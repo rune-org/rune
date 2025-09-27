@@ -8,7 +8,7 @@ Rune is a low‑code workflow automation platform.
 - `packages/*` – shared libraries (planned)
 
 ## Requirements
-- Node.js 20 (see `.nvmrc`)
+- Node.js 20
 - pnpm 9 (via Corepack or manual install)
 
 ## Setup
@@ -19,18 +19,13 @@ Rune is a low‑code workflow automation platform.
      - `corepack enable`
      - `corepack prepare pnpm@9.0.0 --activate`
    - Or install manually: `npm i -g pnpm@9.0.0`
-3) Install deps at the repo root (creates the root lockfile):
-   - `pnpm install`
+3) Install dependencies inside the web app:
+   - `cd apps/web && pnpm install`
 
-## Common Commands
-- Install dependencies (root):
-  - `pnpm install`
-- Run the web app (choose one):
-  - From root: `pnpm --filter web dev`
-  - From app: `cd apps/web && pnpm dev`
-- Lint all packages: `pnpm lint`
-- Typecheck all packages: `pnpm typecheck`
-- Build all packages: `pnpm build`
-- Test all packages: `pnpm test`
-
-See the Makefile for shorthand targets.
+## Common Commands (web)
+- Dev: `cd apps/web && pnpm dev`
+- Build: `cd apps/web && pnpm build`
+- Start: `cd apps/web && pnpm start`
+- Lint: `cd apps/web && pnpm lint`
+- Typecheck: `cd apps/web && pnpm typecheck`
+- Test: `cd apps/web && pnpm test`
