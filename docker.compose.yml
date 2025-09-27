@@ -1,0 +1,10 @@
+services:
+  api:
+
+  frontend:
+
+  rabbitmq:
+
+  worker:
+
+  postgres:

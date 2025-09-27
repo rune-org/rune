@@ -39,3 +39,11 @@
 
 # keys
 *.pem
+
+# python
+.venv
+__pycache__
+*.pyc
+.env
+myenv
+venv
