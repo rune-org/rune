@@ -20,10 +20,11 @@
 **/dist
 **/.turbo
 
-# env files
+# env files - ignore all .env files but keep .env.example
 **/.env
 **/.env.local
 **/.env.*.local
+!**/.env.example
 
 # vercel
 .vercel

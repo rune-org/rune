@@ -1,10 +1,134 @@
 services:
-  api:
-
-  frontend:
+  postgres:
+    image: "postgres:17-alpine"
+    container_name: rune-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rune}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rune_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rune}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
+    image: "rabbitmq:4.0-management-alpine"
+    container_name: rune-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rune}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rune_password}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - backend_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: rune-api
+    env_file:
+      - .env
+      - ./services/api/.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-rune}:${POSTGRES_PASSWORD:-rune_password}@postgres:5432/${POSTGRES_DB:-rune_db}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend_network
+      - frontend_network
+    restart: unless-stopped
 
   worker:
+    build:
+      context: ./services/rune-worker
+      dockerfile: Dockerfile
+    container_name: rune-worker
+    env_file:
+      - .env
+      - ./services/rune-worker/.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-rune}:${POSTGRES_PASSWORD:-rune_password}@postgres:5432/${POSTGRES_DB:-rune_db}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend_network
+    restart: unless-stopped
 
-  postgres:
+  frontend:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: rune-frontend
+    env_file:
+      - ./apps/web/.env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - frontend_network
+    restart: unless-stopped
+
+# (Optional)
+  # nginx:
+  #   image: "nginx:latest"
+  #   container_name: rune-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./nginx/ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - api
+  #     - frontend
+  #   networks:
+  #     - frontend_network
+  #   restart: unless-stopped
+
+networks:
+  # Frontend network - For user-facing services (nginx, frontend, api)
+  frontend_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+  # Backend network - For services (postgres, rabbitmq, worker, api)
+  backend_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
