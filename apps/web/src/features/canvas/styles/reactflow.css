@@ -1,0 +1,29 @@
+.react-flow__background {
+  background: transparent;
+}
+
+.react-flow__controls {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.react-flow__controls > button {
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+.react-flow__minimap {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.react-flow__node {
+  color: var(--foreground);
+}
+
+.react-flow__edge-path {
+  stroke: var(--ring) !important;
+  stroke-width: 2px;
+}
