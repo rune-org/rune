@@ -38,19 +38,24 @@ export function useCanvasShortcuts(opts: {
 
       if (isEditable) return;
 
-      // delete selected node (and its incident edges)
+      // delete selected node(s) (and their incident edges)
       if (e.key === "Delete" || e.key === "Backspace") {
-        setNodes((ns) => ns.filter((n) => n.id !== selectedNodeId));
-        setEdges((es) =>
-          es.filter(
-            (ed) =>
-              ed.source !== selectedNodeId && ed.target !== selectedNodeId,
-          ),
+        const selectedIds = new Set(
+          nodes.filter((n) => n.selected).map((n) => n.id),
         );
+        // fallback to single selectedNodeId if none flagged selected
+        if (selectedIds.size === 0 && selectedNodeId) selectedIds.add(selectedNodeId);
+
+        if (selectedIds.size > 0) {
+          setNodes((ns) => ns.filter((n) => !selectedIds.has(n.id)));
+          setEdges((es) =>
+            es.filter((ed) => !selectedIds.has(ed.source) && !selectedIds.has(ed.target)),
+          );
+        }
         return;
       }
 
-      // select all nodes
+      // select all
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
         e.preventDefault();
         setNodes((ns) => ns.map((n) => ({ ...n, selected: true })));

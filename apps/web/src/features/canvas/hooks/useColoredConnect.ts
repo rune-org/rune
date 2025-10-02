@@ -26,8 +26,6 @@ export function useColoredConnect(
             type: "default",
             animated: false,
             label,
-            style: color ? { stroke: color } : undefined,
-            // white label text on a colored background
             labelStyle: { fill: "white", fontWeight: 600 },
             labelShowBg: !!color,
             labelBgStyle: color ? { fill: color } : undefined,

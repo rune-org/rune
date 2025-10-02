@@ -24,6 +24,12 @@
 }
 
 .react-flow__edge-path {
-  stroke: var(--ring) !important;
+  /* defaults to a neutral gray; runtime styles will override during execution */
+  stroke: var(--border);
   stroke-width: 2px;
+}
+
+.react-flow__node.selected .rune-node {
+  border-color: var(--ring) !important;
+  box-shadow: 0 0 0 2px var(--ring);
 }

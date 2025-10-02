@@ -1,6 +1,7 @@
 "use client";
 
 import { Handle, Position } from "@xyflow/react";
+import { GitBranch } from "lucide-react";
 
 export function IfNode({
   data,
@@ -8,8 +9,11 @@ export function IfNode({
   data: { label?: string; expression?: string };
 }) {
   return (
-    <div className="min-w-[180px] rounded-[var(--radius)] border border-border/70 bg-card p-3 text-sm text-foreground shadow-sm">
-      <div className="font-medium">{data?.label ?? "If"}</div>
+    <div className="rune-node min-w-[180px] rounded-[var(--radius)] border border-border/70 bg-card p-3 text-sm text-foreground shadow-sm">
+      <div className="flex items-center gap-2 font-medium">
+        <GitBranch className="h-4 w-4 text-muted-foreground" />
+        {data?.label ?? "If"}
+      </div>
       <div className="mt-1 truncate text-xs text-muted-foreground">
         {data?.expression ? data.expression : "expression"}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Handle, Position } from "@xyflow/react";
+import { Globe } from "lucide-react";
 
 type HttpData = {
   label?: string;
@@ -10,9 +11,12 @@ type HttpData = {
 
 export function HttpNode({ data }: { data: HttpData }) {
   return (
-    <div className="min-w-[240px] rounded-[var(--radius)] border border-border/70 bg-card p-3 text-sm text-foreground shadow-sm">
+    <div className="rune-node min-w-[240px] rounded-[var(--radius)] border border-border/70 bg-card p-3 text-sm text-foreground shadow-sm">
       <div className="flex items-center justify-between">
-        <div className="font-medium">{data?.label ?? "HTTP"}</div>
+        <div className="flex items-center gap-2 font-medium">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          {data?.label ?? "HTTP"}
+        </div>
         <span className="rounded bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">
           {(data?.method ?? "GET").toUpperCase()}
         </span>

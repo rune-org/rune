@@ -2,6 +2,7 @@
 
 import { Bot, GitBranch, Globe, Mail, Play } from "lucide-react";
 import type { NodeKind } from "../types";
+import { iconFor } from "./NodeIcons";
 
 type LibraryProps = {
   onAdd: (type: NodeKind) => void;
@@ -26,15 +27,19 @@ export function LibraryGroups({ onAdd }: LibraryProps) {
         {title}
       </summary>
       <div className="mt-2 grid gap-2">
-        {items.map((i) => (
-          <button
-            key={i.type}
-            onClick={() => onAdd(i.type)}
-            className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-background/60 px-3 py-1 text-left text-xs hover:bg-muted/40"
-          >
-            {i.label}
-          </button>
-        ))}
+        {items.map((i) => {
+          const ItemIcon = iconFor(i.type);
+          return (
+            <button
+              key={i.type}
+              onClick={() => onAdd(i.type)}
+              className="flex items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-background/60 px-3 py-1 text-left text-xs hover:bg-muted/40"
+            >
+              <ItemIcon className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>{i.label}</span>
+            </button>
+          );
+        })}
       </div>
     </details>
   );

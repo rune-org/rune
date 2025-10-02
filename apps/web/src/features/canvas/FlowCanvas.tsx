@@ -26,6 +26,7 @@ import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
 import { useAddNode } from "./hooks/useAddNode";
 import { useColoredConnect } from "./hooks/useColoredConnect";
 import { useUpdateNodeData } from "./hooks/useUpdateNodeData";
+import { useExecutionSim } from "./hooks/useExecutionSim";
 
 export default function FlowCanvas() {
   const [nodes, setNodes, onNodesChange] =
@@ -34,6 +35,7 @@ export default function FlowCanvas() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rfInstanceRef = useRef<any>(null);
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
 
   const onConnect = useColoredConnect(setEdges);
 
@@ -56,6 +58,27 @@ export default function FlowCanvas() {
 
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
 
+  // TODO: improve history (undo) to be more robust
+  const historyRef = useRef<{ nodes: CanvasNode[]; edges: Edge[] }[]>([]);
+  const pushHistory = useCallback(() => {
+    historyRef.current.push({
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges)),
+    });
+  }, [nodes, edges]);
+
+  const undo = useCallback(() => {
+    const h = historyRef.current;
+    if (!h.length) return;
+    const last = h.pop()!;
+    setNodes(last.nodes as any);
+    setEdges(last.edges as any);
+  }, [setEdges, setNodes]);
+
+  // execution simulator
+  // TODO: implement execution logic for real.
+  const { run, reset } = useExecutionSim(nodes, edges, setNodes, setEdges);
+
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) || null,
     [nodes, selectedNodeId],
@@ -65,7 +88,6 @@ export default function FlowCanvas() {
   const updateSelectedNodeLabel = useCallback(
     (value: string) => {
       if (!selectedNode) return;
-      // Use typed helper to update label according to node kind
       updateNodeData(selectedNode.id, selectedNode.type, (d) => ({
         ...d,
         label: value,
@@ -105,8 +127,28 @@ export default function FlowCanvas() {
         <Controls />
 
         {/* Toolbar */}
-        <Panel position="top-left" className="pointer-events-auto">
-          <Toolbar onAdd={addNode} />
+        <Panel position="top-left" className="pointer-events-auto z-[60]">
+          <div ref={toolbarRef} className="inline-flex">
+          <Toolbar
+            onExecute={() => {
+              reset();
+              run();
+            }}
+            onUndo={undo}
+            onDelete={() => {
+              const selIds = new Set(
+                nodes.filter((n) => n.selected).map((n) => n.id),
+              );
+              if (selIds.size === 0 && selectedNodeId) selIds.add(selectedNodeId);
+              if (selIds.size === 0) return;
+              pushHistory();
+              setNodes((ns) => ns.filter((n) => !selIds.has(n.id)));
+              setEdges((es) => es.filter((ed) => !selIds.has(ed.source) && !selIds.has(ed.target)));
+            }}
+            onSave={() => save({ nodes, edges })}
+            onFitView={() => rfInstanceRef.current?.fitView?.()}
+          />
+          </div>
         </Panel>
 
         {/* Inspector */}
@@ -127,7 +169,14 @@ export default function FlowCanvas() {
         </Panel>
       </ReactFlow>
 
-      <Library containerRef={containerRef} onAdd={addNode} />
+      <Library
+        containerRef={containerRef}
+        toolbarRef={toolbarRef}
+        onAdd={(t, x, y) => {
+          pushHistory();
+          addNode(t, x, y);
+        }}
+      />
     </div>
   );
 }
