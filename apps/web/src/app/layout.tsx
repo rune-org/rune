@@ -22,8 +22,7 @@ export const metadata: Metadata = {
     default: "Rune",
     template: "%s • Rune",
   },
-  description:
-    "Rune is a low-code workflow automation platform.",
+  description: "Rune is a low-code workflow automation platform.",
 };
 
 export default function RootLayout({
