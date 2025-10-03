@@ -1,3 +1,7 @@
+.react-flow {
+  background: var(--canvas-background);
+}
+
 .react-flow__background {
   background: transparent;
 }
@@ -24,8 +28,7 @@
 }
 
 .react-flow__edge-path {
-  /* defaults to a neutral gray; runtime styles will override during execution */
-  stroke: var(--border);
+  stroke: var(--edge-color);
   stroke-width: 2px;
 }
 
