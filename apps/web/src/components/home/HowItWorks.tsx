@@ -1,4 +1,4 @@
-// Note: This is currently a template placeholder, to be updated with the React Flow simulation once ready.
+// TODO: This is currently a template placeholder, needs to be updated with the React Flow simulation once ready.
 
 import { Section } from "@/components/shared/Section";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <Section id="how-it-works" className="gap-12">
+    <Section id="how-it-works">
       <div className="space-y-3">
         <h2 className="text-3xl font-semibold tracking-tight">
           How Rune Works

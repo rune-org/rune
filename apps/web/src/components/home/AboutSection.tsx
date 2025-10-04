@@ -2,7 +2,7 @@ import { Section } from "@/components/shared/Section";
 
 export function AboutSection() {
   return (
-    <Section id="about" className="gap-10 pb-16">
+    <Section id="about" className="gap-10 pb-12">
       <div>
         <div className="space-y-4">
           <h2 className="text-3xl font-semibold tracking-tight">About Rune</h2>
