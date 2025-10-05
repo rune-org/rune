@@ -2,11 +2,23 @@ import * as React from "react";
 
 import { cn } from "@/lib/cn";
 
-export function Section({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLElement>) {
+type SectionSize = "sm" | "md" | "lg";
+
+interface SectionProps extends React.HTMLAttributes<HTMLElement> {
+  size?: SectionSize;
+}
+
+const sizeGap: Record<SectionSize, string> = {
+  sm: "gap-6",
+  md: "gap-8",
+  lg: "gap-10",
+};
+
+export function Section({ className, size = "lg", ...props }: SectionProps) {
   return (
-    <section className={cn("flex flex-col gap-10", className)} {...props} />
+    <section
+      className={cn("flex flex-col", sizeGap[size], className)}
+      {...props}
+    />
   );
 }

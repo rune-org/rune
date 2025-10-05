@@ -34,12 +34,15 @@ export function Footer() {
           <p className="font-display text-4xl tracking-tight">
             Automate your world.
           </p>
+          <p className="text-sm text-muted-foreground -mt-3">
+            {siteConfig.tagline}
+          </p>
         </div>
         <div className="grid gap-10 md:grid-cols-[220px_1fr]">
           <div className="flex flex-col items-start gap-6 border-border/60 md:border-r md:pr-8">
             <Logo className="h-9" />
             <p className="text-sm text-muted-foreground text-left max-w-xs">
-              {siteConfig.tagline}
+              Describe your workflow, Automate your world.
             </p>
             <div className="flex items-center gap-3 text-muted-foreground">
               {siteConfig.socials.map((social) => (
