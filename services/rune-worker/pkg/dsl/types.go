@@ -8,7 +8,7 @@ type Workflow struct {
 	Start  []string         `json:"start"`
 	Nodes  []NodeDefinition `json:"nodes"`
 	Edges  []EdgeDefinition `json:"edges"`
-	Params map[string]any   `json:"params"`
+	Credentials map[string]any   `json:"credentials"`
 }
 
 // NodeDefinition describes a node within the workflow graph.

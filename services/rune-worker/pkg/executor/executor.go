@@ -8,6 +8,7 @@ import (
 	"rune-worker/pkg/dsl"
 	"rune-worker/pkg/nodes"
 	"rune-worker/pkg/nodes/custom"
+	"rune-worker/pkg/messages"
 	"rune-worker/plugin"
 )
 
@@ -26,7 +27,7 @@ func NewExecutor(reg *nodes.Registry) *Executor {
 }
 
 // Execute triggers the workflow described in the message.
-func (e *Executor) Execute(ctx context.Context, msg Message) error {
+func (e *Executor) Execute(ctx context.Context, msg messages.WorkflowStartedMessage) error {
 	if e.registry == nil {
 		return errors.New("executor registry is nil")
 	}
@@ -51,7 +52,7 @@ func (e *Executor) Execute(ctx context.Context, msg Message) error {
 	return nil
 }
 
-func (e *Executor) executeNode(ctx context.Context, wf *dsl.Workflow, nodeID string, msg Message) error {
+func (e *Executor) executeNode(ctx context.Context, wf *dsl.Workflow, nodeID string, msg messages.WorkflowStartedMessage) error {
 	nodeDef, ok := findNode(wf, nodeID)
 	if !ok {
 		return fmt.Errorf("node %s not found", nodeID)
@@ -60,7 +61,7 @@ func (e *Executor) executeNode(ctx context.Context, wf *dsl.Workflow, nodeID str
 	execCtx := plugin.ExecutionContext{
 		WorkflowID: msg.WorkflowID,
 		NodeID:     nodeDef.ID,
-		Config:     nodeDef.Config,
+		Parameters: nodeDef.Config,
 		Input:      msg.Context,
 	}
 
