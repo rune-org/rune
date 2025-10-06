@@ -2,6 +2,7 @@
   color-scheme: dark;
 
   --background: hsl(220 40% 6%);
+  --canvas-background: hsl(240, 33%, 4%);
   --foreground: hsl(210 20% 96%);
 
   --card: hsl(220 35% 9%);
@@ -26,6 +27,7 @@
   --destructive-foreground: hsl(0 0% 100%);
 
   --border: hsl(220 25% 18%);
+  --edge-color: hsl(0, 0%, 69%);
   --input: hsl(220 25% 20%);
   --ring: hsl(217 91% 60%);
 

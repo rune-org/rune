@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -70,4 +70,3 @@ jobs:
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - run: pnpm -C apps/web install
       - run: pnpm -C apps/web test
-
