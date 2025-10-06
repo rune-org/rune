@@ -52,10 +52,14 @@ function DraggableItem({
     onDrag: ({ /* offsetX, offsetY, */ event }) => {
       setDragging(true);
       setPos({ x: 0, y: 0 });
-      const e: any = event;
-      let cx = e?.clientX as number | undefined;
-      let cy = e?.clientY as number | undefined;
-      if ((cx == null || cy == null) && e?.touches?.[0]) {
+      const e = event as MouseEvent | TouchEvent;
+      let cx: number | undefined;
+      let cy: number | undefined;
+      if ("clientX" in e && "clientY" in e) {
+        cx = e.clientX;
+        cy = e.clientY;
+      }
+      if ((cx == null || cy == null) && "touches" in e && e.touches?.[0]) {
         cx = e.touches[0].clientX;
         cy = e.touches[0].clientY;
       }
@@ -67,10 +71,18 @@ function DraggableItem({
       setDragging(false);
       setCursor(null);
       setPos({ x: 0, y: 0 });
-      const e: any = event;
-      let cx = e?.clientX as number | undefined;
-      let cy = e?.clientY as number | undefined;
-      if ((cx == null || cy == null) && e?.changedTouches?.[0]) {
+      const e = event as MouseEvent | TouchEvent;
+      let cx: number | undefined;
+      let cy: number | undefined;
+      if ("clientX" in e && "clientY" in e) {
+        cx = e.clientX;
+        cy = e.clientY;
+      }
+      if (
+        (cx == null || cy == null) &&
+        "changedTouches" in e &&
+        e.changedTouches?.[0]
+      ) {
         cx = e.changedTouches[0].clientX;
         cy = e.changedTouches[0].clientY;
       }
