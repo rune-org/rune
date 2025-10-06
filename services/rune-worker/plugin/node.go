@@ -6,7 +6,8 @@ import "context"
 type ExecutionContext struct {
 	WorkflowID string
 	NodeID     string
-	Config     map[string]any
+	Type       string
+	Parameters map[string]any
 	Input      map[string]any
 }
 
@@ -14,3 +15,7 @@ type ExecutionContext struct {
 type Node interface {
 	Execute(context.Context, ExecutionContext) (map[string]any, error)
 }
+// $http_node.body.data
+// $json.body.data
+// $json.body.data.items[0].name
+// $json.body.data.items[0].value

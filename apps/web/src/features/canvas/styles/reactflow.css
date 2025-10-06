@@ -1,0 +1,58 @@
+.react-flow {
+  background: var(--canvas-background);
+}
+
+.react-flow__background {
+  background: transparent;
+}
+
+.react-flow__controls {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.react-flow__controls > button {
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+.react-flow__minimap {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.react-flow__node {
+  color: var(--foreground);
+}
+
+.react-flow__edge-path {
+  stroke: var(--edge-color);
+  stroke-width: 2px;
+}
+
+.react-flow__node.selected .rune-node {
+  border-color: var(--ring) !important;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.react-flow__handle {
+  transition: all 0.2s ease;
+}
+
+.react-flow__handle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  border-radius: inherit;
+}
+
+.react-flow__handle:hover {
+  box-shadow: 0 0 0 6px rgba(66, 153, 225, 0.25);
+  z-index: 10;
+}

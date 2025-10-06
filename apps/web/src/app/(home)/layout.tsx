@@ -14,7 +14,7 @@ export default function HomeLayout({ children }: HomeLayoutProps) {
       <TopNav />
       <main className="flex-1">
         <Container asChild>
-          <div className="flex flex-col gap-24 py-16">{children}</div>
+          <div className="flex flex-col gap-16 py-12">{children}</div>
         </Container>
       </main>
       <Footer />

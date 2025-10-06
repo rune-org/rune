@@ -30,7 +30,7 @@ const features: Feature[] = [
 
 export function FeatureSection() {
   return (
-    <Section id="features" className="gap-8">
+    <Section id="features" size="md">
       <div className="space-y-3">
         <h2 className="text-3xl font-semibold tracking-tight">
           Empower your workflows

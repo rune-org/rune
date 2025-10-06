@@ -15,8 +15,7 @@ export interface SiteConfig {
 export const siteConfig: SiteConfig = {
   name: "Rune",
   tagline: "Automate your workflows. Build smarter, faster.",
-  description:
-    "Rune is a low-code workflow automation platform.",
+  description: "Rune is a low-code workflow automation platform.",
   mainNav: [
     { title: "Create", href: "/create" },
     { title: "Docs", href: "/docs" },

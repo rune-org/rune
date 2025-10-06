@@ -5,9 +5,10 @@ import (
 	"errors"
 	"log/slog"
 
-	"rune-worker/pkg/config"
+	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/executor"
-	"rune-worker/pkg/queue"
+	"rune-worker/pkg/messages"
+	"rune-worker/pkg/platform/queue"
 )
 
 // WorkflowConsumer listens to the workflow queue and dispatches messages to the executor.
@@ -59,7 +60,7 @@ func (c *WorkflowConsumer) Close() error {
 }
 
 func (c *WorkflowConsumer) handleMessage(ctx context.Context, payload []byte) error {
-	msg, err := executor.DecodeMessage(payload)
+	msg, err := messages.DecodeMessage(payload)
 	if err != nil {
 		slog.Error("invalid workflow message", "error", err)
 		return err

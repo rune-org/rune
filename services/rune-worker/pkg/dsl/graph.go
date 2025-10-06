@@ -20,39 +20,3 @@ func BuildGraph(wf *Workflow) *Graph {
 
 	return &Graph{adjacency: adj}
 }
-
-// HasCycle performs a DFS to detect cycles in the graph.
-func (g *Graph) HasCycle() bool {
-	visited := make(map[string]bool, len(g.adjacency))
-	stack := make(map[string]bool, len(g.adjacency))
-
-	var visit func(string) bool
-	visit = func(node string) bool {
-		if stack[node] {
-			return true
-		}
-		if visited[node] {
-			return false
-		}
-
-		visited[node] = true
-		stack[node] = true
-
-		for _, neighbor := range g.adjacency[node] {
-			if visit(neighbor) {
-				return true
-			}
-		}
-
-		stack[node] = false
-		return false
-	}
-
-	for node := range g.adjacency {
-		if visit(node) {
-			return true
-		}
-	}
-
-	return false
-}

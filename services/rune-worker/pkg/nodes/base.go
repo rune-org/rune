@@ -3,7 +3,6 @@ package nodes
 import (
 	"fmt"
 	"sync"
-
 	"rune-worker/plugin"
 )
 

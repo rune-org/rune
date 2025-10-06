@@ -16,10 +16,6 @@ func ParseWorkflow(data []byte) (*Workflow, error) {
 		return nil, fmt.Errorf("validate workflow: %w", err)
 	}
 
-	graph := BuildGraph(&wf)
-	if graph.HasCycle() {
-		return nil, fmt.Errorf("workflow %s contains a cycle", wf.Name)
-	}
-
+	BuildGraph(&wf)
 	return &wf, nil
 }

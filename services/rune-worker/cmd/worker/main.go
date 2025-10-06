@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"rune-worker/pkg/config"
+	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/consumers"
 )
 
