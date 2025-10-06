@@ -18,26 +18,27 @@ export function JsonField({ value, onChange }: JsonFieldProps) {
     setText(next);
   }, [value]);
 
+  const handleBlur = () => {
+    try {
+      const obj = text.trim() ? JSON.parse(text) : {};
+      if (typeof obj !== "object" || Array.isArray(obj) || obj === null) {
+        setError("Must be a JSON object");
+        return;
+      }
+      setError(null);
+      onChange(obj as Record<string, unknown>);
+    } catch {
+      setError("Invalid JSON");
+    }
+  };
+
   return (
     <div className="space-y-1">
       <textarea
         className="h-24 w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 p-2 text-xs font-mono"
         value={text}
-        onChange={(e) => {
-          const t = e.target.value;
-          setText(t);
-          try {
-            const obj = t.trim() ? JSON.parse(t) : {};
-            if (typeof obj !== "object" || Array.isArray(obj)) {
-              setError("Must be a JSON object");
-              return;
-            }
-            setError(null);
-            onChange(obj as Record<string, unknown>);
-          } catch {
-            setError("Invalid JSON");
-          }
-        }}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={handleBlur}
         spellCheck={false}
       />
       {error ? (

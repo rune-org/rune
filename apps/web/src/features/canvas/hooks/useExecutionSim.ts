@@ -42,7 +42,8 @@ export function useExecutionSim(
     if (startNodes.length === 0) {
       startNodes = nodes.filter((n) => (inDeg[n.id] || 0) === 0);
     }
-    if (startNodes.length === 0 && nodes.length) startNodes = [nodes[0] as CanvasNode];
+    if (startNodes.length === 0 && nodes.length)
+      startNodes = [nodes[0] as CanvasNode];
 
     const visited = new Set<string>();
     const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -55,7 +56,10 @@ export function useExecutionSim(
             ? {
                 ...e,
                 animated: on,
-                style: { ...(e.style || {}), stroke: on ? "var(--ring)" : undefined },
+                style: {
+                  ...(e.style || {}),
+                  stroke: on ? "var(--ring)" : undefined,
+                },
               }
             : e,
         ),

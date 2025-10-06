@@ -19,7 +19,12 @@ type DraggableItemProps = {
   onAdd: (type: NodeKind, x?: number, y?: number) => void;
 };
 
-function DraggableItem({ type, label, containerRef, onAdd }: DraggableItemProps) {
+function DraggableItem({
+  type,
+  label,
+  containerRef,
+  onAdd,
+}: DraggableItemProps) {
   const ref = useRef<HTMLButtonElement | null>(null);
   const [pos, setPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -29,7 +34,8 @@ function DraggableItem({ type, label, containerRef, onAdd }: DraggableItemProps)
     (clientX: number, clientY: number) => {
       const container = containerRef.current;
       const flowEl = container?.querySelector<HTMLElement>(".react-flow");
-      const rect = flowEl?.getBoundingClientRect() ?? container?.getBoundingClientRect();
+      const rect =
+        flowEl?.getBoundingClientRect() ?? container?.getBoundingClientRect();
       if (!rect) return;
       const inside =
         clientX >= rect.left &&
@@ -45,7 +51,6 @@ function DraggableItem({ type, label, containerRef, onAdd }: DraggableItemProps)
     position: pos,
     onDrag: ({ /* offsetX, offsetY, */ event }) => {
       setDragging(true);
-      // keep the original item stationary; only move the ghost
       setPos({ x: 0, y: 0 });
       const e: any = event;
       let cx = e?.clientX as number | undefined;
@@ -62,7 +67,6 @@ function DraggableItem({ type, label, containerRef, onAdd }: DraggableItemProps)
       setDragging(false);
       setCursor(null);
       setPos({ x: 0, y: 0 });
-      // Only add on successful drop inside the flow area
       const e: any = event;
       let cx = e?.clientX as number | undefined;
       let cy = e?.clientY as number | undefined;
@@ -90,24 +94,26 @@ function DraggableItem({ type, label, containerRef, onAdd }: DraggableItemProps)
         <ItemIcon className="h-3.5 w-3.5 text-muted-foreground" />
         <span>{label}</span>
       </button>
-      {dragging && cursor && createPortal(
-        <div
-          style={{
-            position: "fixed",
-            left: 0,
-            top: 0,
-            transform: `translate(${cursor.x}px, ${cursor.y}px) translate(-50%, -50%) scale(1.6)`,
-            pointerEvents: "none",
-            zIndex: 9999,
-          }}
-        >
-          <div className="flex items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-background/90 px-3 py-1.5 text-left text-[0.8rem] shadow-md">
-            <ItemIcon className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>{label}</span>
-          </div>
-        </div>,
-        document.body,
-      )}
+      {dragging &&
+        cursor &&
+        createPortal(
+          <div
+            style={{
+              position: "fixed",
+              left: 0,
+              top: 0,
+              transform: `translate(${cursor.x}px, ${cursor.y}px) translate(-50%, -50%) scale(1.6)`,
+              pointerEvents: "none",
+              zIndex: 9999,
+            }}
+          >
+            <div className="flex items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-background/90 px-3 py-1.5 text-left text-[0.8rem] shadow-md">
+              <ItemIcon className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>{label}</span>
+            </div>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

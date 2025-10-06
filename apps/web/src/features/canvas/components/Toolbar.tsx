@@ -12,7 +12,13 @@ type ToolbarProps = {
   onFitView?: () => void;
 };
 
-export function Toolbar({ onExecute, onUndo, onDelete, onSave, onFitView }: ToolbarProps) {
+export function Toolbar({
+  onExecute,
+  onUndo,
+  onDelete,
+  onSave,
+  onFitView,
+}: ToolbarProps) {
   const Btn = ({
     onClick,
     title,

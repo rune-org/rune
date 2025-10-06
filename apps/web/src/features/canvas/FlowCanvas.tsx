@@ -11,6 +11,7 @@ import {
   Panel,
   type Edge,
   OnSelectionChangeParams,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./styles/reactflow.css";
@@ -24,44 +25,55 @@ import { Library } from "./components/Library";
 import { useLocalGraph } from "./hooks/useLocalGraph";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
 import { useAddNode } from "./hooks/useAddNode";
-import { useColoredConnect } from "./hooks/useColoredConnect";
+import { useConditionalConnect } from "./hooks/useConditionalConnect";
 import { useUpdateNodeData } from "./hooks/useUpdateNodeData";
 import { useExecutionSim } from "./hooks/useExecutionSim";
+
+type HistoryEntry = { nodes: CanvasNode[]; edges: Edge[] };
 
 export default function FlowCanvas() {
   const [nodes, setNodes, onNodesChange] =
     useNodesState<CanvasNode>(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const rfInstanceRef = useRef<any>(null);
+  const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(
+    null,
+  );
   const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const historyRef = useRef<HistoryEntry[]>([]);
 
-  const onConnect = useColoredConnect(setEdges);
-
-  const onSelectionChange = useCallback((params: OnSelectionChangeParams) => {
-    const first = params.nodes?.[0];
-    setSelectedNodeId(first ? (first.id as string) : null);
-  }, []);
-
+  const onConnect = useConditionalConnect(setEdges);
   const { save } = useLocalGraph(setNodes, setEdges);
+  const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
+  const { run, reset } = useExecutionSim(nodes, edges, setNodes, setEdges);
+  const updateNodeData = useUpdateNodeData(setNodes);
 
-  // TODO: improve history (undo) to be more robust
-  const historyRef = useRef<{ nodes: CanvasNode[]; edges: Edge[] }[]>([]);
   const pushHistory = useCallback(() => {
-    historyRef.current.push({
-      nodes: JSON.parse(JSON.stringify(nodes)),
-      edges: JSON.parse(JSON.stringify(edges)),
-    });
+    historyRef.current.push(structuredClone({ nodes, edges }));
   }, [nodes, edges]);
 
   const undo = useCallback(() => {
-    const h = historyRef.current;
-    if (!h.length) return;
-    const last = h.pop()!;
-    setNodes(last.nodes as any);
-    setEdges(last.edges as any);
+    const lastState = historyRef.current.pop();
+    if (lastState) {
+      setNodes(lastState.nodes);
+      setEdges(lastState.edges);
+    }
   }, [setEdges, setNodes]);
+
+  const deleteSelectedElements = useCallback(() => {
+    pushHistory();
+    const selectedNodeIds = new Set(
+      nodes.filter((n) => n.selected).map((n) => n.id),
+    );
+    setNodes((ns) => ns.filter((n) => !selectedNodeIds.has(n.id)));
+    setEdges((es) =>
+      es.filter(
+        (e) => !selectedNodeIds.has(e.source) && !selectedNodeIds.has(e.target),
+      ),
+    );
+  }, [nodes, pushHistory, setNodes, setEdges]);
 
   useCanvasShortcuts({
     nodes,
@@ -69,33 +81,28 @@ export default function FlowCanvas() {
     selectedNodeId,
     setNodes,
     setEdges,
+    onDelete: deleteSelectedElements,
     onSave: () => save({ nodes, edges }),
     onSelectAll: (firstId) => setSelectedNodeId(firstId),
     onPushHistory: pushHistory,
   });
 
-  const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
-
-  // execution simulator
-  // TODO: implement execution logic for real.
-  const { run, reset } = useExecutionSim(nodes, edges, setNodes, setEdges);
-
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) || null,
     [nodes, selectedNodeId],
   );
-  const updateNodeData = useUpdateNodeData(setNodes);
 
   const updateSelectedNodeLabel = useCallback(
-    (value: string) => {
+    (label: string) => {
       if (!selectedNode) return;
-      updateNodeData(selectedNode.id, selectedNode.type, (d) => ({
-        ...d,
-        label: value,
-      }));
+      updateNodeData(selectedNode.id, selectedNode.type, () => ({ label }));
     },
     [selectedNode, updateNodeData],
   );
+
+  const onSelectionChange = useCallback((params: OnSelectionChangeParams) => {
+    setSelectedNodeId(params.nodes[0]?.id ?? null);
+  }, []);
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden">
@@ -103,13 +110,13 @@ export default function FlowCanvas() {
         fitView
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onSelectionChange={onSelectionChange}
         onInit={(inst) => (rfInstanceRef.current = inst)}
         onPaneClick={() => setSelectedNodeId(null)}
-        nodeTypes={nodeTypes}
       >
         <Background />
         <MiniMap
@@ -126,49 +133,30 @@ export default function FlowCanvas() {
           maskColor="rgba(0,0,0,0.3)"
         />
         <Controls />
-
+        
         {/* Toolbar */}
         <Panel position="top-left" className="pointer-events-auto z-[60]">
-          <div ref={toolbarRef} className="inline-flex">
-          <Toolbar
-            onExecute={() => {
-              reset();
-              run();
-            }}
-            onUndo={undo}
-            onDelete={() => {
-              const selectedNodeIds = new Set(
-                nodes.filter((n) => n.selected).map((n) => n.id),
-              );
-              const selectedEdgeIds = new Set(
-                edges.filter((e) => (e as any).selected).map((e) => e.id as string),
-              );
-              if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0 && selectedNodeId)
-                selectedNodeIds.add(selectedNodeId);
-              if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0) return;
-              pushHistory();
-              setNodes((ns) => ns.filter((n) => !selectedNodeIds.has(n.id)));
-              setEdges((es) =>
-                es.filter(
-                  (ed) =>
-                    !selectedEdgeIds.has(ed.id as string) &&
-                    !selectedNodeIds.has(ed.source as string) &&
-                    !selectedNodeIds.has(ed.target as string),
-                ),
-              );
-            }}
-            onSave={() => save({ nodes, edges })}
-            onFitView={() => rfInstanceRef.current?.fitView?.()}
-          />
+          <div ref={toolbarRef}>
+            <Toolbar
+              onExecute={() => {
+                reset();
+                run();
+              }}
+              onUndo={undo}
+              onDelete={deleteSelectedElements}
+              onSave={() => save({ nodes, edges })}
+              onFitView={() => rfInstanceRef.current?.fitView()}
+            />
           </div>
         </Panel>
 
         {/* Inspector */}
         <Inspector
           selectedNode={selectedNode}
-          setNodes={setNodes}
           updateSelectedNodeLabel={updateSelectedNodeLabel}
+          updateData={updateNodeData}
         />
+
 
         {/* Hints */}
         <Panel

@@ -19,4 +19,3 @@ export function iconFor(kind: NodeKind) {
       return Play;
   }
 }
-

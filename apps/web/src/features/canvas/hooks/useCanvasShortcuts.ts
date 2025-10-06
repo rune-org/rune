@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { CanvasNode } from "../types";
 import type { Edge } from "@xyflow/react";
 
-export function useCanvasShortcuts(opts: {
+type CanvasShortcutsProps = {
   nodes: CanvasNode[];
   edges: Edge[];
   selectedNodeId: string | null;
@@ -15,37 +15,56 @@ export function useCanvasShortcuts(opts: {
   onSave: () => void;
   onSelectAll?: (firstId: string | null) => void;
   onPushHistory: () => void;
-}) {
-  const {
-    nodes,
-    edges,
-    selectedNodeId,
-    setNodes,
-    setEdges,
-    onSave,
-    onSelectAll,
-    onPushHistory,
-  } = opts;
+  onDelete: () => void;
+};
+
+export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
+  // Ref stores the latest props, this allows the event listener
+  // to access fresh data without needing to be re-attached on every render.
+  const latestPropsRef = useRef(opts);
+  useEffect(() => {
+    latestPropsRef.current = opts;
+  });
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const {
+        nodes,
+        edges,
+        selectedNodeId,
+        setNodes,
+        setEdges,
+        onSave,
+        onSelectAll,
+        onPushHistory,
+      } = latestPropsRef.current;
+
       const target = e.target as HTMLElement | null;
       const isEditable =
         !!target &&
         (target.tagName === "INPUT" ||
           target.tagName === "TEXTAREA" ||
           target.tagName === "SELECT" ||
-          (target as HTMLElement).isContentEditable ||
-          !!target.closest('[contenteditable="true"]'));
+          (target as HTMLElement).isContentEditable);
 
       if (isEditable) return;
 
       // delete selected node(s)/edge(s)
       if (e.key === "Delete" || e.key === "Backspace") {
-        const selectedNodeIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
-        const selectedEdgeIds = new Set(edges.filter((e) => (e as any).selected).map((e) => e.id as string));
-        // fallback to single selectedNodeId if none flagged selected
-        if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0 && selectedNodeId) selectedNodeIds.add(selectedNodeId);
+        const selectedNodeIds = new Set(
+          nodes.filter((n) => n.selected).map((n) => n.id),
+        );
+        const selectedEdgeIds = new Set(
+          edges.filter((e) => e.selected).map((e) => e.id),
+        );
+
+        if (
+          selectedNodeIds.size === 0 &&
+          selectedEdgeIds.size === 0 &&
+          selectedNodeId
+        ) {
+          selectedNodeIds.add(selectedNodeId);
+        }
 
         if (selectedNodeIds.size > 0 || selectedEdgeIds.size > 0) {
           onPushHistory();
@@ -53,9 +72,9 @@ export function useCanvasShortcuts(opts: {
           setEdges((es) =>
             es.filter(
               (ed) =>
-                !selectedEdgeIds.has(ed.id as string) &&
-                !selectedNodeIds.has(ed.source as string) &&
-                !selectedNodeIds.has(ed.target as string),
+                !selectedEdgeIds.has(ed.id) &&
+                !selectedNodeIds.has(ed.source) &&
+                !selectedNodeIds.has(ed.target),
             ),
           );
         }
@@ -77,7 +96,8 @@ export function useCanvasShortcuts(opts: {
         return;
       }
     };
+
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [edges, nodes, onPushHistory, onSave, onSelectAll, selectedNodeId, setEdges, setNodes]);
+  }, []);
 }

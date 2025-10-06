@@ -23,7 +23,8 @@ export function Library({
   useEffect(() => {
     const el = toolbarRef?.current;
     if (!el) return;
-    const update = () => setTop(Math.round(el.getBoundingClientRect().height + 22));
+    const update = () =>
+      setTop(Math.round(el.getBoundingClientRect().height + 22));
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -34,7 +35,9 @@ export function Library({
     if (!open) return;
     const panel = panelRef.current;
     if (closeBtnRef.current) {
-      try { closeBtnRef.current.focus(); } catch {}
+      try {
+        closeBtnRef.current.focus();
+      } catch {}
     }
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -43,7 +46,8 @@ export function Library({
         setOpen(false);
         return;
       }
-      if (e.key === "Tab" && panel) { // Trap focus to library panel
+      if (e.key === "Tab" && panel) {
+        // Trap focus to library panel
         const focusables = panel.querySelectorAll<HTMLElement>(
           'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
         );
@@ -68,11 +72,15 @@ export function Library({
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[40]">
-      
       {/* Handle */}
       <button
         className="pointer-events-auto absolute left-1 top-1/2 z-[45] -translate-y-1/2 transform rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-background/80 text-muted-foreground hover:border-accent/60 hover:text-foreground"
-        style={{ width: 28, height: 96, opacity: open ? 0 : 1, transition: "opacity 150ms" }}
+        style={{
+          width: 28,
+          height: 96,
+          opacity: open ? 0 : 1,
+          transition: "opacity 150ms",
+        }}
         aria-label="Open library"
         onClick={() => setOpen(true)}
       >
@@ -80,7 +88,7 @@ export function Library({
           <ChevronsRight className="h-5 w-5" />
         </div>
       </button>
-      
+
       {/* Sliding library panel */}
       <div
         ref={panelRef}
@@ -89,12 +97,16 @@ export function Library({
           top: top,
           height: `calc(100% - ${top}px - 12px)`,
           left: GUTTER,
-          transform: open ? "translateX(0)" : `translateX(-${PANEL_WIDTH + GUTTER + 12}px)`,
+          transform: open
+            ? "translateX(0)"
+            : `translateX(-${PANEL_WIDTH + GUTTER + 12}px)`,
           transition: "transform 180ms ease-out",
         }}
       >
         <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-          <div className="text-xs font-medium text-muted-foreground">Library</div>
+          <div className="text-xs font-medium text-muted-foreground">
+            Library
+          </div>
           <button
             ref={closeBtnRef}
             className="inline-flex items-center gap-1 rounded p-1 text-muted-foreground hover:text-foreground"
