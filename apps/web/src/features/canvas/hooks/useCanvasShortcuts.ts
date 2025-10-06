@@ -14,6 +14,7 @@ export function useCanvasShortcuts(opts: {
   setEdges: (updater: (edges: Edge[]) => Edge[] | Edge[]) => void;
   onSave: () => void;
   onSelectAll?: (firstId: string | null) => void;
+  onPushHistory: () => void;
 }) {
   const {
     nodes,
@@ -23,6 +24,7 @@ export function useCanvasShortcuts(opts: {
     setEdges,
     onSave,
     onSelectAll,
+    onPushHistory,
   } = opts;
 
   useEffect(() => {
@@ -38,18 +40,23 @@ export function useCanvasShortcuts(opts: {
 
       if (isEditable) return;
 
-      // delete selected node(s) (and their incident edges)
+      // delete selected node(s)/edge(s)
       if (e.key === "Delete" || e.key === "Backspace") {
-        const selectedIds = new Set(
-          nodes.filter((n) => n.selected).map((n) => n.id),
-        );
+        const selectedNodeIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
+        const selectedEdgeIds = new Set(edges.filter((e) => (e as any).selected).map((e) => e.id as string));
         // fallback to single selectedNodeId if none flagged selected
-        if (selectedIds.size === 0 && selectedNodeId) selectedIds.add(selectedNodeId);
+        if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0 && selectedNodeId) selectedNodeIds.add(selectedNodeId);
 
-        if (selectedIds.size > 0) {
-          setNodes((ns) => ns.filter((n) => !selectedIds.has(n.id)));
+        if (selectedNodeIds.size > 0 || selectedEdgeIds.size > 0) {
+          onPushHistory();
+          setNodes((ns) => ns.filter((n) => !selectedNodeIds.has(n.id)));
           setEdges((es) =>
-            es.filter((ed) => !selectedIds.has(ed.source) && !selectedIds.has(ed.target)),
+            es.filter(
+              (ed) =>
+                !selectedEdgeIds.has(ed.id as string) &&
+                !selectedNodeIds.has(ed.source as string) &&
+                !selectedNodeIds.has(ed.target as string),
+            ),
           );
         }
         return;
@@ -72,5 +79,5 @@ export function useCanvasShortcuts(opts: {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [edges, nodes, onSave, onSelectAll, selectedNodeId, setEdges, setNodes]);
+  }, [edges, nodes, onPushHistory, onSave, onSelectAll, selectedNodeId, setEdges, setNodes]);
 }

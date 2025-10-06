@@ -6,6 +6,7 @@ import { LibraryGroups } from "./LibraryGroups";
 import type { NodeKind } from "../types";
 
 export function Library({
+  containerRef,
   toolbarRef,
   onAdd,
 }: {
@@ -83,7 +84,7 @@ export function Library({
       {/* Sliding library panel */}
       <div
         ref={panelRef}
-        className="pointer-events-auto absolute flex w-[440px] flex-col overflow-hidden rounded-[var(--radius)] border border-border/60 bg-card/90 shadow-xl"
+        className="pointer-events-auto absolute flex w-[440px] flex-col overflow-visible rounded-[var(--radius)] border border-border/60 bg-card/90 shadow-xl"
         style={{
           top: top,
           height: `calc(100% - ${top}px - 12px)`,
@@ -104,7 +105,10 @@ export function Library({
           </button>
         </div>
         <div className="h-full overflow-y-auto p-2">
-          <LibraryGroups onAdd={(type) => onAdd(type)} />
+          <LibraryGroups
+            containerRef={containerRef}
+            onAdd={(type, x, y) => onAdd(type, x, y)}
+          />
         </div>
       </div>
     </div>

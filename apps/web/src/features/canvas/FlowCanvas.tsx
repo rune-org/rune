@@ -46,18 +46,6 @@ export default function FlowCanvas() {
 
   const { save } = useLocalGraph(setNodes, setEdges);
 
-  useCanvasShortcuts({
-    nodes,
-    edges,
-    selectedNodeId,
-    setNodes,
-    setEdges,
-    onSave: () => save({ nodes, edges }),
-    onSelectAll: (firstId) => setSelectedNodeId(firstId),
-  });
-
-  const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
-
   // TODO: improve history (undo) to be more robust
   const historyRef = useRef<{ nodes: CanvasNode[]; edges: Edge[] }[]>([]);
   const pushHistory = useCallback(() => {
@@ -74,6 +62,19 @@ export default function FlowCanvas() {
     setNodes(last.nodes as any);
     setEdges(last.edges as any);
   }, [setEdges, setNodes]);
+
+  useCanvasShortcuts({
+    nodes,
+    edges,
+    selectedNodeId,
+    setNodes,
+    setEdges,
+    onSave: () => save({ nodes, edges }),
+    onSelectAll: (firstId) => setSelectedNodeId(firstId),
+    onPushHistory: pushHistory,
+  });
+
+  const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
 
   // execution simulator
   // TODO: implement execution logic for real.
@@ -136,14 +137,25 @@ export default function FlowCanvas() {
             }}
             onUndo={undo}
             onDelete={() => {
-              const selIds = new Set(
+              const selectedNodeIds = new Set(
                 nodes.filter((n) => n.selected).map((n) => n.id),
               );
-              if (selIds.size === 0 && selectedNodeId) selIds.add(selectedNodeId);
-              if (selIds.size === 0) return;
+              const selectedEdgeIds = new Set(
+                edges.filter((e) => (e as any).selected).map((e) => e.id as string),
+              );
+              if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0 && selectedNodeId)
+                selectedNodeIds.add(selectedNodeId);
+              if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0) return;
               pushHistory();
-              setNodes((ns) => ns.filter((n) => !selIds.has(n.id)));
-              setEdges((es) => es.filter((ed) => !selIds.has(ed.source) && !selIds.has(ed.target)));
+              setNodes((ns) => ns.filter((n) => !selectedNodeIds.has(n.id)));
+              setEdges((es) =>
+                es.filter(
+                  (ed) =>
+                    !selectedEdgeIds.has(ed.id as string) &&
+                    !selectedNodeIds.has(ed.source as string) &&
+                    !selectedNodeIds.has(ed.target as string),
+                ),
+              );
             }}
             onSave={() => save({ nodes, edges })}
             onFitView={() => rfInstanceRef.current?.fitView?.()}
