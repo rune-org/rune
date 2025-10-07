@@ -3,7 +3,7 @@ from typing import Optional, List
 import os
 from zoneinfo import ZoneInfo
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, JSON, func, Integer, DateTime
+from sqlalchemy import Column, Integer, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 
 
@@ -33,11 +33,14 @@ class User(SQLModel, table=True):
     
     # Timestamps
     created_at: datetime = Field(default_factory=now)
-    updated_at: datetime = Field(default_factory=now)
+    updated_at: datetime = Field(
+        default_factory=now,
+        sa_column=Column(DateTime(timezone=True), default=now, onupdate=now)
+    )
     last_login_at: datetime = Field(default_factory=now)
     
     # Relationships
-    # Workflows created by this user - SET NULL on user deletion to preserve workflows
+    # Workflows created by this user - deleted when the user is deleted
     workflows: List["Workflow"] = Relationship(
         back_populates="creator",
         sa_relationship_kwargs={
@@ -90,7 +93,10 @@ class Workflow(SQLModel, table=True):
     
     # Timestamps
     created_at: datetime = Field(default_factory=now)
-    updated_at: datetime = Field(default_factory=now)
+    updated_at: datetime = Field(
+        default_factory=now,
+        sa_column=Column(DateTime(timezone=True), default=now, onupdate=now)
+    )
     
     # Relationships
     # Link back to the creator
@@ -137,7 +143,7 @@ class WorkflowExecution(SQLModel, table=True):
     
     # Timestamps
     started_at: datetime = Field(default_factory=now)
-    # finished_at is nullable because execution may still be running. Store
+    # finished_at is nullable because execution may still be running.
     finished_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
 
     # Relationships
@@ -155,7 +161,10 @@ class WorkflowUser(SQLModel, table=True):
     
     # Timestamps
     created_at: datetime = Field(default_factory=now)
-    updated_at: datetime = Field(default_factory=now)
+    updated_at: datetime = Field(
+        default_factory=now,
+        sa_column=Column(DateTime(timezone=True), default=now, onupdate=now)
+    )
     
     # Relationships
     # Link to the workflow this permission is for
@@ -198,9 +207,11 @@ class WorkflowTemplate(SQLModel, table=True):
     
     # Timestamps
     created_at: datetime = Field(default_factory=now)
-    updated_at: datetime = Field(default_factory=now)
+    updated_at: datetime = Field(
+        default_factory=now,
+        sa_column=Column(DateTime(timezone=True), default=now, onupdate=now)
+    )
     
     # Relationships
     # Link to the user who created this template
     creator: Optional[User] = Relationship(back_populates="workflow_templates")
-
