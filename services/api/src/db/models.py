@@ -177,6 +177,8 @@ class WorkflowTemplate(SQLModel, table=True):
     
     id: Optional[int] = Field(default=None, primary_key=True, sa_column=Column(Integer, autoincrement=True))
     name: str
+    email: str = Field(unique=True)
+    hashed_password: str = Field(exclude=True)
     description: str = Field(default="")
     category: str = Field(default="general")
     

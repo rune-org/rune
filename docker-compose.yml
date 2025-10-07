@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-rune}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
-      POSTGRES_DB: ${POSTGRES_DB:-rune_db}
+      POSTGRES_DB: ${POSTGRES_DB:-rune}
     ports:
       - "5432:5432"
     volumes:
@@ -37,6 +37,16 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: "redis:7-alpine"
+    container_name: rune-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend_network
+
   api:
     build:
       context: ./services/api
@@ -48,6 +58,9 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-rune}:${POSTGRES_PASSWORD:-rune_password}@postgres:5432/${POSTGRES_DB:-rune_db}
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
     ports:
       - "8000:8000"
     depends_on:
@@ -55,6 +68,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - backend_network
       - frontend_network
@@ -113,14 +128,12 @@ services:
 #   restart: unless-stopped
 
 networks:
-  # Frontend network - For user-facing services (nginx, frontend, api)
   frontend_network:
     driver: bridge
     ipam:
       config:
         - subnet: 172.20.0.0/16
 
-  # Backend network - For services (postgres, rabbitmq, worker, api)
   backend_network:
     driver: bridge
     ipam:
@@ -131,4 +144,6 @@ volumes:
   postgres_data:
     driver: local
   rabbitmq_data:
+    driver: local
+  redis_data:
     driver: local

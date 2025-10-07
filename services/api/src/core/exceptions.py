@@ -1,14 +1,3 @@
-"""
-Custom Exception Classes
-
-This module defines custom exception classes that extend FastAPI's HTTPException
-to provide consistent error handling across the API. Each exception class
-represents a specific HTTP status code and error scenario.
-
-These exceptions are designed to be raised in business logic and automatically
-converted to appropriate HTTP responses by FastAPI's exception handling system.
-"""
-
 from fastapi import HTTPException, status
 
 
@@ -87,3 +76,48 @@ class BadRequest(HTTPException):
 
     def __init__(self, detail: str = "Bad Request"):
         super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+
+class InvalidTokenError(HTTPException):
+    """
+    Invalid Token Exception (HTTP 401)
+
+    Args:
+        detail: Custom message explaining why the token is invalid
+    """
+
+    def __init__(self, detail: str = "Invalid token"):
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=detail,
+        )
+
+
+class TokenExpiredError(HTTPException):
+    """
+    Token Expired Exception (HTTP 401)
+
+    Args:
+        detail: Custom message explaining the token has expired
+    """
+
+    def __init__(self, detail: str = "Token expired"):
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=detail,
+        )
+
+
+class RedisConnectionError(HTTPException):
+    """
+    Redis Connection Error Exception (HTTP 503)
+
+    Args:
+        detail: Custom message explaining the Redis error
+    """
+
+    def __init__(self, detail: str = "Redis service unavailable"):
+        super().__init__(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+        )

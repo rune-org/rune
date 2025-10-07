@@ -1,5 +1,7 @@
+import secrets
 from enum import Enum
 from functools import lru_cache
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -28,6 +30,25 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     postgres_db: str = "rune"
     database_url: str | None = None
+
+    # JWT Settings
+    jwt_secret_key: str | None = None
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 2
+    refresh_token_expire_days: int = 30
+
+    # Redis Settings
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_password: str | None = None
+
+
+    @computed_field
+    @property
+    def cookie_secure(self) -> bool:
+        """Cookie secure flag - only true in production."""
+        return self.environment == Environment.PROD
 
 
 @lru_cache
