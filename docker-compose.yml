@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-rune}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
-      POSTGRES_DB: ${POSTGRES_DB:-rune_db}
+      POSTGRES_DB: ${POSTGRES_DB:-rune}
     ports:
       - "5432:5432"
     volumes:
