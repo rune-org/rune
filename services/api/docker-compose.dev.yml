@@ -1,0 +1,72 @@
+# ============================================================================
+# DEVELOPMENT ENVIRONMENT ONLY - DO NOT USE IN PRODUCTION
+# ============================================================================
+# This docker-compose file is specifically designed for local development
+# of the Rune API service. It only includes the essential backing services
+# (PostgreSQL and Redis) that the API depends on.
+#
+# The API itself should be run locally on your machine for development,
+# allowing for hot-reloading and easier debugging.
+#
+# Usage:
+#   docker-compose -f docker-compose.dev.yml up -d
+#   docker-compose -f docker-compose.dev.yml down
+# ============================================================================
+
+services:
+  # ============================================================================
+  # PostgreSQL Database
+  # ============================================================================
+
+  postgres:
+    image: "postgres:17-alpine"
+    container_name: rune-api-postgres-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-rune}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - rune_dev_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Redis Cache - Development Instance
+  # ============================================================================
+  # In-memory data store for session management and caching
+  # Used for storing JWT refresh tokens and temporary data
+  redis:
+    image: "redis:7-alpine"
+    container_name: rune-api-redis-dev
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - rune_dev_network
+    restart: unless-stopped
+
+# ============================================================================
+# Networks
+# ============================================================================
+# Isolated network for development services
+networks:
+  rune_dev_network:
+    driver: bridge
+    name: rune_api_dev_network
+
+# ============================================================================
+# Volumes
+# ============================================================================
+# Named volumes for persistent data storage during development
+# These can be easily removed with: docker volume rm <volume_name>
+volumes:
+  postgres_dev_data:
+    driver: local
+    name: rune_api_postgres_dev_data
+  redis_dev_data:
+    driver: local
+    name: rune_api_redis_dev_data
