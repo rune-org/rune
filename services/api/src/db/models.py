@@ -1,24 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional, List
-import os
-from zoneinfo import ZoneInfo
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, Integer, DateTime
+from sqlalchemy import Column, Integer, DateTime, String
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import ForeignKey
 
-
-# IANA timezone name (e.g. 'UTC', 'Africa/Cairo') to change behavior.
-_APP_TZ = os.getenv("APP_TIMEZONE", "UTC")
-try:
-    _ZONE = ZoneInfo(_APP_TZ)
-except Exception:
-    # Fallback to UTC if zone not found
-    _ZONE = timezone.utc
-
-
-def now() -> datetime:
-    """Return timezone-aware datetime using configured APP_TIMEZONE."""
-    return datetime.now(_ZONE)
 
 
 class User(SQLModel, table=True):
@@ -27,17 +13,17 @@ class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True, sa_column=Column(Integer, autoincrement=True))
     name: str
     email: str = Field(unique=True, index=True)
-    password_hash: str
+    password_hash: str = Field(sa_column=Column(String, nullable=False), exclude=True)
     role: str = Field(default="user")  # 'user', 'admin'
     is_active: bool = Field(default=True)
     
     # Timestamps
-    created_at: datetime = Field(default_factory=now)
+    created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(
-        default_factory=now,
-        sa_column=Column(DateTime(timezone=True), default=now, onupdate=now)
+        default_factory=datetime.now,
+        sa_column=Column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
     )
-    last_login_at: datetime = Field(default_factory=now)
+    last_login_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
     
     # Relationships
     # Workflows created by this user - deleted when the user is deleted
@@ -62,15 +48,14 @@ class User(SQLModel, table=True):
     granted_permissions: List["WorkflowUser"] = Relationship(
         back_populates="granter",
         sa_relationship_kwargs={
-            "foreign_keys": "[WorkflowUser.granted_by]",
-            "cascade": "all, delete-orphan"  # Remove granted permissions when user is deleted
+            "foreign_keys": "[WorkflowUser.granted_by]"
         }
     )
     
     # Templates created by this user
     workflow_templates: List["WorkflowTemplate"] = Relationship(
         back_populates="creator",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"}  # Delete templates when user is deleted
+        sa_relationship_kwargs={"foreign_keys": "[WorkflowTemplate.created_by]"}
     )
 
 
@@ -89,13 +74,13 @@ class Workflow(SQLModel, table=True):
     
     is_active: bool = Field(default=True)
     version: int = Field(default=1)
-    created_by: int = Field(foreign_key="users.id", nullable=False)
+    created_by: Optional[int] = Field(default=None, sa_column=Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True))
     
     # Timestamps
-    created_at: datetime = Field(default_factory=now)
+    created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(
-        default_factory=now,
-        sa_column=Column(DateTime(timezone=True), default=now, onupdate=now)
+        default_factory=datetime.now,
+        sa_column=Column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
     )
     
     # Relationships
@@ -142,7 +127,7 @@ class WorkflowExecution(SQLModel, table=True):
     trigger_source: str = Field(default="manual")  # 'manual', 'scheduled', 'webhook'
     
     # Timestamps
-    started_at: datetime = Field(default_factory=now)
+    started_at: datetime = Field(default_factory=datetime.now)
     # finished_at is nullable because execution may still be running.
     finished_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime(timezone=True), nullable=True))
 
@@ -157,13 +142,13 @@ class WorkflowUser(SQLModel, table=True):
     workflow_id: int = Field(foreign_key="workflows.id", nullable=False)
     user_id: int = Field(foreign_key="users.id", nullable=False)
     role: str = Field(default="viewer")  # 'viewer', 'editor', 'owner'
-    granted_by: int = Field(foreign_key="users.id", nullable=False)
+    granted_by: Optional[int] = Field(default=None, sa_column=Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True))
     
     # Timestamps
-    created_at: datetime = Field(default_factory=now)
+    created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(
-        default_factory=now,
-        sa_column=Column(DateTime(timezone=True), default=now, onupdate=now)
+        default_factory=datetime.now,
+        sa_column=Column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
     )
     
     # Relationships
@@ -206,10 +191,10 @@ class WorkflowTemplate(SQLModel, table=True):
     created_by: int = Field(foreign_key="users.id", nullable=False)
     
     # Timestamps
-    created_at: datetime = Field(default_factory=now)
+    created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(
-        default_factory=now,
-        sa_column=Column(DateTime(timezone=True), default=now, onupdate=now)
+        default_factory=datetime.now,
+        sa_column=Column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
     )
     
     # Relationships
