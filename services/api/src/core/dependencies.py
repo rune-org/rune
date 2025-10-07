@@ -42,4 +42,30 @@ async def get_current_user(request: Request) -> User:
         raise Unauthorized(detail="Invalid access token")
 
 
+CurrentUser = Annotated[User, Depends(get_current_user)]
+"""
+Type alias for authenticated user dependency.
+
+Usage:
+    from src.core.dependencies import CurrentUser
+    
+    @app.get("/profile")
+    async def get_profile(current_user: CurrentUser):
+        # current_user is automatically injected and validated
+        return {"email": current_user.email, "id": current_user.id}
+    
+    @app.post("/workflows")
+    async def create_workflow(
+        workflow_data: WorkflowCreate,
+        current_user: CurrentUser,
+        db: DatabaseDep
+    ):
+        # Use current_user to associate resources with the authenticated user
+        workflow = Workflow(**workflow_data.dict(), user_id=current_user.id)
+        db.add(workflow)
+        await db.commit()
+        return workflow
+
+"""
+
 RedisDep = Annotated[Redis, Depends(get_redis)]
