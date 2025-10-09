@@ -22,18 +22,24 @@ func NewExecutor(reg *nodes.Registry) *Executor {
 	return &Executor{registry: reg}
 }
 
-// Execute triggers the workflow described in the message.
-func (e *Executor) Execute(ctx context.Context, msg messages.WorkflowStartedMessage) error {
-
+// Execute processes a single node execution message.
+// This method handles both initial workflow starts (from master) and recursive
+// node executions (from other workers).
+func (e *Executor) Execute(ctx context.Context, msg *messages.NodeExecutionMessage) error {
+	// TODO: Implement execution logic per RFC-001
+	// 1. Validate message
+	// 2. Lookup current node from workflow definition
+	// 3. Publish "running" status
+	// 4. Build ExecutionContext from accumulated_context
+	// 5. Execute node with context
+	// 6. Publish "success" or "failed" status
+	// 7. Determine next nodes via graph traversal
+	// 8. Publish NodeExecutionMessage for each next node OR CompletionMessage
 	return nil
 }
 
-func (e *Executor) executeNode(ctx context.Context, wf *dsl.Workflow, nodeID string, msg messages.WorkflowStartedMessage) error {
+func (e *Executor) executeNode(ctx context.Context, wf *dsl.Workflow, nodeID string, msg *messages.NodeExecutionMessage) error {
 	return nil
-}
-
-func findNode(wf *dsl.Workflow, nodeID string) (dsl.Node, bool) {
-	return dsl.Node{}, false
 }
 
 // DefaultRegistry returns a registry populated with the built-in nodes.
