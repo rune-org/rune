@@ -48,3 +48,6 @@ __pycache__
 .env
 myenv
 venv
+
+# golang
+services/rune-worker/main

@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"rune-worker/pkg/dsl"
+	"rune-worker/pkg/messages"
 	"rune-worker/pkg/nodes"
 	"rune-worker/pkg/nodes/custom"
-	"rune-worker/pkg/messages"
 	"rune-worker/plugin"
 )
 
