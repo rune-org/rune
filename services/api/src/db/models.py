@@ -10,10 +10,10 @@ from sqlalchemy import ForeignKey
 class User(SQLModel, table=True):
     __tablename__ = "users"
     
-    id: Optional[int] = Field(default=None, primary_key=True, sa_column=Column(Integer, autoincrement=True))
+    id: Optional[int] = Field(default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True))
     name: str
     email: str = Field(unique=True, index=True)
-    password_hash: str = Field(sa_column=Column(String, nullable=False), exclude=True)
+    hashed_password: str = Field(sa_column=Column(String, nullable=False), exclude=True)
     role: str = Field(default="user")  # 'user', 'admin'
     is_active: bool = Field(default=True)
     
@@ -62,7 +62,7 @@ class User(SQLModel, table=True):
 class Workflow(SQLModel, table=True):
     __tablename__ = "workflows"
     
-    id: Optional[int] = Field(default=None, primary_key=True, sa_column=Column(Integer, autoincrement=True))
+    id: Optional[int] = Field(default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True))
     name: str
     description: str = Field(default="")
     
@@ -109,7 +109,7 @@ class Workflow(SQLModel, table=True):
 class WorkflowExecution(SQLModel, table=True):
     __tablename__ = "workflow_executions"
     
-    id: Optional[int] = Field(default=None, primary_key=True, sa_column=Column(Integer, autoincrement=True))
+    id: Optional[int] = Field(default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True))
     workflow_id: int = Field(foreign_key="workflows.id")
     status: str = Field(default="pending")  # 'pending', 'running', 'completed', 'failed'
     
@@ -118,7 +118,7 @@ class WorkflowExecution(SQLModel, table=True):
         default_factory=dict,
         sa_column=Column(JSONB, nullable=False)
     )
-    metadata: dict = Field(
+    execution_metadata: dict = Field(
         default_factory=dict,
         sa_column=Column(JSONB, nullable=False)
     )
@@ -138,7 +138,7 @@ class WorkflowExecution(SQLModel, table=True):
 class WorkflowUser(SQLModel, table=True):
     __tablename__ = "workflow_users"
     
-    id: Optional[int] = Field(default=None, primary_key=True, sa_column=Column(Integer, autoincrement=True))
+    id: Optional[int] = Field(default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True))
     workflow_id: int = Field(foreign_key="workflows.id", nullable=False)
     user_id: int = Field(foreign_key="users.id", nullable=False)
     role: str = Field(default="viewer")  # 'viewer', 'editor', 'owner'
@@ -175,7 +175,7 @@ class WorkflowUser(SQLModel, table=True):
 class WorkflowTemplate(SQLModel, table=True):
     __tablename__ = "workflow_templates"
     
-    id: Optional[int] = Field(default=None, primary_key=True, sa_column=Column(Integer, autoincrement=True))
+    id: Optional[int] = Field(default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True))
     name: str
     email: str = Field(unique=True)
     hashed_password: str = Field(exclude=True)
