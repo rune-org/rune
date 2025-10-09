@@ -229,26 +229,46 @@ This proposal aims to achieve the following objectives:
 ### 5.2 Execution Flow
 
 ```
-1. Master publishes NodeExecutionMessage(node=first_node)
-           ↓
-2. Worker_A consumes message
-           ↓
-3. Worker_A publishes NodeStatusMessage(status=running)
-           ↓
-4. Worker_A executes node logic
-           ↓
-5. Worker_A publishes NodeStatusMessage(status=success, output=data)
-           ↓
-6. Worker_A determines next_nodes from graph
-           ↓
-7. Worker_A publishes NodeExecutionMessage(node=next_node) for each
-           ↓
-8. Worker_B consumes next message (recursive)
-           ↓
-9. Repeat steps 3-8 until no next nodes
-           ↓
-10. Worker_N publishes CompletionMessage(status=completed)
+┌─────────────────────────────────────────────────────────────┐
+│ INITIATION (Master Service)                                 │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Trigger fires (e.g., manual trigger, webhook)            │
+│ 2. Master executes trigger logic                            │
+│ 3. Master resolves ALL credentials for workflow nodes       │
+│ 4. Master publishes NodeExecutionMessage:                    │
+│    - current_node = first_execution_node_id                 │
+│    - workflow_definition (with resolved credentials)        │
+│    - accumulated_context = {"$trigger": trigger_output}     │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│ RECURSIVE EXECUTION (Worker Instances)                      │
+├─────────────────────────────────────────────────────────────┤
+│ 4. Worker_A consumes NodeExecutionMessage                   │
+│ 5. Worker_A publishes NodeStatusMessage(status=running)     │
+│ 6. Worker_A executes node logic                             │
+│ 7. Worker_A publishes NodeStatusMessage(status=success)     │
+│ 8. Worker_A determines next_nodes from graph                │
+│ 9. For each next_node:                                      │
+│    Worker_A publishes NodeExecutionMessage:                 │
+│    - current_node = next_node_id                            │
+│    - accumulated_context += {"$node_name": output}          │
+│ 10. Worker_B consumes next NodeExecutionMessage (recursive) │
+│ 11. Repeat steps 5-10 until no next nodes                   │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│ TERMINATION (Final Worker)                                  │
+├─────────────────────────────────────────────────────────────┤
+│ 12. Worker_N publishes CompletionMessage(status=completed)  │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+**Key Points**:
+- Master and workers publish the **same message type** (NodeExecutionMessage) to the **same queue** (workflow.execution)
+- Workers consume messages regardless of source (master or other workers)
+- Each message represents execution of exactly one node
+- Context accumulates through message propagation
 
 ### 5.3 State Management
 
@@ -264,11 +284,15 @@ Execution state is maintained through message payload propagation:
 
 ### 6.1 NodeExecutionMessage
 
-**Purpose**: Instructs a worker to execute a specific node.
+**Purpose**: Instructs a worker to execute a specific node. This message serves dual purposes:
+1. **Initial workflow start**: Published by master service after trigger execution
+2. **Recursive execution**: Published by workers after completing a node
 
 **Queue**: `workflow.execution`
 
-**Direction**: Worker → Worker (via RabbitMQ)
+**Direction**: 
+- Master → Worker (initial message)
+- Worker → Worker (recursive messages via RabbitMQ)
 
 **Format**:
 
@@ -288,7 +312,7 @@ Execution state is maintained through message payload propagation:
 - `execution_id`: Uniquely identifies this execution instance. Format: `^[a-zA-Z0-9_-]+$`
 - `current_node`: The node ID to execute. MUST reference a valid node in `workflow_definition.nodes`
 - `workflow_definition`: Complete workflow structure including nodes and edges
-- `accumulated_context`: Object with keys of format `$<node_id>` mapping to node outputs
+- `accumulated_context`: Object with keys of format `$<node_name>` mapping to node outputs
 
 **Example**:
 
@@ -310,6 +334,20 @@ Execution state is maintained through message payload propagation:
 }
 ```
 
+**Design Rationale**:
+
+This unified message structure ensures that both initial workflow starts and recursive node executions use the same format and queue. This design provides:
+
+1. **Simplicity**: Single message type for all execution coordination
+2. **Consistency**: Workers use the same consumption logic for initial and recursive messages
+3. **Flexibility**: Master service and workers publish identical message structures
+4. **Scalability**: No distinction needed between message sources at queue level
+
+**Initial vs Recursive Messages**:
+
+- **Initial Message**: `current_node` points to the first execution node (trigger outputs already in `accumulated_context` as `$trigger`)
+- **Recursive Message**: `current_node` points to next node, `accumulated_context` includes all previous node outputs with `$<node_name>` keys
+
 ### 6.2 NodeStatusMessage
 
 **Purpose**: Reports node execution progress and results.
@@ -325,6 +363,7 @@ Execution state is maintained through message payload propagation:
   "workflow_id": string,      // REQUIRED
   "execution_id": string,     // REQUIRED
   "node_id": string,          // REQUIRED
+  "node_name": string,        // REQUIRED
   "status": string,           // REQUIRED. One of: "running", "success", "failed"
   "output": object | null,    // OPTIONAL. Present when status="success"
   "error": object | null,     // OPTIONAL. Present when status="failed"
@@ -356,6 +395,7 @@ Execution state is maintained through message payload propagation:
   "workflow_id": "wf_email_notification",
   "execution_id": "exec_20251009_123456",
   "node_id": "http_fetch_user",
+  "node_name": "Fetch User Data",
   "status": "success",
   "output": {
     "status": 200,
@@ -375,6 +415,7 @@ Execution state is maintained through message payload propagation:
   "workflow_id": "wf_email_notification",
   "execution_id": "exec_20251009_123456",
   "node_id": "http_fetch_user",
+  "node_name": "Fetch User Data",
   "status": "failed",
   "output": null,
   "error": {
@@ -456,19 +497,21 @@ For each consumed NodeExecutionMessage, workers MUST execute the following seque
 2. LOOKUP node by current_node ID
 3. VALIDATE node exists and is executable
 4. PUBLISH NodeStatusMessage(status=running)
-5. RESOLVE credentials if node requires them
-6. BUILD ExecutionContext from accumulated_context
-7. EXECUTE node logic with ExecutionContext
-8. IF execution successful:
+5. BUILD ExecutionContext from accumulated_context
+   Note: Credentials are already resolved by master service and included
+   in the node definition within workflow_definition. Workers do NOT
+   perform credential resolution.
+6. EXECUTE node logic with ExecutionContext
+7. IF execution successful:
      a. PUBLISH NodeStatusMessage(status=success, output=result)
-     b. ACCUMULATE result into context as $<node_id>
+     b. ACCUMULATE result into context as $<node_name>
      c. DETERMINE next nodes via graph traversal
      d. IF next nodes exist:
           FOR EACH next_node:
             PUBLISH NodeExecutionMessage(current_node=next_node)
         ELSE:
           PUBLISH CompletionMessage(status=completed)
-9. IF execution failed:
+8. IF execution failed:
      a. PUBLISH NodeStatusMessage(status=failed, error=details)
      b. APPLY error handling strategy (halt|ignore|branch)
      c. PUBLISH appropriate next message or completion
@@ -504,7 +547,7 @@ FUNCTION determine_next_nodes(workflow, current_node, execution_output):
 Workers MUST:
 
 1. Preserve all existing keys in `accumulated_context`
-2. Add new node output with key format `$<node_id>`
+2. Add new node output with key format `$<node_name>`
 3. Ensure context is serializable to JSON
 4. Include updated context in all published NodeExecutionMessages
 
@@ -516,17 +559,17 @@ Initial context:
     "$trigger": {"user_id": "123"}
   }
 
-After http_node execution:
+After "Fetch User" node execution:
   {
     "$trigger": {"user_id": "123"},
-    "$http_node": {"status": 200, "body": {...}}
+    "$Fetch User": {"status": 200, "body": {...}}
   }
 
-After conditional_node execution:
+After "Check Status" conditional node execution:
   {
     "$trigger": {"user_id": "123"},
-    "$http_node": {"status": 200, "body": {...}},
-    "$conditional_node": {"result": true}
+    "$Fetch User": {"status": 200, "body": {...}},
+    "$Check Status": {"result": true}
   }
 ```
 
@@ -658,14 +701,24 @@ All messages SHOULD be validated against JSON schema before processing to preven
 - Resource exhaustion via extremely large contexts
 - Workflow definition tampering
 
-### 10.2 Credential Isolation
+### 10.2 Credential Handling
 
-Credentials MUST NOT be included in message payloads. Workers MUST:
+**Credential Resolution**: The master service MUST resolve all credentials before publishing the initial NodeExecutionMessage. Credential values are included in the `workflow_definition.nodes[].credentials.values` field.
 
-1. Extract credential reference from node definition
-2. Resolve actual credentials from secure credential store
-3. Pass credentials to node execution context
-4. Ensure credentials never appear in logs or status messages
+**Worker Responsibilities**: Workers MUST:
+
+1. Extract credentials from node definition (already resolved by master)
+2. Pass credentials to node execution context via ExecutionContext
+3. Ensure credentials never appear in logs or status messages
+4. Clear credentials from memory after node execution completes
+
+**Rationale**: Centralizing credential resolution in the master service:
+- Simplifies worker implementation (no credential store access needed)
+- Reduces attack surface (workers don't need credential store permissions)
+- Enables credential caching at the workflow level
+- Ensures consistent credential state across all nodes in a workflow execution
+
+**Security Note**: While credentials are included in messages, the `workflow.execution` queue MUST be secured with appropriate access controls and transport encryption (TLS).
 
 ### 10.3 Access Control
 
@@ -711,6 +764,8 @@ Context grows linearly with workflow size:
 - 100 nodes × 10KB average = ~1MB context
 - Large workflows may require context pruning strategy
 
+**Note**: Using `$<node_name>` instead of `$<node_id>` provides better readability in contexts and logs, but requires unique node names within a workflow.
+
 ---
 
 ## 12. Implementation Requirements
@@ -725,7 +780,12 @@ Context grows linearly with workflow size:
 - [ ] Graph traversal algorithm
 - [ ] Context accumulation logic
 - [ ] Error handling strategies (halt/ignore/branch)
-- [ ] Credential resolution integration
+- [ ] Credential extraction from node definition (already resolved by master)
+
+**MUST NOT** implement:
+
+- [ ] Credential resolution from credential store (handled by master)
+- [ ] Credential store access
 
 **SHOULD** implement:
 
@@ -733,21 +793,25 @@ Context grows linearly with workflow size:
 - [ ] Execution metrics collection
 - [ ] Distributed tracing support
 - [ ] Graceful shutdown with message completion
+- [ ] Credential memory clearing after node execution
 
 ### 12.2 Master Service
 
 **MUST** implement:
 
+- [ ] Credential resolution for all workflow nodes before publishing initial message
 - [ ] NodeStatusMessage consumer
 - [ ] CompletionMessage consumer
 - [ ] Real-time status delivery to users (WebSocket/SSE)
 - [ ] Workflow state persistence
+- [ ] Initial NodeExecutionMessage publishing with resolved credentials
 
 **SHOULD** implement:
 
 - [ ] Status message batching
 - [ ] User notification throttling
 - [ ] Execution history storage
+- [ ] Credential caching per workflow execution
 
 ### 12.3 Infrastructure
 
@@ -792,11 +856,11 @@ Workflow: Trigger → HTTP → SMTP
 
 Message Flow:
 1. Master → workflow.execution: {current_node: "http_1"}
-2. Worker → workflow.node.status: {node_id: "http_1", status: "running"}
-3. Worker → workflow.node.status: {node_id: "http_1", status: "success", output: {...}}
+2. Worker → workflow.node.status: {node_id: "http_1", node_name: "Fetch Data", status: "running"}
+3. Worker → workflow.node.status: {node_id: "http_1", node_name: "Fetch Data", status: "success", output: {...}}
 4. Worker → workflow.execution: {current_node: "smtp_1"}
-5. Worker → workflow.node.status: {node_id: "smtp_1", status: "running"}
-6. Worker → workflow.node.status: {node_id: "smtp_1", status: "success", output: {...}}
+5. Worker → workflow.node.status: {node_id: "smtp_1", node_name: "Send Email", status: "running"}
+6. Worker → workflow.node.status: {node_id: "smtp_1", node_name: "Send Email", status: "success", output: {...}}
 7. Worker → workflow.completion: {status: "completed"}
 ```
 
@@ -807,11 +871,11 @@ Workflow: Trigger → HTTP → Conditional → [SMTP_Success | SMTP_Failure]
 
 Message Flow:
 1. Master → workflow.execution: {current_node: "http_1"}
-2. Worker → workflow.node.status: {node_id: "http_1", status: "success"}
+2. Worker → workflow.node.status: {node_id: "http_1", node_name: "Fetch Data", status: "success"}
 3. Worker → workflow.execution: {current_node: "conditional_1"}
-4. Worker → workflow.node.status: {node_id: "conditional_1", status: "success", output: {result: true}}
+4. Worker → workflow.node.status: {node_id: "conditional_1", node_name: "Check Status", status: "success", output: {result: true}}
 5. Worker → workflow.execution: {current_node: "smtp_success"}
-6. Worker → workflow.node.status: {node_id: "smtp_success", status: "success"}
+6. Worker → workflow.node.status: {node_id: "smtp_success", node_name: "Send Success Email", status: "success"}
 7. Worker → workflow.completion: {status: "completed"}
 ```
 
