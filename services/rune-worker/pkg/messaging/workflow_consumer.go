@@ -3,6 +3,7 @@ package messaging
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"rune-worker/pkg/executor"
@@ -11,7 +12,8 @@ import (
 	"rune-worker/pkg/platform/queue"
 )
 
-// WorkflowConsumer listens to the workflow queue and dispatches messages to the executor.
+// WorkflowConsumer orchestrates workflow execution by consuming messages,
+// invoking the executor, and handling acknowledgments for fault tolerance.
 type WorkflowConsumer struct {
 	queue     queue.Consumer
 	publisher *WorkflowPublisher
@@ -86,25 +88,35 @@ func (c *WorkflowConsumer) Close() error {
 	return pubErr
 }
 
+// handleMessage decodes incoming messages, executes nodes, and returns errors
+// to trigger requeue or nil to trigger acknowledgment.
 func (c *WorkflowConsumer) handleMessage(ctx context.Context, payload []byte) error {
 	msg, err := messages.DecodeNodeExecutionMessage(payload)
 	if err != nil {
-		slog.Error("invalid node execution message", "error", err)
-		return err
+		slog.Error("failed to decode node execution message",
+			"error", err,
+			"payload_size", len(payload))
+		return fmt.Errorf("decode message: %w", err)
 	}
 
+	slog.Info("received node execution message",
+		"workflow_id", msg.WorkflowID,
+		"execution_id", msg.ExecutionID,
+		"node_id", msg.CurrentNode)
+
 	if err := c.executor.Execute(ctx, msg); err != nil {
-		slog.Error("failed to execute node",
+		slog.Error("executor failed to process node",
 			"workflow_id", msg.WorkflowID,
 			"execution_id", msg.ExecutionID,
 			"node_id", msg.CurrentNode,
 			"error", err)
-		return err
+		return fmt.Errorf("execute node: %w", err)
 	}
 
-	slog.Info("node processed",
+	slog.Info("successfully orchestrated node execution",
 		"workflow_id", msg.WorkflowID,
 		"execution_id", msg.ExecutionID,
 		"node_id", msg.CurrentNode)
+
 	return nil
 }
