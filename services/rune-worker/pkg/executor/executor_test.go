@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"rune-worker/pkg/dsl"
 	"rune-worker/pkg/messages"
 	"rune-worker/pkg/nodes"
+	"rune-worker/pkg/core"
 	"rune-worker/plugin"
 )
 
@@ -71,8 +71,8 @@ func TestExecutor_SimpleLinearWorkflow(t *testing.T) {
 	exec := NewExecutor(reg, pub)
 
 	// Create simple workflow: node1 -> node2
-	workflow := dsl.Workflow{
-		Nodes: []dsl.Node{
+	workflow := core.Workflow{
+		Nodes: []core.Node{
 			{
 				ID:         "node1",
 				Name:       "Node 1",
@@ -86,7 +86,7 @@ func TestExecutor_SimpleLinearWorkflow(t *testing.T) {
 				Parameters: map[string]interface{}{},
 			},
 		},
-		Edges: []dsl.Edge{
+		Edges: []core.Edge{
 			{ID: "edge1", Src: "node1", Dst: "node2"},
 		},
 	}
@@ -149,8 +149,8 @@ func TestExecutor_WorkflowCompletion(t *testing.T) {
 	exec := NewExecutor(reg, pub)
 
 	// Create workflow with single node (no outgoing edges)
-	workflow := dsl.Workflow{
-		Nodes: []dsl.Node{
+	workflow := core.Workflow{
+		Nodes: []core.Node{
 			{
 				ID:         "final_node",
 				Name:       "Final Node",
@@ -158,7 +158,7 @@ func TestExecutor_WorkflowCompletion(t *testing.T) {
 				Parameters: map[string]interface{}{},
 			},
 		},
-		Edges: []dsl.Edge{},
+		Edges: []core.Edge{},
 	}
 
 	msg := &messages.NodeExecutionMessage{
@@ -209,19 +209,19 @@ func TestExecutor_NodeFailureHaltStrategy(t *testing.T) {
 	exec := NewExecutor(reg, pub)
 
 	// Create workflow with halt error strategy
-	workflow := dsl.Workflow{
-		Nodes: []dsl.Node{
+	workflow := core.Workflow{
+		Nodes: []core.Node{
 			{
 				ID:         "failing_node",
 				Name:       "Failing Node",
 				Type:       "mock",
 				Parameters: map[string]interface{}{},
-				Error: &dsl.ErrorHandling{
+				Error: &core.ErrorHandling{
 					Type: "halt",
 				},
 			},
 		},
-		Edges: []dsl.Edge{},
+		Edges: []core.Edge{},
 	}
 
 	msg := &messages.NodeExecutionMessage{
@@ -267,8 +267,8 @@ func TestExecutor_ContextAccumulation(t *testing.T) {
 
 	exec := NewExecutor(reg, pub)
 
-	workflow := dsl.Workflow{
-		Nodes: []dsl.Node{
+	workflow := core.Workflow{
+		Nodes: []core.Node{
 			{
 				ID:         "node1",
 				Name:       "Test Node",
@@ -282,7 +282,7 @@ func TestExecutor_ContextAccumulation(t *testing.T) {
 				Parameters: map[string]interface{}{},
 			},
 		},
-		Edges: []dsl.Edge{
+		Edges: []core.Edge{
 			{ID: "edge1", Src: "node1", Dst: "node2"},
 		},
 	}
@@ -348,14 +348,14 @@ func TestExecutor_CredentialsHandling(t *testing.T) {
 
 	exec := NewExecutor(reg, pub)
 
-	workflow := dsl.Workflow{
-		Nodes: []dsl.Node{
+	workflow := core.Workflow{
+		Nodes: []core.Node{
 			{
 				ID:         "node_with_creds",
 				Name:       "Node With Credentials",
 				Type:       "mock",
 				Parameters: map[string]interface{}{},
-				Credentials: &dsl.Credential{
+				Credentials: &core.Credential{
 					ID:   "cred_123",
 					Name: "Test Credentials",
 					Type: "api_key",
@@ -366,7 +366,7 @@ func TestExecutor_CredentialsHandling(t *testing.T) {
 				},
 			},
 		},
-		Edges: []dsl.Edge{},
+		Edges: []core.Edge{},
 	}
 
 	msg := &messages.NodeExecutionMessage{

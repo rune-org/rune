@@ -14,39 +14,25 @@ The worker consumes node execution messages from RabbitMQ, executes workflow nod
 
 - `pkg/consumers`: Message consumer logic.
 
-## Project Structure- `pkg/dsl`: DSL parsing, validation, and graph analysis.
+## Project Structure
 
-- `pkg/executor`: Step execution framework.
-
-```- `pkg/nodes`: Built-in node registry and default implementations.
-
-cmd/worker/          Application entrypoint with service initialization- `pkg/queue`: RabbitMQ connectivity helpers.
-
-pkg/- `plugin`: Public API for third-party node implementations.
-
+```
+cmd/worker/          Application entrypoint with service initialization
+pkg/
+  ├── core/          Core workflow types (Workflow, Node, Edge, etc.)
+  ├── dsl/           DSL parsing, validation, and graph analysis
+  ├── executor/      RFC-001 recursive executor implementation
   ├── messaging/     Message consumer and publisher for RabbitMQ
+  ├── nodes/         Built-in node registry and implementations
+  │   └── custom/    Custom node types (log, http, etc.)
+  ├── messages/      Message type definitions and encoding
+  ├── platform/      Infrastructure components (config, queue)
+  └── registry/      Auto-registration system for nodes
+plugin/              Public API for third-party node implementations
+rfcs/                Architecture and specification documents
+```
 
-  ├── executor/      RFC-001 recursive executor implementation## Getting Started
-
-  ├── dsl/          DSL parsing, validation, and graph analysis
-
-  ├── nodes/        Built-in node registry and implementations1. Ensure you have Go 1.25 or newer installed.
-
-  │   └── custom/   Custom node types (log, http, etc.)2. Copy `.env` and adjust the RabbitMQ URL or queue settings as needed.
-
-  ├── messages/     Message type definitions and encoding3. Install dependencies and run a build:
-
-  └── platform/     Infrastructure components (config, queue)
-
-plugin/             Public API for third-party node implementations```sh
-
-rfcs/               Architecture and specification documentscd rune-worker
-
-```go mod tidy
-
-go build ./...
-
-## Features```
+## Features
 
 
 
@@ -449,19 +435,49 @@ go test ./pkg/executor/... -v
 go test ./pkg/nodes/custom/http/... -v
 ```
 
-### Adding Custom Nodes
+### Creating Custom Node Types
 
-The worker uses an **auto-registration system** - nodes automatically register themselves when their package is imported. No manual registration needed!
+The worker uses an **auto-registration system** - nodes automatically register themselves when their package is imported. This guide walks through creating a complete custom node implementation.
 
-#### Step 1: Create Your Node Implementation
+#### Overview
 
-Create a new directory for your node type:
+Custom nodes must:
+1. Implement the `plugin.Node` interface
+2. Register themselves in the `init()` function
+3. Be imported in `pkg/registry/init_registry.go`
+
+#### Step 1: Create Node Package Structure
 
 ```bash
+# Create directory for your node
 mkdir -p pkg/nodes/custom/mynode
+
+# If your node has complex parameters, create a parameters file
+touch pkg/nodes/custom/mynode/parameters.go
+touch pkg/nodes/custom/mynode/mynode.go
+touch pkg/nodes/custom/mynode/mynode_test.go
 ```
 
-Implement the `plugin.Node` interface:
+#### Step 2: Define Parameters (Optional)
+
+If your node has structured parameters, define them in a separate file:
+
+```go
+// pkg/nodes/custom/mynode/parameters.go
+package mynode
+
+// MyNodeParameters defines configuration for MyNode
+type MyNodeParameters struct {
+    Message    string            `json:"message"`
+    Timeout    int               `json:"timeout,string"`
+    Options    map[string]string `json:"options"`
+    RetryCount int               `json:"retry_count,string"`
+}
+```
+
+#### Step 3: Implement the Node
+
+Create your node implementation following this template:
 
 ```go
 // pkg/nodes/custom/mynode/mynode.go
@@ -469,18 +485,29 @@ package mynode
 
 import (
     "context"
+    "fmt"
+    "log/slog"
+    "time"
+    
     "rune-worker/pkg/nodes"
     "rune-worker/plugin"
 )
 
-type MyCustomNode struct {
-    // Your node fields
-    message string
+// MyNode implements custom business logic
+type MyNode struct {
+    message    string
+    timeout    time.Duration
+    options    map[string]string
+    retryCount int
 }
 
-func NewMyCustomNode(execCtx plugin.ExecutionContext) *MyCustomNode {
-    node := &MyCustomNode{
-        message: "default message",
+// NewMyNode creates a new instance from execution context
+func NewMyNode(execCtx plugin.ExecutionContext) *MyNode {
+    node := &MyNode{
+        message:    "default message",
+        timeout:    30 * time.Second,
+        options:    make(map[string]string),
+        retryCount: 0,
     }
     
     // Parse parameters from execution context
@@ -488,24 +515,66 @@ func NewMyCustomNode(execCtx plugin.ExecutionContext) *MyCustomNode {
         node.message = msg
     }
     
+    if timeout, ok := execCtx.Parameters["timeout"].(float64); ok {
+        node.timeout = time.Duration(timeout) * time.Second
+    }
+    
+    if opts, ok := execCtx.Parameters["options"].(map[string]interface{}); ok {
+        for k, v := range opts {
+            if strVal, ok := v.(string); ok {
+                node.options[k] = strVal
+            }
+        }
+    }
+    
+    if retry, ok := execCtx.Parameters["retry_count"].(float64); ok {
+        node.retryCount = int(retry)
+    }
+    
     return node
 }
 
-func (n *MyCustomNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) (map[string]any, error) {
-    // Your node logic here
+// Execute implements the plugin.Node interface
+func (n *MyNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) (map[string]any, error) {
+    slog.Info("executing mynode",
+        "node_id", execCtx.NodeID,
+        "message", n.message,
+    )
+    
+    // Create context with timeout
+    timeoutCtx, cancel := context.WithTimeout(ctx, n.timeout)
+    defer cancel()
+    
+    // Implement your business logic here
+    result, err := n.performWork(timeoutCtx, execCtx)
+    if err != nil {
+        return nil, fmt.Errorf("mynode execution failed: %w", err)
+    }
+    
+    // Return output that will be available to subsequent nodes
     return map[string]any{
-        "result": "success",
+        "success": true,
         "message": n.message,
+        "result":  result,
+        "options": n.options,
     }, nil
 }
-```
 
-#### Step 2: Add Auto-Registration
-
-Add an `init()` function and registration function to your node:
-
-```go
-// Add to the same file: pkg/nodes/custom/mynode/mynode.go
+// performWork contains the actual node logic
+func (n *MyNode) performWork(ctx context.Context, execCtx plugin.ExecutionContext) (string, error) {
+    // Access input from previous nodes via execCtx.Input
+    // Example: previousOutput := execCtx.Input["$previous_node"]
+    
+    // Access credentials if needed
+    if execCtx.HasCredentials() {
+        creds := execCtx.GetCredentials()
+        // Use credentials for authentication
+        _ = creds
+    }
+    
+    // Your implementation here
+    return "work completed successfully", nil
+}
 
 // init registers the node type automatically on package import
 func init() {
@@ -515,12 +584,126 @@ func init() {
 // RegisterMyNode registers the node type with the registry
 func RegisterMyNode(reg *nodes.Registry) {
     reg.Register("mynode", func(execCtx plugin.ExecutionContext) plugin.Node {
-        return NewMyCustomNode(execCtx)
+        return NewMyNode(execCtx)
     })
 }
 ```
 
-#### Step 3: Import Your Node Package
+#### Step 4: Write Tests
+
+Create comprehensive tests for your node:
+
+```go
+// pkg/nodes/custom/mynode/mynode_test.go
+package mynode
+
+import (
+    "context"
+    "testing"
+    
+    "rune-worker/plugin"
+)
+
+func TestMyNode_Execute(t *testing.T) {
+    tests := []struct {
+        name       string
+        params     map[string]interface{}
+        input      map[string]interface{}
+        wantErr    bool
+        wantResult string
+    }{
+        {
+            name: "basic execution",
+            params: map[string]interface{}{
+                "message": "test message",
+                "timeout": 30,
+            },
+            input:      make(map[string]interface{}),
+            wantErr:    false,
+            wantResult: "work completed successfully",
+        },
+        {
+            name: "with options",
+            params: map[string]interface{}{
+                "message": "test",
+                "options": map[string]interface{}{
+                    "key1": "value1",
+                    "key2": "value2",
+                },
+            },
+            input:      make(map[string]interface{}),
+            wantErr:    false,
+            wantResult: "work completed successfully",
+        },
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            execCtx := plugin.ExecutionContext{
+                WorkflowID:  "test_workflow",
+                ExecutionID: "test_execution",
+                NodeID:      "test_node",
+                Type:        "mynode",
+                Parameters:  tt.params,
+                Input:       tt.input,
+            }
+            
+            node := NewMyNode(execCtx)
+            
+            output, err := node.Execute(context.Background(), execCtx)
+            
+            if (err != nil) != tt.wantErr {
+                t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
+                return
+            }
+            
+            if !tt.wantErr {
+                if result, ok := output["result"].(string); ok {
+                    if result != tt.wantResult {
+                        t.Errorf("Execute() result = %v, want %v", result, tt.wantResult)
+                    }
+                } else {
+                    t.Errorf("Execute() output missing 'result' field")
+                }
+                
+                if success, ok := output["success"].(bool); !ok || !success {
+                    t.Errorf("Execute() success = %v, want true", success)
+                }
+            }
+        })
+    }
+}
+
+func TestMyNode_ParameterParsing(t *testing.T) {
+    execCtx := plugin.ExecutionContext{
+        Parameters: map[string]interface{}{
+            "message":     "custom message",
+            "timeout":     60.0,
+            "retry_count": 3.0,
+            "options": map[string]interface{}{
+                "opt1": "val1",
+            },
+        },
+        Input: make(map[string]interface{}),
+    }
+    
+    node := NewMyNode(execCtx)
+    
+    if node.message != "custom message" {
+        t.Errorf("message = %v, want 'custom message'", node.message)
+    }
+    
+    if node.retryCount != 3 {
+        t.Errorf("retryCount = %v, want 3", node.retryCount)
+    }
+    
+    if len(node.options) != 1 || node.options["opt1"] != "val1" {
+        t.Errorf("options not parsed correctly: %v", node.options)
+    }
+}
+```
+
+#### Step 5: Register the Node
 
 Add a blank import to `pkg/registry/init_registry.go`:
 
@@ -535,76 +718,166 @@ import (
     _ "rune-worker/pkg/nodes/custom/http"
     _ "rune-worker/pkg/nodes/custom/mynode"  // Add your node here
 )
+
+// InitializeRegistry creates and populates the node registry
+func InitializeRegistry() *nodes.Registry {
+    reg := nodes.NewRegistry()
+    
+    // Call all registered node registration functions
+    for _, register := range nodes.GetRegisteredNodeTypes() {
+        register(reg)
+    }
+    
+    types := reg.GetAllTypes()
+    slog.Info("node registry initialized", "registered_nodes", len(types), "types", types)
+    
+    return reg
+}
 ```
 
-**That's it!** Your node will automatically register when the worker starts. No changes needed to `main.go` or any other files.
+#### Step 6: Test Your Node
 
-#### Complete Example
+```bash
+# Run your node tests
+go test ./pkg/nodes/custom/mynode/... -v
 
-Here's a complete example of a simple logging node:
+# Run all tests
+go test ./pkg/... -v
+
+# Test with coverage
+go test ./pkg/nodes/custom/mynode/... -cover
+```
+
+#### Step 7: Use in Workflow DSL
+
+Once registered, your node can be used in workflow definitions:
+
+```json
+{
+  "id": "my_custom_node",
+  "name": "MyCustomStep",
+  "type": "mynode",
+  "parameters": {
+    "message": "Processing data",
+    "timeout": 60,
+    "retry_count": 3,
+    "options": {
+      "mode": "production",
+      "verbose": "true"
+    }
+  },
+  "credentials": {
+    "source": "my_service_key"
+  }
+}
+```
+
+#### Advanced Features
+
+##### Accessing Previous Node Output
 
 ```go
-// pkg/nodes/custom/log/log_node.go
-package log
-
-import (
-    "context"
-    "log/slog"
-    "rune-worker/pkg/nodes"
-    "rune-worker/plugin"
-)
-
-type LogNode struct {
-    message string
-}
-
-func NewLogNode(execCtx plugin.ExecutionContext) *LogNode {
-    node := &LogNode{
-        message: "default log message",
+func (n *MyNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) (map[string]any, error) {
+    // Access output from previous node named "fetch_user"
+    if userData, ok := execCtx.Input["$fetch_user"].(map[string]interface{}); ok {
+        userID := userData["user_id"]
+        // Use userID in your logic
     }
     
-    if msg, ok := execCtx.Parameters["message"].(string); ok {
-        node.message = msg
+    // Access trigger data
+    if triggerData, ok := execCtx.Input["$trigger"].(map[string]interface{}); ok {
+        // Use trigger data
     }
     
-    return node
-}
-
-func (n *LogNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) (map[string]any, error) {
-    slog.Info("log node executed", "message", n.message)
-    
-    return map[string]any{
-        "logged": true,
-        "message": n.message,
-    }, nil
-}
-
-// Auto-registration
-func init() {
-    nodes.RegisterNodeType(RegisterLog)
-}
-
-func RegisterLog(reg *nodes.Registry) {
-    reg.Register("log", func(execCtx plugin.ExecutionContext) plugin.Node {
-        return NewLogNode(execCtx)
-    })
+    // ... rest of implementation
 }
 ```
 
-#### How It Works
+##### Working with Credentials
+
+```go
+func (n *MyNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) (map[string]any, error) {
+    // Check if credentials are available
+    if !execCtx.HasCredentials() {
+        return nil, fmt.Errorf("credentials required but not provided")
+    }
+    
+    creds := execCtx.GetCredentials()
+    
+    // Access credential values
+    apiKey, ok := creds["api_key"].(string)
+    if !ok {
+        return nil, fmt.Errorf("api_key credential not found")
+    }
+    
+    // Use credentials for authentication
+    // ... implementation
+}
+```
+
+##### Error Handling with Retries
+
+```go
+func (n *MyNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) (map[string]any, error) {
+    var lastErr error
+    
+    for attempt := 0; attempt <= n.retryCount; attempt++ {
+        if attempt > 0 {
+            slog.Warn("retrying operation", 
+                "attempt", attempt, 
+                "max_retries", n.retryCount,
+            )
+            time.Sleep(time.Second * time.Duration(attempt))
+        }
+        
+        result, err := n.performWork(ctx, execCtx)
+        if err == nil {
+            return map[string]any{
+                "success": true,
+                "result":  result,
+                "attempts": attempt + 1,
+            }, nil
+        }
+        
+        lastErr = err
+    }
+    
+    return nil, fmt.Errorf("operation failed after %d attempts: %w", 
+        n.retryCount+1, lastErr)
+}
+```
+
+#### Registration System Details
+
+**How It Works:**
 
 1. **Package Import**: When `pkg/registry` is imported, it triggers blank imports of all node packages
-2. **Init Functions**: Each node package's `init()` function runs automatically
+2. **Init Functions**: Each node package's `init()` function runs automatically at program startup
 3. **Registration**: `nodes.RegisterNodeType()` adds the registration function to a global list
-4. **Application**: `registry.InitializeRegistry()` calls all registered functions to populate the registry
+4. **Initialization**: `registry.InitializeRegistry()` calls all registered functions to populate the registry
+5. **Execution**: The executor looks up nodes by type name when processing workflows
 
-#### Benefits
+**Benefits:**
 
 ✅ **Automatic Discovery** - New nodes are found automatically  
-✅ **Zero Configuration** - No manual registration lists  
-✅ **Clean Separation** - Each node is self-contained  
-✅ **Type Safety** - Compile-time verification  
-✅ **Easy Testing** - Nodes can be tested independently
+✅ **Zero Configuration** - No manual registration lists to maintain  
+✅ **Clean Separation** - Each node is self-contained in its package  
+✅ **Type Safety** - Compile-time verification of node implementations  
+✅ **Easy Testing** - Nodes can be unit tested independently  
+✅ **Extensibility** - Add new nodes without modifying core code
+
+#### Best Practices
+
+1. **Parameter Validation**: Always validate and provide defaults for parameters
+2. **Context Handling**: Respect context cancellation for graceful shutdown
+3. **Structured Logging**: Use `slog` with contextual information
+4. **Error Messages**: Return descriptive errors with context
+5. **Output Format**: Return consistent map structure for node output
+6. **Testing**: Write comprehensive tests including edge cases
+7. **Documentation**: Document parameters and expected behavior
+8. **Credentials**: Never log sensitive credential information
+9. **Timeouts**: Always use timeouts for external calls
+10. **Idempotency**: Design nodes to be safely retryable when possible
 
 ## Monitoring and Observability
 
