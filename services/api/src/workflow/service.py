@@ -9,14 +9,14 @@ from src.core.exceptions import NotFound, Forbidden
 class WorkflowService:
     """Database service for Workflow objects.
 
-    Holds an async DB session and exposes simple methods used by API
+    Holds an DB session and exposes simple methods used by API
     routers: listing, retrieval, creation, updates, and deletion.
     """
 
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list_for_user(self, user_id: int) -> List[Workflow]:
+    async def list_for_user(self, user_id: int) -> list[Workflow]:
         """Return workflows owned by `user_id`, newest first.
 
         Used for the `GET /workflows` endpoint.

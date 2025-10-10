@@ -1,4 +1,5 @@
 from typing import Optional, Dict, Any
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 
@@ -29,5 +30,10 @@ class WorkflowDetail(BaseModel):
     is_active: bool
     workflow_data: Dict[str, Any]
     version: int
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
+    
+    # Allow constructing the model directly from object attributes (SQLModel/ORM
+    # instances) when using Pydantic v2. This lets callers do
+    # `WorkflowDetail.model_validate(wf)` instead of manual field mapping.
+    model_config = {"from_attributes": True}

@@ -16,7 +16,7 @@ from src.db.models import User
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
 
 
-async def get_workflow_service(db: DatabaseDep) -> WorkflowService:
+def get_workflow_service(db: DatabaseDep) -> WorkflowService:
     return WorkflowService(db=db)
 
 
@@ -38,16 +38,7 @@ async def get_workflow(
 ) -> ApiResponse[WorkflowDetail]:
     wf = await service.get_for_user(workflow_id, current_user.id)
 
-    detail = WorkflowDetail(
-        id=wf.id,
-        name=wf.name,
-        description=wf.description,
-        is_active=wf.is_active,
-        workflow_data=wf.workflow_data,
-        version=wf.version,
-        created_at=wf.created_at.isoformat(),
-        updated_at=wf.updated_at.isoformat(),
-    )
+    detail = WorkflowDetail.model_validate(wf)
 
     return ApiResponse(success=True, message="Workflow retrieved", data=detail)
 
@@ -65,16 +56,7 @@ async def create_workflow(
         workflow_data=payload.workflow_data,
     )
 
-    detail = WorkflowDetail(
-        id=wf.id,
-        name=wf.name,
-        description=wf.description,
-        is_active=wf.is_active,
-        workflow_data=wf.workflow_data,
-        version=wf.version,
-        created_at=wf.created_at.isoformat(),
-        updated_at=wf.updated_at.isoformat(),
-    )
+    detail = WorkflowDetail.model_validate(wf)
 
     return ApiResponse(success=True, message="Workflow created", data=detail)
 
@@ -89,16 +71,7 @@ async def update_status(
     wf = await service.get_for_user(workflow_id, current_user.id)
     wf = await service.update_status(wf, payload.is_active)
 
-    detail = WorkflowDetail(
-        id=wf.id,
-        name=wf.name,
-        description=wf.description,
-        is_active=wf.is_active,
-        workflow_data=wf.workflow_data,
-        version=wf.version,
-        created_at=wf.created_at.isoformat(),
-        updated_at=wf.updated_at.isoformat(),
-    )
+    detail = WorkflowDetail.model_validate(wf)
 
     return ApiResponse(success=True, message="Workflow status updated", data=detail)
 
@@ -113,16 +86,7 @@ async def update_name(
     wf = await service.get_for_user(workflow_id, current_user.id)
     wf = await service.update_name(wf, payload.name)
 
-    detail = WorkflowDetail(
-        id=wf.id,
-        name=wf.name,
-        description=wf.description,
-        is_active=wf.is_active,
-        workflow_data=wf.workflow_data,
-        version=wf.version,
-        created_at=wf.created_at.isoformat(),
-        updated_at=wf.updated_at.isoformat(),
-    )
+    detail = WorkflowDetail.model_validate(wf)
 
     return ApiResponse(success=True, message="Workflow name updated", data=detail)
 
