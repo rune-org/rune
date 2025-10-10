@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class WorkflowListItem(BaseModel):
@@ -9,14 +9,45 @@ class WorkflowListItem(BaseModel):
     is_active: bool
 
 
+def normalize_and_validate_name(value: str, *, field_name: str = "name") -> str:
+    """validate a name field.
+    - Ensures the resulting value is not empty.
+
+    Args:
+        value: The raw input value.
+        field_name: Optional field name used in the error message.
+
+    Returns:
+        The stripped string.
+
+    Raises:
+        ValueError: If the stripped value is empty.
+    """
+
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{field_name} cannot be blank")
+    return normalized
+
+
 class WorkflowCreate(BaseModel):
     name: str = Field(..., min_length=1)
     description: Optional[str] = Field(default="")
     workflow_data: Dict[str, Any] = Field(default_factory=dict)
 
+    @field_validator("name")
+    @classmethod
+    def _validate_name(cls, v: str) -> str:
+        return normalize_and_validate_name(v)
+
 
 class WorkflowUpdateName(BaseModel):
     name: str = Field(..., min_length=1)
+
+    @field_validator("name")
+    @classmethod
+    def _validate_name(cls, v: str) -> str:
+        return normalize_and_validate_name(v)
 
 
 class WorkflowUpdateStatus(BaseModel):

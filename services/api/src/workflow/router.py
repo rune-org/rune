@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status, Response
 
 from src.workflow.schemas import (
     WorkflowListItem,
@@ -20,7 +20,7 @@ def get_workflow_service(db: DatabaseDep) -> WorkflowService:
     return WorkflowService(db=db)
 
 
-@router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
+@router.get("/", response_model=ApiResponse[list[WorkflowListItem]], status_code=status.HTTP_200_OK)
 async def list_workflows(
     current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
@@ -30,7 +30,7 @@ async def list_workflows(
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
 
 
-@router.get("/{workflow_id}", response_model=ApiResponse[WorkflowDetail])
+@router.get("/{workflow_id}", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_200_OK)
 async def get_workflow(
     workflow_id: int,
     current_user: User = Depends(get_current_user),
@@ -43,7 +43,7 @@ async def get_workflow(
     return ApiResponse(success=True, message="Workflow retrieved", data=detail)
 
 
-@router.post("/", response_model=ApiResponse[WorkflowDetail])
+@router.post("/", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_201_CREATED)
 async def create_workflow(
     payload: WorkflowCreate,
     current_user: User = Depends(get_current_user),
@@ -61,7 +61,7 @@ async def create_workflow(
     return ApiResponse(success=True, message="Workflow created", data=detail)
 
 
-@router.put("/{workflow_id}/status", response_model=ApiResponse[WorkflowDetail])
+@router.put("/{workflow_id}/status", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_200_OK)
 async def update_status(
     workflow_id: int,
     payload: WorkflowUpdateStatus,
@@ -76,7 +76,7 @@ async def update_status(
     return ApiResponse(success=True, message="Workflow status updated", data=detail)
 
 
-@router.put("/{workflow_id}/name", response_model=ApiResponse[WorkflowDetail])
+@router.put("/{workflow_id}/name", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_200_OK)
 async def update_name(
     workflow_id: int,
     payload: WorkflowUpdateName,
@@ -91,12 +91,12 @@ async def update_name(
     return ApiResponse(success=True, message="Workflow name updated", data=detail)
 
 
-@router.delete("/{workflow_id}", response_model=ApiResponse[None])
+@router.delete("/{workflow_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workflow(
     workflow_id: int,
     current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
-) -> ApiResponse[None]:
+) -> None:
     wf = await service.get_for_user(workflow_id, current_user.id)
     await service.delete(wf)
-    return ApiResponse(success=True, message="Workflow deleted", data=None)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
