@@ -214,25 +214,6 @@ func TestValidateWorkflowStructure(t *testing.T) {
 			errMsg:  "empty ID",
 		},
 		{
-			name: "invalid node type",
-			wf: &core.Workflow{
-				WorkflowID:  "wf-123",
-				ExecutionID: "exec-456",
-				Nodes: []core.Node{
-					{
-						ID:         "node1",
-						Name:       "Test core.Node",
-						Type:       "invalid_type",
-						Parameters: map[string]any{},
-						Output:     map[string]any{},
-					},
-				},
-				Edges: []core.Edge{},
-			},
-			wantErr: true,
-			errMsg:  "invalid type",
-		},
-		{
 			name: "edge references non-existent node",
 			wf: &core.Workflow{
 				WorkflowID:  "wf-123",
@@ -272,30 +253,6 @@ func TestValidateWorkflowStructure(t *testing.T) {
 			}
 			if err != nil {
 				t.Errorf("validateWorkflowStructure() unexpected error = %v", err)
-			}
-		})
-	}
-}
-
-func TestIsValidNodeType(t *testing.T) {
-	tests := []struct {
-		name     string
-		nodeType string
-		want     bool
-	}{
-		{"http type", core.NodeTypeHTTP, true},
-		{"smtp type", core.NodeTypeSMTP, true},
-		{"conditional type", core.NodeTypeConditional, true},
-		{"manual trigger type", core.NodeTypeManualTrigger, true},
-		{"log type", core.NodeTypeLog, true},
-		{"invalid type", "invalid", false},
-		{"empty type", "", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := isValidNodeType(tt.nodeType); got != tt.want {
-				t.Errorf("isValidNodeType(%v) = %v, want %v", tt.nodeType, got, tt.want)
 			}
 		})
 	}

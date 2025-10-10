@@ -88,11 +88,6 @@ func validateWorkflowStructure(wf *core.Workflow) error {
 			return fmt.Errorf("node %s has empty type", node.ID)
 		}
 
-		// Validate node type
-		if !isValidNodeType(node.Type) {
-			return fmt.Errorf("node %s has invalid type: %s", node.ID, node.Type)
-		}
-
 		// Validate error handling if present
 		if node.Error != nil {
 			if err := validateErrorHandling(node.Error, node.ID); err != nil {
@@ -129,16 +124,6 @@ func validateWorkflowStructure(wf *core.Workflow) error {
 	}
 
 	return nil
-}
-
-// isValidNodeType checks if the node type is one of the supported types.
-func isValidNodeType(nodeType string) bool {
-	switch nodeType {
-	case core.NodeTypeHTTP, core.NodeTypeSMTP, core.NodeTypeConditional, core.NodeTypeManualTrigger, core.NodeTypeLog:
-		return true
-	default:
-		return false
-	}
 }
 
 // validateErrorHandling checks if error handling configuration is valid.

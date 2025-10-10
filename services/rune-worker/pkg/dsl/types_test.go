@@ -364,7 +364,6 @@ func TestNodeTypeConstants(t *testing.T) {
 		"smtp":          core.NodeTypeSMTP,
 		"conditional":   core.NodeTypeConditional,
 		"ManualTrigger": core.NodeTypeManualTrigger,
-		"log":           core.NodeTypeLog,
 	}
 
 	for expected, actual := range constants {

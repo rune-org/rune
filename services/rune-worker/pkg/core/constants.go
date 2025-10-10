@@ -6,7 +6,6 @@ const (
 	NodeTypeSMTP          = "smtp"
 	NodeTypeConditional   = "conditional"
 	NodeTypeManualTrigger = "ManualTrigger"
-	NodeTypeLog           = "log"
 )
 
 // Constants for conditional operators
