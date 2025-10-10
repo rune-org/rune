@@ -1,4 +1,4 @@
-package consumers
+package messaging
 
 import (
 	"context"
@@ -13,8 +13,9 @@ import (
 
 // WorkflowConsumer listens to the workflow queue and dispatches messages to the executor.
 type WorkflowConsumer struct {
-	queue    queue.Consumer
-	executor *executor.Executor
+	queue     queue.Consumer
+	publisher *WorkflowPublisher
+	executor  *executor.Executor
 }
 
 // NewWorkflowConsumer wires the queue consumer with a default executor.
@@ -35,9 +36,25 @@ func NewWorkflowConsumer(cfg *config.WorkerConfig) (*WorkflowConsumer, error) {
 		return nil, err
 	}
 
+	// Create workflow publisher for executor to publish messages
+	workflowPub, err := NewWorkflowPublisher(cfg.RabbitURL)
+	if err != nil {
+		q.Close()
+		return nil, err
+	}
+
+	// Create publisher for executor (uses the underlying queue publisher)
+	pub, err := queue.NewRabbitMQPublisher(cfg.RabbitURL)
+	if err != nil {
+		q.Close()
+		workflowPub.Close()
+		return nil, err
+	}
+
 	return &WorkflowConsumer{
-		queue:    q,
-		executor: executor.NewExecutor(reg),
+		queue:     q,
+		publisher: workflowPub,
+		executor:  executor.NewExecutor(reg, pub),
 	}, nil
 }
 
@@ -51,12 +68,22 @@ func (c *WorkflowConsumer) Run(ctx context.Context) error {
 	return c.queue.Consume(ctx, c.handleMessage)
 }
 
-// Close releases underlying queue resources.
+// Close releases underlying queue and publisher resources.
 func (c *WorkflowConsumer) Close() error {
-	if c.queue == nil {
-		return nil
+	var queueErr, pubErr error
+
+	if c.queue != nil {
+		queueErr = c.queue.Close()
 	}
-	return c.queue.Close()
+
+	if c.publisher != nil {
+		pubErr = c.publisher.Close()
+	}
+
+	if queueErr != nil {
+		return queueErr
+	}
+	return pubErr
 }
 
 func (c *WorkflowConsumer) handleMessage(ctx context.Context, payload []byte) error {
