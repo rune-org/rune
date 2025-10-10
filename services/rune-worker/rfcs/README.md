@@ -4,21 +4,54 @@ This directory contains design documents, proposals, and architectural specifica
 
 ## Documents
 
-### [ISSUE_RECURSIVE_EXECUTOR.md](./ISSUE_RECURSIVE_EXECUTOR.md)
+### [RFC-001-recursive-executor.md](./RFC-001-recursive-executor.md)
 **Status**: Proposed  
-**Title**: Implement Recursive Node-by-Node Executor with RabbitMQ
+**Created**: 2025-10-09  
+**Title**: Recursive Node-by-Node Workflow Executor
 
-Proposes a message-driven architecture for workflow execution where:
-- Each node executes independently via RabbitMQ messages
-- Real-time status updates sent to master service
-- Horizontal scaling and fault tolerance built-in
-- Recursive execution pattern for complex workflows
+Formal specification of the message-driven architecture for workflow execution:
+- Message format definitions for execution coordination
+- Queue topology and routing semantics
+- Execution protocol and state management
+- Error handling and recovery mechanisms
+- Real-time status update delivery
 
 **Key Features**:
 - Dual-queue pattern (execution + status messages)
 - One message = one node execution
 - Context accumulation across nodes
 - Support for conditional routing and parallel branches
+- Horizontal scalability and fault tolerance
+
+---
+
+### [RFC-002-workflow-dsl.md](./RFC-002-workflow-dsl.md)
+**Status**: Proposed  
+**Created**: 2025-10-10  
+**Title**: Workflow Definition DSL Specification
+
+Complete specification of the JSON-based Domain-Specific Language for defining workflows:
+- Core workflow schema (nodes, edges, credentials)
+- Detailed node type specifications (HTTP, SMTP, Conditional, Trigger, Log)
+- Credential management and security
+- Error handling strategies (halt, ignore, branch)
+- Validation rules and constraints
+- Complete workflow examples
+
+**Supported Node Types**:
+- HTTP: Execute HTTP requests with retry logic
+- SMTP: Send emails via SMTP
+- Conditional: Branch based on expressions
+- Manual Trigger: Initiate workflows
+- Log: Debug and monitoring
+
+---
+
+### [ISSUE_RECURSIVE_EXECUTOR.md](./ISSUE_RECURSIVE_EXECUTOR.md)
+**Status**: Superseded by RFC-001  
+**Title**: Implement Recursive Node-by-Node Executor with RabbitMQ
+
+Initial proposal document (see RFC-001 for formal specification).
 
 ---
 
