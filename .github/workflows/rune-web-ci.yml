@@ -4,11 +4,37 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/web/**"
+      - "apps/web/src/**/*.js"
+      - "apps/web/src/**/*.jsx"
+      - "apps/web/src/**/*.ts"
+      - "apps/web/src/**/*.tsx"
+      - "apps/web/src/**/*.mjs"
+      - "apps/web/src/**/*.cjs"
+      - "apps/web/package.json"
+      - "apps/web/pnpm-lock.yaml"
+      - "apps/web/eslint.config.*"
+      - "apps/web/.eslintrc*"
+      - "apps/web/tsconfig*.json"
+      - "apps/web/next.config.*"
+      - "apps/web/postcss.config.*"
+      - "apps/web/tailwind.config.*"
   pull_request:
     branches: [main]
     paths:
-      - "apps/web/**"
+      - "apps/web/src/**/*.js"
+      - "apps/web/src/**/*.jsx"
+      - "apps/web/src/**/*.ts"
+      - "apps/web/src/**/*.tsx"
+      - "apps/web/src/**/*.mjs"
+      - "apps/web/src/**/*.cjs"
+      - "apps/web/package.json"
+      - "apps/web/pnpm-lock.yaml"
+      - "apps/web/eslint.config.*"
+      - "apps/web/.eslintrc*"
+      - "apps/web/tsconfig*.json"
+      - "apps/web/next.config.*"
+      - "apps/web/postcss.config.*"
+      - "apps/web/tailwind.config.*"
 
 concurrency:
   group: web-ci-${{ github.ref }}

@@ -4,11 +4,25 @@ on:
   push:
     branches: [main]
     paths:
-      - "services/api/**"
+      - "services/api/**/*.py"
+      - "services/api/requirements.txt"
+      - "services/api/requirements-*.txt"
+      - "services/api/pyproject.toml"
+      - "services/api/setup.cfg"
+      - "services/api/mypy.ini"
+      - "services/api/pytest.ini"
+      - "services/api/tox.ini"
   pull_request:
     branches: [main]
     paths:
-      - "services/api/**"
+      - "services/api/**/*.py"
+      - "services/api/requirements.txt"
+      - "services/api/requirements-*.txt"
+      - "services/api/pyproject.toml"
+      - "services/api/setup.cfg"
+      - "services/api/mypy.ini"
+      - "services/api/pytest.ini"
+      - "services/api/tox.ini"
 
 concurrency:
   group: api-ci-${{ github.ref }}
