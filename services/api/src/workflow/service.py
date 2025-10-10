@@ -1,6 +1,5 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from typing import List
 
 from src.db.models import Workflow
 from src.core.exceptions import NotFound, Forbidden
@@ -9,7 +8,7 @@ from src.core.exceptions import NotFound, Forbidden
 class WorkflowService:
     """Database service for Workflow objects.
 
-    Holds an DB session and exposes simple methods used by API
+    Holds a DB session and exposes simple methods used by API
     routers: listing, retrieval, creation, updates, and deletion.
     """
 
@@ -75,11 +74,7 @@ class WorkflowService:
         await self.db.refresh(workflow)
         return workflow
 
-    async def delete(self, workflow: Workflow) -> bool:
-        """Remove a workflow from the database and commit the transaction.
-
-        Returns True on success.
-        """
+    async def delete(self, workflow: Workflow) -> None:
+        """Hard-delete the given Workflow and commit the change."""
         await self.db.delete(workflow)
         await self.db.commit()
-        return True
