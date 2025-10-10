@@ -8,7 +8,7 @@ from src.core.exceptions import NotFound, Forbidden
 class WorkflowService:
     """Database service for Workflow objects.
 
-    Holds an DB session and exposes simple methods used by API
+    Holds a DB session and exposes simple methods used by API
     routers: listing, retrieval, creation, updates, and deletion.
     """
 
