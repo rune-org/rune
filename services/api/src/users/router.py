@@ -12,7 +12,7 @@ router = APIRouter(
 )
 
 
-async def get_user_service(db: DatabaseDep) -> UserService:
+def get_user_service(db: DatabaseDep) -> UserService:
     return UserService(db=db)
 
 
@@ -107,7 +107,7 @@ async def update_user(
 
 @router.delete(
     "/{user_id}",
-    response_model=ApiResponse[dict],
+    status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete user",
     description="Permanently delete a user from the system.",
 )
@@ -115,13 +115,8 @@ async def delete_user(
     user_id: int,
     current_user: CurrentUser,
     service: UserService = Depends(get_user_service),
-) -> ApiResponse[dict]:
+) -> None:
     """
     DELETE /users/{user_id}
     """
     await service.delete_user(user_id)
-    return ApiResponse(
-        success=True,
-        message="User deleted successfully",
-        data={"deleted": True, "user_id": user_id},
-    )
