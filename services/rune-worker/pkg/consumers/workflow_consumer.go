@@ -5,9 +5,9 @@ import (
 	"errors"
 	"log/slog"
 
-	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/executor"
 	"rune-worker/pkg/messages"
+	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
 )
 
@@ -60,17 +60,24 @@ func (c *WorkflowConsumer) Close() error {
 }
 
 func (c *WorkflowConsumer) handleMessage(ctx context.Context, payload []byte) error {
-	msg, err := messages.DecodeMessage(payload)
+	msg, err := messages.DecodeNodeExecutionMessage(payload)
 	if err != nil {
-		slog.Error("invalid workflow message", "error", err)
+		slog.Error("invalid node execution message", "error", err)
 		return err
 	}
 
 	if err := c.executor.Execute(ctx, msg); err != nil {
-		slog.Error("failed to execute workflow", "workflow_id", msg.WorkflowID, "error", err)
+		slog.Error("failed to execute node",
+			"workflow_id", msg.WorkflowID,
+			"execution_id", msg.ExecutionID,
+			"node_id", msg.CurrentNode,
+			"error", err)
 		return err
 	}
 
-	slog.Info("workflow processed", "workflow_id", msg.WorkflowID)
+	slog.Info("node processed",
+		"workflow_id", msg.WorkflowID,
+		"execution_id", msg.ExecutionID,
+		"node_id", msg.CurrentNode)
 	return nil
 }

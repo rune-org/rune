@@ -6,6 +6,7 @@ from src.db.config import init_db
 from src.db.redis import close_redis
 from src.auth.router import router as auth_router
 from src.workflow.router import router as workflow_router
+from src.users.router import router as users_router
 
 # Get settings
 settings = get_settings()
@@ -30,3 +31,4 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(workflow_router)
+app.include_router(users_router)
