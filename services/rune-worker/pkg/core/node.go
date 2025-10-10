@@ -1,4 +1,4 @@
-package types
+package core
 
 // Node represents a single executable node within the workflow.
 // Trigger nodes are included in the structure for graph completeness but are never executed in this service.

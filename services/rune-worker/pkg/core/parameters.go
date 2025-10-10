@@ -1,4 +1,4 @@
-package types
+package core
 
 // TODO: All parameter structs must be moved to the specific node type files in the future.
 

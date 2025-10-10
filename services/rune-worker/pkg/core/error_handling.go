@@ -1,4 +1,4 @@
-package types
+package core
 
 // ErrorHandling defines how errors should be handled when a node fails.
 type ErrorHandling struct {

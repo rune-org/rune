@@ -1,4 +1,4 @@
-package types
+package core
 
 // Credential references a credential definition by type, ID, and name.
 type Credential struct {

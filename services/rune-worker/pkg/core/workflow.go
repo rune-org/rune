@@ -1,4 +1,4 @@
-package types
+package core
 
 // Workflow models a workflow execution structure sent from the master service.
 // It contains only the essential execution data: nodes to execute and their connections.

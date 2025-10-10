@@ -11,7 +11,7 @@ import (
 	"rune-worker/pkg/nodes"
 	"rune-worker/pkg/platform/queue"
 	"rune-worker/pkg/registry"
-	"rune-worker/pkg/types"
+	"rune-worker/pkg/core"
 	"rune-worker/plugin"
 )
 
@@ -98,7 +98,7 @@ func (e *Executor) Execute(ctx context.Context, msg *messages.NodeExecutionMessa
 
 // buildExecutionContext creates the plugin.ExecutionContext from the message.
 // Credentials are already resolved by the master service and included in the node definition.
-func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, node *types.Node) plugin.ExecutionContext {
+func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, node *core.Node) plugin.ExecutionContext {
 	execCtx := plugin.ExecutionContext{
 		ExecutionID: msg.ExecutionID,
 		WorkflowID:  msg.WorkflowID,
@@ -117,7 +117,7 @@ func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, nod
 }
 
 // publishRunningStatus publishes a "running" status message.
-func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeExecutionMessage, node *types.Node) error {
+func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node) error {
 	statusMsg := &messages.NodeStatusMessage{
 		WorkflowID:  msg.WorkflowID,
 		ExecutionID: msg.ExecutionID,
@@ -132,7 +132,7 @@ func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeE
 }
 
 // handleNodeCreationFailure handles the case when a node cannot be created from the registry.
-func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *types.Node, err error, startTime time.Time) error {
+func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, err error, startTime time.Time) error {
 	duration := time.Since(startTime)
 	slog.Error("failed to create node", "error", err, "node_type", node.Type)
 
@@ -158,7 +158,7 @@ func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.
 }
 
 // handleNodeFailure processes a node execution failure according to error handling strategy.
-func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *types.Node, execErr error, duration time.Duration) error {
+func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, execErr error, duration time.Duration) error {
 	slog.Error("node execution failed",
 		"error", execErr,
 		"node_id", node.ID,
@@ -217,7 +217,7 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 }
 
 // handleNodeSuccess processes a successful node execution.
-func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExecutionMessage, node *types.Node, output map[string]any, duration time.Duration, startTime time.Time) error {
+func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, startTime time.Time) error {
 	slog.Info("node execution succeeded",
 		"node_id", node.ID,
 		"node_name", node.Name,
@@ -267,7 +267,7 @@ func (e *Executor) accumulateContext(currentContext map[string]interface{}, node
 }
 
 // determineNextNodes implements the graph traversal algorithm from RFC-001 Section 7.3.
-func (e *Executor) determineNextNodes(wf *types.Workflow, currentNode *types.Node, output map[string]any) []string {
+func (e *Executor) determineNextNodes(wf *core.Workflow, currentNode *core.Node, output map[string]any) []string {
 	graph := dsl.BuildGraph(wf)
 	outgoingEdges := e.getOutgoingEdges(wf, currentNode.ID)
 
@@ -291,8 +291,8 @@ func (e *Executor) determineNextNodes(wf *types.Workflow, currentNode *types.Nod
 }
 
 // getOutgoingEdges returns all edges originating from the given node.
-func (e *Executor) getOutgoingEdges(wf *types.Workflow, nodeID string) []types.Edge {
-	edges := make([]types.Edge, 0)
+func (e *Executor) getOutgoingEdges(wf *core.Workflow, nodeID string) []core.Edge {
+	edges := make([]core.Edge, 0)
 	for _, edge := range wf.Edges {
 		if edge.Src == nodeID {
 			edges = append(edges, edge)
@@ -302,7 +302,7 @@ func (e *Executor) getOutgoingEdges(wf *types.Workflow, nodeID string) []types.E
 }
 
 // handleConditionalNode evaluates a conditional node and returns the appropriate next node.
-func (e *Executor) handleConditionalNode(node *types.Node, output map[string]any, wf *types.Workflow) []string {
+func (e *Executor) handleConditionalNode(node *core.Node, output map[string]any, wf *core.Workflow) []string {
 	// Extract true_edge_id and false_edge_id from parameters
 	trueEdgeID, _ := node.Parameters["true_edge_id"].(string)
 	falseEdgeID, _ := node.Parameters["false_edge_id"].(string)
@@ -337,7 +337,7 @@ func (e *Executor) handleConditionalNode(node *types.Node, output map[string]any
 }
 
 // getNodeByErrorEdge finds the destination node of an error edge.
-func (e *Executor) getNodeByErrorEdge(wf *types.Workflow, errorEdgeID string) *types.Node {
+func (e *Executor) getNodeByErrorEdge(wf *core.Workflow, errorEdgeID string) *core.Node {
 	for _, edge := range wf.Edges {
 		if edge.ID == errorEdgeID {
 			if node, found := wf.GetNodeByID(edge.Dst); found {

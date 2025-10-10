@@ -3,7 +3,7 @@ package dsl
 import (
 	"testing"
 
-	"rune-worker/pkg/types"
+	"rune-worker/pkg/core"
 )
 
 func TestParseWorkflow(t *testing.T) {
@@ -33,7 +33,7 @@ func TestParseWorkflow(t *testing.T) {
 				"nodes": [
 					{
 						"id": "node1",
-						"name": "Test types.Node",
+						"name": "Test core.Node",
 						"type": "http",
 						"parameters": {},
 						"output": {}
@@ -50,7 +50,7 @@ func TestParseWorkflow(t *testing.T) {
 				"nodes": [
 					{
 						"id": "node1",
-						"name": "Test types.Node",
+						"name": "Test core.Node",
 						"type": "http",
 						"parameters": {},
 						"output": {}
@@ -68,7 +68,7 @@ func TestParseWorkflow(t *testing.T) {
 				"nodes": [
 					{
 						"id": "node1",
-						"name": "Test types.Node",
+						"name": "Test core.Node",
 						"type": "http",
 						"parameters": {},
 						"output": {}
@@ -121,7 +121,7 @@ func TestParseWorkflowFromString(t *testing.T) {
 		"nodes": [
 			{
 				"id": "node1",
-				"name": "Test types.Node",
+				"name": "Test core.Node",
 				"type": "http",
 				"parameters": {},
 				"output": {}
@@ -146,107 +146,107 @@ func TestParseWorkflowFromString(t *testing.T) {
 func TestValidateWorkflowStructure(t *testing.T) {
 	tests := []struct {
 		name    string
-		wf      *types.Workflow
+		wf      *core.Workflow
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "valid workflow",
-			wf: &types.Workflow{
+			wf: &core.Workflow{
 				WorkflowID:  "wf-123",
 				ExecutionID: "exec-456",
-				Nodes: []types.Node{
+				Nodes: []core.Node{
 					{
 						ID:         "node1",
-						Name:       "Test types.Node",
-						Type:       types.NodeTypeHTTP,
+						Name:       "Test core.Node",
+						Type:       core.NodeTypeHTTP,
 						Parameters: map[string]any{},
 						Output:     map[string]any{},
 					},
 				},
-				Edges: []types.Edge{},
+				Edges: []core.Edge{},
 			},
 			wantErr: false,
 		},
 		{
 			name: "duplicate node IDs",
-			wf: &types.Workflow{
+			wf: &core.Workflow{
 				WorkflowID:  "wf-123",
 				ExecutionID: "exec-456",
-				Nodes: []types.Node{
+				Nodes: []core.Node{
 					{
 						ID:         "node1",
-						Name:       "Test types.Node 1",
-						Type:       types.NodeTypeHTTP,
+						Name:       "Test core.Node 1",
+						Type:       core.NodeTypeHTTP,
 						Parameters: map[string]any{},
 						Output:     map[string]any{},
 					},
 					{
 						ID:         "node1",
-						Name:       "Test types.Node 2",
-						Type:       types.NodeTypeHTTP,
+						Name:       "Test core.Node 2",
+						Type:       core.NodeTypeHTTP,
 						Parameters: map[string]any{},
 						Output:     map[string]any{},
 					},
 				},
-				Edges: []types.Edge{},
+				Edges: []core.Edge{},
 			},
 			wantErr: true,
 			errMsg:  "duplicate node ID",
 		},
 		{
 			name: "empty node ID",
-			wf: &types.Workflow{
+			wf: &core.Workflow{
 				WorkflowID:  "wf-123",
 				ExecutionID: "exec-456",
-				Nodes: []types.Node{
+				Nodes: []core.Node{
 					{
 						ID:         "",
-						Name:       "Test types.Node",
-						Type:       types.NodeTypeHTTP,
+						Name:       "Test core.Node",
+						Type:       core.NodeTypeHTTP,
 						Parameters: map[string]any{},
 						Output:     map[string]any{},
 					},
 				},
-				Edges: []types.Edge{},
+				Edges: []core.Edge{},
 			},
 			wantErr: true,
 			errMsg:  "empty ID",
 		},
 		{
 			name: "invalid node type",
-			wf: &types.Workflow{
+			wf: &core.Workflow{
 				WorkflowID:  "wf-123",
 				ExecutionID: "exec-456",
-				Nodes: []types.Node{
+				Nodes: []core.Node{
 					{
 						ID:         "node1",
-						Name:       "Test types.Node",
+						Name:       "Test core.Node",
 						Type:       "invalid_type",
 						Parameters: map[string]any{},
 						Output:     map[string]any{},
 					},
 				},
-				Edges: []types.Edge{},
+				Edges: []core.Edge{},
 			},
 			wantErr: true,
 			errMsg:  "invalid type",
 		},
 		{
 			name: "edge references non-existent node",
-			wf: &types.Workflow{
+			wf: &core.Workflow{
 				WorkflowID:  "wf-123",
 				ExecutionID: "exec-456",
-				Nodes: []types.Node{
+				Nodes: []core.Node{
 					{
 						ID:         "node1",
-						Name:       "Test types.Node",
-						Type:       types.NodeTypeHTTP,
+						Name:       "Test core.Node",
+						Type:       core.NodeTypeHTTP,
 						Parameters: map[string]any{},
 						Output:     map[string]any{},
 					},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{
 						ID:  "edge1",
 						Src: "node1",
@@ -283,11 +283,11 @@ func TestIsValidNodeType(t *testing.T) {
 		nodeType string
 		want     bool
 	}{
-		{"http type", types.NodeTypeHTTP, true},
-		{"smtp type", types.NodeTypeSMTP, true},
-		{"conditional type", types.NodeTypeConditional, true},
-		{"manual trigger type", types.NodeTypeManualTrigger, true},
-		{"log type", types.NodeTypeLog, true},
+		{"http type", core.NodeTypeHTTP, true},
+		{"smtp type", core.NodeTypeSMTP, true},
+		{"conditional type", core.NodeTypeConditional, true},
+		{"manual trigger type", core.NodeTypeManualTrigger, true},
+		{"log type", core.NodeTypeLog, true},
 		{"invalid type", "invalid", false},
 		{"empty type", "", false},
 	}
@@ -304,46 +304,46 @@ func TestIsValidNodeType(t *testing.T) {
 func TestValidateErrorHandling(t *testing.T) {
 	tests := []struct {
 		name    string
-		eh      *types.ErrorHandling
+		eh      *core.ErrorHandling
 		nodeID  string
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name:    "halt type",
-			eh:      &types.ErrorHandling{Type: types.ErrorHandlingHalt},
+			eh:      &core.ErrorHandling{Type: core.ErrorHandlingHalt},
 			nodeID:  "node1",
 			wantErr: false,
 		},
 		{
 			name:    "ignore type",
-			eh:      &types.ErrorHandling{Type: types.ErrorHandlingIgnore},
+			eh:      &core.ErrorHandling{Type: core.ErrorHandlingIgnore},
 			nodeID:  "node1",
 			wantErr: false,
 		},
 		{
 			name:    "branch type with error edge",
-			eh:      &types.ErrorHandling{Type: types.ErrorHandlingBranch, ErrorEdge: "error-edge-1"},
+			eh:      &core.ErrorHandling{Type: core.ErrorHandlingBranch, ErrorEdge: "error-edge-1"},
 			nodeID:  "node1",
 			wantErr: false,
 		},
 		{
 			name:    "branch type without error edge",
-			eh:      &types.ErrorHandling{Type: types.ErrorHandlingBranch},
+			eh:      &core.ErrorHandling{Type: core.ErrorHandlingBranch},
 			nodeID:  "node1",
 			wantErr: true,
 			errMsg:  "no error_edge specified",
 		},
 		{
 			name:    "invalid error handling type",
-			eh:      &types.ErrorHandling{Type: "invalid"},
+			eh:      &core.ErrorHandling{Type: "invalid"},
 			nodeID:  "node1",
 			wantErr: true,
 			errMsg:  "invalid error handling type",
 		},
 		{
 			name:    "empty error handling type",
-			eh:      &types.ErrorHandling{Type: ""},
+			eh:      &core.ErrorHandling{Type: ""},
 			nodeID:  "node1",
 			wantErr: true,
 			errMsg:  "empty type",
@@ -371,18 +371,18 @@ func TestValidateErrorHandling(t *testing.T) {
 func TestHasCycle(t *testing.T) {
 	tests := []struct {
 		name      string
-		workflow  *types.Workflow
+		workflow  *core.Workflow
 		wantCycle bool
 	}{
 		{
 			name: "no cycle - linear workflow",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 					{ID: "node3"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node2"},
 					{Src: "node2", Dst: "node3"},
 				},
@@ -391,12 +391,12 @@ func TestHasCycle(t *testing.T) {
 		},
 		{
 			name: "simple cycle",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node2"},
 					{Src: "node2", Dst: "node1"},
 				},
@@ -405,13 +405,13 @@ func TestHasCycle(t *testing.T) {
 		},
 		{
 			name: "complex cycle",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 					{ID: "node3"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node2"},
 					{Src: "node2", Dst: "node3"},
 					{Src: "node3", Dst: "node1"},
@@ -421,13 +421,13 @@ func TestHasCycle(t *testing.T) {
 		},
 		{
 			name: "no cycle - branching workflow",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 					{ID: "node3"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node2"},
 					{Src: "node1", Dst: "node3"},
 				},
@@ -449,19 +449,19 @@ func TestHasCycle(t *testing.T) {
 func TestFindEntryNodes(t *testing.T) {
 	tests := []struct {
 		name     string
-		workflow *types.Workflow
+		workflow *core.Workflow
 		wantLen  int
 		wantIDs  []string
 	}{
 		{
 			name: "single entry node",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1", Name: "Entry"},
 					{ID: "node2", Name: "Middle"},
 					{ID: "node3", Name: "Exit"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node2"},
 					{Src: "node2", Dst: "node3"},
 				},
@@ -471,13 +471,13 @@ func TestFindEntryNodes(t *testing.T) {
 		},
 		{
 			name: "multiple entry nodes",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1", Name: "Entry 1"},
 					{ID: "node2", Name: "Entry 2"},
 					{ID: "node3", Name: "Exit"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node3"},
 					{Src: "node2", Dst: "node3"},
 				},
@@ -487,12 +487,12 @@ func TestFindEntryNodes(t *testing.T) {
 		},
 		{
 			name: "all nodes have incoming edges",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node2"},
 					{Src: "node2", Dst: "node1"},
 				},
@@ -524,14 +524,14 @@ func TestFindEntryNodes(t *testing.T) {
 }
 
 func TestValidateAll(t *testing.T) {
-	validWorkflow := &types.Workflow{
+	validWorkflow := &core.Workflow{
 		WorkflowID:  "wf-123",
 		ExecutionID: "exec-456",
-		Nodes: []types.Node{
+		Nodes: []core.Node{
 			{
 				ID:         "node1",
 				Name:       "Trigger",
-				Type:       types.NodeTypeManualTrigger,
+				Type:       core.NodeTypeManualTrigger,
 				Trigger:    true,
 				Parameters: map[string]any{},
 				Output:     map[string]any{},
@@ -539,12 +539,12 @@ func TestValidateAll(t *testing.T) {
 			{
 				ID:         "node2",
 				Name:       "Action",
-				Type:       types.NodeTypeHTTP,
+				Type:       core.NodeTypeHTTP,
 				Parameters: map[string]any{},
 				Output:     map[string]any{},
 			},
 		},
-		Edges: []types.Edge{
+		Edges: []core.Edge{
 			{ID: "edge1", Src: "node1", Dst: "node2"},
 		},
 	}

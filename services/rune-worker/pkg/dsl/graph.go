@@ -1,6 +1,6 @@
 package dsl
 
-import "rune-worker/pkg/types"
+import "rune-worker/pkg/core"
 
 // Graph represents the workflow as an adjacency list for traversal and cycle detection.
 // It maps each node ID to a list of its destination node IDs.
@@ -10,7 +10,7 @@ type Graph struct {
 
 // BuildGraph constructs a graph from the workflow definition.
 // It creates an adjacency list representation where each node maps to its outgoing edges.
-func BuildGraph(wf *types.Workflow) *Graph {
+func BuildGraph(wf *core.Workflow) *Graph {
 	adj := make(map[string][]string, len(wf.Nodes))
 	for _, node := range wf.Nodes {
 		if _, ok := adj[node.ID]; !ok {

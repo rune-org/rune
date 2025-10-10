@@ -3,24 +3,24 @@ package dsl
 import (
 	"testing"
 
-	"rune-worker/pkg/types"
+	"rune-worker/pkg/core"
 )
 
 func TestBuildGraph(t *testing.T) {
 	tests := []struct {
 		name     string
-		workflow *types.Workflow
+		workflow *core.Workflow
 		wantSize int
 	}{
 		{
 			name: "simple workflow",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 					{ID: "node3"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node2"},
 					{Src: "node2", Dst: "node3"},
 				},
@@ -29,24 +29,24 @@ func TestBuildGraph(t *testing.T) {
 		},
 		{
 			name: "workflow with no edges",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 				},
-				Edges: []types.Edge{},
+				Edges: []core.Edge{},
 			},
 			wantSize: 2,
 		},
 		{
 			name: "workflow with branching",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 					{ID: "node3"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node2"},
 					{Src: "node1", Dst: "node3"},
 				},
@@ -69,13 +69,13 @@ func TestBuildGraph(t *testing.T) {
 }
 
 func TestGetNeighbors(t *testing.T) {
-	workflow := &types.Workflow{
-		Nodes: []types.Node{
+	workflow := &core.Workflow{
+		Nodes: []core.Node{
 			{ID: "node1"},
 			{ID: "node2"},
 			{ID: "node3"},
 		},
-		Edges: []types.Edge{
+		Edges: []core.Edge{
 			{Src: "node1", Dst: "node2"},
 			{Src: "node1", Dst: "node3"},
 		},
@@ -131,12 +131,12 @@ func TestGetNeighbors(t *testing.T) {
 }
 
 func TestHasNode(t *testing.T) {
-	workflow := &types.Workflow{
-		Nodes: []types.Node{
+	workflow := &core.Workflow{
+		Nodes: []core.Node{
 			{ID: "node1"},
 			{ID: "node2"},
 		},
-		Edges: []types.Edge{},
+		Edges: []core.Edge{},
 	}
 	graph := BuildGraph(workflow)
 
@@ -163,36 +163,36 @@ func TestHasNode(t *testing.T) {
 func TestNodeCount(t *testing.T) {
 	tests := []struct {
 		name      string
-		workflow  *types.Workflow
+		workflow  *core.Workflow
 		wantCount int
 	}{
 		{
 			name: "three nodes",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 					{ID: "node3"},
 				},
-				Edges: []types.Edge{},
+				Edges: []core.Edge{},
 			},
 			wantCount: 3,
 		},
 		{
 			name: "zero nodes",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{},
-				Edges: []types.Edge{},
+			workflow: &core.Workflow{
+				Nodes: []core.Node{},
+				Edges: []core.Edge{},
 			},
 			wantCount: 0,
 		},
 		{
 			name: "one node",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 				},
-				Edges: []types.Edge{},
+				Edges: []core.Edge{},
 			},
 			wantCount: 1,
 		},
@@ -209,13 +209,13 @@ func TestNodeCount(t *testing.T) {
 }
 
 func TestGetAllNodes(t *testing.T) {
-	workflow := &types.Workflow{
-		Nodes: []types.Node{
+	workflow := &core.Workflow{
+		Nodes: []core.Node{
 			{ID: "node1"},
 			{ID: "node2"},
 			{ID: "node3"},
 		},
-		Edges: []types.Edge{},
+		Edges: []core.Edge{},
 	}
 	graph := BuildGraph(workflow)
 
@@ -238,13 +238,13 @@ func TestGetAllNodes(t *testing.T) {
 }
 
 func TestIsLeafNode(t *testing.T) {
-	workflow := &types.Workflow{
-		Nodes: []types.Node{
+	workflow := &core.Workflow{
+		Nodes: []core.Node{
 			{ID: "node1"},
 			{ID: "node2"},
 			{ID: "node3"},
 		},
-		Edges: []types.Edge{
+		Edges: []core.Edge{
 			{Src: "node1", Dst: "node2"},
 			{Src: "node2", Dst: "node3"},
 		},
@@ -274,19 +274,19 @@ func TestIsLeafNode(t *testing.T) {
 func TestGetLeafNodes(t *testing.T) {
 	tests := []struct {
 		name        string
-		workflow    *types.Workflow
+		workflow    *core.Workflow
 		wantCount   int
 		wantNodeIDs []string
 	}{
 		{
 			name: "single leaf node",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 					{ID: "node3"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node2"},
 					{Src: "node2", Dst: "node3"},
 				},
@@ -296,13 +296,13 @@ func TestGetLeafNodes(t *testing.T) {
 		},
 		{
 			name: "multiple leaf nodes",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 					{ID: "node3"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node2"},
 					{Src: "node1", Dst: "node3"},
 				},
@@ -312,24 +312,24 @@ func TestGetLeafNodes(t *testing.T) {
 		},
 		{
 			name: "all nodes are leaf nodes",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 				},
-				Edges: []types.Edge{},
+				Edges: []core.Edge{},
 			},
 			wantCount:   2,
 			wantNodeIDs: []string{"node1", "node2"},
 		},
 		{
 			name: "no leaf nodes (cycle)",
-			workflow: &types.Workflow{
-				Nodes: []types.Node{
+			workflow: &core.Workflow{
+				Nodes: []core.Node{
 					{ID: "node1"},
 					{ID: "node2"},
 				},
-				Edges: []types.Edge{
+				Edges: []core.Edge{
 					{Src: "node1", Dst: "node2"},
 					{Src: "node2", Dst: "node1"},
 				},
@@ -365,15 +365,15 @@ func TestGetLeafNodes(t *testing.T) {
 
 func TestGraphWithComplexTopology(t *testing.T) {
 	// Test a more complex workflow with multiple branches and levels
-	workflow := &types.Workflow{
-		Nodes: []types.Node{
+	workflow := &core.Workflow{
+		Nodes: []core.Node{
 			{ID: "start"},
 			{ID: "branch1"},
 			{ID: "branch2"},
 			{ID: "merge"},
 			{ID: "end"},
 		},
-		Edges: []types.Edge{
+		Edges: []core.Edge{
 			{Src: "start", Dst: "branch1"},
 			{Src: "start", Dst: "branch2"},
 			{Src: "branch1", Dst: "merge"},

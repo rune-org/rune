@@ -1,4 +1,4 @@
-package types
+package core
 
 // Constants for node types
 const (
