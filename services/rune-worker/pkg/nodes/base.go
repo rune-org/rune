@@ -18,6 +18,29 @@ type Registry struct {
 // globalRegistry is the default package-level registry instance.
 var globalRegistry = NewRegistry()
 
+// registrationFuncs holds all node registration functions
+var registrationFuncs []func(*Registry)
+var registrationMu sync.Mutex
+
+// RegisterNodeType adds a registration function to be called when initializing a registry.
+// This should be called from init() functions in node packages.
+func RegisterNodeType(fn func(*Registry)) {
+	registrationMu.Lock()
+	defer registrationMu.Unlock()
+	registrationFuncs = append(registrationFuncs, fn)
+}
+
+// ApplyRegistrations applies all registered node types to the given registry.
+// This is typically called once during application initialization.
+func ApplyRegistrations(registry *Registry) {
+	registrationMu.Lock()
+	defer registrationMu.Unlock()
+
+	for _, registerFn := range registrationFuncs {
+		registerFn(registry)
+	}
+}
+
 // NewRegistry creates an empty registry instance.
 func NewRegistry() *Registry {
 	return &Registry{factories: make(map[string]Factory)}
