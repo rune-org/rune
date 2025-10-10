@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
-	"rune-worker/pkg/consumers"
 )
 
 func main() {
@@ -18,7 +18,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	consumer, err := consumers.NewWorkflowConsumer(cfg)
+	consumer, err := messaging.NewWorkflowConsumer(cfg)
 	if err != nil {
 		slog.Error("unable to create workflow consumer", "error", err)
 		os.Exit(1)
