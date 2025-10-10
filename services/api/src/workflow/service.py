@@ -1,6 +1,5 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from typing import List
 
 from src.db.models import Workflow
 from src.core.exceptions import NotFound, Forbidden
