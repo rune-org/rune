@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/rune-web-ci.yml"
       - "apps/web/src/**/*.js"
       - "apps/web/src/**/*.jsx"
       - "apps/web/src/**/*.ts"
@@ -22,7 +21,6 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - ".github/workflows/rune-web-ci.yml"
       - "apps/web/src/**/*.js"
       - "apps/web/src/**/*.jsx"
       - "apps/web/src/**/*.ts"

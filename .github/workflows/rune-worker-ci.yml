@@ -4,7 +4,6 @@ on:
   push:
     branches: ["main"]
     paths:
-      - ".github/workflows/rune-worker-ci.yml"
       - "services/rune-worker/**/*.go"
       - "services/rune-worker/go.mod"
       - "services/rune-worker/go.sum"
@@ -12,7 +11,6 @@ on:
   pull_request:
     branches: ["main"]
     paths:
-      - ".github/workflows/rune-worker-ci.yml"
       - "services/rune-worker/**/*.go"
       - "services/rune-worker/go.mod"
       - "services/rune-worker/go.sum"
