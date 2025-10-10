@@ -3,6 +3,8 @@ package dsl
 import (
 	"encoding/json"
 	"fmt"
+
+	"rune-worker/pkg/types"
 )
 
 // ParseWorkflow converts a JSON document into a validated workflow structure.
@@ -10,12 +12,12 @@ import (
 // 1. Unmarshals JSON into Workflow struct
 // 2. Validates the workflow structure (optional - for monitoring/logging only)
 // 3. Builds the execution graph
-func ParseWorkflow(data []byte) (*Workflow, error) {
+func ParseWorkflow(data []byte) (*types.Workflow, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("parse workflow: empty data")
 	}
 
-	var wf Workflow
+	var wf types.Workflow
 	if err := json.Unmarshal(data, &wf); err != nil {
 		return nil, fmt.Errorf("parse workflow: failed to unmarshal JSON: %w", err)
 	}
@@ -38,7 +40,7 @@ func ParseWorkflow(data []byte) (*Workflow, error) {
 // NOTE: This validation is OPTIONAL and REDUNDANT as messages from the master service
 // are already validated. This exists only for extra safety, logging, and monitoring.
 // Can be safely removed or disabled by commenting out the call in ParseWorkflow().
-func validateAll(wf *Workflow) error {
+func validateAll(wf *types.Workflow) error {
 	// Validate basic workflow structure
 	if err := validateWorkflowStructure(wf); err != nil {
 		return err
@@ -54,7 +56,7 @@ func validateAll(wf *Workflow) error {
 }
 
 // validateWorkflowStructure checks if the workflow has all required fields and valid structure.
-func validateWorkflowStructure(wf *Workflow) error {
+func validateWorkflowStructure(wf *types.Workflow) error {
 	if wf.WorkflowID == "" {
 		return fmt.Errorf("workflow_id is required")
 	}
@@ -132,7 +134,7 @@ func validateWorkflowStructure(wf *Workflow) error {
 // isValidNodeType checks if the node type is one of the supported types.
 func isValidNodeType(nodeType string) bool {
 	switch nodeType {
-	case NodeTypeHTTP, NodeTypeSMTP, NodeTypeConditional, NodeTypeManualTrigger, NodeTypeLog:
+	case types.NodeTypeHTTP, types.NodeTypeSMTP, types.NodeTypeConditional, types.NodeTypeManualTrigger, types.NodeTypeLog:
 		return true
 	default:
 		return false
@@ -140,16 +142,16 @@ func isValidNodeType(nodeType string) bool {
 }
 
 // validateErrorHandling checks if error handling configuration is valid.
-func validateErrorHandling(eh *ErrorHandling, nodeID string) error {
+func validateErrorHandling(eh *types.ErrorHandling, nodeID string) error {
 	if eh.Type == "" {
 		return fmt.Errorf("node %s has error handling with empty type", nodeID)
 	}
 
 	switch eh.Type {
-	case ErrorHandlingHalt, ErrorHandlingIgnore:
+	case types.ErrorHandlingHalt, types.ErrorHandlingIgnore:
 		// These don't require additional fields
 		return nil
-	case ErrorHandlingBranch:
+	case types.ErrorHandlingBranch:
 		if eh.ErrorEdge == "" {
 			return fmt.Errorf("node %s has error handling type 'branch' but no error_edge specified", nodeID)
 		}
@@ -160,7 +162,7 @@ func validateErrorHandling(eh *ErrorHandling, nodeID string) error {
 }
 
 // validateGraphStructure checks for cycles and connectivity issues in the workflow graph.
-func validateGraphStructure(graph *Graph, wf *Workflow) error {
+func validateGraphStructure(graph *Graph, wf *types.Workflow) error {
 	// Check for cycles using DFS
 	if hasCycle(graph) {
 		return fmt.Errorf("workflow contains cycles")
@@ -214,13 +216,13 @@ func hasCycleDFS(nodeID string, graph *Graph, visited, recStack map[string]bool)
 }
 
 // findEntryNodes returns nodes that have no incoming edges.
-func findEntryNodes(wf *Workflow) []Node {
+func findEntryNodes(wf *types.Workflow) []types.Node {
 	hasIncoming := make(map[string]bool)
 	for _, edge := range wf.Edges {
 		hasIncoming[edge.Dst] = true
 	}
 
-	var entryNodes []Node
+	var entryNodes []types.Node
 	for _, node := range wf.Nodes {
 		if !hasIncoming[node.ID] {
 			entryNodes = append(entryNodes, node)
@@ -230,6 +232,6 @@ func findEntryNodes(wf *Workflow) []Node {
 }
 
 // ParseWorkflowFromString is a convenience function that accepts a JSON string.
-func ParseWorkflowFromString(jsonStr string) (*Workflow, error) {
+func ParseWorkflowFromString(jsonStr string) (*types.Workflow, error) {
 	return ParseWorkflow([]byte(jsonStr))
 }

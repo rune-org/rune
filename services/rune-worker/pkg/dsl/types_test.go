@@ -2,13 +2,15 @@ package dsl
 
 import (
 	"testing"
+
+	"rune-worker/pkg/types"
 )
 
 func TestGetNodeByID(t *testing.T) {
-	workflow := &Workflow{
-		Nodes: []Node{
-			{ID: "node1", Name: "Node One", Type: NodeTypeHTTP},
-			{ID: "node2", Name: "Node Two", Type: NodeTypeSMTP},
+	workflow := &types.Workflow{
+		Nodes: []types.Node{
+			{ID: "node1", Name: "types.Node One", Type: types.NodeTypeHTTP},
+			{ID: "node2", Name: "types.Node Two", Type: types.NodeTypeSMTP},
 		},
 	}
 
@@ -18,8 +20,8 @@ func TestGetNodeByID(t *testing.T) {
 		wantFound bool
 		wantName  string
 	}{
-		{"existing node 1", "node1", true, "Node One"},
-		{"existing node 2", "node2", true, "Node Two"},
+		{"existing node 1", "node1", true, "types.Node One"},
+		{"existing node 2", "node2", true, "types.Node Two"},
 		{"non-existing node", "node3", false, ""},
 		{"empty node ID", "", false, ""},
 	}
@@ -38,8 +40,8 @@ func TestGetNodeByID(t *testing.T) {
 }
 
 func TestGetEdgeByID(t *testing.T) {
-	workflow := &Workflow{
-		Edges: []Edge{
+	workflow := &types.Workflow{
+		Edges: []types.Edge{
 			{ID: "edge1", Src: "node1", Dst: "node2"},
 			{ID: "edge2", Src: "node2", Dst: "node3"},
 		},
@@ -79,14 +81,14 @@ func TestGetEdgeByID(t *testing.T) {
 func TestGetTriggerNodes(t *testing.T) {
 	tests := []struct {
 		name      string
-		workflow  *Workflow
+		workflow  *types.Workflow
 		wantCount int
 		wantIDs   []string
 	}{
 		{
 			name: "single trigger",
-			workflow: &Workflow{
-				Nodes: []Node{
+			workflow: &types.Workflow{
+				Nodes: []types.Node{
 					{ID: "trigger1", Trigger: true},
 					{ID: "node1", Trigger: false},
 					{ID: "node2", Trigger: false},
@@ -97,8 +99,8 @@ func TestGetTriggerNodes(t *testing.T) {
 		},
 		{
 			name: "multiple triggers",
-			workflow: &Workflow{
-				Nodes: []Node{
+			workflow: &types.Workflow{
+				Nodes: []types.Node{
 					{ID: "trigger1", Trigger: true},
 					{ID: "node1", Trigger: false},
 					{ID: "trigger2", Trigger: true},
@@ -109,8 +111,8 @@ func TestGetTriggerNodes(t *testing.T) {
 		},
 		{
 			name: "no triggers",
-			workflow: &Workflow{
-				Nodes: []Node{
+			workflow: &types.Workflow{
+				Nodes: []types.Node{
 					{ID: "node1", Trigger: false},
 					{ID: "node2", Trigger: false},
 				},
@@ -143,8 +145,8 @@ func TestGetTriggerNodes(t *testing.T) {
 }
 
 func TestGetOutgoingEdges(t *testing.T) {
-	workflow := &Workflow{
-		Edges: []Edge{
+	workflow := &types.Workflow{
+		Edges: []types.Edge{
 			{ID: "edge1", Src: "node1", Dst: "node2"},
 			{ID: "edge2", Src: "node1", Dst: "node3"},
 			{ID: "edge3", Src: "node2", Dst: "node3"},
@@ -206,8 +208,8 @@ func TestGetOutgoingEdges(t *testing.T) {
 }
 
 func TestGetIncomingEdges(t *testing.T) {
-	workflow := &Workflow{
-		Edges: []Edge{
+	workflow := &types.Workflow{
+		Edges: []types.Edge{
 			{ID: "edge1", Src: "node1", Dst: "node3"},
 			{ID: "edge2", Src: "node2", Dst: "node3"},
 			{ID: "edge3", Src: "node2", Dst: "node4"},
@@ -271,13 +273,13 @@ func TestGetIncomingEdges(t *testing.T) {
 func TestNodeHasCredentials(t *testing.T) {
 	tests := []struct {
 		name string
-		node Node
+		node types.Node
 		want bool
 	}{
 		{
 			name: "node with credentials",
-			node: Node{
-				Credentials: &Credential{
+			node: types.Node{
+				Credentials: &types.Credential{
 					ID:   "cred1",
 					Name: "API Key",
 					Type: "api_key",
@@ -287,15 +289,15 @@ func TestNodeHasCredentials(t *testing.T) {
 		},
 		{
 			name: "node with nil credentials",
-			node: Node{
+			node: types.Node{
 				Credentials: nil,
 			},
 			want: false,
 		},
 		{
 			name: "node with empty credential ID",
-			node: Node{
-				Credentials: &Credential{
+			node: types.Node{
+				Credentials: &types.Credential{
 					ID:   "",
 					Name: "Empty",
 				},
@@ -307,7 +309,7 @@ func TestNodeHasCredentials(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.node.HasCredentials(); got != tt.want {
-				t.Errorf("Node.HasCredentials() = %v, want %v", got, tt.want)
+				t.Errorf("types.Node.HasCredentials() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -316,29 +318,29 @@ func TestNodeHasCredentials(t *testing.T) {
 func TestNodeHasErrorHandling(t *testing.T) {
 	tests := []struct {
 		name string
-		node Node
+		node types.Node
 		want bool
 	}{
 		{
 			name: "node with error handling",
-			node: Node{
-				Error: &ErrorHandling{
-					Type: ErrorHandlingHalt,
+			node: types.Node{
+				Error: &types.ErrorHandling{
+					Type: types.ErrorHandlingHalt,
 				},
 			},
 			want: true,
 		},
 		{
 			name: "node with nil error handling",
-			node: Node{
+			node: types.Node{
 				Error: nil,
 			},
 			want: false,
 		},
 		{
 			name: "node with empty error handling type",
-			node: Node{
-				Error: &ErrorHandling{
+			node: types.Node{
+				Error: &types.ErrorHandling{
 					Type: "",
 				},
 			},
@@ -349,7 +351,7 @@ func TestNodeHasErrorHandling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.node.HasErrorHandling(); got != tt.want {
-				t.Errorf("Node.HasErrorHandling() = %v, want %v", got, tt.want)
+				t.Errorf("types.Node.HasErrorHandling() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -358,11 +360,11 @@ func TestNodeHasErrorHandling(t *testing.T) {
 func TestNodeTypeConstants(t *testing.T) {
 	// Verify node type constants are defined
 	constants := map[string]string{
-		"http":          NodeTypeHTTP,
-		"smtp":          NodeTypeSMTP,
-		"conditional":   NodeTypeConditional,
-		"ManualTrigger": NodeTypeManualTrigger,
-		"log":           NodeTypeLog,
+		"http":          types.NodeTypeHTTP,
+		"smtp":          types.NodeTypeSMTP,
+		"conditional":   types.NodeTypeConditional,
+		"ManualTrigger": types.NodeTypeManualTrigger,
+		"log":           types.NodeTypeLog,
 	}
 
 	for expected, actual := range constants {
@@ -375,14 +377,14 @@ func TestNodeTypeConstants(t *testing.T) {
 func TestErrorHandlingConstants(t *testing.T) {
 	// Verify error handling type constants are defined
 	constants := map[string]string{
-		"halt":   ErrorHandlingHalt,
-		"ignore": ErrorHandlingIgnore,
-		"branch": ErrorHandlingBranch,
+		"halt":   types.ErrorHandlingHalt,
+		"ignore": types.ErrorHandlingIgnore,
+		"branch": types.ErrorHandlingBranch,
 	}
 
 	for expected, actual := range constants {
 		if actual != expected {
-			t.Errorf("ErrorHandling constant mismatch: got %v, want %v", actual, expected)
+			t.Errorf("types.ErrorHandling constant mismatch: got %v, want %v", actual, expected)
 		}
 	}
 }
@@ -390,14 +392,14 @@ func TestErrorHandlingConstants(t *testing.T) {
 func TestOperatorConstants(t *testing.T) {
 	// Verify operator constants are defined
 	constants := map[string]string{
-		"and": OperatorAnd,
-		"or":  OperatorOr,
-		"gt":  OperatorGT,
-		"lt":  OperatorLT,
-		"eq":  OperatorEQ,
-		"neq": OperatorNEQ,
-		"gte": OperatorGTE,
-		"lte": OperatorLTE,
+		"and": types.OperatorAnd,
+		"or":  types.OperatorOr,
+		"gt":  types.OperatorGT,
+		"lt":  types.OperatorLT,
+		"eq":  types.OperatorEQ,
+		"neq": types.OperatorNEQ,
+		"gte": types.OperatorGTE,
+		"lte": types.OperatorLTE,
 	}
 
 	for expected, actual := range constants {
