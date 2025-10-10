@@ -9,9 +9,8 @@ import (
 	"rune-worker/pkg/dsl"
 	"rune-worker/pkg/messages"
 	"rune-worker/pkg/nodes"
-	"rune-worker/pkg/nodes/custom"
-	httpnode "rune-worker/pkg/nodes/custom/http"
 	"rune-worker/pkg/platform/queue"
+	"rune-worker/pkg/registry"
 	"rune-worker/plugin"
 )
 
@@ -25,7 +24,7 @@ type Executor struct {
 // NewExecutor builds an executor with the provided registry and publisher.
 func NewExecutor(reg *nodes.Registry, pub queue.Publisher) *Executor {
 	if reg == nil {
-		reg = DefaultRegistry()
+		reg = registry.InitializeRegistry()
 	}
 
 	return &Executor{
@@ -416,12 +415,4 @@ func (e *Executor) publishCompletion(ctx context.Context, msg *messages.NodeExec
 	)
 
 	return nil
-}
-
-// DefaultRegistry returns a registry populated with the built-in nodes.
-func DefaultRegistry() *nodes.Registry {
-	reg := nodes.NewRegistry()
-	custom.RegisterLog(reg)
-	httpnode.RegisterHTTP(reg)
-	return reg
 }

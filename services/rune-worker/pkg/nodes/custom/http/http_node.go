@@ -341,6 +341,11 @@ func (n *HTTPNode) matchesPattern(statusCode int, pattern string) bool {
 	}
 }
 
+// init registers the HTTP node type automatically on package import.
+func init() {
+	nodes.RegisterNodeType(RegisterHTTP)
+}
+
 // RegisterHTTP registers the HTTP node type with the registry.
 func RegisterHTTP(reg *nodes.Registry) {
 	reg.Register("http", func(execCtx plugin.ExecutionContext) plugin.Node {

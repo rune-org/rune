@@ -10,6 +10,7 @@ import (
 	"rune-worker/pkg/messages"
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
+	"rune-worker/pkg/registry"
 )
 
 // WorkflowConsumer orchestrates workflow execution by consuming messages,
@@ -26,7 +27,7 @@ func NewWorkflowConsumer(cfg *config.WorkerConfig) (*WorkflowConsumer, error) {
 		return nil, errors.New("workflow consumer: config is nil")
 	}
 
-	reg := executor.DefaultRegistry()
+	reg := registry.InitializeRegistry()
 
 	q, err := queue.NewRabbitMQConsumer(queue.Options{
 		URL:         cfg.RabbitURL,
