@@ -1,0 +1,37 @@
+name: Rune Worker CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'services/rune-worker/**'
+
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'services/rune-worker/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Tidy modules
+        run: go mod tidy
+        working-directory: ./services/rune-worker
+
+      - name: Build
+        run: go build -v ./...
+        working-directory: ./services/rune-worker
+
+      - name: Test
+        run: go test -v ./...
+        working-directory: ./services/rune-worker
