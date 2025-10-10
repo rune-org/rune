@@ -12,10 +12,6 @@ func ParseWorkflow(data []byte) (*Workflow, error) {
 		return nil, fmt.Errorf("parse workflow: %w", err)
 	}
 
-	if err := wf.Validate(); err != nil {
-		return nil, fmt.Errorf("validate workflow: %w", err)
-	}
-
 	BuildGraph(&wf)
 	return &wf, nil
 }

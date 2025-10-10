@@ -15,7 +15,7 @@ func BuildGraph(wf *Workflow) *Graph {
 	}
 
 	for _, edge := range wf.Edges {
-		adj[edge.From] = append(adj[edge.From], edge.To)
+		adj[edge.Src] = append(adj[edge.Src], edge.Dst)
 	}
 
 	return &Graph{adjacency: adj}
