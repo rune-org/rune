@@ -48,7 +48,7 @@ class WorkflowService:
 
         Commits the transaction and returns the refreshed model instance.
         """
-        wf = Workflow(name=name, description=description or "", workflow_data=workflow_data, created_by=user_id)
+        wf = Workflow(name=name, description=description, workflow_data=workflow_data, created_by=user_id)
         self.db.add(wf)
         await self.db.commit()
         await self.db.refresh(wf)
