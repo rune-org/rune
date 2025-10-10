@@ -75,11 +75,7 @@ class WorkflowService:
         await self.db.refresh(workflow)
         return workflow
 
-    async def delete(self, workflow: Workflow) -> bool:
-        """Remove a workflow from the database and commit the transaction.
-
-        Returns True on success.
-        """
+    async def delete(self, workflow: Workflow) -> None:
+        """Hard-delete the given Workflow and commit the change."""
         await self.db.delete(workflow)
         await self.db.commit()
-        return True
