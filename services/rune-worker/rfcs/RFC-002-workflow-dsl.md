@@ -273,8 +273,27 @@ Executes HTTP requests to external APIs.
 - `retry` (string, optional): Number of retry attempts (default: "0")
 - `retry_delay` (string, optional): Delay between retries in seconds (default: "0")
 - `timeout` (string, optional): Request timeout in seconds (default: "30")
-- `raise_on_status` (string, optional): Status code pattern to treat as errors (e.g., "4xx or 5xx")
+- `raise_on_status` (string, optional): Comma-separated status code patterns to treat as errors (e.g., "4xx,5xx" or "404,500"). Supports patterns like "2xx", "3xx", "4xx", "5xx" and specific codes like "404", "500". Default: no error raising.
 - `ignore_ssl` (boolean, optional): Whether to ignore SSL certificate validation (default: false)
+
+**Status Code Pattern Matching:**
+
+The `raise_on_status` parameter supports flexible pattern matching for HTTP status codes:
+
+- **Range Patterns**: Use "2xx", "3xx", "4xx", "5xx" to match status code ranges
+  - "2xx" matches 200-299 (success responses)
+  - "3xx" matches 300-399 (redirects)
+  - "4xx" matches 400-499 (client errors)
+  - "5xx" matches 500-599 (server errors)
+
+- **Specific Codes**: Use exact status codes like "404", "500", "201"
+
+- **Comma Separation**: Combine multiple patterns with commas (no spaces)
+  - "4xx,5xx" - Raise on any 4xx or 5xx error
+  - "404,500" - Raise only on 404 or 500
+  - "404,5xx" - Mix specific codes and patterns
+
+- **Behavior**: When a response status code matches any pattern in `raise_on_status`, the request is treated as failed and will retry if retries are configured
 
 **Example:**
 
@@ -297,7 +316,7 @@ Executes HTTP requests to external APIs.
     "retry": "3",
     "retry_delay": "5",
     "timeout": "30",
-    "raise_on_status": "4xx or 5xx",
+    "raise_on_status": "4xx,5xx",
     "ignore_ssl": false
   },
   "credentials": {
