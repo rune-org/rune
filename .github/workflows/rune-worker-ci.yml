@@ -12,7 +12,7 @@ on:
       - "services/rune-worker/**"
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: worker-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
