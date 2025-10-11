@@ -109,7 +109,7 @@ class AuthService:
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=self.settings.cookie_secure,
+            secure=bool(self.settings.cookie_secure),
             max_age=self.settings.access_token_expire_minutes * 60,
         )
 

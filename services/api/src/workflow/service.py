@@ -1,3 +1,4 @@
+from typing import Any, cast
 from sqlalchemy import desc
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -24,7 +25,7 @@ class WorkflowService:
         statement = (
             select(Workflow)
             .where(Workflow.created_by == user_id)
-            .order_by(desc(Workflow.created_at))
+            .order_by(desc(cast(Any, Workflow.created_at)))
         )
         result = await self.db.exec(statement)
         return list(result.all())
