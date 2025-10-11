@@ -104,59 +104,151 @@ def check_prerequisites():
     return True
 
 
-def check_services(test_type: TestType):
+def is_container_running(container_name: str) -> bool:
+    """Check if a Docker container is running"""
+    try:
+        result = subprocess.run(
+            ["docker", "ps", "--filter", f"name={container_name}", "--format", "{{.Names}}"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        return result.returncode == 0 and container_name in result.stdout
+    except FileNotFoundError:
+        return False
+
+
+def container_exists(container_name: str) -> bool:
+    """Check if a Docker container exists (running or stopped)"""
+    try:
+        result = subprocess.run(
+            ["docker", "ps", "-a", "--filter", f"name={container_name}", "--format", "{{.Names}}"],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        return result.returncode == 0 and container_name in result.stdout
+    except FileNotFoundError:
+        return False
+
+
+def start_container(container_name: str, image: str, ports: List[str], extra_args: Optional[List[str]] = None) -> bool:
+    """Start a Docker container"""
+    # Check if container exists but is stopped
+    if container_exists(container_name):
+        if is_container_running(container_name):
+            return True
+        
+        print_info(f"Starting existing {container_name} container...")
+        result = subprocess.run(
+            ["docker", "start", container_name],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        if result.returncode == 0:
+            print_success(f"{container_name} started successfully")
+            return True
+        else:
+            print_error(f"Failed to start {container_name}: {result.stderr}")
+            return False
+    
+    # Create and start new container
+    print_info(f"Creating and starting {container_name} container...")
+    cmd = ["docker", "run", "-d", "--name", container_name]
+    
+    for port in ports:
+        cmd.extend(["-p", port])
+    
+    if extra_args:
+        cmd.extend(extra_args)
+    
+    cmd.append(image)
+    
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        check=False
+    )
+    
+    if result.returncode == 0:
+        print_success(f"{container_name} started successfully")
+        return True
+    else:
+        print_error(f"Failed to start {container_name}: {result.stderr}")
+        return False
+
+
+def check_services(test_type: TestType, auto_start: bool = False):
     """Check if required services are running (for integration/e2e tests)"""
     if test_type == TestType.UNIT:
         return True
     
     print_info("Checking required services...")
-    services_ok = True
     
-    # Check RabbitMQ
-    try:
-        if is_windows():
-            # Windows uses different command
-            result = subprocess.run(
-                ["docker", "ps", "--filter", "name=rabbitmq", "--format", "{{.Names}}"],
-                capture_output=True,
-                text=True,
-                check=False
-            )
-        else:
-            result = subprocess.run(
-                ["docker", "ps", "--filter", "name=rabbitmq", "--format", "{{.Names}}"],
-                capture_output=True,
-                text=True,
-                check=False
-            )
-        
-        if result.returncode == 0 and "rabbitmq" in result.stdout:
-            print_success("RabbitMQ is running")
-        else:
-            print_warning("RabbitMQ is not running. Integration/E2E tests may fail.")
-            print_info("  Start with: docker run -d --name rabbitmq-test -p 5672:5672 -p 15672:15672 rabbitmq:4.0-management-alpine")
-            services_ok = False
-    except FileNotFoundError:
-        print_warning("Docker not found. Cannot check RabbitMQ status.")
-        services_ok = False
-    
-    # Check Redis
+    # Check if Docker is available
     try:
         result = subprocess.run(
-            ["docker", "ps", "--filter", "name=redis", "--format", "{{.Names}}"],
+            ["docker", "--version"],
             capture_output=True,
             text=True,
             check=False
         )
-        
-        if result.returncode == 0 and "redis" in result.stdout:
-            print_success("Redis is running")
+        if result.returncode != 0:
+            print_error("Docker is not installed or not in PATH")
+            return False
+    except FileNotFoundError:
+        print_error("Docker is not installed or not in PATH")
+        return False
+    
+    services_ok = True
+    
+    # Check RabbitMQ
+    if is_container_running("rabbitmq-test"):
+        print_success("RabbitMQ is running")
+    else:
+        if auto_start:
+            print_warning("RabbitMQ is not running. Starting container...")
+            if start_container(
+                "rabbitmq-test",
+                "rabbitmq:4.0-management-alpine",
+                ["5672:5672", "15672:15672"]
+            ):
+                # Wait a moment for RabbitMQ to be ready
+                print_info("Waiting for RabbitMQ to be ready...")
+                import time
+                time.sleep(5)
+            else:
+                services_ok = False
+        else:
+            print_warning("RabbitMQ is not running. Integration/E2E tests may fail.")
+            print_info("  Start with: docker run -d --name rabbitmq-test -p 5672:5672 -p 15672:15672 rabbitmq:4.0-management-alpine")
+            print_info("  Or use --start-services flag to auto-start")
+            services_ok = False
+    
+    # Check Redis
+    if is_container_running("redis-test"):
+        print_success("Redis is running")
+    else:
+        if auto_start:
+            print_warning("Redis is not running. Starting container...")
+            if start_container(
+                "redis-test",
+                "redis:7-alpine",
+                ["6379:6379"]
+            ):
+                # Wait a moment for Redis to be ready
+                print_info("Waiting for Redis to be ready...")
+                import time
+                time.sleep(2)
+            else:
+                services_ok = False
         else:
             print_warning("Redis is not running. Integration/E2E tests may fail.")
             print_info("  Start with: docker run -d --name redis-test -p 6379:6379 redis:7-alpine")
+            print_info("  Or use --start-services flag to auto-start")
             services_ok = False
-    except FileNotFoundError:
-        pass  # Already warned about Docker
     
     return services_ok
 
@@ -320,6 +412,8 @@ Examples:
   %(prog)s integration -p TestRedis # Run specific test pattern
   %(prog)s unit --coverage         # Run with coverage report
   %(prog)s all --skip-unit         # Run integration and e2e only
+  %(prog)s integration --start-services # Auto-start RabbitMQ and Redis
+  %(prog)s all --start-services -v # Run all tests with auto-start
   %(prog)s --no-color              # Disable colored output
         """
     )
@@ -369,6 +463,12 @@ Examples:
     )
     
     parser.add_argument(
+        "--start-services",
+        action="store_true",
+        help="Automatically start Docker containers for RabbitMQ and Redis if not running"
+    )
+    
+    parser.add_argument(
         "--no-color",
         action="store_true",
         help="Disable colored output"
@@ -392,7 +492,10 @@ Examples:
             sys.exit(1)
         
         if test_type != TestType.UNIT:
-            check_services(test_type)
+            if not check_services(test_type, auto_start=args.start_services):
+                if not args.start_services:
+                    print_error("Required services are not running. Use --start-services to auto-start them.")
+                    sys.exit(1)
     
     # Run tests
     success = False

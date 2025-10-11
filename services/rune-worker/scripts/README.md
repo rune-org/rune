@@ -53,6 +53,12 @@ python3 scripts/run_tests.py unit --coverage
 # Run all tests except unit tests
 python3 scripts/run_tests.py all --skip-unit
 
+# Auto-start Docker containers for RabbitMQ and Redis
+python3 scripts/run_tests.py integration --start-services
+
+# Run all tests with auto-start and verbose output
+python3 scripts/run_tests.py all --start-services -v
+
 # Skip prerequisite checks
 python3 scripts/run_tests.py integration --skip-checks
 
@@ -92,6 +98,7 @@ python3 scripts\run_tests.py unit
 | `--coverage` | Generate coverage report |
 | `--skip-unit` | Skip unit tests when running all |
 | `--skip-checks` | Skip prerequisite and service checks |
+| `--start-services` | Automatically start Docker containers if not running |
 | `--no-color` | Disable colored output |
 | `-h, --help` | Show help message |
 
@@ -121,7 +128,23 @@ Before running integration or E2E tests, the script checks if required services 
 - **RabbitMQ:** Checks for running Docker container
 - **Redis:** Checks for running Docker container
 
-If services are not running, the script displays warnings with commands to start them:
+**Automatic Container Startup:**
+
+Use the `--start-services` flag to automatically start Docker containers if they're not running:
+
+```bash
+# Script will auto-start RabbitMQ and Redis if needed
+python3 scripts/run_tests.py integration --start-services
+```
+
+The script will:
+1. Check if containers exist but are stopped → Start them
+2. If containers don't exist → Create and start them
+3. Wait a few seconds for services to be ready
+
+**Manual Container Management:**
+
+If services are not running and `--start-services` is not used, the script displays warnings with commands to start them manually:
 
 ```bash
 # Start RabbitMQ
