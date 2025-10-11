@@ -252,10 +252,12 @@ func TestGetEnv(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.setValue != "" {
-				os.Setenv(tt.key, tt.setValue)
-				defer os.Unsetenv(tt.key)
+				_ = os.Setenv(tt.key, tt.setValue)
+				defer func() {
+					_ = os.Unsetenv(tt.key)
+				}()
 			} else {
-				os.Unsetenv(tt.key)
+				_ = os.Unsetenv(tt.key)
 			}
 
 			got := getEnv(tt.key, tt.fallback)
@@ -300,10 +302,12 @@ func TestGetEnvAsInt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.setValue != "" {
-				os.Setenv(tt.key, tt.setValue)
-				defer os.Unsetenv(tt.key)
+				_ = os.Setenv(tt.key, tt.setValue)
+				defer func() {
+					_ = os.Unsetenv(tt.key)
+				}()
 			} else {
-				os.Unsetenv(tt.key)
+				_ = os.Unsetenv(tt.key)
 			}
 
 			got := getEnvAsInt(tt.key, tt.fallback)

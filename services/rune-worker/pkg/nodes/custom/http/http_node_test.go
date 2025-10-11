@@ -137,7 +137,7 @@ func TestHTTPNode_RaiseOnStatusNoMatch(t *testing.T) {
 func TestHTTPNode_RaiseOnStatusSpecificCode(t *testing.T) {
 	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		w.WriteHeader(nethttp.StatusNotFound)
-		w.Write([]byte("Not Found"))
+		_, _ = w.Write([]byte("Not Found"))
 	}))
 	defer server.Close()
 
@@ -254,7 +254,7 @@ func TestHTTPNode_CustomHeaders(t *testing.T) {
 	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		receivedHeaders = r.Header
 		w.WriteHeader(nethttp.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -291,7 +291,7 @@ func TestHTTPNode_QueryParameters(t *testing.T) {
 	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		receivedQuery = r.URL.RawQuery
 		w.WriteHeader(nethttp.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
