@@ -372,11 +372,20 @@ Make HTTP requests with full configuration support.
 
 ## Message Flow
 
+### RabbitMQ Architecture
+
+The worker uses a **topic exchange** named `workflows` for all message routing. Exchanges and queues are **automatically declared** when the service starts, ensuring zero-configuration deployment.
+
+**Exchange:** `workflows` (topic, durable)  
+**Routing:** Queue name = Routing key
+
 The worker participates in three RabbitMQ queues:
 
 1. **`workflow.execution`** (input): Node execution messages to process
 2. **`workflow.node.status`** (output): Status updates (running, success, failed)
 3. **`workflow.completion`** (output): Workflow completion messages
+
+All queues and bindings are automatically created and configured as durable. See [RABBITMQ_ARCHITECTURE.md](./RABBITMQ_ARCHITECTURE.md) for detailed information about the messaging infrastructure.
 
 ### Node Execution Message
 ```json

@@ -36,6 +36,10 @@ func NewRabbitMQPublisher(url string) (*RabbitMQPublisher, error) {
 	publisher, err := rabbitmq.NewPublisher(
 		conn,
 		rabbitmq.WithPublisherOptionsLogging,
+		rabbitmq.WithPublisherOptionsExchangeName("workflows"),
+		rabbitmq.WithPublisherOptionsExchangeKind("topic"),
+		rabbitmq.WithPublisherOptionsExchangeDurable,
+		rabbitmq.WithPublisherOptionsExchangeDeclare,
 	)
 	if err != nil {
 		_ = conn.Close()
@@ -48,7 +52,7 @@ func NewRabbitMQPublisher(url string) (*RabbitMQPublisher, error) {
 	}, nil
 }
 
-// Publish sends a message to the specified queue.
+// Publish sends a message to the specified queue using routing key.
 func (p *RabbitMQPublisher) Publish(ctx context.Context, queue string, payload []byte) error {
 	return p.publisher.Publish(
 		payload,
@@ -56,6 +60,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, queue string, payload [
 		rabbitmq.WithPublishOptionsContentType("application/json"),
 		rabbitmq.WithPublishOptionsMandatory,
 		rabbitmq.WithPublishOptionsPersistentDelivery,
+		rabbitmq.WithPublishOptionsExchange("workflows"),
 	)
 }
 

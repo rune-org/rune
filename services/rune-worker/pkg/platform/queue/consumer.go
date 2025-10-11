@@ -65,6 +65,11 @@ func NewRabbitMQConsumer(opts Options) (*RabbitMQConsumer, error) {
 		rabbitmq.WithConsumerOptionsQueueDurable,
 		rabbitmq.WithConsumerOptionsQOSPrefetch(opts.Prefetch),
 		rabbitmq.WithConsumerOptionsConcurrency(opts.Concurrency),
+		rabbitmq.WithConsumerOptionsExchangeName("workflows"),
+		rabbitmq.WithConsumerOptionsExchangeKind("topic"),
+		rabbitmq.WithConsumerOptionsExchangeDurable,
+		rabbitmq.WithConsumerOptionsExchangeDeclare,
+		rabbitmq.WithConsumerOptionsRoutingKey(opts.QueueName),
 	)
 	if err != nil {
 		_ = conn.Close()
