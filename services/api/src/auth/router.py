@@ -78,6 +78,7 @@ async def logout(
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service),
 ) -> ApiResponse[None]:
+    assert current_user.id is not None
     await auth_service.logout_user_by_id(user_id=current_user.id)
     auth_service.clear_auth_cookie(response)
 
