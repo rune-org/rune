@@ -65,6 +65,11 @@ func NewRabbitMQConsumer(opts Options) (*RabbitMQConsumer, error) {
 		rabbitmq.WithConsumerOptionsQueueDurable,
 		rabbitmq.WithConsumerOptionsQOSPrefetch(opts.Prefetch),
 		rabbitmq.WithConsumerOptionsConcurrency(opts.Concurrency),
+		rabbitmq.WithConsumerOptionsExchangeName("workflows"),
+		rabbitmq.WithConsumerOptionsExchangeKind("topic"),
+		rabbitmq.WithConsumerOptionsExchangeDurable,
+		rabbitmq.WithConsumerOptionsExchangeDeclare,
+		rabbitmq.WithConsumerOptionsRoutingKey(opts.QueueName),
 	)
 	if err != nil {
 		_ = conn.Close()
@@ -79,22 +84,18 @@ func NewRabbitMQConsumer(opts Options) (*RabbitMQConsumer, error) {
 }
 
 // Consume listens for messages until the context is cancelled or an error occurs.
+// The caller is responsible for calling Close() when done.
 func (r *RabbitMQConsumer) Consume(ctx context.Context, handler MessageHandler) error {
 	if handler == nil {
 		return errors.New("queue: message handler is nil")
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	defer func() {
-		if err := r.Close(); err != nil {
-			slog.Error("failed to close rabbitmq consumer", "error", err)
-		}
-	}()
-
+	// Monitor context cancellation and stop consumer gracefully
 	go func() {
 		<-ctx.Done()
-		r.consumer.Close()
+		if r.consumer != nil {
+			r.consumer.Close()
+		}
 	}()
 
 	slog.Info("rabbitmq consumer started", "queue", r.queue)

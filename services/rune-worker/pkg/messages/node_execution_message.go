@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"rune-worker/pkg/dsl"
+	"rune-worker/pkg/core"
 )
 
 // NodeExecutionMessage instructs a worker to execute a specific node.
@@ -20,7 +20,7 @@ type NodeExecutionMessage struct {
 	WorkflowID         string                 `json:"workflow_id"`
 	ExecutionID        string                 `json:"execution_id"`
 	CurrentNode        string                 `json:"current_node"`        // Node ID to execute
-	WorkflowDefinition dsl.Workflow           `json:"workflow_definition"` // Complete workflow structure
+	WorkflowDefinition core.Workflow         `json:"workflow_definition"` // Complete workflow structure
 	AccumulatedContext map[string]interface{} `json:"accumulated_context"` // Context with $<node_name> keys
 }
 
@@ -48,10 +48,10 @@ func (m *NodeExecutionMessage) Validate() error {
 }
 
 // GetCurrentNodeDetails returns the node object for the current node to execute.
-func (m *NodeExecutionMessage) GetCurrentNodeDetails() (dsl.Node, error) {
+func (m *NodeExecutionMessage) GetCurrentNodeDetails() (core.Node, error) {
 	node, found := m.WorkflowDefinition.GetNodeByID(m.CurrentNode)
 	if !found {
-		return dsl.Node{}, fmt.Errorf("current_node %s not found in workflow", m.CurrentNode)
+		return core.Node{}, fmt.Errorf("current_node %s not found in workflow", m.CurrentNode)
 	}
 	return node, nil
 }

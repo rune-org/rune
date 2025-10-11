@@ -62,9 +62,7 @@ func (m *NodeStatusMessage) Validate() error {
 	}
 
 	// Validate status-specific requirements
-	if m.Status == StatusSuccess && m.Output == nil {
-		// Output is optional for success status
-	}
+	// Output is optional for success status (no action needed)
 	if m.Status == StatusFailed && m.Error == nil {
 		return fmt.Errorf("error is required when status is 'failed'")
 	}
