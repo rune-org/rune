@@ -1,22 +1,59 @@
 # Integration Tests
 
-This directory contains integration tests for the Rune Worker service that validate end-to-end functionality with real external dependencies (RabbitMQ, Redis).
+This directory contains integration tests for the Rune Worker service that validate the system's interaction with external dependencies like RabbitMQ and Redis.
+
+## Test Files
+
+The integration tests are organized into separate files by concern:
+
+- **`common_test.go`** - Wrapper functions for shared test utilities (imports from `test_utils` package)
+  - `setupIntegrationTest()` - Wrapper for `testutils.SetupTestEnv()`
+  - `getKeys()` - Wrapper for `testutils.GetKeys()`
+  - See [Test Utils](../test_utils/README.md) for shared infrastructure
+
+- **`rabbitmq_integration_test.go`** - RabbitMQ-specific tests (5 tests)
+  - `TestPublishToRabbitMQ` - Basic message publishing
+  - `TestWorkflowWithConfig` - Consumer configuration validation
+  - `TestRabbitMQPublishMultipleMessages` - Publishing multiple messages
+  - `TestNodeExecutionWithMultipleNodes` - Multi-node workflow execution
+  - `TestNodeExecutionWithParameterResolution` - Dynamic parameter resolution
+
+- **`redis_integration_test.go`** - Redis-specific tests (1 test with 4 subtests)
+  - `TestRedisOperations` - Comprehensive Redis operation tests
+    - SET and GET operations
+    - INCR counter operations
+    - JSON storage and retrieval
+    - Key expiration
 
 ## Prerequisites
 
 Before running integration tests, ensure the following services are running:
 
-1. **RabbitMQ** - Message broker for workflow execution messages
-   ```bash
-   docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:4.0-management-alpine
-   ```
+### 1. RabbitMQ
+Message broker for workflow execution messages:
 
-2. **Redis** - Key-value store for state management
-   ```bash
-   docker run -d --name redis -p 6379:6379 redis:7-alpine
-   ```
+```bash
+docker run -d --name rabbitmq-test \
+  -p 5672:5672 \
+  -p 15672:15672 \
+  rabbitmq:4.0-management-alpine
+```
+
+Access RabbitMQ Management UI at: http://localhost:15672 (guest/guest)
+
+### 2. Redis
+Key-value store for state management:
+
+```bash
+docker run -d --name redis-test \
+  -p 6379:6379 \
+  redis:7-alpine
+```
+
+### Using Docker Compose
 
 Alternatively, use docker-compose from the project root:
+
 ```bash
 docker-compose up -d rabbitmq redis
 ```
@@ -24,186 +61,232 @@ docker-compose up -d rabbitmq redis
 ## Running Tests
 
 ### Run All Integration Tests
+
 ```bash
+# From the rune-worker directory
 go test -tags=integration -v ./integration/
 ```
 
-### Run Specific Test
+### Run Specific Test Files
+
+**RabbitMQ tests only:**
 ```bash
-go test -tags=integration -v -run TestNodeExecutionEndToEnd ./integration/
+go test -tags=integration -v ./integration/ -run "TestPublishToRabbitMQ|TestRabbitMQ|TestNodeExecution|TestWorkflowWithConfig"
 ```
 
-### Run with Custom Timeouts
+**Redis tests only:**
 ```bash
-go test -tags=integration -v ./integration/ -timeout 30s
+go test -tags=integration -v ./integration/ -run TestRedisOperations
+```
+
+### Run Specific Tests
+
+**Single test:**
+```bash
+go test -tags=integration -v ./integration/ -run TestPublishToRabbitMQ
+```
+
+**Specific Redis subtest:**
+```bash
+go test -tags=integration -v ./integration/ -run "TestRedisOperations/SET_and_GET"
+```
+
+**Multi-node workflow test:**
+```bash
+go test -tags=integration -v ./integration/ -run TestNodeExecutionWithMultipleNodes
+```
+
+### Run with Timeout
+
+```bash
+go test -tags=integration -v ./integration/ -timeout 60s
+```
+
+### Run with Coverage
+
+```bash
+go test -tags=integration -v ./integration/ -cover -coverprofile=coverage.out
+go tool cover -html=coverage.out
 ```
 
 ## Environment Variables
 
-The tests use the following environment variables (with defaults):
+You can customize the test environment using these variables:
 
 - `RABBITMQ_URL` - RabbitMQ connection URL (default: `amqp://guest:guest@localhost:5672/`)
-- `REDIS_ADDR` - Redis server address (default: `localhost:6379`)
+- `REDIS_ADDR` - Redis address (default: `localhost:6379`)
 
-Example with custom values:
+Example:
 ```bash
-RABBITMQ_URL=amqp://user:pass@localhost:5672/ \
-REDIS_ADDR=localhost:6380 \
+RABBITMQ_URL="amqp://admin:password@rabbitmq.example.com:5672/" \
+REDIS_ADDR="redis.example.com:6379" \
 go test -tags=integration -v ./integration/
 ```
 
-## Test Coverage
+## Test Output
 
-### TestNodeExecutionEndToEnd
-**Purpose**: Validates the complete workflow execution lifecycle
+Integration tests produce detailed logs including:
+- Message publishing confirmations
+- Workflow execution status
+- Redis operation results
+- Error messages and stack traces
 
-**What it tests**:
-1. Publishing `NodeExecutionMessage` to `workflow.execution` queue
-2. Consumer processing and node execution
-3. Status message publishing to `workflow.node.status` queue
-4. Completion message publishing to `workflow.completion` queue
-5. HTTP node execution with external API calls
-6. Context accumulation and message routing
-
-**Expected behavior**:
-- Node executes successfully with HTTP GET request
-- Receives "running" status followed by "success" status
-- Receives completion message with status "completed"
-- Node output contains response data (body, headers, status)
-
-### TestNodeExecutionWithMultipleNodes
-**Purpose**: Tests workflow execution with chained nodes
-
-**What it tests**:
-1. Publishing workflow with multiple nodes connected by edges
-2. Sequential node execution following the graph
-3. Message routing between nodes
-4. Context accumulation across multiple nodes
-
-### TestNodeExecutionWithParameterResolution
-**Purpose**: Validates dynamic parameter resolution from context
-
-**What it tests**:
-1. Parameter references using `$node.field` syntax
-2. Context resolution during node execution
-3. Accumulated context propagation
-
-### TestRabbitMQPublishMultipleMessages
-**Purpose**: Tests concurrent message publishing
-
-**What it tests**:
-1. Publishing multiple workflow messages
-2. Queue handling under load
-3. Message persistence
-
-### TestRedisOperations
-**Purpose**: Validates Redis connectivity and operations
-
-**What it tests**:
-1. Basic SET/GET operations
-2. Counters (INCR)
-3. JSON storage and retrieval
-4. Key expiration
-
-## Test Patterns
-
-### Integration Test Setup
-Each test follows this pattern:
-
-```go
-func TestSomething(t *testing.T) {
-    env := setupIntegrationTest(t)
-    defer env.cleanup(t)
-    
-    // Test logic here
-}
+Example output:
 ```
-
-The `setupIntegrationTest` helper provides:
-- RabbitMQ publisher
-- Redis client
-- Configured logger
-- Automatic cleanup
-
-### Message Flow Testing
-To test end-to-end message flow:
-
-1. **Publish** execution message to input queue
-2. **Start consumer** to process messages
-3. **Monitor** status and completion queues
-4. **Validate** output messages and state
+=== RUN   TestPublishToRabbitMQ
+    rabbitmq_integration_test.go:59: Successfully published node execution message to RabbitMQ
+--- PASS: TestPublishToRabbitMQ (0.02s)
+```
 
 ## Troubleshooting
 
-### Connection Refused
-**Error**: `Failed to connect to RabbitMQ` or `Failed to connect to Redis`
+### Connection Errors
 
-**Solution**: Ensure services are running:
+**RabbitMQ connection failed:**
 ```bash
-docker ps | grep -E 'rabbitmq|redis'
+# Check if RabbitMQ is running
+docker ps | grep rabbitmq
+
+# Check RabbitMQ logs
+docker logs rabbitmq-test
+
+# Verify RabbitMQ is accessible
+curl http://localhost:15672/api/overview -u guest:guest
 ```
 
-### Test Timeouts
-**Error**: `panic: test timed out after Xs`
+**Redis connection failed:**
+```bash
+# Check if Redis is running
+docker ps | grep redis
 
-**Solution**: 
-- Check if RabbitMQ/Redis are responsive
-- Increase timeout with `-timeout` flag
-- Verify network connectivity
+# Test Redis connection
+docker exec redis-test redis-cli ping
+# Should return: PONG
+```
 
-### Queue Not Found
-**Error**: Messages not being consumed
+### Queue Issues
 
-**Solution**: 
-- Queues are created on-demand when consumers start
-- Ensure consumer initialization completes before publishing
-- Check RabbitMQ management UI at http://localhost:15672 (guest/guest)
+If tests fail with message consumption errors, you may need to purge queues:
 
-### Race Conditions
-**Error**: Flaky test results
+```bash
+# Purge workflow execution queue
+docker exec rabbitmq-test rabbitmqctl purge_queue workflow.execution
 
-**Solution**:
-- Add appropriate sleep/wait times for async operations
-- Use channels to synchronize goroutines
-- Implement proper context cancellation
+# Purge status queue
+docker exec rabbitmq-test rabbitmqctl purge_queue workflow.node.status
+
+# Purge completion queue
+docker exec rabbitmq-test rabbitmqctl purge_queue workflow.completion
+
+# List all queues
+docker exec rabbitmq-test rabbitmqctl list_queues
+```
+
+### Redis Issues
+
+Clear Redis data if tests are interfering with each other:
+
+```bash
+# Flush Redis database
+docker exec redis-test redis-cli FLUSHDB
+
+# Or flush all databases
+docker exec redis-test redis-cli FLUSHALL
+```
+
+### Port Conflicts
+
+If ports are already in use:
+
+```bash
+# Check what's using the ports
+lsof -i :5672   # RabbitMQ
+lsof -i :15672  # RabbitMQ Management
+lsof -i :6379   # Redis
+
+# Stop conflicting containers
+docker stop $(docker ps -q --filter "publish=5672")
+docker stop $(docker ps -q --filter "publish=6379")
+```
+
+## Test Architecture
+
+### RabbitMQ Tests
+
+Tests validate message publishing, consumption, and workflow execution:
+
+```
+NodeExecutionMessage → RabbitMQ (workflow.execution)
+    ↓
+WorkflowConsumer picks up message
+    ↓
+Executor processes node
+    ↓
+Status updates → RabbitMQ (workflow.node.status)
+    ↓
+Completion message → RabbitMQ (workflow.completion)
+```
+
+### Redis Tests
+
+Tests validate key-value operations used for state management:
+- Simple string SET/GET operations
+- Atomic counter increments (INCR)
+- JSON object storage and retrieval
+- TTL and key expiration
+
+## Build Tags
+
+All integration tests use the `integration` build tag to:
+- Prevent them from running with standard unit tests
+- Allow selective execution requiring external dependencies
+- Enable longer timeout allowances for real service interactions
+
+To run tests without the integration tag:
+```bash
+go test ./integration/  # Will skip all tests
+```
 
 ## CI/CD Integration
 
-For CI environments, start dependencies before running tests:
+Example GitHub Actions workflow:
 
 ```yaml
-# Example GitHub Actions
-steps:
-  - name: Start RabbitMQ
-    run: docker run -d -p 5672:5672 -p 15672:15672 rabbitmq:4.0-management-alpine
-  
-  - name: Start Redis
-    run: docker run -d -p 6379:6379 redis:7-alpine
-  
-  - name: Wait for services
-    run: sleep 5
-  
-  - name: Run Integration Tests
-    run: go test -tags=integration -v ./integration/ -timeout 60s
+name: Integration Tests
+
+on: [push, pull_request]
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      rabbitmq:
+        image: rabbitmq:4.0-management-alpine
+        ports:
+          - 5672:5672
+          - 15672:15672
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      
+      - name: Run Integration Tests
+        run: |
+          cd services/rune-worker
+          go test -tags=integration -v ./integration/ -timeout 5m
 ```
 
-## Best Practices
+## Additional Resources
 
-1. **Isolation**: Each test should be independent and clean up after itself
-2. **Timeouts**: Always use context timeouts to prevent hanging tests
-3. **Logging**: Use `t.Log()` to provide visibility into test execution
-4. **Cleanup**: Use `defer` for cleanup operations
-5. **Validation**: Assert both success cases and expected outputs
-6. **Real Dependencies**: Use actual RabbitMQ/Redis, not mocks
-
-## Known Issues
-
-1. **Cleanup Timeout**: Some tests may timeout during cleanup due to RabbitMQ connection pool draining. This is a known issue with the go-rabbitmq library and doesn't affect test validation.
-
-2. **Concurrent Tests**: Running integration tests in parallel may cause resource contention. Use `-p 1` flag to run sequentially if needed.
-
-## Further Reading
-
-- [RFC-001: Recursive Executor](../rfcs/RFC-001-recursive-executor.md)
-- [RFC-002: Workflow DSL](../rfcs/RFC-002-workflow-dsl.md)
-- [RabbitMQ Flow Diagram](../docs/RABBITMQ_FLOW_DIAGRAM.md)
+- [RabbitMQ Documentation](https://www.rabbitmq.com/documentation.html)
+- [Redis Documentation](https://redis.io/documentation)
+- [Go Testing Documentation](https://pkg.go.dev/testing)
+- [E2E Tests](../e2e/README.md) - For comprehensive end-to-end workflow tests
