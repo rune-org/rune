@@ -154,10 +154,6 @@ func (n *HTTPNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 			return result, nil
 		}
 		lastErr = err
-
-		// If the error is a network error (not a successful HTTP response with bad status),
-		// continue retrying
-		continue
 	}
 
 	return nil, fmt.Errorf("http request failed after %d attempts: %w", attempts, lastErr)
@@ -264,10 +260,8 @@ func (n *HTTPNode) executeRequest(ctx context.Context) (map[string]any, error) {
 	// Build result matching the RFC specification
 	result := map[string]any{
 		"status":      resp.StatusCode,
-		"status_code": resp.StatusCode, // Alias for backwards compatibility
 		"status_text": resp.Status,
 		"body":        parsedBody,
-		"response":    parsedBody, // Alias for context variable access
 		"headers":     responseHeaders,
 		"duration_ms": duration.Milliseconds(),
 	}

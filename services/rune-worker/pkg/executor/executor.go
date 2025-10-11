@@ -6,12 +6,13 @@ import (
 	"log/slog"
 	"time"
 
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/dsl"
 	"rune-worker/pkg/messages"
 	"rune-worker/pkg/nodes"
 	"rune-worker/pkg/platform/queue"
 	"rune-worker/pkg/registry"
-	"rune-worker/pkg/core"
+	"rune-worker/pkg/resolver"
 	"rune-worker/plugin"
 )
 
@@ -98,13 +99,28 @@ func (e *Executor) Execute(ctx context.Context, msg *messages.NodeExecutionMessa
 
 // buildExecutionContext creates the plugin.ExecutionContext from the message.
 // Credentials are already resolved by the master service and included in the node definition.
+// Parameters are resolved using the resolver to handle dynamic references like $node.field.
 func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, node *core.Node) plugin.ExecutionContext {
+	// Resolve dynamic parameter references before execution
+	resolvedParams := node.Parameters
+	if len(node.Parameters) > 0 && msg.AccumulatedContext != nil {
+		r := resolver.NewResolver(msg.AccumulatedContext)
+		if params, err := r.ResolveParameters(node.Parameters); err == nil {
+			resolvedParams = params
+		} else {
+			slog.Warn("failed to resolve parameters, using original values",
+				"error", err,
+				"node_id", node.ID,
+			)
+		}
+	}
+
 	execCtx := plugin.ExecutionContext{
 		ExecutionID: msg.ExecutionID,
 		WorkflowID:  msg.WorkflowID,
 		NodeID:      node.ID,
 		Type:        node.Type,
-		Parameters:  node.Parameters,
+		Parameters:  resolvedParams,
 		Input:       msg.AccumulatedContext,
 	}
 
