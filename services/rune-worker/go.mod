@@ -1,6 +1,6 @@
 module rune-worker
 
-go 1.25
+go 1.24
 
 require github.com/wagslane/go-rabbitmq v0.15.0
 
