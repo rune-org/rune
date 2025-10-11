@@ -67,8 +67,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
 
-    import src.db.models
-
     async_engine = get_async_engine()
 
     async with async_engine.begin() as conn:

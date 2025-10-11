@@ -20,17 +20,27 @@ def get_workflow_service(db: DatabaseDep) -> WorkflowService:
     return WorkflowService(db=db)
 
 
-@router.get("/", response_model=ApiResponse[list[WorkflowListItem]], status_code=status.HTTP_200_OK)
+@router.get(
+    "/",
+    response_model=ApiResponse[list[WorkflowListItem]],
+    status_code=status.HTTP_200_OK,
+)
 async def list_workflows(
     current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
     wfs = await service.list_for_user(current_user.id)
-    items = [WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active) for wf in wfs]
+    items = [
+        WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active) for wf in wfs
+    ]
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
 
 
-@router.get("/{workflow_id}", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_200_OK)
+@router.get(
+    "/{workflow_id}",
+    response_model=ApiResponse[WorkflowDetail],
+    status_code=status.HTTP_200_OK,
+)
 async def get_workflow(
     workflow_id: int,
     current_user: User = Depends(get_current_user),
@@ -43,7 +53,9 @@ async def get_workflow(
     return ApiResponse(success=True, message="Workflow retrieved", data=detail)
 
 
-@router.post("/", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_201_CREATED
+)
 async def create_workflow(
     payload: WorkflowCreate,
     current_user: User = Depends(get_current_user),
@@ -61,7 +73,11 @@ async def create_workflow(
     return ApiResponse(success=True, message="Workflow created", data=detail)
 
 
-@router.put("/{workflow_id}/status", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_200_OK)
+@router.put(
+    "/{workflow_id}/status",
+    response_model=ApiResponse[WorkflowDetail],
+    status_code=status.HTTP_200_OK,
+)
 async def update_status(
     workflow_id: int,
     payload: WorkflowUpdateStatus,
@@ -76,7 +92,11 @@ async def update_status(
     return ApiResponse(success=True, message="Workflow status updated", data=detail)
 
 
-@router.put("/{workflow_id}/name", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_200_OK)
+@router.put(
+    "/{workflow_id}/name",
+    response_model=ApiResponse[WorkflowDetail],
+    status_code=status.HTTP_200_OK,
+)
 async def update_name(
     workflow_id: int,
     payload: WorkflowUpdateName,
