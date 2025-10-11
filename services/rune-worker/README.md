@@ -372,11 +372,20 @@ Make HTTP requests with full configuration support.
 
 ## Message Flow
 
+### RabbitMQ Architecture
+
+The worker uses a **topic exchange** named `workflows` for all message routing. Exchanges and queues are **automatically declared** when the service starts, ensuring zero-configuration deployment.
+
+**Exchange:** `workflows` (topic, durable)  
+**Routing:** Queue name = Routing key
+
 The worker participates in three RabbitMQ queues:
 
 1. **`workflow.execution`** (input): Node execution messages to process
 2. **`workflow.node.status`** (output): Status updates (running, success, failed)
 3. **`workflow.completion`** (output): Workflow completion messages
+
+All queues and bindings are automatically created and configured as durable. See [RABBITMQ_ARCHITECTURE.md](./RABBITMQ_ARCHITECTURE.md) for detailed information about the messaging infrastructure.
 
 ### Node Execution Message
 ```json
@@ -421,8 +430,12 @@ The worker participates in three RabbitMQ queues:
 
 ### Running Tests
 
+#### Unit Tests
+
+Unit tests are fast, isolated tests that don't require external services:
+
 ```bash
-# Run all tests
+# Run all unit tests
 go test ./...
 
 # Run with coverage
@@ -433,7 +446,144 @@ go test ./pkg/executor/... -v
 
 # Run HTTP node tests
 go test ./pkg/nodes/custom/http/... -v
+
+# Run with verbose output and coverage report
+go test -v -cover ./pkg/...
 ```
+
+#### Integration Tests
+
+Integration tests verify end-to-end flows with Redis and RabbitMQ. These tests require running service containers and are marked with the `integration` build tag.
+
+##### Running Integration Tests Locally
+
+
+**Option 1: Using Existing Services**
+
+If you already have Redis and RabbitMQ running:
+
+```bash
+# Set connection URLs (optional if using defaults)
+export RABBITMQ_URL="amqp://guest:guest@localhost:5672/"
+export REDIS_ADDR="localhost:6379"
+
+# Run integration tests
+go test -v -tags=integration ./integration/...
+```
+
+**Option 2: Quick Test Setup**
+
+```bash
+# Start Redis
+docker run -d --name redis-test -p 6379:6379 redis:7-alpine
+
+# Start RabbitMQ
+docker run -d --name rabbitmq-test \
+  -p 5672:5672 -p 15672:15672 \
+  -e RABBITMQ_DEFAULT_USER=guest \
+  -e RABBITMQ_DEFAULT_PASS=guest \
+  rabbitmq:3-management-alpine
+
+# Wait for services
+sleep 15
+
+# Run integration tests
+go test -v -tags=integration ./integration/...
+
+# Cleanup
+docker rm -f redis-test rabbitmq-test
+```
+
+##### Integration Test Coverage
+
+The integration test suite covers:
+
+- ✅ **End-to-End Workflow Execution**: Complete workflow processing from message consumption to completion
+- ✅ **Redis Context Management**: Storing and retrieving workflow context from Redis
+- ✅ **Error Handling**: Processing workflows with invalid node types and error recovery
+- ✅ **Message Acknowledgment**: Proper ACK/NACK behavior for message reliability
+- ✅ **RabbitMQ Operations**: Message publishing, consumption, and queue management
+- ✅ **Redis Operations**: SET, GET, INCR, JSON storage, and key expiration
+- ✅ **Service Recovery**: Consumer behavior during connection issues
+
+##### CI/CD Integration Tests
+
+Integration tests run automatically in GitHub Actions CI with service containers:
+
+```yaml
+# In .github/workflows/rune-worker-ci.yml
+services:
+  redis:
+    image: redis:7-alpine
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+```
+
+The CI pipeline:
+1. Starts Redis and RabbitMQ service containers
+2. Waits for services to be healthy
+3. Runs unit tests (without build tags)
+4. Runs integration tests (with `-tags=integration`)
+
+##### Writing Integration Tests
+
+Integration tests are located in the `integration/` directory and use the `integration` build tag:
+
+```go
+//go:build integration
+
+package integration
+
+import (
+    "testing"
+    "rune-worker/pkg/core"
+    // ... other imports
+)
+
+func TestMyIntegration(t *testing.T) {
+    // Setup Redis and RabbitMQ connections
+    // Run end-to-end tests
+    // Cleanup resources
+}
+```
+
+All integration tests should be placed in the `integration/` folder to keep them separate from unit tests.
+
+##### Test Configuration
+
+Integration tests use these environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RABBITMQ_URL` | `amqp://guest:guest@localhost:5672/` | RabbitMQ connection URL |
+| `REDIS_ADDR` | `localhost:6379` | Redis server address |
+
+##### Troubleshooting Integration Tests
+
+**Tests timeout or fail to connect:**
+- Verify services are running: `docker ps`
+- Check service logs: `docker logs <container-id>`
+- Ensure ports are not already in use
+- Wait longer for services to be ready (especially RabbitMQ)
+
+**Redis connection errors:**
+```bash
+# Test Redis connectivity
+redis-cli -h localhost -p 6379 ping
+# Should return: PONG
+```
+
+**RabbitMQ connection errors:**
+```bash
+# Test RabbitMQ connectivity
+curl http://localhost:15672
+# Should return the management UI
+```
+
+**Tests pass locally but fail in CI:**
+- Check service container health checks in CI config
+- Verify environment variables are set correctly
+- Review CI logs for service startup errors
 
 ### Creating Custom Node Types
 
