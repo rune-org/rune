@@ -43,7 +43,6 @@ class Settings(BaseSettings):
     redis_password: str | None = None
 
     @computed_field
-    @property
     def cookie_secure(self) -> bool:
         """Cookie secure flag - only true in production."""
         return self.environment == Environment.PROD

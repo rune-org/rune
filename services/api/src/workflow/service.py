@@ -1,3 +1,4 @@
+from sqlalchemy import desc
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -23,10 +24,10 @@ class WorkflowService:
         statement = (
             select(Workflow)
             .where(Workflow.created_by == user_id)
-            .order_by(Workflow.created_at.desc())
+            .order_by(desc(Workflow.created_at))
         )
         result = await self.db.exec(statement)
-        return result.all()
+        return list(result.all())
 
     async def get_by_id(self, workflow_id: int) -> Workflow | None:
         """Return a Workflow by primary key or None if not found."""

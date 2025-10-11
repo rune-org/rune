@@ -21,8 +21,7 @@ class UserService:
         statement = select(User)
         result = await self.db.exec(statement)
         users = result.all()
-
-        return users
+        return list(users)
 
     async def get_user_by_id(self, user_id: int) -> User:
         """

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Response
+from fastapi import APIRouter, Depends, status
 
 from src.workflow.schemas import (
     WorkflowListItem,
@@ -29,10 +29,13 @@ async def list_workflows(
     current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
+    assert current_user.id is not None
     wfs = await service.list_for_user(current_user.id)
-    items = [
-        WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active) for wf in wfs
-    ]
+    items: list[WorkflowListItem] = []
+    for wf in wfs:
+        if wf.id is None:
+            continue
+        items.append(WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active))
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
 
 
@@ -46,6 +49,7 @@ async def get_workflow(
     current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
+    assert current_user.id is not None
     wf = await service.get_for_user(workflow_id, current_user.id)
 
     detail = WorkflowDetail.model_validate(wf)
@@ -61,6 +65,7 @@ async def create_workflow(
     current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
+    assert current_user.id is not None
     wf = await service.create(
         user_id=current_user.id,
         name=payload.name,
@@ -84,6 +89,7 @@ async def update_status(
     current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
+    assert current_user.id is not None
     wf = await service.get_for_user(workflow_id, current_user.id)
     wf = await service.update_status(wf, payload.is_active)
 
@@ -103,6 +109,7 @@ async def update_name(
     current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
+    assert current_user.id is not None
     wf = await service.get_for_user(workflow_id, current_user.id)
     wf = await service.update_name(wf, payload.name)
 
@@ -117,6 +124,7 @@ async def delete_workflow(
     current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> None:
+    assert current_user.id is not None
     wf = await service.get_for_user(workflow_id, current_user.id)
     await service.delete(wf)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return None

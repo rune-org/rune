@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import ForeignKey
 
 
-class User(SQLModel, table=True):
+class User(SQLModel, table=True):  # type: ignore[call-arg]
     __tablename__ = "users"
 
     id: Optional[int] = Field(
@@ -62,7 +62,7 @@ class User(SQLModel, table=True):
     )
 
 
-class Workflow(SQLModel, table=True):
+class Workflow(SQLModel, table=True):  # type: ignore[call-arg]
     __tablename__ = "workflows"
 
     id: Optional[int] = Field(
@@ -118,7 +118,7 @@ class Workflow(SQLModel, table=True):
 
 
 # ! IMPORTANT: This workflow execution model is not final and will be Changed later to elastic search for better performance and scalability.
-class WorkflowExecution(SQLModel, table=True):
+class WorkflowExecution(SQLModel, table=True):  # type: ignore[call-arg]
     __tablename__ = "workflow_executions"
 
     id: Optional[int] = Field(
@@ -151,7 +151,7 @@ class WorkflowExecution(SQLModel, table=True):
     workflow: Optional[Workflow] = Relationship(back_populates="executions")
 
 
-class WorkflowUser(SQLModel, table=True):
+class WorkflowUser(SQLModel, table=True):  # type: ignore[call-arg]
     __tablename__ = "workflow_users"
 
     id: Optional[int] = Field(
@@ -197,7 +197,7 @@ class WorkflowUser(SQLModel, table=True):
 
 
 # ! IMPORTANT: WorkflowTemplate is not final and may change significantly after the MVP, based on the Rune team's vision.
-class WorkflowTemplate(SQLModel, table=True):
+class WorkflowTemplate(SQLModel, table=True):  # type: ignore[call-arg]
     __tablename__ = "workflow_templates"
 
     id: Optional[int] = Field(
