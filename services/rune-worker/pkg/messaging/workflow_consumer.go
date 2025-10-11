@@ -42,15 +42,15 @@ func NewWorkflowConsumer(cfg *config.WorkerConfig) (*WorkflowConsumer, error) {
 	// Create workflow publisher for executor to publish messages
 	workflowPub, err := NewWorkflowPublisher(cfg.RabbitURL)
 	if err != nil {
-		q.Close()
+		_ = q.Close()
 		return nil, err
 	}
 
 	// Create publisher for executor (uses the underlying queue publisher)
 	pub, err := queue.NewRabbitMQPublisher(cfg.RabbitURL)
 	if err != nil {
-		q.Close()
-		workflowPub.Close()
+		_ = q.Close()
+		_ = workflowPub.Close()
 		return nil, err
 	}
 

@@ -68,7 +68,9 @@ func TestNewRabbitMQConsumer(t *testing.T) {
 			}
 			// For valid options, we'd get connection errors without RabbitMQ
 			if consumer != nil {
-				defer consumer.Close()
+				defer func() {
+					_ = consumer.Close()
+				}()
 			}
 		})
 	}

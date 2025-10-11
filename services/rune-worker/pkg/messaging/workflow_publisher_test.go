@@ -31,7 +31,9 @@ func TestNewWorkflowPublisher(t *testing.T) {
 			// For valid URLs, we'd get connection errors without RabbitMQ
 			// so we just verify the error handling works
 			if pub != nil {
-				defer pub.Close()
+				defer func() {
+					_ = pub.Close()
+				}()
 			}
 		})
 	}

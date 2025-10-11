@@ -18,7 +18,7 @@ func TestHTTPNode_BasicGETRequest(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(nethttp.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"message": "success"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "success"})
 	}))
 	defer server.Close()
 
@@ -49,7 +49,7 @@ func TestHTTPNode_BasicGETRequest(t *testing.T) {
 func TestHTTPNode_RaiseOnStatusCommaSeparated(t *testing.T) {
 	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		w.WriteHeader(nethttp.StatusNotFound)
-		w.Write([]byte("Not Found"))
+		_, _ = w.Write([]byte("Not Found"))
 	}))
 	defer server.Close()
 
@@ -77,7 +77,7 @@ func TestHTTPNode_RaiseOnStatusCommaSeparated(t *testing.T) {
 func TestHTTPNode_RaiseOnStatus5xxWithCommaSeparated(t *testing.T) {
 	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		w.WriteHeader(nethttp.StatusInternalServerError)
-		w.Write([]byte("Server Error"))
+		_, _ = w.Write([]byte("Server Error"))
 	}))
 	defer server.Close()
 
@@ -105,7 +105,7 @@ func TestHTTPNode_RaiseOnStatus5xxWithCommaSeparated(t *testing.T) {
 func TestHTTPNode_RaiseOnStatusNoMatch(t *testing.T) {
 	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		w.WriteHeader(nethttp.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -137,7 +137,7 @@ func TestHTTPNode_RaiseOnStatusNoMatch(t *testing.T) {
 func TestHTTPNode_RaiseOnStatusSpecificCode(t *testing.T) {
 	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		w.WriteHeader(nethttp.StatusNotFound)
-		w.Write([]byte("Not Found"))
+		_, _ = w.Write([]byte("Not Found"))
 	}))
 	defer server.Close()
 
@@ -168,10 +168,10 @@ func TestHTTPNode_RetryLogicWithRaiseOnStatus(t *testing.T) {
 		attemptCount++
 		if attemptCount < 3 {
 			w.WriteHeader(nethttp.StatusInternalServerError)
-			w.Write([]byte("Server Error"))
+			_, _ = w.Write([]byte("Server Error"))
 		} else {
 			w.WriteHeader(nethttp.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"message": "success"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "success"})
 		}
 	}))
 	defer server.Close()
@@ -213,9 +213,9 @@ func TestHTTPNode_POSTWithBody(t *testing.T) {
 		if r.Method != "POST" {
 			t.Errorf("Expected POST request, got %s", r.Method)
 		}
-		json.NewDecoder(r.Body).Decode(&receivedBody)
+		_ = json.NewDecoder(r.Body).Decode(&receivedBody)
 		w.WriteHeader(nethttp.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]string{"status": "created"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "created"})
 	}))
 	defer server.Close()
 
@@ -254,7 +254,7 @@ func TestHTTPNode_CustomHeaders(t *testing.T) {
 	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		receivedHeaders = r.Header
 		w.WriteHeader(nethttp.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -291,7 +291,7 @@ func TestHTTPNode_QueryParameters(t *testing.T) {
 	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		receivedQuery = r.URL.RawQuery
 		w.WriteHeader(nethttp.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -358,7 +358,7 @@ func TestHTTPNode_Timeout(t *testing.T) {
 func TestHTTPNode_SSLVerification(t *testing.T) {
 	server := httptest.NewTLSServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		w.WriteHeader(nethttp.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -390,7 +390,7 @@ func TestHTTPNode_SSLVerification(t *testing.T) {
 func TestHTTPNode_MixedPatterns(t *testing.T) {
 	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		w.WriteHeader(nethttp.StatusBadRequest)
-		w.Write([]byte("Bad Request"))
+		_, _ = w.Write([]byte("Bad Request"))
 	}))
 	defer server.Close()
 
