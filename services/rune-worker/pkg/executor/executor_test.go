@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/messages"
 	"rune-worker/pkg/nodes"
-	"rune-worker/pkg/core"
 	"rune-worker/plugin"
 )
 
@@ -244,7 +244,9 @@ func TestExecutor_NodeFailureHaltStrategy(t *testing.T) {
 	}
 
 	var completion messages.CompletionMessage
-	json.Unmarshal(completionMsgs[0], &completion)
+	if err := json.Unmarshal(completionMsgs[0], &completion); err != nil {
+		t.Fatalf("Failed to unmarshal completion message: %v", err)
+	}
 
 	if completion.Status != messages.CompletionStatusHalted {
 		t.Errorf("Expected status halted, got %s", completion.Status)
@@ -311,7 +313,9 @@ func TestExecutor_ContextAccumulation(t *testing.T) {
 	}
 
 	var nextMsg messages.NodeExecutionMessage
-	json.Unmarshal(execMsgs[0], &nextMsg)
+	if err := json.Unmarshal(execMsgs[0], &nextMsg); err != nil {
+		t.Fatalf("Failed to unmarshal execution message: %v", err)
+	}
 
 	// Verify context contains both trigger and node output
 	if _, ok := nextMsg.AccumulatedContext["$trigger"]; !ok {

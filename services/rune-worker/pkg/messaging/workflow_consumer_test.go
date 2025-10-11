@@ -36,7 +36,9 @@ func TestNewWorkflowConsumer(t *testing.T) {
 			}
 			// For valid configs, we'd get connection errors without RabbitMQ
 			if consumer != nil {
-				defer consumer.Close()
+				defer func() {
+					_ = consumer.Close()
+				}()
 			}
 		})
 	}
@@ -56,7 +58,7 @@ func TestWorkflowConsumerClose(t *testing.T) {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || 
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
 		(len(s) > 0 && len(substr) > 0 && indexOf(s, substr) >= 0))
 }
 

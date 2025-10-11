@@ -34,7 +34,9 @@ func TestNewRabbitMQPublisher(t *testing.T) {
 			}
 			// For valid URLs, we'd get connection errors without RabbitMQ
 			if pub != nil {
-				defer pub.Close()
+				defer func() {
+					_ = pub.Close()
+				}()
 			}
 		})
 	}

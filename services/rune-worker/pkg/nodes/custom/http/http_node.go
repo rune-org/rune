@@ -230,7 +230,9 @@ func (n *HTTPNode) executeRequest(ctx context.Context) (map[string]any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("http request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	// Read response body
 	responseBody, err := io.ReadAll(resp.Body)

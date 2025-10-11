@@ -136,7 +136,7 @@ func TestParseWorkflowFromString(t *testing.T) {
 		return
 	}
 	if wf == nil {
-		t.Error("ParseWorkflowFromString() returned nil workflow")
+		t.Fatal("ParseWorkflowFromString() returned nil workflow")
 	}
 	if wf.WorkflowID != "wf-123" {
 		t.Errorf("ParseWorkflowFromString() workflow_id = %v, want %v", wf.WorkflowID, "wf-123")
