@@ -42,11 +42,13 @@ class AuthService:
         """Create access and refresh tokens for user."""
         access_token = create_access_token(user)
         token_part = generate_refresh_token()
-        refresh_token = f"{user.id}:{token_part}"
+        assert user.id is not None
+        uid = int(user.id)
+        refresh_token = f"{uid}:{token_part}"
         refresh_token_hash = hash_password(token_part)
 
         await self.token_store.store_refresh_token(
-            user_id=user.id,
+            user_id=uid,
             token_hash=refresh_token_hash,
         )
 
@@ -107,7 +109,7 @@ class AuthService:
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=self.settings.cookie_secure,
+            secure=bool(self.settings.cookie_secure),
             max_age=self.settings.access_token_expire_minutes * 60,
         )
 
