@@ -358,7 +358,7 @@ func TestHTTPNode_Timeout(t *testing.T) {
 func TestHTTPNode_SSLVerification(t *testing.T) {
 	server := httptest.NewTLSServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		w.WriteHeader(nethttp.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -390,7 +390,7 @@ func TestHTTPNode_SSLVerification(t *testing.T) {
 func TestHTTPNode_MixedPatterns(t *testing.T) {
 	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		w.WriteHeader(nethttp.StatusBadRequest)
-		w.Write([]byte("Bad Request"))
+		_, _ = w.Write([]byte("Bad Request"))
 	}))
 	defer server.Close()
 
