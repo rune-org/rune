@@ -1,3 +1,4 @@
+import secrets
 from enum import Enum
 from functools import lru_cache
 from pydantic import computed_field
@@ -42,7 +43,9 @@ class Settings(BaseSettings):
     redis_db: int = 0
     redis_password: str | None = None
 
+
     @computed_field
+    @property
     def cookie_secure(self) -> bool:
         """Cookie secure flag - only true in production."""
         return self.environment == Environment.PROD
