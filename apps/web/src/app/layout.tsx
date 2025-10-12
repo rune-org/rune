@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "@/components/ui/toast";
+import { ClientProviders } from "@/components/providers/ClientProviders";
 
 import "./globals.css";
 
@@ -35,7 +36,7 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontDisplay.variable} antialiased bg-background text-foreground min-h-screen`}
       >
-        {children}
+        <ClientProviders>{children}</ClientProviders>
         <Toaster />
       </body>
     </html>
