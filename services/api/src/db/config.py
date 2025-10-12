@@ -43,7 +43,9 @@ def create_database_engine(settings: Settings | None = None) -> AsyncEngine:
 
     engine = create_async_engine(
         db_url,
-        echo=settings.environment == Environment.DEV,
+        echo=(
+            settings.environment == Environment.DEV
+        ),  # Logs appear in terminal in dev mode
     )
 
     return engine
@@ -64,6 +66,9 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
+
+    import src.db.models
+
     async_engine = get_async_engine()
 
     async with async_engine.begin() as conn:
