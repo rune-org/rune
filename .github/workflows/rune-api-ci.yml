@@ -71,6 +71,8 @@ jobs:
         working-directory: ./services/api
 
   test:
+    # Temporarily disabled until we implement tests/coverage
+    if: ${{ false }}
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: [lint]
