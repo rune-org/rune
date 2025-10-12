@@ -1,4 +1,5 @@
 // Types and helpers for the frontend representation of the Workflow DSL
+// TODO: consolidate JSON object handling with backend (consider `parameters`, `credentials`)
 
 import type { Edge as RFEdge } from "@xyflow/react";
 import type {
