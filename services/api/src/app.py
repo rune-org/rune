@@ -1,7 +1,13 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.core.config import get_settings
+from src.core.exception_handlers import (
+    http_exception_handler,
+    validation_exception_handler,
+)
 from src.db.config import init_db
 from src.db.redis import close_redis
 from src.auth.router import router as auth_router
@@ -28,6 +34,10 @@ app = FastAPI(
     version="0.0.0",
     lifespan=lifespan,
 )
+
+# Register custom exception handlers
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 app.include_router(auth_router)
 app.include_router(workflow_router)
