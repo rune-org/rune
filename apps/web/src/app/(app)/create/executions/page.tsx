@@ -1,6 +1,16 @@
+"use client";
+
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Container } from "@/components/shared/Container";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 const EXECUTIONS = [
   { id: 321, workflow: "Daily Report", run: 95, runtime: "3m 20s", status: "success" },
@@ -9,6 +19,22 @@ const EXECUTIONS = [
   { id: 318.1, workflow: "Data Sync", run: 120, runtime: "Pending", status: "pending" },
   { id: 317, workflow: "ETL Pipeline", run: 8, runtime: "52s", status: "success" },
 ];
+
+/* ------------------------ Helpers ------------------------ */
+function parseRuntime(runtime: string): number | null {
+  if (runtime.toLowerCase() === "pending") return null;
+  const match = runtime.match(/(?:(\d+)m)?\s*(\d+)s/);
+  if (!match) return null;
+  const minutes = match[1] ? parseInt(match[1]) : 0;
+  const seconds = parseInt(match[2]);
+  return minutes * 60 + seconds;
+}
+
+function formatSeconds(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}m ${s}s`;
+}
 
 function StatusPill({ status }: { status: string }) {
   const base =
@@ -26,25 +52,56 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
+/* ------------------------ Page ------------------------ */
 export default function CreateExecutionsPage() {
-  //  Dynamically calculated from the run column
+  /* === Metrics === */
   const totalRuns = EXECUTIONS.reduce((sum, e) => sum + e.run, 0);
 
-  //  Success runs only
   const successfulRuns = EXECUTIONS.filter((e) => e.status === "success").reduce(
     (sum, e) => sum + e.run,
     0
   );
 
-  // Success Rate in percentage
   const successRate =
     totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100) : 0;
 
-  //Circle progress math
   const radius = 16;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference - (successRate / 100) * circumference;
 
+  /* === Avg Runtime === */
+  const runtimes = EXECUTIONS.map((e) => parseRuntime(e.runtime)).filter(
+    Boolean
+  ) as number[];
+  const avgRuntime = runtimes.length
+    ? runtimes.reduce((a, b) => a + b, 0) / runtimes.length
+    : 0;
+
+  /* === Executions Over Time ===
+     We'll generate a simple "trend" line based on runtime lengths:
+     each runtime length (seconds) mapped to y-points scaled to 12px height
+  */
+  const runtimePoints = runtimes.map((r, i) => {
+    const normalizedY = 12 - (r / Math.max(...runtimes)) * 8; // scale visually
+    const normalizedX = (i / (runtimes.length - 1)) * 40;
+    return `${normalizedX.toFixed(1)},${normalizedY.toFixed(1)}`;
+  });
+  const linePoints = runtimePoints.join(" ");
+
+  /* === Failures by Workflow === */
+  const failuresByWorkflow = EXECUTIONS.reduce<Record<string, number>>(
+    (acc, e) => {
+      if (e.status === "failed") {
+        acc[e.workflow] = (acc[e.workflow] || 0) + 1;
+      }
+      return acc;
+    },
+    {}
+  );
+
+  const maxFailures = Math.max(...Object.values(failuresByWorkflow), 1);
+
+  /* ------------------------ Render ------------------------ */
   return (
     <Container className="py-12" widthClassName="max-w-6xl">
       {/* Header */}
@@ -80,42 +137,53 @@ export default function CreateExecutionsPage() {
             </div>
 
             <div className="border-t border-slate-800/60">
-              <table className="min-w-full divide-y divide-slate-800">
-                <thead>
+              <Table className="min-w-full">
+                <TableHeader>
                   <tr className="text-slate-400 text-sm">
-                    <th className="px-6 py-3 text-left">#</th>
-                    <th className="px-6 py-3 text-left">Workflow</th>
-                    <th className="px-6 py-3 text-left">Run #</th>
-                    <th className="px-6 py-3 text-left">Runtime</th>
-                    <th className="px-6 py-3 text-left">Status</th>
+                    <TableHead className="px-6 py-3 text-left">#</TableHead>
+                    <TableHead className="px-6 py-3 text-left">Workflow</TableHead>
+                    <TableHead className="px-6 py-3 text-left">Run #</TableHead>
+                    <TableHead className="px-6 py-3 text-left">Runtime</TableHead>
+                    <TableHead className="px-6 py-3 text-left">Status</TableHead>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
+                </TableHeader>
+
+                <TableBody>
                   {EXECUTIONS.map((e) => (
-                    <tr
+                    <TableRow
                       key={String(e.id)}
                       className="odd:bg-slate-900 even:bg-slate-900/70"
                     >
-                      <td className="px-6 py-4 text-slate-100 font-medium">
+                      <TableCell className="px-6 py-4 text-slate-100 font-medium">
                         {Math.floor(e.id)}
-                      </td>
-                      <td className="px-6 py-4 text-slate-100">{e.workflow}</td>
-                      <td className="px-6 py-4 text-slate-200">{e.run}</td>
-                      <td className="px-6 py-4 text-slate-300">{e.runtime}</td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+
+                      <TableCell className="px-6 py-4 text-slate-100">
+                        {e.workflow}
+                      </TableCell>
+
+                      <TableCell className="px-6 py-4 text-slate-200">
+                        {e.run}
+                      </TableCell>
+
+                      <TableCell className="px-6 py-4 text-slate-300">
+                        {e.runtime}
+                      </TableCell>
+
+                      <TableCell className="px-6 py-4">
                         <StatusPill status={e.status} />
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
         </div>
 
         {/* Right: Metrics Cards */}
         <div className="col-span-5 grid grid-cols-2 gap-4">
-          {/*Total Runs */}
+          {/* Total Runs */}
           <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
             <div className="text-sm text-slate-300">Total Runs</div>
             <div className="mt-4 text-3xl font-semibold text-slate-100">
@@ -180,7 +248,7 @@ export default function CreateExecutionsPage() {
               </svg>
             </div>
             <div className="mt-4 text-2xl font-medium text-slate-100">
-              1m 56s
+              {formatSeconds(Math.round(avgRuntime))}
             </div>
           </div>
 
@@ -197,7 +265,7 @@ export default function CreateExecutionsPage() {
                   fill="none"
                   stroke="#60a5fa"
                   strokeWidth="1.6"
-                  points="0,8 6,4 12,6 18,3 24,5 30,4 36,6 40,5"
+                  points={linePoints}
                 />
               </svg>
             </div>
@@ -206,27 +274,20 @@ export default function CreateExecutionsPage() {
           {/* Failures by Workflow */}
           <div className="col-span-2 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
             <div className="text-sm text-slate-300">Failures by Workflow</div>
-            <div className="mt-3">
-              <svg
-                viewBox="0 0 100 36"
-                className="w-full h-16 text-slate-500"
-                aria-hidden
-              >
-                <path
-                  d="M2 25 C18 18, 40 20, 58 14, 78 18, 98 12"
-                  fill="none"
-                  stroke="#93c5fd"
-                  strokeWidth="1.8"
-                />
-              </svg>
-
-              <div className="mt-3 flex items-end gap-3">
-                <div className="w-6 h-3 bg-blue-700 rounded" />
-                <div className="w-6 h-4 bg-blue-700 rounded" />
-                <div className="w-6 h-5 bg-blue-700 rounded" />
-                <div className="w-6 h-3 bg-blue-700 rounded" />
-                <div className="w-6 h-6 bg-blue-700 rounded" />
-              </div>
+            <div className="mt-3 flex items-end gap-3">
+              {Object.entries(failuresByWorkflow).map(([workflow, count]) => (
+                <div key={workflow} className="flex flex-col items-center">
+                  <div
+                    className="w-6 bg-blue-700 rounded"
+                    style={{
+                      height: `${(count / maxFailures) * 24 + 4}px`,
+                    }}
+                  />
+                  <span className="text-xs text-slate-400 mt-1">
+                    {workflow}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
