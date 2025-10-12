@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import FlowCanvas from "@/features/canvas/FlowCanvas";
@@ -8,9 +8,9 @@ import { ApiMock } from "@/lib/api-mock";
 import type { CanvasEdge, CanvasNode } from "@/features/canvas/types";
 import { sanitizeGraph } from "@/features/canvas/lib/graphIO";
 
-export default function CanvasPage() {
+function CanvasPageInner() {
   const params = useSearchParams();
-  const workflowId = params.get("workflow");
+  const workflowId = params.get("workflow"); // This would be the workflow ID passed as a query parameter
 
   const [nodes, setNodes] = useState<CanvasNode[] | undefined>(undefined);
   const [edges, setEdges] = useState<CanvasEdge[] | undefined>(undefined);
@@ -43,5 +43,19 @@ export default function CanvasPage() {
         <FlowCanvas externalNodes={nodes} externalEdges={edges} />
       </div>
     </div>
+  );
+}
+
+export default function CanvasPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-[100vh] items-center justify-center text-sm text-muted-foreground">
+          Loading workflow...
+        </div>
+      }
+    >
+      <CanvasPageInner />
+    </Suspense>
   );
 }
