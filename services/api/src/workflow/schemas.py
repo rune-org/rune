@@ -63,7 +63,7 @@ class WorkflowDetail(BaseModel):
     version: int
     created_at: datetime
     updated_at: datetime
-    
+
     # Allow constructing the model directly from object attributes (SQLModel/ORM
     # instances) when using Pydantic v2. This lets callers do
     # `WorkflowDetail.model_validate(wf)` instead of manual field mapping.

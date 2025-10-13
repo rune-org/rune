@@ -1,4 +1,3 @@
-import secrets
 from enum import Enum
 from functools import lru_cache
 from pydantic import computed_field
@@ -42,7 +41,6 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
     redis_password: str | None = None
-
 
     @computed_field
     @property

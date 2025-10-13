@@ -1,5 +1,5 @@
 export default {
-  input: 'services/api/openapi.json', // sign up at app.heyapi.dev
+  input: 'services/api/openapi.yaml',
   output: 'apps/web/src/client',
   plugins: [
     {
