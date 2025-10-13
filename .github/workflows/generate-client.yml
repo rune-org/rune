@@ -19,7 +19,7 @@ jobs:
           cache-dependency-path: services/api/requirements.txt
       
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v4
         with:
           version: 10
       
