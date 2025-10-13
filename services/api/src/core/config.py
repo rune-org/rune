@@ -42,7 +42,6 @@ class Settings(BaseSettings):
     redis_db: int = 0
     redis_password: str | None = None
 
-
     @computed_field
     @property
     def cookie_secure(self) -> bool:
