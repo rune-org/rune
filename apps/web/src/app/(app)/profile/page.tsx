@@ -59,7 +59,7 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">- Full Name: [text field]</Label>
+              <Label htmlFor="fullName">Full Name</Label>
               <Input
                 id="fullName"
                 value={profileData.fullName}
@@ -68,7 +68,7 @@ export default function ProfilePage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="timezone">- Timezone: [dropdown]</Label>
+              <Label htmlFor="timezone">Timezone</Label>
               <Select value={profileData.timezone} onValueChange={(value) => setProfileData({...profileData, timezone: value})}>
                 <SelectTrigger>
                   <SelectValue />
@@ -84,7 +84,7 @@ export default function ProfilePage() {
             </div>
 
             <Button onClick={handleSaveChanges} className="mt-4">
-              [Save Changes]
+              Save Changes
             </Button>
           </CardContent>
         </Card>
@@ -96,10 +96,10 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <Button variant="outline" className="w-fit justify-start">
-              - Change Password [btn]
+              Change Password
             </Button>
             <Button variant="outline" className="w-fit justify-start">
-              - 2FA [toggle]
+              Enable 2FA
             </Button>
           </CardContent>
         </Card>
@@ -111,7 +111,7 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>- Locale: [dropdown]</Label>
+              <Label>Locale</Label>
               <Select defaultValue="english-us">
                 <SelectTrigger className="w-48">
                   <SelectValue />
@@ -125,7 +125,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <Label>- Default View: Dashboard</Label>
+              <Label>Default View</Label>
               <Select defaultValue="dashboard">
                 <SelectTrigger className="w-48">
                   <SelectValue />
