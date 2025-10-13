@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Response
+from fastapi import APIRouter, Depends, status
 
 from src.workflow.schemas import (
     WorkflowListItem,
@@ -26,7 +26,9 @@ async def list_workflows(
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
     wfs = await service.list_for_user(current_user.id)
-    items = [WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active) for wf in wfs]
+    items = [
+        WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active) for wf in wfs
+    ]
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
 
 
@@ -43,7 +45,9 @@ async def get_workflow(
     return ApiResponse(success=True, message="Workflow retrieved", data=detail)
 
 
-@router.post("/", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_201_CREATED
+)
 async def create_workflow(
     payload: WorkflowCreate,
     current_user: User = Depends(get_current_user),
