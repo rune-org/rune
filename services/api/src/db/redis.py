@@ -33,7 +33,6 @@ async def get_redis() -> AsyncGenerator[Redis, None]:
 
 
 async def close_redis() -> None:
-
     global _redis_client
 
     if _redis_client is not None:
