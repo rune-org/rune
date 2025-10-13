@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-
+from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import get_settings
 from src.db.config import init_db
 from src.db.redis import close_redis
 from src.auth.router import router as auth_router
+from src.workflow.router import router as workflow_router
 from src.users.router import router as users_router
 
 # Get settings
@@ -27,6 +28,14 @@ app = FastAPI(
     version="0.0.0",
     lifespan=lifespan,
 )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_router)
+app.include_router(workflow_router)
 app.include_router(users_router)

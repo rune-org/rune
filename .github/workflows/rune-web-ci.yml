@@ -1,18 +1,23 @@
-name: CI
+name: Web App CI
 
 on:
   push:
     branches: [main]
+    paths:
+      - "apps/web/**"
+
   pull_request:
     branches: [main]
+    paths:
+      - "apps/web/**"
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: web-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   lint:
-    name: lint
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +32,7 @@ jobs:
       - run: pnpm -C apps/web lint
 
   typecheck:
-    name: typecheck
+    name: Type Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +47,7 @@ jobs:
       - run: pnpm -C apps/web typecheck
 
   build:
-    name: build
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +62,7 @@ jobs:
       - run: pnpm -C apps/web build
 
   test:
-    name: test
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
