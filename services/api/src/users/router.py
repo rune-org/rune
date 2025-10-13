@@ -5,9 +5,8 @@ from src.users.schemas import UserCreate, UserUpdate, UserResponse
 from src.users.service import UserService
 
 
-
 router = APIRouter(
-    prefix="/users",  
+    prefix="/users",
     tags=["Users"],
 )
 
@@ -72,7 +71,7 @@ async def create_user(
     service: UserService = Depends(get_user_service),
 ) -> ApiResponse[UserResponse]:
     """
-    POST /users 
+    POST /users
     """
     new_user = await service.create_user(user_data)
     return ApiResponse(
@@ -120,3 +119,4 @@ async def delete_user(
     DELETE /users/{user_id}
     """
     await service.delete_user(user_id)
+    return

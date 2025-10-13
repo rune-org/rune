@@ -1,0 +1,754 @@
+openapi: 3.1.0
+info:
+  title: Rune API
+  version: 0.0.0
+paths:
+  /auth/login:
+    post:
+      tags:
+      - Authentication
+      summary: User login
+      description: Authenticate user with email and password. Returns access and refresh
+        tokens, and sets an HTTP-only cookie.
+      operationId: login_auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TokenResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/refresh:
+    post:
+      tags:
+      - Authentication
+      summary: Refresh access token
+      description: Generate a new access token using a valid refresh token. The refresh
+        token remains unchanged.
+      operationId: refresh_auth_refresh_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TokenResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/logout:
+    post:
+      tags:
+      - Authentication
+      summary: User logout
+      description: Logout the current user by revoking their refresh token and clearing
+        the authentication cookie.
+      operationId: logout_auth_logout_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
+  /workflows/:
+    get:
+      tags:
+      - Workflows
+      summary: List Workflows
+      operationId: list_workflows_workflows__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_list_WorkflowListItem__'
+    post:
+      tags:
+      - Workflows
+      summary: Create Workflow
+      operationId: create_workflow_workflows__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}:
+    get:
+      tags:
+      - Workflows
+      summary: Get Workflow
+      operationId: get_workflow_workflows__workflow_id__get
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Workflows
+      summary: Delete Workflow
+      operationId: delete_workflow_workflows__workflow_id__delete
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/status:
+    put:
+      tags:
+      - Workflows
+      summary: Update Status
+      operationId: update_status_workflows__workflow_id__status_put
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowUpdateStatus'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/name:
+    put:
+      tags:
+      - Workflows
+      summary: Update Name
+      operationId: update_name_workflows__workflow_id__name_put
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowUpdateName'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/:
+    get:
+      tags:
+      - Users
+      summary: Get all users
+      description: Retrieve a list of all users in the system
+      operationId: get_all_users_users__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_list_UserResponse__'
+    post:
+      tags:
+      - Users
+      summary: Create a new user
+      description: Create a new user account. Email must be unique.
+      operationId: create_user_users__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_UserResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/{user_id}:
+    get:
+      tags:
+      - Users
+      summary: Get user by ID
+      description: Retrieve a single user by their id.
+      operationId: get_user_by_id_users__user_id__get
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_UserResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - Users
+      summary: Update user
+      description: Update an existing user's information.
+      operationId: update_user_users__user_id__put
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_UserResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Users
+      summary: Delete user
+      description: Permanently delete a user from the system.
+      operationId: delete_user_users__user_id__delete
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ApiResponse_NoneType_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          type: 'null'
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[NoneType]
+    ApiResponse_TokenResponse_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/TokenResponse'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[TokenResponse]
+    ApiResponse_UserResponse_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/UserResponse'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[UserResponse]
+    ApiResponse_WorkflowDetail_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/WorkflowDetail'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[WorkflowDetail]
+    ApiResponse_list_UserResponse__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/UserResponse'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[list[UserResponse]]
+    ApiResponse_list_WorkflowListItem__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/WorkflowListItem'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[list[WorkflowListItem]]
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    LoginRequest:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+          description: User's email address
+        password:
+          type: string
+          minLength: 1
+          title: Password
+          description: User's password
+      type: object
+      required:
+      - email
+      - password
+      title: LoginRequest
+    RefreshRequest:
+      properties:
+        refresh_token:
+          type: string
+          minLength: 1
+          title: Refresh Token
+          description: Valid refresh token
+      type: object
+      required:
+      - refresh_token
+      title: RefreshRequest
+    TokenResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+          description: JWT access token
+        refresh_token:
+          type: string
+          title: Refresh Token
+          description: Refresh token for obtaining new access tokens
+        token_type:
+          type: string
+          title: Token Type
+          description: Token type, always 'bearer'
+          default: bearer
+        expires_in:
+          type: integer
+          title: Expires In
+          description: Access token expiration time in seconds
+      type: object
+      required:
+      - access_token
+      - refresh_token
+      - expires_in
+      title: TokenResponse
+    UserCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 40
+          minLength: 3
+          title: Name
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          minLength: 8
+          title: Password
+        role:
+          type: string
+          title: Role
+          default: user
+      type: object
+      required:
+      - name
+      - email
+      - password
+      title: UserCreate
+    UserResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        email:
+          type: string
+          format: email
+          title: Email
+        role:
+          type: string
+          title: Role
+        is_active:
+          type: boolean
+          title: Is Active
+          description: Account active status
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: Account creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: Last update timestamp
+        last_login_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Login At
+          description: Last login timestamp
+      type: object
+      required:
+      - id
+      - name
+      - email
+      - role
+      - is_active
+      - created_at
+      - updated_at
+      title: UserResponse
+    UserUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 40
+            minLength: 3
+          - type: 'null'
+          title: Name
+        email:
+          anyOf:
+          - type: string
+            format: email
+          - type: 'null'
+          title: Email
+        password:
+          anyOf:
+          - type: string
+            minLength: 8
+          - type: 'null'
+          title: Password
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      type: object
+      required:
+      - email
+      - role
+      - is_active
+      title: UserUpdate
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    WorkflowCreate:
+      properties:
+        name:
+          type: string
+          minLength: 1
+          title: Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+          default: ''
+        workflow_data:
+          additionalProperties: true
+          type: object
+          title: Workflow Data
+      type: object
+      required:
+      - name
+      title: WorkflowCreate
+    WorkflowDetail:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        is_active:
+          type: boolean
+          title: Is Active
+        workflow_data:
+          additionalProperties: true
+          type: object
+          title: Workflow Data
+        version:
+          type: integer
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - name
+      - description
+      - is_active
+      - workflow_data
+      - version
+      - created_at
+      - updated_at
+      title: WorkflowDetail
+    WorkflowListItem:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        is_active:
+          type: boolean
+          title: Is Active
+      type: object
+      required:
+      - id
+      - name
+      - is_active
+      title: WorkflowListItem
+    WorkflowUpdateName:
+      properties:
+        name:
+          type: string
+          minLength: 1
+          title: Name
+      type: object
+      required:
+      - name
+      title: WorkflowUpdateName
+    WorkflowUpdateStatus:
+      properties:
+        is_active:
+          type: boolean
+          title: Is Active
+      type: object
+      required:
+      - is_active
+      title: WorkflowUpdateStatus
