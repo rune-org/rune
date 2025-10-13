@@ -41,7 +41,7 @@ async def seed_test_user():
         await session.commit()
         await session.refresh(test_user)
 
-        print("Test user created successfully!")
+        print(f"Test user created successfully!")
         print(f"  ID: {test_user.id}")
         print(f"  Name: {test_user.name}")
         print(f"  Email: {test_user.email}")

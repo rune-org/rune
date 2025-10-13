@@ -1,0 +1,45 @@
+{
+  "nodes": [
+    {
+      "id": "trgr-2",
+      "type": "trigger",
+      "position": { "x": 97, "y": 288 },
+      "data": { "label": "TriggerName" }
+    },
+    {
+      "id": "if-2",
+      "type": "if",
+      "position": { "x": 328, "y": 274 },
+      "data": { "label": "Check" }
+    },
+    {
+      "id": "smtp-2",
+      "type": "smtp",
+      "position": { "x": 598, "y": 180 },
+      "data": { "label": "Alert" }
+    },
+    {
+      "id": "http-2",
+      "type": "http",
+      "position": { "x": 585, "y": 337 },
+      "data": { "label": "Fetch" }
+    }
+  ],
+  "edges": [
+    { "id": "e3", "source": "trgr-2", "target": "if-2", "type": "default" },
+    {
+      "id": "e4true",
+      "source": "if-2",
+      "sourceHandle": "true",
+      "target": "smtp-2",
+      "type": "default"
+    },
+    {
+      "id": "e4false",
+      "source": "if-2",
+      "sourceHandle": "false",
+      "target": "http-2",
+      "type": "default"
+    }
+  ]
+}
