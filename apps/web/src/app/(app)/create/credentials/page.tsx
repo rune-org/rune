@@ -28,7 +28,7 @@ export default function CreateCredentialsPage() {
           </EmptyMedia>
           <EmptyTitle>Secure connections are on the way</EmptyTitle>
           <EmptyDescription>
-            Soon you'll be able to store API keys and rotate secrets for
+            Soon you&apos;ll be able to store API keys and rotate secrets for
             every integration in your workspace.
           </EmptyDescription>
         </EmptyHeader>
