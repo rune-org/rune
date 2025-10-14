@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import get_settings
 from src.db.config import init_db
 from src.db.redis import close_redis
+from src.queue.rabbitmq import close_rabbitmq
 from src.auth.router import router as auth_router
 from src.workflow.router import router as workflow_router
 from src.users.router import router as users_router
@@ -20,6 +21,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown
     await close_redis()
+    await close_rabbitmq()
     print("Shutting down...")
 
 

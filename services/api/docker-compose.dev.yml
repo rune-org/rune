@@ -49,6 +49,25 @@ services:
       - rune_dev_network
     restart: unless-stopped
 
+  # ==========================================================================
+  # RabbitMQ - Development Instance (management plugin enabled)
+  # ==========================================================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rune-api-rabbitmq-dev
+    environment:
+      # Allow overriding via host env or .env when using docker-compose
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_dev_data:/var/lib/rabbitmq
+    networks:
+      - rune_dev_network
+    restart: unless-stopped
+
 # ============================================================================
 # Networks
 # ============================================================================
@@ -70,3 +89,6 @@ volumes:
   redis_dev_data:
     driver: local
     name: rune_api_redis_dev_data
+  rabbitmq_dev_data:
+    driver: local
+    name: rune_api_rabbitmq_dev_data
