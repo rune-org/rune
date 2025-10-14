@@ -20,7 +20,11 @@ class WorkflowService:
 
         Used for the `GET /workflows` endpoint.
         """
-        statement = select(Workflow).where(Workflow.created_by == user_id).order_by(Workflow.created_at.desc())
+        statement = (
+            select(Workflow)
+            .where(Workflow.created_by == user_id)
+            .order_by(Workflow.created_at.desc())
+        )
         result = await self.db.exec(statement)
         return result.all()
 
@@ -42,12 +46,19 @@ class WorkflowService:
             raise Forbidden()
         return wf
 
-    async def create(self, user_id: int, name: str, description: str, workflow_data: dict) -> Workflow:
+    async def create(
+        self, user_id: int, name: str, description: str, workflow_data: dict
+    ) -> Workflow:
         """Create and persist a new Workflow owned by `user_id`.
 
         Commits the transaction and returns the refreshed model instance.
         """
-        wf = Workflow(name=name, description=description, workflow_data=workflow_data, created_by=user_id)
+        wf = Workflow(
+            name=name,
+            description=description,
+            workflow_data=workflow_data,
+            created_by=user_id,
+        )
         self.db.add(wf)
         await self.db.commit()
         await self.db.refresh(wf)

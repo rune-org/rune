@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { ArrowUpRightIcon, Settings2 } from "lucide-react";
+import { ArrowUpRightIcon, KeyRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,31 +14,31 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
 
-export default function SettingsPage() {
+export default function CreateCredentialsPage() {
   return (
-    <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-4xl">
+    <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
       <PageHeader
-        title="Settings"
-        description="Configure workspace preferences and integrations."
+        title="Credentials"
+        description="Manage the keys and secrets your workflows need to run."
       />
       <Empty>
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <Settings2 className="h-6 w-6" aria-hidden />
+            <KeyRound className="h-6 w-6" aria-hidden />
           </EmptyMedia>
-          <EmptyTitle>Workspace settings are under construction</EmptyTitle>
+          <EmptyTitle>Secure connections are on the way</EmptyTitle>
           <EmptyDescription>
-            We&apos;re finishing the controls for managing environments,
-            integrations, and permissions.
+            Soon you&apos;ll be able to store API keys and rotate secrets for
+            every integration in your workspace.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <div className="flex flex-wrap justify-center gap-2">
-            <Button disabled title="Settings will be available soon">
-              Configure workspace
+            <Button disabled title="Credential management is coming soon">
+              Add credential
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/create/docs">Explore integration docs</Link>
+              <Link href="/create/docs">Review integration guide</Link>
             </Button>
           </div>
         </EmptyContent>
@@ -49,7 +49,7 @@ export default function SettingsPage() {
           size="sm"
         >
           <Link href="/create/docs">
-            See what&apos;s coming next{" "}
+            Understand credential security{" "}
             <ArrowUpRightIcon className="ml-1.5 h-4 w-4" aria-hidden />
           </Link>
         </Button>
