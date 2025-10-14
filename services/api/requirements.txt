@@ -6,4 +6,4 @@ asyncpg==0.30.0
 pyjwt==2.10.1
 argon2-cffi==23.1.0
 redis==6.4.0
-aio-pika==11.1.0
+aio-pika==9.5.7
