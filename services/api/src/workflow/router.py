@@ -123,22 +123,18 @@ async def run_workflow(
 ) -> ApiResponse[dict]:
     """
     Queue a workflow for execution.
-    
+
     Verifies the workflow exists and belongs to the authenticated user,
     then publishes a run message to RabbitMQ containing workflow details for the worker to process.
     """
     # Verify workflow exists and belongs to user
     wf = await workflow_service.get_for_user(workflow_id, current_user.id)
-    
+
     # Publish workflow run message to queue with complete workflow data
     await queue_service.publish_workflow_run(
-        workflow_id=wf.id, 
-        user_id=current_user.id,
-        workflow_data=wf.workflow_data
+        workflow_id=wf.id, user_id=current_user.id, workflow_data=wf.workflow_data
     )
-    
+
     return ApiResponse(
-        success=True,
-        message="Workflow run queued",
-        data={"workflow_id": wf.id}
+        success=True, message="Workflow run queued", data={"workflow_id": wf.id}
     )

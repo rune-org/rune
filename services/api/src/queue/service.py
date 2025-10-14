@@ -10,19 +10,21 @@ class WorkflowQueueService:
     def __init__(self, connection: RobustConnection):
         """
         Initialize the workflow queue service.
-        
+
         Args:
             connection: RabbitMQ connection instance
         """
         self.connection = connection
 
-    async def publish_workflow_run(self, workflow_id: int, user_id: int, workflow_data: dict) -> None:
+    async def publish_workflow_run(
+        self, workflow_id: int, user_id: int, workflow_data: dict
+    ) -> None:
         """
         Publish a workflow run message to the queue.
-        
+
         Creates a durable queue and publishes a persistent message containing
         the workflow ID, user ID, and workflow data for the worker to consume and execute.
-        
+
         Args:
             workflow_id: The ID of the workflow to run
             user_id: The ID of the user who triggered the run
@@ -30,25 +32,27 @@ class WorkflowQueueService:
         """
         # Create a channel for this operation
         channel = await self.connection.channel()
-        
+
         # Declare the queue (idempotent - safe to call multiple times)
         await channel.declare_queue(self.QUEUE_NAME, durable=True)
-        
+
         # Create message payload
-        message_body = json.dumps({
-            "workflow_id": workflow_id,
-            "user_id": user_id,
-            "workflow_data": workflow_data,
-        })
-        
+        message_body = json.dumps(
+            {
+                "workflow_id": workflow_id,
+                "user_id": user_id,
+                "workflow_data": workflow_data,
+            }
+        )
+
         # Publish the message with persistence
         await channel.default_exchange.publish(
             Message(
                 body=message_body.encode(),
-                delivery_mode=2  # Persistent message (survives broker restart)
+                delivery_mode=2,  # Persistent message (survives broker restart)
             ),
-            routing_key=self.QUEUE_NAME
+            routing_key=self.QUEUE_NAME,
         )
-        
+
         # Clean up the channel
         await channel.close()

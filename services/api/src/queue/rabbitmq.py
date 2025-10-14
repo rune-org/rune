@@ -11,12 +11,12 @@ _rabbitmq_connection: RobustConnection | None = None
 async def create_rabbitmq_connection() -> RobustConnection:
     """
     Create a new RabbitMQ connection.
-    
+
     Returns:
         RobustConnection: A robust connection that auto-reconnects on failure
     """
     settings = get_settings()
-    
+
     connection = await connect_robust(settings.rabbitmq_url)
     return connection
 
@@ -24,7 +24,7 @@ async def create_rabbitmq_connection() -> RobustConnection:
 async def get_rabbitmq_connection() -> RobustConnection:
     """
     Get or create the global RabbitMQ connection (singleton).
-    
+
     Returns:
         RobustConnection: The global connection instance
     """
@@ -39,7 +39,7 @@ async def get_rabbitmq_connection() -> RobustConnection:
 async def get_rabbitmq() -> AsyncGenerator[RobustConnection, None]:
     """
     FastAPI dependency to inject RabbitMQ connection.
-    
+
     Yields:
         RobustConnection: The active RabbitMQ connection
     """
@@ -49,7 +49,7 @@ async def get_rabbitmq() -> AsyncGenerator[RobustConnection, None]:
 async def close_rabbitmq() -> None:
     """
     Close the global RabbitMQ connection.
-    
+
     Called during application shutdown to ensure graceful cleanup.
     """
     global _rabbitmq_connection
