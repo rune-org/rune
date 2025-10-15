@@ -1,0 +1,26 @@
+{
+  "nodes": [
+    {
+      "id": "trgr-1",
+      "type": "trigger",
+      "position": { "x": 100, "y": 120 },
+      "data": { "label": "Start" }
+    },
+    {
+      "id": "http-1",
+      "type": "http",
+      "position": { "x": 340, "y": 120 },
+      "data": { "label": "Fetch" }
+    },
+    {
+      "id": "smtp-1",
+      "type": "smtp",
+      "position": { "x": 580, "y": 120 },
+      "data": { "label": "Notify" }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "trgr-1", "target": "http-1", "type": "default" },
+    { "id": "e2", "source": "http-1", "target": "smtp-1", "type": "default" }
+  ]
+}

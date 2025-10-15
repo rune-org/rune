@@ -1,18 +1,21 @@
 import { PageHeader } from "@/components/layout/PageHeader";
-import { EmptyState } from "@/components/shared/EmptyState";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Container } from "@/components/shared/Container";
+import { WorkflowsTable } from "@/components/workflows/WorkflowsTable";
 
 export default function CreateWorkflowsPage() {
   return (
     <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
       <PageHeader
-        title="Workflows"
-        description="Create and manage your workflows here."
+        title="Your Workflows"
+        actions={
+          <Button asChild>
+            <Link href="/create/app">Create Workflow</Link>
+          </Button>
+        }
       />
-      <EmptyState
-        title="No workflows to show"
-        description="Create a workflow to see it listed here."
-      />
+      <WorkflowsTable />
     </Container>
   );
 }
