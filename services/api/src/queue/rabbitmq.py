@@ -8,6 +8,16 @@ from src.core.config import get_settings
 _rabbitmq_connection: RobustConnection | None = None
 
 
+def build_rabbitmq_url(
+    host: str,
+    port: int,
+    username: str,
+    password: str,
+) -> str:
+    """Build a RabbitMQ connection URL from components."""
+    return f"amqp://{username}:{password}@{host}:{port}/"
+
+
 async def create_rabbitmq_connection() -> RobustConnection:
     """
     Create a new RabbitMQ connection.
@@ -17,7 +27,16 @@ async def create_rabbitmq_connection() -> RobustConnection:
     """
     settings = get_settings()
 
-    connection = await connect_robust(settings.rabbitmq_url)
+    rabbitmq_url = settings.rabbitmq_url
+    if not rabbitmq_url:
+        rabbitmq_url = build_rabbitmq_url(
+            host=settings.rabbitmq_host,
+            port=settings.rabbitmq_port,
+            username=settings.rabbitmq_username,
+            password=settings.rabbitmq_password,
+        )
+
+    connection = await connect_robust(rabbitmq_url)
     return connection
 
 
