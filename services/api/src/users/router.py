@@ -29,11 +29,10 @@ async def get_all_users(
     GET /users
     """
     users = await service.get_all_users()
-    items = [UserResponse.model_validate(u) for u in users]
     return ApiResponse(
         success=True,
         message="Users retrieved successfully",
-        data=items,
+        data=users,
     )
 
 
@@ -55,7 +54,7 @@ async def get_user_by_id(
     return ApiResponse(
         success=True,
         message="User retrieved successfully",
-        data=UserResponse.model_validate(user),
+        data=user,
     )
 
 
@@ -78,7 +77,7 @@ async def create_user(
     return ApiResponse(
         success=True,
         message="User created successfully",
-        data=UserResponse.model_validate(new_user),
+        data=new_user,
     )
 
 
@@ -101,7 +100,7 @@ async def update_user(
     return ApiResponse(
         success=True,
         message="User updated successfully",
-        data=UserResponse.model_validate(updated_user),
+        data=updated_user,
     )
 
 
@@ -120,3 +119,4 @@ async def delete_user(
     DELETE /users/{user_id}
     """
     await service.delete_user(user_id)
+    return

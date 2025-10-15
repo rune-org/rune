@@ -1,5 +1,3 @@
-from typing import Any, cast
-from sqlalchemy import desc
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -25,10 +23,10 @@ class WorkflowService:
         statement = (
             select(Workflow)
             .where(Workflow.created_by == user_id)
-            .order_by(desc(cast(Any, Workflow.created_at)))
+            .order_by(Workflow.created_at.desc())
         )
         result = await self.db.exec(statement)
-        return list(result.all())
+        return result.all()
 
     async def get_by_id(self, workflow_id: int) -> Workflow | None:
         """Return a Workflow by primary key or None if not found."""

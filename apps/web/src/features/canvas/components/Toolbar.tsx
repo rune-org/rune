@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
-import { Play, RotateCcw, Trash2, Save, Maximize } from "lucide-react";
+import { Play, RotateCcw, Trash2, Save, Maximize, Copy } from "lucide-react";
 
 type ToolbarProps = {
   onExecute: () => void;
   onUndo: () => void;
   onDelete: () => void;
   onSave: () => void;
+  onExport: () => void;
   onFitView?: () => void;
+  saveDisabled?: boolean; // Should be disabled globally when the workflows list page is ready.
 };
 
 export function Toolbar({
@@ -17,22 +19,27 @@ export function Toolbar({
   onUndo,
   onDelete,
   onSave,
+  onExport,
   onFitView,
+  saveDisabled = false,
 }: ToolbarProps) {
   const Btn = ({
     onClick,
     title,
     children,
+    disabled,
   }: {
     onClick: () => void;
     title: string;
     children: React.ReactNode;
+    disabled?: boolean;
   }) => (
     <button
       title={title}
       aria-label={title}
-      onClick={onClick}
-      className="inline-flex h-8 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/40 px-2.5 text-xs hover:bg-muted/60"
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      className="inline-flex h-8 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/40 px-2.5 text-xs hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {children}
     </button>
@@ -58,16 +65,17 @@ export function Toolbar({
       <Btn onClick={onDelete} title="Delete Selected">
         <Trash2 className="h-4 w-4" /> Delete
       </Btn>
-      <Btn onClick={onSave} title="Save (⌘/Ctrl+S)">
+      <Btn onClick={onSave} title="Save (disabled)" disabled={saveDisabled}>
         <Save className="h-4 w-4" /> Save
+      </Btn>
+      <Btn onClick={onExport} title="Export JSON to clipboard">
+        <Copy className="h-4 w-4" /> Export
       </Btn>
       {onFitView && (
         <Btn onClick={onFitView} title="Fit View">
           <Maximize className="h-4 w-4" /> Fit
         </Btn>
       )}
-
-      <span className="ml-2 text-xs text-muted-foreground">⌘/Ctrl+S saves</span>
     </div>
   );
 }

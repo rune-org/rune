@@ -10,6 +10,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Home,
+  Key,
   LayoutGrid,
   Play,
   Settings,
@@ -40,7 +41,7 @@ const topNav: NavItem[] = [
           variant="glyph"
           wrapperClassName={cn(
             "inline-flex h-6 w-6 items-center justify-center",
-            isActive ? "opacity-100" : "opacity-90"
+            isActive ? "opacity-100" : "opacity-90",
           )}
           className="h-6 w-6"
         />
@@ -49,6 +50,7 @@ const topNav: NavItem[] = [
   },
   { title: "Workflows", href: "/create/workflows", icon: Workflow },
   { title: "Executions", href: "/create/executions", icon: Play },
+  { title: "Credentials", href: "/create/credentials", icon: Key },
   { title: "Templates", href: "/create/templates", icon: LayoutGrid },
   { title: "Docs", href: "/create/docs", icon: BookOpen },
 ];
@@ -104,10 +106,13 @@ function NavLink({
         isExpanded ? "justify-start gap-3 px-3" : "justify-center gap-0 px-0",
         isActive
           ? "border-accent/60 bg-accent/15 text-accent"
-          : "hover:border-border/70 hover:bg-muted/40 hover:text-foreground"
+          : "hover:border-border/70 hover:bg-muted/40 hover:text-foreground",
       )}
     >
-      <span aria-hidden={true} className="flex h-5 w-5 items-center justify-center text-inherit">
+      <span
+        aria-hidden={true}
+        className="flex h-5 w-5 items-center justify-center text-inherit"
+      >
         {content}
       </span>
       <span
@@ -116,7 +121,7 @@ function NavLink({
           "pointer-events-none select-none overflow-hidden whitespace-nowrap text-sm font-medium motion-safe:transition-[margin,max-width,opacity,transform] motion-safe:duration-200 motion-safe:ease-out",
           isExpanded
             ? "ml-1.5 max-w-[12rem] translate-x-0 opacity-100"
-            : "ml-0 max-w-0 -translate-x-1 opacity-0"
+            : "ml-0 max-w-0 -translate-x-1 opacity-0",
         )}
       >
         {item.title}
@@ -158,7 +163,7 @@ export function AppSidebar() {
     <aside
       className={cn(
         "sticky top-0 hidden h-screen flex-shrink-0 flex-col overflow-visible border-r border-border/60 bg-background/95 backdrop-blur motion-safe:transition-[width] motion-safe:duration-300 motion-safe:ease-out lg:flex",
-        isExpanded ? "w-60" : "w-20"
+        isExpanded ? "w-60" : "w-20",
       )}
     >
       <div className="flex h-full flex-col justify-between py-6">
@@ -166,7 +171,7 @@ export function AppSidebar() {
           <div
             className={cn(
               "flex items-center px-2",
-              isExpanded ? "justify-between" : "justify-center"
+              isExpanded ? "justify-between" : "justify-center",
             )}
           >
             {isExpanded && (
@@ -179,7 +184,7 @@ export function AppSidebar() {
               onClick={toggleExpanded}
               className={cn(
                 "inline-flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground cursor-pointer",
-                "hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                "hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
               )}
               aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
               aria-expanded={isExpanded}
@@ -189,7 +194,9 @@ export function AppSidebar() {
               ) : (
                 <ChevronsRight className="h-5 w-5" aria-hidden={true} />
               )}
-              <span className="sr-only">{isExpanded ? "Collapse" : "Expand"}</span>
+              <span className="sr-only">
+                {isExpanded ? "Collapse" : "Expand"}
+              </span>
             </button>
           </div>
           <nav className="flex flex-col items-stretch gap-3 px-2">

@@ -21,7 +21,8 @@ class UserService:
         statement = select(User)
         result = await self.db.exec(statement)
         users = result.all()
-        return list(users)
+
+        return users
 
     async def get_user_by_id(self, user_id: int) -> User:
         """
@@ -72,10 +73,8 @@ class UserService:
         hashed_password = hash_password(user_data.password)
 
         user = User(
-            name=user_data.name,
-            email=user_data.email,
+            **user_data.model_dump(),
             hashed_password=hashed_password,
-            role=user_data.role,
         )
 
         self.db.add(user)
