@@ -1,8 +1,9 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy import func
 from src.db.models import User
 from src.core.exceptions import AlreadyExists, NotFound
-from src.users.schemas import UserCreate, UserUpdate
+from src.users.schemas import UserCreate, AdminUserUpdate, ProfileUpdate
 from src.auth.security import hash_password
 
 
@@ -10,6 +11,26 @@ from src.auth.security import hash_password
 class UserService:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def validate_email_uniqueness(self, new_email: str, current_email: str) -> str:
+        """
+        Helper to validate email uniqueness and normalize it.
+        
+        Returns:
+            Normalized (lowercase) email
+            
+        Raises:
+            AlreadyExists: If email is already taken by another user
+        """
+        normalized_email = new_email.lower()
+        
+        # Only check if email is actually changing
+        if normalized_email != current_email.lower():
+            existing_user = await self.get_user_by_email(normalized_email)
+            if existing_user:
+                raise AlreadyExists(detail=f"Email {new_email} is already taken")
+        
+        return normalized_email
 
     async def get_all_users(self) -> list[User]:
         """
@@ -46,7 +67,7 @@ class UserService:
         Returns:
             User object if found, None otherwise
         """
-        statement = select(User).where(User.email == email)
+        statement = select(User).where(func.lower(User.email) == func.lower(email))
         
         # Execute and get first result 
         result = await self.db.exec(statement)
@@ -64,8 +85,11 @@ class UserService:
         Raises:
             AlreadyExists: If email is already registered
         """
+        # Normalize email to lowercase for case-insensitive checking
+        normalized_email = user_data.email.lower()
+        
         # Check if email already exists
-        existing_user = await self.get_user_by_email(user_data.email)
+        existing_user = await self.get_user_by_email(normalized_email)
         if existing_user:
             raise AlreadyExists(detail=f"User with email {user_data.email} already exists")
         
@@ -73,20 +97,32 @@ class UserService:
 
         user = User(
             name=user_data.name,
-            email=user_data.email,
+            email=normalized_email,
             hashed_password=hashed_password,
-            role=user_data.role,
+            role=user_data.role.value,
         )
 
         self.db.add(user)
         await self.db.commit()
-        await self.db.refresh(user) # Refresh to get auto generated fields
+        await self.db.refresh(user)
         
         return user
 
-    async def update_user(self, user_id: int, user_data: UserUpdate) -> User:
+    async def delete_user(self, user_id: int) -> None:
         """
-        Update an existing user's information.
+        Delete a user from the database (permanent removal).
+            
+        Raises:
+            NotFound: If user doesn't exist
+        """
+        user = await self.get_user_by_id(user_id)
+        await self.db.delete(user)
+        await self.db.commit()
+
+    # Admin-Specific Operation
+    async def admin_update_user(self, user_id: int, user_data: AdminUserUpdate) -> User:
+        """
+        Update an existing user's information by admin.
             
         Returns:
             Updated User object
@@ -95,24 +131,18 @@ class UserService:
             NotFound: If user doesn't exist
             AlreadyExists: If new email already taken by another user
         """
-        # Get existing user
         user = await self.get_user_by_id(user_id)
-        
-        # If email is being changed, check it's not taken
-        if user_data.email and user_data.email != user.email:
-            existing_user = await self.get_user_by_email(user_data.email)
-            if existing_user:
-                raise AlreadyExists(detail=f"Email {user_data.email} is already taken")
-        
-        # Update only the fields that were provided
+
+        # Update only provided fields
         update_data = user_data.model_dump(exclude_unset=True)
         
-        # Handling for password
-        if "password" in update_data:
-            plain_password = update_data.pop("password")
-            update_data["hashed_password"] = hash_password(plain_password)
+        # Validate and normalize email if provided
+        if "email" in update_data:
+            update_data["email"] = await self.validate_email_uniqueness(
+                update_data["email"], user.email
+            )
         
-        # Apply all updates to the user object
+        # Apply updates
         for key, value in update_data.items():
             setattr(user, key, value)
         
@@ -122,18 +152,39 @@ class UserService:
         
         return user
 
-    async def delete_user(self, user_id: int) -> bool:
+    # Self-Service Operation
+    async def update_profile(self, user_id: int, profile_data: ProfileUpdate) -> User:
         """
-        Delete a user from the database (permanent removal).
-    
+        Self-service profile update.
+        
         Returns:
-            True if deletion was successful
+            Updated User object
             
         Raises:
-            NotFound: If user doesn't exist
+            AlreadyExists: If new email already taken
         """
         user = await self.get_user_by_id(user_id)
-        await self.db.delete(user)
-        await self.db.commit()
+
+        # Update only provided fields
+        update_data = profile_data.model_dump(exclude_unset=True)
         
-        return True
+        # Validate and normalize email if provided
+        if "email" in update_data:
+            update_data["email"] = await self.validate_email_uniqueness(
+                update_data["email"], user.email
+            )
+        
+        # Hash password if provided
+        if "password" in update_data:
+            plain_password = update_data.pop("password")
+            update_data["hashed_password"] = hash_password(plain_password)
+        
+        # Apply updates
+        for key, value in update_data.items():
+            setattr(user, key, value)
+        
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+        
+        return user
