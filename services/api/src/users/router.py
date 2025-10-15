@@ -6,9 +6,8 @@ from src.users.schemas import UserCreate, AdminUserUpdate, ProfileUpdate, UserRe
 from src.users.service import UserService
 
 
-
 router = APIRouter(
-    prefix="/users",  
+    prefix="/users",
     tags=["Users"],
 )
 
@@ -93,14 +92,14 @@ async def get_user_by_id(
     """
     GET /users/{user_id}
     Admin-only endpoint.
-    
+
     Note: this explicit role checking is just for the mvp but in the future,
     this better be replaced with a dependency for RBAC
     """
     # Simple role check
     if current_user.role != "admin":
         raise Forbidden(detail="Only admins can access this endpoint")
-    
+
     user = await service.get_user_by_id(user_id)
     return ApiResponse(
         success=True,
@@ -122,7 +121,7 @@ async def create_user(
     service: UserService = Depends(get_user_service),
 ) -> ApiResponse[UserResponse]:
     """
-    POST /users 
+    POST /users
     """
     new_user = await service.create_user(user_data)
     return ApiResponse(
@@ -147,14 +146,14 @@ async def update_user(
     """
     PUT /users/{user_id}
     Admin-only endpoint.
-    
+
     Note: this explicit role checking is just for the mvp but in the future,
     this better be replaced with a dependency for RBAC
     """
     # Simple role check
     if current_user.role != "admin":
         raise Forbidden(detail="Only admins can access this endpoint")
-    
+
     updated_user = await service.admin_update_user(user_id, user_data)
     return ApiResponse(
         success=True,

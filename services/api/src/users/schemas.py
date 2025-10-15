@@ -6,29 +6,30 @@ from enum import Enum
 
 class UserRole(str, Enum):
     """Current allowed user roles in the system."""
+
     USER = "user"
     ADMIN = "admin"
-
 
 
 class UserCreate(BaseModel):
     name: str = Field(..., min_length=3, max_length=40)
     email: EmailStr
     password: str = Field(..., min_length=8)
-    role: UserRole = Field(default=UserRole.USER, description="User role: 'user' or 'admin'")
+    role: UserRole = Field(
+        default=UserRole.USER, description="User role: 'user' or 'admin'"
+    )
 
-# Note: role is intentionally excluded from update schemas to prevent privilege escalation
 
 class AdminUserUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=40)
     email: Optional[EmailStr]
+    role: Optional[UserRole] = None
     is_active: Optional[bool]
 
 
 class ProfileUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=40)
     email: Optional[EmailStr] = None
-    password: Optional[str] = Field(None, min_length=8)
 
 
 class UserResponse(BaseModel):
