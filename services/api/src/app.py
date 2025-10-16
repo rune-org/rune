@@ -15,7 +15,7 @@ from src.db.redis import close_redis
 from src.queue.rabbitmq import close_rabbitmq
 from src.auth.router import router as auth_router
 from src.workflow.router import router as workflow_router
-from src.users.router import router as users_router
+from src.users.routers import admin_router, profile_router
 
 # Get settings
 settings = get_settings()
@@ -54,4 +54,5 @@ app.add_exception_handler(Exception, generic_exception_handler)
 # Include routers
 app.include_router(auth_router)
 app.include_router(workflow_router)
-app.include_router(users_router)
+app.include_router(admin_router)
+app.include_router(profile_router)
