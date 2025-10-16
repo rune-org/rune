@@ -17,7 +17,7 @@ A pluggable, message-driven workflow execution engine built on RabbitMQ. The wor
 
 ### Prerequisites
 
-- Go 1.25+
+- Go 1.24+
 - RabbitMQ (default: localhost:5672)
 - Redis (for state management)
 - Docker (optional)
