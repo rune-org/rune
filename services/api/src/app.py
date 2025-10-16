@@ -5,6 +5,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.core.config import get_settings
 from src.core.exception_handlers import (
+    generic_exception_handler,
     http_exception_handler,
     validation_exception_handler,
 )
@@ -38,7 +39,9 @@ app = FastAPI(
 # Register custom exception handlers
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
 
+# Include routers
 app.include_router(auth_router)
 app.include_router(workflow_router)
 app.include_router(users_router)

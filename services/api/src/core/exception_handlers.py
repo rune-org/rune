@@ -1,11 +1,8 @@
-"""
-Custom exception handlers to format errors consistently with ApiResponse.
-"""
-
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from src.core.responses import ApiResponse
 
 
 def http_exception_handler(request: Request, exc: StarletteHTTPException):
@@ -18,13 +15,10 @@ def http_exception_handler(request: Request, exc: StarletteHTTPException):
     And instead returns:
     {"success": false, "message": "error message", "data": null}
     """
+    api_response = ApiResponse(success=False, message=exc.detail, data=None)
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "success": False,
-            "message": exc.detail,
-            "data": None,
-        },
+        content=api_response.model_dump(),
     )
 
 
@@ -35,21 +29,34 @@ def validation_exception_handler(request: Request, exc: RequestValidationError):
     Formats Pydantic validation errors into a readable message.
     """
     # Extract validation error details
-    errors = exc.errors()
-    error_messages = []
+    error_messages: list[str] = []
+    for error in exc.errors():
+        field = ".".join(str(loc) for loc in error.get("loc", [])[1:])
+        message = error.get("msg", "Validation error")
+        error_messages.append(f"{field}: {message}")
 
-    for error in errors:
-        loc = " -> ".join(str(x) for x in error["loc"][1:])  # Skip 'body'
-        msg = error["msg"]
-        error_messages.append(f"{loc}: {msg}" if loc else msg)
-
-    message = "; ".join(error_messages) if error_messages else "Validation error"
+    api_response = ApiResponse(
+        success=False, message="Validation Error(s)", data=error_messages
+    )
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={
-            "success": False,
-            "message": message,
-            "data": {"errors": errors},
-        },
+        content=api_response.model_dump(),
+    )
+
+
+def generic_exception_handler(request: Request, exc: Exception):
+    """
+    Handle uncaught exceptions and return a generic error response.
+
+    This prevents leaking internal error details to clients.
+    """
+    api_response = ApiResponse(
+        success=False,
+        message="An internal server error occurred.",
+        data=None,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=api_response.model_dump(),
     )
