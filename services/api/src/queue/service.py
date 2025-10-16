@@ -5,16 +5,16 @@ from aio_pika import RobustConnection, Message
 class WorkflowQueueService:
     """Service for publishing workflow run messages to RabbitMQ."""
 
-    QUEUE_NAME = "workflow_runs"
-
-    def __init__(self, connection: RobustConnection):
+    def __init__(self, connection: RobustConnection, queue_name: str):
         """
         Initialize the workflow queue service.
 
         Args:
             connection: RabbitMQ connection instance
+            queue_name: Name of the queue to use
         """
         self.connection = connection
+        self.queue_name = queue_name
 
     async def publish_workflow_run(
         self, workflow_id: int, user_id: int, workflow_data: dict
@@ -34,7 +34,7 @@ class WorkflowQueueService:
         channel = await self.connection.channel()
 
         # Declare the queue (idempotent - safe to call multiple times)
-        await channel.declare_queue(self.QUEUE_NAME, durable=True)
+        await channel.declare_queue(self.queue_name, durable=True)
 
         # Create message payload
         message_body = json.dumps(
@@ -51,7 +51,7 @@ class WorkflowQueueService:
                 body=message_body.encode(),
                 delivery_mode=2,  # Persistent message (survives broker restart)
             ),
-            routing_key=self.QUEUE_NAME,
+            routing_key=self.queue_name,
         )
 
         # Clean up the channel

@@ -10,6 +10,7 @@ from src.workflow.schemas import (
 from src.workflow.service import WorkflowService
 from src.core.dependencies import DatabaseDep, get_current_user
 from src.core.responses import ApiResponse
+from src.core.config import get_settings
 from src.db.models import User
 from src.queue.rabbitmq import get_rabbitmq
 from src.queue.service import WorkflowQueueService
@@ -25,7 +26,10 @@ def get_workflow_service(db: DatabaseDep) -> WorkflowService:
 
 def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
     """Dependency to get workflow queue service instance."""
-    return WorkflowQueueService(connection=connection)
+    settings = get_settings()
+    return WorkflowQueueService(
+        connection=connection, queue_name=settings.rabbitmq_queue_name
+    )
 
 
 @router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
