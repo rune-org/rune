@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, status
-from src.core.dependencies import DatabaseDep, CurrentUser
+from src.core.dependencies import DatabaseDep, get_current_admin
 from src.core.responses import ApiResponse
-from src.users.schemas import UserCreate, UserUpdate, UserResponse
+from src.users.schemas import UserCreate, AdminUserUpdate, UserResponse
 from src.users.service import UserService
 
 
 router = APIRouter(
     prefix="/users",
     tags=["Users"],
+    dependencies=[Depends(get_current_admin)],  # All routes require admin by default
 )
 
 
@@ -22,7 +23,6 @@ def get_user_service(db: DatabaseDep) -> UserService:
     description="Retrieve a list of all users in the system",
 )
 async def get_all_users(
-    current_user: CurrentUser,
     service: UserService = Depends(get_user_service),
 ) -> ApiResponse[list[UserResponse]]:
     """
@@ -39,17 +39,18 @@ async def get_all_users(
 @router.get(
     "/{user_id}",
     response_model=ApiResponse[UserResponse],
-    summary="Get user by ID",
-    description="Retrieve a single user by their id.",
+    summary="Admin gets user by ID",
+    description="Admin retrieves a single user by their id.",
 )
 async def get_user_by_id(
     user_id: int,
-    current_user: CurrentUser,
     service: UserService = Depends(get_user_service),
 ) -> ApiResponse[UserResponse]:
     """
     GET /users/{user_id}
+    Admin-only endpoint.
     """
+
     user = await service.get_user_by_id(user_id)
     return ApiResponse(
         success=True,
@@ -67,7 +68,6 @@ async def get_user_by_id(
 )
 async def create_user(
     user_data: UserCreate,
-    current_user: CurrentUser,
     service: UserService = Depends(get_user_service),
 ) -> ApiResponse[UserResponse]:
     """
@@ -84,19 +84,20 @@ async def create_user(
 @router.put(
     "/{user_id}",
     response_model=ApiResponse[UserResponse],
-    summary="Update user",
-    description="Update an existing user's information.",
+    summary="Admin updates user",
+    description="Admin can update an existing user's information excluding its password.",
 )
 async def update_user(
     user_id: int,
-    user_data: UserUpdate,
-    current_user: CurrentUser,
+    user_data: AdminUserUpdate,
     service: UserService = Depends(get_user_service),
 ) -> ApiResponse[UserResponse]:
     """
     PUT /users/{user_id}
+    Admin-only endpoint.
     """
-    updated_user = await service.update_user(user_id, user_data)
+
+    updated_user = await service.admin_update_user(user_id, user_data)
     return ApiResponse(
         success=True,
         message="User updated successfully",
@@ -112,11 +113,9 @@ async def update_user(
 )
 async def delete_user(
     user_id: int,
-    current_user: CurrentUser,
     service: UserService = Depends(get_user_service),
 ) -> None:
     """
     DELETE /users/{user_id}
     """
     await service.delete_user(user_id)
-    return

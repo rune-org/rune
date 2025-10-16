@@ -7,7 +7,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.config import get_async_engine, init_db
-from src.db.models import User
+from src.db.models import User, UserRole
 from src.auth.security import hash_password
 
 
@@ -34,7 +34,10 @@ async def seed_test_user():
         # Create new test user
         hashed_password = hash_password("password")
         test_user = User(
-            name="test", email="test@example.com", hashed_password=hashed_password
+            email="test@example.com",
+            hashed_password=hashed_password,
+            name="Test User",
+            role=UserRole.ADMIN,
         )
 
         session.add(test_user)
@@ -45,6 +48,7 @@ async def seed_test_user():
         print(f"  ID: {test_user.id}")
         print(f"  Name: {test_user.name}")
         print(f"  Email: {test_user.email}")
+        print(f"  Role: {test_user.role}")
 
 
 if __name__ == "__main__":

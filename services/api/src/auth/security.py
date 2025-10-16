@@ -41,10 +41,12 @@ def create_access_token(user: User) -> str:
     expires_delta = timedelta(minutes=settings.access_token_expire_minutes)
     expire = now + expires_delta
 
+    #! Should INCLUDE ALL USER DATA NEEDED FOR AUTHORIZATION DECISIONS
     payload = {
         "sub": str(user.id),
         "email": user.email,
         "name": user.name,
+        "role": user.role,
         "iat": now,
         "exp": expire,
     }
@@ -75,6 +77,7 @@ def decode_access_token(token: str) -> User:
             id=int(payload["sub"]),
             email=payload["email"],
             name=payload["name"],
+            role=payload.get("role", "user"),
         )
         return user
     except jwt.ExpiredSignatureError:
