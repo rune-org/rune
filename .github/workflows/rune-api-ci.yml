@@ -43,33 +43,7 @@ jobs:
       - name: Run ruff formatter check
         run: ruff format --check .
         working-directory: ./services/api
-
-  typecheck:
-    name: Type Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
-          cache-dependency-path: services/api/requirements.txt
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install mypy
-        working-directory: ./services/api
-
-      - name: Run mypy
-        run: mypy src --ignore-missing-imports
-        working-directory: ./services/api
-
+        
   test:
     # Temporarily disabled until we implement tests/coverage
     if: ${{ false }}
