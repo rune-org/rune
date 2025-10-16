@@ -133,6 +133,7 @@ func TestConditionalNodeTruePath(t *testing.T) {
 		},
 		AccumulatedContext: map[string]interface{}{
 			"$useGoogle": true,
+			"useGoogle": true,
 		},
 	}
 
