@@ -1,232 +1,157 @@
 from datetime import datetime
-from typing import Optional, List
+from enum import Enum
+from typing import Optional
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, Integer, DateTime, String
+from sqlalchemy import Column, Enum as SQLAlchemyEnum
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy import ForeignKey
 
 
-class User(SQLModel, table=True):
+class UserRole(str, Enum):
+    """User role enumeration."""
+
+    USER = "user"
+    ADMIN = "admin"
+
+
+class WorkflowRole(str, Enum):
+    """Workflow role enumeration."""
+
+    VIEWER = "viewer"
+    EDITOR = "editor"
+    OWNER = "owner"
+
+
+class TimestampModel(SQLModel):
+    """Base model with created_at and updated_at timestamps."""
+
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(
+        default_factory=datetime.now,
+        sa_column_kwargs={"onupdate": datetime.now},
+    )
+
+
+class User(TimestampModel, table=True):
     __tablename__ = "users"
 
-    id: Optional[int] = Field(
-        default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field()
+    email: str = Field(unique=True)
+    hashed_password: str = Field(exclude=True)
+    role: UserRole = Field(
+        default=UserRole.USER,
+        sa_column=Column(SQLAlchemyEnum(UserRole, name="user_role", native_enum=True)),
     )
-    name: str
-    email: str = Field(unique=True, index=True)
-    hashed_password: str = Field(sa_column=Column(String, nullable=False), exclude=True)
-    role: str = Field(default="user")  # 'user', 'admin'
     is_active: bool = Field(default=True)
+    last_login_at: Optional[datetime] = None
 
-    # Timestamps
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(
-        default_factory=datetime.now,
-        sa_column=Column(
-            DateTime(timezone=True), default=datetime.now, onupdate=datetime.now
-        ),
-    )
-    last_login_at: Optional[datetime] = Field(
-        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
-    )
-
-    # Relationships
-    # Workflows created by this user - deleted when the user is deleted
-    workflows: List["Workflow"] = Relationship(
-        back_populates="creator",
-        sa_relationship_kwargs={
-            "foreign_keys": "[Workflow.created_by]",
-            "cascade": "all, delete-orphan",  # Delete workflows when user is deleted
-        },
-    )
-
-    # Workflow access permissions granted TO this user
-    workflow_permissions: List["WorkflowUser"] = Relationship(
+    workflow_permissions: list["WorkflowUser"] = Relationship(
         back_populates="user",
-        sa_relationship_kwargs={
-            "foreign_keys": "[WorkflowUser.user_id]",
-            "cascade": "all, delete-orphan",  # Remove permissions when user is deleted
-        },
+        cascade_delete=True,
+        sa_relationship_kwargs={"foreign_keys": "WorkflowUser.user_id"},
     )
-
-    # Permissions this user has GRANTED to others
-    granted_permissions: List["WorkflowUser"] = Relationship(
+    granted_workflows: list["WorkflowUser"] = Relationship(
         back_populates="granter",
-        sa_relationship_kwargs={"foreign_keys": "[WorkflowUser.granted_by]"},
+        sa_relationship_kwargs={"foreign_keys": "WorkflowUser.granted_by"},
     )
-
-    # Templates created by this user
-    workflow_templates: List["WorkflowTemplate"] = Relationship(
-        back_populates="creator",
-        sa_relationship_kwargs={"foreign_keys": "[WorkflowTemplate.created_by]"},
-    )
+    templates: list["WorkflowTemplate"] = Relationship(back_populates="creator")
 
 
-class Workflow(SQLModel, table=True):
+class Workflow(TimestampModel, table=True):
     __tablename__ = "workflows"
 
-    id: Optional[int] = Field(
-        default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True)
-    )
-    name: str
-    description: str = Field(default="")
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field()
+    description: str = Field(default="", description="Description of the workflow")
 
-    # JSONB workflow data
     workflow_data: dict = Field(
-        default_factory=dict, sa_column=Column(JSONB, nullable=False)
+        default_factory=dict,
+        sa_type=JSONB,
     )
 
-    is_active: bool = Field(default=True)
+    is_active: bool = Field(default=False)
     version: int = Field(default=1)
-    created_by: Optional[int] = Field(
-        default=None,
-        sa_column=Column(
-            Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-        ),
-    )
 
-    # Timestamps
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(
-        default_factory=datetime.now,
-        sa_column=Column(
-            DateTime(timezone=True), default=datetime.now, onupdate=datetime.now
-        ),
-    )
-
-    # Relationships
-    # Link back to the creator
-    creator: Optional[User] = Relationship(
-        back_populates="workflows",
-        sa_relationship_kwargs={"foreign_keys": "[Workflow.created_by]"},
-    )
-
-    # Executions of this workflow - delete all when workflow is deleted
-    executions: List["WorkflowExecution"] = Relationship(
-        back_populates="workflow",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
-    )
-
-    # User permissions for this workflow - delete all when workflow is deleted
-    workflow_users: List["WorkflowUser"] = Relationship(
-        back_populates="workflow",
-        sa_relationship_kwargs={
-            "foreign_keys": "[WorkflowUser.workflow_id]",
-            "cascade": "all, delete-orphan",
-        },
-    )
-
-
-# ! IMPORTANT: This workflow execution model is not final and will be Changed later to elastic search for better performance and scalability.
-class WorkflowExecution(SQLModel, table=True):
-    __tablename__ = "workflow_executions"
-
-    id: Optional[int] = Field(
-        default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True)
-    )
-    workflow_id: int = Field(foreign_key="workflows.id")
-    status: str = Field(
-        default="pending"
-    )  # 'pending', 'running', 'completed', 'failed'
-
-    # JSONB fields
-    status_object: dict = Field(
-        default_factory=dict, sa_column=Column(JSONB, nullable=False)
-    )
-    execution_metadata: dict = Field(
-        default_factory=dict, sa_column=Column(JSONB, nullable=False)
-    )
-
-    execution_time_ms: int = Field(default=0)
-    trigger_source: str = Field(default="manual")  # 'manual', 'scheduled', 'webhook'
-
-    # Timestamps
-    started_at: datetime = Field(default_factory=datetime.now)
-    # finished_at is nullable because execution may still be running.
-    finished_at: Optional[datetime] = Field(
-        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
-    )
-
-    # Relationships
-    workflow: Optional[Workflow] = Relationship(back_populates="executions")
+    workflow_users: list["WorkflowUser"] = Relationship(back_populates="workflow")
 
 
 class WorkflowUser(SQLModel, table=True):
+    """Junction table for workflow access permissions."""
+
     __tablename__ = "workflow_users"
 
-    id: Optional[int] = Field(
-        default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True)
+    workflow_id: int = Field(
+        foreign_key="workflows.id",
+        primary_key=True,
+        ondelete="CASCADE",
     )
-    workflow_id: int = Field(foreign_key="workflows.id", nullable=False)
-    user_id: int = Field(foreign_key="users.id", nullable=False)
-    role: str = Field(default="viewer")  # 'viewer', 'editor', 'owner'
+    user_id: int = Field(
+        foreign_key="users.id",
+        primary_key=True,
+        ondelete="CASCADE",
+    )
+    role: WorkflowRole = Field(
+        default=WorkflowRole.VIEWER,
+        sa_column=Column(
+            SQLAlchemyEnum(WorkflowRole, name="workflow_role", native_enum=True)
+        ),
+    )
     granted_by: Optional[int] = Field(
         default=None,
-        sa_column=Column(
-            Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-        ),
-    )
-
-    # Timestamps
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(
-        default_factory=datetime.now,
-        sa_column=Column(
-            DateTime(timezone=True), default=datetime.now, onupdate=datetime.now
-        ),
+        foreign_key="users.id",
+        ondelete="SET NULL",
     )
 
     # Relationships
-    # Link to the workflow this permission is for
-    workflow: Optional[Workflow] = Relationship(
-        back_populates="workflow_users",
-        sa_relationship_kwargs={"foreign_keys": "[WorkflowUser.workflow_id]"},
-    )
+    workflow: Workflow = Relationship(back_populates="workflow_users")
 
-    # Link to the user who has this permission
-    user: Optional[User] = Relationship(
+    user: User = Relationship(
         back_populates="workflow_permissions",
-        sa_relationship_kwargs={"foreign_keys": "[WorkflowUser.user_id]"},
+        sa_relationship_kwargs={"foreign_keys": "WorkflowUser.user_id"},
     )
 
-    # Link to the user who granted this permission
-    granter: Optional[User] = Relationship(
-        back_populates="granted_permissions",
-        sa_relationship_kwargs={"foreign_keys": "[WorkflowUser.granted_by]"},
+    granter: User = Relationship(
+        back_populates="granted_workflows",
+        sa_relationship_kwargs={"foreign_keys": "WorkflowUser.granted_by"},
     )
 
 
-# ! IMPORTANT: WorkflowTemplate is not final and may change significantly after the MVP, based on the Rune team's vision.
-class WorkflowTemplate(SQLModel, table=True):
+class WorkflowTemplate(TimestampModel, table=True):
+    """
+    Templates are pre-made workflows that users can use as starting points.
+    Each template is a standalone workflow configuration that can be instantiated.
+    Templates are independent from user workflows and contain their own workflow data.
+    """
+
     __tablename__ = "workflow_templates"
 
-    id: Optional[int] = Field(
-        default=None, sa_column=Column(Integer, primary_key=True, autoincrement=True)
-    )
-    name: str
-    email: str = Field(unique=True)
-    hashed_password: str = Field(exclude=True)
-    description: str = Field(default="")
-    category: str = Field(default="general")
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field()
+    description: str = Field(default="", description="Description of the template")
 
-    # JSONB field
-    template_data: dict = Field(
-        default_factory=dict, sa_column=Column(JSONB, nullable=False)
+    workflow_data: dict = Field(
+        default_factory=dict,
+        sa_type=JSONB,
+        description="The workflow configuration/structure for this template",
     )
 
-    is_public: bool = Field(default=False)
-    usage_count: int = Field(default=0)
-    created_by: int = Field(foreign_key="users.id", nullable=False)
+    category: str = Field(
+        default="general",
+        description="Template category (e.g., 'automation', 'data-processing')",
+    )
+    is_public: bool = Field(
+        default=False, description="Whether this template is publicly available"
+    )
+    usage_count: int = Field(
+        default=0, description="Number of times this template has been used"
+    )
 
-    # Timestamps
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(
-        default_factory=datetime.now,
-        sa_column=Column(
-            DateTime(timezone=True), default=datetime.now, onupdate=datetime.now
-        ),
+    created_by: Optional[int] = Field(
+        default=None,
+        foreign_key="users.id",
+        ondelete="SET NULL",
+        description="User who created this template",
     )
 
     # Relationships
-    # Link to the user who created this template
-    creator: Optional[User] = Relationship(back_populates="workflow_templates")
+    creator: Optional[User] = Relationship(back_populates="templates")
