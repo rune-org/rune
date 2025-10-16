@@ -1,14 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional
-from enum import Enum
-
-
-class UserRole(str, Enum):
-    """Current allowed user roles in the system."""
-
-    USER = "user"
-    ADMIN = "admin"
+from src.db.models import UserRole
 
 
 class UserCreate(BaseModel):
@@ -22,9 +15,9 @@ class UserCreate(BaseModel):
 
 class AdminUserUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=40)
-    email: Optional[EmailStr]
+    email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
-    is_active: Optional[bool]
+    is_active: Optional[bool] = None
 
 
 class ProfileUpdate(BaseModel):

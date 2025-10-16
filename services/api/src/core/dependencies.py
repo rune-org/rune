@@ -6,7 +6,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.auth.security import decode_access_token
 from src.core.exceptions import Unauthorized
 from src.db.config import get_db
-from src.db.models import User
+from src.db.models import User, UserRole
 from src.db.redis import get_redis
 
 
@@ -67,5 +67,15 @@ Usage:
         return workflow
 
 """
+
+
+def get_current_admin(current_user: CurrentUser) -> User:
+    if current_user.role != UserRole.ADMIN:
+        raise Unauthorized(detail="Admin privileges required")
+    return current_user
+
+
+CurrentAdmin = Annotated[User, Depends(get_current_admin)]
+
 
 RedisDep = Annotated[Redis, Depends(get_redis)]
