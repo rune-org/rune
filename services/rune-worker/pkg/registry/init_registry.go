@@ -5,6 +5,7 @@ import (
 
 	"rune-worker/pkg/nodes"
 	// Import all node packages to trigger their init() functions
+	_ "rune-worker/pkg/nodes/custom/conditional"
 	_ "rune-worker/pkg/nodes/custom/http"
 )
 
