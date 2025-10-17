@@ -47,7 +47,11 @@ class AuthService:
         await self.db.refresh(user)
 
     async def create_tokens(self, user: User) -> tuple[str, str]:
-        """Create access and refresh tokens for user."""
+        """
+        Create access and refresh tokens for user.
+        Updates the last_login_at timestamp.
+        """
+        await self.update_last_login(user)
         access_token = create_access_token(user)
         token_part = generate_refresh_token()
         refresh_token = f"{user.id}:{token_part}"
