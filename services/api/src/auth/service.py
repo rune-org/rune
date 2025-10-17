@@ -1,6 +1,7 @@
 from fastapi import Response
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from datetime import datetime, timezone
 
 from src.auth.schemas import TokenResponse
 from src.auth.security import (
@@ -37,6 +38,13 @@ class AuthService:
             return None
 
         return user
+
+    async def update_last_login(self, user: User) -> None:
+        """Update the last_login_at timestamp for a user."""
+        user.last_login_at = datetime.now(timezone.utc)
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
 
     async def create_tokens(self, user: User) -> tuple[str, str]:
         """Create access and refresh tokens for user."""

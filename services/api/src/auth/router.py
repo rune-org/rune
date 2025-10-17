@@ -41,6 +41,9 @@ async def login(
     if not user:
         raise Unauthorized(detail="Invalid credentials")
 
+    # Update last_login_at timestamp
+    await auth_service.update_last_login(user)
+
     token_response = await auth_service.create_auth_response(user)
     auth_service.set_auth_cookie(response, token_response.access_token)
 
