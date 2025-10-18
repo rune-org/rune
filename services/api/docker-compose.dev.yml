@@ -68,42 +68,6 @@ services:
       - rune_dev_network
     restart: unless-stopped
 
-  # ============================================================================
-  # TEST SERVICES
-  # ============================================================================
-  # Separate database instances for running tests in isolation
-  # Use different ports to avoid conflicts with dev services
-
-  test-postgres:
-    image: postgres:16-alpine
-    container_name: rune-api-postgres-test
-    environment:
-      POSTGRES_USER: test_user
-      POSTGRES_PASSWORD: test_password
-      POSTGRES_DB: test_rune
-    ports:
-      - "5433:5432"
-    networks:
-      - rune_dev_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U test_user -d test_rune"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  test-redis:
-    image: redis:7-alpine
-    container_name: rune-api-redis-test
-    ports:
-      - "6380:6379"
-    networks:
-      - rune_dev_network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
 # ============================================================================
 # Networks
 # ============================================================================

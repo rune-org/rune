@@ -1,117 +1,93 @@
 # API Testing Guide
 
-## Quick Start
+## How to Run Tests
 
 ```bash
-# 1. Create test environment file
-# Copy .env.test.example to .env.test and update if needed
+# One-time setup
 cp .env.test.example .env.test
+pip install -r requirements.txt
 
-# 2. Start test databases (from services/api directory)
-docker-compose -f docker-compose.dev.yml up -d test-postgres test-redis
+# Start test infrastructure
+docker-compose -f docker-compose.test.yml up -d
 
-# 3. Install test dependencies
-pip install -r requirements-test.txt
+# Run tests (from services/api directory)
+pytest                  # All tests
+pytest -v               # Verbose
+pytest test/auth/       # Specific directory
+pytest test/auth/test_auth.py::test_login_success  # Specific test
 
-# 4. Run tests (run from services/api directory where pytest.ini is)
-pytest
-
-# Run with verbose output
-pytest -v
-
-# Run specific test file
-pytest test/auth/test_auth.py
+# Stop and cleanup
+docker-compose -f docker-compose.test.yml down -v
 ```
 
----
+## Test Discovery & Naming
 
-## Test Naming & Discovery
+Pytest automatically finds tests using these rules:
 
-Pytest automatically discovers tests following these rules:
-
-### Test Directory Structure
-Mirror the `src/` structure inside `test/`:
+**Directory structure:** Mirror `src/` in `test/`
 ```
 test/
-├── conftest.py           # Shared fixtures
+├── conftest.py        # Shared fixtures
 ├── auth/
 │   ├── __init__.py
-│   └── test_auth.py      # Auth-related tests
-├── users/
-│   ├── __init__.py
-│   └── test_users.py     # User-related tests
-└── workflow/
-    ├── __init__.py
-    └── test_workflow.py  # Workflow-related tests
+│   └── test_auth.py
+└── users/
+    └── test_users.py
 ```
 
-### Naming Rules
-- **Test files:** Must start with `test_` (e.g., `test_auth.py`, `test_users.py`)
-- **Test functions:** Must start with `test_` (e.g., `test_login_success()`)
-- **Test classes (optional):** Must start with `Test` (e.g., `TestAuth`)
+**Naming:**
+- Files: `test_*.py`
+- Functions: `test_*()`
+- Classes: `Test*` (optional)
 
-**Important:** Always run `pytest` from `services/api/` directory (where `pytest.ini` is located).
+## Fixtures
 
----
+**What are fixtures?** Setup code that runs before tests. Pytest automatically passes them as function parameters.
 
-## Writing Your Own Tests
+**Available fixtures:**
 
-### Basic Pattern
+| Fixture | Description |
+|---------|-------------|
+| `client` | Unauthenticated HTTP client |
+| `authenticated_client` | HTTP client with logged-in user |
+| `admin_client` | HTTP client with logged-in admin |
+| `test_db` | Database session (auto-rollback) |
+| `test_user` | Regular user in database |
+| `test_admin` | Admin user in database |
+| `test_redis` | Redis client (auto-flushed) |
+| `test_rabbitmq` | RabbitMQ connection |
+
+**Creating your own:** Add to `test/conftest.py`
+```python
+import pytest_asyncio
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+@pytest_asyncio.fixture(scope="function")
+async def my_fixture(test_db: AsyncSession):
+    # Setup
+    data = create_test_data()
+    yield data
+    # Cleanup (optional)
+```
+
+Scopes: `function` (per test) or `session` (once for all tests)
+
+## Writing Tests
+
+**Basic pattern:**
 ```python
 import pytest
 from httpx import AsyncClient
 
 @pytest.mark.asyncio
-async def test_my_endpoint(client: AsyncClient):
-    response = await client.get("/my-endpoint")
+async def test_endpoint(client: AsyncClient):
+    response = await client.get("/endpoint")
     assert response.status_code == 200
+    assert response.json()["success"] is True
 ```
 
-### With Database Setup
-```python
-from sqlmodel.ext.asyncio.session import AsyncSession
-from src.db.models import User
+## Notes
 
-@pytest.mark.asyncio
-async def test_with_db_data(client: AsyncClient, test_db: AsyncSession):
-    # Create test data
-    user = User(email="user@test.com", name="User")
-    test_db.add(user)
-    await test_db.commit()
-    
-    # Make request
-    response = await client.get(f"/users/{user.id}")
-    assert response.status_code == 200
-```
-
-### Available Fixtures
-- **`client`** - HTTP client for API requests
-- **`test_db`** - Database session (auto-rollback after test)
-- **`test_redis`** - Redis client (auto-flushed)
-- **`test_settings`** - Test configuration
-
----
-
-## Configuration
-
-### Test Environment (`.env.test`)
-- Test Postgres: `localhost:5433`
-- Test Redis: `localhost:6380`
-
-### Database Behavior
-- Tables created once per test session
-- Each test runs in a transaction that rolls back
-- No data persists between tests
-
----
-
-## Clean Up
-
-```bash
-# Stop test databases
-docker-compose -f docker-compose.dev.yml down test-postgres test-redis
-
-# Or stop all services
-docker-compose -f docker-compose.dev.yml down
-``` 
-
+- Run from `services/api/` directory (where `pytest.ini` is)
+- Database rolls back after each test (no data persists)
+- Test services run on different ports (Postgres: 5433, Redis: 6380, RabbitMQ: 5673)
