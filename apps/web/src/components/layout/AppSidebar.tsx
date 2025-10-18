@@ -10,6 +10,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Home,
+  Key,
   LayoutGrid,
   Play,
   Settings,
@@ -49,6 +50,7 @@ const topNav: NavItem[] = [
   },
   { title: "Workflows", href: "/create/workflows", icon: Workflow },
   { title: "Executions", href: "/create/executions", icon: Play },
+  { title: "Credentials", href: "/create/credentials", icon: Key },
   { title: "Templates", href: "/create/templates", icon: LayoutGrid },
   { title: "Docs", href: "/create/docs", icon: BookOpen },
 ];
