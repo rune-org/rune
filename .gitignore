@@ -24,7 +24,9 @@
 **/.env
 **/.env.local
 **/.env.*.local
+**/.env.test
 !**/.env.example
+!**/.env.test.example
 
 # vercel
 .vercel
