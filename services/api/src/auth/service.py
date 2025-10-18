@@ -1,7 +1,6 @@
 from fastapi import Response
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from datetime import datetime, timezone
 
 from src.auth.schemas import TokenResponse
 from src.auth.security import (
