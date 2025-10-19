@@ -229,7 +229,7 @@ export default function AdminPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="p-4 border rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="destructive">Admin</Badge>
+                      <Badge variant="accent">Admin</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       Full access: manage users, integrations, workflows, and settings.
