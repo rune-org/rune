@@ -42,6 +42,14 @@ class Settings(BaseSettings):
     redis_db: int = 0
     redis_password: str | None = None
 
+    # RabbitMQ Settings
+    rabbitmq_queue_name: str = "workflow_runs"
+    rabbitmq_host: str = "localhost"
+    rabbitmq_port: int = 5672
+    rabbitmq_username: str = "guest"
+    rabbitmq_password: str = "guest"
+    rabbitmq_url: str | None = None
+
     @computed_field
     @property
     def cookie_secure(self) -> bool:

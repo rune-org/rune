@@ -10,14 +10,26 @@ from src.workflow.schemas import (
 from src.workflow.service import WorkflowService
 from src.core.dependencies import DatabaseDep, get_current_user
 from src.core.responses import ApiResponse
+from src.core.config import get_settings
 from src.db.models import User
+from src.queue.rabbitmq import get_rabbitmq
+from src.queue.service import WorkflowQueueService
 
 
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
 
 
 def get_workflow_service(db: DatabaseDep) -> WorkflowService:
+    """Dependency to get workflow service instance."""
     return WorkflowService(db=db)
+
+
+def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
+    """Dependency to get workflow queue service instance."""
+    settings = get_settings()
+    return WorkflowQueueService(
+        connection=connection, queue_name=settings.rabbitmq_queue_name
+    )
 
 
 @router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
@@ -104,3 +116,29 @@ async def delete_workflow(
     wf = await service.get_for_user(workflow_id, current_user.id)
     await service.delete(wf)
     return
+
+
+@router.post("/{workflow_id}/run", response_model=ApiResponse[dict])
+async def run_workflow(
+    workflow_id: int,
+    current_user: User = Depends(get_current_user),
+    workflow_service: WorkflowService = Depends(get_workflow_service),
+    queue_service: WorkflowQueueService = Depends(get_queue_service),
+) -> ApiResponse[dict]:
+    """
+    Queue a workflow for execution.
+
+    Verifies the workflow exists and belongs to the authenticated user,
+    then publishes a run message to RabbitMQ containing workflow details for the worker to process.
+    """
+    # Verify workflow exists and belongs to user
+    wf = await workflow_service.get_for_user(workflow_id, current_user.id)
+
+    # Publish workflow run message to queue with complete workflow data
+    await queue_service.publish_workflow_run(
+        workflow_id=wf.id, user_id=current_user.id, workflow_data=wf.workflow_data
+    )
+
+    return ApiResponse(
+        success=True, message="Workflow run queued", data={"workflow_id": wf.id}
+    )
