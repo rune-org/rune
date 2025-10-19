@@ -131,10 +131,6 @@ export default function CreateExecutionsPage() {
         {/* Left: Executions Table */}
         <div className="col-span-7">
           <div className="rounded-lg border border-slate-800 bg-slate-900/60 overflow-hidden">
-            <div className="px-6 py-4">
-              <h3 className="text-lg font-semibold text-slate-100">Executions</h3>
-            </div>
-
             <div>
               <Table className="min-w-full">
                 <TableHeader>
