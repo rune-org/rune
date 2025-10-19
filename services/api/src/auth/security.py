@@ -1,6 +1,7 @@
 import secrets
 import jwt
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, InvalidHashError
@@ -8,6 +9,9 @@ from argon2.exceptions import VerifyMismatchError, InvalidHashError
 from src.core.config import get_settings
 from src.core.exceptions import TokenExpiredError, InvalidTokenError
 from src.db.models import User
+
+if TYPE_CHECKING:
+    from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 ph = PasswordHasher(
@@ -31,20 +35,33 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def create_access_token(user: User) -> str:
+async def create_access_token(user: User, db: "AsyncSession" = None) -> str:
+    """
+    Create access token for user.
+    Updates last_login_at timestamp if db session is provided.
+    """
     settings = get_settings()
 
     if not settings.jwt_secret_key:
         raise ValueError("JWT_SECRET_KEY is not configured")
 
+    # Update last_login_at if db session is available
+    if db is not None:
+        user.last_login_at = datetime.now()
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
     now = datetime.now(timezone.utc)
     expires_delta = timedelta(minutes=settings.access_token_expire_minutes)
     expire = now + expires_delta
 
+    #! Should INCLUDE ALL USER DATA NEEDED FOR AUTHORIZATION DECISIONS
     payload = {
         "sub": str(user.id),
         "email": user.email,
         "name": user.name,
+        "role": user.role,
         "iat": now,
         "exp": expire,
     }
@@ -75,6 +92,7 @@ def decode_access_token(token: str) -> User:
             id=int(payload["sub"]),
             email=payload["email"],
             name=payload["name"],
+            role=payload.get("role", "user"),
         )
         return user
     except jwt.ExpiredSignatureError:
