@@ -1,4 +1,4 @@
-"use client";
+"use client";  // TODO: make this a server component, but move charts/table to client components
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
