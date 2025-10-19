@@ -39,8 +39,11 @@ class AuthService:
         return user
 
     async def create_tokens(self, user: User) -> tuple[str, str]:
-        """Create access and refresh tokens for user."""
-        access_token = create_access_token(user)
+        """
+        Create access and refresh tokens for user.
+        Access token creation will handle updating last_login_at.
+        """
+        access_token = await create_access_token(user, db=self.db)
         token_part = generate_refresh_token()
         refresh_token = f"{user.id}:{token_part}"
         refresh_token_hash = hash_password(token_part)
@@ -77,7 +80,10 @@ class AuthService:
         return user_id, parts[1]
 
     async def refresh_tokens(self, refresh_token: str) -> TokenResponse:
-        """Refresh access token"""
+        """
+        Refresh access token.
+        This updates the user's last_login_at timestamp when creating new access token.
+        """
         user_id, token_part = self._parse_refresh_token(refresh_token)
 
         stored_hash = await self.token_store.get_refresh_token(user_id, token_part)
@@ -88,7 +94,7 @@ class AuthService:
         if not user:
             raise InvalidTokenError(detail="User not found")
 
-        new_access_token = create_access_token(user)
+        new_access_token = await create_access_token(user, db=self.db)
 
         return TokenResponse(
             access_token=new_access_token,
