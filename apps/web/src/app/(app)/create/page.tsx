@@ -1,14 +1,13 @@
 "use client";
 
 import { Container } from "@/components/shared/Container";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { 
   ArrowRight,
   Info
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const creationOptions = [
   {
@@ -66,7 +65,7 @@ const popularWorkflows = [
     title: "RSS → Discord",
     description: "Post new blog articles into a channel.",
     fromIcon: "/icons/social/rss.svg",
-    toIcon: "/icons/social/discord.svg",
+    toIcon: "/icons/social/discord2.svg",
     fromColor: "text-orange-400",
     toColor: "text-indigo-400"
   }
@@ -82,7 +81,7 @@ export default function CreatePage() {
           Build your next workflow.
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Pick a starting point, you'll be running in minutes.
+          Pick a starting point, you&apos;ll be running in minutes.
         </p>
       </div>
 
@@ -97,10 +96,11 @@ export default function CreatePage() {
             >
               <CardHeader className="text-center pb-6">
                 <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-2xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <img 
+                  <Image 
                     src={option.icon} 
                     alt={option.title}
-                    className="h-20 w-20"
+                    width={80}
+                    height={80}
                   />
                 </div>
                 <CardTitle className="text-xl">{option.title}</CardTitle>
@@ -123,18 +123,20 @@ export default function CreatePage() {
                 <CardHeader>
                   <div className="flex items-center gap-4 mb-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/50">
-                      <img 
+                      <Image 
                         src={workflow.fromIcon} 
                         alt={`${workflow.title.split(' → ')[0]} icon`}
-                        className="h-8 w-8"
+                        width={32}
+                        height={32}
                       />
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/50">
-                      <img 
+                      <Image 
                         src={workflow.toIcon} 
                         alt={`${workflow.title.split(' → ')[1]} icon`}
-                        className="h-8 w-8"
+                        width={32}
+                        height={32}
                       />
                     </div>
                   </div>
@@ -154,7 +156,7 @@ export default function CreatePage() {
         <CardContent className="flex items-center gap-3 p-6">
           <Info className="h-5 w-5 text-muted-foreground flex-shrink-0" />
           <p className="text-sm text-muted-foreground">
-            Don't worry, you can customize all template workflows to your services.
+            Don&apos;t worry, you can customize all template workflows to your services.
           </p>
         </CardContent>
       </Card>
