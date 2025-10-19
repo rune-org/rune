@@ -14,7 +14,6 @@ import {
   LayoutGrid,
   Play,
   Settings,
-  Shield,
   User,
   Workflow,
 } from "lucide-react";
@@ -60,7 +59,6 @@ const bottomNav: NavItem[] = [
   { title: "Home", href: "/", icon: Home, exact: true },
   { title: "Settings", href: "/settings", icon: Settings },
   { title: "Profile", href: "/profile", icon: User },
-  { title: "Admin", href: "/admin", icon: Shield },
 ];
 
 function isItemActive(pathname: string, item: NavItem) {

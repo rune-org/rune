@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Settings as SettingsIcon, 
-  User, 
   Shield, 
   Bell, 
   Zap, 
@@ -76,7 +75,7 @@ export default function SettingsPage() {
 
   const handlePasswordChange = () => {
     if (newPassword !== confirmPassword) {
-      alert("Passwords don't match");
+      alert("Passwords don&apos;t match");
       return;
     }
     // Password change logic here
@@ -319,7 +318,7 @@ export default function SettingsPage() {
                 <div className="space-y-0.5">
                   <Label>Show Activity Status</Label>
                   <p className="text-sm text-muted-foreground">
-                    Let others see when you're online
+                    Let others see when you&apos;re online
                   </p>
                 </div>
                 <Button
