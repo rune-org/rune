@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 import pytest_asyncio
 from typing import AsyncGenerator
@@ -14,8 +13,6 @@ from src.core.config import Settings, get_settings
 from src.db.config import create_database_engine, get_db
 from src.db.models import User, UserRole
 from src.db.redis import get_redis
-
-
 
 
 # Override settings for tests
