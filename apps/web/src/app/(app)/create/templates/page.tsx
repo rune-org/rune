@@ -44,9 +44,9 @@ export default function TemplatesPage() {
           <Card className="transition-colors hover:border-accent/50 hover:bg-accent/10">
             <CardContent className="flex flex-col p-5">
               <div className="mb-3 flex items-center gap-5">
-                <Image src="/icons/social/gpt.png" alt="GPT" width={50} height={50} />
+                <Image src="/icons/social/gpt.svg" alt="GPT" width={50} height={50} />
                 <span className="text-2xl font-bold">→</span>
-                <Image src="/icons/social/sheets.png" alt="Sheets" width={50} height={50} />
+                <Image src="/icons/social/sheets.svg" alt="Sheets" width={50} height={50} />
               </div>
               <CardTitle className="mb-1 text-base font-semibold">GPT → Sheets</CardTitle>
               <CardDescription className="mb-4 text-sm">
@@ -65,9 +65,9 @@ export default function TemplatesPage() {
           <Card className="transition-colors hover:border-accent/50 hover:bg-accent/10">
             <CardContent className="flex flex-col p-5">
               <div className="mb-3 flex items-center gap-5">
-                <Image src="/icons/social/postgres.png" alt="Postgres" width={70} height={70} />
+                <Image src="/icons/social/postgres.svg" alt="Postgres" width={70} height={70} />
                 <span className="text-2xl font-bold">→</span>
-                <Image src="/icons/social/telegram.png" alt="Telegram" width={50} height={50} />
+                <Image src="/icons/social/telegram.svg" alt="Telegram" width={50} height={50} />
               </div>
               <CardTitle className="mb-1 text-base font-semibold">Postgres → Telegram</CardTitle>
               <CardDescription className="mb-4 text-sm">
@@ -86,9 +86,9 @@ export default function TemplatesPage() {
           <Card className="transition-colors hover:border-accent/50 hover:bg-accent/10">
             <CardContent className="flex flex-col p-5">
               <div className="mb-3 flex items-center gap-5">
-                <Image src="/icons/social/gpt.png" alt="GPT" width={50} height={50} />
+                <Image src="/icons/social/gpt.svg" alt="GPT" width={50} height={50} />
                 <span className="text-2xl font-bold">→</span>
-                <Image src="/icons/social/file-text.png" alt="Narrative" width={50} height={50} />
+                <Image src="/icons/social/file-text.svg" alt="Narrative" width={50} height={50} />
               </div>
               <CardTitle className="mb-1 text-base font-semibold">GPT → Narrative Stories</CardTitle>
               <CardDescription className="mb-4 text-sm">
@@ -109,7 +109,7 @@ export default function TemplatesPage() {
               <div className="mb-3 flex items-center gap-5">
                 <Image src="/icons/social/rss.svg" alt="RSS" width={50} height={50} />
                 <span className="text-2xl font-bold">→</span>
-                <Image src="/icons/social/discord.svg" alt="Discord" width={50} height={50} />
+                <Image src="/icons/social/discord_purple.svg" alt="Discord" width={50} height={50} />
               </div>
               <CardTitle className="mb-1 text-base font-semibold">RSS → Discord</CardTitle>
               <CardDescription className="mb-4 text-sm">
