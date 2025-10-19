@@ -16,13 +16,6 @@ from src.db.models import User, UserRole
 from src.db.redis import get_redis
 
 
-# Session-scoped event loop for session-scoped async fixtures
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 # Override settings for tests
