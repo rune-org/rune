@@ -135,7 +135,7 @@ export default function CreateExecutionsPage() {
               <h3 className="text-lg font-semibold text-slate-100">Executions</h3>
             </div>
 
-            <div className="border-t border-slate-800/60">
+            <div>
               <Table className="min-w-full">
                 <TableHeader>
                   <tr className="text-slate-400 text-sm">
