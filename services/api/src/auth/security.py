@@ -64,6 +64,8 @@ async def create_access_token(user: User, db: "AsyncSession" = None) -> str:
         "role": user.role,
         "iat": now,
         "exp": expire,
+        "created_at": user.created_at.isoformat(),
+        "updated_at": user.updated_at.isoformat(),
     }
 
     encoded_jwt = jwt.encode(
@@ -93,6 +95,8 @@ def decode_access_token(token: str) -> User:
             email=payload["email"],
             name=payload["name"],
             role=payload.get("role", "user"),
+            created_at=datetime.fromisoformat(payload["created_at"]),
+            updated_at=datetime.fromisoformat(payload["updated_at"]),
         )
         return user
     except jwt.ExpiredSignatureError:
