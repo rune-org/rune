@@ -1,7 +1,7 @@
-from sqlmodel import select
+from sqlmodel import select, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.db.models import Workflow
+from src.db.models import Workflow, WorkflowUser, WorkflowRole
 from src.core.exceptions import NotFound, Forbidden
 
 
@@ -20,9 +20,11 @@ class WorkflowService:
 
         Used for the `GET /workflows` endpoint.
         """
+        # Join the workflows to the junction table and filter by the user_id
         statement = (
             select(Workflow)
-            .where(Workflow.created_by == user_id)
+            .join(WorkflowUser)
+            .where(WorkflowUser.user_id == user_id)
             .order_by(Workflow.created_at.desc())
         )
         result = await self.db.exec(statement)
@@ -42,8 +44,16 @@ class WorkflowService:
         wf = await self.get_by_id(workflow_id)
         if not wf:
             raise NotFound(detail="Workflow not found")
-        if wf.created_by != user_id:
+
+        # Verify the user has any permission entry for the workflow.
+        stmt = select(WorkflowUser).where(
+            WorkflowUser.workflow_id == workflow_id,
+            WorkflowUser.user_id == user_id,
+        )
+        res = await self.db.exec(stmt)
+        if not res.first():
             raise Forbidden()
+
         return wf
 
     async def create(
@@ -53,14 +63,28 @@ class WorkflowService:
 
         Commits the transaction and returns the refreshed model instance.
         """
+        # Create the workflow record first, then add an OWNER entry in the workflow_users table
         wf = Workflow(
             name=name,
             description=description,
             workflow_data=workflow_data,
-            created_by=user_id,
         )
         self.db.add(wf)
+        # Flush to assign the workflow primary key without committing yet
+        await self.db.flush()
+
+        owner = WorkflowUser(
+            workflow_id=wf.id,
+            user_id=user_id,
+            role=WorkflowRole.OWNER,
+            granted_by=user_id,
+        )
+        self.db.add(owner)
+
+        # Commit both records in a single transaction
         await self.db.commit()
+
+        # This is cheaper than refreshing after each commit.
         await self.db.refresh(wf)
         return wf
 
@@ -86,6 +110,14 @@ class WorkflowService:
         return workflow
 
     async def delete(self, workflow: Workflow) -> None:
-        """Hard-delete the given Workflow and commit the change."""
+        """Hard-delete the given Workflow and commit the change.
+
+        First delete all related WorkflowUser entries, then delete the workflow itself.
+        """
+        stmt = delete(WorkflowUser).where(WorkflowUser.workflow_id == workflow.id)
+        await self.db.exec(stmt)
+        await self.db.commit()
+
+        # Now delete the workflow itself
         await self.db.delete(workflow)
         await self.db.commit()
