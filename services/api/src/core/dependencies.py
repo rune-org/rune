@@ -74,6 +74,7 @@ def get_current_admin(current_user: CurrentUser) -> User:
         raise Forbidden(detail="Admin privileges required")
     return current_user
 
+
 CurrentAdmin = Annotated[User, Depends(get_current_admin)]
 
 

@@ -8,6 +8,7 @@ from sqlmodel import select
 # AUTHENTICATION & AUTHORIZATION TESTS
 # ============================================================================
 
+
 @pytest.mark.asyncio
 async def test_users_list_requires_authentication(client):
     """GET /users/ requires authentication (401)"""
@@ -25,7 +26,10 @@ async def test_users_list_forbidden_for_non_admin(authenticated_client):
     assert resp.status_code == 403
     body = resp.json()
     assert body["success"] is False
-    assert "permission" in body.get("message", "").lower() or "admin" in body.get("message", "").lower()
+    assert (
+        "permission" in body.get("message", "").lower()
+        or "admin" in body.get("message", "").lower()
+    )
 
 
 @pytest.mark.asyncio
@@ -38,7 +42,11 @@ async def test_get_user_by_id_forbidden_for_non_admin(authenticated_client, test
 @pytest.mark.asyncio
 async def test_create_user_forbidden_for_non_admin(authenticated_client):
     """Regular user cannot create users (403)"""
-    payload = {"name": "New User", "email": "newuser@example.com", "password": "strongpass123"}
+    payload = {
+        "name": "New User",
+        "email": "newuser@example.com",
+        "password": "strongpass123",
+    }
     resp = await authenticated_client.post("/users/", json=payload)
     assert resp.status_code == 403
 
@@ -46,7 +54,9 @@ async def test_create_user_forbidden_for_non_admin(authenticated_client):
 @pytest.mark.asyncio
 async def test_update_user_forbidden_for_non_admin(authenticated_client, test_user):
     """Regular user cannot update other users (403)"""
-    resp = await authenticated_client.put(f"/users/{test_user.id}", json={"name": "Renamed"})
+    resp = await authenticated_client.put(
+        f"/users/{test_user.id}", json={"name": "Renamed"}
+    )
     assert resp.status_code == 403
 
 
@@ -61,6 +71,7 @@ async def test_delete_user_forbidden_for_non_admin(authenticated_client, test_us
 # ADMIN LIST USERS TESTS
 # ============================================================================
 
+
 @pytest.mark.asyncio
 async def test_users_list_admin_empty(admin_client, test_db):
     """GET /users/ returns empty list when no users exist (except admin)"""
@@ -71,7 +82,7 @@ async def test_users_list_admin_empty(admin_client, test_db):
     for user in users:
         await test_db.delete(user)
     await test_db.commit()
-    
+
     resp = await admin_client.get("/users/")
     assert resp.status_code == 200
     body = resp.json()
@@ -88,7 +99,7 @@ async def test_users_list_admin_multiple(admin_client, test_db, test_user):
     assert body["success"] is True
     assert isinstance(body["data"], list)
     assert len(body["data"]) > 0
-    
+
     # Verify user structure
     user_data = body["data"][0]
     assert "id" in user_data
@@ -105,7 +116,7 @@ async def test_users_list_response_structure(admin_client):
     resp = await admin_client.get("/users/")
     assert resp.status_code == 200
     body = resp.json()
-    
+
     # Verify ApiResponse structure
     assert "success" in body
     assert "message" in body
@@ -117,13 +128,14 @@ async def test_users_list_response_structure(admin_client):
 # GET USER BY ID TESTS
 # ============================================================================
 
+
 @pytest.mark.asyncio
 async def test_get_user_by_id_admin(admin_client, test_user):
     """Admin can retrieve user by ID (200)"""
     resp = await admin_client.get(f"/users/{test_user.id}")
     assert resp.status_code == 200
     body = resp.json()
-    
+
     data = body["data"]
     assert data["id"] == test_user.id
     assert data["email"] == test_user.email
@@ -138,10 +150,10 @@ async def test_get_user_by_id_admin_full_response(admin_client, test_user):
     resp = await admin_client.get(f"/users/{test_user.id}")
     assert resp.status_code == 200
     body = resp.json()
-    
+
     assert body["success"] is True
     assert "message" in body
-    
+
     data = body["data"]
     assert "created_at" in data
     assert "updated_at" in data
@@ -172,24 +184,25 @@ async def test_get_user_by_id_invalid_id_format(admin_client):
 # CREATE USER TESTS - BASIC OPERATIONS
 # ============================================================================
 
+
 @pytest.mark.asyncio
 async def test_create_user_success(admin_client, test_db):
     """Admin can create user successfully (201)"""
     payload = {
         "name": "New User",
         "email": "newuser@example.com",
-        "password": "strongpass123"
+        "password": "strongpass123",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
-    
+
     body = resp.json()
     assert body["success"] is True
     assert body["data"]["email"] == "newuser@example.com"
     assert body["data"]["name"] == "New User"
     assert body["data"]["role"] == "user"
     assert body["data"]["is_active"] is True
-    
+
     # verify persisted
     created_id = body["data"]["id"]
     persisted = await test_db.get(User, created_id)
@@ -204,13 +217,13 @@ async def test_create_user_with_admin_role(admin_client, test_db):
         "name": "New Admin",
         "email": "newadmin@example.com",
         "password": "strongpass123",
-        "role": "admin"
+        "role": "admin",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
     body = resp.json()
     assert body["data"]["role"] == "admin"
-    
+
     # Verify in DB
     created_id = body["data"]["id"]
     persisted = await test_db.get(User, created_id)
@@ -223,12 +236,12 @@ async def test_create_user_response_no_password(admin_client):
     payload = {
         "name": "New User",
         "email": "newuser@example.com",
-        "password": "strongpass123"
+        "password": "strongpass123",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
     body = resp.json()
-    
+
     # Password should NOT be in response
     assert "password" not in body["data"]
     assert "hashed_password" not in body["data"]
@@ -240,13 +253,13 @@ async def test_create_user_email_normalized(admin_client, test_db):
     payload = {
         "name": "New User",
         "email": "NewUser@EXAMPLE.COM",
-        "password": "strongpass123"
+        "password": "strongpass123",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
     body = resp.json()
     assert body["data"]["email"] == "newuser@example.com"
-    
+
     # Verify in DB
     created_id = body["data"]["id"]
     persisted = await test_db.get(User, created_id)
@@ -256,6 +269,7 @@ async def test_create_user_email_normalized(admin_client, test_db):
 # ============================================================================
 # CREATE USER TESTS - VALIDATION & ERROR HANDLING
 # ============================================================================
+
 
 @pytest.mark.asyncio
 async def test_create_user_missing_required_fields(admin_client):
@@ -267,11 +281,7 @@ async def test_create_user_missing_required_fields(admin_client):
 @pytest.mark.asyncio
 async def test_create_user_invalid_email(admin_client):
     """Invalid email format returns 422"""
-    payload = {
-        "name": "New User",
-        "email": "not-an-email",
-        "password": "strongpass123"
-    }
+    payload = {"name": "New User", "email": "not-an-email", "password": "strongpass123"}
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 422
 
@@ -279,11 +289,7 @@ async def test_create_user_invalid_email(admin_client):
 @pytest.mark.asyncio
 async def test_create_user_password_too_short(admin_client):
     """Password shorter than 8 chars returns 422"""
-    payload = {
-        "name": "New User",
-        "email": "newuser@example.com",
-        "password": "short"
-    }
+    payload = {"name": "New User", "email": "newuser@example.com", "password": "short"}
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 422
 
@@ -294,7 +300,7 @@ async def test_create_user_password_exactly_min_length(admin_client, test_db):
     payload = {
         "name": "New User",
         "email": "newuser@example.com",
-        "password": "12345678"
+        "password": "12345678",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
@@ -306,7 +312,7 @@ async def test_create_user_name_too_short(admin_client):
     payload = {
         "name": "ab",
         "email": "newuser@example.com",
-        "password": "strongpass123"
+        "password": "strongpass123",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 422
@@ -318,7 +324,7 @@ async def test_create_user_name_too_long(admin_client):
     payload = {
         "name": "a" * 41,
         "email": "newuser@example.com",
-        "password": "strongpass123"
+        "password": "strongpass123",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 422
@@ -330,7 +336,7 @@ async def test_create_user_name_exactly_min_length(admin_client, test_db):
     payload = {
         "name": "abc",
         "email": "newuser@example.com",
-        "password": "strongpass123"
+        "password": "strongpass123",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
@@ -342,7 +348,7 @@ async def test_create_user_name_exactly_max_length(admin_client, test_db):
     payload = {
         "name": "a" * 40,
         "email": "newuser@example.com",
-        "password": "strongpass123"
+        "password": "strongpass123",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
@@ -356,7 +362,7 @@ async def test_create_user_duplicate_email(admin_client, test_user):
     payload = {
         "name": "Another User",
         "email": test_user.email,
-        "password": "strongpass123"
+        "password": "strongpass123",
     }
     resp = await admin_client.post("/users/", json=payload)
     # Email uniqueness is enforced, should be 409
@@ -372,7 +378,7 @@ async def test_create_user_duplicate_email_case_insensitive(admin_client, test_u
     payload = {
         "name": "Another User",
         "email": test_user.email.upper(),
-        "password": "strongpass123"
+        "password": "strongpass123",
     }
     resp = await admin_client.post("/users/", json=payload)
     # Case-insensitive email uniqueness is enforced, should be 409
@@ -384,6 +390,7 @@ async def test_create_user_duplicate_email_case_insensitive(admin_client, test_u
 # ============================================================================
 # UPDATE USER TESTS - BASIC OPERATIONS
 # ============================================================================
+
 
 @pytest.mark.asyncio
 async def test_admin_update_user_name(admin_client, test_user, test_db):
@@ -417,9 +424,7 @@ async def test_admin_update_user_email(admin_client, test_user, test_db):
 @pytest.mark.asyncio
 async def test_admin_update_user_role(admin_client, test_user, test_db):
     """Admin can change user role"""
-    resp = await admin_client.put(
-        f"/users/{test_user.id}", json={"role": "admin"}
-    )
+    resp = await admin_client.put(f"/users/{test_user.id}", json={"role": "admin"})
     assert resp.status_code == 200
     body = resp.json()
     assert body["data"]["role"] == "admin"
@@ -432,9 +437,7 @@ async def test_admin_update_user_role(admin_client, test_user, test_db):
 @pytest.mark.asyncio
 async def test_admin_update_user_is_active(admin_client, test_user, test_db):
     """Admin can deactivate user"""
-    resp = await admin_client.put(
-        f"/users/{test_user.id}", json={"is_active": False}
-    )
+    resp = await admin_client.put(f"/users/{test_user.id}", json={"is_active": False})
     assert resp.status_code == 200
     body = resp.json()
     assert body["data"]["is_active"] is False
@@ -449,7 +452,12 @@ async def test_admin_update_user_multiple_fields(admin_client, test_user, test_d
     """Admin can update multiple fields at once"""
     resp = await admin_client.put(
         f"/users/{test_user.id}",
-        json={"name": "New Name", "email": "new@example.com", "role": "admin", "is_active": False}
+        json={
+            "name": "New Name",
+            "email": "new@example.com",
+            "role": "admin",
+            "is_active": False,
+        },
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -472,10 +480,11 @@ async def test_admin_update_user_empty_payload(admin_client, test_user):
 # UPDATE USER TESTS - VALIDATION & ERROR HANDLING
 # ============================================================================
 
+
 @pytest.mark.asyncio
 async def test_admin_update_user_not_found(admin_client):
     """Updating non-existent user returns 404"""
-    resp = await admin_client.put(f"/users/99999", json={"name": "New Name"})
+    resp = await admin_client.put("/users/99999", json={"name": "New Name"})
     assert resp.status_code == 404
     body = resp.json()
     assert body["success"] is False
@@ -486,7 +495,7 @@ async def test_admin_update_user_not_found(admin_client):
 async def test_admin_update_user_email_duplicate(admin_client, test_db):
     """Cannot update user to email already taken by another (409)"""
     ph = PasswordHasher()
-    
+
     # Create two users
     user1 = User(
         email="user1@example.com",
@@ -503,7 +512,7 @@ async def test_admin_update_user_email_duplicate(admin_client, test_db):
     test_db.add(user1)
     test_db.add(user2)
     await test_db.commit()
-    
+
     # Try to update user1's email to user2's email
     resp = await admin_client.put(
         f"/users/{user1.id}", json={"email": "user2@example.com"}
@@ -531,6 +540,7 @@ async def test_admin_update_user_validation_invalid_email(admin_client, test_use
 # DELETE USER TESTS
 # ============================================================================
 
+
 @pytest.mark.asyncio
 async def test_admin_delete_user_success(admin_client, test_db):
     """Admin can delete user (204)"""
@@ -549,7 +559,7 @@ async def test_admin_delete_user_success(admin_client, test_db):
     # Delete the user
     resp = await admin_client.delete(f"/users/{user_id}")
     assert resp.status_code == 204
-    
+
     # Verify response has no body
     assert resp.content == b"" or resp.text == ""
 

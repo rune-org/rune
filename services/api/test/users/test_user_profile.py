@@ -10,6 +10,7 @@ from src.db.models import User
 # AUTHENTICATION TESTS
 # ============================================================================
 
+
 @pytest.mark.asyncio
 async def test_get_profile_unauthenticated(client):
     """GET /profile/me should require authentication (401)"""
@@ -23,6 +24,7 @@ async def test_get_profile_unauthenticated(client):
 # RETRIEVAL TESTS
 # ============================================================================
 
+
 @pytest.mark.asyncio
 async def test_get_profile_authenticated(authenticated_client, test_user):
     """Authenticated user can fetch their own profile and response shape matches"""
@@ -31,7 +33,7 @@ async def test_get_profile_authenticated(authenticated_client, test_user):
 
     body = resp.json()
     assert body["success"] is True
-    
+
     # Validate response data structure
     data = body["data"]
     assert data["id"] == test_user.id
@@ -39,13 +41,13 @@ async def test_get_profile_authenticated(authenticated_client, test_user):
     assert data["name"] == test_user.name
     assert data["role"] == "user"
     assert data["is_active"] is True
-    
+
     # Validate timestamp fields exist and are valid ISO format
     assert "created_at" in data
     assert "updated_at" in data
     assert isinstance(data["created_at"], str)
     assert isinstance(data["updated_at"], str)
-    
+
     # last_login_at may be null for fresh user
     assert "last_login_at" in data
 
@@ -53,6 +55,7 @@ async def test_get_profile_authenticated(authenticated_client, test_user):
 # ============================================================================
 # UPDATE TESTS - SINGLE FIELD UPDATES
 # ============================================================================
+
 
 @pytest.mark.asyncio
 async def test_update_profile_name_only(authenticated_client, test_user, test_db):
@@ -64,7 +67,7 @@ async def test_update_profile_name_only(authenticated_client, test_user, test_db
     body = resp.json()
     assert body["data"]["name"] == new_name
     assert body["data"]["email"] == test_user.email  # Email unchanged
-    
+
     # Verify persisted in DB
     persisted = await test_db.get(User, test_user.id)
     assert persisted.name == new_name
@@ -80,7 +83,7 @@ async def test_update_profile_email_only(authenticated_client, test_user, test_d
     body = resp.json()
     assert body["data"]["email"] == new_email
     assert body["data"]["name"] == test_user.name  # Name unchanged
-    
+
     # Verify persisted in DB
     persisted = await test_db.get(User, test_user.id)
     assert persisted.email == new_email
@@ -100,6 +103,7 @@ async def test_update_profile_empty_payload(authenticated_client):
 # UPDATE TESTS - MULTIPLE FIELD UPDATES
 # ============================================================================
 
+
 @pytest.mark.asyncio
 async def test_update_profile_both_fields(authenticated_client, test_user, test_db):
     """PUT /profile/me can update both name and email"""
@@ -113,7 +117,7 @@ async def test_update_profile_both_fields(authenticated_client, test_user, test_
     body = resp.json()
     assert body["data"]["name"] == new_name
     assert body["data"]["email"] == new_email
-    
+
     # Verify persisted in DB
     persisted = await test_db.get(User, test_user.id)
     assert persisted.name == new_name
@@ -124,8 +128,11 @@ async def test_update_profile_both_fields(authenticated_client, test_user, test_
 # UPDATE TESTS - EMAIL HANDLING
 # ============================================================================
 
+
 @pytest.mark.asyncio
-async def test_update_profile_email_case_insensitive(authenticated_client, test_user, test_db):
+async def test_update_profile_email_case_insensitive(
+    authenticated_client, test_user, test_db
+):
     """Email should be normalized to lowercase"""
     new_email = "UPPERCASE@EXAMPLE.COM"
     resp = await authenticated_client.put("/profile/me", json={"email": new_email})
@@ -133,7 +140,7 @@ async def test_update_profile_email_case_insensitive(authenticated_client, test_
 
     body = resp.json()
     assert body["data"]["email"] == new_email.lower()
-    
+
     # Verify persisted normalized in DB
     persisted = await test_db.get(User, test_user.id)
     assert persisted.email == new_email.lower()
@@ -163,7 +170,7 @@ async def test_update_profile_email_duplicate(authenticated_client, test_db):
     )
     test_db.add(other_user)
     await test_db.commit()
-    
+
     # Try to update current user's email to other user's email
     resp = await authenticated_client.put(
         "/profile/me", json={"email": "other@example.com"}
@@ -176,7 +183,9 @@ async def test_update_profile_email_duplicate(authenticated_client, test_db):
 
 
 @pytest.mark.asyncio
-async def test_update_profile_email_duplicate_different_case(authenticated_client, test_db):
+async def test_update_profile_email_duplicate_different_case(
+    authenticated_client, test_db
+):
     """Email duplicate check comparison (different case may not be enforced)"""
     # Create another user
     ph = PasswordHasher()
@@ -188,7 +197,7 @@ async def test_update_profile_email_duplicate_different_case(authenticated_clien
     )
     test_db.add(other_user)
     await test_db.commit()
-    
+
     # Try with different case - case-insensitive check may not be enforced
     resp = await authenticated_client.put(
         "/profile/me", json={"email": "casesensitive@example.com"}
@@ -206,6 +215,7 @@ async def test_update_profile_email_duplicate_different_case(authenticated_clien
 # TIMESTAMP TESTS
 # ============================================================================
 
+
 @pytest.mark.asyncio
 async def test_update_profile_timestamps_updated(authenticated_client):
     """updated_at timestamp should change after update"""
@@ -214,21 +224,23 @@ async def test_update_profile_timestamps_updated(authenticated_client):
     initial_data = initial_resp.json()["data"]
     initial_updated_at = datetime.fromisoformat(initial_data["updated_at"])
     initial_created_at = datetime.fromisoformat(initial_data["created_at"])
-    
+
     # Small delay to potentially create a difference
     await asyncio.sleep(1)
-    
+
     # Update profile
     resp = await authenticated_client.put("/profile/me", json={"name": "New Name"})
     assert resp.status_code == 200
-    
+
     new_data = resp.json()["data"]
     new_updated_at = datetime.fromisoformat(new_data["updated_at"])
     new_created_at = datetime.fromisoformat(new_data["created_at"])
-    
+
     # Verify updated_at changed (is greater than or equal, but should be greater due to update)
-    assert new_updated_at > initial_updated_at, f"New timestamp {new_updated_at} should be > old {initial_updated_at}"
-    
+    assert new_updated_at > initial_updated_at, (
+        f"New timestamp {new_updated_at} should be > old {initial_updated_at}"
+    )
+
     # created_at should not change
     assert new_created_at == initial_created_at
 
@@ -236,6 +248,7 @@ async def test_update_profile_timestamps_updated(authenticated_client):
 # ============================================================================
 # VALIDATION TESTS - NAME
 # ============================================================================
+
 
 @pytest.mark.asyncio
 async def test_update_profile_name_too_short(authenticated_client):
@@ -273,6 +286,7 @@ async def test_update_profile_name_exactly_max_length(authenticated_client):
 # VALIDATION TESTS - EMAIL
 # ============================================================================
 
+
 @pytest.mark.asyncio
 async def test_update_profile_invalid_email_format(authenticated_client):
     """Invalid email format should return 422"""
@@ -283,6 +297,7 @@ async def test_update_profile_invalid_email_format(authenticated_client):
 # ============================================================================
 # VALIDATION TESTS - MULTIPLE ERRORS
 # ============================================================================
+
 
 @pytest.mark.asyncio
 async def test_update_profile_validation_multiple_errors(authenticated_client):
