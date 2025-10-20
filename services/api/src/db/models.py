@@ -75,7 +75,7 @@ class Workflow(TimestampModel, table=True):
     workflow_users: list["WorkflowUser"] = Relationship(back_populates="workflow")
 
 
-class WorkflowUser(SQLModel, table=True):
+class WorkflowUser(TimestampModel, table=True):
     """Junction table for workflow access permissions."""
 
     __tablename__ = "workflow_users"
