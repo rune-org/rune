@@ -4,7 +4,7 @@ from redis.asyncio import Redis
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.auth.security import decode_access_token
-from src.core.exceptions import Unauthorized
+from src.core.exceptions import Forbidden, Unauthorized
 from src.db.config import get_db
 from src.db.models import User, UserRole
 from src.db.redis import get_redis
@@ -71,7 +71,7 @@ Usage:
 
 def get_current_admin(current_user: CurrentUser) -> User:
     if current_user.role != UserRole.ADMIN:
-        raise Unauthorized(detail="Admin privileges required")
+        raise Forbidden(detail="Admin privileges required")
     return current_user
 
 
