@@ -25,7 +25,7 @@ class AuthService:
         return await self.db.get(User, user_id)
 
     async def get_user_by_email(self, email: str) -> User | None:
-        statement = select(User).where(User.email == email)
+        statement = select(User).where(User.email == email.lower())
         result = await self.db.exec(statement)
         return result.first()
 
