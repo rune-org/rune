@@ -1,7 +1,8 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from datetime import datetime
 from typing import Optional
 from src.db.models import UserRole
+from src.auth.security import validate_password_strength
 
 
 class UserCreate(BaseModel):
@@ -11,6 +12,15 @@ class UserCreate(BaseModel):
     role: UserRole = Field(
         default=UserRole.USER, description="User role: 'user' or 'admin'"
     )
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        """Validate password strength according to security requirements."""
+        is_valid, error_message = validate_password_strength(v)
+        if not is_valid:
+            raise ValueError(error_message)
+        return v
 
 
 class AdminUserUpdate(BaseModel):
