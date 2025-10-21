@@ -10,8 +10,7 @@ class TestAPIAuthentication:
     async def test_create_workflow_requires_auth(self, client):
         """Should reject unauthenticated workflow creation."""
         response = await client.post(
-            "/workflows/",
-            json={"name": "Test", "description": "", "workflow_data": {}}
+            "/workflows/", json={"name": "Test", "description": "", "workflow_data": {}}
         )
         assert response.status_code == 401
 
@@ -31,8 +30,7 @@ class TestAPIAuthentication:
     async def test_update_name_requires_auth(self, client, sample_workflow):
         """Should reject unauthenticated workflow rename."""
         response = await client.put(
-            f"/workflows/{sample_workflow.id}/name",
-            json={"name": "New Name"}
+            f"/workflows/{sample_workflow.id}/name", json={"name": "New Name"}
         )
         assert response.status_code == 401
 
@@ -40,8 +38,7 @@ class TestAPIAuthentication:
     async def test_update_status_requires_auth(self, client, sample_workflow):
         """Should reject unauthenticated status update."""
         response = await client.put(
-            f"/workflows/{sample_workflow.id}/status",
-            json={"is_active": False}
+            f"/workflows/{sample_workflow.id}/status", json={"is_active": False}
         )
         assert response.status_code == 401
 
@@ -50,7 +47,7 @@ class TestAPIAuthentication:
         """Should reject unauthenticated workflow deletion."""
         response = await client.delete(f"/workflows/{sample_workflow.id}")
         assert response.status_code == 401
-    
+
     @pytest.mark.asyncio
     async def test_run_workflow_requires_auth(self, client, sample_workflow):
         """Should reject unauthenticated workflow run."""
@@ -162,7 +159,6 @@ class TestAPIValidation:
         assert response.status_code in [201, 200]
 
 
-
 class TestAPISuccess:
     """Tests for successful API responses."""
 
@@ -227,7 +223,7 @@ class TestAPISuccess:
         )
 
         assert response.status_code == 200
-    
+
     @pytest.mark.asyncio
     async def test_run_workflow_returns_200(
         self, authenticated_client, sample_workflow
@@ -238,7 +234,7 @@ class TestAPISuccess:
         )
 
         assert response.status_code == 200
-    
+
     @pytest.mark.asyncio
     async def test_run_inactive_workflow_succeeds(
         self, authenticated_client, workflow_service, test_db, sample_workflow
@@ -246,8 +242,8 @@ class TestAPISuccess:
         """Should allow running inactive workflow when explicitly triggered by user."""
         # Set workflow to inactive
         await authenticated_client.put(
-        f"/workflows/{sample_workflow.id}/status",
-        json={"is_active": False},
+            f"/workflows/{sample_workflow.id}/status",
+            json={"is_active": False},
         )
 
         # User explicitly runs the workflow
@@ -257,7 +253,7 @@ class TestAPISuccess:
 
         # Should succeed (user explicitly requested it)
         assert response.status_code == 200
-        
+
         # Verify workflow remains inactive after run
         await test_db.refresh(sample_workflow)
         assert sample_workflow.is_active is False
@@ -298,8 +294,7 @@ class TestAPIAuthorization:
 
         # Try to update it
         response = await authenticated_client.put(
-            f"/workflows/{other_workflow.id}/name",
-            json={"name": "Hacked Name"}
+            f"/workflows/{other_workflow.id}/name", json={"name": "Hacked Name"}
         )
 
         # Should deny access
@@ -319,9 +314,7 @@ class TestAPIAuthorization:
         )
 
         # Try to delete it
-        response = await authenticated_client.delete(
-            f"/workflows/{other_workflow.id}"
-        )
+        response = await authenticated_client.delete(f"/workflows/{other_workflow.id}")
 
         # Should deny access
         assert response.status_code == 403
@@ -375,7 +368,6 @@ class TestResponseStructure:
         assert isinstance(data["workflow_data"], dict)
         assert isinstance(data["is_active"], bool)
 
-
     @pytest.mark.asyncio
     async def test_run_workflow_response_structure(
         self, authenticated_client, sample_workflow
@@ -386,12 +378,12 @@ class TestResponseStructure:
         )
 
         data = response.json()
-        
+
         # Check response has required fields
         assert "success" in data
         assert "message" in data
         assert "data" in data
-        
+
         # Check field types
         assert isinstance(data["success"], bool)
         assert isinstance(data["message"], str)

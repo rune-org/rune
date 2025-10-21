@@ -1,7 +1,6 @@
 """Edge case and boundary tests for workflow functionality."""
 
 import pytest
-from sqlmodel import select
 
 
 class TestEdgeCases:
@@ -54,7 +53,7 @@ class TestEdgeCases:
                 f"/workflows/{sample_workflow.id}"
             )
             assert response.status_code == 200
-    
+
     @pytest.mark.asyncio
     async def test_name_must_be_string(self, authenticated_client, sample_workflow):
         """Should reject non-string name."""

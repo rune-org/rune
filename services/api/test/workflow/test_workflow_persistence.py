@@ -85,6 +85,7 @@ class TestDatabasePersistence:
         assert "WF1" in names
         assert "WF2" in names
 
+
 class TestWorkflowPermissions:
     """Tests for workflow permission management."""
 
