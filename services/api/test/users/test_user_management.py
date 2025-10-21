@@ -581,3 +581,135 @@ async def test_delete_user_requires_admin(authenticated_client, test_user):
     # Try to delete another user
     resp = await authenticated_client.delete(f"/users/{test_user.id}")
     assert resp.status_code == 403
+
+
+# ============================================================================
+# EDGE CASES
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_admin_update_user_email_to_existing_case_insensitive(
+    admin_client, test_db
+):
+    """Updating a user's email to another user's email with different case should return 409"""
+    ph = PasswordHasher()
+
+    # Create two users with similar emails differing only by case
+    user_lower = User(
+        email="x@gmail.com",
+        hashed_password=ph.hash("pass12345"),
+        name="Lower",
+        role="user",
+    )
+    user_upper = User(
+        email="m@gmail.com",
+        hashed_password=ph.hash("pass12345"),
+        name="Upper",
+        role="user",
+    )
+    test_db.add(user_lower)
+    test_db.add(user_upper)
+    await test_db.commit()
+
+    # Attempt to change user_lower's email to user_upper's email but with different casing
+    resp = await admin_client.put(
+        f"/users/{user_lower.id}", json={"email": "M@gmail.com"}
+    )
+    # Should be treated as duplicate (case-insensitive) -> 409
+    assert resp.status_code == 409
+    body = resp.json()
+    assert body["success"] is False
+    assert (
+        "already" in body.get("message", "").lower()
+        or "exists" in body.get("message", "").lower()
+    )
+
+
+@pytest.mark.asyncio
+async def test_admin_update_user_email_when_user_deleted_race(admin_client, test_db):
+    """Simulate update where target user gets deleted between read and write resulting in 404 or 409 depending on implementation."""
+    ph = PasswordHasher()
+
+    # Create a user to be updated
+    victim = User(
+        email="victim@example.com",
+        hashed_password=ph.hash("pass12345"),
+        name="Victim",
+        role="user",
+    )
+    test_db.add(victim)
+    await test_db.commit()
+
+    # Delete the user directly via DB to simulate concurrent deletion
+    await test_db.delete(victim)
+    await test_db.commit()
+
+    # Now admin tries to update the deleted user
+    resp = await admin_client.put(
+        f"/users/{victim.id}", json={"email": "newvictim@example.com"}
+    )
+    # Expect 404 when the user was deleted before the update attempt
+    assert resp.status_code == 404
+    body = resp.json()
+    assert body.get("success") is False
+
+
+@pytest.mark.asyncio
+async def test_admin_update_user_email_to_same_value_different_case(
+    admin_client, test_user, test_db
+):
+    """Updating email to same value but different case should either succeed (normalized) or be treated as no-op; expect 200 and normalized email in DB."""
+    # Ensure test_user has lowercase email
+    original_email = test_user.email.lower()
+    assert test_user.email == original_email
+
+    # Attempt to change to same email with different case
+    new_email = original_email.upper()
+    resp = await admin_client.put(f"/users/{test_user.id}", json={"email": new_email})
+
+    # We expect the API to normalize emails and accept case-only changes -> 200
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["data"]["email"] == original_email
+    # Verify persisted
+    persisted = await test_db.get(User, test_user.id)
+    assert persisted.email == original_email
+
+
+@pytest.mark.asyncio
+async def test_admin_update_user_email_conflict_with_deleted_account(
+    admin_client, test_db
+):
+    """If an email exists on a soft-deleted account, creating/updating should conflict or be rejected depending on policy; assert consistent error code and message."""
+    ph = PasswordHasher()
+
+    # Create a user and simulate soft-delete by setting is_active=False
+    soft = User(
+        email="soft@example.com",
+        hashed_password=ph.hash("pass12345"),
+        name="Soft",
+        role="user",
+        is_active=False,
+    )
+    test_db.add(soft)
+    await test_db.commit()
+
+    # Create another user to be updated
+    other = User(
+        email="other@example.com",
+        hashed_password=ph.hash("pass12345"),
+        name="Other",
+        role="user",
+    )
+    test_db.add(other)
+    await test_db.commit()
+
+    # Try to update 'other' to the soft-deleted user's email
+    resp = await admin_client.put(
+        f"/users/{other.id}", json={"email": "soft@example.com"}
+    )
+    # Policy: soft-deleted emails are reserved -> updating to that email should conflict
+    assert resp.status_code == 409
+    body = resp.json()
+    assert body.get("success") is False
