@@ -12,8 +12,8 @@ class UserCreate(BaseModel):
     role: UserRole = Field(
         default=UserRole.USER, description="User role: 'user' or 'admin'"
     )
-    
-    @field_validator('password')
+
+    @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
         """Validate password strength according to security requirements."""
