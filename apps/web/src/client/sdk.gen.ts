@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateUserUsersPostData, CreateUserUsersPostErrors, CreateUserUsersPostResponses, CreateWorkflowWorkflowsPostData, CreateWorkflowWorkflowsPostErrors, CreateWorkflowWorkflowsPostResponses, DeleteUserUsersUserIdDeleteData, DeleteUserUsersUserIdDeleteErrors, DeleteUserUsersUserIdDeleteResponses, DeleteWorkflowWorkflowsWorkflowIdDeleteData, DeleteWorkflowWorkflowsWorkflowIdDeleteErrors, DeleteWorkflowWorkflowsWorkflowIdDeleteResponses, GetAllUsersUsersGetData, GetAllUsersUsersGetResponses, GetUserByIdUsersUserIdGetData, GetUserByIdUsersUserIdGetErrors, GetUserByIdUsersUserIdGetResponses, GetWorkflowWorkflowsWorkflowIdGetData, GetWorkflowWorkflowsWorkflowIdGetErrors, GetWorkflowWorkflowsWorkflowIdGetResponses, ListWorkflowsWorkflowsGetData, ListWorkflowsWorkflowsGetResponses, LoginAuthLoginPostData, LoginAuthLoginPostErrors, LoginAuthLoginPostResponses, LogoutAuthLogoutPostData, LogoutAuthLogoutPostResponses, RefreshAuthRefreshPostData, RefreshAuthRefreshPostErrors, RefreshAuthRefreshPostResponses, UpdateNameWorkflowsWorkflowIdNamePutData, UpdateNameWorkflowsWorkflowIdNamePutErrors, UpdateNameWorkflowsWorkflowIdNamePutResponses, UpdateStatusWorkflowsWorkflowIdStatusPutData, UpdateStatusWorkflowsWorkflowIdStatusPutErrors, UpdateStatusWorkflowsWorkflowIdStatusPutResponses, UpdateUserUsersUserIdPutData, UpdateUserUsersUserIdPutErrors, UpdateUserUsersUserIdPutResponses } from './types.gen';
+import type { CreateUserUsersPostData, CreateUserUsersPostErrors, CreateUserUsersPostResponses, CreateWorkflowWorkflowsPostData, CreateWorkflowWorkflowsPostErrors, CreateWorkflowWorkflowsPostResponses, DeleteUserUsersUserIdDeleteData, DeleteUserUsersUserIdDeleteErrors, DeleteUserUsersUserIdDeleteResponses, DeleteWorkflowWorkflowsWorkflowIdDeleteData, DeleteWorkflowWorkflowsWorkflowIdDeleteErrors, DeleteWorkflowWorkflowsWorkflowIdDeleteResponses, GetAllUsersUsersGetData, GetAllUsersUsersGetResponses, GetMyProfileProfileMeGetData, GetMyProfileProfileMeGetResponses, GetUserByIdUsersUserIdGetData, GetUserByIdUsersUserIdGetErrors, GetUserByIdUsersUserIdGetResponses, GetWorkflowWorkflowsWorkflowIdGetData, GetWorkflowWorkflowsWorkflowIdGetErrors, GetWorkflowWorkflowsWorkflowIdGetResponses, ListWorkflowsWorkflowsGetData, ListWorkflowsWorkflowsGetResponses, LoginAuthLoginPostData, LoginAuthLoginPostErrors, LoginAuthLoginPostResponses, LogoutAuthLogoutPostData, LogoutAuthLogoutPostResponses, RefreshAuthRefreshPostData, RefreshAuthRefreshPostErrors, RefreshAuthRefreshPostResponses, RunWorkflowWorkflowsWorkflowIdRunPostData, RunWorkflowWorkflowsWorkflowIdRunPostErrors, RunWorkflowWorkflowsWorkflowIdRunPostResponses, UpdateMyProfileProfileMePutData, UpdateMyProfileProfileMePutErrors, UpdateMyProfileProfileMePutResponses, UpdateNameWorkflowsWorkflowIdNamePutData, UpdateNameWorkflowsWorkflowIdNamePutErrors, UpdateNameWorkflowsWorkflowIdNamePutResponses, UpdateStatusWorkflowsWorkflowIdStatusPutData, UpdateStatusWorkflowsWorkflowIdStatusPutErrors, UpdateStatusWorkflowsWorkflowIdStatusPutResponses, UpdateUserUsersUserIdPutData, UpdateUserUsersUserIdPutErrors, UpdateUserUsersUserIdPutResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -20,6 +20,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 
 /**
  * User login
+ *
  * Authenticate user with email and password. Returns access and refresh tokens, and sets an HTTP-only cookie.
  */
 export const loginAuthLoginPost = <ThrowOnError extends boolean = false>(options: Options<LoginAuthLoginPostData, ThrowOnError>) => {
@@ -35,6 +36,7 @@ export const loginAuthLoginPost = <ThrowOnError extends boolean = false>(options
 
 /**
  * Refresh access token
+ *
  * Generate a new access token using a valid refresh token. The refresh token remains unchanged.
  */
 export const refreshAuthRefreshPost = <ThrowOnError extends boolean = false>(options: Options<RefreshAuthRefreshPostData, ThrowOnError>) => {
@@ -50,6 +52,7 @@ export const refreshAuthRefreshPost = <ThrowOnError extends boolean = false>(opt
 
 /**
  * User logout
+ *
  * Logout the current user by revoking their refresh token and clearing the authentication cookie.
  */
 export const logoutAuthLogoutPost = <ThrowOnError extends boolean = false>(options?: Options<LogoutAuthLogoutPostData, ThrowOnError>) => {
@@ -132,7 +135,23 @@ export const updateNameWorkflowsWorkflowIdNamePut = <ThrowOnError extends boolea
 };
 
 /**
+ * Run Workflow
+ *
+ * Queue a workflow for execution.
+ *
+ * Verifies the workflow exists and belongs to the authenticated user,
+ * then publishes a run message to RabbitMQ containing workflow details for the worker to process.
+ */
+export const runWorkflowWorkflowsWorkflowIdRunPost = <ThrowOnError extends boolean = false>(options: Options<RunWorkflowWorkflowsWorkflowIdRunPostData, ThrowOnError>) => {
+    return (options.client ?? client).post<RunWorkflowWorkflowsWorkflowIdRunPostResponses, RunWorkflowWorkflowsWorkflowIdRunPostErrors, ThrowOnError>({
+        url: '/workflows/{workflow_id}/run',
+        ...options
+    });
+};
+
+/**
  * Get all users
+ *
  * Retrieve a list of all users in the system
  */
 export const getAllUsersUsersGet = <ThrowOnError extends boolean = false>(options?: Options<GetAllUsersUsersGetData, ThrowOnError>) => {
@@ -144,6 +163,7 @@ export const getAllUsersUsersGet = <ThrowOnError extends boolean = false>(option
 
 /**
  * Create a new user
+ *
  * Create a new user account. Email must be unique.
  */
 export const createUserUsersPost = <ThrowOnError extends boolean = false>(options: Options<CreateUserUsersPostData, ThrowOnError>) => {
@@ -159,6 +179,7 @@ export const createUserUsersPost = <ThrowOnError extends boolean = false>(option
 
 /**
  * Delete user
+ *
  * Permanently delete a user from the system.
  */
 export const deleteUserUsersUserIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteUserUsersUserIdDeleteData, ThrowOnError>) => {
@@ -169,8 +190,9 @@ export const deleteUserUsersUserIdDelete = <ThrowOnError extends boolean = false
 };
 
 /**
- * Get user by ID
- * Retrieve a single user by their id.
+ * Admin gets user by ID
+ *
+ * Admin retrieves a single user by their id.
  */
 export const getUserByIdUsersUserIdGet = <ThrowOnError extends boolean = false>(options: Options<GetUserByIdUsersUserIdGetData, ThrowOnError>) => {
     return (options.client ?? client).get<GetUserByIdUsersUserIdGetResponses, GetUserByIdUsersUserIdGetErrors, ThrowOnError>({
@@ -180,12 +202,41 @@ export const getUserByIdUsersUserIdGet = <ThrowOnError extends boolean = false>(
 };
 
 /**
- * Update user
- * Update an existing user's information.
+ * Admin updates user
+ *
+ * Admin can update an existing user's information excluding its password.
  */
 export const updateUserUsersUserIdPut = <ThrowOnError extends boolean = false>(options: Options<UpdateUserUsersUserIdPutData, ThrowOnError>) => {
     return (options.client ?? client).put<UpdateUserUsersUserIdPutResponses, UpdateUserUsersUserIdPutErrors, ThrowOnError>({
         url: '/users/{user_id}',
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    });
+};
+
+/**
+ * Get my profile
+ *
+ * Retrieve the user's own profile info.
+ */
+export const getMyProfileProfileMeGet = <ThrowOnError extends boolean = false>(options?: Options<GetMyProfileProfileMeGetData, ThrowOnError>) => {
+    return (options?.client ?? client).get<GetMyProfileProfileMeGetResponses, unknown, ThrowOnError>({
+        url: '/profile/me',
+        ...options
+    });
+};
+
+/**
+ * Update my profile
+ *
+ * Update your own profile info.
+ */
+export const updateMyProfileProfileMePut = <ThrowOnError extends boolean = false>(options: Options<UpdateMyProfileProfileMePutData, ThrowOnError>) => {
+    return (options.client ?? client).put<UpdateMyProfileProfileMePutResponses, UpdateMyProfileProfileMePutErrors, ThrowOnError>({
+        url: '/profile/me',
         ...options,
         headers: {
             'Content-Type': 'application/json',
