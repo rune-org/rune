@@ -5,21 +5,43 @@ export type ClientOptions = {
 };
 
 /**
+ * AdminUserUpdate
+ */
+export type AdminUserUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Email
+     */
+    email?: string | null;
+    role?: UserRole | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean | null;
+};
+
+/**
  * ApiResponse[NoneType]
  */
 export type ApiResponseNoneType = {
     /**
      * Success
+     *
      * Whether the request was successful
      */
     success?: boolean;
     /**
      * Message
+     *
      * Human-readable message
      */
     message?: string;
     /**
      * Data
+     *
      * Response data
      */
     data: null;
@@ -31,11 +53,13 @@ export type ApiResponseNoneType = {
 export type ApiResponseTokenResponse = {
     /**
      * Success
+     *
      * Whether the request was successful
      */
     success?: boolean;
     /**
      * Message
+     *
      * Human-readable message
      */
     message?: string;
@@ -51,11 +75,13 @@ export type ApiResponseTokenResponse = {
 export type ApiResponseUserResponse = {
     /**
      * Success
+     *
      * Whether the request was successful
      */
     success?: boolean;
     /**
      * Message
+     *
      * Human-readable message
      */
     message?: string;
@@ -71,11 +97,13 @@ export type ApiResponseUserResponse = {
 export type ApiResponseWorkflowDetail = {
     /**
      * Success
+     *
      * Whether the request was successful
      */
     success?: boolean;
     /**
      * Message
+     *
      * Human-readable message
      */
     message?: string;
@@ -86,21 +114,50 @@ export type ApiResponseWorkflowDetail = {
 };
 
 /**
- * ApiResponse[list[UserResponse]]
+ * ApiResponse[dict]
  */
-export type ApiResponseListUserResponse = {
+export type ApiResponseDict = {
     /**
      * Success
+     *
      * Whether the request was successful
      */
     success?: boolean;
     /**
      * Message
+     *
      * Human-readable message
      */
     message?: string;
     /**
      * Data
+     *
+     * Response data
+     */
+    data: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * ApiResponse[list[UserResponse]]
+ */
+export type ApiResponseListUserResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
      * Response data
      */
     data: Array<UserResponse>;
@@ -112,16 +169,19 @@ export type ApiResponseListUserResponse = {
 export type ApiResponseListWorkflowListItem = {
     /**
      * Success
+     *
      * Whether the request was successful
      */
     success?: boolean;
     /**
      * Message
+     *
      * Human-readable message
      */
     message?: string;
     /**
      * Data
+     *
      * Response data
      */
     data: Array<WorkflowListItem>;
@@ -143,14 +203,30 @@ export type HttpValidationError = {
 export type LoginRequest = {
     /**
      * Email
+     *
      * User's email address
      */
     email: string;
     /**
      * Password
+     *
      * User's password
      */
     password: string;
+};
+
+/**
+ * ProfileUpdate
+ */
+export type ProfileUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Email
+     */
+    email?: string | null;
 };
 
 /**
@@ -159,6 +235,7 @@ export type LoginRequest = {
 export type RefreshRequest = {
     /**
      * Refresh Token
+     *
      * Valid refresh token
      */
     refresh_token: string;
@@ -170,21 +247,25 @@ export type RefreshRequest = {
 export type TokenResponse = {
     /**
      * Access Token
+     *
      * JWT access token
      */
     access_token: string;
     /**
      * Refresh Token
+     *
      * Refresh token for obtaining new access tokens
      */
     refresh_token: string;
     /**
      * Token Type
+     *
      * Token type, always 'bearer'
      */
     token_type?: string;
     /**
      * Expires In
+     *
      * Access token expiration time in seconds
      */
     expires_in: number;
@@ -207,9 +288,9 @@ export type UserCreate = {
      */
     password: string;
     /**
-     * Role
+     * User role: 'user' or 'admin'
      */
-    role?: string;
+    role?: UserRole;
 };
 
 /**
@@ -228,57 +309,39 @@ export type UserResponse = {
      * Email
      */
     email: string;
-    /**
-     * Role
-     */
-    role: string;
+    role: UserRole;
     /**
      * Is Active
+     *
      * Account active status
      */
     is_active: boolean;
     /**
      * Created At
+     *
      * Account creation timestamp
      */
     created_at: string;
     /**
      * Updated At
+     *
      * Last update timestamp
      */
     updated_at: string;
     /**
      * Last Login At
+     *
      * Last login timestamp
      */
     last_login_at?: string | null;
 };
 
 /**
- * UserUpdate
+ * UserRole
+ *
+ * User role enumeration.
  */
-export type UserUpdate = {
-    /**
-     * Name
-     */
-    name?: string | null;
-    /**
-     * Email
-     */
-    email: string | null;
-    /**
-     * Password
-     */
-    password?: string | null;
-    /**
-     * Role
-     */
-    role: string | null;
-    /**
-     * Is Active
-     */
-    is_active: boolean | null;
-};
+export type UserRole = 'user' | 'admin';
 
 /**
  * ValidationError
@@ -623,6 +686,36 @@ export type UpdateNameWorkflowsWorkflowIdNamePutResponses = {
 
 export type UpdateNameWorkflowsWorkflowIdNamePutResponse = UpdateNameWorkflowsWorkflowIdNamePutResponses[keyof UpdateNameWorkflowsWorkflowIdNamePutResponses];
 
+export type RunWorkflowWorkflowsWorkflowIdRunPostData = {
+    body?: never;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/run';
+};
+
+export type RunWorkflowWorkflowsWorkflowIdRunPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RunWorkflowWorkflowsWorkflowIdRunPostError = RunWorkflowWorkflowsWorkflowIdRunPostErrors[keyof RunWorkflowWorkflowsWorkflowIdRunPostErrors];
+
+export type RunWorkflowWorkflowsWorkflowIdRunPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseDict;
+};
+
+export type RunWorkflowWorkflowsWorkflowIdRunPostResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponses[keyof RunWorkflowWorkflowsWorkflowIdRunPostResponses];
+
 export type GetAllUsersUsersGetData = {
     body?: never;
     path?: never;
@@ -725,7 +818,7 @@ export type GetUserByIdUsersUserIdGetResponses = {
 export type GetUserByIdUsersUserIdGetResponse = GetUserByIdUsersUserIdGetResponses[keyof GetUserByIdUsersUserIdGetResponses];
 
 export type UpdateUserUsersUserIdPutData = {
-    body: UserUpdate;
+    body: AdminUserUpdate;
     path: {
         /**
          * User Id
@@ -753,3 +846,44 @@ export type UpdateUserUsersUserIdPutResponses = {
 };
 
 export type UpdateUserUsersUserIdPutResponse = UpdateUserUsersUserIdPutResponses[keyof UpdateUserUsersUserIdPutResponses];
+
+export type GetMyProfileProfileMeGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/profile/me';
+};
+
+export type GetMyProfileProfileMeGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseUserResponse;
+};
+
+export type GetMyProfileProfileMeGetResponse = GetMyProfileProfileMeGetResponses[keyof GetMyProfileProfileMeGetResponses];
+
+export type UpdateMyProfileProfileMePutData = {
+    body: ProfileUpdate;
+    path?: never;
+    query?: never;
+    url: '/profile/me';
+};
+
+export type UpdateMyProfileProfileMePutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateMyProfileProfileMePutError = UpdateMyProfileProfileMePutErrors[keyof UpdateMyProfileProfileMePutErrors];
+
+export type UpdateMyProfileProfileMePutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseUserResponse;
+};
+
+export type UpdateMyProfileProfileMePutResponse = UpdateMyProfileProfileMePutResponses[keyof UpdateMyProfileProfileMePutResponses];

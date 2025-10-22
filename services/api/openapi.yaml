@@ -220,6 +220,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/run:
+    post:
+      tags:
+      - Workflows
+      summary: Run Workflow
+      description: 'Queue a workflow for execution.
+
+
+        Verifies the workflow exists and belongs to the authenticated user,
+
+        then publishes a run message to RabbitMQ containing workflow details for the
+        worker to process.'
+      operationId: run_workflow_workflows__workflow_id__run_post
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_dict_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /users/:
     get:
       tags:
@@ -263,8 +296,8 @@ paths:
     get:
       tags:
       - Users
-      summary: Get user by ID
-      description: Retrieve a single user by their id.
+      summary: Admin gets user by ID
+      description: Admin retrieves a single user by their id.
       operationId: get_user_by_id_users__user_id__get
       parameters:
       - name: user_id
@@ -289,8 +322,8 @@ paths:
     put:
       tags:
       - Users
-      summary: Update user
-      description: Update an existing user's information.
+      summary: Admin updates user
+      description: Admin can update an existing user's information excluding its password.
       operationId: update_user_users__user_id__put
       parameters:
       - name: user_id
@@ -304,7 +337,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserUpdate'
+              $ref: '#/components/schemas/AdminUserUpdate'
       responses:
         '200':
           description: Successful Response
@@ -340,8 +373,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /profile/me:
+    get:
+      tags:
+      - Profile
+      summary: Get my profile
+      description: Retrieve the user's own profile info.
+      operationId: get_my_profile_profile_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_UserResponse_'
+    put:
+      tags:
+      - Profile
+      summary: Update my profile
+      description: Update your own profile info.
+      operationId: update_my_profile_profile_me_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_UserResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    AdminUserUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 40
+            minLength: 3
+          - type: 'null'
+          title: Name
+        email:
+          anyOf:
+          - type: string
+            format: email
+          - type: 'null'
+          title: Email
+        role:
+          anyOf:
+          - $ref: '#/components/schemas/UserRole'
+          - type: 'null'
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      type: object
+      title: AdminUserUpdate
     ApiResponse_NoneType_:
       properties:
         success:
@@ -419,6 +517,27 @@ components:
       required:
       - data
       title: ApiResponse[WorkflowDetail]
+    ApiResponse_dict_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[dict]
     ApiResponse_list_UserResponse__:
       properties:
         success:
@@ -489,6 +608,23 @@ components:
       - email
       - password
       title: LoginRequest
+    ProfileUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 40
+            minLength: 3
+          - type: 'null'
+          title: Name
+        email:
+          anyOf:
+          - type: string
+            format: email
+          - type: 'null'
+          title: Email
+      type: object
+      title: ProfileUpdate
     RefreshRequest:
       properties:
         refresh_token:
@@ -541,8 +677,8 @@ components:
           minLength: 8
           title: Password
         role:
-          type: string
-          title: Role
+          $ref: '#/components/schemas/UserRole'
+          description: 'User role: ''user'' or ''admin'''
           default: user
       type: object
       required:
@@ -563,8 +699,7 @@ components:
           format: email
           title: Email
         role:
-          type: string
-          title: Role
+          $ref: '#/components/schemas/UserRole'
         is_active:
           type: boolean
           title: Is Active
@@ -596,43 +731,13 @@ components:
       - created_at
       - updated_at
       title: UserResponse
-    UserUpdate:
-      properties:
-        name:
-          anyOf:
-          - type: string
-            maxLength: 40
-            minLength: 3
-          - type: 'null'
-          title: Name
-        email:
-          anyOf:
-          - type: string
-            format: email
-          - type: 'null'
-          title: Email
-        password:
-          anyOf:
-          - type: string
-            minLength: 8
-          - type: 'null'
-          title: Password
-        role:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Role
-        is_active:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Is Active
-      type: object
-      required:
-      - email
-      - role
-      - is_active
-      title: UserUpdate
+    UserRole:
+      type: string
+      enum:
+      - user
+      - admin
+      title: UserRole
+      description: User role enumeration.
     ValidationError:
       properties:
         loc:
