@@ -45,21 +45,19 @@ jobs:
         working-directory: ./services/api
         
   test:
-    # Temporarily disabled until we implement tests/coverage
-    if: ${{ false }}
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: [lint]
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17-alpine
         env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_rune
         ports:
-          - 5432:5432
+          - 5433:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -69,9 +67,22 @@ jobs:
       redis:
         image: redis:7-alpine
         ports:
-          - 6379:6379
+          - 6380:6379
         options: >-
           --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: test_user
+          RABBITMQ_DEFAULT_PASS: test_password
+        ports:
+          - 5673:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -95,11 +106,6 @@ jobs:
         working-directory: ./services/api
 
       - name: Run tests
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          JWT_SECRET_KEY: test-secret-key-for-ci
         run: pytest --cov=src --cov-report=xml --cov-report=term
         working-directory: ./services/api
 
