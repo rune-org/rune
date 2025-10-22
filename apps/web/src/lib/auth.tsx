@@ -39,7 +39,7 @@ type AuthContextValue = {
   initialize: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 const REFRESH_TOKEN_KEY = "auth:refresh_token";
 const ACCESS_EXP_KEY = "auth:access_exp"; // epoch ms when access token expires
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error: null,
   });
   const initRef = useRef(false);
-  const refreshTimeoutId = useRef<number | null>(null);
+  const refreshTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setLoading = (loading: boolean) =>
     setState((s) => ({ ...s, loading, error: null }));
@@ -230,15 +230,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     setLoading(true);
-    try {
-      await apiLogout();
-    } finally {
-      storeRefreshToken(null);
-      storeAccessExp(null);
-      clearScheduledRefresh();
-      setUser(null);
-      setLoading(false);
-    }
+    // Clear client state immediately
+    storeRefreshToken(null);
+    storeAccessExp(null);
+    clearScheduledRefresh();
+    setUser(null);
+    // Fire-and-forget server logout; do not block UI on network
+    void apiLogout().catch(() => {});
+    setLoading(false);
   }, []);
 
   const value = useMemo<AuthContextValue>(

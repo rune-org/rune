@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import type { UserResponse } from "@/client/types.gen";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,16 +29,15 @@ export default function ProfilePage() {
   const { state } = useAuth();
 
   useEffect(() => {
-    if (state.user) {
-      const role = (state.user as any).role as string | undefined;
-      const name = (state.user as any).name as string | undefined;
-      const email = (state.user as any).email as string | undefined;
+    const u = state.user as UserResponse | null;
+    if (u) {
+      const roleLabel = u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : "";
       setProfileData((prev) => ({
         ...prev,
-        name: name ?? "",
-        email: email ?? "",
-        role: role ? role[0]?.toUpperCase() + role.slice(1) : "",
-        fullName: name ?? "",
+        name: u.name ?? "",
+        email: u.email ?? "",
+        role: roleLabel,
+        fullName: u.name ?? "",
       }));
     }
   }, [state.user]);
