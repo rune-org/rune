@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from datetime import datetime
 from typing import Optional
 from src.db.models import UserRole
@@ -36,6 +36,8 @@ class ProfileUpdate(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     email: EmailStr
@@ -44,6 +46,3 @@ class UserResponse(BaseModel):
     created_at: datetime = Field(..., description="Account creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
     last_login_at: Optional[datetime] = Field(None, description="Last login timestamp")
-
-    class Config:
-        from_attributes = True  # Allows creation from SQLModel objects
