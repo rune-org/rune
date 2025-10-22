@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearScheduledRefresh = () => {
     if (refreshTimeoutId.current !== null) {
-      window.clearTimeout(refreshTimeoutId.current);
+      clearTimeout(refreshTimeoutId.current!);
       refreshTimeoutId.current = null;
     }
   };
@@ -131,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearScheduledRefresh();
       const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
       const delaySec = Math.max(payload.expires_in - leeway, 5);
-      refreshTimeoutId.current = window.setTimeout(async () => {
+      refreshTimeoutId.current = setTimeout(async () => {
         await refresh();
         await fetchProfile();
       }, delaySec * 1000);
@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearScheduledRefresh();
         const leeway = Math.max(LEEWAY_SECONDS, Math.floor(remainingSec * 0.1));
         const delaySec = Math.max(remainingSec - leeway, 5);
-        refreshTimeoutId.current = window.setTimeout(async () => {
+        refreshTimeoutId.current = setTimeout(async () => {
           await refresh();
           await fetchProfile();
         }, delaySec * 1000);
@@ -201,7 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearScheduledRefresh();
       const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
       const delaySec = Math.max(payload.expires_in - leeway, 5);
-      refreshTimeoutId.current = window.setTimeout(async () => {
+      refreshTimeoutId.current = setTimeout(async () => {
         await refresh();
         await fetchProfile();
       }, delaySec * 1000);
