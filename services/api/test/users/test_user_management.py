@@ -45,7 +45,8 @@ async def test_create_user_forbidden_for_non_admin(authenticated_client):
     payload = {
         "name": "New User",
         "email": "newuser@example.com",
-        "password": "strongpass123",
+        # meets new password rules: min 8, upper, lower, digit, special
+        "password": "StrongPass1!",
     }
     resp = await authenticated_client.post("/users/", json=payload)
     assert resp.status_code == 403
@@ -191,7 +192,7 @@ async def test_create_user_success(admin_client, test_db):
     payload = {
         "name": "New User",
         "email": "newuser@example.com",
-        "password": "strongpass123",
+        "password": "StrongPass1!",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
@@ -216,7 +217,7 @@ async def test_create_user_with_admin_role(admin_client, test_db):
     payload = {
         "name": "New Admin",
         "email": "newadmin@example.com",
-        "password": "strongpass123",
+        "password": "StrongPass1!",
         "role": "admin",
     }
     resp = await admin_client.post("/users/", json=payload)
@@ -236,7 +237,7 @@ async def test_create_user_response_no_password(admin_client):
     payload = {
         "name": "New User",
         "email": "newuser@example.com",
-        "password": "strongpass123",
+        "password": "StrongPass1!",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
@@ -253,7 +254,7 @@ async def test_create_user_email_normalized(admin_client, test_db):
     payload = {
         "name": "New User",
         "email": "NewUser@EXAMPLE.COM",
-        "password": "strongpass123",
+        "password": "Normalize1@",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
@@ -281,7 +282,7 @@ async def test_create_user_missing_required_fields(admin_client):
 @pytest.mark.asyncio
 async def test_create_user_invalid_email(admin_client):
     """Invalid email format returns 422"""
-    payload = {"name": "New User", "email": "not-an-email", "password": "strongpass123"}
+    payload = {"name": "New User", "email": "not-an-email", "password": "Invalid1!"}
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 422
 
@@ -296,14 +297,16 @@ async def test_create_user_password_too_short(admin_client):
 
 @pytest.mark.asyncio
 async def test_create_user_password_exactly_min_length(admin_client, test_db):
-    """Password with exactly 8 chars should succeed"""
+    """Password with exactly 8 chars but lacking complexity should be rejected
+    New validation requires upper/lower/digit/special in addition to min length.
+    """
     payload = {
         "name": "New User",
         "email": "newuser@example.com",
         "password": "12345678",
     }
     resp = await admin_client.post("/users/", json=payload)
-    assert resp.status_code == 201
+    assert resp.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -312,7 +315,7 @@ async def test_create_user_name_too_short(admin_client):
     payload = {
         "name": "ab",
         "email": "newuser@example.com",
-        "password": "strongpass123",
+        "password": "StrongPass1!",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 422
@@ -324,7 +327,7 @@ async def test_create_user_name_too_long(admin_client):
     payload = {
         "name": "a" * 41,
         "email": "newuser@example.com",
-        "password": "strongpass123",
+        "password": "StrongPass1!",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 422
@@ -336,7 +339,7 @@ async def test_create_user_name_exactly_min_length(admin_client, test_db):
     payload = {
         "name": "abc",
         "email": "newuser@example.com",
-        "password": "strongpass123",
+        "password": "StrongPass1!",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
@@ -348,7 +351,7 @@ async def test_create_user_name_exactly_max_length(admin_client, test_db):
     payload = {
         "name": "a" * 40,
         "email": "newuser@example.com",
-        "password": "strongpass123",
+        "password": "StrongPass1!",
     }
     resp = await admin_client.post("/users/", json=payload)
     assert resp.status_code == 201
@@ -362,7 +365,7 @@ async def test_create_user_duplicate_email(admin_client, test_user):
     payload = {
         "name": "Another User",
         "email": test_user.email,
-        "password": "strongpass123",
+        "password": "DupEmail1!",
     }
     resp = await admin_client.post("/users/", json=payload)
     # Email uniqueness is enforced, should be 409
@@ -378,13 +381,32 @@ async def test_create_user_duplicate_email_case_insensitive(admin_client, test_u
     payload = {
         "name": "Another User",
         "email": test_user.email.upper(),
-        "password": "strongpass123",
+        "password": "DupEmail1!",
     }
     resp = await admin_client.post("/users/", json=payload)
     # Case-insensitive email uniqueness is enforced, should be 409
     assert resp.status_code == 409
     body = resp.json()
     assert body["success"] is False
+
+
+@pytest.mark.asyncio
+async def test_create_user_password_complexity_requirements(admin_client):
+    """Passwords must include upper, lower, digit and special chars"""
+    base = {"name": "Complex User", "email": "complex+1@example.com"}
+
+    cases = [
+        ("alllower1!", 422),  # missing uppercase
+        ("ALLUPPER1!", 422),  # missing lowercase
+        ("NoDigits!!", 422),  # missing digit
+        ("NoSpecial1", 422),  # missing special
+        ("Good1Pass!", 201),  # meets all requirements
+    ]
+
+    for i, (pwd, expected) in enumerate(cases):
+        payload = {**base, "email": f"complex+{i}@example.com", "password": pwd}
+        resp = await admin_client.post("/users/", json=payload)
+        assert resp.status_code == expected
 
 
 # ============================================================================
