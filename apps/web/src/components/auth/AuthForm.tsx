@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/toast";
+import { useAuth } from "@/lib/auth";
 
 const signUpSchema = z.object({
   name: z
@@ -24,6 +25,7 @@ type SignUpForm = z.infer<typeof signUpSchema>;
 
 export function AuthForm() {
   const [isPending, startTransition] = useTransition();
+  const { state, signUp } = useAuth();
 
   const form = useForm<SignUpForm>({
     resolver: zodResolver(signUpSchema),
@@ -36,10 +38,16 @@ export function AuthForm() {
 
   function onSubmit(values: SignUpForm) {
     startTransition(() => {
-      setTimeout(() => {
-        toast.success(`Welcome to Rune, ${values.name}!`);
-        form.reset();
-      }, 800);
+      signUp(values.name, values.email, values.password)
+        .then((ok) => {
+          if (ok) {
+            toast.success(`Welcome to Rune, ${values.name}!`);
+            form.reset();
+          }
+        })
+        .catch(() => {
+          // error handled via state.error below
+        });
     });
   }
 
@@ -93,7 +101,16 @@ export function AuthForm() {
           </p>
         ) : null}
       </div>
-      <Button type="submit" className="w-full" disabled={isPending}>
+      {state.error ? (
+        <p className="text-xs text-destructive" role="alert">
+          {state.error}
+        </p>
+      ) : null}
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={isPending || state.loading}
+      >
         {isPending ? "Creating account..." : "Create account"}
       </Button>
       <Separator className="my-4" />
