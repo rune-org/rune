@@ -12,8 +12,9 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // If provider is missing, send a clear message rather than crash
     if (!ctx) {
-      // eslint-disable-next-line no-console
-      console.error("RequireAuth: AuthProvider is not mounted. Wrap the app in <ClientProviders>.");
+      console.error(
+        "RequireAuth: AuthProvider is not mounted. Wrap the app in <ClientProviders>.",
+      );
       router.replace("/sign-in");
       return;
     }

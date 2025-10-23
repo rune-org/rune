@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { AuthCard } from "@/components/auth/AuthCard";
 import { SignInForm } from "@/components/auth/SignInForm";
@@ -22,7 +23,13 @@ export default function SignInPage() {
           </span>
         }
       >
-        <SignInForm />
+        <Suspense
+          fallback={
+            <div className="text-sm text-muted-foreground">Loading form…</div>
+          }
+        >
+          <SignInForm />
+        </Suspense>
       </AuthCard>
     </div>
   );
