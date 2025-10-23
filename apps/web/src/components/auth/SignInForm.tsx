@@ -20,10 +20,9 @@ export function SignInForm() {
     const ok = await login(values.email, values.password);
     if (ok) {
       const redirectParam = searchParams.get("redirect");
-      const allowed = ["/create", "/create/app", "/profile", "/settings", "/admin"];
-      const target = redirectParam && redirectParam.startsWith("/") && allowed.some((p) => redirectParam.startsWith(p))
-        ? redirectParam
-        : "/create";
+      const allowed = ["/create", "/create/app", "/profile", "/settings", "/admin"] as const;
+      const isAllowed = (p: string | null): p is (typeof allowed)[number] => !!p && allowed.includes(p as (typeof allowed)[number]);
+      const target = isAllowed(redirectParam) ? redirectParam : "/create";
       router.push(target);
     }
   }
