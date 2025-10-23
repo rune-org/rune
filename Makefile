@@ -124,7 +124,7 @@ web-lint:
 
 web-format:
 	@echo "Formatting frontend with prettier..."
-	cd apps/web && pnpm exec prettier --write .
+	cd apps/web && pnpm dlx prettier --write .
 
 api-lint:
 	@echo "Linting API with ruff..."

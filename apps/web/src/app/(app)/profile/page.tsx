@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth";
+import type { UserResponse } from "@/client/types.gen";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,16 +10,37 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function ProfilePage() {
   const [profileData, setProfileData] = useState({
-    name: "Shehab Mahmoud",
-    email: "shehab@rune.com", 
-    role: "Admin",
-    fullName: "Shehab Mahmoud",
-    timezone: "UTC-8"
+    name: "",
+    email: "",
+    role: "",
+    fullName: "",
+    timezone: "UTC-8",
   });
+  const { state } = useAuth();
+
+  useEffect(() => {
+    const u = state.user as UserResponse | null;
+    if (u) {
+      const roleLabel = u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : "";
+      setProfileData((prev) => ({
+        ...prev,
+        name: u.name ?? "",
+        email: u.email ?? "",
+        role: roleLabel,
+        fullName: u.name ?? "",
+      }));
+    }
+  }, [state.user]);
 
   const handleSaveChanges = () => {
     console.log("Saving profile changes...");
@@ -25,10 +48,7 @@ export default function ProfilePage() {
 
   return (
     <Container className="flex flex-col gap-6 py-12" widthClassName="max-w-2xl">
-      <PageHeader
-        title="Profile"
-        description=""
-      />
+      <PageHeader title="Profile" description="" />
 
       <div className="space-y-6">
         {/* Profile Section */}
@@ -44,9 +64,11 @@ export default function ProfilePage() {
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-1">
-                <h3 className="font-semibold text-lg">{profileData.name}</h3>
-                <p className="text-sm text-muted-foreground">{profileData.email}</p>
-                <p className="text-sm">Role: {profileData.role}</p>
+                <h3 className="font-semibold text-lg">{profileData.name || "—"}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {profileData.email || "—"}
+                </p>
+                <p className="text-sm">Role: {profileData.role || "—"}</p>
               </div>
             </div>
           </CardContent>
@@ -63,13 +85,20 @@ export default function ProfilePage() {
               <Input
                 id="fullName"
                 value={profileData.fullName}
-                onChange={(e) => setProfileData({...profileData, fullName: e.target.value})}
+                onChange={(e) =>
+                  setProfileData({ ...profileData, fullName: e.target.value })
+                }
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="timezone">Timezone</Label>
-              <Select value={profileData.timezone} onValueChange={(value) => setProfileData({...profileData, timezone: value})}>
+              <Select
+                value={profileData.timezone}
+                onValueChange={(value) =>
+                  setProfileData({ ...profileData, timezone: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -77,8 +106,12 @@ export default function ProfilePage() {
                   <SelectItem value="UTC-8">Pacific Time (UTC-8)</SelectItem>
                   <SelectItem value="UTC-5">Eastern Time (UTC-5)</SelectItem>
                   <SelectItem value="UTC+0">UTC (GMT)</SelectItem>
-                  <SelectItem value="UTC+1">Central European Time (UTC+1)</SelectItem>
-                  <SelectItem value="UTC+9">Japan Standard Time (UTC+9)</SelectItem>
+                  <SelectItem value="UTC+1">
+                    Central European Time (UTC+1)
+                  </SelectItem>
+                  <SelectItem value="UTC+9">
+                    Japan Standard Time (UTC+9)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -101,6 +134,7 @@ export default function ProfilePage() {
             <Button variant="outline" className="w-fit justify-start">
               Enable 2FA
             </Button>
+            <LogoutButton />
           </CardContent>
         </Card>
 
@@ -141,5 +175,19 @@ export default function ProfilePage() {
         </Card>
       </div>
     </Container>
+  );
+}
+
+function LogoutButton() {
+  const { logout, state } = useAuth();
+  return (
+    <Button
+      onClick={() => logout()}
+      variant="destructive"
+      className="w-fit justify-start"
+      disabled={state.loading}
+    >
+      {state.loading ? "Logging out…" : "Log out"}
+    </Button>
   );
 }
