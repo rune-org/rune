@@ -3,9 +3,7 @@
 import { client } from "@/client/client.gen";
 import type { HttpMethod } from "@/client/core/types.gen";
 import { refreshAccessToken } from "@/lib/api/auth";
-
-const REFRESH_TOKEN_KEY = "auth:refresh_token";
-const ACCESS_EXP_KEY = "auth:access_exp";
+import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
 
 let installed = false;
 let refreshPromise: Promise<void> | null = null;
@@ -57,19 +55,8 @@ export function setupClientInterceptors() {
   client.interceptors.response.use(async (response, options) => {
     const isAuthRoute =
       typeof options.url === "string" && options.url.startsWith("/auth/");
-    let retried = false;
-    if (options.headers) {
-      if (options.headers instanceof Headers) {
-        retried = options.headers.get("x-retried") === "1";
-      } else if (Array.isArray(options.headers)) {
-        retried = (options.headers as [string, string][]).some(
-          ([k, v]) => k.toLowerCase() === "x-retried" && v === "1",
-        );
-      } else if (typeof options.headers === "object") {
-        const v = (options.headers as Record<string, unknown>)["x-retried"];
-        retried = v === "1";
-      }
-    }
+    const normalized = new Headers(options.headers as HeadersInit | undefined);
+    const retried = normalized.get("x-retried") === "1";
     if (response.status !== 401 || isAuthRoute || retried) {
       return response;
     }
@@ -86,7 +73,7 @@ export function setupClientInterceptors() {
       return response;
     }
 
-    const headers = new Headers(options.headers as HeadersInit | undefined);
+    const headers = normalized;
     headers.set("x-retried", "1");
     const result = await client.request({
       ...options,
