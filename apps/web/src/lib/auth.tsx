@@ -20,6 +20,7 @@ import {
   type LoginResponse,
   type RefreshResponse,
 } from "@/lib/api/auth";
+import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
 import type { TokenResponse } from "@/client/types.gen";
 
 type AuthUser = MyProfileResponse extends { data: infer D } ? D : unknown;
@@ -41,8 +42,6 @@ type AuthContextValue = {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
-const REFRESH_TOKEN_KEY = "auth:refresh_token";
-const ACCESS_EXP_KEY = "auth:access_exp"; // epoch ms when access token expires
 const LEEWAY_SECONDS = 60; // refresh this many seconds before expiry
 
 export function AuthProvider({ children }: { children: ReactNode }) {
