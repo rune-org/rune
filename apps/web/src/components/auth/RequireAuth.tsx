@@ -18,7 +18,9 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
       router.replace("/sign-in");
       return;
     }
-    void ctx.initialize();
+    ctx.initialize().catch((err) => {
+      console.error("Auth initialize failed", err);
+    });
   }, [ctx, router]);
 
   useEffect(() => {
