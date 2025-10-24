@@ -6,7 +6,10 @@ import type { IfData } from "../types";
 
 export function IfNode({ data }: NodeProps<Node<IfData>>) {
   return (
-    <div className="rune-node min-w-[180px] rounded-[var(--radius)] border border-border/70 bg-card p-3 text-sm text-foreground shadow-sm">
+    <div
+      className="rune-node min-w-[180px] rounded-[var(--radius)] border-2 bg-node-core-bg p-3 text-sm text-foreground shadow-sm"
+      style={{ borderColor: 'var(--node-core-border)' }}
+    >
       <div className="flex items-center gap-2 font-medium">
         <GitBranch className="h-4 w-4 text-muted-foreground" />
         {data.label ?? "If"}

@@ -135,16 +135,19 @@ export function LibraryGroups({ containerRef, onAdd }: LibraryProps) {
     title,
     icon: Icon,
     items,
+    colorClass,
   }: {
     title: string;
     icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     items: { label: string; type: NodeKind }[];
+    colorClass: string;
   }) => (
     <details
       open
       className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
     >
       <summary className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
+        <div className={`h-2 w-2 rounded-full ${colorClass}`} />
         <Icon className="h-3.5 w-3.5" />
         {title}
       </summary>
@@ -168,26 +171,31 @@ export function LibraryGroups({ containerRef, onAdd }: LibraryProps) {
         title="Triggers"
         icon={Play}
         items={[{ label: "Manual Trigger", type: "trigger" }]}
+        colorClass="bg-node-trigger"
       />
       <Group
         title="Core"
         icon={GitBranch}
         items={[{ label: "If", type: "if" }]}
+        colorClass="bg-node-core"
       />
       <Group
         title="HTTP"
         icon={Globe}
         items={[{ label: "HTTP Request", type: "http" }]}
+        colorClass="bg-node-http"
       />
       <Group
         title="Email"
         icon={Mail}
         items={[{ label: "SMTP Email", type: "smtp" }]}
+        colorClass="bg-node-email"
       />
       <Group
         title="Agents"
         icon={Bot}
         items={[{ label: "Agent", type: "agent" }]}
+        colorClass="bg-node-agent"
       />
     </div>
   );

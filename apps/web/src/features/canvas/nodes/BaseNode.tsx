@@ -5,11 +5,20 @@ type BaseNodeProps = {
   icon: React.ReactNode;
   label: string;
   children?: ReactNode;
+  bgClassName?: string;
+  borderColor?: string;
 };
 
-export function BaseNode({ icon, label, children }: BaseNodeProps) {
+export function BaseNode({ icon, label, children, bgClassName = "bg-card", borderColor }: BaseNodeProps) {
+  const borderStyle = borderColor
+    ? { borderColor: `var(${borderColor})`, borderWidth: '2px' }
+    : {};
+
   return (
-    <div className="rune-node min-w-[200px] rounded-[var(--radius)] border border-border/70 bg-card p-3 text-sm text-foreground shadow-sm">
+    <div
+      className={`rune-node min-w-[200px] rounded-[var(--radius)] border-2 ${bgClassName} p-3 text-sm text-foreground shadow-sm`}
+      style={borderStyle}
+    >
       <div className="flex items-center gap-2 font-medium">
         {icon}
         {label}

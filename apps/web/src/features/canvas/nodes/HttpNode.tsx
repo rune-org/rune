@@ -10,6 +10,8 @@ export function HttpNode({ data }: NodeProps<Node<HttpData>>) {
     <BaseNode
       icon={<Globe className="h-4 w-4 text-muted-foreground" />}
       label={data.label ?? "HTTP"}
+      bgClassName="bg-node-http-bg"
+      borderColor="--node-http-border"
     >
       <div className="flex items-center justify-between">
         <span className="truncate text-xs text-muted-foreground">

@@ -22,6 +22,22 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-node-trigger: var(--node-trigger);
+  --color-node-trigger-bg: var(--node-trigger-bg);
+  --color-node-trigger-border: var(--node-trigger-border);
+  --color-node-core: var(--node-core);
+  --color-node-core-bg: var(--node-core-bg);
+  --color-node-core-border: var(--node-core-border);
+  --color-node-http: var(--node-http);
+  --color-node-http-bg: var(--node-http-bg);
+  --color-node-http-border: var(--node-http-border);
+  --color-node-email: var(--node-email);
+  --color-node-email-bg: var(--node-email-bg);
+  --color-node-email-border: var(--node-email-border);
+  --color-node-agent: var(--node-agent);
+  --color-node-agent-bg: var(--node-agent-bg);
+  --color-node-agent-border: var(--node-agent-border);
+
   --font-sans: var(--font-sans);
   --font-display: var(--font-display);
 
