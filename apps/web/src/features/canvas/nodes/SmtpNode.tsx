@@ -10,6 +10,8 @@ export function SmtpNode({ data }: NodeProps<Node<SmtpData>>) {
     <BaseNode
       icon={<Mail className="h-4 w-4 text-muted-foreground" />}
       label={data.label ?? "SMTP"}
+      bgClassName="bg-node-email-bg"
+      borderColor="--node-email-border"
     >
       <div className="truncate text-xs text-muted-foreground">
         To: {data.to ?? "user@example.com"}

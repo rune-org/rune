@@ -35,6 +35,23 @@
 
   --shadow-sm: 0 4px 16px hsl(220 55% 6% / 0.45);
   --shadow-lg: 0 24px 48px hsl(220 55% 6% / 0.4);
+
+  /* Node group colors */
+  --node-trigger: hsl(217 91% 60%);
+  --node-trigger-bg: hsl(217 91% 60% / 0.18);
+  --node-trigger-border: hsl(217 91% 60% / 0.35);
+  --node-core: hsl(270 70% 65%);
+  --node-core-bg: hsl(270 70% 65% / 0.18);
+  --node-core-border: hsl(270 70% 65% / 0.35);
+  --node-http: hsl(142 76% 56%);
+  --node-http-bg: hsl(142 76% 56% / 0.18);
+  --node-http-border: hsl(142 76% 56% / 0.35);
+  --node-email: hsl(25 95% 63%);
+  --node-email-bg: hsl(25 95% 63% / 0.18);
+  --node-email-border: hsl(25 95% 63% / 0.35);
+  --node-agent: hsl(189 85% 62%);
+  --node-agent-bg: hsl(189 85% 62% / 0.18);
+  --node-agent-border: hsl(189 85% 62% / 0.35);
 }
 
 * {
