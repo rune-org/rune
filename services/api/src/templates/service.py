@@ -18,8 +18,7 @@ class TemplateService:
     ) -> List[WorkflowTemplate]:
         """Get all templates accessible to a user (public + their own)."""
         stmt = select(WorkflowTemplate).where(
-            (WorkflowTemplate.is_public)
-            | (WorkflowTemplate.created_by == user_id)
+            (WorkflowTemplate.is_public) | (WorkflowTemplate.created_by == user_id)
         )
         result = await self.db.execute(stmt)
         return result.scalars().all()
@@ -85,9 +84,7 @@ class TemplateService:
             await self.db.refresh(template)
 
     @staticmethod
-    def _extract_node_types(
-        workflow_data: dict
-    ) -> tuple[Optional[str], Optional[str]]:
+    def _extract_node_types(workflow_data: dict) -> tuple[Optional[str], Optional[str]]:
         """Extract the first and last node types from workflow data for display."""
         nodes = workflow_data.get("nodes", [])
         if not nodes:
