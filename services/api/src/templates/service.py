@@ -18,8 +18,9 @@ class TemplateService:
         self, user_id: int
     ) -> list[WorkflowTemplate]:
         """Get all templates accessible to a user (public + their own)."""
-        stmt = select(WorkflowTemplate).where(or_(
-            WorkflowTemplate.is_public, WorkflowTemplate.created_by == user_id))
+        stmt = select(WorkflowTemplate).where(
+            or_(WorkflowTemplate.is_public, WorkflowTemplate.created_by == user_id)
+        )
         result = await self.db.exec(stmt)
         return result.scalars().all()
 
