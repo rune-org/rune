@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Node } from "@xyflow/react";
 import type { HttpData, NodeDataMap } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
@@ -6,9 +7,25 @@ import { JsonField } from "../JsonField";
 type HttpInspectorProps = {
   node: Node<HttpData>;
   updateData: ReturnType<typeof useUpdateNodeData>;
+  isExpanded: boolean;
 };
 
-export function HttpInspector({ node, updateData }: HttpInspectorProps) {
+export function HttpInspector({
+  node,
+  updateData,
+  isExpanded,
+}: HttpInspectorProps) {
+  const [openSections, setOpenSections] = useState({
+    headers: false,
+    query: false,
+    body: false,
+    advanced: false,
+  });
+
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
+
   const updateHttpData = (updater: (data: HttpData) => HttpData) => {
     updateData(node.id, "http", updater);
   };
@@ -65,8 +82,17 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
           }
           placeholder="https://api.example.com/path"
         />
+        {isExpanded && (
+          <div className="text-xs text-muted-foreground/70">
+            The URL endpoint for the HTTP request
+          </div>
+        )}
       </div>
-      <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
+      <details
+        className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
+        open={isExpanded || openSections.headers}
+        onToggle={() => !isExpanded && toggleSection("headers")}
+      >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Headers (JSON object)
         </summary>
@@ -79,8 +105,17 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
             }))
           }
         />
+        {isExpanded && (
+          <div className="mt-1 text-xs text-muted-foreground/70">
+            Custom HTTP headers to include in the request
+          </div>
+        )}
       </details>
-      <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
+      <details
+        className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
+        open={isExpanded || openSections.query}
+        onToggle={() => !isExpanded && toggleSection("query")}
+      >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Query Params (JSON object)
         </summary>
@@ -93,8 +128,17 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
             }))
           }
         />
+        {isExpanded && (
+          <div className="mt-1 text-xs text-muted-foreground/70">
+            URL query parameters to append to the request
+          </div>
+        )}
       </details>
-      <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
+      <details
+        className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
+        open={isExpanded || openSections.body}
+        onToggle={() => !isExpanded && toggleSection("body")}
+      >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Body (JSON)
         </summary>
@@ -107,8 +151,17 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
             }))
           }
         />
+        {isExpanded && (
+          <div className="mt-1 text-xs text-muted-foreground/70">
+            Request body payload (typically for POST/PUT/PATCH)
+          </div>
+        )}
       </details>
-      <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
+      <details
+        className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
+        open={isExpanded || openSections.advanced}
+        onToggle={() => !isExpanded && toggleSection("advanced")}
+      >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Advanced
         </summary>
@@ -126,6 +179,11 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
             />
             Ignore SSL
           </label>
+          {isExpanded && (
+            <div className="text-xs text-muted-foreground/70">
+              Skip SSL certificate validation (use with caution)
+            </div>
+          )}
           <label className="block">Retries</label>
           <input
             type="number"
@@ -138,6 +196,11 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
               }))
             }
           />
+          {isExpanded && (
+            <div className="text-xs text-muted-foreground/70">
+              Number of retry attempts on failure
+            </div>
+          )}
         </div>
       </details>
     </div>
