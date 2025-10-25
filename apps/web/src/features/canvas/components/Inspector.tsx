@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Panel } from "@xyflow/react";
 import {
   Maximize2,
@@ -76,8 +76,11 @@ export function Inspector({
 }: InspectorProps) {
   const [isExpandedDialogOpen, setIsExpandedDialogOpen] = useState(false);
 
-  // Compute inputs/outputs
-  const nodeIO = selectedNode ? getNodeInputsOutputs(selectedNode) : null;
+  // Memoize inputs/outputs computation
+  const nodeIO = useMemo(
+    () => (selectedNode ? getNodeInputsOutputs(selectedNode) : null),
+    [selectedNode],
+  );
 
   return (
     <>
