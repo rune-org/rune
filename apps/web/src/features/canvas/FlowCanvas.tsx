@@ -210,6 +210,7 @@ export default function FlowCanvas({
           selectedNode={selectedNode}
           updateSelectedNodeLabel={updateSelectedNodeLabel}
           updateData={updateNodeData}
+          onDelete={selectedNode ? deleteSelectedElements : undefined}
         />
 
         {/* Hints */}

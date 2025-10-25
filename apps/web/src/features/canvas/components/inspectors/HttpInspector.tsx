@@ -6,9 +6,14 @@ import { JsonField } from "../JsonField";
 type HttpInspectorProps = {
   node: Node<HttpData>;
   updateData: ReturnType<typeof useUpdateNodeData>;
+  isExpanded: boolean;
 };
 
-export function HttpInspector({ node, updateData }: HttpInspectorProps) {
+export function HttpInspector({
+  node,
+  updateData,
+  isExpanded,
+}: HttpInspectorProps) {
   const updateHttpData = (updater: (data: HttpData) => HttpData) => {
     updateData(node.id, "http", updater);
   };
@@ -65,8 +70,16 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
           }
           placeholder="https://api.example.com/path"
         />
+        {isExpanded && (
+          <div className="text-xs text-muted-foreground/70">
+            The URL endpoint for the HTTP request
+          </div>
+        )}
       </div>
-      <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
+      <details
+        className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
+        open={isExpanded}
+      >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Headers (JSON object)
         </summary>
@@ -79,8 +92,16 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
             }))
           }
         />
+        {isExpanded && (
+          <div className="mt-1 text-xs text-muted-foreground/70">
+            Custom HTTP headers to include in the request
+          </div>
+        )}
       </details>
-      <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
+      <details
+        className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
+        open={isExpanded}
+      >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Query Params (JSON object)
         </summary>
@@ -93,8 +114,16 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
             }))
           }
         />
+        {isExpanded && (
+          <div className="mt-1 text-xs text-muted-foreground/70">
+            URL query parameters to append to the request
+          </div>
+        )}
       </details>
-      <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
+      <details
+        className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
+        open={isExpanded}
+      >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Body (JSON)
         </summary>
@@ -107,8 +136,16 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
             }))
           }
         />
+        {isExpanded && (
+          <div className="mt-1 text-xs text-muted-foreground/70">
+            Request body payload (typically for POST/PUT/PATCH)
+          </div>
+        )}
       </details>
-      <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
+      <details
+        className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
+        open={isExpanded}
+      >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Advanced
         </summary>
@@ -126,6 +163,11 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
             />
             Ignore SSL
           </label>
+          {isExpanded && (
+            <div className="text-xs text-muted-foreground/70">
+              Skip SSL certificate validation (use with caution)
+            </div>
+          )}
           <label className="block">Retries</label>
           <input
             type="number"
@@ -138,6 +180,11 @@ export function HttpInspector({ node, updateData }: HttpInspectorProps) {
               }))
             }
           />
+          {isExpanded && (
+            <div className="text-xs text-muted-foreground/70">
+              Number of retry attempts on failure
+            </div>
+          )}
         </div>
       </details>
     </div>
