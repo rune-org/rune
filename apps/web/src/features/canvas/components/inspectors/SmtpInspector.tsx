@@ -5,9 +5,14 @@ import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
 type SmtpInspectorProps = {
   node: Node<SmtpData>;
   updateData: ReturnType<typeof useUpdateNodeData>;
+  isExpanded: boolean;
 };
 
-export function SmtpInspector({ node, updateData }: SmtpInspectorProps) {
+export function SmtpInspector({
+  node,
+  updateData,
+  isExpanded,
+}: SmtpInspectorProps) {
   const updateSmtpData = (updater: (data: SmtpData) => SmtpData) => {
     updateData(node.id, "smtp", updater);
   };
@@ -24,7 +29,13 @@ export function SmtpInspector({ node, updateData }: SmtpInspectorProps) {
             to: e.target.value,
           }))
         }
+        placeholder="recipient@example.com"
       />
+      {isExpanded && (
+        <div className="text-xs text-muted-foreground/70">
+          Email address of the recipient
+        </div>
+      )}
       <label className="block text-xs text-muted-foreground">Subject</label>
       <input
         className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
@@ -35,7 +46,13 @@ export function SmtpInspector({ node, updateData }: SmtpInspectorProps) {
             subject: e.target.value,
           }))
         }
+        placeholder="Email subject line"
       />
+      {isExpanded && (
+        <div className="text-xs text-muted-foreground/70">
+          Subject line for the email message
+        </div>
+      )}
     </div>
   );
 }
