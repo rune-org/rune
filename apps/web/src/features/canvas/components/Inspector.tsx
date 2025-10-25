@@ -9,6 +9,7 @@ import {
   Settings,
 } from "lucide-react";
 import type { CanvasNode } from "../types";
+import { NODE_SCHEMA } from "../types";
 import { useUpdateNodeData } from "../hooks/useUpdateNodeData";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -49,23 +50,10 @@ function renderInspectorForm(
 }
 
 function getNodeInputsOutputs(node: CanvasNode): {
-  inputs: string[];
-  outputs: string[];
+  inputs: readonly string[];
+  outputs: readonly string[];
 } {
-  switch (node.type) {
-    case "trigger":
-      return { inputs: [], outputs: ["trigger"] };
-    case "agent":
-      return { inputs: ["input"], outputs: ["response"] };
-    case "if":
-      return { inputs: ["condition"], outputs: ["true", "false"] };
-    case "http":
-      return { inputs: ["request"], outputs: ["response", "error"] };
-    case "smtp":
-      return { inputs: ["email"], outputs: ["sent", "error"] };
-    default:
-      return { inputs: [], outputs: [] };
-  }
+  return NODE_SCHEMA[node.type] || { inputs: [], outputs: [] };
 }
 
 export function Inspector({
@@ -75,12 +63,19 @@ export function Inspector({
   onDelete,
 }: InspectorProps) {
   const [isExpandedDialogOpen, setIsExpandedDialogOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   // Memoize inputs/outputs computation
   const nodeIO = useMemo(
     () => (selectedNode ? getNodeInputsOutputs(selectedNode) : null),
     [selectedNode],
   );
+
+  const handleDelete = () => {
+    setIsDeleteConfirmOpen(false);
+    setIsExpandedDialogOpen(false);
+    onDelete?.();
+  };
 
   return (
     <>
@@ -89,7 +84,7 @@ export function Inspector({
         position="top-right"
         className="pointer-events-auto !right-4 !top-4"
       >
-        <div className="w-[260px] rounded-[var(--radius)] border border-border/60 bg-card/90 shadow-lg">
+        <div className="w-[260px] max-w-[90vw] rounded-[var(--radius)] border border-border/60 bg-card/90 shadow-lg">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border/40 p-3 pb-2">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -276,10 +271,7 @@ export function Inspector({
                 <div className="flex gap-2">
                   {onDelete && (
                     <button
-                      onClick={() => {
-                        setIsExpandedDialogOpen(false);
-                        onDelete();
-                      }}
+                      onClick={() => setIsDeleteConfirmOpen(true)}
                       className="inline-flex h-9 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-destructive/40 bg-destructive/10 px-4 text-sm text-destructive transition-colors hover:bg-destructive/20"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -292,6 +284,46 @@ export function Inspector({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              Delete Node
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete this node? This action cannot be
+              undone.
+            </p>
+            {selectedNode && (
+              <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/30 p-3">
+                <div className="text-sm font-medium text-foreground">
+                  {selectedNode.type} • {selectedNode.data.label || selectedNode.id.slice(0, 6)}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setIsDeleteConfirmOpen(false)}
+              className="inline-flex h-9 items-center rounded-[calc(var(--radius)-0.25rem)] border border-input bg-background px-4 text-sm transition-colors hover:bg-muted/60"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              className="inline-flex h-9 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] bg-destructive px-4 text-sm text-destructive-foreground transition-colors hover:bg-destructive/90"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
