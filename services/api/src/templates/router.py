@@ -5,6 +5,7 @@ from src.templates.schemas import (
     TemplateSummary,
     TemplateDetail,
     TemplateCreate,
+    TemplateWorkflowData,
 )
 from src.templates.service import TemplateService
 from src.core.dependencies import DatabaseDep, get_current_user
@@ -29,15 +30,11 @@ async def list_templates(
 
     summaries = []
     for template in templates:
-        # Extract node types for display
-        from_node, to_node = service._extract_node_types(template.workflow_data)
-
         summary = TemplateSummary(
             id=template.id,
             name=template.name,
             description=template.description,
             category=template.category,
-            **{"from": from_node, "to": to_node},
             usage_count=template.usage_count,
             is_public=template.is_public,
         )
@@ -84,18 +81,19 @@ async def delete_template(
     await service.delete_template(template_id, current_user.id)
 
 
-@router.post("/{template_id}/use", response_model=ApiResponse[dict])
+@router.post("/{template_id}/use", response_model=ApiResponse[TemplateWorkflowData])
 async def use_template(
     template_id: int,
     current_user: User = Depends(get_current_user),
     service: TemplateService = Depends(get_template_service),
-) -> ApiResponse[dict]:
+) -> ApiResponse[TemplateWorkflowData]:
     """Mark a template as used (increment usage count) and return its workflow data."""
     template = await service.get_template(template_id, current_user.id)
     await service.increment_usage_count(template_id)
 
+    workflow_response = TemplateWorkflowData(workflow_data=template.workflow_data)
     return ApiResponse(
         success=True,
         message="Template usage recorded",
-        data={"workflow_data": template.workflow_data},
+        data=workflow_response,
     )

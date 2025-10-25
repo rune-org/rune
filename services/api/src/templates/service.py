@@ -1,4 +1,5 @@
-from typing import List, Optional
+from operator import or_
+from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,13 +16,11 @@ class TemplateService:
 
     async def list_all_accessible_templates(
         self, user_id: int
-    ) -> List[WorkflowTemplate]:
+    ) -> list[WorkflowTemplate]:
         """Get all templates accessible to a user (public + their own)."""
-        stmt = select(WorkflowTemplate).where(
-            (WorkflowTemplate.is_public)
-            | (WorkflowTemplate.created_by == user_id)
-        )
-        result = await self.db.execute(stmt)
+        stmt = select(WorkflowTemplate).where(or_(
+            WorkflowTemplate.is_public, WorkflowTemplate.created_by == user_id))
+        result = await self.db.exec(stmt)
         return result.scalars().all()
 
     async def get_template(
@@ -29,7 +28,7 @@ class TemplateService:
     ) -> WorkflowTemplate:
         """Get a specific template by ID."""
         stmt = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
-        result = await self.db.execute(stmt)
+        result = await self.db.exec(stmt)
         template = result.scalar_one_or_none()
 
         if not template:
@@ -76,30 +75,10 @@ class TemplateService:
     async def increment_usage_count(self, template_id: int) -> None:
         """Increment the usage count for a template."""
         stmt = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
-        result = await self.db.execute(stmt)
+        result = await self.db.exec(stmt)
         template = result.scalar_one_or_none()
 
         if template:
             template.usage_count += 1
             await self.db.commit()
             await self.db.refresh(template)
-
-    @staticmethod
-    def _extract_node_types(
-        workflow_data: dict
-    ) -> tuple[Optional[str], Optional[str]]:
-        """Extract the first and last node types from workflow data for display."""
-        nodes = workflow_data.get("nodes", [])
-        if not nodes:
-            return None, None
-
-        # Find trigger node (first) and last node
-        trigger_node = None
-        last_node = None
-
-        for node in nodes:
-            if node.get("trigger", False):
-                trigger_node = node.get("type")
-            last_node = node.get("type")  # Keep updating to get the last one
-
-        return trigger_node, last_node

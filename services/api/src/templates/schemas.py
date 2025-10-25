@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
 
@@ -10,8 +10,6 @@ class TemplateSummary(BaseModel):
     name: str
     description: str
     category: str
-    from_node: Optional[str] = Field(alias="from", default=None)
-    to_node: Optional[str] = Field(alias="to", default=None)
     usage_count: int
     is_public: bool
 
@@ -23,7 +21,7 @@ class TemplateDetail(BaseModel):
     name: str
     description: str
     category: str
-    workflow_data: Dict[str, Any]
+    workflow_data: dict[str, Any]
     usage_count: int
     is_public: bool
     created_at: datetime
@@ -39,5 +37,11 @@ class TemplateCreate(BaseModel):
     name: str = Field(..., min_length=1)
     description: str = Field(default="")
     category: str = Field(default="general")
-    workflow_data: Dict[str, Any] = Field(default_factory=dict)
+    workflow_data: dict[str, Any] = Field(default_factory=dict)
     is_public: bool = Field(default=False)
+
+
+class TemplateWorkflowData(BaseModel):
+    """Schema for template workflow data response."""
+
+    workflow_data: dict[str, Any]
