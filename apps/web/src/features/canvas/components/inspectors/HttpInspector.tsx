@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { Node } from "@xyflow/react";
 import type { HttpData, NodeDataMap } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
@@ -15,17 +14,6 @@ export function HttpInspector({
   updateData,
   isExpanded,
 }: HttpInspectorProps) {
-  const [openSections, setOpenSections] = useState({
-    headers: false,
-    query: false,
-    body: false,
-    advanced: false,
-  });
-
-  const toggleSection = (section: keyof typeof openSections) => {
-    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
-  };
-
   const updateHttpData = (updater: (data: HttpData) => HttpData) => {
     updateData(node.id, "http", updater);
   };
@@ -90,8 +78,7 @@ export function HttpInspector({
       </div>
       <details
         className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
-        open={isExpanded || openSections.headers}
-        onToggle={() => !isExpanded && toggleSection("headers")}
+        open={isExpanded}
       >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Headers (JSON object)
@@ -113,8 +100,7 @@ export function HttpInspector({
       </details>
       <details
         className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
-        open={isExpanded || openSections.query}
-        onToggle={() => !isExpanded && toggleSection("query")}
+        open={isExpanded}
       >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Query Params (JSON object)
@@ -136,8 +122,7 @@ export function HttpInspector({
       </details>
       <details
         className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
-        open={isExpanded || openSections.body}
-        onToggle={() => !isExpanded && toggleSection("body")}
+        open={isExpanded}
       >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Body (JSON)
@@ -159,8 +144,7 @@ export function HttpInspector({
       </details>
       <details
         className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
-        open={isExpanded || openSections.advanced}
-        onToggle={() => !isExpanded && toggleSection("advanced")}
+        open={isExpanded}
       >
         <summary className="cursor-pointer text-xs text-muted-foreground">
           Advanced
