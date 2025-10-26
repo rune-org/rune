@@ -109,7 +109,7 @@ function CanvasPageInner() {
 
       if (numericWorkflowId !== null) {
         toast.error(
-          "Updating existing workflows is not yet supported by the API.",
+          "Updating existing workflows is not yet supported by the API.", // TODO(fe): implement workflow updates
         );
         return;
       }
