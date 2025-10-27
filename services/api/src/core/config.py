@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     rabbitmq_password: str = "guest"
     rabbitmq_url: str | None = None
 
+    # Encryption Settings
+    encryption_key: str | None = None
+
     @computed_field
     @property
     def cookie_secure(self) -> bool:
