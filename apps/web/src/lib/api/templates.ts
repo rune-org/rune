@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import {
     listTemplatesTemplatesGet,
     getTemplateTemplatesTemplateIdGet,
@@ -9,27 +10,22 @@ import {
 import type { TemplateCreate } from "@/client/types.gen";
 
 // Readable wrappers for template-related SDK functions
+// Note: The generated SDK function names start with "use" but are not React Hooks
 
-export async function listTemplates() {
-    return listTemplatesTemplatesGet();
-}
+export const listTemplates = () => listTemplatesTemplatesGet();
 
-export async function getTemplate(templateId: number) {
-    return getTemplateTemplatesTemplateIdGet({ path: { template_id: templateId } });
-}
+export const getTemplate = (templateId: number) =>
+    getTemplateTemplatesTemplateIdGet({ path: { template_id: templateId } });
 
-export async function createTemplate(payload: TemplateCreate) {
-    return createTemplateTemplatesPost({ body: payload });
-}
+export const createTemplate = (payload: TemplateCreate) =>
+    createTemplateTemplatesPost({ body: payload });
 
-export async function deleteTemplate(templateId: number) {
-    return deleteTemplateTemplatesTemplateIdDelete({
+export const deleteTemplate = (templateId: number) =>
+    deleteTemplateTemplatesTemplateIdDelete({
         path: { template_id: templateId },
     });
-}
 
-export async function useTemplate(templateId: number) {
-    return useTemplateTemplatesTemplateIdUsePost({
+export const applyTemplate = (templateId: number) =>
+    useTemplateTemplatesTemplateIdUsePost({
         path: { template_id: templateId },
     });
-}

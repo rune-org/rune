@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/shared/Container";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { listTemplates, useTemplate } from "@/lib/api/templates";
+import { listTemplates, applyTemplate } from "@/lib/api/templates";
 import type { TemplateSummary } from "@/client/types.gen";
 import { useRouter } from "next/navigation";
 
@@ -48,7 +48,7 @@ export default function TemplatesPage() {
 
   const handleUseTemplate = async (templateId: number) => {
     try {
-      const response = await useTemplate(templateId);
+      const response = await applyTemplate(templateId);
       if (response.data && !response.error) {
         // Store the workflow data in sessionStorage to pass to canvas
         const workflowData = response.data.data.workflow_data;
