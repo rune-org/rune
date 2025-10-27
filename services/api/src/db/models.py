@@ -21,6 +21,17 @@ class WorkflowRole(str, Enum):
     OWNER = "owner"
 
 
+class CredentialType(str, Enum):
+    """Credential type enumeration."""
+
+    API_KEY = "api_key"
+    OAUTH2 = "oauth2"
+    BASIC_AUTH = "basic_auth"
+    TOKEN = "token"
+    CUSTOM = "custom"
+    SMTP = "smtp"
+
+
 class TimestampModel(SQLModel):
     """Base model with created_at and updated_at timestamps."""
 
@@ -28,6 +39,24 @@ class TimestampModel(SQLModel):
     updated_at: datetime = Field(
         default_factory=datetime.now,
         sa_column_kwargs={"onupdate": datetime.now},
+    )
+
+
+class WorkflowCredentialLink(TimestampModel, table=True):
+
+    __tablename__ = "workflow_credential_links"
+
+    workflow_id: int = Field(
+        foreign_key="workflows.id",
+        primary_key=True,
+        ondelete="CASCADE",
+        description="Workflow using this credential",
+    )
+    credential_id: int = Field(
+        foreign_key="workflow_credentials.id",
+        primary_key=True,
+        ondelete="CASCADE",
+        description="Credential being used",
     )
 
 
@@ -55,6 +84,7 @@ class User(TimestampModel, table=True):
         sa_relationship_kwargs={"foreign_keys": "WorkflowUser.granted_by"},
     )
     templates: list["WorkflowTemplate"] = Relationship(back_populates="creator")
+    credentials: list["WorkflowCredential"] = Relationship(back_populates="creator")
 
 
 class Workflow(TimestampModel, table=True):
@@ -73,6 +103,10 @@ class Workflow(TimestampModel, table=True):
     version: int = Field(default=1)
 
     workflow_users: list["WorkflowUser"] = Relationship(back_populates="workflow")
+    credentials: list["WorkflowCredential"] = Relationship(
+        back_populates="used_in_workflows",
+        link_model=WorkflowCredentialLink,
+    )
 
 
 class WorkflowUser(TimestampModel, table=True):
@@ -155,3 +189,33 @@ class WorkflowTemplate(TimestampModel, table=True):
 
     # Relationships
     creator: Optional[User] = Relationship(back_populates="templates")
+
+
+class WorkflowCredential(TimestampModel, table=True):
+
+    __tablename__ = "workflow_credentials"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(description="Name/identifier for this credential")
+    credential_type: CredentialType = Field(
+        sa_column=Column(
+            SQLAlchemyEnum(CredentialType, name="credential_type", native_enum=True)
+        ),
+        description="Type of credential (API key, OAuth2, etc.)",
+    )
+    credential_data: str = Field(
+        description="Dynamic credential data (encrypted in production)",
+    )
+    created_by: Optional[int] = Field(
+        default=None,
+        foreign_key="users.id",
+        ondelete="SET NULL",
+        description="User who created this credential",
+    )
+
+    # Relationships
+    creator: Optional[User] = Relationship(back_populates="credentials")
+    used_in_workflows: list["Workflow"] = Relationship(
+        back_populates="credentials",
+        link_model=WorkflowCredentialLink,
+    )
