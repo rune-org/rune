@@ -24,6 +24,30 @@ export type AdminUserUpdate = {
 };
 
 /**
+ * ApiResponse[List[TemplateSummary]]
+ */
+export type ApiResponseListTemplateSummary = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<TemplateSummary>;
+};
+
+/**
  * ApiResponse[NoneType]
  */
 export type ApiResponseNoneType = {
@@ -45,6 +69,50 @@ export type ApiResponseNoneType = {
      * Response data
      */
     data: null;
+};
+
+/**
+ * ApiResponse[TemplateDetail]
+ */
+export type ApiResponseTemplateDetail = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: TemplateDetail;
+};
+
+/**
+ * ApiResponse[TemplateWorkflowData]
+ */
+export type ApiResponseTemplateWorkflowData = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: TemplateWorkflowData;
 };
 
 /**
@@ -239,6 +307,132 @@ export type RefreshRequest = {
      * Valid refresh token
      */
     refresh_token: string;
+};
+
+/**
+ * TemplateCreate
+ *
+ * Schema for creating a new template.
+ */
+export type TemplateCreate = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string;
+    /**
+     * Category
+     */
+    category?: string;
+    /**
+     * Workflow Data
+     */
+    workflow_data?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Is Public
+     */
+    is_public?: boolean;
+};
+
+/**
+ * TemplateDetail
+ *
+ * Detailed template information including workflow data.
+ */
+export type TemplateDetail = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Workflow Data
+     */
+    workflow_data: {
+        [key: string]: unknown;
+    };
+    /**
+     * Usage Count
+     */
+    usage_count: number;
+    /**
+     * Is Public
+     */
+    is_public: boolean;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+    /**
+     * Created By
+     */
+    created_by: number | null;
+};
+
+/**
+ * TemplateSummary
+ *
+ * Template summary for listing templates.
+ */
+export type TemplateSummary = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Usage Count
+     */
+    usage_count: number;
+    /**
+     * Is Public
+     */
+    is_public: boolean;
+};
+
+/**
+ * TemplateWorkflowData
+ *
+ * Schema for template workflow data response.
+ */
+export type TemplateWorkflowData = {
+    /**
+     * Workflow Data
+     */
+    workflow_data: {
+        [key: string]: unknown;
+    };
 };
 
 /**
@@ -715,6 +909,137 @@ export type RunWorkflowWorkflowsWorkflowIdRunPostResponses = {
 };
 
 export type RunWorkflowWorkflowsWorkflowIdRunPostResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponses[keyof RunWorkflowWorkflowsWorkflowIdRunPostResponses];
+
+export type ListTemplatesTemplatesGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/templates/';
+};
+
+export type ListTemplatesTemplatesGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListTemplateSummary;
+};
+
+export type ListTemplatesTemplatesGetResponse = ListTemplatesTemplatesGetResponses[keyof ListTemplatesTemplatesGetResponses];
+
+export type CreateTemplateTemplatesPostData = {
+    body: TemplateCreate;
+    path?: never;
+    query?: never;
+    url: '/templates/';
+};
+
+export type CreateTemplateTemplatesPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateTemplateTemplatesPostError = CreateTemplateTemplatesPostErrors[keyof CreateTemplateTemplatesPostErrors];
+
+export type CreateTemplateTemplatesPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ApiResponseTemplateDetail;
+};
+
+export type CreateTemplateTemplatesPostResponse = CreateTemplateTemplatesPostResponses[keyof CreateTemplateTemplatesPostResponses];
+
+export type DeleteTemplateTemplatesTemplateIdDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Template Id
+         */
+        template_id: number;
+    };
+    query?: never;
+    url: '/templates/{template_id}';
+};
+
+export type DeleteTemplateTemplatesTemplateIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteTemplateTemplatesTemplateIdDeleteError = DeleteTemplateTemplatesTemplateIdDeleteErrors[keyof DeleteTemplateTemplatesTemplateIdDeleteErrors];
+
+export type DeleteTemplateTemplatesTemplateIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteTemplateTemplatesTemplateIdDeleteResponse = DeleteTemplateTemplatesTemplateIdDeleteResponses[keyof DeleteTemplateTemplatesTemplateIdDeleteResponses];
+
+export type GetTemplateTemplatesTemplateIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Template Id
+         */
+        template_id: number;
+    };
+    query?: never;
+    url: '/templates/{template_id}';
+};
+
+export type GetTemplateTemplatesTemplateIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetTemplateTemplatesTemplateIdGetError = GetTemplateTemplatesTemplateIdGetErrors[keyof GetTemplateTemplatesTemplateIdGetErrors];
+
+export type GetTemplateTemplatesTemplateIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseTemplateDetail;
+};
+
+export type GetTemplateTemplatesTemplateIdGetResponse = GetTemplateTemplatesTemplateIdGetResponses[keyof GetTemplateTemplatesTemplateIdGetResponses];
+
+export type UseTemplateTemplatesTemplateIdUsePostData = {
+    body?: never;
+    path: {
+        /**
+         * Template Id
+         */
+        template_id: number;
+    };
+    query?: never;
+    url: '/templates/{template_id}/use';
+};
+
+export type UseTemplateTemplatesTemplateIdUsePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UseTemplateTemplatesTemplateIdUsePostError = UseTemplateTemplatesTemplateIdUsePostErrors[keyof UseTemplateTemplatesTemplateIdUsePostErrors];
+
+export type UseTemplateTemplatesTemplateIdUsePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseTemplateWorkflowData;
+};
+
+export type UseTemplateTemplatesTemplateIdUsePostResponse = UseTemplateTemplatesTemplateIdUsePostResponses[keyof UseTemplateTemplatesTemplateIdUsePostResponses];
 
 export type GetAllUsersUsersGetData = {
     body?: never;

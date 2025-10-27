@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateUserUsersPostData, CreateUserUsersPostErrors, CreateUserUsersPostResponses, CreateWorkflowWorkflowsPostData, CreateWorkflowWorkflowsPostErrors, CreateWorkflowWorkflowsPostResponses, DeleteUserUsersUserIdDeleteData, DeleteUserUsersUserIdDeleteErrors, DeleteUserUsersUserIdDeleteResponses, DeleteWorkflowWorkflowsWorkflowIdDeleteData, DeleteWorkflowWorkflowsWorkflowIdDeleteErrors, DeleteWorkflowWorkflowsWorkflowIdDeleteResponses, GetAllUsersUsersGetData, GetAllUsersUsersGetResponses, GetMyProfileProfileMeGetData, GetMyProfileProfileMeGetResponses, GetUserByIdUsersUserIdGetData, GetUserByIdUsersUserIdGetErrors, GetUserByIdUsersUserIdGetResponses, GetWorkflowWorkflowsWorkflowIdGetData, GetWorkflowWorkflowsWorkflowIdGetErrors, GetWorkflowWorkflowsWorkflowIdGetResponses, ListWorkflowsWorkflowsGetData, ListWorkflowsWorkflowsGetResponses, LoginAuthLoginPostData, LoginAuthLoginPostErrors, LoginAuthLoginPostResponses, LogoutAuthLogoutPostData, LogoutAuthLogoutPostResponses, RefreshAuthRefreshPostData, RefreshAuthRefreshPostErrors, RefreshAuthRefreshPostResponses, RunWorkflowWorkflowsWorkflowIdRunPostData, RunWorkflowWorkflowsWorkflowIdRunPostErrors, RunWorkflowWorkflowsWorkflowIdRunPostResponses, UpdateMyProfileProfileMePutData, UpdateMyProfileProfileMePutErrors, UpdateMyProfileProfileMePutResponses, UpdateNameWorkflowsWorkflowIdNamePutData, UpdateNameWorkflowsWorkflowIdNamePutErrors, UpdateNameWorkflowsWorkflowIdNamePutResponses, UpdateStatusWorkflowsWorkflowIdStatusPutData, UpdateStatusWorkflowsWorkflowIdStatusPutErrors, UpdateStatusWorkflowsWorkflowIdStatusPutResponses, UpdateUserUsersUserIdPutData, UpdateUserUsersUserIdPutErrors, UpdateUserUsersUserIdPutResponses } from './types.gen';
+import type { CreateTemplateTemplatesPostData, CreateTemplateTemplatesPostErrors, CreateTemplateTemplatesPostResponses, CreateUserUsersPostData, CreateUserUsersPostErrors, CreateUserUsersPostResponses, CreateWorkflowWorkflowsPostData, CreateWorkflowWorkflowsPostErrors, CreateWorkflowWorkflowsPostResponses, DeleteTemplateTemplatesTemplateIdDeleteData, DeleteTemplateTemplatesTemplateIdDeleteErrors, DeleteTemplateTemplatesTemplateIdDeleteResponses, DeleteUserUsersUserIdDeleteData, DeleteUserUsersUserIdDeleteErrors, DeleteUserUsersUserIdDeleteResponses, DeleteWorkflowWorkflowsWorkflowIdDeleteData, DeleteWorkflowWorkflowsWorkflowIdDeleteErrors, DeleteWorkflowWorkflowsWorkflowIdDeleteResponses, GetAllUsersUsersGetData, GetAllUsersUsersGetResponses, GetMyProfileProfileMeGetData, GetMyProfileProfileMeGetResponses, GetTemplateTemplatesTemplateIdGetData, GetTemplateTemplatesTemplateIdGetErrors, GetTemplateTemplatesTemplateIdGetResponses, GetUserByIdUsersUserIdGetData, GetUserByIdUsersUserIdGetErrors, GetUserByIdUsersUserIdGetResponses, GetWorkflowWorkflowsWorkflowIdGetData, GetWorkflowWorkflowsWorkflowIdGetErrors, GetWorkflowWorkflowsWorkflowIdGetResponses, ListTemplatesTemplatesGetData, ListTemplatesTemplatesGetResponses, ListWorkflowsWorkflowsGetData, ListWorkflowsWorkflowsGetResponses, LoginAuthLoginPostData, LoginAuthLoginPostErrors, LoginAuthLoginPostResponses, LogoutAuthLogoutPostData, LogoutAuthLogoutPostResponses, RefreshAuthRefreshPostData, RefreshAuthRefreshPostErrors, RefreshAuthRefreshPostResponses, RunWorkflowWorkflowsWorkflowIdRunPostData, RunWorkflowWorkflowsWorkflowIdRunPostErrors, RunWorkflowWorkflowsWorkflowIdRunPostResponses, UpdateMyProfileProfileMePutData, UpdateMyProfileProfileMePutErrors, UpdateMyProfileProfileMePutResponses, UpdateNameWorkflowsWorkflowIdNamePutData, UpdateNameWorkflowsWorkflowIdNamePutErrors, UpdateNameWorkflowsWorkflowIdNamePutResponses, UpdateStatusWorkflowsWorkflowIdStatusPutData, UpdateStatusWorkflowsWorkflowIdStatusPutErrors, UpdateStatusWorkflowsWorkflowIdStatusPutResponses, UpdateUserUsersUserIdPutData, UpdateUserUsersUserIdPutErrors, UpdateUserUsersUserIdPutResponses, UseTemplateTemplatesTemplateIdUsePostData, UseTemplateTemplatesTemplateIdUsePostErrors, UseTemplateTemplatesTemplateIdUsePostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -145,6 +145,70 @@ export const updateNameWorkflowsWorkflowIdNamePut = <ThrowOnError extends boolea
 export const runWorkflowWorkflowsWorkflowIdRunPost = <ThrowOnError extends boolean = false>(options: Options<RunWorkflowWorkflowsWorkflowIdRunPostData, ThrowOnError>) => {
     return (options.client ?? client).post<RunWorkflowWorkflowsWorkflowIdRunPostResponses, RunWorkflowWorkflowsWorkflowIdRunPostErrors, ThrowOnError>({
         url: '/workflows/{workflow_id}/run',
+        ...options
+    });
+};
+
+/**
+ * List Templates
+ *
+ * Get all templates accessible to the current user (public + their own).
+ */
+export const listTemplatesTemplatesGet = <ThrowOnError extends boolean = false>(options?: Options<ListTemplatesTemplatesGetData, ThrowOnError>) => {
+    return (options?.client ?? client).get<ListTemplatesTemplatesGetResponses, unknown, ThrowOnError>({
+        url: '/templates/',
+        ...options
+    });
+};
+
+/**
+ * Create Template
+ *
+ * Create a new template.
+ */
+export const createTemplateTemplatesPost = <ThrowOnError extends boolean = false>(options: Options<CreateTemplateTemplatesPostData, ThrowOnError>) => {
+    return (options.client ?? client).post<CreateTemplateTemplatesPostResponses, CreateTemplateTemplatesPostErrors, ThrowOnError>({
+        url: '/templates/',
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    });
+};
+
+/**
+ * Delete Template
+ *
+ * Delete a template.
+ */
+export const deleteTemplateTemplatesTemplateIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteTemplateTemplatesTemplateIdDeleteData, ThrowOnError>) => {
+    return (options.client ?? client).delete<DeleteTemplateTemplatesTemplateIdDeleteResponses, DeleteTemplateTemplatesTemplateIdDeleteErrors, ThrowOnError>({
+        url: '/templates/{template_id}',
+        ...options
+    });
+};
+
+/**
+ * Get Template
+ *
+ * Get a specific template by ID.
+ */
+export const getTemplateTemplatesTemplateIdGet = <ThrowOnError extends boolean = false>(options: Options<GetTemplateTemplatesTemplateIdGetData, ThrowOnError>) => {
+    return (options.client ?? client).get<GetTemplateTemplatesTemplateIdGetResponses, GetTemplateTemplatesTemplateIdGetErrors, ThrowOnError>({
+        url: '/templates/{template_id}',
+        ...options
+    });
+};
+
+/**
+ * Use Template
+ *
+ * Mark a template as used (increment usage count) and return its workflow data.
+ */
+export const useTemplateTemplatesTemplateIdUsePost = <ThrowOnError extends boolean = false>(options: Options<UseTemplateTemplatesTemplateIdUsePostData, ThrowOnError>) => {
+    return (options.client ?? client).post<UseTemplateTemplatesTemplateIdUsePostResponses, UseTemplateTemplatesTemplateIdUsePostErrors, ThrowOnError>({
+        url: '/templates/{template_id}/use',
         ...options
     });
 };

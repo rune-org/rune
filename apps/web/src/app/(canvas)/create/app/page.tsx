@@ -11,6 +11,7 @@ import { sanitizeGraph } from "@/features/canvas/lib/graphIO";
 function CanvasPageInner() {
   const params = useSearchParams();
   const workflowId = params.get("workflow"); // This would be the workflow ID passed as a query parameter
+  const fromTemplate = params.get("fromTemplate"); // Check if loading from template
 
   const [nodes, setNodes] = useState<CanvasNode[] | undefined>(undefined);
   const [edges, setEdges] = useState<CanvasEdge[] | undefined>(undefined);
@@ -18,6 +19,27 @@ function CanvasPageInner() {
   useEffect(() => {
     let ignore = false;
     async function load() {
+      // Check if loading from template
+      if (fromTemplate === "true") {
+        const templateData = sessionStorage.getItem("templateWorkflowData");
+        if (templateData) {
+          try {
+            const workflowData = JSON.parse(templateData);
+            const { nodes: filteredNodes, edges: filteredEdges } =
+              sanitizeGraph(workflowData);
+            if (!ignore) {
+              setNodes(filteredNodes as unknown as CanvasNode[]);
+              setEdges(filteredEdges as unknown as CanvasEdge[]);
+            }
+            // Clear the template data after loading
+            sessionStorage.removeItem("templateWorkflowData");
+          } catch (error) {
+            console.error("Failed to load template data:", error);
+          }
+        }
+        return;
+      }
+
       if (!workflowId) {
         setNodes(undefined);
         setEdges(undefined);
@@ -35,7 +57,7 @@ function CanvasPageInner() {
     return () => {
       ignore = true;
     };
-  }, [workflowId]);
+  }, [workflowId, fromTemplate]);
 
   return (
     <div className="flex h-[100vh] flex-col">

@@ -19,6 +19,8 @@ export type {
   OptionsLegacyParser,
   RequestOptions,
   RequestResult,
+  ResolvedRequestOptions,
+  ResponseStyle,
   TDataShape,
 } from './types.gen';
-export { createConfig } from './utils.gen';
+export { createConfig, mergeHeaders } from './utils.gen';
