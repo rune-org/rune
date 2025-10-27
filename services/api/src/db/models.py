@@ -43,7 +43,6 @@ class TimestampModel(SQLModel):
 
 
 class WorkflowCredentialLink(TimestampModel, table=True):
-
     __tablename__ = "workflow_credential_links"
 
     workflow_id: int = Field(
@@ -192,7 +191,6 @@ class WorkflowTemplate(TimestampModel, table=True):
 
 
 class WorkflowCredential(TimestampModel, table=True):
-
     __tablename__ = "workflow_credentials"
 
     id: Optional[int] = Field(default=None, primary_key=True)
