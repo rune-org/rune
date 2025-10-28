@@ -109,6 +109,18 @@ class WorkflowService:
         await self.db.refresh(workflow)
         return workflow
 
+    async def update_workflow_data(
+        self, workflow: Workflow, workflow_data: dict
+    ) -> Workflow:
+        """Update the workflow's workflow_data field and persist the change.
+
+        Caller is responsible for authorization. Returns the refreshed model.
+        """
+        workflow.workflow_data = workflow_data
+        await self.db.commit()
+        await self.db.refresh(workflow)
+        return workflow
+
     async def delete(self, workflow: Workflow) -> None:
         """Hard-delete the given Workflow and commit the change.
 

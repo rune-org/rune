@@ -54,6 +54,10 @@ class WorkflowUpdateStatus(BaseModel):
     is_active: bool
 
 
+class WorkflowUpdateData(BaseModel):
+    workflow_data: dict[str, Any] = Field(..., description="Updated workflow data")
+
+
 class WorkflowDetail(BaseModel):
     id: int
     name: str
