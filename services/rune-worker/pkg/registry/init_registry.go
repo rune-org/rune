@@ -7,6 +7,7 @@ import (
 	// Import all node packages to trigger their init() functions
 	_ "rune-worker/pkg/nodes/custom/conditional"
 	_ "rune-worker/pkg/nodes/custom/http"
+	_ "rune-worker/pkg/nodes/custom/smtp"
 )
 
 // InitializeRegistry creates and populates the node registry with all available node types.
