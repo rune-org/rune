@@ -1,5 +1,5 @@
-import json
 from aio_pika import RobustConnection, Message
+from src.workflow.schemas import NodeExecutionMessage
 
 
 class WorkflowQueueService:
@@ -16,39 +16,29 @@ class WorkflowQueueService:
         self.connection = connection
         self.queue_name = queue_name
 
-    async def publish_workflow_run(
-        self, workflow_id: int, user_id: int, workflow_data: dict
-    ) -> None:
+    async def publish_workflow_run(self, payload: NodeExecutionMessage) -> None:
         """
         Publish a workflow run message to the queue.
 
         Creates a durable queue and publishes a persistent message containing
-        the workflow ID, user ID, and workflow data for the worker to consume and execute.
+        the workflow ID, execution ID, and workflow data for the worker to consume and execute.
 
         Args:
-            workflow_id: The ID of the workflow to run
-            user_id: The ID of the user who triggered the run
-            workflow_data: The workflow definition data
+            payload: NodeExecutionMessage to publish (will be JSON encoded)
         """
+
         # Create a channel for this operation
         channel = await self.connection.channel()
 
         # Declare the queue (idempotent - safe to call multiple times)
         await channel.declare_queue(self.queue_name, durable=True)
 
-        # Create message payload
-        message_body = json.dumps(
-            {
-                "workflow_id": workflow_id,
-                "user_id": user_id,
-                "workflow_data": workflow_data,
-            }
-        )
+        body_bytes = payload.model_dump_json().encode("utf-8")
 
         # Publish the message with persistence
         await channel.default_exchange.publish(
             Message(
-                body=message_body.encode(),
+                body=body_bytes,
                 delivery_mode=2,  # Persistent message (survives broker restart)
             ),
             routing_key=self.queue_name,

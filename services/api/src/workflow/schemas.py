@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
@@ -33,7 +33,7 @@ def normalize_and_validate_name(value: str, *, field_name: str = "name") -> str:
 class WorkflowCreate(BaseModel):
     name: str = Field(..., min_length=1)
     description: Optional[str] = Field(default="")
-    workflow_data: Dict[str, Any] = Field(default_factory=dict)
+    workflow_data: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("name")
     @classmethod
@@ -59,7 +59,7 @@ class WorkflowDetail(BaseModel):
     name: str
     description: Optional[str]
     is_active: bool
-    workflow_data: Dict[str, Any]
+    workflow_data: dict[str, Any]
     version: int
     created_at: datetime
     updated_at: datetime
@@ -68,3 +68,11 @@ class WorkflowDetail(BaseModel):
     # instances) when using Pydantic v2. This lets callers do
     # `WorkflowDetail.model_validate(wf)` instead of manual field mapping.
     model_config = {"from_attributes": True}
+
+
+class NodeExecutionMessage(BaseModel):
+    workflow_id: str
+    execution_id: str
+    current_node: str
+    workflow_definition: dict[str, Any]
+    accumulated_context: dict[str, Any] = Field(default_factory=dict)
