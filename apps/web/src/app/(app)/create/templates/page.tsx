@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import {
   Card,
   CardContent,
@@ -20,15 +20,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/shared/Container";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { listTemplates, applyTemplate } from "@/lib/api/templates";
+import { listTemplates } from "@/lib/api/templates";
 import type { TemplateSummary } from "@/client/types.gen";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function TemplatesPage() {
+function TemplatesPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Get category from URL params
+  const selectedCategory = searchParams.get("category");
 
   useEffect(() => {
     async function fetchTemplates() {
@@ -47,18 +50,8 @@ export default function TemplatesPage() {
   }, []);
 
   const handleUseTemplate = async (templateId: number) => {
-    try {
-      const response = await applyTemplate(templateId);
-      if (response.data && !response.error) {
-        // Store the workflow data in sessionStorage to pass to canvas
-        const workflowData = response.data.data.workflow_data;
-        sessionStorage.setItem("templateWorkflowData", JSON.stringify(workflowData));
-        // Navigate to canvas
-        router.push("/create/app?fromTemplate=true");
-      }
-    } catch (error) {
-      console.error("Failed to use template:", error);
-    }
+    // Navigate to canvas with template ID in URL
+    router.push(`/create/app?templateId=${templateId}`);
   };
 
   // Group templates by category
@@ -117,7 +110,7 @@ export default function TemplatesPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setSelectedCategory(null)}
+            onClick={() => router.push("/create/templates")}
             className="gap-2"
           >
             ← Back
@@ -243,7 +236,7 @@ export default function TemplatesPage() {
             .map((cat, i) => (
               <div
                 key={i}
-                onClick={() => setSelectedCategory(cat.name)}
+                onClick={() => router.push(`/create/templates?category=${cat.name}`)}
                 className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/30 p-3 transition-colors hover:bg-accent/10 cursor-pointer"
               >
                 <div className="rounded-md bg-background/70 p-1.5">{cat.icon}</div>
@@ -260,5 +253,20 @@ export default function TemplatesPage() {
         </Button>
       </div>
     </Container>
+  );
+}
+
+export default function TemplatesPage() {
+  return (
+    <Suspense
+      fallback={
+        <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
+          <PageHeader title="Templates" />
+          <div className="text-center text-muted-foreground">Loading templates...</div>
+        </Container>
+      }
+    >
+      <TemplatesPageInner />
+    </Suspense>
   );
 }

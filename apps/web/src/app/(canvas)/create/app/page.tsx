@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
 
 import FlowCanvas from "@/features/canvas/FlowCanvas";
 import { ApiMock } from "@/lib/api-mock";
@@ -11,29 +12,37 @@ import { sanitizeGraph } from "@/features/canvas/lib/graphIO";
 function CanvasPageInner() {
   const params = useSearchParams();
   const workflowId = params.get("workflow"); // This would be the workflow ID passed as a query parameter
-  const fromTemplate = params.get("fromTemplate"); // Check if loading from template
+  const templateId = params.get("templateId"); // Check if loading from template
 
   const [nodes, setNodes] = useState<CanvasNode[] | undefined>(undefined);
   const [edges, setEdges] = useState<CanvasEdge[] | undefined>(undefined);
 
   useEffect(() => {
-    let ignore = false;
+    const abortController = new AbortController();
+    
     async function load() {
       // Check if loading from template
-      if (fromTemplate === "true") {
-        const templateData = sessionStorage.getItem("templateWorkflowData");
-        if (templateData) {
-          try {
-            const workflowData = JSON.parse(templateData);
+      if (templateId) {
+        try {
+          const { applyTemplate } = await import("@/lib/api/templates");
+          
+          // Check if aborted before making the API call
+          if (abortController.signal.aborted) return;
+          
+          const response = await applyTemplate(Number(templateId));
+          
+          // Check if aborted after API call
+          if (abortController.signal.aborted) return;
+          
+          if (response.data && !response.error) {
+            const workflowData = response.data.data.workflow_data as { nodes: RFNode[]; edges: RFEdge[] };
             const { nodes: filteredNodes, edges: filteredEdges } =
               sanitizeGraph(workflowData);
-            if (!ignore) {
-              setNodes(filteredNodes as unknown as CanvasNode[]);
-              setEdges(filteredEdges as unknown as CanvasEdge[]);
-            }
-            // Clear the template data after loading
-            sessionStorage.removeItem("templateWorkflowData");
-          } catch (error) {
+            setNodes(filteredNodes as unknown as CanvasNode[]);
+            setEdges(filteredEdges as unknown as CanvasEdge[]);
+          }
+        } catch (error) {
+          if (!abortController.signal.aborted) {
             console.error("Failed to load template data:", error);
           }
         }
@@ -45,19 +54,23 @@ function CanvasPageInner() {
         setEdges(undefined);
         return;
       }
+      
+      if (abortController.signal.aborted) return;
+      
       const graph = await ApiMock.getWorkflowGraph(workflowId);
+      
+      if (abortController.signal.aborted) return;
+      
       const { nodes: filteredNodes, edges: filteredEdges } =
         sanitizeGraph(graph);
-      if (!ignore) {
-        setNodes(filteredNodes as unknown as CanvasNode[]);
-        setEdges(filteredEdges as unknown as CanvasEdge[]);
-      }
+      setNodes(filteredNodes as unknown as CanvasNode[]);
+      setEdges(filteredEdges as unknown as CanvasEdge[]);
     }
     load();
     return () => {
-      ignore = true;
+      abortController.abort();
     };
-  }, [workflowId, fromTemplate]);
+  }, [workflowId, templateId]);
 
   return (
     <div className="flex h-[100vh] flex-col">
