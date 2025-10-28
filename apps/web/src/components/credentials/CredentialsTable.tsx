@@ -111,11 +111,13 @@ function CredentialTypeBadge({ type }: { type: CredentialType }) {
 interface CredentialsTableProps {
   credentials: Credential[];
   onDelete?: (id: number) => void;
+  isLoading?: boolean;
 }
 
 export function CredentialsTable({
   credentials = MOCK_CREDENTIALS,
   onDelete,
+  isLoading = false,
 }: CredentialsTableProps) {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<CredentialType | "all">("all");
@@ -175,7 +177,16 @@ export function CredentialsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={4} className="h-24 text-center">
+                <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+                  <p className="text-sm">Loading credentials...</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : filtered.length === 0 ? (
             <TableRow>
               <TableCell colSpan={4} className="h-24 text-center">
                 <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">

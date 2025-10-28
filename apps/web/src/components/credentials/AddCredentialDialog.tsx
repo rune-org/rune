@@ -28,7 +28,7 @@ interface AddCredentialDialogProps {
     name: string;
     credential_type: CredentialType;
     credential_data: Record<string, string>;
-  }) => void;
+  }) => Promise<void>;
 }
 
 const CREDENTIAL_TYPES: { value: CredentialType; label: string }[] = [
@@ -161,8 +161,9 @@ export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
   const [credentialData, setCredentialData] = useState<Record<string, string>>(
     {},
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validate required fields
@@ -186,17 +187,25 @@ export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
       }
     }
 
-    onAdd({
-      name: name.trim(),
-      credential_type: credentialType,
-      credential_data: credentialData,
-    });
+    try {
+      setIsSubmitting(true);
+      await onAdd({
+        name: name.trim(),
+        credential_type: credentialType,
+        credential_data: credentialData,
+      });
 
-    // Reset form
-    setName("");
-    setCredentialType("api_key");
-    setCredentialData({});
-    setOpen(false);
+      // Reset form on success
+      setName("");
+      setCredentialType("api_key");
+      setCredentialData({});
+      setOpen(false);
+    } catch (error) {
+      console.error("Error creating credential:", error);
+      // Error handling is done in parent component
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleTypeChange = (value: string) => {
@@ -301,10 +310,13 @@ export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit">Add credential</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Adding..." : "Add credential"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
