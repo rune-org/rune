@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { CredentialType } from "./CredentialsTable";
+import type { CredentialType } from "@/client/types.gen";
 
 interface AddCredentialDialogProps {
   onAdd: (credential: {

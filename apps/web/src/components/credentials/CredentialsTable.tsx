@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * This table displays credentials with mock data for now.
- * TODO: integrate with real backend API (GET /credentials)
- */
-
 import { useState, useMemo } from "react";
 import { MoreHorizontal, Search, Key, Filter } from "lucide-react";
 
@@ -34,25 +29,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { CredentialResponse, CredentialType } from "@/client/types.gen";
 
-export type CredentialType =
-  | "api_key"
-  | "oauth2"
-  | "basic_auth"
-  | "token"
-  | "custom"
-  | "smtp";
-
-export interface Credential {
-  id: number;
-  name: string;
-  credential_type: CredentialType;
-  created_at: string;
-  updated_at: string;
-}
-
-// Mock data - will be replaced with API calls
-const MOCK_CREDENTIALS: Credential[] = [];
+// Re-export for convenience
+export type { CredentialType };
+export type Credential = CredentialResponse;
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -115,7 +96,7 @@ interface CredentialsTableProps {
 }
 
 export function CredentialsTable({
-  credentials = MOCK_CREDENTIALS,
+  credentials = [],
   onDelete,
   isLoading = false,
 }: CredentialsTableProps) {
