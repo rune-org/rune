@@ -171,7 +171,8 @@ function TemplatesPageInner() {
               className="inline-flex items-center gap-3 rounded-md border border-border/60 bg-muted/30 px-4 py-3 transition-colors hover:bg-muted/50 cursor-pointer"
               onClick={() => handleUseTemplate(template.id)}
             >
-              <Image src="/icons/social/email.svg" alt="template" width={20} height={20} />
+              {/* TODO(fe): Use actual template icon when available */}
+              <Image src="/icons/social/email.svg" alt="template" width={20} height={20} /> 
               <span className="text-sm">{template.name}</span>
             </div>
           ))}
