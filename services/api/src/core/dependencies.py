@@ -21,8 +21,8 @@ Usage:
     @app.get("/users")
     async def get_users(db: DatabaseDep):
         # db is automatically injected as AsyncSession
-        result = await db.execute(select(User))
-        return result.scalars().all()
+        result = await db.exec(select(User))
+        return result.all()
 """
 
 
