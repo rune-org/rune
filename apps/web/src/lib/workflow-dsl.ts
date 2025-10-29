@@ -91,14 +91,13 @@ export interface WorkerEdge {
 
 export interface WorkerNode<
   Params = Record<string, unknown>,
-  Credentials = CredentialRef | Record<string, unknown>,
 > {
   id: UUID;
   name: string;
   trigger: boolean;
   type: string;
   parameters: Params;
-  credentials?: Credentials;
+  credentials?: CredentialRef;
   output: Record<string, unknown>;
   error?: NodeErrorConfig;
 }
