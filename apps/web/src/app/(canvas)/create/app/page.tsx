@@ -108,9 +108,27 @@ function CanvasPageInner() {
       if (isSaving) return;
 
       if (numericWorkflowId !== null) {
-        toast.error(
-          "Updating existing workflows is not yet supported by the API.", // TODO(fe): implement workflow updates
-        );
+        try {
+          setIsSaving(true);
+          const payload = graphToWorkflowData(graph);
+          const response = await workflows.updateWorkflowData(
+            numericWorkflowId,
+            payload,
+          );
+
+          if (!response.data) {
+            throw new Error("Failed to update workflow");
+          }
+
+          toast.success("Workflow updated");
+          void refreshWorkflows();
+        } catch (err) {
+          toast.error(
+            err instanceof Error ? err.message : "Failed to update workflow",
+          );
+        } finally {
+          setIsSaving(false);
+        }
         return;
       }
 
@@ -120,7 +138,7 @@ function CanvasPageInner() {
       });
       setCreateDialogOpen(true);
     },
-    [isSaving, numericWorkflowId],
+    [isSaving, numericWorkflowId, refreshWorkflows],
   );
 
   const handleRun = useCallback(async () => {

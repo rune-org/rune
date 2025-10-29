@@ -6,12 +6,14 @@ import {
   updateStatusWorkflowsWorkflowIdStatusPut,
   deleteWorkflowWorkflowsWorkflowIdDelete,
   runWorkflowWorkflowsWorkflowIdRunPost,
+  updateWorkflowDataWorkflowsWorkflowIdDataPut,
 } from "@/client";
 
 import type {
   WorkflowCreate,
   WorkflowUpdateName,
   WorkflowUpdateStatus,
+  WorkflowUpdateData,
   ListWorkflowsWorkflowsGetResponse,
   GetWorkflowWorkflowsWorkflowIdGetResponse,
   CreateWorkflowWorkflowsPostResponse,
@@ -19,6 +21,7 @@ import type {
   UpdateStatusWorkflowsWorkflowIdStatusPutResponse,
   DeleteWorkflowWorkflowsWorkflowIdDeleteResponse,
   RunWorkflowWorkflowsWorkflowIdRunPostResponse,
+  UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse,
 } from "@/client/types.gen";
 
 // Readable wrappers for workflow-related SDK functions
@@ -49,6 +52,15 @@ export const deleteWorkflow = (workflow_id: number) =>
 export const runWorkflow = (workflow_id: number) =>
   runWorkflowWorkflowsWorkflowIdRunPost({ path: { workflow_id } });
 
+export const updateWorkflowData = (
+  workflow_id: number,
+  workflow_data: Record<string, unknown>,
+) =>
+  updateWorkflowDataWorkflowsWorkflowIdDataPut({
+    path: { workflow_id },
+    body: { workflow_data } as WorkflowUpdateData,
+  });
+
 // Useful response types
 export type ListWorkflowsResponse = ListWorkflowsWorkflowsGetResponse;
 export type GetWorkflowResponse = GetWorkflowWorkflowsWorkflowIdGetResponse;
@@ -60,3 +72,5 @@ export type UpdateWorkflowStatusResponse =
 export type DeleteWorkflowResponse =
   DeleteWorkflowWorkflowsWorkflowIdDeleteResponse;
 export type RunWorkflowResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponse;
+export type UpdateWorkflowDataResponse =
+  UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse;

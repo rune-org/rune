@@ -1,6 +1,9 @@
 import type { WorkflowListItem, WorkflowDetail } from "@/client/types.gen";
 import type { CanvasNode, CanvasEdge } from "@/features/canvas/types";
-import type { WorkflowNode, WorkflowEdge } from "@/lib/workflow-dsl";
+import type {
+  WorkflowNode as WorkflowNodeDSL,
+  WorkflowEdge as WorkflowEdgeDSL,
+} from "@/lib/workflow-dsl";
 import {
   canvasToWorkflowData,
   workflowDataToCanvas,
@@ -64,11 +67,11 @@ export type WorkflowGraph = {
 
 export function detailToGraph(detail: WorkflowDetail): WorkflowGraph {
   const data = (detail.workflow_data ?? {}) as {
-    nodes?: WorkflowNode[] | undefined;
-    edges?: WorkflowEdge[] | undefined;
+    nodes?: WorkflowNodeDSL[] | undefined;
+    edges?: WorkflowEdgeDSL[] | undefined;
   };
   const { nodes, edges } = workflowDataToCanvas({
-    nodes: Array.isArray(data.nodes) ? (data.nodes as WorkflowNode[]) : [],
+    nodes: Array.isArray(data.nodes) ? data.nodes : [],
     edges: Array.isArray(data.edges) ? data.edges : [],
   });
 
@@ -78,6 +81,6 @@ export function detailToGraph(detail: WorkflowDetail): WorkflowGraph {
   };
 }
 
-export function graphToWorkflowData(graph: WorkflowGraph) {
+export function graphToWorkflowData(graph: WorkflowGraph): Record<string, unknown> {
   return canvasToWorkflowData(graph.nodes, graph.edges);
 }
