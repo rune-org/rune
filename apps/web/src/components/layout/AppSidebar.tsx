@@ -175,7 +175,7 @@ export function AppSidebar() {
             )}
           >
             {isExpanded && (
-              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <span className="pl-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 Navigation
               </span>
             )}
