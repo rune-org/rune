@@ -220,6 +220,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/data:
+    put:
+      tags:
+      - Workflows
+      summary: Update Workflow Data
+      operationId: update_workflow_data_workflows__workflow_id__data_put
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowUpdateData'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /workflows/{workflow_id}/run:
     post:
       tags:
@@ -247,6 +279,123 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_dict_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /templates/:
+    get:
+      tags:
+      - Templates
+      summary: List Templates
+      description: Get all templates accessible to the current user (public + their
+        own).
+      operationId: list_templates_templates__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_List_TemplateSummary__'
+    post:
+      tags:
+      - Templates
+      summary: Create Template
+      description: Create a new template.
+      operationId: create_template_templates__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /templates/{template_id}:
+    get:
+      tags:
+      - Templates
+      summary: Get Template
+      description: Get a specific template by ID.
+      operationId: get_template_templates__template_id__get
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Templates
+      summary: Delete Template
+      description: Delete a template.
+      operationId: delete_template_templates__template_id__delete
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /templates/{template_id}/use:
+    post:
+      tags:
+      - Templates
+      summary: Use Template
+      description: Mark a template as used (increment usage count) and return its
+        workflow data.
+      operationId: use_template_templates__template_id__use_post
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateWorkflowData_'
         '422':
           description: Validation Error
           content:
@@ -412,6 +561,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /credentials/:
+    get:
+      tags:
+      - credentials
+      summary: List all credentials
+      description: List all credentials in the system.
+      operationId: list_credentials_credentials__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_list_CredentialResponse__'
+    post:
+      tags:
+      - credentials
+      summary: Create a new credential
+      description: "Create a new credential with encrypted data. \n    The credential\
+        \ data will be encrypted before storage."
+      operationId: create_credential_credentials__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_CredentialResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /credentials/dropdown:
+    get:
+      tags:
+      - credentials
+      summary: List all credentials for dropdown
+      description: List all credentials in the system for dropdowns.
+      operationId: list_credentials_dropdown_credentials_dropdown_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_list_CredentialResponseDropDown__'
 components:
   schemas:
     AdminUserUpdate:
@@ -440,6 +643,47 @@ components:
           title: Is Active
       type: object
       title: AdminUserUpdate
+    ApiResponse_CredentialResponse_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/CredentialResponse'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[CredentialResponse]
+    ApiResponse_List_TemplateSummary__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/TemplateSummary'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[List[TemplateSummary]]
     ApiResponse_NoneType_:
       properties:
         success:
@@ -460,6 +704,44 @@ components:
       required:
       - data
       title: ApiResponse[NoneType]
+    ApiResponse_TemplateDetail_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/TemplateDetail'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[TemplateDetail]
+    ApiResponse_TemplateWorkflowData_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/TemplateWorkflowData'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[TemplateWorkflowData]
     ApiResponse_TokenResponse_:
       properties:
         success:
@@ -538,6 +820,50 @@ components:
       required:
       - data
       title: ApiResponse[dict]
+    ApiResponse_list_CredentialResponseDropDown__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/CredentialResponseDropDown'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[list[CredentialResponseDropDown]]
+    ApiResponse_list_CredentialResponse__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/CredentialResponse'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[list[CredentialResponse]]
     ApiResponse_list_UserResponse__:
       properties:
         success:
@@ -582,6 +908,89 @@ components:
       required:
       - data
       title: ApiResponse[list[WorkflowListItem]]
+    CredentialCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+          description: Credential name
+        credential_type:
+          $ref: '#/components/schemas/CredentialType'
+          description: Type of credential
+        credential_data:
+          additionalProperties: true
+          type: object
+          title: Credential Data
+          description: Credential data (will be encrypted)
+      type: object
+      required:
+      - name
+      - credential_type
+      title: CredentialCreate
+      description: Schema for creating a new credential.
+    CredentialResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        credential_type:
+          $ref: '#/components/schemas/CredentialType'
+        created_by:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Created By
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - name
+      - credential_type
+      - created_by
+      - created_at
+      - updated_at
+      title: CredentialResponse
+      description: Schema for credential response (without sensitive data).
+    CredentialResponseDropDown:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        credential_type:
+          $ref: '#/components/schemas/CredentialType'
+      type: object
+      required:
+      - id
+      - name
+      - credential_type
+      title: CredentialResponseDropDown
+      description: Schema for credential response in dropdowns.
+    CredentialType:
+      type: string
+      enum:
+      - api_key
+      - oauth2
+      - basic_auth
+      - token
+      - custom
+      - smtp
+      title: CredentialType
+      description: Credential type enumeration.
     HTTPValidationError:
       properties:
         detail:
@@ -636,6 +1045,125 @@ components:
       required:
       - refresh_token
       title: RefreshRequest
+    TemplateCreate:
+      properties:
+        name:
+          type: string
+          minLength: 1
+          title: Name
+        description:
+          type: string
+          title: Description
+          default: ''
+        category:
+          type: string
+          title: Category
+          default: general
+        workflow_data:
+          additionalProperties: true
+          type: object
+          title: Workflow Data
+        is_public:
+          type: boolean
+          title: Is Public
+          default: false
+      type: object
+      required:
+      - name
+      title: TemplateCreate
+      description: Schema for creating a new template.
+    TemplateDetail:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+        category:
+          type: string
+          title: Category
+        workflow_data:
+          additionalProperties: true
+          type: object
+          title: Workflow Data
+        usage_count:
+          type: integer
+          title: Usage Count
+        is_public:
+          type: boolean
+          title: Is Public
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        created_by:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Created By
+      type: object
+      required:
+      - id
+      - name
+      - description
+      - category
+      - workflow_data
+      - usage_count
+      - is_public
+      - created_at
+      - updated_at
+      - created_by
+      title: TemplateDetail
+      description: Detailed template information including workflow data.
+    TemplateSummary:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+        category:
+          type: string
+          title: Category
+        usage_count:
+          type: integer
+          title: Usage Count
+        is_public:
+          type: boolean
+          title: Is Public
+      type: object
+      required:
+      - id
+      - name
+      - description
+      - category
+      - usage_count
+      - is_public
+      title: TemplateSummary
+      description: Template summary for listing templates.
+    TemplateWorkflowData:
+      properties:
+        workflow_data:
+          additionalProperties: true
+          type: object
+          title: Workflow Data
+      type: object
+      required:
+      - workflow_data
+      title: TemplateWorkflowData
+      description: Schema for template workflow data response.
     TokenResponse:
       properties:
         access_token:
@@ -838,6 +1366,17 @@ components:
       - name
       - is_active
       title: WorkflowListItem
+    WorkflowUpdateData:
+      properties:
+        workflow_data:
+          additionalProperties: true
+          type: object
+          title: Workflow Data
+          description: Updated workflow data
+      type: object
+      required:
+      - workflow_data
+      title: WorkflowUpdateData
     WorkflowUpdateName:
       properties:
         name:
