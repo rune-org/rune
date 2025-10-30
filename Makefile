@@ -79,7 +79,7 @@ web-dev:
 
 api-dev:
 	@echo "Starting API in development mode..."
-	cd services/api && docker compose -f docker-compose.dev.yml up
+	cd services/api && docker compose -f docker-compose.dev.yml up -d
 
 worker-dev:
 	@echo "Starting worker in development mode..."
