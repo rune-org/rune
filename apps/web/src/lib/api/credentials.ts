@@ -6,9 +6,6 @@ import {
 
 import type {
   CredentialCreate,
-  CreateCredentialCredentialsPostResponses,
-  ListCredentialsCredentialsGetResponses,
-  ListCredentialsDropdownCredentialsDropdownGetResponses,
 } from "@/client/types.gen";
 
 // Readable wrappers for credentials-related SDK functions
