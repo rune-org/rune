@@ -153,6 +153,27 @@ function nodeName(n: CanvasNode): string {
   return n.type.charAt(0).toUpperCase() + n.type.slice(1);
 }
 
+// Helper to convert comma-separated email string to array
+function emailStringToArray(value: string | undefined): string[] | string | undefined {
+  if (!value || !value.trim()) return undefined;
+  const emails = value
+    .split(",")
+    .map((e) => e.trim())
+    .filter((e) => e.length > 0);
+  // Return single string if only one email, array if multiple
+  return emails.length === 1 ? emails[0] : emails.length > 1 ? emails : undefined;
+}
+
+// Helper to convert array or single string back to comma-separated string for UI
+function emailArrayToString(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    const emails = value.filter((v) => typeof v === "string") as string[];
+    return emails.length > 0 ? emails.join(", ") : undefined;
+  }
+  return undefined;
+}
+
 // Build parameter objects for supported node types
 function toWorkerParameters(
   n: CanvasNode,
@@ -197,9 +218,12 @@ function toWorkerParameters(
     case "smtp": {
       const d = (n.data || {}) as SmtpData;
       const params: Record<string, unknown> = {};
+      if (d.from) params.from = String(d.from);
+      if (d.to) params.to = emailStringToArray(d.to);
+      if (d.cc) params.cc = emailStringToArray(d.cc);
+      if (d.bcc) params.bcc = emailStringToArray(d.bcc);
       if (d.subject) params.subject = String(d.subject);
-      if (d.to) params.to = String(d.to);
-      // TODO(ui): from/cc/bcc.
+      if (d.body) params.body = String(d.body);
       return params;
     }
     default:
@@ -258,9 +282,13 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
   smtp: (base, params) => {
     const smtpData: SmtpData = {
       ...base,
+      from: typeof params.from === "string" ? params.from : undefined,
+      to: emailArrayToString(params.to),
+      cc: emailArrayToString(params.cc),
+      bcc: emailArrayToString(params.bcc),
       subject:
         typeof params.subject === "string" ? params.subject : undefined,
-      to: typeof params.to === "string" ? params.to : undefined,
+      body: typeof params.body === "string" ? params.body : undefined,
     };
     return smtpData;
   },

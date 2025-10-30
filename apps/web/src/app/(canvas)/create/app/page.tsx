@@ -21,6 +21,7 @@ import {
 } from "@/lib/workflows";
 import { sanitizeGraph } from "@/features/canvas/lib/graphIO";
 import { useAppState } from "@/lib/state";
+import { MissingNodeCredentialsError } from "@/lib/workflow-dsl";
 import {
   Dialog,
   DialogContent,
@@ -123,9 +124,16 @@ function CanvasPageInner() {
           toast.success("Workflow updated");
           void refreshWorkflows();
         } catch (err) {
-          toast.error(
-            err instanceof Error ? err.message : "Failed to update workflow",
-          );
+          if (err instanceof MissingNodeCredentialsError) {
+            const nodeList = err.nodes
+              .map((n) => `${n.type} (${n.id.slice(0, 6)})`)
+              .join(", ");
+            toast.error(`Missing credentials for: ${nodeList}`);
+          } else {
+            toast.error(
+              err instanceof Error ? err.message : "Failed to update workflow",
+            );
+          }
         } finally {
           setIsSaving(false);
         }
@@ -197,9 +205,16 @@ function CanvasPageInner() {
         void refreshWorkflows();
         router.replace(`/create/app?workflow=${created.id}`);
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to save workflow",
-        );
+        if (err instanceof MissingNodeCredentialsError) {
+          const nodeList = err.nodes
+            .map((n) => `${n.type} (${n.id.slice(0, 6)})`)
+            .join(", ");
+          toast.error(`Missing credentials for: ${nodeList}`);
+        } else {
+          toast.error(
+            err instanceof Error ? err.message : "Failed to save workflow",
+          );
+        }
       } finally {
         setIsSaving(false);
       }
