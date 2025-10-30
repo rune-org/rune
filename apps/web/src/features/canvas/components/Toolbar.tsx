@@ -11,7 +11,7 @@ type ToolbarProps = {
   onSave: () => void;
   onExport: () => void;
   onFitView?: () => void;
-  saveDisabled?: boolean; // Should be disabled globally when the workflows list page is ready.
+  saveDisabled?: boolean;
 };
 
 export function Toolbar({
@@ -65,7 +65,7 @@ export function Toolbar({
       <Btn onClick={onDelete} title="Delete Selected">
         <Trash2 className="h-4 w-4" /> Delete
       </Btn>
-      <Btn onClick={onSave} title="Save (disabled)" disabled={saveDisabled}>
+      <Btn onClick={onSave} title="Save" disabled={saveDisabled}>
         <Save className="h-4 w-4" /> Save
       </Btn>
       <Btn onClick={onExport} title="Export JSON to clipboard">

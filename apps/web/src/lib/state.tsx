@@ -9,7 +9,9 @@ import {
   type ReactNode,
 } from "react";
 
-import { ApiMock, type WorkflowSummary } from "./api-mock";
+import { auth, workflows as workflowsApi } from "@/lib/api";
+import type { UserResponse } from "@/client/types.gen";
+import { listItemToWorkflowSummary, type WorkflowSummary } from "@/lib/workflows";
 import type {
   ExecutionHistoryItem,
   TemplateSummary,
@@ -54,6 +56,15 @@ function dedupeById<T extends { id: string }>(arr: T[]): T[] {
   return out;
 }
 
+function toUserProfile(user: UserResponse): UserProfile {
+  return {
+    id: String(user.id),
+    name: user.name,
+    email: user.email,
+    avatarUrl: undefined,
+  };
+}
+
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "start":
@@ -82,8 +93,6 @@ type AppContextType = {
   actions: {
     init: () => Promise<void>;
     refreshWorkflows: () => Promise<void>;
-    // TODO: Mutating actions (create/update/delete) are intentionally
-    // unimplemented and should be implemented via backend APIs.
   };
 };
 
@@ -95,12 +104,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const init = useCallback(async () => {
     try {
       dispatch({ type: "start" });
-      const [user, workflows] = await Promise.all([
-        ApiMock.getUserProfile(),
-        ApiMock.getWorkflows(),
+      const [profileRes, workflowsRes] = await Promise.all([
+        auth.getMyProfile(),
+        workflowsApi.listWorkflows(),
       ]);
-      dispatch({ type: "setUser", user });
-      dispatch({ type: "setWorkflows", workflows });
+      if (!profileRes.data) {
+        throw new Error("Unable to load user profile");
+      }
+      if (!workflowsRes.data) {
+        throw new Error("Unable to load workflows");
+      }
+      const userData = profileRes.data.data;
+      dispatch({ type: "setUser", user: toUserProfile(userData) });
+      const workflowItems = workflowsRes.data.data ?? [];
+      dispatch({
+        type: "setWorkflows",
+        workflows: workflowItems.map((item) =>
+          listItemToWorkflowSummary(item),
+        ),
+      });
     } catch (e) {
       dispatch({ type: "error", error: (e as Error).message });
     }
@@ -109,8 +131,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const refreshWorkflows = useCallback(async () => {
     try {
       dispatch({ type: "start" });
-      const list = await ApiMock.getWorkflows();
-      dispatch({ type: "setWorkflows", workflows: list });
+      const res = await workflowsApi.listWorkflows();
+      if (!res.data) {
+        throw new Error("Unable to load workflows");
+      }
+      const items = res.data.data ?? [];
+      dispatch({
+        type: "setWorkflows",
+        workflows: items.map((item) => listItemToWorkflowSummary(item)),
+      });
     } catch (e) {
       dispatch({ type: "error", error: (e as Error).message });
     }

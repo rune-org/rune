@@ -36,6 +36,8 @@ export default function FlowCanvas({
   externalNodes,
   externalEdges,
   onPersist,
+  onRun,
+  saveDisabled = false,
 }: {
   externalNodes?: CanvasNode[];
   externalEdges?: Edge[];
@@ -43,6 +45,8 @@ export default function FlowCanvas({
     nodes: CanvasNode[];
     edges: Edge[];
   }) => Promise<void> | void;
+  onRun?: () => Promise<void> | void;
+  saveDisabled?: boolean;
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>(
     externalNodes && externalNodes.length ? externalNodes : [],
@@ -186,7 +190,8 @@ export default function FlowCanvas({
             <Toolbar
               onExecute={() => {
                 reset();
-                run();
+                void run();
+                if (onRun) void onRun();
               }}
               onUndo={undo}
               onDelete={deleteSelectedElements}
@@ -200,7 +205,7 @@ export default function FlowCanvas({
                 toast.success("Exported JSON to clipboard");
               }}
               onFitView={() => rfInstanceRef.current?.fitView()}
-              saveDisabled
+              saveDisabled={saveDisabled}
             />
           </div>
         </Panel>

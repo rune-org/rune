@@ -193,7 +193,7 @@ logs-frontend:
 # ======================
 
 db-shell:
-	docker compose exec postgres psql -U rune -d rune
+	docker exec -it rune-api-postgres-dev psql -U postgres -d rune
 
 # ======================
 # Cleanup targets

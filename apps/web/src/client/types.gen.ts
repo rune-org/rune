@@ -24,6 +24,28 @@ export type AdminUserUpdate = {
 };
 
 /**
+ * ApiResponse[CredentialResponse]
+ */
+export type ApiResponseCredentialResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: CredentialResponse;
+};
+
+/**
  * ApiResponse[List[TemplateSummary]]
  */
 export type ApiResponseListTemplateSummary = {
@@ -208,6 +230,54 @@ export type ApiResponseDict = {
 };
 
 /**
+ * ApiResponse[list[CredentialResponseDropDown]]
+ */
+export type ApiResponseListCredentialResponseDropDown = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<CredentialResponseDropDown>;
+};
+
+/**
+ * ApiResponse[list[CredentialResponse]]
+ */
+export type ApiResponseListCredentialResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<CredentialResponse>;
+};
+
+/**
  * ApiResponse[list[UserResponse]]
  */
 export type ApiResponseListUserResponse = {
@@ -254,6 +324,85 @@ export type ApiResponseListWorkflowListItem = {
      */
     data: Array<WorkflowListItem>;
 };
+
+/**
+ * CredentialCreate
+ *
+ * Schema for creating a new credential.
+ */
+export type CredentialCreate = {
+    /**
+     * Name
+     *
+     * Credential name
+     */
+    name: string;
+    /**
+     * Type of credential
+     */
+    credential_type: CredentialType;
+    /**
+     * Credential Data
+     *
+     * Credential data (will be encrypted)
+     */
+    credential_data?: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * CredentialResponse
+ *
+ * Schema for credential response (without sensitive data).
+ */
+export type CredentialResponse = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    credential_type: CredentialType;
+    /**
+     * Created By
+     */
+    created_by: number | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+};
+
+/**
+ * CredentialResponseDropDown
+ *
+ * Schema for credential response in dropdowns.
+ */
+export type CredentialResponseDropDown = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    credential_type: CredentialType;
+};
+
+/**
+ * CredentialType
+ *
+ * Credential type enumeration.
+ */
+export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'token' | 'custom' | 'smtp';
 
 /**
  * HTTPValidationError
@@ -634,6 +783,20 @@ export type WorkflowListItem = {
 };
 
 /**
+ * WorkflowUpdateData
+ */
+export type WorkflowUpdateData = {
+    /**
+     * Workflow Data
+     *
+     * Updated workflow data
+     */
+    workflow_data: {
+        [key: string]: unknown;
+    };
+};
+
+/**
  * WorkflowUpdateName
  */
 export type WorkflowUpdateName = {
@@ -879,6 +1042,36 @@ export type UpdateNameWorkflowsWorkflowIdNamePutResponses = {
 };
 
 export type UpdateNameWorkflowsWorkflowIdNamePutResponse = UpdateNameWorkflowsWorkflowIdNamePutResponses[keyof UpdateNameWorkflowsWorkflowIdNamePutResponses];
+
+export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutData = {
+    body: WorkflowUpdateData;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/data';
+};
+
+export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutError = UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors[keyof UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors];
+
+export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseWorkflowDetail;
+};
+
+export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse = UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses[keyof UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses];
 
 export type RunWorkflowWorkflowsWorkflowIdRunPostData = {
     body?: never;
@@ -1212,3 +1405,60 @@ export type UpdateMyProfileProfileMePutResponses = {
 };
 
 export type UpdateMyProfileProfileMePutResponse = UpdateMyProfileProfileMePutResponses[keyof UpdateMyProfileProfileMePutResponses];
+
+export type ListCredentialsCredentialsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/credentials/';
+};
+
+export type ListCredentialsCredentialsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListCredentialResponse;
+};
+
+export type ListCredentialsCredentialsGetResponse = ListCredentialsCredentialsGetResponses[keyof ListCredentialsCredentialsGetResponses];
+
+export type CreateCredentialCredentialsPostData = {
+    body: CredentialCreate;
+    path?: never;
+    query?: never;
+    url: '/credentials/';
+};
+
+export type CreateCredentialCredentialsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateCredentialCredentialsPostError = CreateCredentialCredentialsPostErrors[keyof CreateCredentialCredentialsPostErrors];
+
+export type CreateCredentialCredentialsPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ApiResponseCredentialResponse;
+};
+
+export type CreateCredentialCredentialsPostResponse = CreateCredentialCredentialsPostResponses[keyof CreateCredentialCredentialsPostResponses];
+
+export type ListCredentialsDropdownCredentialsDropdownGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/credentials/dropdown';
+};
+
+export type ListCredentialsDropdownCredentialsDropdownGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListCredentialResponseDropDown;
+};
+
+export type ListCredentialsDropdownCredentialsDropdownGetResponse = ListCredentialsDropdownCredentialsDropdownGetResponses[keyof ListCredentialsDropdownCredentialsDropdownGetResponses];
