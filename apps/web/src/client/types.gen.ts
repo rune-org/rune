@@ -204,32 +204,6 @@ export type ApiResponseWorkflowDetail = {
 };
 
 /**
- * ApiResponse[dict]
- */
-export type ApiResponseDict = {
-    /**
-     * Success
-     *
-     * Whether the request was successful
-     */
-    success?: boolean;
-    /**
-     * Message
-     *
-     * Human-readable message
-     */
-    message?: string;
-    /**
-     * Data
-     *
-     * Response data
-     */
-    data: {
-        [key: string]: unknown;
-    };
-};
-
-/**
  * ApiResponse[list[CredentialResponseDropDown]]
  */
 export type ApiResponseListCredentialResponseDropDown = {
@@ -323,6 +297,30 @@ export type ApiResponseListWorkflowListItem = {
      * Response data
      */
     data: Array<WorkflowListItem>;
+};
+
+/**
+ * ApiResponse[str]
+ */
+export type ApiResponseStr = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: string;
 };
 
 /**
@@ -1098,7 +1096,7 @@ export type RunWorkflowWorkflowsWorkflowIdRunPostResponses = {
     /**
      * Successful Response
      */
-    200: ApiResponseDict;
+    200: ApiResponseStr;
 };
 
 export type RunWorkflowWorkflowsWorkflowIdRunPostResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponses[keyof RunWorkflowWorkflowsWorkflowIdRunPostResponses];
