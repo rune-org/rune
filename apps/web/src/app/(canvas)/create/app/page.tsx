@@ -15,6 +15,7 @@ import FlowCanvas from "@/features/canvas/FlowCanvas";
 import type { CanvasEdge, CanvasNode } from "@/features/canvas/types";
 import { toast } from "@/components/ui/toast";
 import { workflows } from "@/lib/api";
+import { applyTemplate } from "@/lib/api/templates";
 import {
   detailToGraph,
   graphToWorkflowData,
@@ -68,7 +69,6 @@ function CanvasPageInner() {
       // Check if loading from template
       if (templateId) {
         try {
-          const { applyTemplate } = await import("@/lib/api/templates");
           
           // Check if aborted before making the API call
           if (abortController.signal.aborted) return;
