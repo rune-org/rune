@@ -1,8 +1,10 @@
+import copy
 from sqlmodel import select, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.db.models import Workflow, WorkflowUser, WorkflowRole
+from src.db.models import Workflow, WorkflowUser, WorkflowRole, WorkflowCredential
 from src.core.exceptions import NotFound, Forbidden
+from src.credentials.encryption import get_encryptor
 
 
 class WorkflowService:
@@ -14,6 +16,7 @@ class WorkflowService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.encryptor = get_encryptor()
 
     async def list_for_user(self, user_id: int) -> list[Workflow]:
         """Return workflows owned by `user_id`, newest first.
@@ -133,3 +136,67 @@ class WorkflowService:
         # Now delete the workflow itself
         await self.db.delete(workflow)
         await self.db.commit()
+
+    async def resolve_workflow_credentials(self, workflow_data: dict) -> dict:
+        """
+        Resolve credentials for all nodes in the workflow.
+
+        Iterates through all nodes in the workflow_data, finds nodes with credential
+        references, fetches the actual credential from the database, decrypts it,
+        and embeds the resolved values in place.
+
+        Args:
+            workflow_data: The workflow definition containing nodes and edges
+            user_id: ID of the user requesting the workflow run
+
+        Returns:
+            Updated workflow_data with resolved credentials embedded in nodes
+
+        Raises:
+            NotFound: If a referenced credential doesn't exist
+            Forbidden: If user doesn't have access to a credential
+        """
+        # Create a deep copy to avoid mutating the original
+
+        resolved_data = copy.deepcopy(workflow_data)
+
+        # Get all nodes from the workflow
+        nodes = resolved_data.get("nodes", [])
+
+        for node in nodes:
+            # Check if this node has a credentials reference
+            if "credentials" in node and isinstance(node["credentials"], dict):
+                cred_ref = node["credentials"]
+
+                # If it has an id field, it's a reference that needs resolving
+                if "id" in cred_ref:
+                    credential_id = cred_ref["id"]
+
+                    # Convert string ID to int if needed
+                    if isinstance(credential_id, str):
+                        credential_id = int(credential_id)
+
+                    # Fetch the credential from database
+                    credential: WorkflowCredential | None = await self.db.get(
+                        WorkflowCredential, credential_id
+                    )
+
+                    if not credential:
+                        raise NotFound(
+                            detail=f"Credential with ID {credential_id} not found"
+                        )
+
+                    # Decrypt the credential data
+                    decrypted_data = self.encryptor.decrypt_credential_data(
+                        credential.credential_data
+                    )
+
+                    # Replace the credentials reference with resolved values
+                    node["credentials"] = {
+                        "id": str(credential.id),  # Convert to string for Go worker
+                        "name": credential.name,
+                        "type": credential.credential_type.value,
+                        "values": decrypted_data,
+                    }
+
+        return resolved_data
