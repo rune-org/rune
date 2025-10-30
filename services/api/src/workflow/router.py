@@ -6,6 +6,7 @@ from src.workflow.schemas import (
     WorkflowDetail,
     WorkflowUpdateName,
     WorkflowUpdateStatus,
+    WorkflowUpdateData,
 )
 from src.workflow.service import WorkflowService
 from src.core.dependencies import DatabaseDep, get_current_user
@@ -105,6 +106,21 @@ async def update_name(
     detail = WorkflowDetail.model_validate(wf)
 
     return ApiResponse(success=True, message="Workflow name updated", data=detail)
+
+
+@router.put("/{workflow_id}/data", response_model=ApiResponse[WorkflowDetail])
+async def update_workflow_data(
+    workflow_id: int,
+    payload: WorkflowUpdateData,
+    current_user: User = Depends(get_current_user),
+    service: WorkflowService = Depends(get_workflow_service),
+) -> ApiResponse[WorkflowDetail]:
+    wf = await service.get_for_user(workflow_id, current_user.id)
+    wf = await service.update_workflow_data(wf, payload.workflow_data)
+
+    detail = WorkflowDetail.model_validate(wf)
+
+    return ApiResponse(success=True, message="Workflow data updated", data=detail)
 
 
 @router.delete("/{workflow_id}", status_code=status.HTTP_204_NO_CONTENT)

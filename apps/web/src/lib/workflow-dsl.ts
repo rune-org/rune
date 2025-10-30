@@ -1,6 +1,7 @@
 // Types and helpers for the frontend representation of the Workflow DSL
 
 import type { Edge as RFEdge } from "@xyflow/react";
+import type { CSSProperties } from "react";
 import type {
   CanvasNode,
   HttpData,
@@ -206,6 +207,65 @@ function toWorkerParameters(
   }
 }
 
+type NodeHydrator = (
+  base: CanvasNode["data"],
+  params: Record<string, unknown>,
+) => CanvasNode["data"];
+
+const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
+  http: (base, params) => {
+    const httpData: HttpData = {
+      ...base,
+      method:
+        typeof params.method === "string"
+          ? (params.method.toUpperCase() as HttpData["method"])
+          : undefined,
+      url: typeof params.url === "string" ? params.url : undefined,
+      headers:
+        params.headers && typeof params.headers === "object"
+          ? (params.headers as Record<string, unknown>)
+          : undefined,
+      query:
+        params.query && typeof params.query === "object"
+          ? (params.query as Record<string, unknown>)
+          : undefined,
+      body: params.body,
+      timeout:
+        typeof params.timeout === "number"
+          ? params.timeout
+          : typeof params.timeout === "string"
+            ? Number(params.timeout)
+            : undefined,
+      retries:
+        typeof params.retry === "number"
+          ? params.retry
+          : typeof params.retry === "string"
+            ? Number(params.retry)
+            : undefined,
+      ignoreSSL:
+        typeof params.ignore_ssl === "boolean" ? params.ignore_ssl : undefined,
+    };
+    return httpData;
+  },
+  if: (base, params) => {
+    const ifData: IfData = {
+      ...base,
+      expression:
+        typeof params.expression === "string" ? params.expression : undefined,
+    };
+    return ifData;
+  },
+  smtp: (base, params) => {
+    const smtpData: SmtpData = {
+      ...base,
+      subject:
+        typeof params.subject === "string" ? params.subject : undefined,
+      to: typeof params.to === "string" ? params.to : undefined,
+    };
+    return smtpData;
+  },
+};
+
 function extractNodeCredential(node: CanvasNode): CredentialRef | undefined {
   const data = (node.data ?? {}) as { credential?: unknown };
   const candidate = data.credential;
@@ -320,24 +380,52 @@ export function workflowDataToCanvas(data: {
           ? "trigger"
           : n.type;
     const credentials = n.credentials ? { ...n.credentials } : undefined;
+    const baseData = {
+      label: n.name,
+      ...(credentials ? { credential: credentials } : {}),
+    } as CanvasNode["data"];
+    const params = (n.parameters ?? {}) as Record<string, unknown>;
+    const hydrateDataForNode =
+      nodeHydrators[canvasType as CanvasNode["type"]] ??
+      ((existing) => existing);
+    const dataForNode = hydrateDataForNode(baseData, params);
     return {
       id: n.id,
       type: canvasType as CanvasNode["type"],
       position: { x, y },
-      data: {
-        label: n.name,
-        ...(credentials ? { credential: credentials } : {}),
-      },
+      data: dataForNode,
     } as CanvasNode;
   });
 
-  const edges: RFEdge[] = (data.edges ?? []).map((e) => ({
-    id: e.id,
-    source: e.src,
-    target: e.dst,
-    type: "default",
-    label: e.label,
-  })) as RFEdge[];
+  const edges: RFEdge[] = (data.edges ?? []).map((e) => {
+    const edge: RFEdge = {
+      id: e.id,
+      source: e.src,
+      target: e.dst,
+      type: "default",
+      label: e.label,
+    } as RFEdge;
+
+    if (e.label === "true" || e.label === "false") {
+      const isTrue = e.label === "true";
+      (edge as RFEdge & { sourceHandle?: string }).sourceHandle = e.label;
+      (edge as RFEdge & { labelStyle?: CSSProperties }).labelStyle = {
+        fill: "white",
+        fontWeight: 600,
+      };
+      (edge as RFEdge & { labelShowBg?: boolean }).labelShowBg = true;
+      (edge as RFEdge & { labelBgStyle?: CSSProperties }).labelBgStyle = {
+        fill: isTrue ? "hsl(142 70% 45%)" : "hsl(0 70% 50%)",
+      };
+      (edge as RFEdge & { labelBgPadding?: [number, number] }).labelBgPadding = [
+        2,
+        6,
+      ];
+      (edge as RFEdge & { labelBgBorderRadius?: number }).labelBgBorderRadius = 4;
+    }
+
+    return edge;
+  });
 
   return { nodes, edges };
 }
