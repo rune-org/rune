@@ -132,7 +132,7 @@ function CanvasPageInner() {
     return () => {
       abortController.abort();
     };
-  }, [workflowId, numericWorkflowId]);
+  }, [workflowId, numericWorkflowId, templateId]);
 
   const handlePersist = useCallback(
     async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }) => {
