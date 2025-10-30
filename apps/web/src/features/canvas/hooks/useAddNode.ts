@@ -28,7 +28,13 @@ const NODE_DEFAULTS: Record<
   },
   smtp: {
     type: "smtp",
-    data: { label: "SMTP", to: "user@example.com", subject: "Hello" },
+    data: {
+      label: "SMTP",
+      from: "sender@example.com",
+      to: "recipient@example.com",
+      subject: "Hello from Rune",
+      body: "This is a test email",
+    },
   },
 };
 
@@ -73,11 +79,12 @@ export function useAddNode(
 
       const defaults = NODE_DEFAULTS[kind];
 
-      const newNode: CanvasNode = {
+      const newNode = {
         id: createId(),
         position,
-        ...defaults,
-      };
+        type: defaults.type,
+        data: defaults.data,
+      } as CanvasNode;
 
       setNodes((nodes) => nodes.concat(newNode));
     },

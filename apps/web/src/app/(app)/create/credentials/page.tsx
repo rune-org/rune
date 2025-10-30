@@ -1,59 +1,143 @@
-import Link from "next/link";
+"use client";
 
-import { ArrowUpRightIcon, KeyRound } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
+import { CredentialsTable, type Credential } from "@/components/credentials/CredentialsTable";
+import { AddCredentialDialog } from "@/components/credentials/AddCredentialDialog";
+import { DeleteCredentialDialog } from "@/components/credentials/DeleteCredentialDialog";
+import { credentials as credentialsAPI } from "@/lib/api";
+import { toast } from "@/components/ui/toast";
 
 export default function CreateCredentialsPage() {
+  const [credentials, setCredentials] = useState<Credential[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    credentialId: number | null;
+    credentialName: string;
+  }>({
+    open: false,
+    credentialId: null,
+    credentialName: "",
+  });
+
+  // Fetch credentials on mount
+  useEffect(() => {
+    loadCredentials();
+  }, []);
+
+  const loadCredentials = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await credentialsAPI.listCredentials();
+      
+      // Extract data from the ApiResponse wrapper
+      if (response.data && response.data.data) {
+        setCredentials(response.data.data);
+      }
+    } catch (err) {
+      console.error("Failed to load credentials:", err);
+      setError("Failed to load credentials. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddCredential = async (newCred: {
+    name: string;
+    credential_type: Credential["credential_type"];
+    credential_data: Record<string, string>;
+  }) => {
+    try {
+      const response = await credentialsAPI.createCredential({
+        name: newCred.name,
+        credential_type: newCred.credential_type,
+        credential_data: newCred.credential_data,
+      });
+
+      // Extract the created credential from the ApiResponse wrapper
+      if (response.data && response.data.data) {
+        setCredentials((prev) => [...prev, response.data.data]);
+        toast.success("Credential created successfully");
+      }
+    } catch (err) {
+      console.error("Failed to create credential:", err);
+      toast.error("Failed to create credential. Please try again.");
+      throw err; // Re-throw so the dialog can handle it
+    }
+  };
+
+  const handleDeleteCredential = (id: number) => {
+    const credential = credentials.find((c) => c.id === id);
+    if (credential) {
+      setDeleteDialog({
+        open: true,
+        credentialId: id,
+        credentialName: credential.name,
+      });
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (deleteDialog.credentialId === null) return;
+
+    const id = deleteDialog.credentialId;
+    
+    // Optimistic update - remove from UI immediately
+    setCredentials((prev) => prev.filter((c) => c.id !== id));
+    toast.success("Credential deleted successfully");
+    
+    // TODO: Call API to delete on backend
+    // try {
+    //   await credentialsAPI.deleteCredential(id);
+    //   toast.success("Credential deleted successfully");
+    // } catch (err) {
+    //   console.error("Failed to delete credential:", err);
+    //   // Reload credentials to restore UI state on error
+    //   loadCredentials();
+    //   toast.error("Failed to delete credential. Please try again.");
+    // }
+  };
+
+  if (error) {
+    return (
+      <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
+        <div className="text-center text-destructive">
+          <p>{error}</p>
+          <button
+            onClick={loadCredentials}
+            className="mt-4 underline hover:no-underline"
+          >
+            Try again
+          </button>
+        </div>
+      </Container>
+    );
+  }
+
   return (
     <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
       <PageHeader
         title="Credentials"
         description="Manage the keys and secrets your workflows need to run."
+        actions={<AddCredentialDialog onAdd={handleAddCredential} />}
       />
-      <Empty>
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <KeyRound className="h-6 w-6" aria-hidden />
-          </EmptyMedia>
-          <EmptyTitle>Secure connections are on the way</EmptyTitle>
-          <EmptyDescription>
-            Soon you&apos;ll be able to store API keys and rotate secrets for
-            every integration in your workspace.
-          </EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button disabled title="Credential management is coming soon">
-              Add credential
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/create/docs">Review integration guide</Link>
-            </Button>
-          </div>
-        </EmptyContent>
-        <Button
-          variant="link"
-          asChild
-          className="text-muted-foreground"
-          size="sm"
-        >
-          <Link href="/create/docs">
-            Understand credential security{" "}
-            <ArrowUpRightIcon className="ml-1.5 h-4 w-4" aria-hidden />
-          </Link>
-        </Button>
-      </Empty>
+      <CredentialsTable
+        credentials={credentials}
+        onDelete={handleDeleteCredential}
+        isLoading={isLoading}
+      />
+      <DeleteCredentialDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) =>
+          setDeleteDialog((prev) => ({ ...prev, open }))
+        }
+        credentialName={deleteDialog.credentialName}
+        onConfirm={confirmDelete}
+      />
     </Container>
   );
 }

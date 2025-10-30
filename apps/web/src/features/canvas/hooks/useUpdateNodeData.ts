@@ -24,9 +24,9 @@ export function useUpdateNodeData(setNodes: SetNodes) {
           const nextData: NodeDataMap[T] = {
             ...n.data,
             ...updater(n.data as NodeDataMap[T]),
-          };
+          } as NodeDataMap[T];
 
-          return { ...n, data: nextData };
+          return { ...n, data: nextData } as CanvasNode;
         }),
       );
     },
