@@ -220,6 +220,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/data:
+    put:
+      tags:
+      - Workflows
+      summary: Update Workflow Data
+      operationId: update_workflow_data_workflows__workflow_id__data_put
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowUpdateData'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /workflows/{workflow_id}/run:
     post:
       tags:
@@ -1334,6 +1366,17 @@ components:
       - name
       - is_active
       title: WorkflowListItem
+    WorkflowUpdateData:
+      properties:
+        workflow_data:
+          additionalProperties: true
+          type: object
+          title: Workflow Data
+          description: Updated workflow data
+      type: object
+      required:
+      - workflow_data
+      title: WorkflowUpdateData
     WorkflowUpdateName:
       properties:
         name:

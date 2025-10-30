@@ -783,6 +783,20 @@ export type WorkflowListItem = {
 };
 
 /**
+ * WorkflowUpdateData
+ */
+export type WorkflowUpdateData = {
+    /**
+     * Workflow Data
+     *
+     * Updated workflow data
+     */
+    workflow_data: {
+        [key: string]: unknown;
+    };
+};
+
+/**
  * WorkflowUpdateName
  */
 export type WorkflowUpdateName = {
@@ -1028,6 +1042,36 @@ export type UpdateNameWorkflowsWorkflowIdNamePutResponses = {
 };
 
 export type UpdateNameWorkflowsWorkflowIdNamePutResponse = UpdateNameWorkflowsWorkflowIdNamePutResponses[keyof UpdateNameWorkflowsWorkflowIdNamePutResponses];
+
+export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutData = {
+    body: WorkflowUpdateData;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/data';
+};
+
+export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutError = UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors[keyof UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors];
+
+export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseWorkflowDetail;
+};
+
+export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse = UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses[keyof UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses];
 
 export type RunWorkflowWorkflowsWorkflowIdRunPostData = {
     body?: never;
