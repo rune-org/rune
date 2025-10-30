@@ -154,7 +154,10 @@ export const updateWorkflowDataWorkflowsWorkflowIdDataPut = <ThrowOnError extend
  * Queue a workflow for execution.
  *
  * Verifies the workflow exists and belongs to the authenticated user,
- * then publishes a run message to RabbitMQ containing workflow details for the worker to process.
+ * resolves all credential references in workflow nodes,
+ * then publishes a run message to RabbitMQ containing workflow details with resolved credentials.
+ *
+ * Returns execution_id for tracking the execution.
  */
 export const runWorkflowWorkflowsWorkflowIdRunPost = <ThrowOnError extends boolean = false>(options: Options<RunWorkflowWorkflowsWorkflowIdRunPostData, ThrowOnError>) => {
     return (options.client ?? client).post<RunWorkflowWorkflowsWorkflowIdRunPostResponses, RunWorkflowWorkflowsWorkflowIdRunPostErrors, ThrowOnError>({

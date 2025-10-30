@@ -9,11 +9,13 @@ import {
   useState,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
 
 import FlowCanvas from "@/features/canvas/FlowCanvas";
 import type { CanvasEdge, CanvasNode } from "@/features/canvas/types";
 import { toast } from "@/components/ui/toast";
 import { workflows } from "@/lib/api";
+import { applyTemplate } from "@/lib/api/templates";
 import {
   detailToGraph,
   graphToWorkflowData,
@@ -39,6 +41,7 @@ function CanvasPageInner() {
   const params = useSearchParams();
   const router = useRouter();
   const workflowId = params.get("workflow") ?? undefined;
+  const templateId = params.get("templateId"); // Check if loading from template
   const {
     actions: { refreshWorkflows },
   } = useAppState();
@@ -61,23 +64,60 @@ function CanvasPageInner() {
   }, [workflowId]);
 
   useEffect(() => {
-    let ignore = false;
+    const abortController = new AbortController();
+
     async function load() {
+      // Check if loading from template
+      if (templateId) {
+        try {
+          // Check if aborted before making the API call
+          if (abortController.signal.aborted) return;
+
+          const response = await applyTemplate(Number(templateId));
+
+          // Check if aborted after API call
+          if (abortController.signal.aborted) return;
+
+          if (response.data && !response.error) {
+            const workflowData = response.data.data.workflow_data as { nodes: RFNode[]; edges: RFEdge[] };
+            const { nodes: filteredNodes, edges: filteredEdges } =
+              sanitizeGraph(workflowData);
+            if (!abortController.signal.aborted) {
+              setNodes(filteredNodes as unknown as CanvasNode[]);
+              setEdges(filteredEdges as unknown as CanvasEdge[]);
+            }
+          }
+        } catch (error) {
+          if (!abortController.signal.aborted) {
+            console.error("Failed to load template data:", error);
+          }
+        }
+        return;
+      }
+
       if (!workflowId) {
-        setNodes(undefined);
-        setEdges(undefined);
+        if (!abortController.signal.aborted) {
+          setNodes(undefined);
+          setEdges(undefined);
+        }
         return;
       }
       if (numericWorkflowId === null) {
         toast.error("Invalid workflow id.");
-        if (!ignore) {
+        if (!abortController.signal.aborted) {
           setNodes(undefined);
           setEdges(undefined);
         }
         return;
       }
       try {
+        // Check if aborted before making the API call
+        if (abortController.signal.aborted) return;
+
         const response = await workflows.getWorkflowById(numericWorkflowId);
+
+        // Check if aborted after API call
+        if (abortController.signal.aborted) return;
         if (!response.data) {
           throw new Error("Workflow not found");
         }
@@ -86,12 +126,12 @@ function CanvasPageInner() {
           nodes: graph.nodes,
           edges: graph.edges,
         });
-        if (!ignore) {
+        if (!abortController.signal.aborted) {
           setNodes(filteredNodes as CanvasNode[]);
           setEdges(filteredEdges as CanvasEdge[]);
         }
       } catch (err) {
-        if (!ignore) {
+        if (!abortController.signal.aborted) {
           toast.error(
             err instanceof Error ? err.message : "Failed to load workflow",
           );
@@ -100,9 +140,9 @@ function CanvasPageInner() {
     }
     load();
     return () => {
-      ignore = true;
+      abortController.abort();
     };
-  }, [workflowId, numericWorkflowId]);
+  }, [workflowId, numericWorkflowId, templateId]);
 
   const handlePersist = useCallback(
     async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }) => {

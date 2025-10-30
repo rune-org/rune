@@ -262,8 +262,13 @@ paths:
 
         Verifies the workflow exists and belongs to the authenticated user,
 
-        then publishes a run message to RabbitMQ containing workflow details for the
-        worker to process.'
+        resolves all credential references in workflow nodes,
+
+        then publishes a run message to RabbitMQ containing workflow details with
+        resolved credentials.
+
+
+        Returns execution_id for tracking the execution.'
       operationId: run_workflow_workflows__workflow_id__run_post
       parameters:
       - name: workflow_id
@@ -278,7 +283,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_dict_'
+                $ref: '#/components/schemas/ApiResponse_str_'
         '422':
           description: Validation Error
           content:
@@ -799,27 +804,6 @@ components:
       required:
       - data
       title: ApiResponse[WorkflowDetail]
-    ApiResponse_dict_:
-      properties:
-        success:
-          type: boolean
-          title: Success
-          description: Whether the request was successful
-          default: true
-        message:
-          type: string
-          title: Message
-          description: Human-readable message
-          default: Success
-        data:
-          additionalProperties: true
-          type: object
-          title: Data
-          description: Response data
-      type: object
-      required:
-      - data
-      title: ApiResponse[dict]
     ApiResponse_list_CredentialResponseDropDown__:
       properties:
         success:
@@ -908,6 +892,26 @@ components:
       required:
       - data
       title: ApiResponse[list[WorkflowListItem]]
+    ApiResponse_str_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          type: string
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[str]
     CredentialCreate:
       properties:
         name:
