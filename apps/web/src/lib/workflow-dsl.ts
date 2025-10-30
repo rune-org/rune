@@ -1,5 +1,4 @@
 // Types and helpers for the frontend representation of the Workflow DSL
-// TODO: consolidate JSON object handling with backend (consider `parameters`, `credentials`)
 
 import type { Edge as RFEdge } from "@xyflow/react";
 import type {
@@ -8,18 +7,14 @@ import type {
   IfData,
   SmtpData,
 } from "@/features/canvas/types";
+import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
+import type { CredentialRef } from "@/lib/credentials";
 
 export type UUID = string;
 
 export type EdgeStyle = "solid" | "dashed";
 export type EdgeKind = "success" | "error";
 export type ErrorStrategy = "halt" | "ignore" | "branch";
-
-export interface CredentialRef {
-  type: string;
-  id: UUID;
-  name: string;
-}
 
 export interface NodeErrorConfig {
   type: ErrorStrategy;
@@ -94,13 +89,15 @@ export interface WorkerEdge {
   dst: UUID;
 }
 
-export interface WorkerNode<Params = Record<string, unknown>> {
+export interface WorkerNode<
+  Params = Record<string, unknown>,
+> {
   id: UUID;
   name: string;
   trigger: boolean;
   type: string;
   parameters: Params;
-  credentials?: Record<string, unknown>;
+  credentials?: CredentialRef;
   output: Record<string, unknown>;
   error?: NodeErrorConfig;
 }
@@ -110,6 +107,20 @@ export interface WorkerWorkflow<Params = Record<string, unknown>> {
   execution_id: UUID;
   nodes: WorkerNode<Params>[];
   edges: WorkerEdge[];
+}
+
+export class MissingNodeCredentialsError extends Error {
+  constructor(
+    public readonly nodes: Array<{ id: UUID; type: string }>,
+  ) {
+    super(
+      `Missing credentials for nodes: ${nodes
+        .map((n) => `${n.type} (${n.id})`)
+        .join(", ")}`,
+    );
+    this.name = "MissingNodeCredentialsError";
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
 }
 
 // ————————————————————————————————————————————————————————————————
@@ -195,6 +206,16 @@ function toWorkerParameters(
   }
 }
 
+function extractNodeCredential(node: CanvasNode): CredentialRef | undefined {
+  const data = (node.data ?? {}) as { credential?: unknown };
+  const candidate = data.credential;
+  if (!candidate) return undefined;
+  if (isCredentialRef(candidate)) {
+    return { ...candidate };
+  }
+  return undefined;
+}
+
 // Convert Canvas graph to worker payload
 export function canvasToWorkerWorkflow(
   workflowId: UUID,
@@ -206,14 +227,28 @@ export function canvasToWorkerWorkflow(
   const supported = new Set(["trigger", "if", "http", "smtp"]);
   const filteredNodes = nodes.filter((n) => supported.has(n.type));
 
-  const workerNodes: WorkerNode[] = filteredNodes.map((n) => ({
-    id: n.id,
-    name: nodeName(n),
-    trigger: n.type === "trigger",
-    type: toWorkerType(n.type),
-    parameters: toWorkerParameters(n, edges),
-    output: {},
-  }));
+  const missingCredentials: Array<{ id: UUID; type: string }> = [];
+
+  const workerNodes: WorkerNode[] = filteredNodes.map((n) => {
+    const credential = extractNodeCredential(n);
+    if (nodeTypeRequiresCredential(n.type) && !credential) {
+      missingCredentials.push({ id: n.id, type: n.type });
+    }
+
+    return {
+      id: n.id,
+      name: nodeName(n),
+      trigger: n.type === "trigger",
+      type: toWorkerType(n.type),
+      parameters: toWorkerParameters(n, edges),
+      credentials: credential,
+      output: {},
+    };
+  });
+
+  if (missingCredentials.length > 0) {
+    throw new MissingNodeCredentialsError(missingCredentials);
+  }
 
   const workerEdges: WorkerEdge[] = edges
     .filter(
@@ -236,15 +271,25 @@ export function canvasToWorkflowData(
   nodes: CanvasNode[],
   edges: RFEdge[],
 ): { nodes: WorkflowNode[]; edges: WorkflowEdge[] } {
-  const blueprintNodes: WorkflowNode[] = nodes.map((n) => ({
-    id: n.id,
-    name: nodeName(n),
-    trigger: n.type === "trigger",
-    type: toWorkerType(n.type), // store canonical type to simplify future use
-    parameters: toWorkerParameters(n, edges),
-    output: {},
-    position: [n.position.x, n.position.y],
-  }));
+  const missingCredentials: Array<{ id: UUID; type: string }> = [];
+
+  const blueprintNodes: WorkflowNode[] = nodes.map((n) => {
+    const credential = extractNodeCredential(n);
+    if (nodeTypeRequiresCredential(n.type) && !credential) {
+      missingCredentials.push({ id: n.id, type: n.type });
+    }
+
+    return {
+      id: n.id,
+      name: nodeName(n),
+      trigger: n.type === "trigger",
+      type: toWorkerType(n.type), // store canonical type to simplify future use
+      parameters: toWorkerParameters(n, edges),
+      output: {},
+      position: [n.position.x, n.position.y],
+      credentials: credential,
+    };
+  });
 
   const blueprintEdges: WorkflowEdge[] = edges.map((e) => ({
     id: e.id,
@@ -252,6 +297,10 @@ export function canvasToWorkflowData(
     dst: String(e.target),
     label: (e as RFEdge & { label?: string }).label,
   }));
+
+  if (missingCredentials.length > 0) {
+    throw new MissingNodeCredentialsError(missingCredentials);
+  }
 
   return { nodes: blueprintNodes, edges: blueprintEdges };
 }
@@ -270,11 +319,15 @@ export function workflowDataToCanvas(data: {
         : n.type === "ManualTrigger"
           ? "trigger"
           : n.type;
+    const credentials = n.credentials ? { ...n.credentials } : undefined;
     return {
       id: n.id,
       type: canvasType as CanvasNode["type"],
       position: { x, y },
-      data: { label: n.name },
+      data: {
+        label: n.name,
+        ...(credentials ? { credential: credentials } : {}),
+      },
     } as CanvasNode;
   });
 

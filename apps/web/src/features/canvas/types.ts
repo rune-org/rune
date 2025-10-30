@@ -1,8 +1,10 @@
 import type { Edge, Node } from "@xyflow/react";
+import type { CredentialRef } from "@/lib/credentials";
 
 /** The base data structure that all nodes share. */
 export type BaseData = {
   label?: string;
+  credential?: CredentialRef | null;
 };
 
 /** A map defining the specific data for each kind of node. */
