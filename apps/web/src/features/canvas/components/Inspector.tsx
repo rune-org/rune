@@ -35,15 +35,13 @@ function renderInspectorForm(
   updateData: ReturnType<typeof useUpdateNodeData>,
   isExpanded: boolean,
 ) {
-  const commonProps = { node, updateData, isExpanded };
-
   switch (node.type) {
     case "http":
-      return <HttpInspector {...commonProps} />;
+      return <HttpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "if":
-      return <IfInspector {...commonProps} />;
+      return <IfInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "smtp":
-      return <SmtpInspector {...commonProps} />;
+      return <SmtpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     default:
       return null;
   }
