@@ -32,8 +32,3 @@ export const listCredentials = () => listCredentialsCredentialsGet();
 export const listCredentialsDropdown = () =>
   listCredentialsDropdownCredentialsDropdownGet();
 
-// Useful response types
-export type CreateCredentialResponse = CreateCredentialCredentialsPostResponses;
-export type ListCredentialsResponse = ListCredentialsCredentialsGetResponses;
-export type ListCredentialsDropdownResponse =
-  ListCredentialsDropdownCredentialsDropdownGetResponses;

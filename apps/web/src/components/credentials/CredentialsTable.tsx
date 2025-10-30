@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { MoreHorizontal, Search, Key} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -29,61 +30,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { CredentialResponse, CredentialType } from "@/client/types.gen";
+import { 
+  getCredentialTypeLabel, 
+  CREDENTIAL_TYPE_BADGE_STYLES 
+} from "@/lib/credentials/types";
 
 // Re-export for convenience
 export type { CredentialType };
 export type Credential = CredentialResponse;
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const h = Math.floor(diff / (1000 * 60 * 60));
-  if (h < 1) {
-    const m = Math.max(1, Math.floor(diff / (1000 * 60)));
-    return `${m}m ago`;
-  }
-  if (h < 24) {
-    return `${h}hr. ago`;
-  }
-  const d = Math.floor(h / 24);
-  return `${d}d ago`;
-}
-
 function CredentialTypeBadge({ type }: { type: CredentialType }) {
-  const variants: Record<
-    CredentialType,
-    { label: string; className: string }
-  > = {
-    api_key: {
-      label: "API Key",
-      className: "bg-blue-900/40 text-blue-200",
-    },
-    oauth2: {
-      label: "OAuth2",
-      className: "bg-purple-900/40 text-purple-200",
-    },
-    basic_auth: {
-      label: "Basic Auth",
-      className: "bg-green-900/40 text-green-200",
-    },
-    token: {
-      label: "Token",
-      className: "bg-amber-900/40 text-amber-200",
-    },
-    smtp: {
-      label: "SMTP",
-      className: "bg-cyan-900/40 text-cyan-200",
-    },
-    custom: {
-      label: "Custom",
-      className: "bg-slate-800 text-slate-200",
-    },
-  };
-
-  const variant = variants[type];
+  const label = getCredentialTypeLabel(type);
+  const badgeStyle = CREDENTIAL_TYPE_BADGE_STYLES[type];
 
   return (
-    <Badge className={variant.className} variant="secondary">
-      {variant.label}
+    <Badge className={badgeStyle.className} variant="secondary">
+      {label}
     </Badge>
   );
 }
@@ -189,7 +151,7 @@ export function CredentialsTable({
                   <CredentialTypeBadge type={c.credential_type} />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {timeAgo(c.created_at)}
+                  {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>

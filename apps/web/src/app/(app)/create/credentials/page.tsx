@@ -5,12 +5,23 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
 import { CredentialsTable, type Credential } from "@/components/credentials/CredentialsTable";
 import { AddCredentialDialog } from "@/components/credentials/AddCredentialDialog";
+import { DeleteCredentialDialog } from "@/components/credentials/DeleteCredentialDialog";
 import { credentials as credentialsAPI } from "@/lib/api";
+import { toast } from "@/components/ui/toast";
 
 export default function CreateCredentialsPage() {
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    credentialId: number | null;
+    credentialName: string;
+  }>({
+    open: false,
+    credentialId: null,
+    credentialName: "",
+  });
 
   // Fetch credentials on mount
   useEffect(() => {
@@ -50,33 +61,45 @@ export default function CreateCredentialsPage() {
       // Extract the created credential from the ApiResponse wrapper
       if (response.data && response.data.data) {
         setCredentials((prev) => [...prev, response.data.data]);
+        toast.success("Credential created successfully");
       }
     } catch (err) {
       console.error("Failed to create credential:", err);
-      alert("Failed to create credential. Please try again.");
+      toast.error("Failed to create credential. Please try again.");
+      throw err; // Re-throw so the dialog can handle it
     }
   };
 
-  const handleDeleteCredential = async (id: number) => {
-    // TODO: Implement DELETE endpoint in backend and API wrapper
-    if (
-      confirm(
-        "Are you sure you want to delete this credential? This action cannot be undone.",
-      )
-    ) {
-      // Optimistic update - remove from UI immediately
-      setCredentials((prev) => prev.filter((c) => c.id !== id));
-      
-      // TODO: Call API to delete on backend
-      // try {
-      //   await credentialsAPI.deleteCredential(id);
-      // } catch (err) {
-      //   console.error("Failed to delete credential:", err);
-      //   // Reload credentials to restore UI state on error
-      //   loadCredentials();
-      //   alert("Failed to delete credential. Please try again.");
-      // }
+  const handleDeleteCredential = (id: number) => {
+    const credential = credentials.find((c) => c.id === id);
+    if (credential) {
+      setDeleteDialog({
+        open: true,
+        credentialId: id,
+        credentialName: credential.name,
+      });
     }
+  };
+
+  const confirmDelete = async () => {
+    if (deleteDialog.credentialId === null) return;
+
+    const id = deleteDialog.credentialId;
+    
+    // Optimistic update - remove from UI immediately
+    setCredentials((prev) => prev.filter((c) => c.id !== id));
+    toast.success("Credential deleted successfully");
+    
+    // TODO: Call API to delete on backend
+    // try {
+    //   await credentialsAPI.deleteCredential(id);
+    //   toast.success("Credential deleted successfully");
+    // } catch (err) {
+    //   console.error("Failed to delete credential:", err);
+    //   // Reload credentials to restore UI state on error
+    //   loadCredentials();
+    //   toast.error("Failed to delete credential. Please try again.");
+    // }
   };
 
   if (error) {
@@ -106,6 +129,14 @@ export default function CreateCredentialsPage() {
         credentials={credentials}
         onDelete={handleDeleteCredential}
         isLoading={isLoading}
+      />
+      <DeleteCredentialDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) =>
+          setDeleteDialog((prev) => ({ ...prev, open }))
+        }
+        credentialName={deleteDialog.credentialName}
+        onConfirm={confirmDelete}
       />
     </Container>
   );

@@ -26,6 +26,7 @@
     "@xyflow/react": "^12.8.6",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.479.0",
     "next": "15.5.4",
     "react": "19.1.0",

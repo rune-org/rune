@@ -21,7 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toast";
 import type { CredentialType } from "@/client/types.gen";
+import { getCredentialTypeOptions } from "@/lib/credentials/types";
 
 interface AddCredentialDialogProps {
   onAdd: (credential: {
@@ -31,14 +33,7 @@ interface AddCredentialDialogProps {
   }) => Promise<void>;
 }
 
-const CREDENTIAL_TYPES: { value: CredentialType; label: string }[] = [
-  { value: "api_key", label: "API Key" },
-  { value: "oauth2", label: "OAuth2" },
-  { value: "basic_auth", label: "Basic Auth" },
-  { value: "token", label: "Token" },
-  { value: "smtp", label: "SMTP" },
-  { value: "custom", label: "Custom" },
-];
+const CREDENTIAL_TYPES = getCredentialTypeOptions();
 
 // Field configurations for each credential type
 const CREDENTIAL_FIELDS: Record<
@@ -46,7 +41,7 @@ const CREDENTIAL_FIELDS: Record<
   Array<{
     key: string;
     label: string;
-    type: "text" | "password" | "textarea";
+    type: "text" | "password" | "textarea" | "number";
     placeholder?: string;
     required?: boolean;
   }>
@@ -126,7 +121,7 @@ const CREDENTIAL_FIELDS: Record<
     {
       key: "port",
       label: "Port",
-      type: "text",
+      type: "number",
       placeholder: "587",
       required: true,
     },
@@ -173,7 +168,7 @@ export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
       .map((f) => f.label);
 
     if (missingFields.length > 0) {
-      alert(`Please fill in required fields: ${missingFields.join(", ")}`);
+      toast.error(`Please fill in required fields: ${missingFields.join(", ")}`);
       return;
     }
 
@@ -182,7 +177,7 @@ export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
       try {
         JSON.parse(credentialData.custom_data);
       } catch {
-        alert("Invalid JSON in custom data field");
+        toast.error("Invalid JSON in custom data field");
         return;
       }
     }
