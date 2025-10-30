@@ -1,19 +1,63 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import {
+  FormEvent,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import FlowCanvas from "@/features/canvas/FlowCanvas";
-import { ApiMock } from "@/lib/api-mock";
 import type { CanvasEdge, CanvasNode } from "@/features/canvas/types";
+import { toast } from "@/components/ui/toast";
+import { workflows } from "@/lib/api";
+import {
+  detailToGraph,
+  graphToWorkflowData,
+  defaultWorkflowSummary,
+} from "@/lib/workflows";
 import { sanitizeGraph } from "@/features/canvas/lib/graphIO";
+import { useAppState } from "@/lib/state";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 function CanvasPageInner() {
   const params = useSearchParams();
-  const workflowId = params.get("workflow"); // This would be the workflow ID passed as a query parameter
+  const router = useRouter();
+  const workflowId = params.get("workflow") ?? undefined;
+  const {
+    actions: { refreshWorkflows },
+  } = useAppState();
 
   const [nodes, setNodes] = useState<CanvasNode[] | undefined>(undefined);
   const [edges, setEdges] = useState<CanvasEdge[] | undefined>(undefined);
+  const [isSaving, setIsSaving] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [draftGraph, setDraftGraph] = useState<{
+    nodes: CanvasNode[];
+    edges: CanvasEdge[];
+  } | null>(null);
+  const [draftName, setDraftName] = useState("");
+  const [draftDescription, setDraftDescription] = useState("");
+
+  const numericWorkflowId = useMemo(() => {
+    if (!workflowId) return null;
+    const parsed = Number(workflowId);
+    return Number.isFinite(parsed) ? parsed : null;
+  }, [workflowId]);
 
   useEffect(() => {
     let ignore = false;
@@ -23,25 +67,232 @@ function CanvasPageInner() {
         setEdges(undefined);
         return;
       }
-      const graph = await ApiMock.getWorkflowGraph(workflowId);
-      const { nodes: filteredNodes, edges: filteredEdges } =
-        sanitizeGraph(graph);
-      if (!ignore) {
-        setNodes(filteredNodes as unknown as CanvasNode[]);
-        setEdges(filteredEdges as unknown as CanvasEdge[]);
+      if (numericWorkflowId === null) {
+        toast.error("Invalid workflow id.");
+        if (!ignore) {
+          setNodes(undefined);
+          setEdges(undefined);
+        }
+        return;
+      }
+      try {
+        const response = await workflows.getWorkflowById(numericWorkflowId);
+        if (!response.data) {
+          throw new Error("Workflow not found");
+        }
+        const graph = detailToGraph(response.data.data);
+        const { nodes: filteredNodes, edges: filteredEdges } = sanitizeGraph({
+          nodes: graph.nodes,
+          edges: graph.edges,
+        });
+        if (!ignore) {
+          setNodes(filteredNodes as CanvasNode[]);
+          setEdges(filteredEdges as CanvasEdge[]);
+        }
+      } catch (err) {
+        if (!ignore) {
+          toast.error(
+            err instanceof Error ? err.message : "Failed to load workflow",
+          );
+        }
       }
     }
     load();
     return () => {
       ignore = true;
     };
-  }, [workflowId]);
+  }, [workflowId, numericWorkflowId]);
+
+  const handlePersist = useCallback(
+    async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }) => {
+      if (isSaving) return;
+
+      if (numericWorkflowId !== null) {
+        try {
+          setIsSaving(true);
+          const payload = graphToWorkflowData(graph);
+          const response = await workflows.updateWorkflowData(
+            numericWorkflowId,
+            payload,
+          );
+
+          if (!response.data) {
+            throw new Error("Failed to update workflow");
+          }
+
+          toast.success("Workflow updated");
+          void refreshWorkflows();
+        } catch (err) {
+          toast.error(
+            err instanceof Error ? err.message : "Failed to update workflow",
+          );
+        } finally {
+          setIsSaving(false);
+        }
+        return;
+      }
+
+      setDraftGraph({
+        nodes: graph.nodes,
+        edges: graph.edges,
+      });
+      setCreateDialogOpen(true);
+    },
+    [isSaving, numericWorkflowId, refreshWorkflows],
+  );
+
+  const handleRun = useCallback(async () => {
+    if (numericWorkflowId === null) {
+      toast.error("Save the workflow before running it.");
+      return;
+    }
+
+    try {
+      const response = await workflows.runWorkflow(numericWorkflowId);
+      if (!response.data) {
+        throw new Error("Failed to queue workflow");
+      }
+      toast.success("Workflow queued for execution");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to run workflow",
+      );
+    }
+  }, [numericWorkflowId]);
+
+  const handleCreateSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!draftGraph || isSaving) return;
+
+      try {
+        setIsSaving(true);
+        const payload = graphToWorkflowData(draftGraph);
+
+        const response = await workflows.createWorkflow({
+          name: draftName.trim() || defaultWorkflowSummary.name,
+          description: draftDescription.trim(),
+          workflow_data: payload,
+        });
+
+        if (!response.data) {
+          throw new Error("Failed to create workflow");
+        }
+
+        const created = response.data.data;
+        toast.success("Workflow created");
+
+        const graphFromDetail = detailToGraph(created);
+        const sanitized = sanitizeGraph({
+          nodes: graphFromDetail.nodes,
+          edges: graphFromDetail.edges,
+        });
+
+        setNodes(sanitized.nodes as CanvasNode[]);
+        setEdges(sanitized.edges as CanvasEdge[]);
+        setDraftGraph(null);
+        setDraftName("");
+        setDraftDescription("");
+        setCreateDialogOpen(false);
+        void refreshWorkflows();
+        router.replace(`/create/app?workflow=${created.id}`);
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to save workflow",
+        );
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [
+      draftGraph,
+      draftName,
+      draftDescription,
+      refreshWorkflows,
+      router,
+      isSaving,
+    ],
+  );
 
   return (
     <div className="flex h-[100vh] flex-col">
       <div className="flex-1">
-        <FlowCanvas externalNodes={nodes} externalEdges={edges} />
+        <FlowCanvas
+          externalNodes={nodes}
+          externalEdges={edges}
+          onPersist={handlePersist}
+          onRun={handleRun}
+          saveDisabled={isSaving}
+        />
       </div>
+
+      <Dialog
+        open={createDialogOpen}
+        onOpenChange={(open) => {
+          if (!isSaving) {
+            setCreateDialogOpen(open);
+            if (!open) {
+              setDraftGraph(null);
+              setDraftName("");
+              setDraftDescription("");
+            }
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save workflow</DialogTitle>
+            <DialogDescription>
+              Provide a name and optional description before we create the
+              workflow.
+            </DialogDescription>
+          </DialogHeader>
+          <form className="grid gap-4" onSubmit={handleCreateSubmit}>
+            <div className="grid gap-2">
+              <Label htmlFor="canvas-workflow-name">Name</Label>
+              <Input
+                id="canvas-workflow-name"
+                value={draftName}
+                onChange={(event) => setDraftName(event.target.value)}
+                placeholder="Untitled workflow"
+                disabled={isSaving}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="canvas-workflow-description">Description</Label>
+              <Textarea
+                id="canvas-workflow-description"
+                value={draftDescription}
+                onChange={(event) => setDraftDescription(event.target.value)}
+                placeholder="What does this workflow do?"
+                disabled={isSaving}
+                rows={4}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  if (!isSaving) {
+                    setCreateDialogOpen(false);
+                    setDraftGraph(null);
+                    setDraftName("");
+                    setDraftDescription("");
+                  }
+                }}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? "Saving…" : "Save workflow"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

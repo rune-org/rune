@@ -1,25 +1,21 @@
 // Types and helpers for the frontend representation of the Workflow DSL
-// TODO: consolidate JSON object handling with backend (consider `parameters`, `credentials`)
 
 import type { Edge as RFEdge } from "@xyflow/react";
+import type { CSSProperties } from "react";
 import type {
   CanvasNode,
   HttpData,
   IfData,
   SmtpData,
 } from "@/features/canvas/types";
+import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
+import type { CredentialRef } from "@/lib/credentials";
 
 export type UUID = string;
 
 export type EdgeStyle = "solid" | "dashed";
 export type EdgeKind = "success" | "error";
 export type ErrorStrategy = "halt" | "ignore" | "branch";
-
-export interface CredentialRef {
-  type: string;
-  id: UUID;
-  name: string;
-}
 
 export interface NodeErrorConfig {
   type: ErrorStrategy;
@@ -94,13 +90,15 @@ export interface WorkerEdge {
   dst: UUID;
 }
 
-export interface WorkerNode<Params = Record<string, unknown>> {
+export interface WorkerNode<
+  Params = Record<string, unknown>,
+> {
   id: UUID;
   name: string;
   trigger: boolean;
   type: string;
   parameters: Params;
-  credentials?: Record<string, unknown>;
+  credentials?: CredentialRef;
   output: Record<string, unknown>;
   error?: NodeErrorConfig;
 }
@@ -110,6 +108,20 @@ export interface WorkerWorkflow<Params = Record<string, unknown>> {
   execution_id: UUID;
   nodes: WorkerNode<Params>[];
   edges: WorkerEdge[];
+}
+
+export class MissingNodeCredentialsError extends Error {
+  constructor(
+    public readonly nodes: Array<{ id: UUID; type: string }>,
+  ) {
+    super(
+      `Missing credentials for nodes: ${nodes
+        .map((n) => `${n.type} (${n.id})`)
+        .join(", ")}`,
+    );
+    this.name = "MissingNodeCredentialsError";
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
 }
 
 // ————————————————————————————————————————————————————————————————
@@ -195,6 +207,75 @@ function toWorkerParameters(
   }
 }
 
+type NodeHydrator = (
+  base: CanvasNode["data"],
+  params: Record<string, unknown>,
+) => CanvasNode["data"];
+
+const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
+  http: (base, params) => {
+    const httpData: HttpData = {
+      ...base,
+      method:
+        typeof params.method === "string"
+          ? (params.method.toUpperCase() as HttpData["method"])
+          : undefined,
+      url: typeof params.url === "string" ? params.url : undefined,
+      headers:
+        params.headers && typeof params.headers === "object"
+          ? (params.headers as Record<string, unknown>)
+          : undefined,
+      query:
+        params.query && typeof params.query === "object"
+          ? (params.query as Record<string, unknown>)
+          : undefined,
+      body: params.body,
+      timeout:
+        typeof params.timeout === "number"
+          ? params.timeout
+          : typeof params.timeout === "string"
+            ? Number(params.timeout)
+            : undefined,
+      retries:
+        typeof params.retry === "number"
+          ? params.retry
+          : typeof params.retry === "string"
+            ? Number(params.retry)
+            : undefined,
+      ignoreSSL:
+        typeof params.ignore_ssl === "boolean" ? params.ignore_ssl : undefined,
+    };
+    return httpData;
+  },
+  if: (base, params) => {
+    const ifData: IfData = {
+      ...base,
+      expression:
+        typeof params.expression === "string" ? params.expression : undefined,
+    };
+    return ifData;
+  },
+  smtp: (base, params) => {
+    const smtpData: SmtpData = {
+      ...base,
+      subject:
+        typeof params.subject === "string" ? params.subject : undefined,
+      to: typeof params.to === "string" ? params.to : undefined,
+    };
+    return smtpData;
+  },
+};
+
+function extractNodeCredential(node: CanvasNode): CredentialRef | undefined {
+  const data = (node.data ?? {}) as { credential?: unknown };
+  const candidate = data.credential;
+  if (!candidate) return undefined;
+  if (isCredentialRef(candidate)) {
+    return { ...candidate };
+  }
+  return undefined;
+}
+
 // Convert Canvas graph to worker payload
 export function canvasToWorkerWorkflow(
   workflowId: UUID,
@@ -206,14 +287,28 @@ export function canvasToWorkerWorkflow(
   const supported = new Set(["trigger", "if", "http", "smtp"]);
   const filteredNodes = nodes.filter((n) => supported.has(n.type));
 
-  const workerNodes: WorkerNode[] = filteredNodes.map((n) => ({
-    id: n.id,
-    name: nodeName(n),
-    trigger: n.type === "trigger",
-    type: toWorkerType(n.type),
-    parameters: toWorkerParameters(n, edges),
-    output: {},
-  }));
+  const missingCredentials: Array<{ id: UUID; type: string }> = [];
+
+  const workerNodes: WorkerNode[] = filteredNodes.map((n) => {
+    const credential = extractNodeCredential(n);
+    if (nodeTypeRequiresCredential(n.type) && !credential) {
+      missingCredentials.push({ id: n.id, type: n.type });
+    }
+
+    return {
+      id: n.id,
+      name: nodeName(n),
+      trigger: n.type === "trigger",
+      type: toWorkerType(n.type),
+      parameters: toWorkerParameters(n, edges),
+      credentials: credential,
+      output: {},
+    };
+  });
+
+  if (missingCredentials.length > 0) {
+    throw new MissingNodeCredentialsError(missingCredentials);
+  }
 
   const workerEdges: WorkerEdge[] = edges
     .filter(
@@ -236,15 +331,25 @@ export function canvasToWorkflowData(
   nodes: CanvasNode[],
   edges: RFEdge[],
 ): { nodes: WorkflowNode[]; edges: WorkflowEdge[] } {
-  const blueprintNodes: WorkflowNode[] = nodes.map((n) => ({
-    id: n.id,
-    name: nodeName(n),
-    trigger: n.type === "trigger",
-    type: toWorkerType(n.type), // store canonical type to simplify future use
-    parameters: toWorkerParameters(n, edges),
-    output: {},
-    position: [n.position.x, n.position.y],
-  }));
+  const missingCredentials: Array<{ id: UUID; type: string }> = [];
+
+  const blueprintNodes: WorkflowNode[] = nodes.map((n) => {
+    const credential = extractNodeCredential(n);
+    if (nodeTypeRequiresCredential(n.type) && !credential) {
+      missingCredentials.push({ id: n.id, type: n.type });
+    }
+
+    return {
+      id: n.id,
+      name: nodeName(n),
+      trigger: n.type === "trigger",
+      type: toWorkerType(n.type), // store canonical type to simplify future use
+      parameters: toWorkerParameters(n, edges),
+      output: {},
+      position: [n.position.x, n.position.y],
+      credentials: credential,
+    };
+  });
 
   const blueprintEdges: WorkflowEdge[] = edges.map((e) => ({
     id: e.id,
@@ -252,6 +357,10 @@ export function canvasToWorkflowData(
     dst: String(e.target),
     label: (e as RFEdge & { label?: string }).label,
   }));
+
+  if (missingCredentials.length > 0) {
+    throw new MissingNodeCredentialsError(missingCredentials);
+  }
 
   return { nodes: blueprintNodes, edges: blueprintEdges };
 }
@@ -270,21 +379,53 @@ export function workflowDataToCanvas(data: {
         : n.type === "ManualTrigger"
           ? "trigger"
           : n.type;
+    const credentials = n.credentials ? { ...n.credentials } : undefined;
+    const baseData = {
+      label: n.name,
+      ...(credentials ? { credential: credentials } : {}),
+    } as CanvasNode["data"];
+    const params = (n.parameters ?? {}) as Record<string, unknown>;
+    const hydrateDataForNode =
+      nodeHydrators[canvasType as CanvasNode["type"]] ??
+      ((existing) => existing);
+    const dataForNode = hydrateDataForNode(baseData, params);
     return {
       id: n.id,
       type: canvasType as CanvasNode["type"],
       position: { x, y },
-      data: { label: n.name },
+      data: dataForNode,
     } as CanvasNode;
   });
 
-  const edges: RFEdge[] = (data.edges ?? []).map((e) => ({
-    id: e.id,
-    source: e.src,
-    target: e.dst,
-    type: "default",
-    label: e.label,
-  })) as RFEdge[];
+  const edges: RFEdge[] = (data.edges ?? []).map((e) => {
+    const edge: RFEdge = {
+      id: e.id,
+      source: e.src,
+      target: e.dst,
+      type: "default",
+      label: e.label,
+    } as RFEdge;
+
+    if (e.label === "true" || e.label === "false") {
+      const isTrue = e.label === "true";
+      (edge as RFEdge & { sourceHandle?: string }).sourceHandle = e.label;
+      (edge as RFEdge & { labelStyle?: CSSProperties }).labelStyle = {
+        fill: "white",
+        fontWeight: 600,
+      };
+      (edge as RFEdge & { labelShowBg?: boolean }).labelShowBg = true;
+      (edge as RFEdge & { labelBgStyle?: CSSProperties }).labelBgStyle = {
+        fill: isTrue ? "hsl(142 70% 45%)" : "hsl(0 70% 50%)",
+      };
+      (edge as RFEdge & { labelBgPadding?: [number, number] }).labelBgPadding = [
+        2,
+        6,
+      ];
+      (edge as RFEdge & { labelBgBorderRadius?: number }).labelBgBorderRadius = 4;
+    }
+
+    return edge;
+  });
 
   return { nodes, edges };
 }
