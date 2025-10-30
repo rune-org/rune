@@ -1,3 +1,4 @@
+import uuid
 from fastapi import APIRouter, Depends, status
 
 from src.workflow.schemas import (
@@ -134,7 +135,7 @@ async def delete_workflow(
     return
 
 
-@router.post("/{workflow_id}/run", response_model=ApiResponse[dict])
+@router.post("/{workflow_id}/run", response_model=ApiResponse[str])
 async def run_workflow(
     workflow_id: int,
     current_user: User = Depends(get_current_user),
@@ -145,16 +146,27 @@ async def run_workflow(
     Queue a workflow for execution.
 
     Verifies the workflow exists and belongs to the authenticated user,
-    then publishes a run message to RabbitMQ containing workflow details for the worker to process.
+    resolves all credential references in workflow nodes,
+    then publishes a run message to RabbitMQ containing workflow details with resolved credentials.
+
+    Returns execution_id for tracking the execution.
     """
     # Verify workflow exists and belongs to user
     wf = await workflow_service.get_for_user(workflow_id, current_user.id)
 
-    # Publish workflow run message to queue with complete workflow data
-    await queue_service.publish_workflow_run(
-        workflow_id=wf.id, user_id=current_user.id, workflow_data=wf.workflow_data
+    # Resolve credentials for all nodes in the workflow
+    resolved_workflow_data = await workflow_service.resolve_workflow_credentials(
+        wf.workflow_data
     )
 
-    return ApiResponse(
-        success=True, message="Workflow run queued", data={"workflow_id": wf.id}
+    # Generate a unique execution ID
+    execution_id = f"exec_{uuid.uuid4().hex[:16]}"
+
+    # Publish workflow run message to queue with resolved credentials
+    await queue_service.publish_workflow_run(
+        workflow_id=wf.id,
+        execution_id=execution_id,
+        workflow_data=resolved_workflow_data,
     )
+
+    return ApiResponse(success=True, message="Workflow run queued", data=execution_id)
