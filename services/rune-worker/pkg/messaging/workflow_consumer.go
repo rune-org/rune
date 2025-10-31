@@ -17,7 +17,6 @@ import (
 // invoking the executor, and handling acknowledgments for fault tolerance.
 type WorkflowConsumer struct {
 	queue     queue.Consumer
-	publisher *WorkflowPublisher
 	executor  *executor.Executor
 }
 
@@ -39,24 +38,15 @@ func NewWorkflowConsumer(cfg *config.WorkerConfig) (*WorkflowConsumer, error) {
 		return nil, err
 	}
 
-	// Create workflow publisher for executor to publish messages
-	workflowPub, err := NewWorkflowPublisher(cfg.RabbitURL)
-	if err != nil {
-		_ = q.Close()
-		return nil, err
-	}
-
 	// Create publisher for executor (uses the underlying queue publisher)
 	pub, err := queue.NewRabbitMQPublisher(cfg.RabbitURL)
 	if err != nil {
 		_ = q.Close()
-		_ = workflowPub.Close()
 		return nil, err
 	}
 
 	return &WorkflowConsumer{
 		queue:     q,
-		publisher: workflowPub,
 		executor:  executor.NewExecutor(reg, pub),
 	}, nil
 }
@@ -77,10 +67,6 @@ func (c *WorkflowConsumer) Close() error {
 
 	if c.queue != nil {
 		queueErr = c.queue.Close()
-	}
-
-	if c.publisher != nil {
-		pubErr = c.publisher.Close()
 	}
 
 	if queueErr != nil {
