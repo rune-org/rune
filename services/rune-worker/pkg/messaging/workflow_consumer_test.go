@@ -48,7 +48,6 @@ func TestWorkflowConsumerClose(t *testing.T) {
 	// Test that Close doesn't panic with nil fields
 	consumer := &WorkflowConsumer{
 		queue:     nil,
-		publisher: nil,
 		executor:  nil,
 	}
 
