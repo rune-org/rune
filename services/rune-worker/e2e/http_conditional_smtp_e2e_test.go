@@ -17,7 +17,50 @@ import (
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
+	testutils "rune-worker/test_utils"
 )
+
+// logStatusMessage logs a status message with enhanced formatting
+func logStatusMessage(t *testing.T, msg *messages.NodeStatusMessage, msgNum int, testPath string) {
+	t.Logf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	t.Logf("📨 STATUS MESSAGE #%d (%s)", msgNum, testPath)
+	t.Logf("  Node ID:   %s", msg.NodeID)
+	t.Logf("  Node Name: %s", msg.NodeName)
+	t.Logf("  Status:    %s", msg.Status)
+	if msg.Output != nil && len(msg.Output) > 0 {
+		t.Logf("  Output:")
+		for k, v := range msg.Output {
+			switch val := v.(type) {
+			case string:
+				if len(val) > 200 {
+					t.Logf("    %s: %s... (truncated, length=%d)", k, val[:200], len(val))
+				} else {
+					t.Logf("    %s: %s", k, val)
+				}
+			default:
+				t.Logf("    %s: %+v", k, v)
+			}
+		}
+	}
+	if msg.Error != nil {
+		t.Logf("  Error:     %s (code: %s)", msg.Error.Message, msg.Error.Code)
+		if msg.Error.Details != nil && len(msg.Error.Details) > 0 {
+			t.Logf("  Error Details: %+v", msg.Error.Details)
+		}
+	}
+	t.Logf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+}
+
+// logCompletionMessage logs a completion message with enhanced formatting
+func logCompletionMessage(t *testing.T, msg *messages.CompletionMessage, testPath string) {
+	t.Logf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	t.Logf("✅ COMPLETION MESSAGE (%s)", testPath)
+	t.Logf("  Status:         %s", msg.Status)
+	if msg.FailureReason != "" {
+		t.Logf("  Failure Reason: %s", msg.FailureReason)
+	}
+	t.Logf("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+}
 
 // loadSMTPConfigFromEnv loads SMTP configuration from .env file
 func loadSMTPConfigFromEnv(envPath string) (map[string]string, error) {
@@ -102,10 +145,10 @@ func loadTestEnvFile(path string) error {
 // - SMTP node email sending with credentials from .env file
 // - Complete workflow with multiple node types and branching logic
 func TestHTTPConditionalSMTPWorkflow(t *testing.T) {
-	env := setupE2ETest(t)
+	env := testutils.SetupTestEnv(t)
 	defer env.Cleanup(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), testutils.TestTimeout)
 	defer cancel()
 
 	// Load SMTP configuration from .env file

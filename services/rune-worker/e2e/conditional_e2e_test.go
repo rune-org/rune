@@ -14,6 +14,7 @@ import (
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
+	testutils "rune-worker/test_utils"
 )
 
 // logStatusMessage logs a status message with enhanced formatting
@@ -628,4 +629,17 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+const (
+	testTimeout = testutils.TestTimeout
+)
+
+// setupE2ETest creates a test environment for E2E tests
+func setupE2ETest(t *testing.T) *testutils.TestEnv {
+	return testutils.SetupTestEnv(t)
+}
+
+// getKeys returns the keys from a map for logging purposes
+func getKeys(m map[string]interface{}) []string {
+	return testutils.GetKeys(m)
 }
