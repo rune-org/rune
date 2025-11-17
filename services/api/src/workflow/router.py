@@ -10,7 +10,7 @@ from src.workflow.schemas import (
     WorkflowUpdateData,
 )
 from src.workflow.service import WorkflowService
-from src.core.dependencies import DatabaseDep, get_current_user
+from src.core.dependencies import DatabaseDep, require_password_changed
 from src.core.responses import ApiResponse
 from src.core.config import get_settings
 from src.db.models import User
@@ -36,7 +36,7 @@ def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
 
 @router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
 async def list_workflows(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
     wfs = await service.list_for_user(current_user.id)
@@ -49,7 +49,7 @@ async def list_workflows(
 @router.get("/{workflow_id}", response_model=ApiResponse[WorkflowDetail])
 async def get_workflow(
     workflow_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
     wf = await service.get_for_user(workflow_id, current_user.id)
@@ -64,7 +64,7 @@ async def get_workflow(
 )
 async def create_workflow(
     payload: WorkflowCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
     wf = await service.create(
@@ -83,7 +83,7 @@ async def create_workflow(
 async def update_status(
     workflow_id: int,
     payload: WorkflowUpdateStatus,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
     wf = await service.get_for_user(workflow_id, current_user.id)
@@ -98,7 +98,7 @@ async def update_status(
 async def update_name(
     workflow_id: int,
     payload: WorkflowUpdateName,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
     wf = await service.get_for_user(workflow_id, current_user.id)
@@ -113,7 +113,7 @@ async def update_name(
 async def update_workflow_data(
     workflow_id: int,
     payload: WorkflowUpdateData,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
     wf = await service.get_for_user(workflow_id, current_user.id)
@@ -127,7 +127,7 @@ async def update_workflow_data(
 @router.delete("/{workflow_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workflow(
     workflow_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> None:
     wf = await service.get_for_user(workflow_id, current_user.id)
@@ -138,7 +138,7 @@ async def delete_workflow(
 @router.post("/{workflow_id}/run", response_model=ApiResponse[str])
 async def run_workflow(
     workflow_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     workflow_service: WorkflowService = Depends(get_workflow_service),
     queue_service: WorkflowQueueService = Depends(get_queue_service),
 ) -> ApiResponse[dict]:

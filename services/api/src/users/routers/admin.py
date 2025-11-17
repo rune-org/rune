@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends, status
 from src.core.dependencies import DatabaseDep, get_current_admin
 from src.core.responses import ApiResponse
-from src.users.schemas import UserCreate, AdminUserUpdate, UserResponse
+from src.users.schemas import (
+    UserCreate,
+    AdminUserUpdate,
+    UserResponse,
+    AdminPasswordResetResponse,
+    CreateUserResponse,
+)
 from src.users.service import UserService
 
 
@@ -61,7 +67,7 @@ async def get_user_by_id(
 
 @router.post(
     "/",
-    response_model=ApiResponse[UserResponse],
+    response_model=ApiResponse[CreateUserResponse],
     status_code=status.HTTP_201_CREATED,
     summary="Create a new user",
     description="Create a new user account. Email must be unique.",
@@ -69,15 +75,19 @@ async def get_user_by_id(
 async def create_user(
     user_data: UserCreate,
     service: UserService = Depends(get_user_service),
-) -> ApiResponse[UserResponse]:
+) -> ApiResponse[CreateUserResponse]:
     """
     POST /users
+    Admin creates a new user with auto-generated temporary password.
     """
-    new_user = await service.create_user(user_data)
+    new_user, temp_password = await service.create_user(user_data)
     return ApiResponse(
         success=True,
-        message="User created successfully",
-        data=new_user,
+        message="User created successfully with temporary password",
+        data=CreateUserResponse(
+            user=new_user,
+            temporary_password=temp_password,
+        ),
     )
 
 
@@ -102,6 +112,31 @@ async def update_user(
         success=True,
         message="User updated successfully",
         data=updated_user,
+    )
+
+
+@router.post(
+    "/{user_id}/reset-password",
+    response_model=ApiResponse[AdminPasswordResetResponse],
+    summary="Admin resets user password",
+    description="Admin generates a temporary password for a user. User must change it.",
+)
+async def reset_user_password(
+    user_id: int,
+    service: UserService = Depends(get_user_service),
+) -> ApiResponse[AdminPasswordResetResponse]:
+    """
+    POST /users/{user_id}/reset-password
+    Admin-only endpoint.
+    """
+    temp_password = await service.admin_reset_user_password(user_id)
+    return ApiResponse(
+        success=True,
+        message="Temporary password generated successfully",
+        data=AdminPasswordResetResponse(
+            temporary_password=temp_password,
+            user_id=user_id,
+        ),
     )
 
 
