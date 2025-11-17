@@ -15,12 +15,28 @@ rune/
 └── Makefile
 ```
 
+## Services at a Glance
+
+| Component | Responsibilities | Location |
+| --- | --- | --- |
+| Frontend | Visual workflow builder, run history UI, auth flows | `apps/web` |
+| API | Workflow definitions, scheduling, user/org management, REST/GraphQL APIs | `services/api` |
+| Worker | Executes workflow steps, manages retries, interacts with external services | `services/rune-worker` |
+| Infrastructure | Shared dependencies: PostgreSQL, Redis, RabbitMQ, MinIO (optional) | `docker-compose.yml` |
+
 ## Tech Stack
 
 - **Frontend**: Next.js 15, React, TypeScript
 - **API**: FastAPI, Python 3.13, PostgreSQL
 - **Worker**: Go 1.25, RabbitMQ
 - **Infrastructure**: Docker, PostgreSQL, Redis, RabbitMQ
+
+## Key Capabilities
+
+- **Visual workflow designer** for composing multi-step automations with branching logic, retry policies, and scheduling.
+- **Reusable integration blocks** for common SaaS tools (HTTP, queues, databases) that can be combined into new workflows quickly.
+- **Observability first**: central run history, live logs, and per-step metrics to debug production runs without diving into logs manually.
+- **Environment aware deployments** so you can promote workflows from staging to production with consistent secrets and infra settings.
 
 ## Quick Start (Docker - Recommended)
 
@@ -221,8 +237,9 @@ docker volume rm rune_postgres_data
 make up
 ```
 
-<!-- ## Contributing
-TODO: CONTRIBUTING.md -->
+## Contributing
+
+New issues, feature proposals, and pull requests are very welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the full development workflow, coding standards, and commit message conventions.
 
 ## License
 
