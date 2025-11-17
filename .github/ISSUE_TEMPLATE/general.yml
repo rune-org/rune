@@ -1,0 +1,83 @@
+name: Issue
+description: File a bug report, feature request, or improvement proposal.
+title: "[TYPE]: <summary>"
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to improve Rune! Fill out the sections below so we can help quickly.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Issue type
+      description: What kind of change are you proposing?
+      options:
+        - Bug report
+        - Feature request
+        - Improvement
+        - Question / Discussion
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the problem or idea in a couple of sentences.
+      placeholder: e.g. Workflow retries are capped at 1 even when configured higher.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps / context
+      description: Provide detailed reproduction steps, logs, screenshots, or background context.
+      placeholder: |
+        1. Go to ...
+        2. Click on ...
+        3. Observe ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior or desired outcome
+      description: Tell us what you expected to happen.
+    validations:
+      required: false
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior / current outcome
+      description: What happened instead? Include stack traces, screenshots, or performance measurements if available.
+    validations:
+      required: false
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution / acceptance criteria
+      description: Optional, but helpful—describe how you'd like to fix this or what “done” looks like.
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment details
+      description: Runtime versions, OS, browser, commit hash, or deployment region.
+      placeholder: "Docker (main@abc123), Node 22, Chrome 127, macOS 14"
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues and discussions to avoid duplicates.
+          required: true
+        - label: I am willing to help implement or test a fix.

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   async rewrites() {
     const target = process.env.API_PROXY_TARGET || "http://localhost:8000";
     return [
