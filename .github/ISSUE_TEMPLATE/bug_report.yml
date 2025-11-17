@@ -1,0 +1,71 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Fill out the sections below so we can fix it quickly.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Bug Summary
+      description: Describe the bug in a couple of sentences.
+      placeholder: e.g. Workflow retries are capped at 1 even when configured higher.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Provide detailed steps to reproduce the bug.
+      placeholder: |
+        1. Go to ...
+        2. Click on ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What happened instead? Include stack traces, screenshots, or error messages if available.
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Runtime versions, OS, browser, commit hash, or deployment region.
+      placeholder: "Docker (main@abc123), Node 22, Chrome 127, macOS 14"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Screenshots
+      description: Add any relevant logs, screenshots, or additional context.
+      placeholder: Paste logs or drag and drop screenshots here.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues to avoid duplicates.
+          required: true
+        - label: I am willing to help test a fix.

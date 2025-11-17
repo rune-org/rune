@@ -1,0 +1,59 @@
+name: Improvement
+description: Suggest an improvement to an existing feature
+title: "[Improvement]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement! Help us understand how to make Rune better.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Improvement Summary
+      description: Describe the improvement you'd like in a couple of sentences.
+      placeholder: e.g. Improve error messages when workflow validation fails.
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current Behavior
+      description: How does the feature work today? What could be better?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed Improvement
+      description: How would you improve it? What would the ideal behavior look like?
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefits
+    attributes:
+      label: Benefits
+      description: What benefits would this improvement provide? Who would benefit?
+      placeholder: |
+        - Better developer experience
+        - Faster debugging
+        - Reduced confusion
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context, examples, or comparisons to other tools.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues to avoid duplicates.
+          required: true
+        - label: I am willing to help implement or test this improvement.
