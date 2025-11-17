@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-lint api-format worker-dev worker-lint worker-format worker-test
+.PHONY: help install dev build clean docker-up docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-lint api-format worker-dev worker-lint worker-format worker-test up down restart status
 
 # Default target
 help:
@@ -36,12 +36,17 @@ help:
 	@echo "  make worker-test    - Run worker tests"
 	@echo ""
 	@echo "Docker targets:"
+	@echo "  make up             - Start all services (alias for docker-up)"
+	@echo "  make down           - Stop all services (alias for docker-down)"
+	@echo "  make restart        - Restart all services (alias for docker-rebuild)"
+	@echo "  make status         - Show running containers status"
+	@echo "  make logs           - Show logs from all services"
+	@echo ""
 	@echo "  make docker-up      - Start all services with Docker Compose"
 	@echo "  make docker-down    - Stop all services"
 	@echo "  make docker-build   - Build all Docker images"
 	@echo "  make docker-rebuild - Rebuild and restart all services"
 	@echo "  make docker-clean   - Remove all containers, volumes, and images"
-	@echo "  make logs          - Show logs from all services"
 	@echo ""
 	@echo "Cleanup targets:"
 	@echo "  make clean         - Clean all build artifacts"
@@ -157,6 +162,18 @@ web-typecheck:
 # Docker targets
 # ======================
 
+# Convenient aliases
+up: docker-up
+
+down: docker-down
+
+restart: docker-rebuild
+
+status:
+	@echo "Docker containers status:"
+	@docker compose ps
+
+# Full docker commands
 docker-up:
 	@echo "Starting all services with Docker Compose..."
 	docker compose up -d
@@ -193,7 +210,7 @@ logs-frontend:
 # ======================
 
 db-shell:
-	docker exec -it rune-api-postgres-dev psql -U postgres -d rune
+	docker exec -it rune-postgres psql -U rune -d rune_db
 
 # ======================
 # Cleanup targets

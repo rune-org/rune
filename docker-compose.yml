@@ -54,13 +54,35 @@ services:
     container_name: rune-api
     env_file:
       - .env
-      - ./services/api/.env
     environment:
+      # Database Settings
       DATABASE_URL: postgresql://${POSTGRES_USER:-rune}:${POSTGRES_PASSWORD:-rune_password}@postgres:5432/${POSTGRES_DB:-rune_db}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-rune}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rune_db}
+      # RabbitMQ Settings
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-rune}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rune_password}
+      RABBITMQ_QUEUE_NAME: workflow.execution
+      # Redis Settings
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_DB: 0
+      # Application Settings
+      ENVIRONMENT: ${ENVIRONMENT:-prod}
+      APP_NAME: "Rune API"
+      # JWT Settings (use secrets from .env or defaults for development)
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-key-change-in-production}
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}
+      # Encryption Key (use from .env or default for development)
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
     ports:
       - "8000:8000"
     depends_on:
@@ -82,10 +104,15 @@ services:
     container_name: rune-worker
     env_file:
       - .env
-      - ./services/rune-worker/.env
     environment:
+      # Database Settings
       DATABASE_URL: postgresql://${POSTGRES_USER:-rune}:${POSTGRES_PASSWORD:-rune_password}@postgres:5432/${POSTGRES_DB:-rune_db}
+      # RabbitMQ Settings
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/
+      # Workflow Queue Configuration
+      WORKFLOW_QUEUE_NAME: workflow.execution
+      WORKFLOW_PREFETCH: ${WORKFLOW_PREFETCH:-10}
+      WORKFLOW_CONCURRENCY: ${WORKFLOW_CONCURRENCY:-1}
     depends_on:
       postgres:
         condition: service_healthy
@@ -100,8 +127,12 @@ services:
       context: ./apps/web
       dockerfile: Dockerfile
     container_name: rune-frontend
-    env_file:
-      - ./apps/web/.env
+    environment:
+      # API Configuration
+      NEXT_PUBLIC_API_BASE_URL: /api
+      API_PROXY_TARGET: http://api:8000
+      # Next.js Configuration
+      NODE_ENV: production
     ports:
       - "3000:3000"
     depends_on:

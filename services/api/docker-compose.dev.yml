@@ -22,9 +22,9 @@ services:
     image: "postgres:17-alpine"
     container_name: rune-api-postgres-dev
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-rune}
+      POSTGRES_USER: ${POSTGRES_USER:-rune}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rune_db}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -57,8 +57,8 @@ services:
     container_name: rune-api-rabbitmq-dev
     environment:
       # Allow overriding via host env or .env when using docker-compose
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rune}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rune_password}
     ports:
       - "5672:5672"    # AMQP
       - "15672:15672"  # Management UI
