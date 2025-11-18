@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import type { Metadata } from "next";
 
 import { AmbientBackground } from "@/components/illustrations/AmbientBackground";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,10 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from "@/components/ui/empty";
+
+export const metadata: Metadata = {
+    title: "404 Not Found",
+};
 
 export default function NotFound() {
     return (
@@ -28,7 +33,7 @@ export default function NotFound() {
                     />
                 </EmptyMedia>
                 <EmptyHeader className="gap-8">
-                    <EmptyTitle className="whitespace-nowrap font-rune text-4xl font-black uppercase tracking-widest text-foreground sm:text-6xl">
+                    <EmptyTitle className="whitespace-nowrap font-display text-4xl tracking-tight text-foreground sm:text-6xl">
                         The Rune is Silent
                     </EmptyTitle>
                     <div className="flex flex-col gap-1 text-center">
