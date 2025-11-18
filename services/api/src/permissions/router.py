@@ -4,6 +4,7 @@ from src.permissions.schemas import (
     WorkflowShareRequest,
     WorkflowShareResponse,
     WorkflowPermissionListResponse,
+    WorkflowRoleUpdateRequest,
 )
 from src.permissions.service import PermissionService
 from src.core.dependencies import (
@@ -32,8 +33,8 @@ def get_permission_service(db: DatabaseDep) -> PermissionService:
 async def share_workflow(
     share_request: WorkflowShareRequest,
     workflow: Workflow = Depends(get_workflow_with_permission),
-    current_user: User = Depends(get_current_user),
     service: PermissionService = Depends(get_permission_service),
+    current_user: User = Depends(get_current_user),
 ) -> ApiResponse[WorkflowShareResponse]:
     """
     Share workflow with another user.
@@ -74,7 +75,6 @@ async def share_workflow(
 async def revoke_access(
     user_id: int,
     workflow: Workflow = Depends(get_workflow_with_permission),
-    current_user: User = Depends(get_current_user),
     service: PermissionService = Depends(get_permission_service),
 ) -> ApiResponse[WorkflowShareResponse]:
     """
@@ -107,7 +107,6 @@ async def revoke_access(
 @require_workflow_permission("view")
 async def list_workflow_permissions(
     workflow: Workflow = Depends(get_workflow_with_permission),
-    current_user: User = Depends(get_current_user),
     service: PermissionService = Depends(get_permission_service),
 ) -> ApiResponse[WorkflowPermissionListResponse]:
     """
@@ -143,9 +142,8 @@ async def list_workflow_permissions(
 @require_workflow_permission("share")
 async def update_user_role(
     user_id: int,
-    share_request: WorkflowShareRequest,
+    role_update: WorkflowRoleUpdateRequest,
     workflow: Workflow = Depends(get_workflow_with_permission),
-    current_user: User = Depends(get_current_user),
     service: PermissionService = Depends(get_permission_service),
 ) -> ApiResponse[WorkflowShareResponse]:
     """
@@ -163,11 +161,11 @@ async def update_user_role(
     - ADMIN: can update roles (bypass)
     """
     await service.update_user_role(
-        workflow=workflow, user_id=user_id, new_role=share_request.role
+        workflow=workflow, user_id=user_id, new_role=role_update.role
     )
 
     response = WorkflowShareResponse(
         status="success",
-        message=f"User role updated to {share_request.role.value}",
+        message=f"User role updated to {role_update.role.value}",
     )
     return ApiResponse(success=True, message="Role updated", data=response)

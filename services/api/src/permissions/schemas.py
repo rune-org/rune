@@ -27,6 +27,23 @@ class WorkflowShareRequest(BaseModel):
         return v
 
 
+class WorkflowRoleUpdateRequest(BaseModel):
+    """Request to update a user's role on a workflow."""
+
+    role: WorkflowRole = Field(
+        ...,
+        description="New role to assign (EDITOR or VIEWER, not OWNER)",
+    )
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: WorkflowRole) -> WorkflowRole:
+        """Ensure only EDITOR or VIEWER roles can be assigned."""
+        if v == WorkflowRole.OWNER:
+            raise ValueError("Cannot grant OWNER role through this endpoint")
+        return v
+
+
 class WorkflowShareResponse(BaseModel):
     """Response after sharing a workflow."""
 
