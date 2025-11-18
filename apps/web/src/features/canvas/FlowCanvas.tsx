@@ -347,7 +347,7 @@ export default function FlowCanvas({
           position="bottom-center"
           className="pointer-events-none !bottom-4 !right-auto !left-1/2 !-translate-x-2"
         >
-          <div className="rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
+          <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
             Drag to move • Connect via handles • Paste JSON to import
           </div>
         </Panel>
