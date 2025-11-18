@@ -85,7 +85,7 @@ def require_password_changed(current_user: CurrentUser) -> User:
     """
     if current_user.must_change_password:
         raise Forbidden(
-            detail="Password change required. Please change your password before proceeding. POST to /profile/me/change-password"
+            detail="Password change required. Please set a new password to continue."
         )
     return current_user
 

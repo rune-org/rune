@@ -73,6 +73,7 @@ class User(TimestampModel, table=True):
     is_active: bool = Field(default=True)
     last_login_at: Optional[datetime] = None
     must_change_password: bool = Field(
+        default=False,
         description="Flag indicating user must change their password",
     )
 
