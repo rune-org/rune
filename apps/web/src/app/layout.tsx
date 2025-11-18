@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display, Cinzel } from "next/font/google";
 import { Toaster } from "@/components/ui/toast";
 import { ClientProviders } from "@/components/providers/ClientProviders";
 
@@ -15,6 +15,12 @@ const fontDisplay = Playfair_Display({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
+  display: "swap",
+});
+const fontRune = Cinzel({
+  variable: "--font-rune",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -34,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} ${fontDisplay.variable} antialiased bg-background text-foreground min-h-screen`}
+        className={`${fontSans.variable} ${fontDisplay.variable} ${fontRune.variable} antialiased bg-background text-foreground min-h-screen`}
       >
         <ClientProviders>{children}</ClientProviders>
         <Toaster />
