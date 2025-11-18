@@ -79,14 +79,30 @@ export function useAddNode(
 
       const defaults = NODE_DEFAULTS[kind];
 
-      const newNode = {
-        id: createId(),
-        position,
-        type: defaults.type,
-        data: defaults.data,
-      } as CanvasNode;
+      setNodes((nodes) => {
+        const baseLabel = defaults.data.label ?? "Node";
+        const existingLabels = nodes
+          .filter((node) => node.type === kind)
+          .map((node) => node.data.label)
+          .filter((label): label is string => !!label);
 
-      setNodes((nodes) => nodes.concat(newNode));
+        let newLabel = baseLabel;
+        let counter = 2;
+
+        while (existingLabels.includes(newLabel)) {
+          newLabel = `${baseLabel} ${counter}`;
+          counter++;
+        }
+
+        const newNode = {
+          id: createId(),
+          position,
+          type: defaults.type,
+          data: { ...defaults.data, label: newLabel },
+        } as CanvasNode;
+
+        return nodes.concat(newNode);
+      });
     },
     [containerRef, rfInstanceRef, setNodes],
   );
