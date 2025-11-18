@@ -1,7 +1,6 @@
-from operator import or_
 from typing import Optional
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select, update, or_
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.models import WorkflowTemplate
 from src.core.exceptions import NotFound, Forbidden
@@ -22,7 +21,7 @@ class TemplateService:
             or_(WorkflowTemplate.is_public, WorkflowTemplate.created_by == user_id)
         )
         result = await self.db.exec(stmt)
-        return result.scalars().all()
+        return result.all()
 
     async def get_template(
         self, template_id: int, user_id: Optional[int] = None
@@ -30,7 +29,7 @@ class TemplateService:
         """Get a specific template by ID."""
         stmt = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
         result = await self.db.exec(stmt)
-        template = result.scalar_one_or_none()
+        template = result.one_or_none()
 
         if not template:
             raise NotFound(f"Template with id {template_id} not found")
@@ -54,7 +53,6 @@ class TemplateService:
             workflow_data=template_data.workflow_data,
             is_public=template_data.is_public,
             created_by=user_id,
-            usage_count=0,
         )
 
         self.db.add(template)
@@ -75,11 +73,12 @@ class TemplateService:
 
     async def increment_usage_count(self, template_id: int) -> None:
         """Increment the usage count for a template."""
-        stmt = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
-        result = await self.db.exec(stmt)
-        template = result.scalar_one_or_none()
+        stmt = (
+            update(WorkflowTemplate)
+            .where(WorkflowTemplate.id == template_id)
+            .values(usage_count=WorkflowTemplate.usage_count + 1)
+        )
 
-        if template:
-            template.usage_count += 1
-            await self.db.commit()
-            await self.db.refresh(template)
+        # Execute the UPDATE and commit. This delegates the increment to the database so concurrent workers won't overwrite each other's increments.
+        await self.db.exec(stmt)
+        await self.db.commit()
