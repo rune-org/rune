@@ -62,7 +62,7 @@ async def _read_usage(engine, template_id: int) -> int:
         try:
             stmt = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
             result = await session.exec(stmt)
-            tpl = result.scalar_one()
+            tpl = result.one()
             return tpl.usage_count
         finally:
             await session.close()
@@ -86,7 +86,7 @@ async def _reset_usage(engine, template_id: int):
         try:
             stmt = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
             result = await session.exec(stmt)
-            tpl = result.scalar_one()
+            tpl = result.one()
             tpl.usage_count = 0
             await session.commit()
         finally:
