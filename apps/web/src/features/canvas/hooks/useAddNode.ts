@@ -82,7 +82,6 @@ export function useAddNode(
       setNodes((nodes) => {
         const baseLabel = defaults.data.label ?? "Node";
         const existingLabels = nodes
-          .filter((node) => node.type === kind)
           .map((node) => node.data.label)
           .filter((label): label is string => !!label);
 
