@@ -34,6 +34,7 @@ import { createId } from "./utils/id";
 type HistoryEntry = { nodes: CanvasNode[]; edges: Edge[] };
 const CLIPBOARD_SELECTION_TYPE = "rune.canvas.selection";
 const PASTE_OFFSET = 32;
+const MAX_HISTORY_SIZE = 50;
 
 export default function FlowCanvas({
   externalNodes,
@@ -78,6 +79,9 @@ export default function FlowCanvas({
 
   const pushHistory = useCallback(() => {
     historyRef.current.push(structuredClone({ nodes, edges }));
+    if (historyRef.current.length > MAX_HISTORY_SIZE) {
+      historyRef.current.shift();
+    }
   }, [nodes, edges]);
 
   const copySelection = useCallback(async () => {
@@ -220,7 +224,7 @@ export default function FlowCanvas({
 
       // For DSL imports, ignore if parsed graph is empty to prevent
       // accidentally clearing the canvas.
-      if (clipboardType !== CLIPBOARD_SELECTION_TYPE && parsed.nodes.length === 0){
+      if (clipboardType !== CLIPBOARD_SELECTION_TYPE && parsed.nodes.length === 0) {
         return;
       }
 
