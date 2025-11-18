@@ -1,7 +1,6 @@
-from operator import or_
 from typing import Optional
-from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select, update, or_
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.models import WorkflowTemplate
 from src.core.exceptions import NotFound, Forbidden
@@ -22,7 +21,7 @@ class TemplateService:
             or_(WorkflowTemplate.is_public, WorkflowTemplate.created_by == user_id)
         )
         result = await self.db.exec(stmt)
-        return result.scalars().all()
+        return result.all()
 
     async def get_template(
         self, template_id: int, user_id: Optional[int] = None
@@ -30,7 +29,7 @@ class TemplateService:
         """Get a specific template by ID."""
         stmt = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
         result = await self.db.exec(stmt)
-        template = result.scalar_one_or_none()
+        template = result.one_or_none()
 
         if not template:
             raise NotFound(f"Template with id {template_id} not found")

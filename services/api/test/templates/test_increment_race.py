@@ -1,7 +1,7 @@
 import asyncio
 import os
 import pytest
-from sqlalchemy import select
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.templates.service import TemplateService
