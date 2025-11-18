@@ -108,6 +108,9 @@ export default function FlowCanvas({
     onSave: () => {
       void persistGraph();
     },
+    onUndo: () => {
+      void undo();
+    },
     onSelectAll: (firstId) => setSelectedNodeId(firstId),
     onPushHistory: pushHistory,
   });
