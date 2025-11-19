@@ -27,10 +27,14 @@ import { useAddNode } from "./hooks/useAddNode";
 import { useConditionalConnect } from "./hooks/useConditionalConnect";
 import { useUpdateNodeData } from "./hooks/useUpdateNodeData";
 import { useExecutionSim } from "./hooks/useExecutionSim";
-import { stringifyGraph, tryParseGraphFromText } from "./lib/graphIO";
+import { sanitizeGraph, stringifyGraph } from "./lib/graphIO";
 import { toast } from "@/components/ui/toast";
+import { createId } from "./utils/id";
 
 type HistoryEntry = { nodes: CanvasNode[]; edges: Edge[] };
+const CLIPBOARD_SELECTION_TYPE = "rune.canvas.selection";
+const PASTE_OFFSET = 32;
+const MAX_HISTORY_SIZE = 50;
 
 export default function FlowCanvas({
   externalNodes,
@@ -75,7 +79,53 @@ export default function FlowCanvas({
 
   const pushHistory = useCallback(() => {
     historyRef.current.push(structuredClone({ nodes, edges }));
+    if (historyRef.current.length > MAX_HISTORY_SIZE) {
+      historyRef.current.shift();
+    }
   }, [nodes, edges]);
+
+  const copySelection = useCallback(async () => {
+    const selectedNodeIds = new Set(
+      nodes.filter((n) => n.selected).map((n) => n.id),
+    );
+    if (selectedNodeIds.size === 0 && selectedNodeId) {
+      selectedNodeIds.add(selectedNodeId);
+    }
+
+    if (selectedNodeIds.size === 0) {
+      return;
+    }
+
+    const selectedNodes = nodes
+      .filter((n) => selectedNodeIds.has(n.id))
+      .map((n) => structuredClone(n));
+
+    const selectedEdges = edges
+      .filter(
+        (e) =>
+          selectedNodeIds.has(e.source as string) &&
+          selectedNodeIds.has(e.target as string),
+      )
+      .map((e) => structuredClone(e));
+
+    if (!navigator.clipboard?.writeText) {
+      toast.error("Clipboard permissions are required to copy");
+      return;
+    }
+
+    const payload = {
+      __runeClipboardType: CLIPBOARD_SELECTION_TYPE,
+      nodes: selectedNodes,
+      edges: selectedEdges,
+    };
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      toast.success("Copied selection to clipboard");
+    } catch {
+      toast.error("Unable to copy selection");
+    }
+  }, [edges, nodes, selectedNodeId]);
 
   const undo = useCallback(() => {
     const lastState = historyRef.current.pop();
@@ -108,6 +158,12 @@ export default function FlowCanvas({
     onSave: () => {
       void persistGraph();
     },
+    onUndo: () => {
+      void undo();
+    },
+    onCopy: () => {
+      void copySelection();
+    },
     onSelectAll: (firstId) => setSelectedNodeId(firstId),
     onPushHistory: pushHistory,
   });
@@ -136,13 +192,85 @@ export default function FlowCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalNodes, externalEdges]);
 
-  // Paste to import graph DSL
+  // Paste to import graph DSL or clone selections
   useEffect(() => {
     const handler = (e: ClipboardEvent) => {
       const text = e.clipboardData?.getData("text");
       if (!text) return;
-      const parsed = tryParseGraphFromText(text);
-      if (!parsed) return; // ignore other content
+      let raw: unknown;
+      try {
+        raw = JSON.parse(text);
+      } catch {
+        return;
+      }
+
+      if (!raw || typeof raw !== "object") return;
+
+      const candidate = raw as {
+        __runeClipboardType?: string;
+        nodes?: unknown;
+        edges?: unknown;
+      };
+
+      if (!Array.isArray(candidate.nodes) || !Array.isArray(candidate.edges)) {
+        return;
+      }
+
+      const clipboardType = candidate.__runeClipboardType ?? null;
+      const parsed = sanitizeGraph({
+        nodes: candidate.nodes as CanvasNode[],
+        edges: candidate.edges as Edge[],
+      });
+
+      // For DSL imports, ignore if parsed graph is empty to prevent
+      // accidentally clearing the canvas.
+      if (clipboardType !== CLIPBOARD_SELECTION_TYPE && parsed.nodes.length === 0) {
+        return;
+      }
+
+      if (clipboardType === CLIPBOARD_SELECTION_TYPE) {
+        e.preventDefault();
+        pushHistory();
+
+        const idMap = new Map<string, string>();
+        const pastedNodes = (parsed.nodes as CanvasNode[]).map((node) => {
+          const newId = createId();
+          idMap.set(node.id, newId);
+          return {
+            ...node,
+            id: newId,
+            selected: true,
+            position: {
+              x: (node.position?.x ?? 0) + PASTE_OFFSET,
+              y: (node.position?.y ?? 0) + PASTE_OFFSET,
+            },
+          } satisfies CanvasNode;
+        });
+
+        const pastedEdges = (parsed.edges as Edge[])
+          .map((edge) => {
+            const newSource = idMap.get(edge.source as string);
+            const newTarget = idMap.get(edge.target as string);
+            if (!newSource || !newTarget) return null;
+            return {
+              ...edge,
+              id: createId(),
+              source: newSource,
+              target: newTarget,
+            } satisfies Edge;
+          })
+          .filter((edge): edge is Edge => edge !== null);
+
+        setNodes((current) => [
+          ...current.map((n) => ({ ...n, selected: false })),
+          ...pastedNodes,
+        ]);
+        setEdges((current) => [...current, ...pastedEdges]);
+        setSelectedNodeId(pastedNodes[0]?.id ?? null);
+        toast.success("Pasted selection from clipboard");
+        return;
+      }
+
       e.preventDefault();
       pushHistory();
       setNodes(parsed.nodes as CanvasNode[]);
@@ -152,7 +280,7 @@ export default function FlowCanvas({
     const el = containerRef.current ?? window;
     el.addEventListener("paste", handler as EventListener);
     return () => el.removeEventListener("paste", handler as EventListener);
-  }, [pushHistory, setNodes, setEdges]);
+  }, [pushHistory, setEdges, setNodes, setSelectedNodeId]);
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden">
@@ -223,7 +351,7 @@ export default function FlowCanvas({
           position="bottom-center"
           className="pointer-events-none !bottom-4 !right-auto !left-1/2 !-translate-x-2"
         >
-          <div className="rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
+          <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
             Drag to move • Connect via handles • Paste JSON to import
           </div>
         </Panel>

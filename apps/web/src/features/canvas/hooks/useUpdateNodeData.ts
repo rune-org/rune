@@ -15,20 +15,41 @@ export function useUpdateNodeData(setNodes: SetNodes) {
       // The updater returns a partial object of changes
       updater: (data: NodeDataMap[T]) => Partial<NodeDataMap[T]>,
     ) {
-      setNodes((nodes) =>
-        nodes.map((n) => {
+      setNodes((nodes) => {
+        // Collect all existing labels from other nodes
+        const existingLabels = nodes
+          .filter((n) => n.id !== id)
+          .map((n) => n.data.label)
+          .filter((label): label is string => !!label);
+
+        return nodes.map((n) => {
           if (n.id !== id || n.type !== kind) {
             return n;
           }
-          // The new data is a shallow merge of the old and the new partial data
-          const nextData: NodeDataMap[T] = {
+
+          // Get the updated data
+          const updates = updater(n.data as NodeDataMap[T]);
+          let nextData: NodeDataMap[T] = {
             ...n.data,
-            ...updater(n.data as NodeDataMap[T]),
+            ...updates,
           } as NodeDataMap[T];
 
+          // If label was updated, ensure it's unique
+          if (updates.label !== undefined && typeof updates.label === "string") {
+            let newLabel = updates.label;
+            let counter = 2;
+
+            while (existingLabels.includes(newLabel)) {
+              newLabel = `${updates.label} ${counter}`;
+              counter++;
+            }
+
+            nextData = { ...nextData, label: newLabel } as NodeDataMap[T];
+          }
+
           return { ...n, data: nextData } as CanvasNode;
-        }),
-      );
+        });
+      });
     },
     [setNodes],
   );
