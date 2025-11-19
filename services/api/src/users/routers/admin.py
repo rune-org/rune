@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status
-from src.core.dependencies import DatabaseDep, get_current_admin
+from src.core.dependencies import DatabaseDep, require_admin_role
 from src.core.responses import ApiResponse
 from src.users.schemas import (
     UserCreate,
@@ -14,7 +14,7 @@ from src.users.service import UserService
 router = APIRouter(
     prefix="/users",
     tags=["Users"],
-    dependencies=[Depends(get_current_admin)],  # All routes require admin by default
+    dependencies=[Depends(require_admin_role)],  # All routes require admin role and password change
 )
 
 

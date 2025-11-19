@@ -38,7 +38,7 @@ async def seed_test_user():
             hashed_password=hashed_password,
             name="Test User",
             role=UserRole.ADMIN,
-            must_change_password=False,  # Admin doesn't need to change password
+            must_change_password=True, 
         )
 
         session.add(test_user)

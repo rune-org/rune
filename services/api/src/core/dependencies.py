@@ -105,4 +105,18 @@ Usage:
 """
 
 
+def require_admin_role(current_user: RequirePasswordChanged) -> User:
+    """
+    Enforces admin role requirement with password change enforcement.
+    Depends on require_password_changed to ensure admins must change their
+    password before accessing admin functions.
+    """
+    if current_user.role != UserRole.ADMIN:
+        raise Forbidden(detail="Admin privileges required")
+    return current_user
+
+
+RequireAdminRole = Annotated[User, Depends(require_admin_role)]
+
+
 RedisDep = Annotated[Redis, Depends(get_redis)]

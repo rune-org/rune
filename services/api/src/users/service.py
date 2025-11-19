@@ -1,6 +1,6 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.db.models import User, UserRole
+from src.db.models import User
 from src.core.exceptions import AlreadyExists, NotFound, Unauthorized
 from src.users.schemas import UserCreate, AdminUserUpdate, ProfileUpdate
 from src.auth.security import hash_password, verify_password
@@ -91,7 +91,7 @@ class UserService:
     async def create_user(self, user_data: UserCreate) -> tuple[User, str]:
         """
         Create a new user in the database with auto-generated temporary password.
-        Users must change password on first sign up but admins don't.
+        All newly created users (including admins) must change their password on first sign up.
 
         Returns:
             Tuple of (User object, Temporary password string)
@@ -111,7 +111,7 @@ class UserService:
 
         temp_password = self._generate_temporary_password()
         hashed_password = hash_password(temp_password)
-        must_change = user_data.role != UserRole.ADMIN
+        must_change = True
 
         user = User(
             name=user_data.name,
