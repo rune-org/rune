@@ -14,7 +14,9 @@ from src.users.service import UserService
 router = APIRouter(
     prefix="/users",
     tags=["Users"],
-    dependencies=[Depends(require_admin_role)],  # All routes require admin role and password change
+    dependencies=[
+        Depends(require_admin_role)
+    ],  # All routes require admin role and password change
 )
 
 
