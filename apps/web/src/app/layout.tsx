@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Open_Sans, Playfair_Display, Cinzel } from "next/font/google";
+import { Noto_Sans, Playfair_Display, Cinzel } from "next/font/google";
 import { Toaster } from "@/components/ui/toast";
 import { ClientProviders } from "@/components/providers/ClientProviders";
 
 import "./globals.css";
 
-const fontSans = Open_Sans({
+const fontSans = Noto_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
