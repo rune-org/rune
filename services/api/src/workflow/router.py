@@ -10,12 +10,9 @@ from src.workflow.schemas import (
     WorkflowUpdateData,
 )
 from src.workflow.service import WorkflowService
-from src.core.dependencies import (
-    DatabaseDep,
-    get_current_user,
-    get_workflow_with_permission,
-)
-from src.core.permissions import require_workflow_permission
+from src.core.dependencies import DatabaseDep, get_current_user
+from src.workflow.dependencies import get_workflow_with_permission
+from src.workflow.permissions import require_workflow_permission
 from src.core.responses import ApiResponse
 from src.core.config import get_settings
 from src.db.models import User, Workflow
@@ -55,7 +52,6 @@ async def list_workflows(
 @require_workflow_permission("view")
 async def get_workflow(
     workflow: Workflow = Depends(get_workflow_with_permission),
-    current_user: User = Depends(get_current_user),
 ) -> ApiResponse[WorkflowDetail]:
     """
     Get a specific workflow by ID.
@@ -91,7 +87,6 @@ async def create_workflow(
 async def update_status(
     payload: WorkflowUpdateStatus,
     workflow: Workflow = Depends(get_workflow_with_permission),
-    current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
     """
@@ -109,7 +104,6 @@ async def update_status(
 async def update_name(
     payload: WorkflowUpdateName,
     workflow: Workflow = Depends(get_workflow_with_permission),
-    current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
     """
@@ -127,7 +121,6 @@ async def update_name(
 async def update_workflow_data(
     payload: WorkflowUpdateData,
     workflow: Workflow = Depends(get_workflow_with_permission),
-    current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
     """
@@ -160,7 +153,6 @@ async def delete_workflow(
 @require_workflow_permission("execute")
 async def run_workflow(
     workflow: Workflow = Depends(get_workflow_with_permission),
-    current_user: User = Depends(get_current_user),
     workflow_service: WorkflowService = Depends(get_workflow_service),
     queue_service: WorkflowQueueService = Depends(get_queue_service),
 ) -> ApiResponse[dict]:

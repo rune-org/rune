@@ -1,5 +1,17 @@
+"""
+Workflow-specific permission decorators.
+
+This module defines decorators for workflow-level authorization.
+These decorators mark route handlers as requiring specific permissions,
+with actual validation happening in the dependency layer.
+"""
+
 from functools import wraps
 from typing import Callable
+
+
+# Valid workflow actions - used for validation
+VALID_WORKFLOW_ACTIONS = {"view", "edit", "execute", "delete", "share"}
 
 
 def require_workflow_permission(action: str):
@@ -13,6 +25,9 @@ def require_workflow_permission(action: str):
         action: The action being performed. Valid values:
                'view', 'edit', 'execute', 'delete', 'share'
 
+    Raises:
+        ValueError: If an invalid action is provided
+
     Usage:
         @router.get("/{workflow_id}")
         @require_workflow_permission("view")
@@ -22,6 +37,12 @@ def require_workflow_permission(action: str):
         ):
             return workflow
     """
+    # Validate action at decorator creation time
+    if action not in VALID_WORKFLOW_ACTIONS:
+        raise ValueError(
+            f"Invalid permission action '{action}'. "
+            f"Valid actions are: {', '.join(sorted(VALID_WORKFLOW_ACTIONS))}"
+        )
 
     def decorator(func: Callable):
         @wraps(func)
@@ -32,35 +53,6 @@ def require_workflow_permission(action: str):
 
         # Store metadata for use in dependencies and OpenAPI docs
         wrapper.__permission_required__ = action
-        return wrapper
-
-    return decorator
-
-
-def require_admin():
-    """
-    Decorator to enforce admin-only access.
-
-    This decorator marks a route handler as requiring admin privileges.
-    The actual admin checking happens through the CurrentAdmin dependency.
-
-    Usage:
-        @router.get("/admin/all-workflows")
-        @require_admin()
-        async def list_all_workflows(
-            current_admin: CurrentAdmin = ...,
-            db: DatabaseDep = ...
-        ):
-            return workflows
-    """
-
-    def decorator(func: Callable):
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            return await func(*args, **kwargs)
-
-        # Store metadata for OpenAPI docs
-        wrapper.__admin_required__ = True
         return wrapper
 
     return decorator

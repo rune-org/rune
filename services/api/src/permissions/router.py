@@ -7,12 +7,9 @@ from src.permissions.schemas import (
     WorkflowRoleUpdateRequest,
 )
 from src.permissions.service import PermissionService
-from src.core.dependencies import (
-    DatabaseDep,
-    get_current_user,
-    get_workflow_with_permission,
-)
-from src.core.permissions import require_workflow_permission
+from src.core.dependencies import DatabaseDep, get_current_user
+from src.workflow.dependencies import get_workflow_with_permission
+from src.workflow.permissions import require_workflow_permission
 from src.core.responses import ApiResponse
 from src.db.models import User, Workflow
 
