@@ -53,8 +53,36 @@ const INITIAL_NODES = [
 
 const INITIAL_EDGES = [
   { id: "edge-1", source: "trgr-1", target: "if-1", type: "default", animated: true, style: { stroke: "#52525b" } },
-  { id: "edge-2", source: "if-1", target: "smtp-1", type: "default", sourceHandle: "true", animated: true, label: "True", style: { stroke: "#52525b" } },
-  { id: "edge-3", source: "if-1", target: "http-1", type: "default", sourceHandle: "false", animated: true, label: "False", style: { stroke: "#52525b" } },
+  {
+    id: "edge-2",
+    source: "if-1",
+    target: "smtp-1",
+    type: "default",
+    sourceHandle: "true",
+    animated: true,
+    label: "true",
+    labelStyle: { fill: "white", fontWeight: 600 },
+    labelShowBg: true,
+    labelBgStyle: { fill: "hsl(142 70% 45%)" },
+    labelBgPadding: [2, 6] as [number, number],
+    labelBgBorderRadius: 4,
+    style: { stroke: "#52525b" }
+  },
+  {
+    id: "edge-3",
+    source: "if-1",
+    target: "http-1",
+    type: "default",
+    sourceHandle: "false",
+    animated: true,
+    label: "false",
+    labelStyle: { fill: "white", fontWeight: 600 },
+    labelShowBg: true,
+    labelBgStyle: { fill: "hsl(0 70% 50%)" },
+    labelBgPadding: [2, 6] as [number, number],
+    labelBgBorderRadius: 4,
+    style: { stroke: "#52525b" }
+  },
 ];
 
 export function MarketingCanvas() {
