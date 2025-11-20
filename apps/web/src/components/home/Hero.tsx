@@ -49,7 +49,7 @@ export function Hero() {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
             className="text-6xl md:text-7xl font-serif tracking-tight text-foreground leading-[1.0] md:leading-[0.95]"
             style={{ fontFamily: 'var(--font-playfair)' }}
           >
