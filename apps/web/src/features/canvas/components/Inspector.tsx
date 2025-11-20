@@ -28,6 +28,8 @@ type InspectorProps = {
   updateSelectedNodeLabel: (value: string) => void;
   updateData: ReturnType<typeof useUpdateNodeData>;
   onDelete?: () => void;
+  isExpandedDialogOpen?: boolean;                  // new
+  setIsExpandedDialogOpen?: (open: boolean) => void; // new
 };
 
 function renderInspectorForm(
@@ -59,9 +61,15 @@ export function Inspector({
   updateSelectedNodeLabel,
   updateData,
   onDelete,
+  isExpandedDialogOpen: isExpandedProp,
+  setIsExpandedDialogOpen: setIsExpandedProp,
 }: InspectorProps) {
-  const [isExpandedDialogOpen, setIsExpandedDialogOpen] = useState(false);
+  const [isExpandedInternal, setIsExpandedInternal] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  // Decide whether to use external or internal state
+  const isExpandedDialogOpen = isExpandedProp ?? isExpandedInternal;
+  const setIsExpandedDialogOpen = setIsExpandedProp ?? setIsExpandedInternal;
 
   // Memoize inputs/outputs computation
   const nodeIO = useMemo(

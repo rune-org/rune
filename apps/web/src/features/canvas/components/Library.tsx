@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronsRight } from "lucide-react";
+import { ChevronLeft, ChevronsRight, GripHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { LibraryGroups } from "./LibraryGroups";
 import type { NodeKind } from "../types";
@@ -15,11 +15,11 @@ export function Library({
   onAdd: (type: NodeKind, x?: number, y?: number) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(300);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  // Dynamically position the panel below the toolbar
-  const [top, setTop] = useState(66); // Fallback
+  const [top, setTop] = useState(66); // fallback
   useEffect(() => {
     const el = toolbarRef?.current;
     if (!el) return;
@@ -31,6 +31,7 @@ export function Library({
     return () => ro.disconnect();
   }, [toolbarRef]);
 
+  // Focus trap & ESC key
   useEffect(() => {
     if (!open) return;
     const panel = panelRef.current;
@@ -47,7 +48,6 @@ export function Library({
         return;
       }
       if (e.key === "Tab" && panel) {
-        // Trap focus to library panel
         const focusables = panel.querySelectorAll<HTMLElement>(
           'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
         );
@@ -67,12 +67,40 @@ export function Library({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  const PANEL_WIDTH = 440;
-  const GUTTER = 16; // Breathing room from left edge of screen
+  // Drag to resize
+  const resizerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const resizer = resizerRef.current;
+    if (!resizer) return;
+
+    let startX = 0;
+    let startWidth = panelWidth;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const newWidth = Math.max(200, startWidth + e.clientX - startX);
+      setPanelWidth(newWidth);
+    };
+    const onMouseUp = () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      startX = e.clientX;
+      startWidth = panelWidth;
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+      e.preventDefault();
+    };
+
+    resizer.addEventListener("mousedown", onMouseDown);
+    return () => resizer.removeEventListener("mousedown", onMouseDown);
+  }, [panelWidth]);
+
+  const GUTTER = 16;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[40]">
-      {/* Handle */}
+      {/* Handle to open panel */}
       <button
         className="pointer-events-auto absolute left-1 top-1/2 z-[45] -translate-y-1/2 transform rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-background/80 text-muted-foreground hover:border-accent/60 hover:text-foreground"
         style={{
@@ -92,21 +120,19 @@ export function Library({
       {/* Sliding library panel */}
       <div
         ref={panelRef}
-        className="pointer-events-auto absolute flex w-[440px] flex-col overflow-visible rounded-[var(--radius)] border border-border/60 bg-card/90 shadow-xl"
+        className="pointer-events-auto absolute flex flex-col overflow-visible rounded-[var(--radius)] border border-border/60 bg-card/90 shadow-xl"
         style={{
           top: top,
           height: `calc(100% - ${top}px - 12px)`,
           left: GUTTER,
-          transform: open
-            ? "translateX(0)"
-            : `translateX(-${PANEL_WIDTH + GUTTER + 12}px)`,
+          width: panelWidth,
+          transform: open ? "translateX(0)" : `translateX(-${panelWidth + GUTTER + 12}px)`,
           transition: "transform 180ms ease-out",
         }}
       >
+        {/* Header */}
         <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-          <div className="text-xs font-medium text-muted-foreground">
-            Library
-          </div>
+          <div className="text-xs font-medium text-muted-foreground">Library</div>
           <button
             ref={closeBtnRef}
             className="inline-flex items-center gap-1 rounded p-1 text-muted-foreground hover:text-foreground"
@@ -116,11 +142,21 @@ export function Library({
             <ChevronLeft className="h-4 w-4" />
           </button>
         </div>
+
+        {/* Content */}
         <div className="h-full overflow-y-auto p-2">
           <LibraryGroups
             containerRef={containerRef}
             onAdd={(type, x, y) => onAdd(type, x, y)}
           />
+        </div>
+
+        {/* Resizer handle */}
+        <div
+          ref={resizerRef}
+          className="absolute top-0 right-0 h-full w-2 cursor-ew-resize"
+        >
+          <GripHorizontal className="h-full w-full text-border/50" />
         </div>
       </div>
     </div>
