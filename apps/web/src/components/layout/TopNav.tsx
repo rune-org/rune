@@ -52,7 +52,7 @@ export function TopNav() {
             Sign in
           </Link>
           <Button asChild size="sm" className="relative top-[2px]">
-            <Link href="/sign-up">Start building</Link>
+            <Link href="/create">Start building</Link>
           </Button>
         </div>
       </Container>
