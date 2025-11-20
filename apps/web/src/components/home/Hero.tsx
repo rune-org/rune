@@ -1,78 +1,101 @@
-import Image from "next/image";
-import Link from "next/link";
-
-const workflowsIllustration = "/images/workflows.png";
+"use client";
 
 import { Button } from "@/components/ui/button";
-import { Section } from "@/components/shared/Section";
+import { motion } from "framer-motion";
+import { ArrowRight, PlayCircle } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import { Playfair_Display } from "next/font/google";
+import { cn } from "@/lib/cn";
+
+const playfair = Playfair_Display({ 
+  subsets: ["latin"],
+  weight: ["400", "600"],
+  variable: "--font-playfair",
+});
+
+const runeLogo = "/icons/Logo.svg"; 
 
 export function Hero() {
   return (
-    <Section>
-      <div className="relative space-y-6">
-        <div className="space-y-4">
-          <h1 className="max-w-3xl font-display text-4xl leading-tight sm:text-5xl">
-            Describe your workflow, <br /> Automate your world.
-          </h1>
-          <p className="max-w-2xl text-base text-muted-foreground sm:text-lg">
-            Rune gives every team a canvas, agents, and integrations to deliver
-            powerful automation without writing boilerplate code.
-          </p>
+    <section className={cn("relative w-full min-h-screen flex flex-col justify-center items-center overflow-hidden pt-32 pb-20", playfair.variable)}>
+      
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))]" />
+      </div>
+
+      <div className="container relative z-10 flex flex-col items-center text-center space-y-10 mx-auto px-4">
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 1.4, filter: "blur(10px)" }}
+          animate={{ opacity: 1, scale: 2.3, filter: "blur(0px)" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="relative mb-20"
+        >
+           <div className="absolute inset-0 bg-primary/20 blur-[80px] rounded-full scale-150 pointer-events-none" />
+           
+           <div className="relative w-32 h-32 md:w-40 md:h-40 drop-shadow-[0_0_40px_rgba(255,255,255,0.3)]">
+             <Image 
+               src={runeLogo} 
+               alt="Rune Logo" 
+               fill 
+               className="object-contain dark:invert" 
+               priority
+             />
+           </div>
+        </motion.div>
+
+        <div className="space-y-6 max-w-5xl">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-6xl md:text-7xl font-serif tracking-tight text-foreground leading-[1.0] md:leading-[0.95]"
+            style={{ fontFamily: 'var(--font-playfair)' }}
+          >
+            Describe your Workflow. <br />
+            <span className="italic font-light text-muted-foreground">Automate your World.</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="max-w-2xl mx-auto text-lg text-muted-foreground/80 sm:text-xl leading-relaxed font-sans"
+          >
+            The infinite canvas for everyone. Orchestrate data, APIs, and agents with a simple drag and drop!
+          </motion.p>
         </div>
-        <Image
-          src={workflowsIllustration}
-          alt="Illustration of workflow automation"
-          aria-hidden
-          width={1000}
-          height={1000}
-          priority
-          className="pointer-events-none select-none hidden sm:block absolute right-0 top-1/2 -translate-y-1/2 w-48 sm:w-64 lg:w-80 xl:w-[22rem] object-contain"
-        />
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Button asChild size="lg">
-            <Link href="/sign-up">Start building</Link>
-          </Button>
-          <Button variant="outline" asChild size="lg">
-            <Link
-              href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Watch a demo
+
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="flex flex-col sm:flex-row items-center gap-4 w-full justify-center pt-4"
+        >
+          <Button 
+            asChild 
+            size="lg" 
+            className="h-14 px-8 text-base rounded-full bg-white !text-black hover:bg-gray-200 border-0 shadow-[0_0_30px_-10px_rgba(255,255,255,0.3)] transition-all"
+          >
+            <Link href="/create">
+              Start Building <ArrowRight className="ml-2 h-4 w-4 !text-black" />
             </Link>
           </Button>
-        </div>
+          
+          <Button 
+            variant="outline" 
+            asChild 
+            size="lg" 
+            className="h-14 px-8 text-base rounded-full border-muted-foreground/20 hover:bg-muted/10 hover:text-foreground transition-all"
+          >
+            <Link href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+              <PlayCircle className="mr-2 h-4 w-4" /> See how it works
+            </Link>
+          </Button>
+        </motion.div>
       </div>
-      <div className="overflow-hidden rounded-[var(--radius)] border border-border/60 bg-gradient-to-br from-primary/20 via-background to-secondary/40 p-8 shadow-[0_40px_80px_hsl(220_55%_6%/0.35)] mt-7">
-        <div className="grid gap-4 text-sm text-muted-foreground sm:grid-cols-2">
-          <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-card/60 p-4">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Flow Canvas
-            </p>
-            <p className="mt-2 font-medium text-foreground">
-              Drag nodes onto the canvas to orchestrate any workflow.
-            </p>
-          </div>
-          <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-card/60 p-4">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Version Control
-            </p>
-            <p className="mt-2 font-medium text-foreground">
-              Ship confidently with built-in history, review flows, and test
-              runs.
-            </p>
-          </div>
-          <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-card/60 p-4 sm:col-span-2">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Agent Collaboration
-            </p>
-            <p className="mt-2 font-medium text-foreground">
-              Connect triggers, services, and agents side-by-side while Rune
-              manages routing and guardrails.
-            </p>
-          </div>
-        </div>
-      </div>
-    </Section>
+    </section>
   );
 }
