@@ -90,7 +90,7 @@ export function Hero() {
             size="lg" 
             className="h-14 px-8 text-base rounded-full border-muted-foreground/20 hover:bg-muted/10 hover:text-foreground transition-all"
           >
-            <Link href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+            <Link href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">
               <PlayCircle className="mr-2 h-4 w-4" /> See how it works
             </Link>
           </Button>
