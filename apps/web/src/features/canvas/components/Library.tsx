@@ -15,7 +15,7 @@ export function Library({
   onAdd: (type: NodeKind, x?: number, y?: number) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(300);
+  const [panelWidth, setPanelWidth] = useState(440);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -97,7 +97,6 @@ export function Library({
     resizer.addEventListener("mousedown", onMouseDown);
     return () => resizer.removeEventListener("mousedown", onMouseDown);
   }, [panelWidth]);
-
  
 
   return (
