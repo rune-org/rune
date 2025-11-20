@@ -1,5 +1,5 @@
 import { Handle, Position } from "@xyflow/react";
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 type BaseNodeProps = {
   icon: React.ReactNode;
@@ -9,7 +9,7 @@ type BaseNodeProps = {
   borderColor?: string;
 };
 
-export function BaseNode({ icon, label, children, bgClassName = "bg-card", borderColor }: BaseNodeProps) {
+export const BaseNode = memo(function BaseNode({ icon, label, children, bgClassName = "bg-card", borderColor }: BaseNodeProps) {
   const borderStyle = borderColor
     ? { borderColor: `var(${borderColor})`, borderWidth: '2px' }
     : {};
@@ -30,4 +30,4 @@ export function BaseNode({ icon, label, children, bgClassName = "bg-card", borde
       <Handle type="source" position={Position.Right} className="!bg-ring" />
     </div>
   );
-}
+});
