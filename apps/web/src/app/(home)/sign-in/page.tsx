@@ -1,14 +1,37 @@
+"use client";
+
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 import { AuthCard } from "@/components/auth/AuthCard";
 import { SignInForm } from "@/components/auth/SignInForm";
-
-export const metadata = {
-  title: "Sign in to Rune",
-};
+import { useAuth } from "@/lib/auth";
 
 export default function SignInPage() {
+  const router = useRouter();
+  const { state } = useAuth();
+
+  useEffect(() => {
+    if (!state.loading && state.user) {
+      router.replace("/create");
+    }
+  }, [state.loading, state.user, router]);
+
+  if (state.loading) {
+    return (
+      <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center py-12 px-4">
+        <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  if (state.user) {
+    return null;
+  }
+
   return (
     <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center py-12 px-4">
       <div className="absolute inset-0 pointer-events-none">

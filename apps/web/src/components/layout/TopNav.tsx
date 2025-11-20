@@ -8,9 +8,11 @@ import { Container } from "@/components/shared/Container";
 import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/cn";
 import { siteConfig } from "@/lib/site";
+import { useAuth } from "@/lib/auth";
 
 export function TopNav() {
   const pathname = usePathname();
+  const { state } = useAuth();
 
   return (
     <header className="absolute top-0 z-50 w-full">
@@ -45,12 +47,14 @@ export function TopNav() {
           })}
         </nav>
         <div className="flex flex-1 items-center justify-end gap-5">
-          <Link
-            href="/sign-in"
-            className="hidden h-10 items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex relative top-[2px]"
-          >
-            Sign in
-          </Link>
+          {!state.user && (
+            <Link
+              href="/sign-in"
+              className="hidden h-10 items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex relative top-[2px]"
+            >
+              Sign in
+            </Link>
+          )}
           <Button asChild size="sm" className="relative top-[2px]">
             <Link href="/create">Start building</Link>
           </Button>
