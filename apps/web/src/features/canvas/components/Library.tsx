@@ -19,7 +19,8 @@ export function Library({
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  const [top, setTop] = useState(66); // fallback
+  // Dynamically position the panel below the toolbar
+  const [top, setTop] = useState(66); // Fallback
   useEffect(() => {
     const el = toolbarRef?.current;
     if (!el) return;
@@ -31,7 +32,6 @@ export function Library({
     return () => ro.disconnect();
   }, [toolbarRef]);
 
-  // Focus trap & ESC key
   useEffect(() => {
     if (!open) return;
     const panel = panelRef.current;
@@ -48,6 +48,7 @@ export function Library({
         return;
       }
       if (e.key === "Tab" && panel) {
+        // Trap focus to library panel
         const focusables = panel.querySelectorAll<HTMLElement>(
           'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
         );
@@ -67,6 +68,7 @@ export function Library({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
+  const GUTTER = 16; // Breathing room from left edge of screen
   // Drag to resize
   const resizerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -96,11 +98,11 @@ export function Library({
     return () => resizer.removeEventListener("mousedown", onMouseDown);
   }, [panelWidth]);
 
-  const GUTTER = 16;
+ 
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[40]">
-      {/* Handle to open panel */}
+      {/* Handle */}
       <button
         className="pointer-events-auto absolute left-1 top-1/2 z-[45] -translate-y-1/2 transform rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-background/80 text-muted-foreground hover:border-accent/60 hover:text-foreground"
         style={{
@@ -130,9 +132,10 @@ export function Library({
           transition: "transform 180ms ease-out",
         }}
       >
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-          <div className="text-xs font-medium text-muted-foreground">Library</div>
+          <div className="text-xs font-medium text-muted-foreground">
+            Library
+          </div>
           <button
             ref={closeBtnRef}
             className="inline-flex items-center gap-1 rounded p-1 text-muted-foreground hover:text-foreground"

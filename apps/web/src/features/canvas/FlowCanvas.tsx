@@ -16,6 +16,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./styles/reactflow.css";
 
+// Start with an empty canvas by default
 import { nodeTypes } from "./nodes";
 import type { CanvasNode } from "./types";
 import { Toolbar } from "./components/Toolbar";
@@ -61,7 +62,9 @@ export default function FlowCanvas({
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(null);
+  const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(
+    null,
+  );
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const historyRef = useRef<HistoryEntry[]>([]);
 
@@ -89,7 +92,10 @@ export default function FlowCanvas({
     if (selectedNodeIds.size === 0 && selectedNodeId) {
       selectedNodeIds.add(selectedNodeId);
     }
-    if (selectedNodeIds.size === 0) return;
+
+    if (selectedNodeIds.size === 0) {
+      return;
+    }
 
     const selectedNodes = nodes
       .filter((n) => selectedNodeIds.has(n.id))
@@ -150,9 +156,15 @@ export default function FlowCanvas({
     setNodes,
     setEdges,
     onDelete: deleteSelectedElements,
-    onSave: () => void persistGraph(),
-    onUndo: () => void undo(),
-    onCopy: () => void copySelection(),
+    onSave: () => {
+      void persistGraph();
+    },
+    onUndo: () => {
+      void undo();
+    },
+    onCopy: () => {
+      void copySelection();
+    },
     onSelectAll: (firstId) => setSelectedNodeId(firstId),
     onPushHistory: pushHistory,
   });
@@ -174,11 +186,14 @@ export default function FlowCanvas({
     setSelectedNodeId(params.nodes[0]?.id ?? null);
   }, []);
 
+  // If external graph changes, hydrate the canvas
   useEffect(() => {
     setNodes(externalNodes ?? []);
     setEdges(externalEdges ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalNodes, externalEdges]);
 
+  // Paste to import graph DSL or clone selections
   useEffect(() => {
     const handler = (e: ClipboardEvent) => {
       const text = e.clipboardData?.getData("text");
@@ -198,7 +213,9 @@ export default function FlowCanvas({
         edges?: unknown;
       };
 
-      if (!Array.isArray(candidate.nodes) || !Array.isArray(candidate.edges)) return;
+      if (!Array.isArray(candidate.nodes) || !Array.isArray(candidate.edges)) {
+        return;
+      }
 
       const clipboardType = candidate.__runeClipboardType ?? null;
       const parsed = sanitizeGraph({
@@ -206,7 +223,11 @@ export default function FlowCanvas({
         edges: candidate.edges as Edge[],
       });
 
-      if (clipboardType !== CLIPBOARD_SELECTION_TYPE && parsed.nodes.length === 0) return;
+      // For DSL imports, ignore if parsed graph is empty to prevent
+      // accidentally clearing the canvas.
+      if (clipboardType !== CLIPBOARD_SELECTION_TYPE && parsed.nodes.length === 0) {
+        return;
+      }
 
       if (clipboardType === CLIPBOARD_SELECTION_TYPE) {
         e.preventDefault();
