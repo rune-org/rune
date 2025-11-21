@@ -10,7 +10,11 @@ from src.workflow.schemas import (
     WorkflowUpdateData,
 )
 from src.workflow.service import WorkflowService
-from src.core.dependencies import DatabaseDep, require_password_changed,get_current_user
+from src.core.dependencies import (
+    DatabaseDep,
+    require_password_changed,
+    get_current_user,
+)
 from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
 from src.core.responses import ApiResponse
