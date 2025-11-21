@@ -318,9 +318,11 @@ export default function FlowCanvas({
         <Background />
 
         <MiniMap
+          position="bottom-left"
           nodeColor={(node) => getNodeColor(node.type as string)}
           nodeStrokeColor="#334155"
           maskColor="rgba(0,0,0,0.2)"
+          style={{ marginLeft: "55px" }}
         />
 
         <Controls />
