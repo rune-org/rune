@@ -294,7 +294,7 @@ export default function FlowCanvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onSelectionChange={onSelectionChange}
-        onNodeDoubleClick={() => setIsInspectorExpanded(true)} // <-- open inspector
+        onNodeDoubleClick={() => setIsInspectorExpanded(true)}
         onInit={(inst) => (rfInstanceRef.current = inst)}
         onPaneClick={() => setSelectedNodeId(null)}
       >
