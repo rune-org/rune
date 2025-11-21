@@ -28,8 +28,8 @@ type InspectorProps = {
   updateSelectedNodeLabel: (value: string) => void;
   updateData: ReturnType<typeof useUpdateNodeData>;
   onDelete?: () => void;
-  isExpandedDialogOpen?: boolean;                  // new
-  setIsExpandedDialogOpen?: (open: boolean) => void; // new
+  isExpandedDialogOpen?: boolean;
+  setIsExpandedDialogOpen?: (open: boolean) => void;
 };
 
 function renderInspectorForm(
