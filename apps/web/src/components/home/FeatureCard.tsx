@@ -22,7 +22,7 @@ export function FeatureCard({ title, description, className, delay = 0, visual }
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay }}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-3xl border border-white/5 bg-zinc-900/12 backdrop-blur-sm transition-all duration-500 hover:border-white/10 hover:bg-zinc-900/40",
+        "group relative flex flex-col overflow-hidden rounded-3xl border border-white/5 bg-zinc-900/12 backdrop-blur-sm transition-[border-color,background-color] duration-500 hover:border-white/10 hover:bg-zinc-900/40",
         className
       )}
     >
