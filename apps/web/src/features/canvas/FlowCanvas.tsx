@@ -12,7 +12,6 @@ import {
   type Edge,
   OnSelectionChangeParams,
   type ReactFlowInstance,
-  type Node as RFNode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./styles/reactflow.css";
@@ -60,6 +59,7 @@ export default function FlowCanvas({
     externalEdges && externalEdges.length ? externalEdges : [],
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(
@@ -283,70 +283,18 @@ export default function FlowCanvas({
     return () => el.removeEventListener("paste", handler as EventListener);
   }, [pushHistory, setEdges, setNodes, setSelectedNodeId]);
 
-  // helper: build color-mix using css variable name; returns a CSS color string
-  // if color-mix() is supported we use it, otherwise we compute an rgba fallback
-  const cssVarToColorWithAlpha = (cssVarName: string, alpha = 0.5) => {
-    // Prefer color-mix if available
-    try {
-      if (typeof CSS !== "undefined" && (CSS as unknown as any).supports) {
-        // test color-mix support (some browsers)
-        if (
-          (CSS as unknown as any).supports(
-            "color",
-            "color-mix(in srgb, #000 10%, transparent)",
-          )
-        ) {
-          return `color-mix(in srgb, var(${cssVarName}) ${Math.round(
-            alpha * 100,
-          )}%, transparent)`;
-        }
-      }
-    } catch {
-      // fall through to computed style fallback
-    }
-
-    // Fallback: read computed style, convert to rgba with alpha
-    const computed = getComputedStyle(document.documentElement).getPropertyValue(cssVarName).trim();
-
-    // If it's already an rgba/ rgb string, try to parse it
-    const rgbMatch = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/i);
-    if (rgbMatch) {
-      const r = Number(rgbMatch[1]);
-      const g = Number(rgbMatch[2]);
-      const b = Number(rgbMatch[3]);
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-
-    // If it's hex like #rrggbb or #rgb
-    const hex = computed.match(/#(?:[0-9a-fA-F]{3}){1,2}/);
-    if (hex) {
-      const hexVal = hex[0];
-      // expand short hex
-      const normalized =
-        hexVal.length === 4
-          ? hexVal
-              .slice(1)
-              .split("")
-              .map((c) => c + c)
-              .join("")
-          : hexVal.slice(1);
-      const r = parseInt(normalized.slice(0, 2), 16);
-      const g = parseInt(normalized.slice(2, 4), 16);
-      const b = parseInt(normalized.slice(4, 6), 16);
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-
-    // Last resort: return the var directly (browser may support mixing)
-    return `var(${cssVarName})`;
-  };
-
-  // map node types to the CSS variable that defines their background color
-  const nodeTypeToCssVar: Record<string, string> = {
-    agent: "--node-agent-bg",
-    trigger: "--node-trigger-bg",
-    if: "--node-core-bg",
-    http: "--node-http-bg",
-    smtp: "--node-email-bg",
+  const getNodeColor = (type: string) => {
+    const colorVars: Record<string, string> = {
+      agent: "--node-agent",
+      trigger: "--node-trigger",
+      if: "--node-core",
+      http: "--node-http",
+      smtp: "--node-email",
+    };
+    const varName = colorVars[type];
+    return varName
+      ? `color-mix(in srgb, var(${varName}) 30%, transparent)`
+      : "color-mix(in srgb, var(--muted) 50%, transparent)";
   };
 
   return (
@@ -361,9 +309,8 @@ export default function FlowCanvas({
         onConnect={onConnect}
         onSelectionChange={onSelectionChange}
         onNodeDoubleClick={(_evt, node) => {
-          // select and open expanded inspector on double click (select only;
-          // Inspector controls its own expanded state in the provided version).
           setSelectedNodeId(node.id as string);
+          setIsInspectorExpanded(true);
         }}
         onInit={(inst) => (rfInstanceRef.current = inst)}
         onPaneClick={() => setSelectedNodeId(null)}
@@ -371,18 +318,8 @@ export default function FlowCanvas({
         <Background />
 
         <MiniMap
-          nodeColor={(node) => {
-            const cssVar = nodeTypeToCssVar[node.type as string];
-            if (cssVar) {
-              return cssVarToColorWithAlpha(cssVar, 0.5);
-            }
-            return cssVarToColorWithAlpha("--color-muted", 0.5);
-          }}
-          nodeStrokeColor={() =>
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--color-border",
-            ) || "#334155"
-          }
+          nodeColor={(node) => getNodeColor(node.type as string)}
+          nodeStrokeColor="#334155"
           maskColor="rgba(0,0,0,0.2)"
         />
 
@@ -420,6 +357,8 @@ export default function FlowCanvas({
           updateSelectedNodeLabel={updateSelectedNodeLabel}
           updateData={updateNodeData}
           onDelete={selectedNode ? deleteSelectedElements : undefined}
+          isExpandedDialogOpen={isInspectorExpanded}
+          setIsExpandedDialogOpen={setIsInspectorExpanded}
         />
 
         {/* Hints */}
