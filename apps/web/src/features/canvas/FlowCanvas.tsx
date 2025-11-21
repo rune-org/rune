@@ -360,11 +360,7 @@ export default function FlowCanvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onSelectionChange={onSelectionChange}
-        onNodeDoubleClick={(_evt, node) => {
-          // select and open expanded inspector on double click (select only;
-          // Inspector controls its own expanded state in the provided version).
-          setSelectedNodeId(node.id as string);
-        }}
+        onNodeDoubleClick={() => setIsInspectorExpanded(true)} // <-- open inspector
         onInit={(inst) => (rfInstanceRef.current = inst)}
         onPaneClick={() => setSelectedNodeId(null)}
       >
