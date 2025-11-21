@@ -285,7 +285,7 @@ export default function FlowCanvas({
 
   // helper: build color-mix using css variable name; returns a CSS color string
   // if color-mix() is supported we use it, otherwise we compute an rgba fallback
-  const cssVarToColorWithAlpha = (cssVarName: string, alpha = 0.3) => {
+  const cssVarToColorWithAlpha = (cssVarName: string, alpha = 0.5) => {
     // Prefer color-mix if available
     try {
       if (typeof CSS !== "undefined" && (CSS as unknown as any).supports) {
@@ -374,9 +374,9 @@ export default function FlowCanvas({
           nodeColor={(node) => {
             const cssVar = nodeTypeToCssVar[node.type as string];
             if (cssVar) {
-              return cssVarToColorWithAlpha(cssVar, 0.3);
+              return cssVarToColorWithAlpha(cssVar, 0.5);
             }
-            return cssVarToColorWithAlpha("--color-muted", 0.3);
+            return cssVarToColorWithAlpha("--color-muted", 0.5);
           }}
           nodeStrokeColor={() =>
             getComputedStyle(document.documentElement).getPropertyValue(
