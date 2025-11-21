@@ -12,10 +12,12 @@ import {
   type Edge,
   OnSelectionChangeParams,
   type ReactFlowInstance,
+  type Node as RFNode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./styles/reactflow.css";
 
+// Start with an empty canvas by default
 import { nodeTypes } from "./nodes";
 import type { CanvasNode } from "./types";
 import { Toolbar } from "./components/Toolbar";
@@ -58,10 +60,11 @@ export default function FlowCanvas({
     externalEdges && externalEdges.length ? externalEdges : [],
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(null);
+  const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(
+    null,
+  );
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const historyRef = useRef<HistoryEntry[]>([]);
 
@@ -89,7 +92,10 @@ export default function FlowCanvas({
     if (selectedNodeIds.size === 0 && selectedNodeId) {
       selectedNodeIds.add(selectedNodeId);
     }
-    if (selectedNodeIds.size === 0) return;
+
+    if (selectedNodeIds.size === 0) {
+      return;
+    }
 
     const selectedNodes = nodes
       .filter((n) => selectedNodeIds.has(n.id))
@@ -150,9 +156,15 @@ export default function FlowCanvas({
     setNodes,
     setEdges,
     onDelete: deleteSelectedElements,
-    onSave: () => void persistGraph(),
-    onUndo: () => void undo(),
-    onCopy: () => void copySelection(),
+    onSave: () => {
+      void persistGraph();
+    },
+    onUndo: () => {
+      void undo();
+    },
+    onCopy: () => {
+      void copySelection();
+    },
     onSelectAll: (firstId) => setSelectedNodeId(firstId),
     onPushHistory: pushHistory,
   });
@@ -174,11 +186,14 @@ export default function FlowCanvas({
     setSelectedNodeId(params.nodes[0]?.id ?? null);
   }, []);
 
+  // If external graph changes, hydrate the canvas
   useEffect(() => {
     setNodes(externalNodes ?? []);
     setEdges(externalEdges ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalNodes, externalEdges]);
 
+  // Paste to import graph DSL or clone selections
   useEffect(() => {
     const handler = (e: ClipboardEvent) => {
       const text = e.clipboardData?.getData("text");
@@ -198,7 +213,9 @@ export default function FlowCanvas({
         edges?: unknown;
       };
 
-      if (!Array.isArray(candidate.nodes) || !Array.isArray(candidate.edges)) return;
+      if (!Array.isArray(candidate.nodes) || !Array.isArray(candidate.edges)) {
+        return;
+      }
 
       const clipboardType = candidate.__runeClipboardType ?? null;
       const parsed = sanitizeGraph({
@@ -206,7 +223,11 @@ export default function FlowCanvas({
         edges: candidate.edges as Edge[],
       });
 
-      if (clipboardType !== CLIPBOARD_SELECTION_TYPE && parsed.nodes.length === 0) return;
+      // For DSL imports, ignore if parsed graph is empty to prevent
+      // accidentally clearing the canvas.
+      if (clipboardType !== CLIPBOARD_SELECTION_TYPE && parsed.nodes.length === 0) {
+        return;
+      }
 
       if (clipboardType === CLIPBOARD_SELECTION_TYPE) {
         e.preventDefault();
@@ -262,6 +283,72 @@ export default function FlowCanvas({
     return () => el.removeEventListener("paste", handler as EventListener);
   }, [pushHistory, setEdges, setNodes, setSelectedNodeId]);
 
+  // helper: build color-mix using css variable name; returns a CSS color string
+  // if color-mix() is supported we use it, otherwise we compute an rgba fallback
+  const cssVarToColorWithAlpha = (cssVarName: string, alpha = 0.5) => {
+    // Prefer color-mix if available
+    try {
+      if (typeof CSS !== "undefined" && (CSS as unknown as any).supports) {
+        // test color-mix support (some browsers)
+        if (
+          (CSS as unknown as any).supports(
+            "color",
+            "color-mix(in srgb, #000 10%, transparent)",
+          )
+        ) {
+          return `color-mix(in srgb, var(${cssVarName}) ${Math.round(
+            alpha * 100,
+          )}%, transparent)`;
+        }
+      }
+    } catch {
+      // fall through to computed style fallback
+    }
+
+    // Fallback: read computed style, convert to rgba with alpha
+    const computed = getComputedStyle(document.documentElement).getPropertyValue(cssVarName).trim();
+
+    // If it's already an rgba/ rgb string, try to parse it
+    const rgbMatch = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/i);
+    if (rgbMatch) {
+      const r = Number(rgbMatch[1]);
+      const g = Number(rgbMatch[2]);
+      const b = Number(rgbMatch[3]);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    // If it's hex like #rrggbb or #rgb
+    const hex = computed.match(/#(?:[0-9a-fA-F]{3}){1,2}/);
+    if (hex) {
+      const hexVal = hex[0];
+      // expand short hex
+      const normalized =
+        hexVal.length === 4
+          ? hexVal
+              .slice(1)
+              .split("")
+              .map((c) => c + c)
+              .join("")
+          : hexVal.slice(1);
+      const r = parseInt(normalized.slice(0, 2), 16);
+      const g = parseInt(normalized.slice(2, 4), 16);
+      const b = parseInt(normalized.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    // Last resort: return the var directly (browser may support mixing)
+    return `var(${cssVarName})`;
+  };
+
+  // map node types to the CSS variable that defines their background color
+  const nodeTypeToCssVar: Record<string, string> = {
+    agent: "--node-agent-bg",
+    trigger: "--node-trigger-bg",
+    if: "--node-core-bg",
+    http: "--node-http-bg",
+    smtp: "--node-email-bg",
+  };
+
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden">
       <ReactFlow
@@ -273,35 +360,32 @@ export default function FlowCanvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onSelectionChange={onSelectionChange}
-        onNodeDoubleClick={() => setIsInspectorExpanded(true)} // <-- open inspector
+        onNodeDoubleClick={(_evt, node) => {
+          // select and open expanded inspector on double click (select only;
+          // Inspector controls its own expanded state in the provided version).
+          setSelectedNodeId(node.id as string);
+        }}
         onInit={(inst) => (rfInstanceRef.current = inst)}
         onPaneClick={() => setSelectedNodeId(null)}
       >
         <Background />
+
         <MiniMap
           nodeColor={(node) => {
-            switch (node.type) {
-              case "agent":
-                return "rgba(6, 182, 212, 0.7)";
-              case "trigger":
-                return "rgba(37, 99, 235, 0.7)";
-              case "if":
-                return "rgba(139, 92, 246, 0.7)";
-              case "http":
-                return "rgba(5, 150, 105, 0.7)";
-              case "smtp":
-                return "rgba(249, 115, 22, 0.7)";
-              default:
-                return "rgba(107, 114, 128, 0.7)";
+            const cssVar = nodeTypeToCssVar[node.type as string];
+            if (cssVar) {
+              return cssVarToColorWithAlpha(cssVar, 0.5);
             }
+            return cssVarToColorWithAlpha("--color-muted", 0.5);
           }}
           nodeStrokeColor={() =>
             getComputedStyle(document.documentElement).getPropertyValue(
-              "--border",
+              "--color-border",
             ) || "#334155"
           }
-          maskColor="rgba(0,0,0,0.3)"
+          maskColor="rgba(0,0,0,0.5)"
         />
+
         <Controls />
 
         {/* Toolbar */}
@@ -336,8 +420,6 @@ export default function FlowCanvas({
           updateSelectedNodeLabel={updateSelectedNodeLabel}
           updateData={updateNodeData}
           onDelete={selectedNode ? deleteSelectedElements : undefined}
-          isExpandedDialogOpen={isInspectorExpanded} // pass expanded state
-          setIsExpandedDialogOpen={setIsInspectorExpanded}
         />
 
         {/* Hints */}
@@ -364,4 +446,3 @@ export default function FlowCanvas({
     </div>
   );
 }
-
