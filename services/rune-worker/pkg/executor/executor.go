@@ -292,6 +292,9 @@ func (e *Executor) determineNextNodes(wf *core.Workflow, currentNode *core.Node,
 		// Evaluate condition and follow true/false edge
 		return e.handleConditionalNode(currentNode, output, wf)
 
+	case "switch":
+		return e.handleSwitchNode(currentNode, output, wf)
+
 	case "split":
 		// Parallel execution - return all destinations
 		nextNodes := make([]string, 0, len(outgoingEdges))
@@ -349,6 +352,48 @@ func (e *Executor) handleConditionalNode(node *core.Node, output map[string]any,
 	}
 
 	slog.Warn("conditional edge not found", "edge_id", edgeID, "node_id", node.ID)
+	return []string{}
+}
+
+// handleSwitchNode evaluates a switch node and returns the appropriate next node.
+func (e *Executor) handleSwitchNode(node *core.Node, output map[string]any, wf *core.Workflow) []string {
+	// Get output index
+	var outputIndex int
+	if val, ok := output["output_index"].(int); ok {
+		outputIndex = val
+	} else if val, ok := output["output_index"].(float64); ok {
+		outputIndex = int(val)
+	} else {
+		slog.Warn("switch node did not return valid output_index", "node_id", node.ID)
+		return []string{}
+	}
+
+	// Get routes parameter
+	routesParam, ok := node.Parameters["routes"].([]interface{})
+	if !ok {
+		slog.Warn("switch node missing routes parameter", "node_id", node.ID)
+		return []string{}
+	}
+
+	if outputIndex < 0 || outputIndex >= len(routesParam) {
+		slog.Warn("switch node output_index out of bounds", "index", outputIndex, "routes_len", len(routesParam), "node_id", node.ID)
+		return []string{}
+	}
+
+	edgeID, ok := routesParam[outputIndex].(string)
+	if !ok {
+		slog.Warn("invalid route edge ID", "index", outputIndex, "node_id", node.ID)
+		return []string{}
+	}
+
+	// Find the destination node for this edge
+	for _, edge := range wf.Edges {
+		if edge.ID == edgeID {
+			return []string{edge.Dst}
+		}
+	}
+
+	slog.Warn("switch edge not found", "edge_id", edgeID, "node_id", node.ID)
 	return []string{}
 }
 
