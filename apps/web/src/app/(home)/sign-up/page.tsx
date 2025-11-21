@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AuthCard } from "@/components/auth/AuthCard";
@@ -11,14 +11,19 @@ import { useAuth } from "@/lib/auth";
 export default function SignUpPage() {
   const router = useRouter();
   const { state } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!state.loading && state.user) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !state.loading && state.user) {
       router.replace("/create");
     }
-  }, [state.loading, state.user, router]);
+  }, [mounted, state.loading, state.user, router]);
 
-  if (state.loading) {
+  if (!mounted || state.loading) {
     return (
       <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center py-12 px-4">
         <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
@@ -33,7 +38,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center py-12 px-4">
+    <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center pt-24 pb-12 px-4">
       <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(120,119,198,0.1)_0%,transparent_100%)]" />
       </div>

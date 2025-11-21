@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/shared/Container";
@@ -13,6 +14,11 @@ import { useAuth } from "@/lib/auth";
 export function TopNav() {
   const pathname = usePathname();
   const { state } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="absolute top-0 z-50 w-full">
@@ -47,12 +53,12 @@ export function TopNav() {
           })}
         </nav>
         <div className="flex flex-1 items-center justify-end gap-5">
-          {!state.user && (
+          {mounted && !state.user && (
             <Link
-              href="/sign-in"
+              href="/sign-up"
               className="hidden h-10 items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex relative top-[2px]"
             >
-              Sign in
+              Sign Up
             </Link>
           )}
           <Button asChild size="sm" className="relative top-[2px]">

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { ArrowRight, PlayCircle } from "lucide-react";
+import { PlayCircle, BookOpenText } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Playfair_Display } from "next/font/google";
@@ -79,8 +79,8 @@ export function Hero() {
             size="lg" 
             className="h-14 px-8 text-base rounded-full bg-white !text-black hover:bg-gray-200 border-0 shadow-[0_0_30px_-10px_rgba(255,255,255,0.3)] transition-all"
           >
-            <Link href="/create">
-              Start Building <ArrowRight className="ml-2 h-4 w-4 !text-black" />
+            <Link href="/docs">
+              <BookOpenText className="mr-2 h-4 w-4" /> Read the Docs 
             </Link>
           </Button>
           
