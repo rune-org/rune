@@ -16,22 +16,7 @@ import (
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
-	testutils "rune-worker/test_utils"
 )
-
-const (
-	testTimeout = testutils.TestTimeout
-)
-
-// setupE2ETest creates a test environment for E2E tests
-func setupE2ETest(t *testing.T) *testutils.TestEnv {
-	return testutils.SetupTestEnv(t)
-}
-
-// getKeys returns the keys from a map for logging purposes
-func getKeys(m map[string]interface{}) []string {
-	return testutils.GetKeys(m)
-}
 
 // TestNodeExecutionEndToEnd tests the full workflow execution lifecycle:
 // 1. Publishes a NodeExecutionMessage to RabbitMQ (workflow.execution queue)
