@@ -10,7 +10,7 @@ from fastapi import Request
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.core.dependencies import CurrentUser, DatabaseDep
+from src.core.dependencies import RequirePasswordChanged, DatabaseDep
 from src.core.exceptions import Forbidden, NotFound
 from src.db.models import Workflow, WorkflowUser, WorkflowRole
 from src.workflow.policy import WorkflowPolicy
@@ -57,7 +57,7 @@ async def get_workflow_by_id(db: AsyncSession, workflow_id: int) -> Optional[Wor
 async def get_workflow_with_permission(
     workflow_id: int,
     request: Request,
-    current_user: CurrentUser,
+    current_user: RequirePasswordChanged,
     db: DatabaseDep,
 ) -> Workflow:
     """
@@ -86,7 +86,7 @@ async def get_workflow_with_permission(
         @require_workflow_permission("view")
         async def get_workflow(
             workflow: Workflow = Depends(get_workflow_with_permission),
-            current_user: CurrentUser = ...
+            current_user: RequirePasswordChanged  = ...
         ):
             return workflow
     """

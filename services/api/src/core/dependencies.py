@@ -78,4 +78,45 @@ def get_current_admin(current_user: CurrentUser) -> User:
 CurrentAdmin = Annotated[User, Depends(get_current_admin)]
 
 
+def require_password_changed(current_user: CurrentUser) -> User:
+    """
+    Enforces password change requirement.
+    Blocks access if must_change_password is True.
+    """
+    if current_user.must_change_password:
+        raise Forbidden(
+            detail="Password change required. Please set a new password to continue."
+        )
+    return current_user
+
+
+RequirePasswordChanged = Annotated[User, Depends(require_password_changed)]
+"""
+Type alias for authenticated user who has changed their password.
+Blocks access if must_change_password flag is True.
+
+Usage:
+    from src.core.dependencies import RequirePasswordChanged
+    
+    @app.get("/workflows")
+    async def list_workflows(current_user: RequirePasswordChanged):
+        # Only accessible if user has changed their password
+        return workflows
+"""
+
+
+def require_admin_role(current_user: RequirePasswordChanged) -> User:
+    """
+    Enforces admin role requirement with password change enforcement.
+    Depends on require_password_changed to ensure admins must change their
+    password before accessing admin functions.
+    """
+    if current_user.role != UserRole.ADMIN:
+        raise Forbidden(detail="Admin privileges required")
+    return current_user
+
+
+RequireAdminRole = Annotated[User, Depends(require_admin_role)]
+
+
 RedisDep = Annotated[Redis, Depends(get_redis)]

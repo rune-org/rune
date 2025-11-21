@@ -10,7 +10,11 @@ from src.workflow.schemas import (
     WorkflowUpdateData,
 )
 from src.workflow.service import WorkflowService
-from src.core.dependencies import DatabaseDep, get_current_user
+from src.core.dependencies import (
+    DatabaseDep,
+    require_password_changed,
+    get_current_user,
+)
 from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
 from src.core.responses import ApiResponse
@@ -38,7 +42,7 @@ def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
 
 @router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
 async def list_workflows(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
     wfs = await service.list_for_user(current_user.id)
@@ -67,7 +71,7 @@ async def get_workflow(
 )
 async def create_workflow(
     payload: WorkflowCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
     wf = await service.create(
