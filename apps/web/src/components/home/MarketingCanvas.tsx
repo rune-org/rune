@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { 
-  ReactFlow, 
-  Background, 
-  useNodesState, 
-  useEdgesState, 
-  ReactFlowProvider,
+import {
+  ReactFlow,
+  Background,
+  useNodesState,
+  useEdgesState,
+  useReactFlow,
+  ReactFlowProvider
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { nodeTypes } from "@/features/canvas/nodes"; 
-import "@/features/canvas/styles/reactflow.css"; 
-// import { Button } from "@/components/ui/button";
-// import { Play } from "lucide-react";
+import "@/features/canvas/styles/reactflow.css";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 
 const INITIAL_NODES = [
   {
@@ -85,36 +85,18 @@ const INITIAL_EDGES = [
   },
 ];
 
-export function MarketingCanvas() {
+function MarketingCanvasContent() {
   const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES);
   const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES);
-  const [isSimulating, setIsSimulating] = useState(false);
+  const { fitView } = useReactFlow();
 
-  useEffect(() => {
-    if (!isSimulating) return;
-
-    const interval = setInterval(() => {
-      setEdges((eds) => 
-        eds.map((e) => ({
-          ...e,
-          animated: true,
-          style: { 
-            ...e.style, 
-            stroke: isSimulating ? "#fff" : "#52525b",
-            strokeWidth: isSimulating ? 2 : 1,
-            opacity: isSimulating ? 1 : 0.5
-          } 
-        }))
-      );
-      
-      setTimeout(() => {
-         setEdges((eds) => eds.map(e => ({ ...e, style: { ...e.style, stroke: "#52525b", strokeWidth: 1 } })));
-      }, 800);
-
-    }, 1500);
-
-    return () => clearInterval(interval);
-  }, [isSimulating, setEdges]);
+  const handleReset = () => {
+    setNodes(INITIAL_NODES);
+    setEdges(INITIAL_EDGES);
+    setTimeout(() => {
+      fitView({ padding: 0.2 });
+    }, 0);
+  };
 
   return (
     <div className="w-full h-full relative bg-zinc/50 rounded-xl overflow-hidden border-1 border-white/10 shadow-2xl">
@@ -139,9 +121,9 @@ export function MarketingCanvas() {
       
       {/* TODO: maybe add a simulation effect for the canvas component if possile */}
       {/* <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => setIsSimulating(!isSimulating)}
           className={cn(
             "rounded-full border-white/10 bg-zinc-900/80 backdrop-blur hover:bg-zinc-800 transition-all",
@@ -152,8 +134,28 @@ export function MarketingCanvas() {
           {isSimulating ? "Simulating Live Traffic..." : "Run Simulation"}
         </Button>
       </div> */}
-      
+
+      <div className="absolute bottom-6 right-6 z-10">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleReset}
+          className="rounded-full border-white/10 bg-zinc-900/80 backdrop-blur hover:bg-zinc-800 transition-all"
+        >
+          <RotateCcw className="w-3 h-3 mr-2" />
+          Reset
+        </Button>
+      </div>
+
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none rounded-xl" />
     </div>
+  );
+}
+
+export function MarketingCanvas() {
+  return (
+    <ReactFlowProvider>
+      <MarketingCanvasContent />
+    </ReactFlowProvider>
   );
 }
