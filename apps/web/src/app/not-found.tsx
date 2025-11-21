@@ -52,7 +52,7 @@ export default function NotFound() {
                         size="lg"
                         className="h-14 min-w-[260px] border-blue-500/30 bg-slate-950/30 text-base font-bold uppercase tracking-[0.2em] text-blue-100 shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] backdrop-blur-md transition-all duration-500 hover:border-blue-400/50 hover:bg-blue-900/20 hover:text-white hover:shadow-[0_0_50px_-10px_rgba(59,130,246,0.5)]"
                     >
-                        <Link href="/create/">Return to Dashboard</Link>
+                        <Link href="/">Return to Rune</Link>
                     </Button>
                 </EmptyContent>
             </Empty>

@@ -98,6 +98,7 @@ async def create_access_token(user: User, db: "AsyncSession" = None) -> str:
         "email": user.email,
         "name": user.name,
         "role": user.role,
+        "must_change_password": user.must_change_password,
         "iat": now,
         "exp": expire,
         "created_at": user.created_at.isoformat(),
@@ -131,6 +132,7 @@ def decode_access_token(token: str) -> User:
             email=payload["email"],
             name=payload["name"],
             role=payload.get("role", "user"),
+            must_change_password=payload.get("must_change_password", False),
             created_at=datetime.fromisoformat(payload["created_at"]),
             updated_at=datetime.fromisoformat(payload["updated_at"]),
         )

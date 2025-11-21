@@ -59,6 +59,7 @@ export default function FlowCanvas({
     externalEdges && externalEdges.length ? externalEdges : [],
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(
@@ -282,6 +283,20 @@ export default function FlowCanvas({
     return () => el.removeEventListener("paste", handler as EventListener);
   }, [pushHistory, setEdges, setNodes, setSelectedNodeId]);
 
+  const getNodeColor = (type: string) => {
+    const colorVars: Record<string, string> = {
+      agent: "--node-agent",
+      trigger: "--node-trigger",
+      if: "--node-core",
+      http: "--node-http",
+      smtp: "--node-email",
+    };
+    const varName = colorVars[type];
+    return varName
+      ? `color-mix(in srgb, var(${varName}) 30%, transparent)`
+      : "color-mix(in srgb, var(--muted) 50%, transparent)";
+  };
+
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden">
       <ReactFlow
@@ -293,23 +308,23 @@ export default function FlowCanvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onSelectionChange={onSelectionChange}
+        onNodeDoubleClick={(_evt, node) => {
+          setSelectedNodeId(node.id as string);
+          setIsInspectorExpanded(true);
+        }}
         onInit={(inst) => (rfInstanceRef.current = inst)}
         onPaneClick={() => setSelectedNodeId(null)}
       >
         <Background />
+
         <MiniMap
-          nodeColor={() =>
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--secondary",
-            ) || "#1f2937"
-          }
-          nodeStrokeColor={() =>
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--border",
-            ) || "#334155"
-          }
-          maskColor="rgba(0,0,0,0.3)"
+          position="bottom-left"
+          nodeColor={(node) => getNodeColor(node.type as string)}
+          nodeStrokeColor="#334155"
+          maskColor="rgba(0,0,0,0.2)"
+          style={{ marginLeft: "55px" }}
         />
+
         <Controls />
 
         {/* Toolbar */}
@@ -344,6 +359,8 @@ export default function FlowCanvas({
           updateSelectedNodeLabel={updateSelectedNodeLabel}
           updateData={updateNodeData}
           onDelete={selectedNode ? deleteSelectedElements : undefined}
+          isExpandedDialogOpen={isInspectorExpanded}
+          setIsExpandedDialogOpen={setIsInspectorExpanded}
         />
 
         {/* Hints */}

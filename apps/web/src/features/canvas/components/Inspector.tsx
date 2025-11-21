@@ -22,12 +22,15 @@ import {
 import { IfInspector } from "./inspectors/IfInspector";
 import { HttpInspector } from "./inspectors/HttpInspector";
 import { SmtpInspector } from "./inspectors/SmtpInspector";
+import ExpandButton from "./ExpandButton";
 
 type InspectorProps = {
   selectedNode: CanvasNode | null;
   updateSelectedNodeLabel: (value: string) => void;
   updateData: ReturnType<typeof useUpdateNodeData>;
   onDelete?: () => void;
+  isExpandedDialogOpen?: boolean;
+  setIsExpandedDialogOpen?: (open: boolean) => void;
 };
 
 function renderInspectorForm(
@@ -59,9 +62,15 @@ export function Inspector({
   updateSelectedNodeLabel,
   updateData,
   onDelete,
+  isExpandedDialogOpen: isExpandedProp,
+  setIsExpandedDialogOpen: setIsExpandedProp,
 }: InspectorProps) {
-  const [isExpandedDialogOpen, setIsExpandedDialogOpen] = useState(false);
+  const [isExpandedInternal, setIsExpandedInternal] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  // Decide whether to use external or internal state
+  const isExpandedDialogOpen = isExpandedProp ?? isExpandedInternal;
+  const setIsExpandedDialogOpen = setIsExpandedProp ?? setIsExpandedInternal;
 
   // Memoize inputs/outputs computation
   const nodeIO = useMemo(
@@ -89,14 +98,11 @@ export function Inspector({
               Inspector
             </div>
             {selectedNode && (
-              <button
+              <ExpandButton 
                 onClick={() => setIsExpandedDialogOpen(true)}
-                className="inline-flex h-6 w-6 items-center justify-center rounded-[calc(var(--radius)-0.25rem)] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                icon={Maximize2}
                 title="Expand inspector"
-                aria-label="Expand inspector"
-              >
-                <Maximize2 className="h-4 w-4" />
-              </button>
+              />
             )}
           </div>
 
