@@ -1,10 +1,11 @@
 "use client";
 
+import { memo } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { Play } from "lucide-react";
 import type { TriggerData } from "../types";
 
-export function TriggerNode({ data }: NodeProps<Node<TriggerData>>) {
+export const TriggerNode = memo(function TriggerNode({ data }: NodeProps<Node<TriggerData>>) {
   return (
     <div
       className="rune-node min-w-[120px] rounded-[var(--radius)] border-2 bg-node-trigger-bg p-2 text-sm"
@@ -17,4 +18,4 @@ export function TriggerNode({ data }: NodeProps<Node<TriggerData>>) {
       <Handle type="source" position={Position.Right} className="!bg-ring" />
     </div>
   );
-}
+});

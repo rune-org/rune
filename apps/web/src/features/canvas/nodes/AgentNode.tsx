@@ -1,11 +1,12 @@
 "use client";
 
+import { memo } from "react";
 import { type Node, type NodeProps } from "@xyflow/react";
 import { Bot } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { AgentData } from "../types";
 
-export function AgentNode({ data }: NodeProps<Node<AgentData>>) {
+export const AgentNode = memo(function AgentNode({ data }: NodeProps<Node<AgentData>>) {
   return (
     <BaseNode
       icon={<Bot className="h-4 w-4 text-muted-foreground" />}
@@ -18,4 +19,4 @@ export function AgentNode({ data }: NodeProps<Node<AgentData>>) {
       </div>
     </BaseNode>
   );
-}
+});
