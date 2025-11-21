@@ -5,11 +5,11 @@ import { HowItWorks } from "@/components/home/HowItWorks";
 
 export default function HomePage() {
   return (
-    <>
+    <div className="flex flex-col">
       <Hero />
       <FeatureSection />
       <HowItWorks />
       <AboutSection />
-    </>
+    </div>
   );
 }

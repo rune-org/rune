@@ -13,7 +13,7 @@ interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
 export function Container({
   asChild,
   className,
-  widthClassName = "max-w-6xl",
+  widthClassName = "max-w-7xl",
   ...props
 }: ContainerProps) {
   const Comp = asChild ? Slot : "div";
