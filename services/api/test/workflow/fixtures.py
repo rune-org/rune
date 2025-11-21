@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 from argon2 import PasswordHasher
 
-from src.db.models import User, UserRole, Workflow, WorkflowUser
+from src.db.models import User, UserRole, Workflow, WorkflowUser, WorkflowRole
 from src.workflow.service import WorkflowService
 
 
@@ -36,7 +36,10 @@ async def sample_workflow(test_db, test_user):
     workflow = Workflow(
         name="Sample Workflow",
         description="A sample workflow for testing",
-        workflow_data={"nodes": [], "edges": []},
+        workflow_data={
+            "nodes": [{"id": "node-1", "type": "trigger", "data": {"label": "Start"}}],
+            "edges": [],
+        },
         is_active=False,
         version=1,
     )
@@ -48,6 +51,7 @@ async def sample_workflow(test_db, test_user):
         workflow_id=workflow.id,
         user_id=test_user.id,
         granted_by=test_user.id,
+        role=WorkflowRole.OWNER,
     )
     test_db.add(permission)
     await test_db.commit()

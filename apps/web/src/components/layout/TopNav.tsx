@@ -2,28 +2,38 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/shared/Container";
 import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/cn";
 import { siteConfig } from "@/lib/site";
+import { useAuth } from "@/lib/auth";
 
 export function TopNav() {
   const pathname = usePathname();
+  const { state } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
+    <header className="absolute top-0 z-50 w-full">
       <Container
-        className="flex h-16 items-center gap-6"
+        className="flex h-16 items-center justify-between"
         widthClassName="max-w-6xl"
       >
-        <Logo
-          priority
-          className="h-7"
-          wrapperClassName="flex h-10 items-center"
-        />
-        <nav className="hidden flex-1 items-center gap-1 md:flex">
+        <div className="flex-1">
+          <Logo
+            priority
+            className="h-7"
+            wrapperClassName="flex h-10 items-center"
+          />
+        </div>
+        <nav className="hidden flex-1 items-center justify-center gap-4 md:flex">
           {siteConfig.mainNav.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -31,7 +41,7 @@ export function TopNav() {
                 key={item.title}
                 href={item.href}
                 className={cn(
-                  "inline-flex h-10 items-center rounded-[calc(var(--radius)-0.5rem)] px-3 text-m font-medium transition-colors relative top-[5px]",
+                  "inline-flex h-10 items-center whitespace-nowrap rounded-[calc(var(--radius)-0.5rem)] px-3 text-m font-medium transition-colors relative top-[5px]",
                   isActive
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground",
@@ -42,15 +52,17 @@ export function TopNav() {
             );
           })}
         </nav>
-        <div className="ml-auto flex items-center gap-5">
-          <Link
-            href="/sign-in"
-            className="hidden h-10 items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex relative top-[2px]"
-          >
-            Sign in
-          </Link>
+        <div className="flex flex-1 items-center justify-end gap-5">
+          {mounted && !state.user && (
+            <Link
+              href="/sign-up"
+              className="hidden h-10 items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex relative top-[2px]"
+            >
+              Sign Up
+            </Link>
+          )}
           <Button asChild size="sm" className="relative top-[2px]">
-            <Link href="/sign-up">Start building</Link>
+            <Link href="/create">Start building</Link>
           </Button>
         </div>
       </Container>

@@ -1,11 +1,12 @@
 "use client";
 
+import { memo } from "react";
 import { type Node, type NodeProps } from "@xyflow/react";
 import { Mail, Key, AlertCircle } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { SmtpData } from "../types";
 
-export function SmtpNode({ data }: NodeProps<Node<SmtpData>>) {
+export const SmtpNode = memo(function SmtpNode({ data }: NodeProps<Node<SmtpData>>) {
   const hasCredential = !!data.credential;
 
   return (
@@ -41,4 +42,4 @@ export function SmtpNode({ data }: NodeProps<Node<SmtpData>>) {
       </div>
     </BaseNode>
   );
-}
+});

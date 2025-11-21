@@ -21,6 +21,7 @@ export const siteConfig: SiteConfig = {
     { title: "Docs", href: "/docs" },
     { title: "Use Cases", href: "/use-cases" },
     { title: "Product", href: "/product" },
+    { title: "Resources", href: "/resources" },
   ],
   footer: {
     product: [

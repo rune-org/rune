@@ -16,7 +16,7 @@ const creationOptions = [
     description: "Build a custom workflow from the ground up",
     icon: "/icons/StartFromScratchIcon.svg",
     action: "Create New",
-    href: "/create/workflows/new"
+    href: "/create/app"
   },
   {
     id: "template",
@@ -32,7 +32,7 @@ const creationOptions = [
     description: "Let AI help you build your workflow",
     icon: "/icons/AskAgentIcon.svg",
     action: "Start Chat",
-    href: "/create/agent"
+    href: "/create/app"
   }
 ];
 
@@ -104,7 +104,7 @@ export default function CreatePage() {
                   />
                 </div>
                 <CardTitle className="text-xl">{option.title}</CardTitle>
-                <CardDescription className="text-sm">
+                <CardDescription className="text-sm whitespace-nowrap">
                   {option.description}
                 </CardDescription>
               </CardHeader>

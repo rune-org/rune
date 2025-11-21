@@ -1,44 +1,63 @@
-import type { ReactNode } from "react";
+"use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { ReactNode } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/cn";
 
 interface AuthCardProps {
   title: string;
   description?: string;
-  children: ReactNode;
   footer?: ReactNode;
+  children: ReactNode;
+  className?: string;
 }
 
 export function AuthCard({
   title,
   description,
-  children,
   footer,
+  children,
+  className,
 }: AuthCardProps) {
   return (
-    <Card className="w-full max-w-md border-border/70 bg-card/80 shadow-[0_32px_64px_hsl(220_55%_6%/0.35)]">
-      <CardHeader className="space-y-3 text-center">
-        <CardTitle className="text-3xl font-semibold text-foreground">
-          {title}
-        </CardTitle>
-        {description ? (
-          <CardDescription className="text-sm text-muted-foreground">
-            {description}
-          </CardDescription>
-        ) : null}
-      </CardHeader>
-      <CardContent className="space-y-6">{children}</CardContent>
-      {footer ? (
-        <div className="border-t border-border/60 p-6 text-center text-sm text-muted-foreground">
-          {footer}
+    <div className="relative w-full max-w-md mx-auto">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-primary/20 blur-[100px] rounded-full opacity-50 pointer-events-none" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className={cn(
+          "relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/40 backdrop-blur-xl shadow-2xl",
+          className
+        )}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+
+        <div className="relative z-10 p-8 md:p-10 flex flex-col gap-6">
+          <div className="space-y-2 text-center">
+            <h1 
+              className="text-3xl font-bold font-serif tracking-tight text-white"
+              style={{ fontFamily: 'var(--font-playfair)' }}
+            >
+              {title}
+            </h1>
+            {description && (
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {description}
+              </p>
+            )}
+          </div>
+          
+          {children}
+
+          {footer && (
+            <div className="text-center text-sm text-muted-foreground pt-2">
+              {footer}
+            </div>
+          )}
         </div>
-      ) : null}
-    </Card>
+      </motion.div>
+    </div>
   );
 }
