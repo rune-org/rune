@@ -9,7 +9,7 @@ const ExpandButton = ({
   onClick, 
   icon: Icon, 
   className,
-  glowColor = "bg-cyan-800",
+  glowColor = "bg-slate-50",
   ...props 
 }: ExpandButtonProps) => {
   return (
