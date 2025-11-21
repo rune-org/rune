@@ -285,7 +285,7 @@ export default function FlowCanvas({
 
   // helper: build color-mix using css variable name; returns a CSS color string
   // if color-mix() is supported we use it, otherwise we compute an rgba fallback
-  const cssVarToColorWithAlpha = (cssVarName: string, alpha = 0.5) => {
+  const cssVarToColorWithAlpha = (cssVarName: string, alpha = 0.3) => {
     // Prefer color-mix if available
     try {
       if (typeof CSS !== "undefined" && (CSS as unknown as any).supports) {
@@ -360,7 +360,11 @@ export default function FlowCanvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onSelectionChange={onSelectionChange}
-        onNodeDoubleClick={() => setIsInspectorExpanded(true)} // <-- open inspector
+        onNodeDoubleClick={(_evt, node) => {
+          // select and open expanded inspector on double click (select only;
+          // Inspector controls its own expanded state in the provided version).
+          setSelectedNodeId(node.id as string);
+        }}
         onInit={(inst) => (rfInstanceRef.current = inst)}
         onPaneClick={() => setSelectedNodeId(null)}
       >
@@ -370,16 +374,16 @@ export default function FlowCanvas({
           nodeColor={(node) => {
             const cssVar = nodeTypeToCssVar[node.type as string];
             if (cssVar) {
-              return cssVarToColorWithAlpha(cssVar, 0.5);
+              return cssVarToColorWithAlpha(cssVar, 0.3);
             }
-            return cssVarToColorWithAlpha("--color-muted", 0.5);
+            return cssVarToColorWithAlpha("--color-muted", 0.3);
           }}
           nodeStrokeColor={() =>
             getComputedStyle(document.documentElement).getPropertyValue(
               "--color-border",
             ) || "#334155"
           }
-          maskColor="rgba(0,0,0,0.5)"
+          maskColor="rgba(0,0,0,0.2)"
         />
 
         <Controls />
