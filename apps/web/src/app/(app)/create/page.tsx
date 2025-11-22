@@ -104,7 +104,7 @@ export default function CreatePage() {
                   />
                 </div>
                 <CardTitle className="text-xl">{option.title}</CardTitle>
-                <CardDescription className="text-sm">
+                <CardDescription className="text-sm whitespace-nowrap">
                   {option.description}
                 </CardDescription>
               </CardHeader>

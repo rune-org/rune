@@ -1,11 +1,12 @@
 "use client";
 
+import { memo } from "react";
 import { type Node, type NodeProps } from "@xyflow/react";
 import { Globe } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { HttpData } from "../types";
 
-export function HttpNode({ data }: NodeProps<Node<HttpData>>) {
+export const HttpNode = memo(function HttpNode({ data }: NodeProps<Node<HttpData>>) {
   return (
     <BaseNode
       icon={<Globe className="h-4 w-4 text-muted-foreground" />}
@@ -23,4 +24,4 @@ export function HttpNode({ data }: NodeProps<Node<HttpData>>) {
       </div>
     </BaseNode>
   );
-}
+});

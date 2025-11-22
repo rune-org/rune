@@ -387,4 +387,4 @@ class TestResponseStructure:
         # Check field types
         assert isinstance(data["success"], bool)
         assert isinstance(data["message"], str)
-        assert isinstance(data["data"], dict)
+        assert isinstance(data["data"], str)

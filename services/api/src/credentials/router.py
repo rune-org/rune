@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 
-from src.core.dependencies import DatabaseDep, get_current_user
+from src.core.dependencies import DatabaseDep, require_password_changed
 from src.db.models import User
 from src.credentials.schemas import (
     CredentialCreate,
@@ -28,7 +28,7 @@ def get_credential_service(db: DatabaseDep) -> CredentialService:
 )
 async def create_credential(
     credential_data: CredentialCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: CredentialService = Depends(get_credential_service),
 ) -> ApiResponse[CredentialResponse]:
     """Create a new credential."""
@@ -47,7 +47,7 @@ async def create_credential(
     description="""List all credentials in the system.""",
 )
 async def list_credentials(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: CredentialService = Depends(get_credential_service),
 ) -> ApiResponse[list[CredentialResponse]]:
     """List all credentials."""
@@ -66,7 +66,7 @@ async def list_credentials(
     description="""List all credentials in the system for dropdowns.""",
 )
 async def list_credentials_dropdown(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: CredentialService = Depends(get_credential_service),
 ) -> ApiResponse[list[CredentialResponseDropDown]]:
     """List all credentials for dropdowns."""

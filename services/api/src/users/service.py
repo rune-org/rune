@@ -1,14 +1,27 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.models import User
-from src.core.exceptions import AlreadyExists, NotFound
+from src.core.exceptions import AlreadyExists, NotFound, Unauthorized
 from src.users.schemas import UserCreate, AdminUserUpdate, ProfileUpdate
-from src.auth.security import hash_password
+from src.auth.security import hash_password, verify_password
+import secrets
+import string
 
 
 class UserService:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    def _generate_temporary_password(self) -> str:
+        """
+        Generate a random temporary password.
+        Include uppercase, lowercase, digits, and special characters.
+
+        Returns:
+            8-character temporary password string
+        """
+        alphabet = string.ascii_letters + string.digits + string.punctuation
+        return "".join(secrets.choice(alphabet) for _ in range(8))
 
     async def validate_email_uniqueness(
         self, new_email: str, current_email: str
@@ -75,12 +88,13 @@ class UserService:
 
         return user  # Or None
 
-    async def create_user(self, user_data: UserCreate) -> User:
+    async def create_user(self, user_data: UserCreate) -> tuple[User, str]:
         """
-        Create a new user in the database.
+        Create a new user in the database with auto-generated temporary password.
+        All newly created users (including admins) must change their password on first sign up.
 
         Returns:
-            Newly created User object
+            Tuple of (User object, Temporary password string)
 
         Raises:
             AlreadyExists: If email is already registered
@@ -95,20 +109,23 @@ class UserService:
                 detail=f"User with email {user_data.email} already exists"
             )
 
-        hashed_password = hash_password(user_data.password)
+        temp_password = self._generate_temporary_password()
+        hashed_password = hash_password(temp_password)
+        must_change = True
 
         user = User(
             name=user_data.name,
             email=normalized_email,
             hashed_password=hashed_password,
             role=user_data.role.value,
+            must_change_password=must_change,
         )
 
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
 
-        return user
+        return user, temp_password
 
     async def delete_user(self, user_id: int) -> None:
         """
@@ -154,6 +171,33 @@ class UserService:
 
         return user
 
+    # Admin-Specific Operation
+    async def admin_reset_user_password(self, user_id: int) -> str:
+        """
+        Generate a temporary password for a user and mark their account
+        to require password change.
+
+        Returns:
+            Temporary password string
+
+        Raises:
+            NotFound: If user doesn't exist
+        """
+        user = await self.get_user_by_id(user_id)
+
+        # Generate a random temporary password
+        temp_password = self._generate_temporary_password()
+
+        # Hash and update password
+        user.hashed_password = hash_password(temp_password)
+        user.must_change_password = True
+
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return temp_password
+
     # Self-Service Operation
     async def update_profile(self, user_id: int, profile_data: ProfileUpdate) -> User:
         """
@@ -179,6 +223,37 @@ class UserService:
         # Apply updates
         for key, value in update_data.items():
             setattr(user, key, value)
+
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user
+
+    # Self-Service Operation
+    async def user_change_password(
+        self, user_id: int, old_password: str, new_password: str
+    ) -> User:
+        """
+        Allow user to change their password.
+        Requires verification of old password.
+        Clears must_change_password flag if set.
+
+        Returns:
+            Updated User object
+
+        Raises:
+            NotFound: If user doesn't exist
+            ValueError: If old password is incorrect
+        """
+        user = await self.get_user_by_id(user_id)
+
+        # Verify old password
+        if not verify_password(old_password, user.hashed_password):
+            raise Unauthorized(detail="Old password is incorrect")
+
+        user.hashed_password = hash_password(new_password)
+        user.must_change_password = False
 
         self.db.add(user)
         await self.db.commit()

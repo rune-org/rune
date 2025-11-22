@@ -160,6 +160,7 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
   const initials = user?.name
     ? user.name
         .split(" ")
+        .filter((n) => n.length > 0)
         .map((n) => n[0])
         .join("")
         .toUpperCase()
@@ -176,6 +177,7 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
+          aria-label="Open profile menu"
           className={cn(
             "group relative flex h-12 w-full items-center rounded-xl border border-transparent text-sm font-medium text-muted-foreground motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",

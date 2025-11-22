@@ -8,7 +8,7 @@ from src.templates.schemas import (
     TemplateWorkflowData,
 )
 from src.templates.service import TemplateService
-from src.core.dependencies import DatabaseDep, get_current_user
+from src.core.dependencies import DatabaseDep, require_password_changed
 from src.core.responses import ApiResponse
 from src.db.models import User
 
@@ -22,7 +22,7 @@ def get_template_service(db: DatabaseDep) -> TemplateService:
 
 @router.get("/", response_model=ApiResponse[List[TemplateSummary]])
 async def list_templates(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: TemplateService = Depends(get_template_service),
 ) -> ApiResponse[List[TemplateSummary]]:
     """Get all templates accessible to the current user (public + their own)."""
@@ -46,7 +46,7 @@ async def list_templates(
 @router.get("/{template_id}", response_model=ApiResponse[TemplateDetail])
 async def get_template(
     template_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: TemplateService = Depends(get_template_service),
 ) -> ApiResponse[TemplateDetail]:
     """Get a specific template by ID."""
@@ -61,7 +61,7 @@ async def get_template(
 )
 async def create_template(
     payload: TemplateCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: TemplateService = Depends(get_template_service),
 ) -> ApiResponse[TemplateDetail]:
     """Create a new template."""
@@ -74,7 +74,7 @@ async def create_template(
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_template(
     template_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: TemplateService = Depends(get_template_service),
 ) -> None:
     """Delete a template."""
@@ -84,7 +84,7 @@ async def delete_template(
 @router.post("/{template_id}/use", response_model=ApiResponse[TemplateWorkflowData])
 async def use_template(
     template_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_password_changed),
     service: TemplateService = Depends(get_template_service),
 ) -> ApiResponse[TemplateWorkflowData]:
     """Mark a template as used (increment usage count) and return its workflow data."""

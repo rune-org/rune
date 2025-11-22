@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronsRight } from "lucide-react";
+import { ChevronLeft, ChevronsRight, GripHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { LibraryGroups } from "./LibraryGroups";
 import type { NodeKind } from "../types";
@@ -15,6 +15,7 @@ export function Library({
   onAdd: (type: NodeKind, x?: number, y?: number) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(300);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -67,8 +68,36 @@ export function Library({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  const PANEL_WIDTH = 440;
   const GUTTER = 16; // Breathing room from left edge of screen
+  // Drag to resize
+  const resizerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const resizer = resizerRef.current;
+    if (!resizer) return;
+
+    let startX = 0;
+    let startWidth = panelWidth;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const newWidth = Math.max(200, startWidth + e.clientX - startX);
+      setPanelWidth(newWidth);
+    };
+    const onMouseUp = () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      startX = e.clientX;
+      startWidth = panelWidth;
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+      e.preventDefault();
+    };
+
+    resizer.addEventListener("mousedown", onMouseDown);
+    return () => resizer.removeEventListener("mousedown", onMouseDown);
+  }, [panelWidth]);
+ 
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[40]">
@@ -92,14 +121,13 @@ export function Library({
       {/* Sliding library panel */}
       <div
         ref={panelRef}
-        className="pointer-events-auto absolute flex w-[440px] flex-col overflow-visible rounded-[var(--radius)] border border-border/60 bg-card/90 shadow-xl"
+        className="pointer-events-auto absolute flex flex-col overflow-visible rounded-[var(--radius)] border border-border/60 bg-card/90 shadow-xl"
         style={{
           top: top,
           height: `calc(100% - ${top}px - 12px)`,
           left: GUTTER,
-          transform: open
-            ? "translateX(0)"
-            : `translateX(-${PANEL_WIDTH + GUTTER + 12}px)`,
+          width: panelWidth,
+          transform: open ? "translateX(0)" : `translateX(-${panelWidth + GUTTER + 12}px)`,
           transition: "transform 180ms ease-out",
         }}
       >
@@ -116,11 +144,21 @@ export function Library({
             <ChevronLeft className="h-4 w-4" />
           </button>
         </div>
+
+        {/* Content */}
         <div className="h-full overflow-y-auto p-2">
           <LibraryGroups
             containerRef={containerRef}
             onAdd={(type, x, y) => onAdd(type, x, y)}
           />
+        </div>
+
+        {/* Resizer handle */}
+        <div
+          ref={resizerRef}
+          className="absolute top-0 right-0 h-full w-2 cursor-ew-resize"
+        >
+          <GripHorizontal className="h-full w-full text-border/50" />
         </div>
       </div>
     </div>
