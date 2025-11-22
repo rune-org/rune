@@ -3,7 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
@@ -12,6 +12,7 @@ import {
   Home,
   Key,
   LayoutGrid,
+  LogOut,
   Play,
   Settings,
   User,
@@ -20,6 +21,19 @@ import {
 
 import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/cn";
+import { useAuth } from "@/lib/auth";
+import {
+  Avatar,
+  AvatarFallback,
+} from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type NavItem = {
   title: string;
@@ -57,8 +71,6 @@ const topNav: NavItem[] = [
 
 const bottomNav: NavItem[] = [
   { title: "Home", href: "/", icon: Home, exact: true },
-  { title: "Settings", href: "/settings", icon: Settings },
-  { title: "Profile", href: "/profile", icon: User },
 ];
 
 function isItemActive(pathname: string, item: NavItem) {
@@ -139,6 +151,97 @@ function NavLink({
   );
 }
 
+function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
+  const router = useRouter();
+  const { state, logout } = useAuth();
+  const { user } = state;
+
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .filter((n) => n.length > 0)
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "U";
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/");
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Open profile menu"
+          className={cn(
+            "group relative flex h-12 w-full items-center rounded-xl border border-transparent text-sm font-medium text-muted-foreground motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            "hover:border-border/70 hover:bg-muted/40 hover:text-foreground",
+            isExpanded ? "justify-start gap-3 px-3" : "justify-center gap-0 px-0",
+          )}
+        >
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
+          </Avatar>
+          <span
+            aria-hidden={!isExpanded}
+            className={cn(
+              "pointer-events-none select-none overflow-hidden whitespace-nowrap text-sm font-medium motion-safe:transition-[margin,max-width,opacity,transform] motion-safe:duration-200 motion-safe:ease-out",
+              isExpanded
+                ? "ml-1.5 max-w-[12rem] translate-x-0 opacity-100"
+                : "ml-0 max-w-0 -translate-x-1 opacity-0",
+            )}
+          >
+            {user?.name ?? "User"}
+          </span>
+          {!isExpanded && <span className="sr-only">Profile menu</span>}
+          {!isExpanded && (
+            <span
+              aria-hidden={true}
+              className="pointer-events-none absolute left-full top-1/2 ml-3 -translate-y-1/2 rounded-[calc(var(--radius)-0.25rem)] border border-border/70 bg-background/95 px-2 py-1 text-xs font-medium text-muted-foreground opacity-0 shadow-sm motion-safe:transition-all motion-safe:duration-150 motion-safe:ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
+            >
+              Profile
+            </span>
+          )}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={isExpanded ? "end" : "start"} side="top" className="w-56">
+        <DropdownMenuLabel>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium text-foreground">{user?.name ?? "User"}</p>
+            <p className="text-xs font-normal text-muted-foreground">{user?.email ?? ""}</p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/profile" className="flex items-center gap-2 cursor-pointer">
+            <User className="h-4 w-4" />
+            <span>Profile</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="flex items-center gap-2 cursor-pointer">
+            <Settings className="h-4 w-4" />
+            <span>Settings</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          onClick={handleLogout}
+          className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Log out</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function AppSidebar() {
   const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -210,16 +313,19 @@ export function AppSidebar() {
             ))}
           </nav>
         </div>
-        <nav className="flex flex-col items-stretch gap-3 px-2">
-          {bottomNav.map((item) => (
-            <NavLink
-              key={item.title}
-              item={item}
-              pathname={pathname}
-              isExpanded={isExpanded}
-            />
-          ))}
-        </nav>
+        <div className="flex flex-col items-stretch gap-3 px-2">
+          <nav className="flex flex-col items-stretch gap-3">
+            {bottomNav.map((item) => (
+              <NavLink
+                key={item.title}
+                item={item}
+                pathname={pathname}
+                isExpanded={isExpanded}
+              />
+            ))}
+          </nav>
+          <ProfileDropdown isExpanded={isExpanded} />
+        </div>
       </div>
     </aside>
   );

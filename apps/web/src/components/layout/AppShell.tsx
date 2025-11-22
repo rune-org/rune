@@ -12,7 +12,7 @@ export function AppShell({ children }: AppShellProps) {
     <div className="flex min-h-screen bg-background text-foreground">
       <AppSidebar />
       <div className="flex flex-1 flex-col">
-        <main className="flex-1 overflow-x-hidden bg-background/80">
+        <main className="flex-1 overflow-x-hidden bg-background/80 pb-16 min-h-[calc(100vh-400px)]">
           {children}
         </main>
         <Footer />

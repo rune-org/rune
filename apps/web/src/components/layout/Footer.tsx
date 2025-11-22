@@ -28,8 +28,8 @@ function SocialIcon({ name }: { name: string }) {
 
 export function Footer() {
   return (
-    <footer className="border-t border-border/60 bg-background/60">
-      <Container className="flex flex-col gap-12 py-9">
+    <footer className="border-t border-border/60 bg-background/60 mt-12">
+      <Container className="flex flex-col gap-12 py-16">
         <div className="flex flex-col items-center gap-6 text-center">
           <p className="font-display text-4xl tracking-tight">
             Automate your world.
