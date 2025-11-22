@@ -184,7 +184,6 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
           )}
         >
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user?.avatar_url ?? undefined} alt={user?.name ?? "User"} />
             <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
           </Avatar>
           <span
