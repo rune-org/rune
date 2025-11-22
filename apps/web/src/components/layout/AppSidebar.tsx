@@ -160,6 +160,7 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
   const initials = user?.name
     ? user.name
         .split(" ")
+        .filter((n) => n.length > 0)
         .map((n) => n[0])
         .join("")
         .toUpperCase()
