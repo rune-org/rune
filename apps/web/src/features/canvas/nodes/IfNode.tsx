@@ -8,7 +8,7 @@ import type { IfData } from "../types";
 export const IfNode = memo(function IfNode({ data }: NodeProps<Node<IfData>>) {
   return (
     <div
-      className="rune-node min-w-[180px] rounded-[var(--radius)] border-2 bg-node-core-bg p-3 text-sm text-foreground shadow-sm"
+      className="rune-node w-[200px] rounded-[var(--radius)] border-2 bg-node-core-bg p-3 text-sm text-foreground shadow-sm"
       style={{ borderColor: 'var(--node-core-border)' }}
     >
       <div className="flex items-center gap-2 font-medium">

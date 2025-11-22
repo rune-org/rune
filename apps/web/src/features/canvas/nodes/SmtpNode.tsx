@@ -30,7 +30,7 @@ export const SmtpNode = memo(function SmtpNode({ data }: NodeProps<Node<SmtpData
         )}
         {data.from && (
           <div className="truncate text-xs text-muted-foreground">
-            From: {data.from}
+            From: {data.from ?? "sender@example.com"}
           </div>
         )}
         <div className="truncate text-xs text-muted-foreground">

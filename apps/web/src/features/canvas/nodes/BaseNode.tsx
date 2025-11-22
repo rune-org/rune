@@ -16,7 +16,7 @@ export const BaseNode = memo(function BaseNode({ icon, label, children, bgClassN
 
   return (
     <div
-      className={`rune-node min-w-[200px] rounded-[var(--radius)] border-2 ${bgClassName} p-3 text-sm text-foreground shadow-sm`}
+      className={`rune-node w-[220px] rounded-[var(--radius)] border-2 ${bgClassName} p-3 text-sm text-foreground shadow-sm`}
       style={borderStyle}
     >
       <div className="flex items-center gap-2 font-medium">
