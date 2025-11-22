@@ -8,7 +8,7 @@ import type { TriggerData } from "../types";
 export const TriggerNode = memo(function TriggerNode({ data }: NodeProps<Node<TriggerData>>) {
   return (
     <div
-      className="rune-node min-w-[120px] rounded-[var(--radius)] border-2 bg-node-trigger-bg p-2 text-sm"
+      className="rune-node w-[160px] rounded-[var(--radius)] border-2 bg-node-trigger-bg p-2 text-sm"
       style={{ borderColor: 'var(--node-trigger-border)' }}
     >
       <div className="flex items-center gap-2 font-medium text-foreground">
