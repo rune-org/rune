@@ -25,7 +25,6 @@ import { useAuth } from "@/lib/auth";
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
 } from "@/components/ui/avatar";
 import {
   DropdownMenu,
