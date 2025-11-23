@@ -10,6 +10,7 @@ import {
   useNodesState,
   Panel,
   type Edge,
+  type Connection,
   OnSelectionChangeParams,
   type ReactFlowInstance,
 } from "@xyflow/react";
@@ -72,6 +73,32 @@ export default function FlowCanvas({
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
   const { run, reset } = useExecutionSim(nodes, edges, setNodes, setEdges);
   const updateNodeData = useUpdateNodeData(setNodes);
+
+  // Validate connections to limit edges based on node type
+  const isValidConnection = useCallback(
+    (connection: Edge | Connection) => {
+      const { source, sourceHandle } = connection;
+
+      const sourceNode = nodes.find((node) => node.id === source);
+      if (!sourceNode) return false;
+
+      const existingEdges = edges.filter((edge) => edge.source === source);
+
+      // For "if" nodes: allow max 2 edges (true/false)
+      if (sourceNode.type === "if") {
+        const hasEdgeFromHandle = existingEdges.some(
+          (edge) => edge.sourceHandle === sourceHandle
+        );
+        return !hasEdgeFromHandle;
+      }
+
+      // TODO(canvas): if "switch" return true
+
+      // For all other nodes: allow max 1 edge
+      return existingEdges.length === 0;
+    },
+    [nodes, edges]
+  );
 
   const persistGraph = useCallback(() => {
     if (!onPersist) return;
@@ -307,6 +334,7 @@ export default function FlowCanvas({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
         onSelectionChange={onSelectionChange}
         onNodeDoubleClick={(_evt, node) => {
           setSelectedNodeId(node.id as string);
