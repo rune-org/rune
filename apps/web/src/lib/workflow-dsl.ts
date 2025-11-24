@@ -91,33 +91,6 @@ export interface ExecutionHistoryItem {
   finishedAt?: string; // ISO date
 }
 
-// Worker payload (what rune-worker expects) - minimized execution schema
-export interface WorkerEdge {
-  id: UUID;
-  src: UUID;
-  dst: UUID;
-}
-
-export interface WorkerNode<
-  Params = Record<string, unknown>,
-> {
-  id: UUID;
-  name: string;
-  trigger: boolean;
-  type: string;
-  parameters: Params;
-  credentials?: CredentialRef;
-  output: Record<string, unknown>;
-  error?: NodeErrorConfig;
-}
-
-export interface WorkerWorkflow<Params = Record<string, unknown>> {
-  workflow_id: UUID;
-  execution_id: UUID;
-  nodes: WorkerNode<Params>[];
-  edges: WorkerEdge[];
-}
-
 export class MissingNodeCredentialsError extends Error {
   constructor(
     public readonly nodes: Array<{ id: UUID; type: string }>,
@@ -383,56 +356,6 @@ function extractNodeCredential(node: CanvasNode): CredentialRef | undefined {
     return { ...candidate };
   }
   return undefined;
-}
-
-// Convert Canvas graph to worker payload
-export function canvasToWorkerWorkflow(
-  workflowId: UUID,
-  executionId: UUID,
-  nodes: CanvasNode[],
-  edges: RFEdge[],
-): WorkerWorkflow {
-  // Exclude unsupported types from worker payload for now (e.g., agent)
-  const supported = new Set(["trigger", "if", "switch", "http", "smtp"]);
-  const filteredNodes = nodes.filter((n) => supported.has(n.type));
-
-  const missingCredentials: Array<{ id: UUID; type: string }> = [];
-
-  const workerNodes: WorkerNode[] = filteredNodes.map((n) => {
-    const credential = extractNodeCredential(n);
-    if (nodeTypeRequiresCredential(n.type) && !credential) {
-      missingCredentials.push({ id: n.id, type: n.type });
-    }
-
-    return {
-      id: n.id,
-      name: nodeName(n),
-      trigger: n.type === "trigger",
-      type: toWorkerType(n.type),
-      parameters: toWorkerParameters(n, edges),
-      credentials: credential,
-      output: {},
-    };
-  });
-
-  if (missingCredentials.length > 0) {
-    throw new MissingNodeCredentialsError(missingCredentials);
-  }
-
-  const workerEdges: WorkerEdge[] = edges
-    .filter(
-      (e) =>
-        filteredNodes.some((n) => n.id === e.source) &&
-        filteredNodes.some((n) => n.id === e.target),
-    )
-    .map((e) => ({ id: e.id, src: String(e.source), dst: String(e.target) }));
-
-  return {
-    workflow_id: workflowId,
-    execution_id: executionId,
-    nodes: workerNodes,
-    edges: workerEdges,
-  };
 }
 
 // Convert Canvas graph to a workflow_data blueprint (stored in API)

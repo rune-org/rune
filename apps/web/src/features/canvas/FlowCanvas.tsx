@@ -364,14 +364,17 @@ export default function FlowCanvas({
         <Background />
 
         <MiniMap
+          nodeBorderRadius={17}
           position="bottom-left"
           nodeColor={(node) => getNodeColor(node.type as string)}
           nodeStrokeColor="#334155"
           maskColor="rgba(0,0,0,0.2)"
-          style={{ marginLeft: "55px" }}
+          style={{width: 200, height:117, opacity: 0.85}}
         />
 
-        <Controls />
+        <Controls 
+          style={{ height: 107, marginLeft: "222px", opacity:0.85 }}
+        />
 
         {/* Toolbar */}
         <Panel position="top-left" className="pointer-events-auto z-[60]">
