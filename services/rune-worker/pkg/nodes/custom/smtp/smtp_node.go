@@ -102,16 +102,18 @@ func NewSMTPNode(execCtx plugin.ExecutionContext) *SMTPNode {
 		}
 	}
 
-	// Parse subject
-	if subject, ok := execCtx.Parameters["subject"].(string); ok {
-		node.subject = subject
+	// Parse subject (accept any value)
+	if subject := execCtx.Parameters["subject"]; subject != nil {
+		node.subject = fmt.Sprintf("%v", subject)
 	}
 
 	// Parse body
-	if body, ok := execCtx.Parameters["body"].(string); ok {
-		node.body = body
+	if body := execCtx.Parameters["body"]; body != nil {
+		node.body = fmt.Sprintf("%v", body) // We need the body to accept any value not just strings, instead of being resolved prematurely
 	}
 
+	// TODO(worker): update parsing logic for the other fields if needed to match the parsing logic of subject and body
+	
 	return node
 }
 
