@@ -22,6 +22,16 @@ const NODE_DEFAULTS: Record<
     type: "if",
     data: { label: "If", expression: "{{ var > 10 }}" },
   },
+  switch: {
+    type: "switch",
+    data: {
+      label: "Switch",
+      rules: [
+        { value: "$input.status", operator: "==", compare: "ok" },
+        { value: "$input.status", operator: "==", compare: "error" },
+      ],
+    },
+  },
   http: {
     type: "http",
     data: { label: "HTTP", method: "GET", url: "https://api.example.com" },
