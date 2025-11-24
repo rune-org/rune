@@ -48,7 +48,7 @@ export const SwitchNode = memo(function SwitchNode({
           <span className="truncate">{data.label ?? "Switch"}</span>
         </div>
         <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {rules.length} {rules.length == 1 ? 'route' : 'routes'}
+          {rules.length} {rules.length === 1 ? 'route' : 'routes'}
         </span>
       </div>
 
