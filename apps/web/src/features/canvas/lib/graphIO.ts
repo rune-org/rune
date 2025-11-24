@@ -1,6 +1,12 @@
 import type { Edge as RFEdge, Node as RFNode } from "@xyflow/react";
 import type { CSSProperties } from "react";
 import { nodeTypes } from "@/features/canvas/nodes";
+import {
+  SWITCH_FALLBACK_HANDLE_ID,
+  SWITCH_RULE_HANDLE_PREFIX,
+  switchHandleIdFromLabel,
+  switchHandleLabelFromId,
+} from "../utils/switchHandles";
 
 export type RFGraph = { nodes: RFNode[]; edges: RFEdge[] };
 
@@ -36,23 +42,69 @@ export function sanitizeGraph(
 
   const edges = rawEdges.map((e) => {
     const sh = (e as RFEdge & EdgeMeta).sourceHandle;
+    const label = (e as RFEdge & EdgeMeta).label;
+    const switchHandle =
+      sh && typeof sh === "string" && sh.startsWith(SWITCH_RULE_HANDLE_PREFIX)
+        ? sh
+        : sh === SWITCH_FALLBACK_HANDLE_ID
+          ? sh
+          : switchHandleIdFromLabel(label);
+
     if (sh === "true" || sh === "false") {
       const isTrue = sh === "true";
-      const label = (e as RFEdge & EdgeMeta).label ?? sh;
-      const labelStyle = (e as RFEdge & EdgeMeta).labelStyle ?? {
-        fill: "white",
-        fontWeight: 600,
-      };
-      const labelBgStyle = (e as RFEdge & EdgeMeta).labelBgStyle ?? {
-        fill: isTrue ? "hsl(142 70% 45%)" : "hsl(0 70% 50%)",
-      };
-      const labelShowBg = (e as RFEdge & EdgeMeta).labelShowBg ?? true;
-      const labelBgPadding = (e as RFEdge & EdgeMeta).labelBgPadding ?? [2, 6];
+      const edgeLabel = label ?? sh;
+      const labelStyle =
+        (e as RFEdge & EdgeMeta).labelStyle ?? {
+          fill: "white",
+          fontWeight: 600,
+        };
+      const labelBgStyle =
+        (e as RFEdge & EdgeMeta).labelBgStyle ?? {
+          fill: isTrue ? "hsl(142 70% 45%)" : "hsl(0 70% 50%)",
+        };
+      const labelShowBg =
+        (e as RFEdge & EdgeMeta).labelShowBg ?? true;
+      const labelBgPadding =
+        (e as RFEdge & EdgeMeta).labelBgPadding ?? [2, 6];
       const labelBgBorderRadius =
         (e as RFEdge & EdgeMeta).labelBgBorderRadius ?? 4;
       return {
         ...e,
-        label,
+        label: edgeLabel,
+        labelStyle,
+        labelShowBg,
+        labelBgStyle,
+        labelBgPadding,
+        labelBgBorderRadius,
+      } as RFEdge;
+    }
+
+    if (switchHandle) {
+      const edgeLabel =
+        switchHandleLabelFromId(switchHandle) ?? (label || switchHandle);
+      const labelStyle =
+        (e as RFEdge & EdgeMeta).labelStyle ?? {
+          fill: "white",
+          fontWeight: 600,
+        };
+      const labelBgStyle =
+        (e as RFEdge & EdgeMeta).labelBgStyle ??
+        ({
+          fill:
+            switchHandle === SWITCH_FALLBACK_HANDLE_ID
+              ? "hsl(220 9% 55%)"
+              : "hsl(211 80% 55%)",
+        } as CSSProperties);
+      const labelShowBg =
+        (e as RFEdge & EdgeMeta).labelShowBg ?? true;
+      const labelBgPadding =
+        (e as RFEdge & EdgeMeta).labelBgPadding ?? [2, 6];
+      const labelBgBorderRadius =
+        (e as RFEdge & EdgeMeta).labelBgBorderRadius ?? 4;
+      return {
+        ...e,
+        sourceHandle: switchHandle,
+        label: edgeLabel,
         labelStyle,
         labelShowBg,
         labelBgStyle,

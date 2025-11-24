@@ -6,10 +6,18 @@ import type {
   CanvasNode,
   HttpData,
   IfData,
+  SwitchData,
+  SwitchRule,
   SmtpData,
 } from "@/features/canvas/types";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
 import type { CredentialRef } from "@/lib/credentials";
+import {
+  switchFallbackHandleId,
+  switchHandleIdFromLabel,
+  switchHandleLabelFromId,
+  switchRuleHandleId,
+} from "@/features/canvas/utils/switchHandles";
 
 export type UUID = string;
 
@@ -83,33 +91,6 @@ export interface ExecutionHistoryItem {
   finishedAt?: string; // ISO date
 }
 
-// Worker payload (what rune-worker expects) - minimized execution schema
-export interface WorkerEdge {
-  id: UUID;
-  src: UUID;
-  dst: UUID;
-}
-
-export interface WorkerNode<
-  Params = Record<string, unknown>,
-> {
-  id: UUID;
-  name: string;
-  trigger: boolean;
-  type: string;
-  parameters: Params;
-  credentials?: CredentialRef;
-  output: Record<string, unknown>;
-  error?: NodeErrorConfig;
-}
-
-export interface WorkerWorkflow<Params = Record<string, unknown>> {
-  workflow_id: UUID;
-  execution_id: UUID;
-  nodes: WorkerNode<Params>[];
-  edges: WorkerEdge[];
-}
-
 export class MissingNodeCredentialsError extends Error {
   constructor(
     public readonly nodes: Array<{ id: UUID; type: string }>,
@@ -135,6 +116,8 @@ function toWorkerType(canvasType: string): string {
       return "ManualTrigger";
     case "if":
       return "conditional";
+    case "switch":
+      return "switch";
     case "http":
       return "http";
     case "smtp":
@@ -215,6 +198,57 @@ function toWorkerParameters(
       }
       return params;
     }
+    case "switch": {
+      const d = (n.data || {}) as SwitchData;
+      const rules = Array.isArray(d.rules)
+        ? d.rules.map((rule) => {
+            const operator = rule.operator;
+            const safeOp: SwitchRule["operator"] =
+              operator === "==" ||
+              operator === "!=" ||
+              operator === ">" ||
+              operator === "<" ||
+              operator === ">=" ||
+              operator === "<=" ||
+              operator === "contains"
+                ? operator
+                : "==";
+            return {
+              value:
+                typeof rule.value === "string" && rule.value.trim()
+                  ? rule.value.trim()
+                  : undefined,
+              operator: safeOp,
+              compare:
+                typeof rule.compare === "string" && rule.compare.trim()
+                  ? rule.compare.trim()
+                  : undefined,
+            } as SwitchRule;
+          })
+        : [];
+
+      const outgoing = edges.filter((e) => e.source === n.id);
+      const routes: Array<string | null> = Array(rules.length + 1).fill(null);
+      rules.forEach((_, idx) => {
+        const edge = outgoing.find(
+          (e) =>
+            (e as RFEdge & { sourceHandle?: string }).sourceHandle ===
+            switchRuleHandleId(idx),
+        );
+        if (edge) routes[idx] = edge.id;
+      });
+      const fallbackEdge = outgoing.find(
+        (e) =>
+          (e as RFEdge & { sourceHandle?: string }).sourceHandle ===
+          switchFallbackHandleId(),
+      );
+      if (fallbackEdge) routes[rules.length] = fallbackEdge.id;
+
+      const params: Record<string, unknown> = {};
+      if (rules.length > 0) params.rules = rules;
+      if (routes.some((r) => !!r)) params.routes = routes;
+      return params;
+    }
     case "smtp": {
       const d = (n.data || {}) as SmtpData;
       const params: Record<string, unknown> = {};
@@ -279,6 +313,26 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
     };
     return ifData;
   },
+  switch: (base, params) => {
+    const switchData: SwitchData = {
+      ...base,
+      rules: Array.isArray(params.rules)
+        ? (params.rules as unknown[])
+            .map((rule) => rule as Record<string, unknown>)
+            .map((rule) => ({
+              value:
+                typeof rule.value === "string" ? rule.value : undefined,
+              operator:
+                typeof rule.operator === "string"
+                  ? (rule.operator as SwitchRule["operator"])
+                  : undefined,
+              compare:
+                typeof rule.compare === "string" ? rule.compare : undefined,
+            }))
+        : [],
+    };
+    return switchData;
+  },
   smtp: (base, params) => {
     const smtpData: SmtpData = {
       ...base,
@@ -302,56 +356,6 @@ function extractNodeCredential(node: CanvasNode): CredentialRef | undefined {
     return { ...candidate };
   }
   return undefined;
-}
-
-// Convert Canvas graph to worker payload
-export function canvasToWorkerWorkflow(
-  workflowId: UUID,
-  executionId: UUID,
-  nodes: CanvasNode[],
-  edges: RFEdge[],
-): WorkerWorkflow {
-  // Exclude unsupported types from worker payload for now (e.g., agent)
-  const supported = new Set(["trigger", "if", "http", "smtp"]);
-  const filteredNodes = nodes.filter((n) => supported.has(n.type));
-
-  const missingCredentials: Array<{ id: UUID; type: string }> = [];
-
-  const workerNodes: WorkerNode[] = filteredNodes.map((n) => {
-    const credential = extractNodeCredential(n);
-    if (nodeTypeRequiresCredential(n.type) && !credential) {
-      missingCredentials.push({ id: n.id, type: n.type });
-    }
-
-    return {
-      id: n.id,
-      name: nodeName(n),
-      trigger: n.type === "trigger",
-      type: toWorkerType(n.type),
-      parameters: toWorkerParameters(n, edges),
-      credentials: credential,
-      output: {},
-    };
-  });
-
-  if (missingCredentials.length > 0) {
-    throw new MissingNodeCredentialsError(missingCredentials);
-  }
-
-  const workerEdges: WorkerEdge[] = edges
-    .filter(
-      (e) =>
-        filteredNodes.some((n) => n.id === e.source) &&
-        filteredNodes.some((n) => n.id === e.target),
-    )
-    .map((e) => ({ id: e.id, src: String(e.source), dst: String(e.target) }));
-
-  return {
-    workflow_id: workflowId,
-    execution_id: executionId,
-    nodes: workerNodes,
-    edges: workerEdges,
-  };
 }
 
 // Convert Canvas graph to a workflow_data blueprint (stored in API)
@@ -434,22 +438,36 @@ export function workflowDataToCanvas(data: {
       label: e.label,
     } as RFEdge;
 
-    if (e.label === "true" || e.label === "false") {
+    const switchHandleId = switchHandleIdFromLabel(e.label);
+    const isTrueFalse = e.label === "true" || e.label === "false";
+    if (isTrueFalse || switchHandleId) {
       const isTrue = e.label === "true";
-      (edge as RFEdge & { sourceHandle?: string }).sourceHandle = e.label;
+      (edge as RFEdge & { sourceHandle?: string }).sourceHandle =
+        switchHandleId || e.label;
       (edge as RFEdge & { labelStyle?: CSSProperties }).labelStyle = {
         fill: "white",
         fontWeight: 600,
       };
       (edge as RFEdge & { labelShowBg?: boolean }).labelShowBg = true;
+      const bgFill = isTrue
+        ? "hsl(142 70% 45%)"
+        : e.label === "false"
+          ? "hsl(0 70% 50%)"
+          : switchHandleId === switchFallbackHandleId()
+            ? "hsl(220 9% 55%)"
+            : "hsl(211 80% 55%)";
       (edge as RFEdge & { labelBgStyle?: CSSProperties }).labelBgStyle = {
-        fill: isTrue ? "hsl(142 70% 45%)" : "hsl(0 70% 50%)",
+        fill: bgFill,
       };
       (edge as RFEdge & { labelBgPadding?: [number, number] }).labelBgPadding = [
         2,
         6,
       ];
       (edge as RFEdge & { labelBgBorderRadius?: number }).labelBgBorderRadius = 4;
+
+      const readableLabel =
+        switchHandleLabelFromId(switchHandleId || e.label) || e.label;
+      (edge as RFEdge & { label?: string }).label = readableLabel;
     }
 
     return edge;

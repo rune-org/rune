@@ -17,6 +17,10 @@ export type NodeDataMap = {
     expression?: string;
   };
 
+  switch: BaseData & {
+    rules?: SwitchRule[];
+  };
+
   http: BaseData & {
     method?: "GET" | "POST" | "PUT" | "DELETE";
     url?: string;
@@ -55,6 +59,10 @@ export const NODE_SCHEMA = {
     inputs: ["condition"],
     outputs: ["true", "false"],
   },
+  switch: {
+    inputs: ["input"],
+    outputs: [], // dynamic based on configured rules
+  },
   http: {
     inputs: ["request"],
     outputs: ["response", "error"],
@@ -70,9 +78,25 @@ export type CanvasNode = {
 }[NodeKind];
 
 export type IfData = NodeDataMap["if"];
+export type SwitchData = NodeDataMap["switch"];
 export type HttpData = NodeDataMap["http"];
 export type SmtpData = NodeDataMap["smtp"];
 export type AgentData = NodeDataMap["agent"];
 export type TriggerData = NodeDataMap["trigger"];
 
 export type CanvasEdge = Edge;
+
+export type SwitchRule = {
+  value?: string;
+  operator?: SwitchOperator;
+  compare?: string;
+};
+
+export type SwitchOperator =
+  | "=="
+  | "!="
+  | ">"
+  | "<"
+  | ">="
+  | "<="
+  | "contains";

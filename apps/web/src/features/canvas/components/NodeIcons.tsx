@@ -10,6 +10,7 @@ export function iconFor(kind: NodeKind) {
     case "agent":
       return Bot;
     case "if":
+    case "switch":
       return GitBranch;
     case "http":
       return Globe;

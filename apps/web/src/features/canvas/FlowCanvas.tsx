@@ -31,6 +31,10 @@ import { useExecutionSim } from "./hooks/useExecutionSim";
 import { sanitizeGraph, stringifyGraph } from "./lib/graphIO";
 import { toast } from "@/components/ui/toast";
 import { createId } from "./utils/id";
+import {
+  switchFallbackHandleId,
+  switchRuleHandleId,
+} from "./utils/switchHandles";
 
 type HistoryEntry = { nodes: CanvasNode[]; edges: Edge[] };
 const CLIPBOARD_SELECTION_TYPE = "rune.canvas.selection";
@@ -92,7 +96,20 @@ export default function FlowCanvas({
         return !hasEdgeFromHandle;
       }
 
-      // TODO(canvas): if "switch" return true
+      if (sourceNode.type === "switch") {
+        const rules = Array.isArray(sourceNode.data.rules)
+          ? sourceNode.data.rules
+          : [];
+        const allowedHandles = new Set<string>([
+          ...rules.map((_, idx) => switchRuleHandleId(idx)),
+          switchFallbackHandleId(),
+        ]);
+        if (!sourceHandle || !allowedHandles.has(String(sourceHandle))) return false;
+        const hasEdgeFromHandle = existingEdges.some(
+          (edge) => edge.sourceHandle === sourceHandle,
+        );
+        return !hasEdgeFromHandle;
+      }
 
       // For all other nodes: allow max 1 edge
       return existingEdges.length === 0;
@@ -315,6 +332,7 @@ export default function FlowCanvas({
       agent: "--node-agent",
       trigger: "--node-trigger",
       if: "--node-core",
+      switch: "--node-core",
       http: "--node-http",
       smtp: "--node-email",
     };
@@ -346,14 +364,17 @@ export default function FlowCanvas({
         <Background />
 
         <MiniMap
+          nodeBorderRadius={19}
           position="bottom-left"
           nodeColor={(node) => getNodeColor(node.type as string)}
           nodeStrokeColor="#334155"
           maskColor="rgba(0,0,0,0.2)"
-          style={{ marginLeft: "55px" }}
+          style={{width: 200, height:117, opacity: 0.85}}
         />
 
-        <Controls />
+        <Controls 
+          style={{ height: 107, marginLeft: "222px", opacity:0.85 }}
+        />
 
         {/* Toolbar */}
         <Panel position="top-left" className="pointer-events-auto z-[60]">

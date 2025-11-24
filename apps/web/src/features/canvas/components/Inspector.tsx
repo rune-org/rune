@@ -22,6 +22,7 @@ import {
 import { IfInspector } from "./inspectors/IfInspector";
 import { HttpInspector } from "./inspectors/HttpInspector";
 import { SmtpInspector } from "./inspectors/SmtpInspector";
+import { SwitchInspector } from "./inspectors/SwitchInspector";
 import ExpandButton from "./ExpandButton";
 
 type InspectorProps = {
@@ -43,6 +44,10 @@ function renderInspectorForm(
       return <HttpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "if":
       return <IfInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "switch":
+      return (
+        <SwitchInspector node={node} updateData={updateData} isExpanded={isExpanded} />
+      );
     case "smtp":
       return <SmtpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     default:
@@ -54,6 +59,11 @@ function getNodeInputsOutputs(node: CanvasNode): {
   inputs: readonly string[];
   outputs: readonly string[];
 } {
+  if (node.type === "switch") {
+    const rules = Array.isArray(node.data.rules) ? node.data.rules : [];
+    const outputs = rules.map((_, idx) => `case ${idx + 1}`).concat("fallback");
+    return { inputs: ["input"], outputs };
+  }
   return NODE_SCHEMA[node.type] || { inputs: [], outputs: [] };
 }
 
