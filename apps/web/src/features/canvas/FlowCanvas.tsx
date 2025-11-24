@@ -369,11 +369,11 @@ export default function FlowCanvas({
           nodeColor={(node) => getNodeColor(node.type as string)}
           nodeStrokeColor="#334155"
           maskColor="rgba(0,0,0,0.2)"
-          style={{width: 200, height:117, opacity: 0.85}}
+          style={{width: 200, height:117, marginLeft: "49px", opacity: 0.85}}
         />
 
         <Controls 
-          style={{ height: 107, marginLeft: "222px", opacity:0.85 }}
+          style={{ height: 107, opacity:0.85 }}
         />
 
         {/* Toolbar */}
