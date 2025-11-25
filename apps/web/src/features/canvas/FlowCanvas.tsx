@@ -56,7 +56,7 @@ export default function FlowCanvas({
     nodes: CanvasNode[];
     edges: Edge[];
   }) => Promise<void> | void;
-  onRun?: () => Promise<void> | void;
+  onRun?: (graph: { nodes: CanvasNode[]; edges: Edge[] }) => Promise<void> | void;
   saveDisabled?: boolean;
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>(
@@ -390,7 +390,7 @@ export default function FlowCanvas({
               onExecute={() => {
                 reset();
                 void run();
-                if (onRun) void onRun();
+                if (onRun) void onRun({ nodes, edges });
               }}
               onUndo={undo}
               onSave={async () => {
