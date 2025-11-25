@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from typing import List
 
 from src.templates.schemas import (
@@ -65,10 +65,16 @@ async def create_template(
     service: TemplateService = Depends(get_template_service),
 ) -> ApiResponse[TemplateDetail]:
     """Create a new template."""
-    template = await service.create_template(current_user.id, payload)
-    detail = TemplateDetail.model_validate(template)
+    try:
+        template = await service.create_template(current_user.id, payload)
+        detail = TemplateDetail.model_validate(template)
 
-    return ApiResponse(success=True, message="Template created", data=detail)
+        return ApiResponse(success=True, message="Template created", data=detail)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        )
 
 
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
