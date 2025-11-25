@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import type { CanvasNode } from "../types";
 
 type SetNodes = (
-  updater: (nodes: CanvasNode[]) => CanvasNode[] | CanvasNode[],
+  updater: (nodes: CanvasNode[]) => CanvasNode[],
 ) => void;
 
 export function usePinNode(setNodes: SetNodes) {
@@ -82,5 +82,5 @@ export function usePinNode(setNodes: SetNodes) {
     pinNode,
     unpinNode,
     unpinAll,
-  };
+  }; // Flow Canvas currently only uses togglePin, other hooks are left here if needed for future use.
 }
