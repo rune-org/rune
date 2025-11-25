@@ -140,7 +140,72 @@ export function applyAutoLayout({
 
   const reorderedNodes = reorderSiblingNodes(layoutedNodes, edges);
 
-  return adjustForPinnedOverlaps(reorderedNodes, edges, pinnedNodes);
+  // Resolve any remaining overlaps
+  const nonOverlappingNodes = resolveAllOverlaps(reorderedNodes);
+
+  return adjustForPinnedOverlaps(nonOverlappingNodes, edges, pinnedNodes);
+}
+
+/**
+ * Resolve overlaps between nodes 
+ * Groups nodes by approximate X position (rank), then ensures no vertical overlap within each group.
+ */
+function resolveAllOverlaps(nodes: CanvasNode[]): CanvasNode[] {
+  const PADDING = 20;
+  const nodeMap = new Map(nodes.map((n) => [n.id, { ...n }]));
+
+  // Group nodes by approximate X position (within ranksep/2 = 60px are considered same rank)
+  const rankTolerance = 60;
+  const ranks: CanvasNode[][] = [];
+
+  for (const node of nodes) {
+    const nodeX = node.position.x;
+    let foundRank = false;
+
+    for (const rank of ranks) {
+      const rankX = rank[0].position.x;
+      if (Math.abs(nodeX - rankX) < rankTolerance) {
+        rank.push(node);
+        foundRank = true;
+        break;
+      }
+    }
+
+    if (!foundRank) {
+      ranks.push([node]);
+    }
+  }
+
+  // For each rank, sort by Y and resolve overlaps
+  for (const rank of ranks) {
+    if (rank.length < 2) continue;
+
+    // Sort by current Y position
+    rank.sort((a, b) => a.position.y - b.position.y);
+
+    // Ensure no overlaps: each node must start after the previous ends
+    for (let i = 1; i < rank.length; i++) {
+      const prevNode = nodeMap.get(rank[i - 1].id)!;
+      const currNode = nodeMap.get(rank[i].id)!;
+
+      const prevDimensions = getNodeDimensions(prevNode);
+      const prevBottom = prevNode.position.y + prevDimensions.height + PADDING;
+      const currTop = currNode.position.y;
+
+      if (currTop < prevBottom) {
+        // Overlap detected, push current node down
+        nodeMap.set(currNode.id, {
+          ...currNode,
+          position: {
+            ...currNode.position,
+            y: prevBottom,
+          },
+        });
+      }
+    }
+  }
+
+  return nodes.map((n) => nodeMap.get(n.id) || n);
 }
 
 /**
