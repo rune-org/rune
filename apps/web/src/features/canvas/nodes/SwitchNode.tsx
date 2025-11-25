@@ -2,7 +2,7 @@
 
 import { memo, useMemo } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { GitBranch } from "lucide-react";
+import { GitBranch, Pin } from "lucide-react";
 import type { SwitchData, SwitchRule } from "../types";
 import {
   switchFallbackHandleId,
@@ -42,6 +42,14 @@ export const SwitchNode = memo(function SwitchNode({
       className="rune-node relative w-[240px] rounded-[var(--radius)] border-2 bg-node-core-bg p-3 text-sm text-foreground shadow-sm"
       style={{ borderColor: "var(--node-core-border)" }}
     >
+      {data.pinned && (
+        <div
+          className="absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-ring text-background shadow-sm"
+          title="Pinned - position locked during auto-layout"
+        >
+          <Pin className="h-3 w-3" />
+        </div>
+      )}
       <div className="flex items-center justify-between gap-2 font-medium">
         <div className="flex items-center gap-2 truncate">
           <GitBranch className="h-4 w-4 text-muted-foreground" />

@@ -13,6 +13,7 @@ export const HttpNode = memo(function HttpNode({ data }: NodeProps<Node<HttpData
       label={data.label ?? "HTTP"}
       bgClassName="bg-node-http-bg"
       borderColor="--node-http-border"
+      pinned={data.pinned}
     >
       <div className="flex items-center justify-between">
         <span className="truncate text-xs text-muted-foreground">

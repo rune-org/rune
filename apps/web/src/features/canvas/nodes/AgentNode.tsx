@@ -13,6 +13,7 @@ export const AgentNode = memo(function AgentNode({ data }: NodeProps<Node<AgentD
       label={data.label ?? "Agent"}
       bgClassName="bg-node-agent-bg"
       borderColor="--node-agent-border"
+      pinned={data.pinned}
     >
       <div className="text-xs text-muted-foreground">
         Model • Tools • Limits

@@ -15,6 +15,7 @@ export const SmtpNode = memo(function SmtpNode({ data }: NodeProps<Node<SmtpData
       label={data.label ?? "SMTP"}
       bgClassName="bg-node-email-bg"
       borderColor="--node-email-border"
+      pinned={data.pinned}
     >
       <div className="space-y-1">
         {hasCredential ? (
