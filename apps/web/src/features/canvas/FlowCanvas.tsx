@@ -28,6 +28,8 @@ import { useAddNode } from "./hooks/useAddNode";
 import { useConditionalConnect } from "./hooks/useConditionalConnect";
 import { useUpdateNodeData } from "./hooks/useUpdateNodeData";
 import { useExecutionSim } from "./hooks/useExecutionSim";
+import { useAutoLayout } from "./hooks/useAutoLayout";
+import { usePinNode } from "./hooks/usePinNode";
 import { sanitizeGraph, stringifyGraph } from "./lib/graphIO";
 import { toast } from "@/components/ui/toast";
 import { createId } from "./utils/id";
@@ -77,6 +79,7 @@ export default function FlowCanvas({
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
   const { run, reset } = useExecutionSim(nodes, edges, setNodes, setEdges);
   const updateNodeData = useUpdateNodeData(setNodes);
+  const { togglePin } = usePinNode(setNodes);
 
   // Validate connections to limit edges based on node type
   const isValidConnection = useCallback(
@@ -128,6 +131,10 @@ export default function FlowCanvas({
       historyRef.current.shift();
     }
   }, [nodes, edges]);
+
+  const { autoLayout } = useAutoLayout(nodes, edges, setNodes, setEdges, {
+    onBeforeLayout: pushHistory,
+  });
 
   const copySelection = useCallback(async () => {
     const selectedNodeIds = new Set(
@@ -386,7 +393,6 @@ export default function FlowCanvas({
                 if (onRun) void onRun();
               }}
               onUndo={undo}
-              onDelete={deleteSelectedElements}
               onSave={async () => {
                 await persistGraph();
               }}
@@ -397,6 +403,7 @@ export default function FlowCanvas({
                 toast.success("Exported JSON to clipboard");
               }}
               onFitView={() => rfInstanceRef.current?.fitView()}
+              onAutoLayout={autoLayout}
               saveDisabled={saveDisabled}
             />
           </div>
@@ -410,6 +417,7 @@ export default function FlowCanvas({
           onDelete={selectedNode ? deleteSelectedElements : undefined}
           isExpandedDialogOpen={isInspectorExpanded}
           setIsExpandedDialogOpen={setIsInspectorExpanded}
+          onTogglePin={togglePin}
         />
 
         {/* Hints */}

@@ -5,6 +5,8 @@ import type { CredentialRef } from "@/lib/credentials";
 export type BaseData = {
   label?: string;
   credential?: CredentialRef | null;
+  /** When true, the node's position is preserved during auto-layout. */
+  pinned?: boolean;
 };
 
 /** A map defining the specific data for each kind of node. */

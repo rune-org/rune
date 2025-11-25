@@ -2,25 +2,25 @@
 
 import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
-import { Play, RotateCcw, Trash2, Save, Maximize, Copy } from "lucide-react";
+import { Play, RotateCcw, Save, Maximize, Copy, LayoutDashboard } from "lucide-react";
 
 type ToolbarProps = {
   onExecute: () => void;
   onUndo: () => void;
-  onDelete: () => void;
   onSave: () => void;
   onExport: () => void;
   onFitView?: () => void;
+  onAutoLayout?: () => void;
   saveDisabled?: boolean;
 };
 
 export function Toolbar({
   onExecute,
   onUndo,
-  onDelete,
   onSave,
   onExport,
   onFitView,
+  onAutoLayout,
   saveDisabled = false,
 }: ToolbarProps) {
   const Btn = ({
@@ -62,9 +62,6 @@ export function Toolbar({
       <Btn onClick={onUndo} title="Undo">
         <RotateCcw className="h-4 w-4" /> Undo
       </Btn>
-      <Btn onClick={onDelete} title="Delete Selected">
-        <Trash2 className="h-4 w-4" /> Delete
-      </Btn>
       <Btn onClick={onSave} title="Save" disabled={saveDisabled}>
         <Save className="h-4 w-4" /> Save
       </Btn>
@@ -74,6 +71,11 @@ export function Toolbar({
       {onFitView && (
         <Btn onClick={onFitView} title="Fit View">
           <Maximize className="h-4 w-4" /> Fit
+        </Btn>
+      )}
+      {onAutoLayout && (
+        <Btn onClick={onAutoLayout} title="Auto Layout">
+          <LayoutDashboard className="h-4 w-4" /> Layout
         </Btn>
       )}
     </div>
