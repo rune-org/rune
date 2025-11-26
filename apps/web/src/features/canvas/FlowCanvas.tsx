@@ -221,45 +221,9 @@ export default function FlowCanvas({
   }, [nodes]);
 
   // Import handlers
-  const importFromClipboard = useCallback(async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (!text) {
-        toast.error("Clipboard is empty");
-        return;
-      }
-      let raw: unknown;
-      try {
-        raw = JSON.parse(text);
-      } catch {
-        toast.error("Clipboard does not contain valid JSON");
-        return;
-      }
-      if (!raw || typeof raw !== "object") {
-        toast.error("Invalid workflow data");
-        return;
-      }
-      const candidate = raw as { nodes?: unknown; edges?: unknown };
-      if (!Array.isArray(candidate.nodes) || !Array.isArray(candidate.edges)) {
-        toast.error("Invalid workflow format");
-        return;
-      }
-      const parsed = sanitizeGraph({
-        nodes: candidate.nodes as CanvasNode[],
-        edges: candidate.edges as Edge[],
-      });
-      if (parsed.nodes.length === 0) {
-        toast.error("No valid nodes found in clipboard data");
-        return;
-      }
-      pushHistory();
-      setNodes(parsed.nodes as CanvasNode[]);
-      setEdges(parsed.edges as Edge[]);
-      toast.success("Imported workflow from clipboard");
-    } catch {
-      toast.error("Failed to read clipboard");
-    }
-  }, [pushHistory, setNodes, setEdges]);
+  const importFromClipboard = useCallback(() => {
+    toast("Press Ctrl+V (or Cmd+V) to paste workflow from clipboard");
+  }, []);
 
   const importFromFile = useCallback(() => {
     fileInputRef.current?.click();
