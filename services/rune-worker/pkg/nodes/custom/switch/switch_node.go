@@ -2,6 +2,7 @@ package switchnode
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"rune-worker/pkg/nodes"
@@ -31,19 +32,24 @@ func NewSwitchNode(execCtx plugin.ExecutionContext) *SwitchNode {
 	// Parse rules parameter
 	if rulesParam, ok := execCtx.Parameters["rules"].([]interface{}); ok {
 		for _, r := range rulesParam {
-			if ruleMap, ok := r.(map[string]interface{}); ok {
-				rule := Rule{}
-				if val, ok := ruleMap["value"].(string); ok {
-					rule.Value = val
-				}
-				if op, ok := ruleMap["operator"].(string); ok {
-					rule.Operator = op
-				}
-				if cmp, ok := ruleMap["compare"]; ok {
-					rule.Compare = cmp
-				}
-				node.rules = append(node.rules, rule)
+			ruleMap, ok := r.(map[string]interface{})
+			if !ok {
+				continue
 			}
+			rule := Rule{}
+			if val, ok := ruleMap["value"].(string); ok {
+				rule.Value = val
+			} else if val, exists := ruleMap["value"]; exists {
+				// Preserve already-resolved values (e.g., after parameter resolution)
+				rule.Value = fmt.Sprintf("%v", val)
+			}
+			if op, ok := ruleMap["operator"].(string); ok {
+				rule.Operator = op
+			}
+			if cmp, ok := ruleMap["compare"]; ok {
+				rule.Compare = cmp
+			}
+			node.rules = append(node.rules, rule)
 		}
 	}
 

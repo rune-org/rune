@@ -7,6 +7,8 @@ import {
   Trash2,
   ArrowRightLeft,
   Settings,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import type { CanvasNode } from "../types";
 import { NODE_SCHEMA } from "../types";
@@ -22,7 +24,7 @@ import {
 import { IfInspector } from "./inspectors/IfInspector";
 import { HttpInspector } from "./inspectors/HttpInspector";
 import { SmtpInspector } from "./inspectors/SmtpInspector";
-import ExpandButton from "./ExpandButton";
+import { SwitchInspector } from "./inspectors/SwitchInspector";
 
 type InspectorProps = {
   selectedNode: CanvasNode | null;
@@ -31,6 +33,7 @@ type InspectorProps = {
   onDelete?: () => void;
   isExpandedDialogOpen?: boolean;
   setIsExpandedDialogOpen?: (open: boolean) => void;
+  onTogglePin?: (nodeId: string) => void;
 };
 
 function renderInspectorForm(
@@ -43,6 +46,10 @@ function renderInspectorForm(
       return <HttpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "if":
       return <IfInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "switch":
+      return (
+        <SwitchInspector node={node} updateData={updateData} isExpanded={isExpanded} />
+      );
     case "smtp":
       return <SmtpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     default:
@@ -54,6 +61,11 @@ function getNodeInputsOutputs(node: CanvasNode): {
   inputs: readonly string[];
   outputs: readonly string[];
 } {
+  if (node.type === "switch") {
+    const rules = Array.isArray(node.data.rules) ? node.data.rules : [];
+    const outputs = rules.map((_, idx) => `case ${idx + 1}`).concat("fallback");
+    return { inputs: ["input"], outputs };
+  }
   return NODE_SCHEMA[node.type] || { inputs: [], outputs: [] };
 }
 
@@ -64,6 +76,7 @@ export function Inspector({
   onDelete,
   isExpandedDialogOpen: isExpandedProp,
   setIsExpandedDialogOpen: setIsExpandedProp,
+  onTogglePin,
 }: InspectorProps) {
   const [isExpandedInternal, setIsExpandedInternal] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -98,11 +111,41 @@ export function Inspector({
               Inspector
             </div>
             {selectedNode && (
-              <ExpandButton 
-                onClick={() => setIsExpandedDialogOpen(true)}
-                icon={Maximize2}
-                title="Expand inspector"
-              />
+              <div className="flex items-center gap-1">
+                {onTogglePin && (
+                  <button
+                    onClick={() => onTogglePin(selectedNode.id)}
+                    title={selectedNode.data.pinned ? "Unpin node" : "Pin node"}
+                    className={`flex h-6 w-6 items-center justify-center rounded-[calc(var(--radius)-0.25rem)] transition-colors ${
+                      selectedNode.data.pinned
+                        ? "bg-ring/20 text-ring hover:bg-ring/30"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    }`}
+                  >
+                    {selectedNode.data.pinned ? (
+                      <PinOff className="h-3.5 w-3.5" />
+                    ) : (
+                      <Pin className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsExpandedDialogOpen(true)}
+                  title="Expand inspector"
+                  className="flex h-6 w-6 items-center justify-center rounded-[calc(var(--radius)-0.25rem)] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                >
+                  <Maximize2 className="h-3.5 w-3.5" />
+                </button>
+                {onDelete && (
+                  <button
+                    onClick={onDelete}
+                    title="Delete node"
+                    className="flex h-6 w-6 items-center justify-center rounded-[calc(var(--radius)-0.25rem)] text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
@@ -138,7 +181,7 @@ export function Inspector({
               {/* Footer Hint */}
               <div className="border-t border-border/40 px-3 py-2">
                 <div className="text-xs text-muted-foreground">
-                  Delete key removes selected.
+                  Double-click to expand.
                 </div>
               </div>
             </>
@@ -273,6 +316,28 @@ export function Inspector({
                   Changes are saved automatically
                 </div>
                 <div className="flex gap-2">
+                  {onTogglePin && (
+                    <button
+                      onClick={() => onTogglePin(selectedNode.id)}
+                      className={`inline-flex h-9 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border px-4 text-sm transition-colors ${
+                        selectedNode.data.pinned
+                          ? "border-ring/40 bg-ring/10 text-ring hover:bg-ring/20"
+                          : "border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted/60"
+                      }`}
+                    >
+                      {selectedNode.data.pinned ? (
+                        <>
+                          <PinOff className="h-4 w-4" />
+                          Unpin Node
+                        </>
+                      ) : (
+                        <>
+                          <Pin className="h-4 w-4" />
+                          Pin Node
+                        </>
+                      )}
+                    </button>
+                  )}
                   {onDelete && (
                     <button
                       onClick={() => setIsDeleteConfirmOpen(true)}

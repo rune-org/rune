@@ -10,6 +10,7 @@ import {
   useNodesState,
   Panel,
   type Edge,
+  type Connection,
   OnSelectionChangeParams,
   type ReactFlowInstance,
 } from "@xyflow/react";
@@ -27,9 +28,15 @@ import { useAddNode } from "./hooks/useAddNode";
 import { useConditionalConnect } from "./hooks/useConditionalConnect";
 import { useUpdateNodeData } from "./hooks/useUpdateNodeData";
 import { useExecutionSim } from "./hooks/useExecutionSim";
+import { useAutoLayout } from "./hooks/useAutoLayout";
+import { usePinNode } from "./hooks/usePinNode";
 import { sanitizeGraph, stringifyGraph } from "./lib/graphIO";
 import { toast } from "@/components/ui/toast";
 import { createId } from "./utils/id";
+import {
+  switchFallbackHandleId,
+  switchRuleHandleId,
+} from "./utils/switchHandles";
 
 type HistoryEntry = { nodes: CanvasNode[]; edges: Edge[] };
 const CLIPBOARD_SELECTION_TYPE = "rune.canvas.selection";
@@ -49,7 +56,7 @@ export default function FlowCanvas({
     nodes: CanvasNode[];
     edges: Edge[];
   }) => Promise<void> | void;
-  onRun?: () => Promise<void> | void;
+  onRun?: (graph: { nodes: CanvasNode[]; edges: Edge[] }) => Promise<void> | void;
   saveDisabled?: boolean;
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>(
@@ -72,6 +79,46 @@ export default function FlowCanvas({
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
   const { run, reset } = useExecutionSim(nodes, edges, setNodes, setEdges);
   const updateNodeData = useUpdateNodeData(setNodes);
+  const { togglePin } = usePinNode(setNodes);
+
+  // Validate connections to limit edges based on node type
+  const isValidConnection = useCallback(
+    (connection: Edge | Connection) => {
+      const { source, sourceHandle } = connection;
+
+      const sourceNode = nodes.find((node) => node.id === source);
+      if (!sourceNode) return false;
+
+      const existingEdges = edges.filter((edge) => edge.source === source);
+
+      // For "if" nodes: allow max 2 edges (true/false)
+      if (sourceNode.type === "if") {
+        const hasEdgeFromHandle = existingEdges.some(
+          (edge) => edge.sourceHandle === sourceHandle
+        );
+        return !hasEdgeFromHandle;
+      }
+
+      if (sourceNode.type === "switch") {
+        const rules = Array.isArray(sourceNode.data.rules)
+          ? sourceNode.data.rules
+          : [];
+        const allowedHandles = new Set<string>([
+          ...rules.map((_, idx) => switchRuleHandleId(idx)),
+          switchFallbackHandleId(),
+        ]);
+        if (!sourceHandle || !allowedHandles.has(String(sourceHandle))) return false;
+        const hasEdgeFromHandle = existingEdges.some(
+          (edge) => edge.sourceHandle === sourceHandle,
+        );
+        return !hasEdgeFromHandle;
+      }
+
+      // For all other nodes: allow max 1 edge
+      return existingEdges.length === 0;
+    },
+    [nodes, edges]
+  );
 
   const persistGraph = useCallback(() => {
     if (!onPersist) return;
@@ -84,6 +131,10 @@ export default function FlowCanvas({
       historyRef.current.shift();
     }
   }, [nodes, edges]);
+
+  const { autoLayout } = useAutoLayout(nodes, edges, setNodes, setEdges, {
+    onBeforeLayout: pushHistory,
+  });
 
   const copySelection = useCallback(async () => {
     const selectedNodeIds = new Set(
@@ -288,6 +339,7 @@ export default function FlowCanvas({
       agent: "--node-agent",
       trigger: "--node-trigger",
       if: "--node-core",
+      switch: "--node-core",
       http: "--node-http",
       smtp: "--node-email",
     };
@@ -307,6 +359,7 @@ export default function FlowCanvas({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
         onSelectionChange={onSelectionChange}
         onNodeDoubleClick={(_evt, node) => {
           setSelectedNodeId(node.id as string);
@@ -318,14 +371,17 @@ export default function FlowCanvas({
         <Background />
 
         <MiniMap
+          nodeBorderRadius={19}
           position="bottom-left"
           nodeColor={(node) => getNodeColor(node.type as string)}
           nodeStrokeColor="#334155"
           maskColor="rgba(0,0,0,0.2)"
-          style={{ marginLeft: "55px" }}
+          style={{width: 200, height:117, opacity: 0.85}}
         />
 
-        <Controls />
+        <Controls 
+          style={{ height: 107, marginLeft: "222px", opacity:0.85 }}
+        />
 
         {/* Toolbar */}
         <Panel position="top-left" className="pointer-events-auto z-[60]">
@@ -334,10 +390,9 @@ export default function FlowCanvas({
               onExecute={() => {
                 reset();
                 void run();
-                if (onRun) void onRun();
+                if (onRun) void onRun({ nodes, edges });
               }}
               onUndo={undo}
-              onDelete={deleteSelectedElements}
               onSave={async () => {
                 await persistGraph();
               }}
@@ -348,6 +403,7 @@ export default function FlowCanvas({
                 toast.success("Exported JSON to clipboard");
               }}
               onFitView={() => rfInstanceRef.current?.fitView()}
+              onAutoLayout={autoLayout}
               saveDisabled={saveDisabled}
             />
           </div>
@@ -361,6 +417,7 @@ export default function FlowCanvas({
           onDelete={selectedNode ? deleteSelectedElements : undefined}
           isExpandedDialogOpen={isInspectorExpanded}
           setIsExpandedDialogOpen={setIsInspectorExpanded}
+          onTogglePin={togglePin}
         />
 
         {/* Hints */}
