@@ -91,16 +91,22 @@ export const SwitchNode = memo(function SwitchNode({
       </div>
 
       <Handle type="target" position={Position.Left} className="!bg-ring" />
-      {handleLayout.map((h) => (
-        <Handle
-          key={h.id}
-          id={h.id}
-          type="source"
-          position={Position.Right}
-          className="!bg-ring"
-          style={{ top: h.top }}
-        />
-      ))}
+      {handleLayout.map((h, idx) => {
+        // The fallback handle (last item) needs a dynamic key that includes rules.length
+        // to force React to remount it when rules change. This ensures React Flow
+        // registers the handle at its new position.
+        const isFallback = idx === handleLayout.length - 1;
+        return (
+          <Handle
+            key={isFallback ? `${h.id}-${rules.length}` : h.id}
+            id={h.id}
+            type="source"
+            position={Position.Right}
+            className="!bg-ring"
+            style={{ top: h.top }}
+          />
+        );
+      })}
     </div>
   );
 });
