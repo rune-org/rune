@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
 import {
@@ -22,8 +21,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-type OpenMenu = "import" | "export" | null;
 
 type ToolbarProps = {
   onExecute: () => void;
@@ -54,8 +51,6 @@ export function Toolbar({
   onAutoLayout,
   saveDisabled = false,
 }: ToolbarProps) {
-  const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
-
   const Btn = ({
     onClick,
     title,
@@ -102,21 +97,12 @@ export function Toolbar({
         <Save className="h-4 w-4" /> Save
       </Btn>
 
-      <DropdownMenu
-        open={openMenu === "import"}
-        onOpenChange={(open) => setOpenMenu(open ? "import" : null)}
-      >
-        <DropdownMenuTrigger
-          className={btnClass}
-          onMouseEnter={() => setOpenMenu("import")}
-        >
+      <DropdownMenu>
+        <DropdownMenuTrigger className={btnClass}>
           <Download className="h-4 w-4" /> Import{" "}
           <ChevronDown className="h-3 w-3 opacity-60" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="start"
-          onMouseLeave={() => setOpenMenu(null)}
-        >
+        <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={onImportFromClipboard} className="gap-2">
             <Clipboard className="h-4 w-4" /> From Clipboard
           </DropdownMenuItem>
@@ -129,21 +115,12 @@ export function Toolbar({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <DropdownMenu
-        open={openMenu === "export"}
-        onOpenChange={(open) => setOpenMenu(open ? "export" : null)}
-      >
-        <DropdownMenuTrigger
-          className={btnClass}
-          onMouseEnter={() => setOpenMenu("export")}
-        >
+      <DropdownMenu>
+        <DropdownMenuTrigger className={btnClass}>
           <Upload className="h-4 w-4" /> Export{" "}
           <ChevronDown className="h-3 w-3 opacity-60" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="start"
-          onMouseLeave={() => setOpenMenu(null)}
-        >
+        <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={onExportToClipboard} className="gap-2">
             <Clipboard className="h-4 w-4" /> To Clipboard
           </DropdownMenuItem>
