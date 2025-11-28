@@ -128,7 +128,7 @@ services:
       context: ./apps/web
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE_URL: /api
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api
     container_name: rune-frontend
     environment:
       # API Configuration
