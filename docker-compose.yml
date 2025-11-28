@@ -74,6 +74,7 @@ services:
       REDIS_PORT: 6379
       REDIS_DB: 0
       # Application Settings
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://frontend:3000}
       ENVIRONMENT: ${ENVIRONMENT:-prod}
       APP_NAME: "Rune API"
       # JWT Settings (use secrets from .env or defaults for development)
