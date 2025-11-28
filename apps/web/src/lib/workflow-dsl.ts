@@ -19,81 +19,27 @@ import {
   switchRuleHandleId,
 } from "@/features/canvas/utils/switchHandles";
 
-export type UUID = string;
-
-export type EdgeStyle = "solid" | "dashed";
-export type EdgeKind = "success" | "error";
-export type ErrorStrategy = "halt" | "ignore" | "branch";
-
-export interface NodeErrorConfig {
-  type: ErrorStrategy;
-  error_edge?: UUID;
-}
-
 export interface WorkflowNode<Params = Record<string, unknown>> {
-  id: UUID;
+  id: string;
   name: string;
   trigger: boolean;
   type: string;
   parameters: Params;
   credentials?: CredentialRef;
   output: Record<string, unknown>;
-  error?: NodeErrorConfig;
   position?: [number, number];
 }
 
 export interface WorkflowEdge {
-  id: UUID;
-  src: UUID;
-  dst: UUID;
-  style?: EdgeStyle;
+  id: string;
+  src: string;
+  dst: string;
   label?: string;
-  is_error?: EdgeKind;
-}
-
-export interface WorkflowCredential extends CredentialRef {
-  // Values are opaque for the UI; should be partial or empty
-  // depending on whether we will be showing secrets in the UI or not.
-  // For mock data, we are including fields for demonstration.
-  [key: string]: unknown;
-}
-
-export interface WorkflowDefinition {
-  id: UUID;
-  name: string;
-  desc?: string;
-  nodes: WorkflowNode[];
-  edges: WorkflowEdge[];
-  active: boolean;
-  credentials: WorkflowCredential[];
-}
-
-export interface UserProfile {
-  id: UUID;
-  name: string;
-  email: string;
-  avatarUrl?: string;
-}
-
-export interface TemplateSummary {
-  id: UUID;
-  title: string;
-  description: string;
-  from?: string;
-  to?: string;
-}
-
-export interface ExecutionHistoryItem {
-  id: UUID;
-  workflowId: UUID;
-  status: "running" | "success" | "failed" | "canceled";
-  startedAt: string; // ISO date
-  finishedAt?: string; // ISO date
 }
 
 export class MissingNodeCredentialsError extends Error {
   constructor(
-    public readonly nodes: Array<{ id: UUID; type: string }>,
+    public readonly nodes: Array<{ id: string; type: string }>,
   ) {
     super(
       `Missing credentials for nodes: ${nodes
@@ -363,7 +309,7 @@ export function canvasToWorkflowData(
   nodes: CanvasNode[],
   edges: RFEdge[],
 ): { nodes: WorkflowNode[]; edges: WorkflowEdge[] } {
-  const missingCredentials: Array<{ id: UUID; type: string }> = [];
+  const missingCredentials: Array<{ id: string; type: string }> = [];
 
   const blueprintNodes: WorkflowNode[] = nodes.map((n) => {
     const credential = extractNodeCredential(n);

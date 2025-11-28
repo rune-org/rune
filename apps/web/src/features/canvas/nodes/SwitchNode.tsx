@@ -55,7 +55,7 @@ export const SwitchNode = memo(function SwitchNode({
           <GitBranch className="h-4 w-4 text-muted-foreground" />
           <span className="truncate">{data.label ?? "Switch"}</span>
         </div>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="shrink-0 whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           {rules.length} {rules.length === 1 ? 'route' : 'routes'}
         </span>
       </div>
