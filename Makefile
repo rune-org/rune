@@ -165,6 +165,8 @@ web-typecheck:
 # Convenient aliases
 up: docker-up
 
+up-nginx: docker-up-nginx
+
 down: docker-down
 
 restart: docker-rebuild
@@ -177,6 +179,10 @@ status:
 docker-up:
 	@echo "Starting all services with Docker Compose..."
 	docker compose up -d
+
+docker-up-nginx:
+	@echo "Starting on nginx..."
+	docker compose -f docker-compose.nginx.yml up -d 
 
 docker-down:
 	@echo "Stopping all services..."
