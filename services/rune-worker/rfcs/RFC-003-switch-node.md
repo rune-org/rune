@@ -24,7 +24,7 @@ Each rule in the `rules` list is an object with:
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `value` | `string` | The left-hand side value to check. Supports dynamic references (e.g., `$input.status`). |
+| `value` | `string` | The left-hand side value to check. Supports dynamic references (e.g., `$input.status`). Resolved values (e.g. numbers) are automatically converted to strings. |
 | `operator` | `string` | The comparison operator. Supported: `==`, `!=`, `>`, `<`, `>=`, `<=`, `contains`. |
 | `compare` | `string` | The right-hand side value to compare against. Supports literals and references. |
 

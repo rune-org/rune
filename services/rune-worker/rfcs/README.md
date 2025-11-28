@@ -47,6 +47,67 @@ Complete specification of the JSON-based Domain-Specific Language for defining w
 
 ---
 
+### [RFC-003-switch-node.md](./RFC-003-switch-node.md)
+**Status**: Implemented  
+**Created**: 2025-11-21  
+**Title**: Switch Node Implementation
+
+Definition of the Switch Node for multi-path conditional routing:
+- Rule-based routing logic
+- Support for multiple comparison operators
+- Fallback path mechanism
+- Integration with workflow executor
+
+---
+
+### [RFC-004-split-aggregate.md](./RFC-004-split-aggregate.md)
+**Status**: Proposed  
+**Created**: 2025-11-28  
+**Title**: Distributed Fan-Out/Fan-In Execution Pattern
+
+Architecture for Data Parallelism using Split and Aggregator nodes:
+- Split Node for scattering execution
+- Aggregator Node for gathering results
+- Lineage Stack for nested context tracking
+
+---
+
+### [RFC-005-merge.md](./RFC-005-merge.md)
+**Status**: Proposed  
+**Created**: 2025-11-28  
+**Title**: Merge Node Architecture
+
+Specification for synchronizing distributed execution paths:
+- Wait for All (Barrier Synchronization)
+- Wait for Any (Race Condition Handling)
+- Timeout handling mechanisms
+
+---
+
+### [RFC-006-wait.md](./RFC-006-wait.md)
+**Status**: Proposed  
+**Created**: 2025-11-28  
+**Title**: Distributed Wait Node & Scheduler Architecture
+
+Architecture for pausing workflow execution:
+- Timerless architecture using Redis Sorted Sets
+- Decoupled Scheduler for polling
+- Support for resuming specific parallel branches
+
+---
+
+### [RFC-007-edit.md](./RFC-007-edit.md)
+**Status**: Proposed  
+**Created**: 2025-05-01  
+**Title**: Edit Node Architecture (Data Transformation)
+
+Specification for the Edit Node for data manipulation:
+- Stateless execution model
+- JavaScript Sandbox (Goja) for dynamic expressions
+- Support for projection, enrichment, and transformation
+
+---
+
 ### [ISSUE_RECURSIVE_EXECUTOR.md](./ISSUE_RECURSIVE_EXECUTOR.md)
 **Status**: Superseded by RFC-001  
 **Title**: Implement Recursive Node-by-Node Executor with RabbitMQ
