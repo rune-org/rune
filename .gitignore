@@ -53,3 +53,6 @@ venv
 # golang
 services/rune-worker/main
 services/rune-worker/go.sum
+
+# nginx
+nginx/ssl/

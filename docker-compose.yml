@@ -126,6 +126,8 @@ services:
     build:
       context: ./apps/web
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /api
     container_name: rune-frontend
     environment:
       # API Configuration
@@ -140,23 +142,6 @@ services:
     networks:
       - frontend_network
     restart: unless-stopped
-
-# (Optional)
-# nginx:
-#   image: "nginx:latest"
-#   container_name: rune-nginx
-#   ports:
-#     - "80:80"
-#     - "443:443"
-#   volumes:
-#     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-#     - ./nginx/ssl:/etc/nginx/ssl:ro
-#   depends_on:
-#     - api
-#     - frontend
-#   networks:
-#     - frontend_network
-#   restart: unless-stopped
 
 networks:
   frontend_network:

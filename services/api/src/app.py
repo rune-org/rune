@@ -40,6 +40,7 @@ app = FastAPI(
     title=settings.app_name,
     version="0.0.0",
     lifespan=lifespan,
+    root_path="/api",
 )
 app.add_middleware(
     CORSMiddleware,

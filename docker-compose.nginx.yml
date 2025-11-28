@@ -1,0 +1,22 @@
+# docker-compose.nginx.yml
+# Optional nginx reverse proxy configuration
+# This file must be explicitly included
+#
+# Usage: docker compose -f docker-compose.yml -f docker-compose.nginx.yml up
+
+services:
+  nginx:
+    image: "nginx:latest"
+    container_name: rune-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+      - frontend
+    networks:
+      - frontend_network
+    restart: unless-stopped
