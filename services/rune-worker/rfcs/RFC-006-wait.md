@@ -8,7 +8,7 @@ It leverages:
 
 1. **Redis Sorted Sets:** For high-performance scheduling of millions of timers.  
 2. **Decoupled Scheduler:** A background worker (Poller) that moves due tasks from Redis.  
-3. **Unified Execution Queue:** Resumed tasks are published back to the main workflow.execution queue, ensuring a consistent execution path and simplifying the worker consumer logic.  
+3. **Dedicated Resume Queue:** Resumed tasks are published to the `workflow.resume` queue, ensuring separation of concerns and higher priority processing for resumed workflows.  
 4. **Branch-Aware Context:** Full support for pausing/resuming specific parallel branches (Fan-Out) without blocking the main workflow, integrated with the Lineage Stack from RFC-004.
 
 ## **2\. Motivation**
@@ -54,7 +54,7 @@ In a distributed workflow engine, "waiting" poses specific challenges that canno
 2. **Redis (Scheduler Store):**  
    * **Priority Queue (ZSET):** Orders timers by epoch milliseconds.  
    * **Payload Store (HASH):** Stores the "Frozen" execution message (Context \+ Lineage) indexed by a unique Timer ID.  
-3. **Scheduler (Poller):** A dedicated loop that polls Redis for expired timers and publishes execution messages directly to the main workflow.execution queue.
+3. **Scheduler (Poller):** A dedicated loop that polls Redis for expired timers and publishes execution messages to the `workflow.resume` queue.
 
 ### **4.2 Redis Data Schema**
 
@@ -89,11 +89,11 @@ sequenceDiagram
     Redis--\>\>Scheduler: Returns \[UUID\_1, UUID\_2\]  
     Scheduler-\>\>Redis: HGET scheduler:payloads \<UUID\>  
     Scheduler-\>\>Worker: Resolve Next Node (Graph Traversal)  
-    Scheduler-\>\>RabbitMQ: Publish to workflow.execution  
+    Scheduler->>RabbitMQ: Publish to workflow.resume  
     Scheduler-\>\>Redis: DEL payload & timer
 
     Note over Worker: Phase 3: Resume  
-    RabbitMQ-\>\>Worker: Consume Execution Message  
+    RabbitMQ->>Worker: Consume Execution Message (from workflow.resume)  
     Worker-\>\>Worker: Normal Execution Logic (Unaware of Wait)  
     Worker-\>\>RabbitMQ: Publish Next Node (workflow.execution)
 
@@ -139,7 +139,7 @@ sequenceDiagram
        * Find the **Next Node(s)** from the workflow\_definition (edges).  
        * *Note:* If multiple edges exist, we must Fan-Out here (publish multiple messages).  
      * **Publish:** \* Update the message current\_node to the ID of the *next* node.  
-       * Publish the message(s) to the workflow.execution queue.  
+       * Publish the message(s) to the `workflow.resume` queue.  
      * **Cleanup:** HDEL scheduler:payloads {timer\_id} (Ideally, only after successful publish confirmation).
 
 **Lua Script (poll\_timers.lua):**
@@ -160,7 +160,7 @@ return ids
 
 ### **5.3 Phase 3: Resumption (The "Wake")**
 
-**Context:** A standard Worker consumes from workflow.execution.
+**Context:** A standard Worker consumes from `workflow.resume` (High Priority).
 
 **Algorithm:**
 
@@ -173,7 +173,7 @@ return ids
 ### **6.1 NodeExecutionMessage**
 
 * **Input (Phase 1):** Triggers the Suspend logic. The worker identifies type: "wait" and executes the scheduling logic instead of business logic.  
-* **Output (Phase 2 \- Scheduler):** The Scheduler acts as a pseudo-worker. It generates the *next* NodeExecutionMessage pointing to the successor node and injects it back into the stream.
+* **Output (Phase 2 \- Scheduler):** The Scheduler acts as a pseudo-worker. It generates the *next* NodeExecutionMessage pointing to the successor node and injects it into the `workflow.resume` queue.
 
 ### **6.2 NodeStatusMessage**
 
@@ -218,3 +218,5 @@ return ids
 * \[ \] **Scheduler:**  
   * \[ \] Implement poll\_timers.lua.  
   * \[ \] Implement Ticker Loop with configurable interval.
+* \[ \] **Worker (Resume Consumer):**
+  * \[ \] Implement consumer for `workflow.resume` queue.
