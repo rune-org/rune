@@ -1,6 +1,13 @@
 import { useMemo } from "react";
 import type { Node } from "@xyflow/react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { SwitchData, SwitchOperator, SwitchRule } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
 import {
@@ -173,23 +180,23 @@ export function SwitchInspector({
                 <label className="block text-[11px] text-muted-foreground">
                   Operator
                 </label>
-                <select
-                  className="w-full rounded-[calc(var(--radius)-0.3rem)] border border-input bg-muted/30 px-2 py-1 text-xs"
-                  value={rule.operator ?? "=="} 
-                  onChange={(e) =>
-                    updateRuleField(
-                      idx,
-                      "operator",
-                      e.target.value as SwitchOperator,
-                    )
+                <Select
+                  value={rule.operator ?? "=="}
+                  onValueChange={(val) =>
+                    updateRuleField(idx, "operator", val as SwitchOperator)
                   }
                 >
-                  {OPERATORS.map((op) => (
-                    <option key={op} value={op}>
-                      {op}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-auto w-full rounded-[calc(var(--radius)-0.3rem)] border-input bg-muted/30 px-2 py-1 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OPERATORS.map((op) => (
+                      <SelectItem key={op} value={op} className="text-xs">
+                        {op}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <label className="block text-[11px] text-muted-foreground">
