@@ -194,6 +194,40 @@ class WorkflowTemplate(TimestampModel, table=True):
     creator: Optional[User] = Relationship(back_populates="templates")
 
 
+class CredentialShare(TimestampModel, table=True):
+    """Tracks which users have access to which credentials."""
+
+    __tablename__ = "credential_shares"
+
+    credential_id: int = Field(
+        foreign_key="workflow_credentials.id",
+        primary_key=True,
+        ondelete="CASCADE",
+        description="Credential being shared",
+    )
+    user_id: int = Field(
+        foreign_key="users.id",
+        primary_key=True,
+        ondelete="CASCADE",
+        description="User who has access to this credential",
+    )
+    shared_by: Optional[int] = Field(
+        default=None,
+        foreign_key="users.id",
+        ondelete="SET NULL",
+        description="User who shared this credential",
+    )
+
+    # Relationships
+    credential: "WorkflowCredential" = Relationship(back_populates="shares")
+    user: User = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "CredentialShare.user_id"}
+    )
+    sharer: Optional[User] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "CredentialShare.shared_by"}
+    )
+
+
 class WorkflowCredential(TimestampModel, table=True):
     __tablename__ = "workflow_credentials"
 
@@ -220,4 +254,8 @@ class WorkflowCredential(TimestampModel, table=True):
     used_in_workflows: list["Workflow"] = Relationship(
         back_populates="credentials",
         link_model=WorkflowCredentialLink,
+    )
+    shares: list["CredentialShare"] = Relationship(
+        back_populates="credential",
+        cascade_delete=True,
     )
