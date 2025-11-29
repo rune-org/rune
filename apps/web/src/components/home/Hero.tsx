@@ -14,7 +14,7 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 });
 
-const runeLogo = "/icons/Logo.svg"; 
+const runeLogo = "/icons/logo-white.svg"; 
 
 export function Hero() {
   return (
@@ -39,7 +39,6 @@ export function Hero() {
                src={runeLogo} 
                alt="Rune Logo" 
                fill 
-               className="object-contain dark:invert" 
                priority
              />
            </div>
