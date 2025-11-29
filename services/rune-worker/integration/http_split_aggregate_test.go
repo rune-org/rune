@@ -6,6 +6,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,39 +21,82 @@ import (
 	testutils "rune-worker/test_utils"
 )
 
-func TestSplitAggregateWorkflow(t *testing.T) {
+func TestHTTPSplitAggregateWorkflow(t *testing.T) {
 	env := setupIntegrationTest(t)
 	defer env.Cleanup(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	workflowID := fmt.Sprintf("wf_split_agg_%d", time.Now().UnixNano())
-	executionID := fmt.Sprintf("exec_split_agg_%d", time.Now().UnixNano())
+	users := []map[string]any{
+		{"id": 1, "name": "Alice"},
+		{"id": 2, "name": "Bob"},
+		{"id": 3, "name": "Carol"},
+	}
 
-	// Define workflow: Split -> Aggregator
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/users":
+			_ = json.NewEncoder(w).Encode(users)
+		case strings.HasPrefix(r.URL.Path, "/users/"):
+			idStr := strings.TrimPrefix(r.URL.Path, "/users/")
+			id, _ := strconv.Atoi(idStr)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":     id,
+				"detail": fmt.Sprintf("detail-%d", id),
+			})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	workflowID := fmt.Sprintf("wf_http_split_%d", time.Now().UnixNano())
+	executionID := fmt.Sprintf("exec_http_split_%d", time.Now().UnixNano())
+
+	// Define workflow: Fetch Users -> Split -> Fetch Details -> Aggregate
 	workflow := core.Workflow{
 		WorkflowID: workflowID,
 		Nodes: []core.Node{
 			{
-				ID:   "split_node",
-				Name: "Splitter",
-				Type: "split",
+				ID:   "fetch_users",
+				Name: "Fetch Users",
+				Type: "http",
 				Parameters: map[string]interface{}{
-					"input_array": []string{"item1", "item2", "item3"},
+					"url":    server.URL + "/users",
+					"method": "GET",
 				},
 			},
 			{
-				ID:   "aggregator_node",
-				Name: "Collector",
+				ID:   "split_users",
+				Name: "Split Users",
+				Type: "split",
+				Parameters: map[string]interface{}{
+					"input_array": "$Fetch Users.body",
+				},
+			},
+			{
+				ID:   "fetch_details",
+				Name: "Fetch Details",
+				Type: "http",
+				Parameters: map[string]interface{}{
+					"url":    server.URL + "/users/$item.id",
+					"method": "GET",
+				},
+			},
+			{
+				ID:   "aggregate_users",
+				Name: "Aggregate Users",
 				Type: "aggregator",
 				Parameters: map[string]interface{}{
-					"timeout": 10,
+					"timeout": 30,
 				},
 			},
 		},
 		Edges: []core.Edge{
-			{ID: "e1", Src: "split_node", Dst: "aggregator_node"},
+			{ID: "e1", Src: "fetch_users", Dst: "split_users"},
+			{ID: "e2", Src: "split_users", Dst: "fetch_details"},
+			{ID: "e3", Src: "fetch_details", Dst: "aggregate_users"},
 		},
 	}
 
@@ -57,7 +104,7 @@ func TestSplitAggregateWorkflow(t *testing.T) {
 	msg := &messages.NodeExecutionMessage{
 		WorkflowID:         workflowID,
 		ExecutionID:        executionID,
-		CurrentNode:        "split_node",
+		CurrentNode:        "fetch_users",
 		WorkflowDefinition: workflow,
 		AccumulatedContext: map[string]interface{}{
 			"$trigger": map[string]interface{}{"start": true},
@@ -100,7 +147,6 @@ func TestSplitAggregateWorkflow(t *testing.T) {
 				return fmt.Errorf("failed to decode completion message: %w", err)
 			}
 			if completion.WorkflowID != workflowID {
-				// Ignore messages from other tests
 				return nil
 			}
 			completionChan <- completion
@@ -111,7 +157,7 @@ func TestSplitAggregateWorkflow(t *testing.T) {
 		}
 	}()
 
-	// Start the worker (WorkflowConsumer) to process the workflow
+	// Start the worker
 	workerCfg := &config.WorkerConfig{
 		RabbitURL:   env.RabbitMQURL,
 		RedisURL:    "redis://" + testutils.DefaultRedisAddr + "/0",
@@ -133,7 +179,7 @@ func TestSplitAggregateWorkflow(t *testing.T) {
 
 	// Wait for completion
 	select {
-	case <-time.After(10 * time.Second):
+	case <-time.After(30 * time.Second):
 		t.Fatal("Timed out waiting for workflow completion")
 	case completion := <-completionChan:
 		if completion.Status != messages.CompletionStatusCompleted {
@@ -141,25 +187,25 @@ func TestSplitAggregateWorkflow(t *testing.T) {
 		}
 
 		// Verify aggregated results
-		collectorOutput, ok := completion.FinalContext["$Collector"]
+		aggOutput, ok := completion.FinalContext["$Aggregate Users"]
 		if !ok {
-			t.Fatalf("Final context missing $Collector output. Context: %v", completion.FinalContext)
+			t.Fatalf("Final context missing $Aggregate Users output. Context keys: %v", getKeys(completion.FinalContext))
 		}
 
-		outputMap, ok := collectorOutput.(map[string]interface{})
+		outputMap, ok := aggOutput.(map[string]interface{})
 		if !ok {
-			t.Fatalf("Collector output is not a map: %T", collectorOutput)
+			t.Fatalf("Aggregate output is not a map: %T", aggOutput)
 		}
 
 		aggregated, ok := outputMap["aggregated"].([]interface{})
 		if !ok {
-			t.Fatalf("Collector output missing 'aggregated' field or wrong type: %v", outputMap)
+			t.Fatalf("Aggregate output missing 'aggregated' field: %v", outputMap)
 		}
 
-		if len(aggregated) != 3 {
-			t.Fatalf("Expected 3 aggregated items, got %d", len(aggregated))
+		if len(aggregated) != len(users) {
+			t.Fatalf("Expected %d aggregated items, got %d", len(users), len(aggregated))
 		}
 
-		t.Logf("Successfully verified aggregated results: %v", aggregated)
+		t.Logf("Successfully verified aggregated results: %d items", len(aggregated))
 	}
 }

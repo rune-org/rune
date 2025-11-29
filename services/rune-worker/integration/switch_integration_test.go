@@ -11,12 +11,28 @@ import (
 	"rune-worker/pkg/core"
 	"rune-worker/pkg/messages"
 	"rune-worker/pkg/messaging"
+	"rune-worker/pkg/nodes"
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
+	"rune-worker/plugin"
 	testutils "rune-worker/test_utils"
 
 	_ "rune-worker/pkg/nodes/custom/switch"
 )
+
+type mockNode struct{}
+
+func (n *mockNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) (map[string]any, error) {
+	return map[string]any{}, nil
+}
+
+func init() {
+	nodes.RegisterNodeType(func(reg *nodes.Registry) {
+		reg.Register("mock", func(execCtx plugin.ExecutionContext) plugin.Node {
+			return &mockNode{}
+		})
+	})
+}
 
 // TestSwitchNodeRouting tests the routing logic of the Switch Node within the messaging system.
 func TestSwitchNodeRouting(t *testing.T) {
@@ -188,6 +204,7 @@ func publishAndVerifyRouting(t *testing.T, env *testutils.TestEnv, ctx context.C
 	// Create worker config manually since env.Config is not available
 	workerConfig := &config.WorkerConfig{
 		RabbitURL:   env.RabbitMQURL,
+		RedisURL:    "redis://" + testutils.DefaultRedisAddr + "/0",
 		QueueName:   "workflow.execution",
 		Prefetch:    1,
 		Concurrency: 1,
