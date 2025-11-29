@@ -1,6 +1,10 @@
 package plugin
 
-import "context"
+import (
+	"context"
+
+	"rune-worker/pkg/messages"
+)
 
 // ExecutionContext provides runtime information and secure access to resources
 // for nodes during workflow execution. It contains the workflow and node identifiers,
@@ -9,13 +13,15 @@ import "context"
 // The context is passed to each node's Execute method and provides a scoped view of
 // the execution environment, ensuring nodes only access data relevant to their execution.
 type ExecutionContext struct {
-	ExecutionID string
-	WorkflowID string
-	NodeID string
-	Type string
-	Parameters map[string]any
-	Input map[string]any
-	credentials map[string]any
+	ExecutionID  string
+	WorkflowID   string
+	NodeID       string
+	Type         string
+	Parameters   map[string]any
+	Input        map[string]any
+	credentials  map[string]any
+	RedisClient  interface{}
+	LineageStack []messages.StackFrame
 }
 
 // GetCredentials returns a read-only copy of the resolved credentials for this node.

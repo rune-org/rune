@@ -10,15 +10,22 @@ import (
 // This message is published to the workflow.node.status queue for
 // consumption by the master service to provide real-time updates to users.
 type NodeStatusMessage struct {
-	WorkflowID  string                 `json:"workflow_id"`
-	ExecutionID string                 `json:"execution_id"`
-	NodeID      string                 `json:"node_id"`
-	NodeName    string                 `json:"node_name"`
-	Status      string                 `json:"status"` // "running", "success", "failed"
-	Output      map[string]interface{} `json:"output,omitempty"`
-	Error       *NodeError             `json:"error,omitempty"`
-	ExecutedAt  time.Time              `json:"executed_at"`
-	DurationMs  int64                  `json:"duration_ms"`
+	WorkflowID      string                 `json:"workflow_id"`
+	ExecutionID     string                 `json:"execution_id"`
+	NodeID          string                 `json:"node_id"`
+	NodeName        string                 `json:"node_name"`
+	Status          string                 `json:"status"` // "running", "success", "failed"
+	Output          map[string]interface{} `json:"output,omitempty"`
+	Error           *NodeError             `json:"error,omitempty"`
+	ExecutedAt      time.Time              `json:"executed_at"`
+	DurationMs      int64                  `json:"duration_ms"`
+	BranchID        string                 `json:"branch_id,omitempty"`
+	LineageStack    []StackFrame           `json:"lineage_stack,omitempty"`
+	SplitNodeID     string                 `json:"split_node_id,omitempty"`
+	ItemIndex       *int                   `json:"item_index,omitempty"`
+	TotalItems      *int                   `json:"total_items,omitempty"`
+	ProcessedCount  *int                   `json:"processed_count,omitempty"`
+	AggregatorState string                 `json:"aggregator_state,omitempty"`
 }
 
 // NodeError contains error details when a node execution fails.
@@ -33,6 +40,9 @@ const (
 	StatusRunning = "running"
 	StatusSuccess = "success"
 	StatusFailed  = "failed"
+
+	AggregatorStateWaiting  = "waiting"
+	AggregatorStateReleased = "released"
 )
 
 // Validate checks if the NodeStatusMessage has all required fields.

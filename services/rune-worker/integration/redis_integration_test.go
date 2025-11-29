@@ -8,14 +8,30 @@ import (
 	"testing"
 	"time"
 
+	testutils "rune-worker/test_utils"
+
 	"github.com/redis/go-redis/v9"
 )
 
 // TestRedisOperations tests basic Redis operations used by the worker
 func TestRedisOperations(t *testing.T) {
-	env := setupIntegrationTest(t)
-	defer env.Cleanup(t)
+	// Custom setup for Redis only, as RabbitMQ might be down
+	redisAddr := testutils.GetEnvOrDefault("REDIS_ADDR", testutils.DefaultRedisAddr)
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: redisAddr,
+		DB:   0,
+	})
 
+	// Use a separate context for the initial ping with a timeout
+	pingCtx, cancelPing := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelPing()
+
+	if err := redisClient.Ping(pingCtx).Err(); err != nil {
+		t.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	defer redisClient.Close()
+
+	// We don't need the full env for this test, so we use a generic background context for operations
 	ctx := context.Background()
 
 	testCases := []struct {
@@ -28,12 +44,12 @@ func TestRedisOperations(t *testing.T) {
 				key := "test:key:1"
 				value := "test-value"
 
-				err := env.RedisClient.Set(ctx, key, value, 5*time.Minute).Err()
+				err := redisClient.Set(ctx, key, value, 5*time.Minute).Err()
 				if err != nil {
 					t.Fatalf("SET operation failed: %v", err)
 				}
 
-				result, err := env.RedisClient.Get(ctx, key).Result()
+				result, err := redisClient.Get(ctx, key).Result()
 				if err != nil {
 					t.Fatalf("GET operation failed: %v", err)
 				}
@@ -50,13 +66,13 @@ func TestRedisOperations(t *testing.T) {
 
 				// Increment 5 times
 				for i := 0; i < 5; i++ {
-					err := env.RedisClient.Incr(ctx, key).Err()
+					err := redisClient.Incr(ctx, key).Err()
 					if err != nil {
 						t.Fatalf("INCR operation failed: %v", err)
 					}
 				}
 
-				count, err := env.RedisClient.Get(ctx, key).Int()
+				count, err := redisClient.Get(ctx, key).Int()
 				if err != nil {
 					t.Fatalf("GET counter failed: %v", err)
 				}
@@ -81,12 +97,12 @@ func TestRedisOperations(t *testing.T) {
 					t.Fatalf("JSON marshal failed: %v", err)
 				}
 
-				err = env.RedisClient.Set(ctx, key, jsonBytes, 5*time.Minute).Err()
+				err = redisClient.Set(ctx, key, jsonBytes, 5*time.Minute).Err()
 				if err != nil {
 					t.Fatalf("SET JSON failed: %v", err)
 				}
 
-				result, err := env.RedisClient.Get(ctx, key).Bytes()
+				result, err := redisClient.Get(ctx, key).Bytes()
 				if err != nil {
 					t.Fatalf("GET JSON failed: %v", err)
 				}
@@ -108,13 +124,13 @@ func TestRedisOperations(t *testing.T) {
 				key := "test:expire:1"
 				value := "expiring-value"
 
-				err := env.RedisClient.Set(ctx, key, value, 2*time.Second).Err()
+				err := redisClient.Set(ctx, key, value, 2*time.Second).Err()
 				if err != nil {
 					t.Fatalf("SET with expiration failed: %v", err)
 				}
 
 				// Verify key exists
-				result, err := env.RedisClient.Get(ctx, key).Result()
+				result, err := redisClient.Get(ctx, key).Result()
 				if err != nil {
 					t.Fatalf("GET before expiration failed: %v", err)
 				}
@@ -126,7 +142,7 @@ func TestRedisOperations(t *testing.T) {
 				time.Sleep(3 * time.Second)
 
 				// Verify key expired
-				_, err = env.RedisClient.Get(ctx, key).Result()
+				_, err = redisClient.Get(ctx, key).Result()
 				if err != redis.Nil {
 					t.Errorf("Expected key to be expired, but got: %v", err)
 				}
