@@ -1,0 +1,139 @@
+package aggregatornode
+
+import (
+	"context"
+	_ "embed"
+	"encoding/json"
+	"fmt"
+	"log/slog"
+
+	"rune-worker/pkg/messages"
+	"rune-worker/pkg/nodes"
+	"rune-worker/plugin"
+
+	"github.com/redis/go-redis/v9"
+)
+
+//go:embed aggregate.lua
+var aggregateScript string
+
+// AggregatorNode implements the fan-in pattern.
+type AggregatorNode struct {
+	redisClient  *redis.Client
+	nodeID       string
+	executionID  string
+	lineageStack []messages.StackFrame
+	input        map[string]any
+}
+
+// NewAggregatorNode creates a new AggregatorNode instance.
+func NewAggregatorNode(execCtx plugin.ExecutionContext) *AggregatorNode {
+	var rc *redis.Client
+	if execCtx.RedisClient != nil {
+		if client, ok := execCtx.RedisClient.(*redis.Client); ok {
+			rc = client
+		}
+	}
+
+	// We need to access LineageStack, but it's not in ExecutionContext directly.
+	// However, it is passed in the NodeExecutionMessage.
+	// Wait, ExecutionContext does NOT have LineageStack.
+	// I need to add LineageStack to ExecutionContext in plugin/node.go and executor.go.
+
+	// For now, I will assume it's added. I will fix this in the next steps.
+	// Or I can pass it via Input? No, it's metadata.
+
+	// Let's assume I add it to ExecutionContext.
+
+	return &AggregatorNode{
+		redisClient: rc,
+		nodeID:      execCtx.NodeID,
+		executionID: execCtx.ExecutionID,
+		input:       execCtx.Input,
+		// lineageStack: execCtx.LineageStack, // TODO: Add this
+	}
+}
+
+// Execute synchronizes execution threads.
+func (n *AggregatorNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) (map[string]any, error) {
+	if n.redisClient == nil {
+		return nil, fmt.Errorf("aggregator node requires redis client")
+	}
+
+	// Get LineageStack from context (I need to add it to ExecutionContext first)
+	// For now, let's assume I can get it.
+	stack := execCtx.LineageStack
+	if len(stack) == 0 {
+		return nil, fmt.Errorf("aggregator node must be executed within a split context")
+	}
+
+	topFrame := stack[len(stack)-1]
+	splitID := topFrame.SplitNodeID
+
+	// Keys
+	resultsKey := fmt.Sprintf("exec:%s:split:%s:results", n.executionID, splitID)
+	countKey := fmt.Sprintf("exec:%s:split:%s:count", n.executionID, splitID)
+	expectedKey := fmt.Sprintf("exec:%s:split:%s:expected", n.executionID, splitID)
+
+	// Payload: Use the accumulated context or a specific part of it?
+	// RFC says: "Pass the current accumulated_context (or just the specific branch result) as the payload."
+	// Usually we want the result of the previous node.
+	// But Aggregator receives the full context.
+	// Let's serialize the whole input (AccumulatedContext).
+
+	// Wait, usually the previous node puts its result in $node_name.
+	// But inside the split, the context has grown.
+	// If we just want the "result" of this branch, what is it?
+	// Maybe the Aggregator just aggregates the whole context?
+	// Or maybe it aggregates the value of $item (which was modified)?
+
+	// Let's serialize the whole input for now.
+	payloadBytes, err := json.Marshal(n.input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal input: %w", err)
+	}
+
+	// Run Lua script
+	cmd := n.redisClient.Eval(ctx, aggregateScript,
+		[]string{resultsKey, countKey, expectedKey},
+		topFrame.ItemIndex, string(payloadBytes))
+
+	result, err := cmd.Result()
+	if err != nil {
+		if err == redis.Nil {
+			// Barrier closed
+			slog.Info("aggregator barrier closed", "node_id", n.nodeID, "index", topFrame.ItemIndex)
+			return map[string]any{
+				"_barrier_closed": true,
+			}, nil
+		}
+		return nil, fmt.Errorf("lua script failed: %w", err)
+	}
+
+	// Barrier open!
+	slog.Info("aggregator barrier open", "node_id", n.nodeID)
+
+	var aggregatedResults []any
+	if str, ok := result.(string); ok {
+		if err := json.Unmarshal([]byte(str), &aggregatedResults); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal aggregated results: %w", err)
+		}
+	} else {
+		return nil, fmt.Errorf("unexpected result type from lua: %T", result)
+	}
+
+	return map[string]any{
+		"aggregated": aggregatedResults,
+	}, nil
+}
+
+func init() {
+	nodes.RegisterNodeType(RegisterAggregator)
+}
+
+// RegisterAggregator registers the aggregator node type.
+func RegisterAggregator(reg *nodes.Registry) {
+	reg.Register("aggregator", func(execCtx plugin.ExecutionContext) plugin.Node {
+		return NewAggregatorNode(execCtx)
+	})
+}

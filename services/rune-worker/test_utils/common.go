@@ -30,8 +30,10 @@ type TestEnv struct {
 func SetupTestEnv(t *testing.T) *TestEnv {
 	t.Helper()
 
-	rabbitmqURL := GetEnvOrDefault("RABBITMQ_URL", DefaultRabbitMQURL)
-	redisAddr := GetEnvOrDefault("REDIS_ADDR", DefaultRedisAddr)
+	// rabbitmqURL := GetEnvOrDefault("RABBITMQ_URL", DefaultRabbitMQURL)
+	// redisAddr := GetEnvOrDefault("REDIS_ADDR", DefaultRedisAddr)
+	rabbitmqURL := DefaultRabbitMQURL
+	redisAddr := DefaultRedisAddr
 
 	// Setup logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{

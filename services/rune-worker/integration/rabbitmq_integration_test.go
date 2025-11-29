@@ -198,7 +198,7 @@ func TestNodeExecutionWithMultipleNodes(t *testing.T) {
 		Concurrency: 1,
 	}
 
-	consumer, err := messaging.NewWorkflowConsumer(cfg)
+	consumer, err := messaging.NewWorkflowConsumer(cfg, env.RedisClient)
 	if err != nil {
 		t.Fatalf("Failed to create workflow consumer: %v", err)
 	}
@@ -291,7 +291,7 @@ func TestNodeExecutionWithParameterResolution(t *testing.T) {
 		Concurrency: 1,
 	}
 
-	consumer, err := messaging.NewWorkflowConsumer(cfg)
+	consumer, err := messaging.NewWorkflowConsumer(cfg, env.RedisClient)
 	if err != nil {
 		t.Fatalf("Failed to create workflow consumer: %v", err)
 	}

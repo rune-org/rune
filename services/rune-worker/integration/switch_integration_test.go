@@ -193,14 +193,14 @@ func publishAndVerifyRouting(t *testing.T, env *testutils.TestEnv, ctx context.C
 		Concurrency: 1,
 	}
 
-	worker, err := messaging.NewWorkflowConsumer(workerConfig)
+	consumer, err := messaging.NewWorkflowConsumer(workerConfig, env.RedisClient)
 	if err != nil {
 		t.Fatalf("Failed to create worker: %v", err)
 	}
-	defer worker.Close()
+	defer consumer.Close()
 
 	// Run worker in background
-	go worker.Run(ctx)
+	go consumer.Run(ctx)
 
 	// Wait a bit for consumers to be ready
 	time.Sleep(100 * time.Millisecond)
