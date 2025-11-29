@@ -114,6 +114,10 @@ paths:
       tags:
       - Workflows
       summary: Get Workflow
+      description: 'Get a specific workflow by ID.
+
+
+        **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)'
       operationId: get_workflow_workflows__workflow_id__get
       parameters:
       - name: workflow_id
@@ -139,6 +143,10 @@ paths:
       tags:
       - Workflows
       summary: Delete Workflow
+      description: 'Delete a workflow.
+
+
+        **Requires:** DELETE permission (OWNER only)'
       operationId: delete_workflow_workflows__workflow_id__delete
       parameters:
       - name: workflow_id
@@ -161,6 +169,10 @@ paths:
       tags:
       - Workflows
       summary: Update Status
+      description: 'Update workflow status (active/inactive).
+
+
+        **Requires:** EDIT permission (OWNER or EDITOR)'
       operationId: update_status_workflows__workflow_id__status_put
       parameters:
       - name: workflow_id
@@ -193,6 +205,10 @@ paths:
       tags:
       - Workflows
       summary: Update Name
+      description: 'Update workflow name.
+
+
+        **Requires:** EDIT permission (OWNER or EDITOR)'
       operationId: update_name_workflows__workflow_id__name_put
       parameters:
       - name: workflow_id
@@ -225,6 +241,10 @@ paths:
       tags:
       - Workflows
       summary: Update Workflow Data
+      description: 'Update workflow data/definition.
+
+
+        **Requires:** EDIT permission (OWNER or EDITOR)'
       operationId: update_workflow_data_workflows__workflow_id__data_put
       parameters:
       - name: workflow_id
@@ -260,7 +280,7 @@ paths:
       description: 'Queue a workflow for execution.
 
 
-        Verifies the workflow exists and belongs to the authenticated user,
+        Verifies the workflow exists and user has execute permission (OWNER or EDITOR),
 
         resolves all credential references in workflow nodes,
 
@@ -268,7 +288,10 @@ paths:
         resolved credentials.
 
 
-        Returns execution_id for tracking the execution.'
+        Returns execution_id for tracking the execution.
+
+
+        **Requires:** EXECUTE permission (OWNER or EDITOR, not VIEWER)'
       operationId: run_workflow_workflows__workflow_id__run_post
       parameters:
       - name: workflow_id
@@ -284,6 +307,216 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_str_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/share:
+    post:
+      tags:
+      - Workflow Permissions
+      summary: Share workflow with another user
+      description: 'Share workflow with another user.
+
+
+        Only the workflow owner may share access with other users. The
+
+        granted role must be EDITOR or VIEWER - OWNER cannot be granted through
+
+        the share endpoint.
+
+
+        Requires: SHARE permission (owner or admin)
+
+
+        Permissions:
+
+        - OWNER: can share workflows
+
+        - EDITOR: cannot share workflows
+
+        - VIEWER: cannot share workflows
+
+        - ADMIN: can share workflows (bypass)'
+      operationId: share_workflow_workflows__workflow_id__share_post
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowShareRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowShareResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/share/{user_id}:
+    delete:
+      tags:
+      - Workflow Permissions
+      summary: Revoke user's access to workflow
+      description: 'Revoke user''s access to workflow.
+
+
+        Only the workflow owner may revoke a user''s access; revoking the
+
+        owner''s own access is not allowed.
+
+
+        Requires: SHARE permission (owner or admin)
+
+
+        Permissions:
+
+        - OWNER: can revoke access
+
+        - EDITOR: cannot revoke access
+
+        - VIEWER: cannot revoke access
+
+        - ADMIN: can revoke access (bypass)'
+      operationId: revoke_access_workflows__workflow_id__share__user_id__delete
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowShareResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/permissions:
+    get:
+      tags:
+      - Workflow Permissions
+      summary: List all users with access to workflow
+      description: 'List all users who have access to this workflow.
+
+
+        Any user with access (owner, editor, or viewer) can list who has
+
+        access to the workflow.
+
+
+        Requires: VIEW permission (owner/editor/viewer or admin)
+
+
+        Permissions:
+
+        - OWNER: can view permissions
+
+        - EDITOR: can view permissions
+
+        - VIEWER: can view permissions
+
+        - ADMIN: can view permissions (bypass)'
+      operationId: list_workflow_permissions_workflows__workflow_id__permissions_get
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowPermissionListResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/permissions/{user_id}:
+    patch:
+      tags:
+      - Workflow Permissions
+      summary: Update user's role for workflow
+      description: 'Update a user''s role for a workflow.
+
+
+        Only the workflow owner may update other users'' roles. This endpoint
+
+        cannot transfer or grant OWNER role.
+
+
+        Requires: SHARE permission (owner or admin)
+
+
+        Permissions:
+
+        - OWNER: can update roles
+
+        - EDITOR: cannot update roles
+
+        - VIEWER: cannot update roles
+
+        - ADMIN: can update roles (bypass)'
+      operationId: update_user_role_workflows__workflow_id__permissions__user_id__patch
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowRoleUpdateRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowShareResponse_'
         '422':
           description: Validation Error
           content:
@@ -439,7 +672,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_UserResponse_'
+                $ref: '#/components/schemas/ApiResponse_CreateUserResponse_'
         '422':
           description: Validation Error
           content:
@@ -527,6 +760,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /users/{user_id}/reset-password:
+    post:
+      tags:
+      - Users
+      summary: Admin resets user password
+      description: Admin generates a temporary password for a user. User must change
+        it.
+      operationId: reset_user_password_users__user_id__reset_password_post
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_AdminPasswordResetResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /profile/me:
     get:
       tags:
@@ -560,6 +821,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_UserResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /profile/me/change-password:
+    post:
+      tags:
+      - Profile
+      summary: Change my password
+      description: Change your own password. Requires verification of old password.
+        Returns a new access token.
+      operationId: change_my_password_profile_me_change_password_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPasswordChange'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_UserPasswordChangeResponse_'
         '422':
           description: Validation Error
           content:
@@ -622,6 +910,21 @@ paths:
                 $ref: '#/components/schemas/ApiResponse_list_CredentialResponseDropDown__'
 components:
   schemas:
+    AdminPasswordResetResponse:
+      properties:
+        temporary_password:
+          type: string
+          title: Temporary Password
+          description: Temporary password for the user to use
+        user_id:
+          type: integer
+          title: User Id
+          description: ID of the user whose password was reset
+      type: object
+      required:
+      - temporary_password
+      - user_id
+      title: AdminPasswordResetResponse
     AdminUserUpdate:
       properties:
         name:
@@ -648,6 +951,44 @@ components:
           title: Is Active
       type: object
       title: AdminUserUpdate
+    ApiResponse_AdminPasswordResetResponse_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/AdminPasswordResetResponse'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[AdminPasswordResetResponse]
+    ApiResponse_CreateUserResponse_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/CreateUserResponse'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[CreateUserResponse]
     ApiResponse_CredentialResponse_:
       properties:
         success:
@@ -766,6 +1107,25 @@ components:
       required:
       - data
       title: ApiResponse[TokenResponse]
+    ApiResponse_UserPasswordChangeResponse_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/UserPasswordChangeResponse'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[UserPasswordChangeResponse]
     ApiResponse_UserResponse_:
       properties:
         success:
@@ -804,6 +1164,44 @@ components:
       required:
       - data
       title: ApiResponse[WorkflowDetail]
+    ApiResponse_WorkflowPermissionListResponse_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/WorkflowPermissionListResponse'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[WorkflowPermissionListResponse]
+    ApiResponse_WorkflowShareResponse_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/WorkflowShareResponse'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[WorkflowShareResponse]
     ApiResponse_list_CredentialResponseDropDown__:
       properties:
         success:
@@ -912,6 +1310,20 @@ components:
       required:
       - data
       title: ApiResponse[str]
+    CreateUserResponse:
+      properties:
+        user:
+          $ref: '#/components/schemas/UserResponse'
+          description: Newly created user
+        temporary_password:
+          type: string
+          title: Temporary Password
+          description: Temporary password for the user to use on first login
+      type: object
+      required:
+      - user
+      - temporary_password
+      title: CreateUserResponse
     CredentialCreate:
       properties:
         name:
@@ -1074,6 +1486,7 @@ components:
       type: object
       required:
       - name
+      - workflow_data
       title: TemplateCreate
       description: Schema for creating a new template.
     TemplateDetail:
@@ -1204,10 +1617,6 @@ components:
           type: string
           format: email
           title: Email
-        password:
-          type: string
-          minLength: 8
-          title: Password
         role:
           $ref: '#/components/schemas/UserRole'
           description: 'User role: ''user'' or ''admin'''
@@ -1216,8 +1625,37 @@ components:
       required:
       - name
       - email
-      - password
       title: UserCreate
+    UserPasswordChange:
+      properties:
+        old_password:
+          type: string
+          title: Old Password
+          description: Current password for verification
+        new_password:
+          type: string
+          minLength: 8
+          title: New Password
+          description: New password
+      type: object
+      required:
+      - old_password
+      - new_password
+      title: UserPasswordChange
+    UserPasswordChangeResponse:
+      properties:
+        user:
+          $ref: '#/components/schemas/UserResponse'
+          description: Updated user information
+        access_token:
+          type: string
+          title: Access Token
+          description: New access token with updated must_change_password flag
+      type: object
+      required:
+      - user
+      - access_token
+      title: UserPasswordChangeResponse
     UserResponse:
       properties:
         id:
@@ -1253,6 +1691,10 @@ components:
           - type: 'null'
           title: Last Login At
           description: Last login timestamp
+        must_change_password:
+          type: boolean
+          title: Must Change Password
+          description: Flag indicating user must change password
       type: object
       required:
       - id
@@ -1262,6 +1704,7 @@ components:
       - is_active
       - created_at
       - updated_at
+      - must_change_password
       title: UserResponse
     UserRole:
       type: string
@@ -1370,6 +1813,100 @@ components:
       - name
       - is_active
       title: WorkflowListItem
+    WorkflowPermissionInfo:
+      properties:
+        user_id:
+          type: integer
+          title: User Id
+        user_email:
+          type: string
+          title: User Email
+        user_name:
+          type: string
+          title: User Name
+        role:
+          $ref: '#/components/schemas/WorkflowRole'
+        granted_at:
+          type: string
+          format: date-time
+          title: Granted At
+        granted_by:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Granted By
+      type: object
+      required:
+      - user_id
+      - user_email
+      - user_name
+      - role
+      - granted_at
+      title: WorkflowPermissionInfo
+      description: Information about a user's permission on a workflow.
+    WorkflowPermissionListResponse:
+      properties:
+        workflow_id:
+          type: integer
+          title: Workflow Id
+        permissions:
+          items:
+            $ref: '#/components/schemas/WorkflowPermissionInfo'
+          type: array
+          title: Permissions
+      type: object
+      required:
+      - workflow_id
+      - permissions
+      title: WorkflowPermissionListResponse
+      description: List of all users with access to a workflow.
+    WorkflowRole:
+      type: string
+      enum:
+      - viewer
+      - editor
+      - owner
+      title: WorkflowRole
+      description: Workflow role enumeration.
+    WorkflowRoleUpdateRequest:
+      properties:
+        role:
+          $ref: '#/components/schemas/WorkflowRole'
+          description: New role to assign (EDITOR or VIEWER, not OWNER)
+      type: object
+      required:
+      - role
+      title: WorkflowRoleUpdateRequest
+      description: Request to update a user's role on a workflow.
+    WorkflowShareRequest:
+      properties:
+        user_id:
+          type: integer
+          title: User Id
+          description: ID of the user to share with
+        role:
+          $ref: '#/components/schemas/WorkflowRole'
+          description: Role to grant (EDITOR or VIEWER, not OWNER)
+      type: object
+      required:
+      - user_id
+      - role
+      title: WorkflowShareRequest
+      description: Request to share a workflow with another user.
+    WorkflowShareResponse:
+      properties:
+        status:
+          type: string
+          title: Status
+          default: success
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - message
+      title: WorkflowShareResponse
+      description: Response after sharing a workflow.
     WorkflowUpdateData:
       properties:
         workflow_data:
