@@ -25,7 +25,7 @@ func TestNewWorkflowConsumer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			consumer, err := NewWorkflowConsumer(tt.cfg)
+			consumer, err := NewWorkflowConsumer(tt.cfg, nil)
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("NewWorkflowConsumer() expected error containing %q, got nil", tt.errMsg)
@@ -47,8 +47,8 @@ func TestNewWorkflowConsumer(t *testing.T) {
 func TestWorkflowConsumerClose(t *testing.T) {
 	// Test that Close doesn't panic with nil fields
 	consumer := &WorkflowConsumer{
-		queue:     nil,
-		executor:  nil,
+		queue:    nil,
+		executor: nil,
 	}
 
 	err := consumer.Close()

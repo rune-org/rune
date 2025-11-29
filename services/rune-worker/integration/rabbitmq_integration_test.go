@@ -12,6 +12,7 @@ import (
 	"rune-worker/pkg/messages"
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
+	testutils "rune-worker/test_utils"
 )
 
 // TestPublishToRabbitMQ tests basic message publishing to RabbitMQ
@@ -67,6 +68,7 @@ func TestWorkflowWithConfig(t *testing.T) {
 	// Create a config
 	cfg := &config.WorkerConfig{
 		RabbitURL:   env.RabbitMQURL,
+		RedisURL:    "redis://" + testutils.DefaultRedisAddr + "/0",
 		QueueName:   "workflow.execution.test",
 		Prefetch:    5,
 		Concurrency: 1,
@@ -193,12 +195,13 @@ func TestNodeExecutionWithMultipleNodes(t *testing.T) {
 	// Create consumer
 	cfg := &config.WorkerConfig{
 		RabbitURL:   env.RabbitMQURL,
+		RedisURL:    "redis://" + testutils.DefaultRedisAddr + "/0",
 		QueueName:   "workflow.execution",
 		Prefetch:    1,
 		Concurrency: 1,
 	}
 
-	consumer, err := messaging.NewWorkflowConsumer(cfg)
+	consumer, err := messaging.NewWorkflowConsumer(cfg, env.RedisClient)
 	if err != nil {
 		t.Fatalf("Failed to create workflow consumer: %v", err)
 	}
@@ -286,12 +289,13 @@ func TestNodeExecutionWithParameterResolution(t *testing.T) {
 	// Create consumer
 	cfg := &config.WorkerConfig{
 		RabbitURL:   env.RabbitMQURL,
+		RedisURL:    "redis://" + testutils.DefaultRedisAddr + "/0",
 		QueueName:   "workflow.execution",
 		Prefetch:    1,
 		Concurrency: 1,
 	}
 
-	consumer, err := messaging.NewWorkflowConsumer(cfg)
+	consumer, err := messaging.NewWorkflowConsumer(cfg, env.RedisClient)
 	if err != nil {
 		t.Fatalf("Failed to create workflow consumer: %v", err)
 	}
