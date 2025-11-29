@@ -212,17 +212,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signUp = useCallback(
-    async (name: string, email: string, password: string) => {
+    async (name: string, email: string, _password: string) => {
       setLoading(true);
       setError(null);
-      const { error } = await adminCreateUser(name, email, password);
-      if (error) {
+      const { data, error } = await adminCreateUser(name, email);
+      if (error || !data) {
         setError(getErrorMessage(error));
         setLoading(false);
         return false;
       }
-      // Auto-login after successful registration
-      return await login(email, password);
+      // Use temp password for auto-login
+      const tempPassword = data.data.temporary_password;
+      return await login(email, tempPassword);
     },
     [login],
   );
