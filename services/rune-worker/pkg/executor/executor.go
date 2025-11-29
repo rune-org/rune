@@ -336,6 +336,14 @@ func (e *Executor) handleSplitFanOut(ctx context.Context, msg *messages.NodeExec
 			if err := e.publisher.Publish(ctx, "workflow.execution", payload); err != nil {
 				return fmt.Errorf("publish split message: %w", err)
 			}
+
+			slog.Info("published split node message",
+				"workflow_id", nextMsg.WorkflowID,
+				"execution_id", nextMsg.ExecutionID,
+				"target_node", nextNodeID,
+				"accumulated_context", nextMsg.AccumulatedContext,
+				"node_execution_message", nextMsg,
+			)
 		}
 	}
 
@@ -502,7 +510,13 @@ func (e *Executor) publishNextNodes(ctx context.Context, msg *messages.NodeExecu
 			return fmt.Errorf("publish next node message: %w", err)
 		}
 
-		slog.Info("published next node message", "next_node", nextNodeID)
+		slog.Info("published next node message",
+			"workflow_id", nextMsg.WorkflowID,
+			"execution_id", nextMsg.ExecutionID,
+			"next_node", nextNodeID,
+			"accumulated_context", nextMsg.AccumulatedContext,
+			"node_execution_message", nextMsg,
+		)
 	}
 
 	return nil
