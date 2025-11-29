@@ -90,8 +90,13 @@ func (n *AggregatorNode) Execute(ctx context.Context, execCtx plugin.ExecutionCo
 		if err == redis.Nil {
 			// Barrier closed
 			slog.Info("aggregator barrier closed", "node_id", n.nodeID, "index", topFrame.ItemIndex)
+			processed := topFrame.ItemIndex + 1
+			if cnt, countErr := n.redisClient.Get(ctx, countKey).Int(); countErr == nil {
+				processed = cnt
+			}
 			return map[string]any{
-				"_barrier_closed": true,
+				"_barrier_closed":             true,
+				"_aggregator_processed_count": processed,
 			}, nil
 		}
 		return nil, fmt.Errorf("lua script failed: %w", err)
