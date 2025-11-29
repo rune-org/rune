@@ -128,8 +128,8 @@ func TestHTTPSplitAggregateWorkflow(t *testing.T) {
 	completionConsumer, err := queue.NewRabbitMQConsumer(queue.Options{
 		URL:         env.RabbitMQURL,
 		QueueName:   "workflow.completion",
-		Prefetch:    1,
-		Concurrency: 1,
+		Prefetch:    3,
+		Concurrency: 3,
 	})
 	if err != nil {
 		t.Fatalf("Failed to create completion consumer: %v", err)
@@ -162,8 +162,8 @@ func TestHTTPSplitAggregateWorkflow(t *testing.T) {
 		RabbitURL:   env.RabbitMQURL,
 		RedisURL:    "redis://" + testutils.DefaultRedisAddr + "/0",
 		QueueName:   "workflow.execution",
-		Prefetch:    1,
-		Concurrency: 1,
+		Prefetch:    3,
+		Concurrency: 3,
 	}
 	worker, err := messaging.NewWorkflowConsumer(workerCfg, env.RedisClient)
 	if err != nil {
@@ -192,14 +192,9 @@ func TestHTTPSplitAggregateWorkflow(t *testing.T) {
 			t.Fatalf("Final context missing $Aggregate Users output. Context keys: %v", getKeys(completion.FinalContext))
 		}
 
-		outputMap, ok := aggOutput.(map[string]interface{})
+		aggregated, ok := aggOutput.([]interface{})
 		if !ok {
-			t.Fatalf("Aggregate output is not a map: %T", aggOutput)
-		}
-
-		aggregated, ok := outputMap["aggregated"].([]interface{})
-		if !ok {
-			t.Fatalf("Aggregate output missing 'aggregated' field: %v", outputMap)
+			t.Fatalf("Aggregate output missing 'aggregated' field: %v", aggOutput)
 		}
 
 		if len(aggregated) != len(users) {

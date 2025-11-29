@@ -146,14 +146,9 @@ func TestSplitAggregateWorkflow(t *testing.T) {
 			t.Fatalf("Final context missing $Collector output. Context: %v", completion.FinalContext)
 		}
 
-		outputMap, ok := collectorOutput.(map[string]interface{})
+		aggregated, ok := collectorOutput.([]interface{})
 		if !ok {
-			t.Fatalf("Collector output is not a map: %T", collectorOutput)
-		}
-
-		aggregated, ok := outputMap["aggregated"].([]interface{})
-		if !ok {
-			t.Fatalf("Collector output missing 'aggregated' field or wrong type: %v", outputMap)
+			t.Fatalf("Collector output missing 'aggregated' field or wrong type: %v", collectorOutput)
 		}
 
 		if len(aggregated) != 3 {

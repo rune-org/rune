@@ -301,9 +301,7 @@ func (e *Executor) handleSplitFanOut(ctx context.Context, msg *messages.NodeExec
 		for k, v := range baseContext {
 			itemContext[k] = v
 		}
-		// Promote item to top-level key (e.g. $item) - RFC says "usually promotes...".
-		// Let's assume we put it in $item for now, or maybe just leave it in the stack context?
-		// The RFC says: "This new context usually promotes the specific item to a top-level key (e.g., $input or $item)"
+
 		itemContext["$item"] = item
 
 		// Clone and update lineage stack
@@ -355,6 +353,12 @@ func (e *Executor) accumulateContext(currentContext map[string]interface{}, node
 	updated := make(map[string]interface{}, len(currentContext)+1)
 	for k, v := range currentContext {
 		updated[k] = v
+	}
+	if len(output) == 1 {
+		for _, v := range output {
+			updated[fmt.Sprintf("$%s", nodeName)] = v
+			return updated
+		}
 	}
 	updated[fmt.Sprintf("$%s", nodeName)] = output
 	return updated

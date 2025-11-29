@@ -75,19 +75,6 @@ func (n *AggregatorNode) Execute(ctx context.Context, execCtx plugin.ExecutionCo
 	countKey := fmt.Sprintf("exec:%s:split:%s:count", n.executionID, splitID)
 	expectedKey := fmt.Sprintf("exec:%s:split:%s:expected", n.executionID, splitID)
 
-	// Payload: Use the accumulated context or a specific part of it?
-	// RFC says: "Pass the current accumulated_context (or just the specific branch result) as the payload."
-	// Usually we want the result of the previous node.
-	// But Aggregator receives the full context.
-	// Let's serialize the whole input (AccumulatedContext).
-
-	// Wait, usually the previous node puts its result in $node_name.
-	// But inside the split, the context has grown.
-	// If we just want the "result" of this branch, what is it?
-	// Maybe the Aggregator just aggregates the whole context?
-	// Or maybe it aggregates the value of $item (which was modified)?
-
-	// Let's serialize the whole input for now.
 	payloadBytes, err := json.Marshal(n.input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal input: %w", err)
