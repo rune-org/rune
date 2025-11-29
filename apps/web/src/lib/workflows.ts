@@ -10,6 +10,11 @@ import {
 } from "@/lib/workflow-dsl";
 
 /**
+ * Workflow role types matching backend WorkflowRole enum
+ */
+export type WorkflowRole = "owner" | "editor" | "viewer";
+
+/**
  * UI-friendly summary of a workflow row (in the table view).
  * The backend currently only exposes minimal fields, so we derive
  * placeholder values for items like status metadata until richer data arrives.
@@ -17,6 +22,10 @@ import {
 export type WorkflowSummary = {
   id: string;
   name: string;
+  /**
+   * User's role for this workflow (determines permissions)
+   */
+  role: WorkflowRole;
   /**
    * Derived status – treated as active when `is_active` is true, otherwise draft.
    */
@@ -42,6 +51,7 @@ export type WorkflowSummary = {
 export const defaultWorkflowSummary: WorkflowSummary = {
   id: "",
   name: "Untitled Workflow",
+  role: "viewer",
   status: "draft",
   triggerType: "Manual",
   lastRunAt: null,
@@ -52,10 +62,15 @@ export const defaultWorkflowSummary: WorkflowSummary = {
 export function listItemToWorkflowSummary(
   item: WorkflowListItem,
 ): WorkflowSummary {
+  // For now, extract role from item if available, otherwise default to "owner"
+  // Once backend is updated, this will use item.role directly
+  const role: WorkflowRole = (item as any).role || "owner";
+  
   return {
     ...defaultWorkflowSummary,
     id: String(item.id),
     name: item.name,
+    role,
     status: item.is_active ? "active" : "draft",
   };
 }

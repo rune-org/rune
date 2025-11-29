@@ -30,7 +30,16 @@ import {
 } from "@/components/ui/table";
 import { useAppState } from "@/lib/state";
 import type { WorkflowSummary } from "@/lib/workflows";
+import {
+  canEditWorkflow,
+  canDeleteWorkflow,
+  canShareWorkflow,
+  canRenameWorkflow,
+  canChangeWorkflowStatus,
+  canExecuteWorkflow,
+} from "@/lib/permissions";
 import { toast } from "@/components/ui/toast";
+import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog";
 import {
   deleteWorkflow,
   runWorkflow,
@@ -90,6 +99,9 @@ export function WorkflowsTable() {
     null,
   );
   const [deleteTarget, setDeleteTarget] = useState<WorkflowSummary | null>(
+    null,
+  );
+  const [shareTarget, setShareTarget] = useState<WorkflowSummary | null>(
     null,
   );
 
@@ -364,32 +376,53 @@ export function WorkflowsTable() {
                         Open in Canvas
                       </a>
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => setRenameTarget(w)}
-                      disabled={isRowPending(w.id)}
-                    >
-                      Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleToggleActive(w)}
-                      disabled={isRowPending(w.id)}
-                    >
-                      {w.status === "active" ? "Deactivate" : "Activate"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleRun(w)}
-                      disabled={isRowPending(w.id)}
-                    >
-                      Run
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={() => beginDelete(w)}
-                      disabled={isRowPending(w.id)}
-                      className="text-red-400 focus:text-red-300 data-[highlighted]:bg-red-500/10 data-[highlighted]:text-red-200"
-                    >
-                      Delete
-                    </DropdownMenuItem>
+                    {canRenameWorkflow(w.role) && (
+                      <DropdownMenuItem
+                        onSelect={() => setRenameTarget(w)}
+                        disabled={isRowPending(w.id)}
+                      >
+                        Rename
+                      </DropdownMenuItem>
+                    )}
+                    {canChangeWorkflowStatus(w.role) && (
+                      <DropdownMenuItem
+                        onSelect={() => handleToggleActive(w)}
+                        disabled={isRowPending(w.id)}
+                      >
+                        {w.status === "active" ? "Deactivate" : "Activate"}
+                      </DropdownMenuItem>
+                    )}
+                    {canExecuteWorkflow(w.role) && (
+                      <DropdownMenuItem
+                        onSelect={() => handleRun(w)}
+                        disabled={isRowPending(w.id)}
+                      >
+                        Run
+                      </DropdownMenuItem>
+                    )}
+                    {canShareWorkflow(w.role) && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => setShareTarget(w)}
+                          disabled={isRowPending(w.id)}
+                        >
+                          Share
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {canDeleteWorkflow(w.role) && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => beginDelete(w)}
+                          disabled={isRowPending(w.id)}
+                          className="text-red-400 focus:text-red-300 data-[highlighted]:bg-red-500/10 data-[highlighted]:text-red-200"
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -415,6 +448,10 @@ export function WorkflowsTable() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
         pending={pendingWorkflowId !== null}
+      />
+      <ShareWorkflowDialog
+        workflow={shareTarget}
+        onClose={() => setShareTarget(null)}
       />
     </div>
   );
