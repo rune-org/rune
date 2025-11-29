@@ -37,10 +37,22 @@ jobs:
       - name: Generate client with hey-api
         run: pnpm dlx @hey-api/openapi-ts -f heyapi.conf.js
       
-      - name: Commit and push client changes
+      - name: Create PR with client changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add .
-          git diff --staged --quiet || git commit -m "chore: regenerate API client"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          BRANCH_NAME="chore/regenerate-api-client-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH_NAME"
+          git commit -m "chore: regenerate API client"
+          git push -u origin "$BRANCH_NAME"
+          gh pr create \
+            --title "chore: regenerate API client" \
+            --body "This PR was automatically generated to update the API client based on the latest OpenAPI schema." \
+            --base main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

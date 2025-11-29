@@ -217,3 +217,42 @@ func TestSwitchNode_ReferenceComparison(t *testing.T) {
 		t.Errorf("Expected output_index 0, got %v", result["output_index"])
 	}
 }
+
+func TestSwitchNode_PreservesResolvedRuleValues(t *testing.T) {
+	// Simulate a resolver that already replaced "$status" with the numeric status code.
+	execCtx := plugin.ExecutionContext{
+		ExecutionID: "test-exec-7",
+		WorkflowID:  "test-workflow-7",
+		NodeID:      "switch-node-7",
+		Type:        "switch",
+		Parameters: map[string]any{
+			"rules": []interface{}{
+				map[string]interface{}{
+					// Value is already resolved to a number (not a string reference).
+					"value":    200,
+					"operator": "==",
+					"compare":  200,
+				},
+				map[string]interface{}{
+					"value":    "$status",
+					"operator": "==",
+					"compare":  404,
+				},
+			},
+		},
+		Input: map[string]any{
+			"$status": 200,
+		},
+	}
+
+	node := NewSwitchNode(execCtx)
+	result, err := node.Execute(context.Background(), execCtx)
+
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	if index, ok := result["output_index"].(int); !ok || index != 0 {
+		t.Errorf("Expected output_index 0 for resolved numeric value, got %v", result["output_index"])
+	}
+}

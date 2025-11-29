@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 from sqlmodel import select, update, or_
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -42,10 +42,28 @@ class TemplateService:
 
         return template
 
+    def _validate_workflow_data(self, workflow_data: dict[str, Any]) -> None:
+        """Validate workflow_data structure and types."""
+        if not isinstance(workflow_data, dict):
+            raise ValueError("workflow_data must be a dictionary")
+
+        if not workflow_data:
+            raise ValueError("workflow_data cannot be empty")
+
+        # Validate that all keys are strings
+        for key in workflow_data.keys():
+            if not isinstance(key, str):
+                raise ValueError(
+                    f"workflow_data keys must be strings, got {type(key).__name__}"
+                )
+
     async def create_template(
         self, user_id: int, template_data: TemplateCreate
     ) -> WorkflowTemplate:
         """Create a new template."""
+        # Additional validation at service layer
+        self._validate_workflow_data(template_data.workflow_data)
+
         template = WorkflowTemplate(
             name=template_data.name,
             description=template_data.description,

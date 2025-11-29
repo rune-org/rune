@@ -176,7 +176,10 @@ export function LibraryGroups({ containerRef, onAdd }: LibraryProps) {
       <Group
         title="Core"
         icon={GitBranch}
-        items={[{ label: "If", type: "if" }]}
+        items={[
+          { label: "If", type: "if" },
+          { label: "Switch", type: "switch" },
+        ]}
         colorClass="bg-node-core"
       />
       <Group

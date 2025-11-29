@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Application Settings
     environment: Environment = Environment.DEV
     app_name: str = "Rune API"
+    cors_origins: str = (
+        "http://localhost:3000,http://frontend:3000,http://127.0.0.1:3000"
+    )
 
     # Database Settings
     postgres_user: str = "postgres"

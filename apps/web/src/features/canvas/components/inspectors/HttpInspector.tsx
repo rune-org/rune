@@ -2,6 +2,13 @@ import type { Node } from "@xyflow/react";
 import type { HttpData, NodeDataMap } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
 import { JsonField } from "../JsonField";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type HttpInspectorProps = {
   node: Node<HttpData>;
@@ -23,22 +30,26 @@ export function HttpInspector({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="block text-xs text-muted-foreground">Method</label>
-          <select
-            className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
+          <Select
             value={node.data.method ?? "GET"}
-            onChange={(e) =>
+            onValueChange={(value) =>
               updateHttpData((d) => ({
                 ...d,
-                method: e.target.value as NodeDataMap["http"]["method"],
+                method: value as NodeDataMap["http"]["method"],
               }))
             }
           >
-            {"GET POST PUT PATCH DELETE".split(" ").map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {["GET", "POST", "PUT", "PATCH", "DELETE"].map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <label className="block text-xs text-muted-foreground">

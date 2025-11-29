@@ -5,6 +5,8 @@ import type { CredentialRef } from "@/lib/credentials";
 export type BaseData = {
   label?: string;
   credential?: CredentialRef | null;
+  /** When true, the node's position is preserved during auto-layout. */
+  pinned?: boolean;
 };
 
 /** A map defining the specific data for each kind of node. */
@@ -15,6 +17,10 @@ export type NodeDataMap = {
 
   if: BaseData & {
     expression?: string;
+  };
+
+  switch: BaseData & {
+    rules?: SwitchRule[];
   };
 
   http: BaseData & {
@@ -55,6 +61,10 @@ export const NODE_SCHEMA = {
     inputs: ["condition"],
     outputs: ["true", "false"],
   },
+  switch: {
+    inputs: ["input"],
+    outputs: [], // dynamic based on configured rules
+  },
   http: {
     inputs: ["request"],
     outputs: ["response", "error"],
@@ -70,9 +80,25 @@ export type CanvasNode = {
 }[NodeKind];
 
 export type IfData = NodeDataMap["if"];
+export type SwitchData = NodeDataMap["switch"];
 export type HttpData = NodeDataMap["http"];
 export type SmtpData = NodeDataMap["smtp"];
 export type AgentData = NodeDataMap["agent"];
 export type TriggerData = NodeDataMap["trigger"];
 
 export type CanvasEdge = Edge;
+
+export type SwitchRule = {
+  value?: string;
+  operator?: SwitchOperator;
+  compare?: string;
+};
+
+export type SwitchOperator =
+  | "=="
+  | "!="
+  | ">"
+  | "<"
+  | ">="
+  | "<="
+  | "contains";

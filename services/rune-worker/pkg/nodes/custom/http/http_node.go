@@ -56,7 +56,9 @@ func NewHTTPNode(execCtx plugin.ExecutionContext) *HTTPNode {
 
 	// Parse body
 	if body, ok := execCtx.Parameters["body"]; ok {
-		node.body = body
+		if m, ok := body.(map[string]interface{}); !ok || len(m) > 0 {
+			node.body = body
+		}
 	}
 
 	// Parse query parameters
