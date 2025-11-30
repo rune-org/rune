@@ -294,4 +294,4 @@ class CredentialPermissionService:
         for cred in shared_credentials:
             all_credentials[cred.id] = cred
 
-        return list(all_credentials.values())
+        return sorted(all_credentials.values(), key=lambda x: x.name)

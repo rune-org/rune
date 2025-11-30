@@ -243,7 +243,14 @@ async def share_credential(
 
     # Get user info for response
     shares = await permission_service.list_credential_shares(credential_id)
-    share_info = next(s for s in shares if s.user_id == share_data.user_id)
+    share_info = next((s for s in shares if s.user_id == share_data.user_id), None)
+    if share_info is None:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=500,
+            detail="Shared credential not found after creation. Please try again.",
+        )
 
     return ApiResponse(
         data=share_info,

@@ -123,17 +123,19 @@ class CredentialService:
         await self.permission_service.require_edit_access(credential, user)
 
         # Check for name conflicts if name is being changed
+        # Use credential.created_by (owner's ID) not user.id, so admins editing
+        # others' credentials check against the owner's namespace
         if credential_data.name and credential_data.name != credential.name:
             statement = select(WorkflowCredential).where(
                 WorkflowCredential.name == credential_data.name,
-                WorkflowCredential.created_by == user.id,
+                WorkflowCredential.created_by == credential.created_by,
                 WorkflowCredential.id != credential_id,
             )
             result = await self.session.exec(statement)
             existing = result.first()
             if existing:
                 raise AlreadyExists(
-                    f"You already have a credential named '{credential_data.name}'"
+                    f"A credential named '{credential_data.name}' already exists"
                 )
             credential.name = credential_data.name
 

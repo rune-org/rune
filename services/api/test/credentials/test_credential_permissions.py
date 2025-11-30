@@ -3,7 +3,7 @@ Test cases for credential management system with access control.
 
 These tests verify:
 1. Owner permissions (full control)
-2. Admin permissions (view-only for non-owned credentials)
+2. Admin permissions (can view, edit, delete all credentials but cannot share non-owned credentials)
 3. Shared user permissions (view-only)
 4. Unauthorized access (no permissions)
 """
