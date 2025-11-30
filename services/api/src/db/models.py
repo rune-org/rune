@@ -88,6 +88,14 @@ class User(TimestampModel, table=True):
     )
     templates: list["WorkflowTemplate"] = Relationship(back_populates="creator")
     credentials: list["WorkflowCredential"] = Relationship(back_populates="creator")
+    shared_credentials: list["CredentialShare"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"foreign_keys": "CredentialShare.user_id"},
+    )
+    credentials_shared_by_me: list["CredentialShare"] = Relationship(
+        back_populates="sharer",
+        sa_relationship_kwargs={"foreign_keys": "CredentialShare.shared_by"},
+    )
 
 
 class Workflow(TimestampModel, table=True):
@@ -221,10 +229,12 @@ class CredentialShare(TimestampModel, table=True):
     # Relationships
     credential: "WorkflowCredential" = Relationship(back_populates="shares")
     user: User = Relationship(
-        sa_relationship_kwargs={"foreign_keys": "CredentialShare.user_id"}
+        back_populates="shared_credentials",
+        sa_relationship_kwargs={"foreign_keys": "CredentialShare.user_id"},
     )
     sharer: Optional[User] = Relationship(
-        sa_relationship_kwargs={"foreign_keys": "CredentialShare.shared_by"}
+        back_populates="credentials_shared_by_me",
+        sa_relationship_kwargs={"foreign_keys": "CredentialShare.shared_by"},
     )
 
 

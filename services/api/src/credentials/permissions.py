@@ -2,7 +2,7 @@
 Credential permission management service.
 
 This module handles access control for credentials with the following rules:
-- System Admins: Full access to all credentials (view, but cannot edit/delete/share what they don't own)
+- System Admins: Full access to all credentials (view, edit, delete, but cannot share what they don't own)
 - Regular Users: Full control over their own credentials, can only access shared credentials
 """
 
