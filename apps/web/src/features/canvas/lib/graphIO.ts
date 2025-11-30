@@ -10,6 +10,24 @@ import {
 
 export type RFGraph = { nodes: RFNode[]; edges: RFEdge[] };
 
+/**
+ * Strips credential data from nodes to prevent sensitive data from being exported.
+ * Returns a new graph with credentials cleared from all nodes.
+ */
+export function stripCredentials(graph: RFGraph): RFGraph {
+  const nodes = graph.nodes.map((node) => {
+    if (node.data && typeof node.data === "object" && "credential" in node.data) {
+      const { credential: _, ...restData } = node.data as Record<string, unknown>;
+      return {
+        ...node,
+        data: restData,
+      };
+    }
+    return node;
+  });
+  return { nodes, edges: graph.edges };
+}
+
 type EdgeMeta = {
   sourceHandle?: string;
   label?: string;
@@ -119,7 +137,8 @@ export function sanitizeGraph(
 }
 
 export function stringifyGraph(graph: RFGraph): string {
-  return JSON.stringify(graph, null, 2);
+  const sanitized = stripCredentials(graph);
+  return JSON.stringify(sanitized, null, 2);
 }
 
 export function tryParseGraphFromText(text: string): RFGraph | null {
