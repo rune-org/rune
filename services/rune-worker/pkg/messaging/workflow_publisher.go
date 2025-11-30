@@ -3,6 +3,7 @@ package messaging
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"rune-worker/pkg/messages"
 	"rune-worker/pkg/platform/queue"
@@ -35,7 +36,19 @@ func (p *WorkflowPublisher) PublishNodeExecution(ctx context.Context, msg *messa
 	if err != nil {
 		return err
 	}
-	return p.publisher.Publish(ctx, "workflow.execution", payload)
+	if err := p.publisher.Publish(ctx, "workflow.execution", payload); err != nil {
+		return err
+	}
+
+	slog.Info("published workflow node execution message",
+		"workflow_id", msg.WorkflowID,
+		"execution_id", msg.ExecutionID,
+		"current_node", msg.CurrentNode,
+		"accumulated_context", msg.AccumulatedContext,
+		"node_execution_message", msg,
+	)
+
+	return nil
 }
 
 // PublishNodeStatus publishes a node status message to the node status queue.

@@ -189,7 +189,7 @@ class TestOwnerPermissions:
 
 
 class TestAdminPermissions:
-    """Test that admins can manage all credentials but cannot reshare credentials they don't own."""
+    """Test that admins can manage all credentials but cannot share credentials they don't own."""
 
     async def test_admin_can_view_all_credentials(
         self,

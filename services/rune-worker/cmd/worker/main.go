@@ -10,6 +10,8 @@ import (
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/registry"
+
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -32,9 +34,30 @@ func main() {
 
 	slog.Info("configuration loaded",
 		"rabbitmq_url", cfg.RabbitURL,
+		"redis_url", cfg.RedisURL,
 		"queue_name", cfg.QueueName,
 		"prefetch", cfg.Prefetch,
 		"concurrency", cfg.Concurrency)
+
+	// Initialize Redis client
+	redisOpts, err := redis.ParseURL(cfg.RedisURL)
+	if err != nil {
+		slog.Error("failed to parse redis url", "error", err)
+		os.Exit(1)
+	}
+	redisClient := redis.NewClient(redisOpts)
+	defer func() {
+		if err := redisClient.Close(); err != nil {
+			slog.Error("error closing redis client", "error", err)
+		}
+	}()
+
+	// Ping Redis to verify connection
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
+		slog.Error("failed to connect to redis", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("connected to redis")
 
 	// Initialize node registry with built-in nodes
 	// All nodes that have init() functions will be auto-registered
@@ -43,7 +66,7 @@ func main() {
 		"registered_nodes", len(nodeRegistry.GetAllTypes()))
 
 	// Create workflow consumer
-	consumer, err := messaging.NewWorkflowConsumer(cfg)
+	consumer, err := messaging.NewWorkflowConsumer(cfg, redisClient)
 	if err != nil {
 		slog.Error("unable to create workflow consumer", "error", err)
 		os.Exit(1)

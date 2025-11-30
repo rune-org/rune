@@ -12,17 +12,16 @@ import {
 import { auth, workflows as workflowsApi } from "@/lib/api";
 import type { UserResponse } from "@/client/types.gen";
 import { listItemToWorkflowSummary, type WorkflowSummary } from "@/lib/workflows";
-import type {
-  ExecutionHistoryItem,
-  TemplateSummary,
-  UserProfile,
-} from "./workflow-dsl";
+
+type UserProfile = {
+  id: string;
+  name: string;
+  email: string;
+};
 
 type AppState = {
   user: UserProfile | null;
   workflows: WorkflowSummary[];
-  templates: TemplateSummary[];
-  executions: ExecutionHistoryItem[];
   loading: boolean;
   error: string | null;
 };
@@ -31,15 +30,11 @@ type Action =
   | { type: "start" }
   | { type: "error"; error: string }
   | { type: "setUser"; user: UserProfile }
-  | { type: "setWorkflows"; workflows: WorkflowSummary[] }
-  | { type: "setTemplates"; templates: TemplateSummary[] }
-  | { type: "setExecutions"; executions: ExecutionHistoryItem[] };
+  | { type: "setWorkflows"; workflows: WorkflowSummary[] };
 
 const initialState: AppState = {
   user: null,
   workflows: [],
-  templates: [],
-  executions: [],
   loading: false,
   error: null,
 };
@@ -61,7 +56,6 @@ function toUserProfile(user: UserResponse): UserProfile {
     id: String(user.id),
     name: user.name,
     email: user.email,
-    avatarUrl: undefined,
   };
 }
 
@@ -79,10 +73,6 @@ function reducer(state: AppState, action: Action): AppState {
         loading: false,
         workflows: dedupeById(action.workflows),
       };
-    case "setTemplates":
-      return { ...state, loading: false, templates: action.templates };
-    case "setExecutions":
-      return { ...state, loading: false, executions: action.executions };
     default:
       return state;
   }
