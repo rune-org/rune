@@ -5,7 +5,7 @@ This directory contains design documents, proposals, and architectural specifica
 ## Documents
 
 ### [RFC-001-recursive-executor.md](./RFC-001-recursive-executor.md)
-**Status**: Proposed  
+**Status**: Implemented  
 **Created**: 2025-10-09  
 **Title**: Recursive Node-by-Node Workflow Executor
 
@@ -26,7 +26,7 @@ Formal specification of the message-driven architecture for workflow execution:
 ---
 
 ### [RFC-002-workflow-dsl.md](./RFC-002-workflow-dsl.md)
-**Status**: Proposed  
+**Status**: Implemented
 **Created**: 2025-10-10  
 **Title**: Workflow Definition DSL Specification
 

@@ -11,17 +11,19 @@ import (
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
 	"rune-worker/pkg/registry"
+
+	"github.com/redis/go-redis/v9"
 )
 
 // WorkflowConsumer orchestrates workflow execution by consuming messages,
 // invoking the executor, and handling acknowledgments for fault tolerance.
 type WorkflowConsumer struct {
-	queue     queue.Consumer
-	executor  *executor.Executor
+	queue    queue.Consumer
+	executor *executor.Executor
 }
 
 // NewWorkflowConsumer wires the queue consumer with a default executor.
-func NewWorkflowConsumer(cfg *config.WorkerConfig) (*WorkflowConsumer, error) {
+func NewWorkflowConsumer(cfg *config.WorkerConfig, redisClient *redis.Client) (*WorkflowConsumer, error) {
 	if cfg == nil {
 		return nil, errors.New("workflow consumer: config is nil")
 	}
@@ -46,8 +48,8 @@ func NewWorkflowConsumer(cfg *config.WorkerConfig) (*WorkflowConsumer, error) {
 	}
 
 	return &WorkflowConsumer{
-		queue:     q,
-		executor:  executor.NewExecutor(reg, pub),
+		queue:    q,
+		executor: executor.NewExecutor(reg, pub, redisClient),
 	}, nil
 }
 
