@@ -19,19 +19,21 @@ import (
 // Executor evaluates workflow definitions and invokes nodes in order.
 // It implements the recursive node-by-node execution model as specified in RFC-001.
 type Executor struct {
-	registry  *nodes.Registry
-	publisher queue.Publisher
+	registry    *nodes.Registry
+	publisher   queue.Publisher
+	redisClient interface{}
 }
 
 // NewExecutor builds an executor with the provided registry and publisher.
-func NewExecutor(reg *nodes.Registry, pub queue.Publisher) *Executor {
+func NewExecutor(reg *nodes.Registry, pub queue.Publisher, redisClient interface{}) *Executor {
 	if reg == nil {
 		reg = registry.InitializeRegistry()
 	}
 
 	return &Executor{
-		registry:  reg,
-		publisher: pub,
+		registry:    reg,
+		publisher:   pub,
+		redisClient: redisClient,
 	}
 }
 
@@ -116,12 +118,14 @@ func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, nod
 	}
 
 	execCtx := plugin.ExecutionContext{
-		ExecutionID: msg.ExecutionID,
-		WorkflowID:  msg.WorkflowID,
-		NodeID:      node.ID,
-		Type:        node.Type,
-		Parameters:  resolvedParams,
-		Input:       msg.AccumulatedContext,
+		ExecutionID:  msg.ExecutionID,
+		WorkflowID:   msg.WorkflowID,
+		NodeID:       node.ID,
+		Type:         node.Type,
+		Parameters:   resolvedParams,
+		Input:        msg.AccumulatedContext,
+		RedisClient:  e.redisClient,
+		LineageStack: msg.LineageStack,
 	}
 
 	// Set credentials if present (already resolved by master)
@@ -143,6 +147,8 @@ func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeE
 		ExecutedAt:  time.Now(),
 		DurationMs:  0,
 	}
+
+	e.enrichStatusWithLineage(statusMsg, msg.LineageStack)
 
 	return e.publishStatus(ctx, statusMsg)
 }
@@ -167,10 +173,12 @@ func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.
 		DurationMs: duration.Milliseconds(),
 	}
 
+	e.enrichStatusWithLineage(statusMsg, msg.LineageStack)
+
 	_ = e.publishStatus(ctx, statusMsg)
 
 	// Node creation failure is always a halt condition
-	return e.publishCompletion(ctx, msg, messages.CompletionStatusFailed, startTime)
+	return e.publishCompletion(ctx, msg, messages.CompletionStatusFailed, startTime, msg.AccumulatedContext)
 }
 
 // handleNodeFailure processes a node execution failure according to error handling strategy.
@@ -208,7 +216,7 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 
 	switch errorStrategy {
 	case "halt":
-		return e.publishCompletion(ctx, msg, messages.CompletionStatusHalted, time.Now())
+		return e.publishCompletion(ctx, msg, messages.CompletionStatusHalted, time.Now(), msg.AccumulatedContext)
 
 	case "ignore":
 		// Continue to next nodes despite error
@@ -224,11 +232,11 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 			}
 		}
 		// If no error edge, halt
-		return e.publishCompletion(ctx, msg, messages.CompletionStatusHalted, time.Now())
+		return e.publishCompletion(ctx, msg, messages.CompletionStatusHalted, time.Now(), msg.AccumulatedContext)
 
 	default:
 		slog.Warn("unknown error strategy, halting", "strategy", errorStrategy)
-		return e.publishCompletion(ctx, msg, messages.CompletionStatusHalted, time.Now())
+		return e.publishCompletion(ctx, msg, messages.CompletionStatusHalted, time.Now(), msg.AccumulatedContext)
 	}
 }
 
@@ -252,6 +260,9 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 		DurationMs:  duration.Milliseconds(),
 	}
 
+	e.enrichStatusWithLineage(statusMsg, msg.LineageStack)
+	e.applyAggregatorMetadata(statusMsg, node, output)
+
 	if err := e.publishStatus(ctx, statusMsg); err != nil {
 		slog.Error("failed to publish success status", "error", err)
 	}
@@ -262,14 +273,86 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 	// Determine next nodes via graph traversal
 	nextNodes := e.determineNextNodes(&msg.WorkflowDefinition, node, output)
 
+	// Handle Split Node Fan-Out
+	if node.Type == "split" {
+		if items, ok := output["_split_items"].([]any); ok {
+			return e.handleSplitFanOut(ctx, msg, node, nextNodes, items, updatedContext)
+		}
+	}
+
+	// Handle Aggregator Barrier
+	if node.Type == "aggregator" {
+		if _, closed := output["_barrier_closed"]; closed {
+			slog.Info("aggregator barrier closed, halting branch", "node_id", node.ID)
+			return nil // Do not publish next nodes or completion
+		}
+	}
+
 	if len(nextNodes) == 0 {
 		// No more nodes to execute - workflow completed
-		slog.Info("workflow completed", "workflow_id", msg.WorkflowID, "execution_id", msg.ExecutionID)
-		return e.publishCompletion(ctx, msg, messages.CompletionStatusCompleted, startTime)
+		slog.Info("workflow completed", "workflow_id", msg.WorkflowID, "execution_id", msg.ExecutionID, "final_context_keys", getKeys(updatedContext))
+		return e.publishCompletion(ctx, msg, messages.CompletionStatusCompleted, startTime, updatedContext)
 	}
 
 	// Publish execution messages for next nodes
 	return e.publishNextNodes(ctx, msg, nextNodes, updatedContext)
+}
+
+// handleSplitFanOut iterates over items and publishes messages for each.
+func (e *Executor) handleSplitFanOut(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, nextNodes []string, items []any, baseContext map[string]interface{}) error {
+	slog.Info("handling split fan-out", "node_id", node.ID, "item_count", len(items))
+
+	for i, item := range items {
+		// Create new context for this item
+		itemContext := make(map[string]interface{}, len(baseContext)+1)
+		for k, v := range baseContext {
+			itemContext[k] = v
+		}
+
+		itemContext["$item"] = item
+
+		// Clone and update lineage stack
+		newStack := make([]messages.StackFrame, len(msg.LineageStack)+1)
+		copy(newStack, msg.LineageStack)
+
+		newStack[len(msg.LineageStack)] = messages.StackFrame{
+			SplitNodeID: node.ID,
+			BranchID:    fmt.Sprintf("%s_%s_%d", msg.ExecutionID, node.ID, i),
+			ItemIndex:   i,
+			TotalItems:  len(items),
+		}
+
+		// Publish to next nodes
+		for _, nextNodeID := range nextNodes {
+			nextMsg := &messages.NodeExecutionMessage{
+				WorkflowID:         msg.WorkflowID,
+				ExecutionID:        msg.ExecutionID,
+				CurrentNode:        nextNodeID,
+				WorkflowDefinition: msg.WorkflowDefinition,
+				AccumulatedContext: itemContext,
+				LineageStack:       newStack,
+			}
+
+			payload, err := nextMsg.Encode()
+			if err != nil {
+				return fmt.Errorf("encode split message: %w", err)
+			}
+
+			if err := e.publisher.Publish(ctx, "workflow.execution", payload); err != nil {
+				return fmt.Errorf("publish split message: %w", err)
+			}
+
+			slog.Info("published split node message",
+				"workflow_id", nextMsg.WorkflowID,
+				"execution_id", nextMsg.ExecutionID,
+				"target_node", nextNodeID,
+				"accumulated_context", nextMsg.AccumulatedContext,
+				"node_execution_message", nextMsg,
+			)
+		}
+	}
+
+	return nil
 }
 
 // accumulateContext adds the node output to the accumulated context with $<node_name> key.
@@ -277,6 +360,12 @@ func (e *Executor) accumulateContext(currentContext map[string]interface{}, node
 	updated := make(map[string]interface{}, len(currentContext)+1)
 	for k, v := range currentContext {
 		updated[k] = v
+	}
+	if len(output) == 1 {
+		for _, v := range output {
+			updated[fmt.Sprintf("$%s", nodeName)] = v
+			return updated
+		}
 	}
 	updated[fmt.Sprintf("$%s", nodeName)] = output
 	return updated
@@ -418,6 +507,7 @@ func (e *Executor) publishNextNodes(ctx context.Context, msg *messages.NodeExecu
 			CurrentNode:        nextNodeID,
 			WorkflowDefinition: msg.WorkflowDefinition,
 			AccumulatedContext: updatedContext,
+			LineageStack:       msg.LineageStack, // Propagate stack
 		}
 
 		payload, err := nextMsg.Encode()
@@ -431,7 +521,13 @@ func (e *Executor) publishNextNodes(ctx context.Context, msg *messages.NodeExecu
 			return fmt.Errorf("publish next node message: %w", err)
 		}
 
-		slog.Info("published next node message", "next_node", nextNodeID)
+		slog.Info("published next node message",
+			"workflow_id", nextMsg.WorkflowID,
+			"execution_id", nextMsg.ExecutionID,
+			"next_node", nextNodeID,
+			"accumulated_context", nextMsg.AccumulatedContext,
+			"node_execution_message", nextMsg,
+		)
 	}
 
 	return nil
@@ -447,15 +543,78 @@ func (e *Executor) publishStatus(ctx context.Context, msg *messages.NodeStatusMe
 	return e.publisher.Publish(ctx, "workflow.node.status", payload)
 }
 
+func (e *Executor) enrichStatusWithLineage(status *messages.NodeStatusMessage, stack []messages.StackFrame) {
+	if status == nil || len(stack) == 0 {
+		return
+	}
+
+	status.LineageStack = append(status.LineageStack, stack...)
+	top := stack[len(stack)-1]
+	status.BranchID = top.BranchID
+	status.SplitNodeID = top.SplitNodeID
+	status.ItemIndex = intPointer(top.ItemIndex)
+	status.TotalItems = intPointer(top.TotalItems)
+}
+
+func (e *Executor) applyAggregatorMetadata(status *messages.NodeStatusMessage, node *core.Node, output map[string]any) {
+	if status == nil || node == nil || node.Type != "aggregator" {
+		return
+	}
+
+	if output != nil {
+		if processed, ok := extractInt(output, "_aggregator_processed_count"); ok {
+			status.ProcessedCount = intPointer(processed)
+		}
+		if _, waiting := output["_barrier_closed"]; waiting {
+			status.AggregatorState = messages.AggregatorStateWaiting
+		} else if _, released := output["aggregated"]; released {
+			status.AggregatorState = messages.AggregatorStateReleased
+		}
+	}
+
+	if status.AggregatorState == "" {
+		status.AggregatorState = messages.AggregatorStateReleased
+	}
+
+	if status.AggregatorState == messages.AggregatorStateReleased && status.ProcessedCount == nil && status.TotalItems != nil {
+		status.ProcessedCount = intPointer(*status.TotalItems)
+	}
+}
+
+func extractInt(data map[string]any, key string) (int, bool) {
+	if data == nil {
+		return 0, false
+	}
+	val, ok := data[key]
+	if !ok {
+		return 0, false
+	}
+	switch v := val.(type) {
+	case int:
+		return v, true
+	case int64:
+		return int(v), true
+	case float64:
+		return int(v), true
+	default:
+		return 0, false
+	}
+}
+
+func intPointer(value int) *int {
+	v := value
+	return &v
+}
+
 // publishCompletion publishes a CompletionMessage to the completion queue.
-func (e *Executor) publishCompletion(ctx context.Context, msg *messages.NodeExecutionMessage, status string, startTime time.Time) error {
+func (e *Executor) publishCompletion(ctx context.Context, msg *messages.NodeExecutionMessage, status string, startTime time.Time, finalContext map[string]interface{}) error {
 	totalDuration := time.Since(startTime)
 
 	completionMsg := &messages.CompletionMessage{
 		WorkflowID:      msg.WorkflowID,
 		ExecutionID:     msg.ExecutionID,
 		Status:          status,
-		FinalContext:    msg.AccumulatedContext,
+		FinalContext:    finalContext,
 		CompletedAt:     time.Now(),
 		TotalDurationMs: totalDuration.Milliseconds(),
 	}

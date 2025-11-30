@@ -169,7 +169,7 @@ export function Inspector({
                     <input
                       className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
                       value={selectedNode.data.label ?? ""}
-                      onChange={(e) => updateSelectedNodeLabel(e.target.value)}
+                      onChange={(e) => updateSelectedNodeLabel(e.target.value.replace(/ /g, "_"))}
                     />
                   </div>
 
@@ -230,7 +230,7 @@ export function Inspector({
                     <input
                       className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
                       value={selectedNode.data.label ?? ""}
-                      onChange={(e) => updateSelectedNodeLabel(e.target.value)}
+                      onChange={(e) => updateSelectedNodeLabel(e.target.value.replace(/ /g, "_"))}
                       placeholder="Enter a descriptive label"
                     />
                     <div className="text-xs text-muted-foreground">

@@ -1,11 +1,11 @@
-.PHONY: help install dev build clean docker-up docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-lint api-format worker-dev worker-lint worker-format worker-test up down restart status
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
 
 # Default target
 help:
 	@echo "Rune - Low-code Workflow Automation Platform"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  make install        - Install all dependencies (frontend, API, worker)"
+	@echo "  make install       - Install all dependencies (frontend, API, worker)"
 	@echo "  make dev           - Start all services in development mode"
 	@echo "  make build         - Build all services"
 	@echo "  make test          - Run tests for all services"
@@ -36,17 +36,21 @@ help:
 	@echo "  make worker-test    - Run worker tests"
 	@echo ""
 	@echo "Docker targets:"
-	@echo "  make up             - Start all services (alias for docker-up)"
-	@echo "  make down           - Stop all services (alias for docker-down)"
-	@echo "  make restart        - Restart all services (alias for docker-rebuild)"
-	@echo "  make status         - Show running containers status"
-	@echo "  make logs           - Show logs from all services"
+	@echo "  make up                        - Start all services (alias for docker-up)"
+	@echo "  make up-nginx                  - Start all services on nginx proxy (alias for docker-up-nginx)"
+	@echo "  make down                      - Stop all services (alias for docker-down)"
+	@echo "  make restart                   - Restart all services (alias for docker-rebuild)"
+	@echo "  make restart-nginx             - Restart services on nginx proxy (alias for docker-rebuild-nginx)"
+	@echo "  make status                    - Show running containers status"
+	@echo "  make logs                      - Show logs from all services"
 	@echo ""
-	@echo "  make docker-up      - Start all services with Docker Compose"
-	@echo "  make docker-down    - Stop all services"
-	@echo "  make docker-build   - Build all Docker images"
-	@echo "  make docker-rebuild - Rebuild and restart all services"
-	@echo "  make docker-clean   - Remove all containers, volumes, and images"
+	@echo "  make docker-up        			- Start all services with Docker Compose"
+	@echo "  make docker-up-nginx  			- Start all services on nginx proxy"
+	@echo "  make docker-down      			- Stop all services"
+	@echo "  make docker-build     			- Build all Docker images"
+	@echo "  make docker-rebuild   			- Rebuild and restart all services"
+	@echo "  make docker-rebuild-nginx   			- Rebuild and restart all services on nginx"
+	@echo "  make docker-clean     			- Remove all containers, volumes, and images"
 	@echo ""
 	@echo "Cleanup targets:"
 	@echo "  make clean         - Clean all build artifacts"
@@ -165,9 +169,13 @@ web-typecheck:
 # Convenient aliases
 up: docker-up
 
+up-nginx: docker-up-nginx
+
 down: docker-down
 
 restart: docker-rebuild
+
+restart-nginx: docker-rebuild-nginx
 
 status:
 	@echo "Docker containers status:"
@@ -178,6 +186,10 @@ docker-up:
 	@echo "Starting all services with Docker Compose..."
 	docker compose up -d
 
+docker-up-nginx:
+	@echo "Starting on nginx..."
+	docker compose -f docker-compose.nginx.yml up -d 
+
 docker-down:
 	@echo "Stopping all services..."
 	docker compose down
@@ -186,7 +198,14 @@ docker-build:
 	@echo "Building all Docker images..."
 	docker compose build
 
+docker-build-nginx:
+	@echo "Building on nginx..."
+	docker compose -f docker-compose.nginx.yml build
+
 docker-rebuild: docker-down docker-build docker-up
+	@echo "✓ All services rebuilt and restarted"
+
+docker-rebuild-nginx: docker-down docker-build-nginx docker-up-nginx
 	@echo "✓ All services rebuilt and restarted"
 
 docker-clean:

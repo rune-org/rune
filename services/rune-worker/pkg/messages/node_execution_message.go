@@ -22,6 +22,15 @@ type NodeExecutionMessage struct {
 	CurrentNode        string                 `json:"current_node"`        // Node ID to execute
 	WorkflowDefinition core.Workflow         `json:"workflow_definition"` // Complete workflow structure
 	AccumulatedContext map[string]interface{} `json:"accumulated_context"` // Context with $<node_name> keys
+	LineageStack       []StackFrame           `json:"lineage_stack,omitempty"` // Stack of split contexts
+}
+
+// StackFrame represents a single level of split execution context.
+type StackFrame struct {
+	SplitNodeID string `json:"split_node_id"` // The node that generated this split
+	BranchID    string `json:"branch_id"`     // Unique ID for this branch execution
+	ItemIndex   int    `json:"item_index"`    // 0-based index of this item
+	TotalItems  int    `json:"total_items"`   // Total count in this batch
 }
 
 // Validate checks if the NodeExecutionMessage has all required fields.

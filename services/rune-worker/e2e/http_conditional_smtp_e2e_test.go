@@ -30,6 +30,10 @@ import (
 // - SMTP node email sending with credentials from .env file
 // - Complete workflow with multiple node types and branching logic
 func TestHTTPConditionalSMTPWorkflow(t *testing.T) {
+	if os.Getenv("ENABLE_SMTP_E2E") != "true" {
+		t.Skip("Skipping SMTP workflow test; set ENABLE_SMTP_E2E=true to enable it")
+	}
+
 	env := testutils.SetupTestEnv(t)
 	defer env.Cleanup(t)
 
@@ -266,12 +270,13 @@ func TestHTTPConditionalSMTPWorkflow(t *testing.T) {
 	// Create main workflow consumer
 	cfg := &config.WorkerConfig{
 		RabbitURL:   env.RabbitMQURL,
+		RedisURL:    "redis://" + testutils.DefaultRedisAddr + "/0",
 		QueueName:   "workflow.execution",
 		Prefetch:    1,
 		Concurrency: 1,
 	}
 
-	consumer, err := messaging.NewWorkflowConsumer(cfg)
+	consumer, err := messaging.NewWorkflowConsumer(cfg, env.RedisClient)
 	if err != nil {
 		t.Fatalf("Failed to create workflow consumer: %v", err)
 	}

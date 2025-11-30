@@ -86,10 +86,11 @@ export default function FlowCanvas({
   const updateNodeData = useUpdateNodeData(setNodes);
   const { togglePin } = usePinNode(setNodes);
 
-  // Validate connections to limit edges based on node type
   const isValidConnection = useCallback(
     (connection: Edge | Connection) => {
-      const { source, sourceHandle } = connection;
+      const { source, target, sourceHandle } = connection;
+
+      if (source === target) return false;
 
       const sourceNode = nodes.find((node) => node.id === source);
       if (!sourceNode) return false;
