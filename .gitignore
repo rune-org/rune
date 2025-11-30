@@ -8,7 +8,7 @@
 **/yarn-debug.log*
 **/yarn-error.log*
 **/pnpm-debug.log*
-
+**/*.log
 # test coverage
 **/coverage
 
@@ -53,3 +53,6 @@ venv
 # golang
 services/rune-worker/main
 services/rune-worker/go.sum
+
+# nginx
+nginx/ssl/

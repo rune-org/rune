@@ -2,13 +2,36 @@
 
 import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
-import { Play, RotateCcw, Save, Maximize, Copy, LayoutDashboard } from "lucide-react";
+import {
+  Play,
+  RotateCcw,
+  Save,
+  Maximize,
+  Upload,
+  Download,
+  LayoutDashboard,
+  Clipboard,
+  FileJson,
+  FileBox,
+  ChevronDown,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type ToolbarProps = {
   onExecute: () => void;
   onUndo: () => void;
   onSave: () => void;
-  onExport: () => void;
+  onExportToClipboard: () => void;
+  onExportToFile: () => void;
+  onExportToTemplate: () => void;
+  onImportFromClipboard: () => void;
+  onImportFromFile: () => void;
+  onImportFromTemplate: () => void;
   onFitView?: () => void;
   onAutoLayout?: () => void;
   saveDisabled?: boolean;
@@ -18,7 +41,12 @@ export function Toolbar({
   onExecute,
   onUndo,
   onSave,
-  onExport,
+  onExportToClipboard,
+  onExportToFile,
+  onExportToTemplate,
+  onImportFromClipboard,
+  onImportFromFile,
+  onImportFromTemplate,
   onFitView,
   onAutoLayout,
   saveDisabled = false,
@@ -45,6 +73,9 @@ export function Toolbar({
     </button>
   );
 
+  const btnClass =
+    "inline-flex h-8 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/40 px-2.5 text-xs hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50";
+
   return (
     <div className="flex items-center gap-2 rounded-[var(--radius)] border border-border/60 bg-card/80 p-2 shadow-lg">
       <Link
@@ -65,9 +96,43 @@ export function Toolbar({
       <Btn onClick={onSave} title="Save" disabled={saveDisabled}>
         <Save className="h-4 w-4" /> Save
       </Btn>
-      <Btn onClick={onExport} title="Export JSON to clipboard">
-        <Copy className="h-4 w-4" /> Export
-      </Btn>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger className={btnClass}>
+          <Download className="h-4 w-4" /> Import{" "}
+          <ChevronDown className="h-3 w-3 opacity-60" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={onImportFromClipboard} className="gap-2">
+            <Clipboard className="h-4 w-4" /> From Clipboard
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onImportFromFile} className="gap-2">
+            <FileJson className="h-4 w-4" /> From File (JSON)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onImportFromTemplate} className="gap-2">
+            <FileBox className="h-4 w-4" /> From Templates
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger className={btnClass}>
+          <Upload className="h-4 w-4" /> Export{" "}
+          <ChevronDown className="h-3 w-3 opacity-60" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={onExportToClipboard} className="gap-2">
+            <Clipboard className="h-4 w-4" /> To Clipboard
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onExportToFile} className="gap-2">
+            <FileJson className="h-4 w-4" /> To File (JSON)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onExportToTemplate} className="gap-2">
+            <FileBox className="h-4 w-4" /> Save as Template
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       {onFitView && (
         <Btn onClick={onFitView} title="Fit View">
           <Maximize className="h-4 w-4" /> Fit

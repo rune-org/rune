@@ -23,6 +23,8 @@ import type { CanvasNode } from "./types";
 import { Toolbar } from "./components/Toolbar";
 import { Inspector } from "./components/Inspector";
 import { Library } from "./components/Library";
+import { SaveTemplateDialog } from "./components/SaveTemplateDialog";
+import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
 import { useAddNode } from "./hooks/useAddNode";
 import { useConditionalConnect } from "./hooks/useConditionalConnect";
@@ -67,6 +69,8 @@ export default function FlowCanvas({
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
+  const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
+  const [isImportTemplateOpen, setIsImportTemplateOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(
@@ -74,6 +78,7 @@ export default function FlowCanvas({
   );
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const historyRef = useRef<HistoryEntry[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const onConnect = useConditionalConnect(setEdges);
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
@@ -81,10 +86,11 @@ export default function FlowCanvas({
   const updateNodeData = useUpdateNodeData(setNodes);
   const { togglePin } = usePinNode(setNodes);
 
-  // Validate connections to limit edges based on node type
   const isValidConnection = useCallback(
     (connection: Edge | Connection) => {
-      const { source, sourceHandle } = connection;
+      const { source, target, sourceHandle } = connection;
+
+      if (source === target) return false;
 
       const sourceNode = nodes.find((node) => node.id === source);
       if (!sourceNode) return false;
@@ -186,6 +192,103 @@ export default function FlowCanvas({
       setEdges(lastState.edges);
     }
   }, [setEdges, setNodes]);
+
+  // Export handlers
+  const exportToClipboard = useCallback(async () => {
+    await navigator.clipboard.writeText(stringifyGraph({ nodes, edges }));
+    toast.success("Exported JSON to clipboard");
+  }, [nodes, edges]);
+
+  const exportToFile = useCallback(() => {
+    const json = stringifyGraph({ nodes, edges });
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `workflow-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Exported workflow to file");
+  }, [nodes, edges]);
+
+  const exportToTemplate = useCallback(() => {
+    if (nodes.length === 0) {
+      toast.error("Cannot save empty workflow as template");
+      return;
+    }
+    setIsSaveTemplateOpen(true);
+  }, [nodes]);
+
+  // Import handlers
+  const importFromClipboard = useCallback(() => {
+    toast("Press Ctrl+V (or Cmd+V) to paste workflow from clipboard");
+  }, []);
+
+  const importFromFile = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileImport = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const text = event.target?.result as string;
+          const raw = JSON.parse(text);
+          if (!raw || typeof raw !== "object") {
+            toast.error("Invalid workflow data");
+            return;
+          }
+          const candidate = raw as { nodes?: unknown; edges?: unknown };
+          if (
+            !Array.isArray(candidate.nodes) ||
+            !Array.isArray(candidate.edges)
+          ) {
+            toast.error("Invalid workflow format");
+            return;
+          }
+          const parsed = sanitizeGraph({
+            nodes: candidate.nodes as CanvasNode[],
+            edges: candidate.edges as Edge[],
+          });
+          if (parsed.nodes.length === 0) {
+            toast.error("No valid nodes found in file");
+            return;
+          }
+          pushHistory();
+          setNodes(parsed.nodes as CanvasNode[]);
+          setEdges(parsed.edges as Edge[]);
+          toast.success(`Imported workflow from ${file.name}`);
+        } catch {
+          toast.error("Failed to parse workflow file");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    },
+    [pushHistory, setNodes, setEdges],
+  );
+
+  const importFromTemplate = useCallback(() => {
+    setIsImportTemplateOpen(true);
+  }, []);
+
+  const handleTemplateSelect = useCallback(
+    (workflowData: { nodes: CanvasNode[]; edges: Edge[] }) => {
+      const parsed = sanitizeGraph(workflowData);
+      pushHistory();
+      setNodes(parsed.nodes as CanvasNode[]);
+      setEdges(parsed.edges as Edge[]);
+      setIsImportTemplateOpen(false);
+      toast.success("Imported workflow from template");
+    },
+    [pushHistory, setNodes, setEdges],
+  );
 
   const deleteSelectedElements = useCallback(() => {
     pushHistory();
@@ -396,12 +499,12 @@ export default function FlowCanvas({
               onSave={async () => {
                 await persistGraph();
               }}
-              onExport={async () => {
-                await navigator.clipboard.writeText(
-                  stringifyGraph({ nodes, edges }),
-                );
-                toast.success("Exported JSON to clipboard");
-              }}
+              onExportToClipboard={exportToClipboard}
+              onExportToFile={exportToFile}
+              onExportToTemplate={exportToTemplate}
+              onImportFromClipboard={importFromClipboard}
+              onImportFromFile={importFromFile}
+              onImportFromTemplate={importFromTemplate}
               onFitView={() => rfInstanceRef.current?.fitView()}
               onAutoLayout={autoLayout}
               saveDisabled={saveDisabled}
@@ -440,7 +543,28 @@ export default function FlowCanvas({
         }}
       />
 
-      {null}
+      {/* Hidden file input for importing JSON files */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        onChange={handleFileImport}
+        className="hidden"
+      />
+
+      {/* Save as Template dialog */}
+      <SaveTemplateDialog
+        open={isSaveTemplateOpen}
+        onOpenChange={setIsSaveTemplateOpen}
+        workflowData={{ nodes, edges }}
+      />
+
+      {/* Import from Templates dialog */}
+      <ImportTemplateDialog
+        open={isImportTemplateOpen}
+        onOpenChange={setIsImportTemplateOpen}
+        onSelect={handleTemplateSelect}
+      />
     </div>
   );
 }

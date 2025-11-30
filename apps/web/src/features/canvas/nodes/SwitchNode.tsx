@@ -55,7 +55,7 @@ export const SwitchNode = memo(function SwitchNode({
           <GitBranch className="h-4 w-4 text-muted-foreground" />
           <span className="truncate">{data.label ?? "Switch"}</span>
         </div>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="shrink-0 whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           {rules.length} {rules.length === 1 ? 'route' : 'routes'}
         </span>
       </div>
@@ -91,16 +91,22 @@ export const SwitchNode = memo(function SwitchNode({
       </div>
 
       <Handle type="target" position={Position.Left} className="!bg-ring" />
-      {handleLayout.map((h) => (
-        <Handle
-          key={h.id}
-          id={h.id}
-          type="source"
-          position={Position.Right}
-          className="!bg-ring"
-          style={{ top: h.top }}
-        />
-      ))}
+      {handleLayout.map((h, idx) => {
+        // The fallback handle (last item) needs a dynamic key that includes rules.length
+        // to force React to remount it when rules change. This ensures React Flow
+        // registers the handle at its new position.
+        const isFallback = idx === handleLayout.length - 1;
+        return (
+          <Handle
+            key={isFallback ? `${h.id}-${rules.length}` : h.id}
+            id={h.id}
+            type="source"
+            position={Position.Right}
+            className="!bg-ring"
+            style={{ top: h.top }}
+          />
+        );
+      })}
     </div>
   );
 });

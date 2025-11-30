@@ -16,6 +16,7 @@ import (
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
+	testutils "rune-worker/test_utils"
 )
 
 // TestNodeExecutionEndToEnd tests the full workflow execution lifecycle:
@@ -149,12 +150,13 @@ func TestNodeExecutionEndToEnd(t *testing.T) {
 	// Create main workflow consumer
 	cfg := &config.WorkerConfig{
 		RabbitURL:   env.RabbitMQURL,
+		RedisURL:    "redis://" + testutils.DefaultRedisAddr + "/0",
 		QueueName:   "workflow.execution",
 		Prefetch:    1,
 		Concurrency: 1,
 	}
 
-	consumer, err := messaging.NewWorkflowConsumer(cfg)
+	consumer, err := messaging.NewWorkflowConsumer(cfg, env.RedisClient)
 	if err != nil {
 		t.Fatalf("Failed to create workflow consumer: %v", err)
 	}
