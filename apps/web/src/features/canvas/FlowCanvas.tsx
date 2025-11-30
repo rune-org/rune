@@ -33,6 +33,7 @@ import { useExecutionSim } from "./hooks/useExecutionSim";
 import { useAutoLayout } from "./hooks/useAutoLayout";
 import { usePinNode } from "./hooks/usePinNode";
 import { sanitizeGraph, stringifyGraph } from "./lib/graphIO";
+import { workflowDataToCanvas } from "@/lib/workflow-dsl";
 import { toast } from "@/components/ui/toast";
 import { createId } from "./utils/id";
 import {
@@ -363,8 +364,8 @@ export default function FlowCanvas({
 
       const candidate = raw as {
         __runeClipboardType?: string;
-        nodes?: unknown;
-        edges?: unknown;
+        nodes?: unknown[];
+        edges?: unknown[];
       };
 
       if (!Array.isArray(candidate.nodes) || !Array.isArray(candidate.edges)) {
@@ -372,10 +373,21 @@ export default function FlowCanvas({
       }
 
       const clipboardType = candidate.__runeClipboardType ?? null;
-      const parsed = sanitizeGraph({
-        nodes: candidate.nodes as CanvasNode[],
-        edges: candidate.edges as Edge[],
-      });
+
+      // Detect worker DSL format
+      const isWorkerDSL = candidate.edges.some(
+        (e) => e && typeof e === "object" && "src" in e && "dst" in e
+      );
+
+      // Convert worker DSL to canvas
+      const graphData = isWorkerDSL
+        ? workflowDataToCanvas({
+            nodes: candidate.nodes as Parameters<typeof workflowDataToCanvas>[0]["nodes"],
+            edges: candidate.edges as Parameters<typeof workflowDataToCanvas>[0]["edges"],
+          })
+        : { nodes: candidate.nodes as CanvasNode[], edges: candidate.edges as Edge[] };
+
+      const parsed = sanitizeGraph(graphData);
 
       // For DSL imports, ignore if parsed graph is empty to prevent
       // accidentally clearing the canvas.
