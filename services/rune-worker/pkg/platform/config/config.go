@@ -12,10 +12,12 @@ import (
 
 const (
 	envRabbitURL       = "RABBITMQ_URL"
+	envRedisURL        = "REDIS_URL"
 	envWorkflowQueue   = "WORKFLOW_QUEUE_NAME"
 	envPrefetch        = "WORKFLOW_PREFETCH"
 	envConcurrency     = "WORKFLOW_CONCURRENCY"
 	defaultRabbitURL   = "amqp://guest:guest@localhost:5672/"
+	defaultRedisURL    = "redis://localhost:6379/0"
 	defaultQueueName   = "workflow.execute"
 	defaultPrefetch    = 10
 	defaultConcurrency = 1
@@ -24,6 +26,7 @@ const (
 // WorkerConfig captures runtime configuration for the worker process.
 type WorkerConfig struct {
 	RabbitURL   string
+	RedisURL    string
 	QueueName   string
 	Prefetch    int
 	Concurrency int
@@ -39,6 +42,7 @@ func Load(path string) (*WorkerConfig, error) {
 
 	cfg := &WorkerConfig{
 		RabbitURL:   getEnv(envRabbitURL, defaultRabbitURL),
+		RedisURL:    getEnv(envRedisURL, defaultRedisURL),
 		QueueName:   getEnv(envWorkflowQueue, defaultQueueName),
 		Prefetch:    getEnvAsInt(envPrefetch, defaultPrefetch),
 		Concurrency: getEnvAsInt(envConcurrency, defaultConcurrency),
@@ -46,6 +50,9 @@ func Load(path string) (*WorkerConfig, error) {
 
 	if cfg.RabbitURL == "" {
 		return nil, fmt.Errorf("%s is required", envRabbitURL)
+	}
+	if cfg.RedisURL == "" {
+		return nil, fmt.Errorf("%s is required", envRedisURL)
 	}
 	if cfg.QueueName == "" {
 		return nil, fmt.Errorf("%s is required", envWorkflowQueue)

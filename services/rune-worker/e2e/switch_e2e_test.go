@@ -14,6 +14,7 @@ import (
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
+	testutils "rune-worker/test_utils"
 
 	_ "rune-worker/pkg/nodes/custom/switch"
 )
@@ -184,11 +185,12 @@ func TestSwitchNodeE2E(t *testing.T) {
 		// Start worker
 		cfg := &config.WorkerConfig{
 			RabbitURL:   env.RabbitMQURL,
+			RedisURL:    "redis://" + testutils.DefaultRedisAddr + "/0",
 			QueueName:   "workflow.execution",
 			Prefetch:    1,
 			Concurrency: 1,
 		}
-		worker, err := messaging.NewWorkflowConsumer(cfg)
+		worker, err := messaging.NewWorkflowConsumer(cfg, env.RedisClient)
 		if err != nil {
 			t.Fatalf("Failed to create worker: %v", err)
 		}

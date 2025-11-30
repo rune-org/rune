@@ -68,7 +68,7 @@ func TestExecutor_SimpleLinearWorkflow(t *testing.T) {
 		}
 	})
 
-	exec := NewExecutor(reg, pub)
+	exec := NewExecutor(reg, pub, nil)
 
 	// Create simple workflow: node1 -> node2
 	workflow := core.Workflow{
@@ -146,7 +146,7 @@ func TestExecutor_WorkflowCompletion(t *testing.T) {
 		}
 	})
 
-	exec := NewExecutor(reg, pub)
+	exec := NewExecutor(reg, pub, nil)
 
 	// Create workflow with single node (no outgoing edges)
 	workflow := core.Workflow{
@@ -206,7 +206,7 @@ func TestExecutor_NodeFailureHaltStrategy(t *testing.T) {
 		}
 	})
 
-	exec := NewExecutor(reg, pub)
+	exec := NewExecutor(reg, pub, nil)
 
 	// Create workflow with halt error strategy
 	workflow := core.Workflow{
@@ -267,7 +267,7 @@ func TestExecutor_ContextAccumulation(t *testing.T) {
 		}
 	})
 
-	exec := NewExecutor(reg, pub)
+	exec := NewExecutor(reg, pub, nil)
 
 	workflow := core.Workflow{
 		Nodes: []core.Node{
@@ -350,7 +350,7 @@ func TestExecutor_CredentialsHandling(t *testing.T) {
 		}
 	})
 
-	exec := NewExecutor(reg, pub)
+	exec := NewExecutor(reg, pub, nil)
 
 	workflow := core.Workflow{
 		Nodes: []core.Node{
