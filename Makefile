@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status db-shell db-migrate db-rollback db-history db-current db-revision db-reset
 
 # Default target
 help:
@@ -34,6 +34,15 @@ help:
 	@echo "  make worker-lint    - Lint worker code"
 	@echo "  make worker-format  - Format worker code"
 	@echo "  make worker-test    - Run worker tests"
+	@echo ""
+	@echo "Database targets (run with venv activated):"
+	@echo "  make db-migrate        - Apply all pending migrations"
+	@echo "  make db-revision msg=x - Generate migration from model changes"
+	@echo "  make db-rollback       - Rollback last migration"
+	@echo "  make db-history        - Show migration history"
+	@echo "  make db-current        - Show current DB version"
+	@echo "  make db-reset          - Reset DB and run all migrations"
+	@echo "  make db-shell          - Open PostgreSQL shell"
 	@echo ""
 	@echo "Docker targets:"
 	@echo "  make up                        - Start all services (alias for docker-up)"
@@ -227,9 +236,42 @@ logs-frontend:
 # ======================
 # Database targets
 # ======================
+# NOTE: Run these from services/api directory with venv activated:
+#   cd services/api && source .venv/bin/activate  (Linux/Mac)
+#   cd services/api && .\.venv\Scripts\activate   (Windows)
 
 db-shell:
 	docker exec -it rune-postgres psql -U rune -d rune_db
+
+# Alembic Migration Commands (run from services/api with venv activated)
+db-migrate:
+	@echo "Applying all pending migrations..."
+	alembic upgrade head
+
+db-rollback:
+	@echo "Rolling back last migration..."
+	alembic downgrade -1
+	
+db-history:
+	@echo "Migration history:"
+	alembic history
+
+db-current:
+	@echo "Current database version:"
+	alembic current
+
+db-revision:
+	@echo "Generating migration from model changes..."
+	alembic revision --autogenerate -m "$(msg)"
+
+db-reset:
+	@echo "Resetting database (WARNING: destroys all data)..."
+	docker compose -f docker-compose.dev.yml down -v
+	docker compose -f docker-compose.dev.yml up -d
+	@echo "Waiting for database to start..."
+	@sleep 3
+	alembic upgrade head
+	@echo "✓ Database reset complete"
 
 # ======================
 # Cleanup targets
