@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/toast";
 import { createTemplate } from "@/lib/api/templates";
+import { stripCredentials } from "../lib/graphIO";
 import type { CanvasNode } from "../types";
 import type { Edge } from "@xyflow/react";
 
@@ -60,11 +61,14 @@ export function SaveTemplateDialog({
 
     setSaving(true);
     try {
+      // Strip credentials from workflow data before saving to prevent sensitive data from being exported
+      const sanitizedWorkflowData = stripCredentials(workflowData);
+      
       const response = await createTemplate({
         name: name.trim(),
         description: description.trim(),
         category,
-        workflow_data: workflowData,
+        workflow_data: sanitizedWorkflowData,
         is_public: isPublic,
       });
 
