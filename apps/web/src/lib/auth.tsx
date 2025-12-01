@@ -15,7 +15,7 @@ import {
   logout as apiLogout,
   refreshAccessToken as apiRefresh,
   getMyProfile as apiGetMyProfile,
-  adminCreateUser,
+  firstAdminSignup,
   type MyProfileResponse,
   type LoginResponse,
   type RefreshResponse,
@@ -215,7 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (name: string, email: string, password: string) => {
       setLoading(true);
       setError(null);
-      const { error } = await adminCreateUser(name, email, password);
+      const { error } = await firstAdminSignup(name, email, password);
       if (error) {
         setError(getErrorMessage(error));
         setLoading(false);
