@@ -25,6 +25,7 @@ import { IfInspector } from "./inspectors/IfInspector";
 import { HttpInspector } from "./inspectors/HttpInspector";
 import { SmtpInspector } from "./inspectors/SmtpInspector";
 import { SwitchInspector } from "./inspectors/SwitchInspector";
+import { toast } from "@/components/ui/toast";
 
 type InspectorProps = {
   selectedNode: CanvasNode | null;
@@ -312,9 +313,12 @@ export function Inspector({
             {/* Footer Actions */}
             <div className="shrink-0 border-t border-border/40 p-6 pt-4">
               <div className="flex items-center justify-between">
-                <div className="text-xs text-muted-foreground">
-                  Changes are saved automatically
-                </div>
+                <button
+                  onClick={() => toast.success("Changes saved")}
+                  className="inline-flex h-9 items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-5 text-sm text-muted-foreground transition-colors hover:bg-muted/60"
+                >
+                  Save
+                </button>
                 <div className="flex gap-2">
                   {onTogglePin && (
                     <button
