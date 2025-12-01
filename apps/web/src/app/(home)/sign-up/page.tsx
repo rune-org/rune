@@ -7,15 +7,29 @@ import { useRouter } from "next/navigation";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { useAuth } from "@/lib/auth";
+import { checkFirstTimeSetup } from "@/lib/api/auth";
 
 export default function SignUpPage() {
   const router = useRouter();
   const { state } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [checkingSetup, setCheckingSetup] = useState(true);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    checkFirstTimeSetup().then(({ data }) => {
+      if (!data?.data.requires_setup) {
+        router.replace("/sign-in");
+      } else {
+        setCheckingSetup(false);
+      }
+    });
+  }, [mounted, router]);
 
   useEffect(() => {
     if (mounted && !state.loading && state.user) {
@@ -23,7 +37,7 @@ export default function SignUpPage() {
     }
   }, [mounted, state.loading, state.user, router]);
 
-  if (!mounted || state.loading) {
+  if (!mounted || state.loading || checkingSetup) {
     return (
       <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center py-12 px-4">
         <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">

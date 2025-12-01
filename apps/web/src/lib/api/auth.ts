@@ -4,6 +4,8 @@ import {
   logoutAuthLogoutPost,
   getMyProfileProfileMeGet,
   createUserUsersPost,
+  firstAdminSignupAuthFirstAdminSignupPost,
+  checkFirstTimeSetupAuthFirstTimeSetupGet,
 } from "@/client";
 
 import type {
@@ -28,9 +30,13 @@ export const getMyProfile = () => getMyProfileProfileMeGet({});
 export const adminCreateUser = (
   name: string,
   email: string,
-  password: string,
   role: "user" | "admin" = "user",
-) => createUserUsersPost({ body: { name, email, password, role } });
+) => createUserUsersPost({ body: { name, email, role } });
+
+export const firstAdminSignup = (name: string, email: string, password: string) =>
+  firstAdminSignupAuthFirstAdminSignupPost({ body: { name, email, password } });
+
+export const checkFirstTimeSetup = () => checkFirstTimeSetupAuthFirstTimeSetupGet();
 
 // Useful types to consume in app code
 export type MyProfileResponse = GetMyProfileProfileMeGetResponse;
