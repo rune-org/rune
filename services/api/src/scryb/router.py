@@ -1,0 +1,47 @@
+from typing import Literal
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+
+from src.db.models import Workflow
+from src.workflow.service import WorkflowService
+from src.core.dependencies import DatabaseDep
+from src.workflow.dependencies import get_workflow_with_permission
+from src.workflow.permissions import require_workflow_permission
+from src.core.responses import ApiResponse
+from src.scryb.generator import DocumentationGenerator
+
+
+router = APIRouter(prefix="/workflows", tags=["Workflows"])
+
+
+def get_workflow_service(db: DatabaseDep) -> WorkflowService:
+    """Dependency to get workflow service instance."""
+    return WorkflowService(db=db)
+
+
+class WorkflowDetailDocs(BaseModel):
+    docs: str
+
+
+@router.post("/{workflow_id}/docs", response_model=ApiResponse[WorkflowDetailDocs])
+@require_workflow_permission("view")
+async def generate_workflow_docs(
+    workflow: Workflow = Depends(get_workflow_with_permission),
+    target_audience: Literal[
+        "Technical Developer", "Executive Summary"
+    ] = "Technical Developer",
+):
+    """Generate documentation for the specified workflow."""
+
+    # 1. Prepare Workflow Data
+    workflow_data = workflow.workflow_data.copy() if workflow.workflow_data else {}
+
+    workflow_data["id"] = str(workflow.id)
+    workflow_data["name"] = workflow.name
+    workflow_data["description"] = workflow.description
+
+    # 2. Generate Documentation
+    generator = DocumentationGenerator()
+    docs = generator.generate(workflow_data, target_audience)
+
+    return ApiResponse(data=WorkflowDetailDocs(docs=docs))
