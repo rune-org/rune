@@ -1,4 +1,3 @@
-
 services:
   nginx:
     image: "nginx:latest"
@@ -101,6 +100,7 @@ services:
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}
       # Encryption Key (use from .env or default for development)
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-your-google-api-key-here}
     expose:
       - "8000"
     depends_on:
