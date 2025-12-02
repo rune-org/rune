@@ -1,18 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:base",
-    "security:github"
-  ],
-
-  "packageRules": [
-    {
-      "description": "Disable all non-security updates",
-      "matchPackagePatterns": ["*"],
-      "matchUpdateTypes": ["minor", "major", "patch", "pin", "digest", "lockFileMaintenance", "rollback", "bump"],
-      "enabled": false
-    }
-  ],
+  "extends": ["config:base", "security:github"],
+  
+  "enabled": false,
 
   "vulnerabilityAlerts": {
     "enabled": true,
