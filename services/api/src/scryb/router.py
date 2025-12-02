@@ -1,6 +1,4 @@
-from typing import Literal
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
 
 from src.db.models import Workflow
 from src.workflow.service import WorkflowService
@@ -9,6 +7,7 @@ from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
 from src.core.responses import ApiResponse
 from src.scryb.generator import DocumentationGenerator
+from src.scryb.schemas import WorkflowDetailDocs, GenerateWorkflowDocsRequest
 
 
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
@@ -17,16 +16,6 @@ router = APIRouter(prefix="/workflows", tags=["Workflows"])
 def get_workflow_service(db: DatabaseDep) -> WorkflowService:
     """Dependency to get workflow service instance."""
     return WorkflowService(db=db)
-
-
-class WorkflowDetailDocs(BaseModel):
-    docs: str
-
-
-class GenerateWorkflowDocsRequest(BaseModel):
-    target_audience: Literal["Technical Developer", "Executive Summary"] = (
-        "Executive Summary"
-    )
 
 
 @router.post("/{workflow_id}/docs", response_model=ApiResponse[WorkflowDetailDocs])
