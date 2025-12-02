@@ -1,13 +1,15 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:base",
+    "security:github"
   ],
 
   "packageRules": [
     {
-      "description": "Disable all standard updates by default",
+      "description": "Disable all non-security updates",
       "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["minor", "major", "patch", "pin", "digest", "lockFileMaintenance", "rollback", "bump"],
       "enabled": false
     }
   ],
@@ -15,8 +17,8 @@
   "vulnerabilityAlerts": {
     "enabled": true,
     "labels": ["security"],
-    "assignees": ["ashmod"]
+    "assignees": ["ashmod"],
+    "commitMessageTopic": "security fix"
   },
-  
   "osvVulnerabilityAlerts": true
 }
