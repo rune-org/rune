@@ -44,32 +44,31 @@ class WorkflowQueueService:
 
         # Validate trigger nodes - must have exactly one
         trigger_nodes = [node for node in nodes if node.get("trigger", False)]
-        
+
         if len(trigger_nodes) != 1:
             raise ValueError("Workflow must have exactly one trigger node")
-        
+
         # Get the single trigger node
         trigger_node = trigger_nodes[0]
         trigger_node_id = trigger_node.get("id")
-        
+
         # Find the executable nodes the trigger points to
         first_nodes = []
-        
+
         for edge in edges:
             if edge.get("src") == trigger_node_id:
                 # This edge comes from the trigger node
                 dst_node_id = edge.get("dst")
                 first_nodes.append(dst_node_id)
-        
+
         if not first_nodes:
             raise ValueError(
                 f"Trigger node '{trigger_node_id}' has no outgoing edges to executable nodes. "
                 "Please connect the trigger to at least one executable node."
             )
-        
+
         # For now, use the first one (in the future, might send multiple messages)
         first_node = first_nodes[0]
-        
 
         payload = NodeExecutionMessage(
             workflow_id=str(workflow_id),
