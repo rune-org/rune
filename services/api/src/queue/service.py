@@ -62,10 +62,7 @@ class WorkflowQueueService:
                 first_nodes.append(dst_node_id)
 
         if not first_nodes:
-            raise ValueError(
-                f"Trigger node '{trigger_node_id}' has no outgoing edges to executable nodes. "
-                "Please connect the trigger to at least one executable node."
-            )
+            return None
 
         # For now, use the first one (in the future, might send multiple messages)
         first_node = first_nodes[0]
