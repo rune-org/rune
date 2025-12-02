@@ -23,13 +23,17 @@ class WorkflowDetailDocs(BaseModel):
     docs: str
 
 
+class GenerateWorkflowDocsRequest(BaseModel):
+    target_audience: Literal["Technical Developer", "Executive Summary"] = (
+        "Executive Summary"
+    )
+
+
 @router.post("/{workflow_id}/docs", response_model=ApiResponse[WorkflowDetailDocs])
 @require_workflow_permission("view")
 async def generate_workflow_docs(
+    style_request: GenerateWorkflowDocsRequest,
     workflow: Workflow = Depends(get_workflow_with_permission),
-    target_audience: Literal[
-        "Technical Developer", "Executive Summary"
-    ] = "Technical Developer",
 ):
     """Generate documentation for the specified workflow."""
 
@@ -42,6 +46,6 @@ async def generate_workflow_docs(
 
     # 2. Generate Documentation
     generator = DocumentationGenerator()
-    docs = generator.generate(workflow_data, target_audience)
+    docs = generator.generate(workflow_data, style_request.target_audience)
 
     return ApiResponse(data=WorkflowDetailDocs(docs=docs))
