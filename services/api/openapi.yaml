@@ -1256,6 +1256,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/docs:
+    post:
+      tags:
+      - Workflows
+      summary: Generate Workflow Docs
+      description: Generate documentation for the specified workflow.
+      operationId: generate_workflow_docs_workflows__workflow_id__docs_post
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateWorkflowDocsRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowDetailDocs_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AdminPasswordResetResponse:
@@ -1550,6 +1583,25 @@ components:
       required:
       - data
       title: ApiResponse[UserResponse]
+    ApiResponse_WorkflowDetailDocs_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/WorkflowDetailDocs'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[WorkflowDetailDocs]
     ApiResponse_WorkflowDetail_:
       properties:
         success:
@@ -1982,6 +2034,17 @@ components:
       - message
       title: FirstTimeSetupStatus
       description: Response schema for first-time setup status check.
+    GenerateWorkflowDocsRequest:
+      properties:
+        target_audience:
+          type: string
+          enum:
+          - Technical Developer
+          - Executive Summary
+          title: Target Audience
+          default: Executive Summary
+      type: object
+      title: GenerateWorkflowDocsRequest
     HTTPValidationError:
       properties:
         detail:
@@ -2371,6 +2434,15 @@ components:
       - created_at
       - updated_at
       title: WorkflowDetail
+    WorkflowDetailDocs:
+      properties:
+        docs:
+          type: string
+          title: Docs
+      type: object
+      required:
+      - docs
+      title: WorkflowDetailDocs
     WorkflowListItem:
       properties:
         id:

@@ -332,6 +332,28 @@ export type ApiResponseUserResponse = {
 };
 
 /**
+ * ApiResponse[WorkflowDetailDocs]
+ */
+export type ApiResponseWorkflowDetailDocs = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: WorkflowDetailDocs;
+};
+
+/**
  * ApiResponse[WorkflowDetail]
  */
 export type ApiResponseWorkflowDetail = {
@@ -801,6 +823,16 @@ export type FirstTimeSetupStatus = {
 };
 
 /**
+ * GenerateWorkflowDocsRequest
+ */
+export type GenerateWorkflowDocsRequest = {
+    /**
+     * Target Audience
+     */
+    target_audience?: 'Technical Developer' | 'Executive Summary';
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -1194,6 +1226,16 @@ export type WorkflowDetail = {
      * Updated At
      */
     updated_at: string;
+};
+
+/**
+ * WorkflowDetailDocs
+ */
+export type WorkflowDetailDocs = {
+    /**
+     * Docs
+     */
+    docs: string;
 };
 
 /**
@@ -2400,3 +2442,33 @@ export type ListCredentialSharesCredentialsCredentialIdSharesGetResponses = {
 };
 
 export type ListCredentialSharesCredentialsCredentialIdSharesGetResponse = ListCredentialSharesCredentialsCredentialIdSharesGetResponses[keyof ListCredentialSharesCredentialsCredentialIdSharesGetResponses];
+
+export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostData = {
+    body: GenerateWorkflowDocsRequest;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/docs';
+};
+
+export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostError = GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors[keyof GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors];
+
+export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseWorkflowDetailDocs;
+};
+
+export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponse = GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses[keyof GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses];
