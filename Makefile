@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-infra api-server api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
 
 # Default target
 help:
@@ -22,8 +22,11 @@ help:
 	@echo "  make web-typecheck - Type check frontend code"
 	@echo ""
 	@echo "API targets:"
-	@echo "  make api-install   - Install API dependencies"
-	@echo "  make api-dev       - Start API in dev mode"
+	@echo "  make api-install        - Install API dependencies (creates/uses venv)"
+	@echo "  make api-install-no-env - Install API dependencies to system Python"
+	@echo "  make api-dev            - Start API infrastructure and server in dev mode"
+	@echo "  make api-infra     - Start API infrastructure only (postgres, redis, rabbitmq)"
+	@echo "  make api-server    - Start FastAPI server in dev mode (hot-reload)"
 	@echo "  make api-lint      - Lint API code with ruff"
 	@echo "  make api-format    - Format API code with ruff"
 	@echo ""
@@ -68,8 +71,43 @@ web-install:
 	cd apps/web && pnpm install
 
 api-install:
-	@echo "Installing API dependencies..."
-	cd services/api && pip install -r requirements.txt
+	@echo "Setting up API dependencies..."
+	@if [ ! -d "services/api/venv" ] && [ ! -d "services/api/.venv" ]; then \
+		echo "Creating virtual environment..."; \
+		cd services/api && python3 -m venv venv; \
+	fi
+	@if [ -d "services/api/venv" ]; then \
+		echo "Using virtual environment: services/api/venv"; \
+		cd services/api && . venv/bin/activate && pip install -r requirements.txt; \
+		echo "✓ API dependencies installed"; \
+	elif [ -d "services/api/.venv" ]; then \
+		echo "Using virtual environment: services/api/.venv"; \
+		cd services/api && . .venv/bin/activate && pip install -r requirements.txt; \
+		echo "✓ API dependencies installed"; \
+	else \
+		echo "❌ Error: No virtual environment found and could not create one"; \
+		echo ""; \
+		echo "   For best results, create a virtual environment:"; \
+		echo "   cd services/api && python3 -m venv venv"; \
+		echo ""; \
+		echo "   If you need to install to system Python (not recommended), use:"; \
+		echo "   make api-install-no-env"; \
+		exit 1; \
+	fi
+
+api-install-no-env:
+	@echo "⚠️  Warning: This will install packages to your system Python"
+	@echo "   For isolated dependencies, use 'make api-install' instead"
+	@echo ""
+	@read -p "Continue with system Python installation? [y/N]: " confirm && \
+		if [ "$$confirm" != "y" ] && [ "$$confirm" != "Y" ]; then \
+			echo "Installation cancelled."; \
+			exit 0; \
+		else \
+			echo "Installing API dependencies to system Python..."; \
+			cd services/api && pip install -r requirements.txt && \
+			echo "✓ API dependencies installed to system Python"; \
+		fi
 
 worker-install:
 	@echo "Installing worker dependencies..."
@@ -86,9 +124,28 @@ web-dev:
 	@echo "Starting frontend in development mode..."
 	cd apps/web && pnpm dev
 
-api-dev:
-	@echo "Starting API in development mode..."
+api-infra:
+	@echo "Starting API infrastructure services..."
 	cd services/api && docker compose -f docker-compose.dev.yml up -d
+
+api-server:
+	@echo "Starting FastAPI server in development mode..."
+	@if [ -d "services/api/venv" ]; then \
+		echo "Using virtual environment: services/api/venv"; \
+		echo "Installing/updating dependencies..."; \
+		cd services/api && . venv/bin/activate && pip install -r requirements.txt && fastapi dev src/app.py; \
+	elif [ -d "services/api/.venv" ]; then \
+		echo "Using virtual environment: services/api/.venv"; \
+		echo "Installing/updating dependencies..."; \
+		cd services/api && . .venv/bin/activate && pip install -r requirements.txt && fastapi dev src/app.py; \
+	else \
+		echo "⚠️  No virtual environment found. Using system Python."; \
+		echo "   For best results, create a venv: cd services/api && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt"; \
+		cd services/api && fastapi dev src/app.py || (echo "❌ FastAPI not found. Please install dependencies: cd services/api && pip install -r requirements.txt" && exit 1); \
+	fi
+
+api-dev: api-infra api-server
+	@echo "✓ API development environment ready"
 
 worker-dev:
 	@echo "Starting worker in development mode..."

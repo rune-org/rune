@@ -305,6 +305,7 @@ function CanvasPageInner() {
           onPersist={handlePersist}
           onRun={handleRun}
           saveDisabled={isSaving}
+          workflowId={numericWorkflowId}
         />
       </div>
 

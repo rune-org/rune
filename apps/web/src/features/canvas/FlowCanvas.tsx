@@ -21,7 +21,7 @@ import "./styles/reactflow.css";
 import { nodeTypes } from "./nodes";
 import type { CanvasNode } from "./types";
 import { Toolbar } from "./components/Toolbar";
-import { Inspector } from "./components/Inspector";
+import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
 import { SaveTemplateDialog } from "./components/SaveTemplateDialog";
 import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
@@ -52,6 +52,7 @@ export default function FlowCanvas({
   onPersist,
   onRun,
   saveDisabled = false,
+  workflowId,
 }: {
   externalNodes?: CanvasNode[];
   externalEdges?: Edge[];
@@ -61,6 +62,7 @@ export default function FlowCanvas({
   }) => Promise<void> | void;
   onRun?: (graph: { nodes: CanvasNode[]; edges: Edge[] }) => Promise<void> | void;
   saveDisabled?: boolean;
+  workflowId?: number | null;
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>(
     externalNodes && externalNodes.length ? externalNodes : [],
@@ -524,8 +526,8 @@ export default function FlowCanvas({
           </div>
         </Panel>
 
-        {/* Inspector */}
-        <Inspector
+        {/* Right Sidebar (Inspector + Scryb) */}
+        <RightPanelStack
           selectedNode={selectedNode}
           updateSelectedNodeLabel={updateSelectedNodeLabel}
           updateData={updateNodeData}
@@ -533,6 +535,7 @@ export default function FlowCanvas({
           isExpandedDialogOpen={isInspectorExpanded}
           setIsExpandedDialogOpen={setIsInspectorExpanded}
           onTogglePin={togglePin}
+          workflowId={workflowId}
         />
 
         {/* Hints */}
