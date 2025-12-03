@@ -11,10 +11,15 @@ class WorkflowSignature(dspy.Signature):
     2. Connecting them with edges (src -> dst)
     3. Calling build_workflow to assemble
 
-    Use get_node_types to see available nodes and their fields.
+    Node schemas (fields/outputs):
+    trigger: {}
+    http: fields: method (GET|POST|PUT|DELETE, required), url (required), headers, body. outputs: status, body, headers
+    smtp: fields: to (required), subject, body. outputs: sent
+    if: fields: expression (required). outputs: true, false. Use label "true"/"false" on edges
+    switch: fields: rules (array of {value, operator, compare}, all string). outputs: case 1, case 2, ..., fallback. Use labels "case 1"/"case 2"/... or "fallback" on edges.
+
     Reference previous node outputs with $NodeName.field (e.g., $Fetch.status).
-    
-    For conditional (if) nodes, use label="true" or label="false" on edges.
+    For conditional (if) nodes, use label="true" or "false" on edges.
     For switch nodes, use label="case 1", "case 2", etc. or "fallback" on edges.
     """
 

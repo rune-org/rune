@@ -10,16 +10,7 @@ def _generate_id() -> str:
     return str(uuid.uuid4())
 
 
-def get_node_types() -> str:
-    """Get all available node types and their schemas.
-
-    Returns:
-        JSON with node types, their fields, and outputs.
-    """
-    return json.dumps(NODE_SCHEMAS, indent=2)
-
-
-def create_node(node_type: str, name: str, params: str = "{}") -> str:
+def create_node(node_type: str, name: str, params: str | dict = "{}") -> str:
     """Create a workflow node.
 
     Args:
@@ -46,7 +37,10 @@ def create_node(node_type: str, name: str, params: str = "{}") -> str:
         return json.dumps({"error": f"Unknown type '{node_type}'. Valid: {list(NODE_SCHEMAS.keys())}"})
 
     try:
-        parameters = json.loads(params) if params else {}
+        if isinstance(params, dict):
+            parameters = params
+        else:
+            parameters = json.loads(params) if params else {}
     except json.JSONDecodeError as e:
         return json.dumps({"error": f"Invalid JSON: {e}"})
 
@@ -168,7 +162,6 @@ def _validate(nodes: list, edges: list) -> list:
 
 
 SMITH_TOOLS = [
-    get_node_types,
     create_node,
     create_edge,
     build_workflow,
