@@ -52,6 +52,7 @@ export default function FlowCanvas({
   onPersist,
   onRun,
   saveDisabled = false,
+  workflowId,
 }: {
   externalNodes?: CanvasNode[];
   externalEdges?: Edge[];
@@ -61,6 +62,7 @@ export default function FlowCanvas({
   }) => Promise<void> | void;
   onRun?: (graph: { nodes: CanvasNode[]; edges: Edge[] }) => Promise<void> | void;
   saveDisabled?: boolean;
+  workflowId?: number | null;
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>(
     externalNodes && externalNodes.length ? externalNodes : [],
@@ -533,6 +535,7 @@ export default function FlowCanvas({
           isExpandedDialogOpen={isInspectorExpanded}
           setIsExpandedDialogOpen={setIsInspectorExpanded}
           onTogglePin={togglePin}
+          workflowId={workflowId}
         />
 
         {/* Hints */}

@@ -16,10 +16,12 @@ type RightPanelStackProps = {
   isExpandedDialogOpen?: boolean;
   setIsExpandedDialogOpen?: (open: boolean) => void;
   onTogglePin?: (nodeId: string) => void;
+  workflowId?: number | null;
 };
 
 export function RightPanelStack(props: RightPanelStackProps) {
   const [isScrybOpen, setIsScrybOpen] = useState(false);
+  const { workflowId, ...inspectorProps } = props;
 
   return (
     <Panel 
@@ -29,7 +31,7 @@ export function RightPanelStack(props: RightPanelStackProps) {
       {/* Top: Inspector */}
       <div className="pointer-events-auto min-h-0 flex flex-col items-end overflow-visible">
         <Inspector
-          {...props}
+          {...inspectorProps}
           renderInPanel={false}
           className={cn(
             "transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
@@ -45,6 +47,7 @@ export function RightPanelStack(props: RightPanelStackProps) {
         <ScrybInterface
           isOpen={isScrybOpen}
           onOpenChange={setIsScrybOpen}
+          workflowId={workflowId}
         />
       </div>
     </Panel>
