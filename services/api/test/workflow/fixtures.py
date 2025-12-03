@@ -37,8 +37,16 @@ async def sample_workflow(test_db, test_user):
         name="Sample Workflow",
         description="A sample workflow for testing",
         workflow_data={
-            "nodes": [{"id": "node-1", "type": "trigger", "data": {"label": "Start"}}],
-            "edges": [],
+            "nodes": [
+                {
+                    "id": "node-1",
+                    "type": "trigger",
+                    "trigger": True,
+                    "data": {"label": "Start"},
+                },
+                {"id": "node-2", "type": "action", "data": {"label": "Action"}},
+            ],
+            "edges": [{"id": "edge-1", "src": "node-1", "dst": "node-2"}],
         },
         is_active=False,
         version=1,

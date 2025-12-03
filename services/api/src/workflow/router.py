@@ -15,6 +15,7 @@ from src.core.dependencies import (
     require_password_changed,
     get_current_user,
 )
+from src.core.exceptions import BadRequest
 from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
 from src.core.responses import ApiResponse
@@ -180,10 +181,14 @@ async def run_workflow(
     execution_id = f"exec_{uuid.uuid4().hex[:16]}"
 
     # Publish workflow run message to queue with resolved credentials
-    await queue_service.publish_workflow_run(
-        workflow_id=workflow.id,
-        execution_id=execution_id,
-        workflow_data=resolved_workflow_data,
-    )
+    try:
+        await queue_service.publish_workflow_run(
+            workflow_id=workflow.id,
+            execution_id=execution_id,
+            workflow_data=resolved_workflow_data,
+        )
+    except ValueError as e:
+        # Workflow validation errors (e.g., missing trigger, multiple triggers, invalid structure)
+        raise BadRequest(detail=str(e))
 
     return ApiResponse(success=True, message="Workflow run queued", data=execution_id)
