@@ -153,21 +153,21 @@ export function ScrybInterface({
                 x: [0, -40, 0], 
                 y: [0, 40, 0],
                 scale: [1, 1.2, 1],
-                opacity: [0.3, 0.6, 0.3]
+                opacity: [0.1, 0.3, 0.1]
               }}
               transition={{ 
                 duration: 8, 
                 repeat: Infinity, 
                 ease: "easeInOut" 
               }}
-              className="absolute -top-[100px] -right-[100px] w-[300px] h-[300px] rounded-full bg-purple-500/30 blur-[80px] pointer-events-none z-0" 
+              className="absolute -top-[100px] -right-[100px] w-[300px] h-[300px] rounded-full bg-purple-500/20 blur-[80px] pointer-events-none z-0" 
             />
             <motion.div 
               animate={{ 
                 x: [0, 50, 0], 
                 y: [0, -40, 0],
                 scale: [1, 1.3, 1],
-                opacity: [0.3, 0.5, 0.3]
+                opacity: [0.1, 0.25, 0.1]
               }}
               transition={{ 
                 duration: 10, 
@@ -175,7 +175,7 @@ export function ScrybInterface({
                 ease: "easeInOut",
                 delay: 1
               }}
-              className="absolute -bottom-[100px] -left-[100px] w-[300px] h-[300px] rounded-full bg-emerald-500/30 blur-[80px] pointer-events-none z-0" 
+              className="absolute -bottom-[100px] -left-[100px] w-[300px] h-[300px] rounded-full bg-emerald-500/20 blur-[80px] pointer-events-none z-0" 
             />
             
             <div className="relative z-10">
@@ -231,32 +231,40 @@ export function ScrybInterface({
                       </div>
 
                       {/* Target Audience Selector */}
-                      <div className="space-y-2">
-                        <label className="font-sans text-xs tracking-wide text-zinc-500">Target Audience</label>
+                      <div className="space-y-2 mt-1 mb-4">
+                        <label className="block font-sans text-xs tracking-wide text-zinc-500 -mt-2.5 mb-4">Target Audience</label>
                         <div className="flex gap-2">
                           <button
                             type="button"
                             onClick={() => setTargetAudience("Technical Developer")}
                             className={cn(
-                              "flex-1 rounded-xl border px-3 py-2 font-sans text-xs transition-all",
+                              "flex-1 rounded-xl border px-3 py-2 text-xs transition-all",
                               targetAudience === "Technical Developer"
-                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                                : "border-white/[0.06] bg-white/[0.03] text-zinc-400 hover:bg-white/[0.05]"
+                                ? "border-white/20 bg-white/5 backdrop-blur-md text-zinc-100 shadow-sm"
+                                : "border-white/[0.05] bg-transparent text-zinc-500 hover:bg-white/[0.05]"
                             )}
+                            style={{
+                              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                              fontWeight: targetAudience === "Technical Developer" ? 700 : 400
+                            }}
                           >
-                            Technical
+                            TECHNICAL
                           </button>
                           <button
                             type="button"
                             onClick={() => setTargetAudience("Executive Summary")}
                             className={cn(
-                              "flex-1 rounded-xl border px-3 py-2 font-sans text-xs transition-all",
+                              "flex-1 rounded-xl border px-3 py-2 text-xs transition-all",
                               targetAudience === "Executive Summary"
-                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                                : "border-white/[0.06] bg-white/[0.03] text-zinc-400 hover:bg-white/[0.05]"
+                                ? "border-white/20 bg-white/5 backdrop-blur-md text-zinc-100 shadow-sm"
+                                : "border-white/[0.05] bg-transparent text-zinc-500 hover:bg-white/[0.05]"
                             )}
+                            style={{
+                              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                              fontWeight: targetAudience === "Executive Summary" ? 700 : 400
+                            }}
                           >
-                            Executive
+                            EXECUTIVE
                           </button>
                         </div>
                       </div>
@@ -360,7 +368,7 @@ export function ScrybInterface({
                       <div className="flex gap-3 font-sans">
                         <Button
                           variant="outline"
-                          className="flex-1 gap-2 rounded-2xl border-white/[0.1] bg-white/[0.05] text-zinc-300 hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-zinc-100"
+                          className="flex-1 gap-2 rounded-2xl border-0 bg-white/[0.05] text-zinc-300 hover:bg-white/[0.08] hover:text-zinc-100"
                           onClick={resetView}
                         >
                           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -372,7 +380,7 @@ export function ScrybInterface({
                           style={{ backgroundColor: 'rgba(255,255,255,0.9)', color: '#18181b' }}
                           onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,1)'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.9)'; }}
-                          onClick={handleOpenInNewTab}
+                          onClick={handleOpenInNewTab} // TODO(ash): in-app markdown renderer
                         >
                           <ExternalLink className="h-4 w-4" aria-hidden="true" />
                           Open
