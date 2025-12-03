@@ -1,0 +1,2555 @@
+[
+  {
+    "id": "12",
+    "name": "09_new_user_welcome_email",
+    "description": "",
+    "steps": [
+      {
+        "id": "e5f6a7b8-c9d0-1234-e123-567890123456",
+        "name": "Create_New_User",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users",
+          "body": {
+            "name": "Jane Doe",
+            "email": "jane.doe@example.com",
+            "phone": "555-0123",
+            "username": "janedoe"
+          },
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Send Welcome Email",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "f6a7b8c9-d0e1-2345-f234-678901234567",
+        "name": "Send Welcome Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "sophia.martinez963@workflow.dev",
+          "body": "Hello $Create_New_User.body.name,\\n\\nWelcome to our platform! Your account has been successfully created.\\n\\nUsername: $Create_New_User.body.username\\nEmail: $Create_New_User.body.email\\n\\nWe're excited to have you on board!\\n\\nBest regards,\\nThe Team",
+          "from": "mjohnson408@mailtest.com",
+          "subject": "Welcome to Our Platform, $Create_New_User.body.name!"
+        },
+        "parent_step_name": "Create_New_User",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "11",
+    "name": "07_email_api_status",
+    "description": "",
+    "steps": [
+      {
+        "id": "a1b2c3d4-e5f6-7890-a789-123456789012",
+        "name": "Check_API_Health",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://httpbin.org/status/200",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Send Status Email",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "b2c3d4e5-f6a7-8901-b890-234567890123",
+        "name": "Send Status Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "zgonzalez611@automation.test",
+          "body": "API Health Check Results:\\n\\nStatus Code: $Check_API_Health.status\\n\\nThe API is responding normally.",
+          "from": "frank_taylor81@demo.net",
+          "subject": "API Health Check - Status $Check_API_Health.status"
+        },
+        "parent_step_name": "Check_API_Health",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "9",
+    "name": "05_get_posts",
+    "description": "",
+    "steps": [
+      {
+        "id": "c7d8e9f0-a1b2-3456-c345-789012345678",
+        "name": "Search_Posts",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "query": {
+            "_limit": "5",
+            "userId": "1"
+          },
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "8",
+    "name": "02_post_user",
+    "description": "",
+    "steps": [
+      {
+        "id": "c1d2e3f4-a5b6-7890-cdef-123456789012",
+        "name": "Create_User",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users",
+          "body": {
+            "name": "Test User",
+            "email": "testuser@example.com",
+            "username": "testuser"
+          },
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "parent_step_name": null,
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "10",
+    "name": "06_email_user_data",
+    "description": "",
+    "steps": [
+      {
+        "id": "e9f0a1b2-c3d4-5678-e567-901234567890",
+        "name": "Get_User_Data",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/1",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Email User Summary",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "f0a1b2c3-d4e5-6789-f678-012345678901",
+        "name": "Email User Summary",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "liam.garcia999@mailtest.com",
+          "body": "User Details:\\nName: $Get_User_Data.body.name\\nEmail: $Get_User_Data.body.email\\nCompany: $Get_User_Data.body.company.name",
+          "from": "gracemartinez342@workflow.dev",
+          "subject": "User Data Retrieved"
+        },
+        "parent_step_name": "Get_User_Data",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "13",
+    "name": "11_cascade_http_get",
+    "description": "",
+    "steps": [
+      {
+        "id": "c9d0e1f2-a3b4-5678-c567-012345678901",
+        "name": "Get_User",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/5",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Get_User_Posts",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "d0e1f2a3-b4c5-6789-d678-123456789012",
+        "name": "Get_User_Posts",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "query": {
+            "userId": "$Get_User.body.id"
+          },
+          "method": "GET"
+        },
+        "parent_step_name": "Get_User",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "14",
+    "name": "12_post_transform",
+    "description": "",
+    "steps": [
+      {
+        "id": "f2a3b4c5-d6e7-8901-f890-345678901234",
+        "name": "Fetch_Raw_Data",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/todos/1",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Transform_Data",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "a3b4c5d6-e7f8-9012-a901-456789012345",
+        "name": "Transform_Data",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "body": {
+            "completed": "$Fetch_Raw_Data.body.completed",
+            "processed": true,
+            "original_title": "$Fetch_Raw_Data.body.title"
+          },
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "parent_step_name": "Fetch_Raw_Data",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "16",
+    "name": "13_cascade_http_get_then_post",
+    "description": "",
+    "steps": [
+      {
+        "id": "c5d6e7f8-a9b0-1234-c123-678901234567",
+        "name": "Step_One",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://dummyjson.com/products/1",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Step_Two",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "d6e7f8a9-b0c1-2345-d234-789012345678",
+        "name": "Step_Two",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://dummyjson.com/users/1",
+          "method": "GET"
+        },
+        "parent_step_name": "Step_One",
+        "edges": [
+          {
+            "target_step_name": "Step_Three",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "e7f8a9b0-c1d2-3456-e345-890123456789",
+        "name": "Step_Three",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "body": {
+            "user_name": "{{$Step_Two.body.firstName}}",
+            "product_id": "{{$Step_One.body.id}}",
+            "product_title": "{{$Step_One.body.title}}",
+            "cascade_complete": true
+          },
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "parent_step_name": "Step_Two",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "17",
+    "name": "15_cascade_http_get_then_email",
+    "description": "",
+    "steps": [
+      {
+        "id": "c1d2e3f4-a5b6-7890-c789-234567890123",
+        "name": "Stage_One",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/2",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Stage_Two",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "d2e3f4a5-b6c7-8901-d890-345678901234",
+        "name": "Stage_Two",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "query": {
+            "_limit": "3",
+            "userId": "2"
+          },
+          "method": "GET"
+        },
+        "parent_step_name": "Stage_One",
+        "edges": [
+          {
+            "target_step_name": "Stage Three Notify",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "e3f4a5b6-c7d8-9012-e901-456789012345",
+        "name": "Stage Three Notify",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "cjackson819@automation.test",
+          "body": "Sequential Processing Results:\\n\\nUser: $Stage_One.body.name\\nEmail: $Stage_One.body.email\\nPosts Retrieved: $Stage_Two.body\\n\\nProcessing completed successfully.",
+          "from": "jackbrown85@usertest.org",
+          "subject": "Processing Complete for $Stage_One.body.name"
+        },
+        "parent_step_name": "Stage_Two",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "18",
+    "name": "16_if_statusOK",
+    "description": "",
+    "steps": [
+      {
+        "id": "f4a5b6c7-d8e9-0123-f012-567890123456",
+        "name": "Check_Endpoint",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts/1",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Is Status OK",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "a5b6c7d8-e9f0-1234-a123-678901234567",
+        "name": "Is Status OK",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Check_Endpoint.status == 200"
+        },
+        "parent_step_name": "Check_Endpoint",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "21",
+    "name": "22_if_post_success",
+    "description": "",
+    "steps": [
+      {
+        "id": "f8a9b0c1-d2e3-4567-f456-901234567890",
+        "name": "Create_Resource",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "body": {
+            "body": "Test content",
+            "title": "Test Resource",
+            "userId": 1
+          },
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Creation_Success",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "a9b0c1d2-e3f4-5678-a567-012345678901",
+        "name": "Creation_Success",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Create_Resource.status == 201"
+        },
+        "parent_step_name": "Create_Resource",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "19",
+    "name": "17_email_if_user_exist",
+    "description": "",
+    "steps": [
+      {
+        "id": "d8e9f0a1-b2c3-4567-d456-901234567890",
+        "name": "Fetch_User",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/1",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "User_Found",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "e9f0a1b2-c3d4-5678-e567-012345678901",
+        "name": "User_Found",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Fetch_User.status == 200",
+          "true_edge_id": "User_Exists_Email"
+        },
+        "parent_step_name": "Fetch_User",
+        "edges": [
+          {
+            "target_step_name": "User_Exists_Email",
+            "label": "Condition met: $Fetch_User.status == 200"
+          }
+        ]
+      },
+      {
+        "id": "f0a1b2c3-d4e5-6789-f678-123456789012",
+        "name": "User_Exists_Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "gmartin630@demo.net",
+          "body": "User Details:\\nName: $Fetch_User.body.name\\nEmail: $Fetch_User.body.email\\nUsername: $Fetch_User.body.username\\n\\nUser exists in the system.",
+          "from": "katejones387@example.com",
+          "subject": "User Found: $Fetch_User.body.name"
+        },
+        "parent_step_name": "User_Found",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "20",
+    "name": "19_email_if_api_error",
+    "description": "",
+    "steps": [
+      {
+        "id": "f6a7b8c9-d0e1-2345-f234-789012345678",
+        "name": "API_Call",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://reqres.in/api/users/99999",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Has_Error",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "a7b8c9d0-e1f2-3456-a345-890123456789",
+        "name": "Has_Error",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$API_Call.status >= 400",
+          "true_edge_id": "Error_Alert"
+        },
+        "parent_step_name": "API_Call",
+        "edges": [
+          {
+            "target_step_name": "Error_Alert",
+            "label": "Condition met: $API_Call.status >= 400"
+          }
+        ]
+      },
+      {
+        "id": "b8c9d0e1-f2a3-4567-b456-901234567890",
+        "name": "Error_Alert",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "diana_miller801@sample.io",
+          "body": "Error Alert!\\n\\nAPI returned error status: $API_Call.status\\nEndpoint: https://reqres.in/api/users/99999\\n\\nImmediate attention required.",
+          "from": "zack.jones715@demo.net",
+          "subject": "API Error Detected - Status $API_Call.status"
+        },
+        "parent_step_name": "Has_Error",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "22",
+    "name": "23_if_bad_data",
+    "description": "",
+    "steps": [
+      {
+        "id": "d2e3f4a5-b6c7-8901-d890-345678901234",
+        "name": "Fetch_Data",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/3",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Data_Quality_OK",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "e3f4a5b6-c7d8-9012-e901-456789012345",
+        "name": "Data_Quality_OK",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Fetch_Data.body.email != null",
+          "false_edge_id": "Quality_Alert"
+        },
+        "parent_step_name": "Fetch_Data",
+        "edges": [
+          {
+            "target_step_name": "Quality_Alert",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "a5b6c7d8-e9f0-1234-a123-678901234567",
+        "name": "Quality_Alert",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "frodriguez386@example.com",
+          "body": "Data Quality Alert!\\n\\nIncomplete data detected for user ID: $Fetch_Data.body.id\\nMissing critical fields.\\n\\nPlease investigate immediately.",
+          "from": "sam_anderson713@testmail.org",
+          "subject": "Data Quality Issue Detected"
+        },
+        "parent_step_name": "Data_Quality_OK",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "23",
+    "name": "25_get_check_post",
+    "description": "",
+    "steps": [
+      {
+        "id": "f0a1b2c3-d4e5-6789-f678-123456789012",
+        "name": "Get_Comment",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/comments/1",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Contains_Email",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "a1b2c3d4-e5f6-7890-a789-234567890123",
+        "name": "Contains_Email",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Get_Comment.body.email != null",
+          "true_edge_id": "Process_With_Email"
+        },
+        "parent_step_name": "Get_Comment",
+        "edges": [
+          {
+            "target_step_name": "Process_With_Email",
+            "label": "Condition met: $Get_Comment.body.email != null"
+          }
+        ]
+      },
+      {
+        "id": "b2c3d4e5-f6a7-8901-b890-345678901234",
+        "name": "Process_With_Email",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "body": {
+            "email": "$Get_Comment.body.email",
+            "processed": true,
+            "comment_id": "$Get_Comment.body.id"
+          },
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "parent_step_name": "Contains_Email",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "24",
+    "name": "26_get_nested_if",
+    "description": "",
+    "steps": [
+      {
+        "id": "d4e5f6a7-b8c9-0123-d012-567890123456",
+        "name": "Get_Post",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts/1",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "First_Check",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "e5f6a7b8-c9d0-1234-e123-678901234567",
+        "name": "First_Check",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Get_Post.status == 200",
+          "true_edge_id": "Second_Check"
+        },
+        "parent_step_name": "Get_Post",
+        "edges": [
+          {
+            "target_step_name": "Second_Check",
+            "label": "Condition met: $Get_Post.status == 200"
+          }
+        ]
+      },
+      {
+        "id": "f6a7b8c9-d0e1-2345-f234-789012345678",
+        "name": "Second_Check",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Get_Post.body.title != null"
+        },
+        "parent_step_name": "First_Check",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "25",
+    "name": "27_get_nested_if_email",
+    "description": "",
+    "steps": [
+      {
+        "id": "e7f8a9b0-c1d2-3456-e345-890123456789",
+        "name": "Get_User_Info",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/4",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Check_Name",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "f8a9b0c1-d2e3-4567-f456-901234567890",
+        "name": "Check_Name",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Get_User_Info.body.name != null",
+          "true_edge_id": "Check_Email"
+        },
+        "parent_step_name": "Get_User_Info",
+        "edges": [
+          {
+            "target_step_name": "Check_Email",
+            "label": "Condition met: $Get_User_Info.body.name != null"
+          }
+        ]
+      },
+      {
+        "id": "a9b0c1d2-e3f4-5678-a567-012345678901",
+        "name": "Check_Email",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Get_User_Info.body.email != null",
+          "true_edge_id": "Send_Valid_User_Email"
+        },
+        "parent_step_name": "Check_Name",
+        "edges": [
+          {
+            "target_step_name": "Send_Valid_User_Email",
+            "label": "Condition met: $Get_User_Info.body.email != null"
+          }
+        ]
+      },
+      {
+        "id": "b0c1d2e3-f4a5-6789-b678-123456789012",
+        "name": "Send_Valid_User_Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "zack.brown125@devmail.net",
+          "body": "User validation complete:\\n\\nName: $Get_User_Info.body.name\\nEmail: $Get_User_Info.body.email\\n\\nAll required fields present.",
+          "from": "xander.taylor648@demo.net",
+          "subject": "User Validation: $Get_User_Info.body.name"
+        },
+        "parent_step_name": "Check_Email",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "27",
+    "name": "30_get_if_post_tiered",
+    "description": "",
+    "steps": [
+      {
+        "id": "a2b3c4d5-e6f7-8901-a890-345678901234",
+        "name": "Get_Order",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts/10",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Tier_Check",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "b3c4d5e6-f7a8-9012-b901-456789012345",
+        "name": "Tier_Check",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Get_Order.body.userId <= 3",
+          "true_edge_id": "Premium_Processing",
+          "false_edge_id": "Standard_Processing"
+        },
+        "parent_step_name": "Get_Order",
+        "edges": [
+          {
+            "target_step_name": "Premium_Processing",
+            "label": "Condition met: $Get_Order.body.userId <= 3"
+          },
+          {
+            "target_step_name": "Standard_Processing",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "c4d5e6f7-a8b9-0123-c012-567890123456",
+        "name": "Premium_Processing",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "body": {
+            "tier": "premium",
+            "order_id": "$Get_Order.body.id",
+            "priority": "high"
+          },
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "parent_step_name": "Tier_Check",
+        "edges": []
+      },
+      {
+        "id": "d5e6f7a8-b9c0-1234-d123-678901234567",
+        "name": "Standard_Processing",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "body": {
+            "tier": "standard",
+            "order_id": "$Get_Order.body.id",
+            "priority": "normal"
+          },
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "parent_step_name": "Tier_Check",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "37",
+    "name": "61_GitHub_Repository_Stats_Tracker",
+    "description": "",
+    "steps": [
+      {
+        "id": "gh-01",
+        "name": "Fetch_Repo_Info",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://api.github.com/repos/rune-org/rune",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "API_Success",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "gh-02",
+        "name": "API_Success",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Fetch_Repo_Info.status == 200",
+          "true_edge_id": "Fetch_Contributors",
+          "false_edge_id": "API_Error_Alert"
+        },
+        "parent_step_name": "Fetch_Repo_Info",
+        "edges": [
+          {
+            "target_step_name": "Fetch_Contributors",
+            "label": "Condition met: $Fetch_Repo_Info.status == 200"
+          },
+          {
+            "target_step_name": "API_Error_Alert",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "gh-03",
+        "name": "Fetch_Contributors",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://api.github.com/repos/rune-org/rune/contributors?per_page=5",
+          "method": "GET"
+        },
+        "parent_step_name": "API_Success",
+        "edges": [
+          {
+            "target_step_name": "Send_Stats_Report",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "gh-04",
+        "name": "Send_Stats_Report",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "bob_jackson591@testmail.org",
+          "body": "Repository Statistics Report\\n\\nRepo: $Fetch_Repo_Info.body.full_name\\nDescription: $Fetch_Repo_Info.body.description\\n\\nMetrics:\\n\u0393\u00a1\u00c9 Stars: $Fetch_Repo_Info.body.stargazers_count\\n\u2261\u0192\u00ec\u2524 Forks: $Fetch_Repo_Info.body.forks_count\\n\u2261\u0192\u00e6\u00c7 Watchers: $Fetch_Repo_Info.body.watchers_count\\n\u2261\u0192\u00c9\u00a2 Open Issues: $Fetch_Repo_Info.body.open_issues_count\\n\\nLanguage: $Fetch_Repo_Info.body.language\\nLicense: $Fetch_Repo_Info.body.license.name\\n\\nTop Contributor: $Fetch_Contributors.body[0].login\\nContributions: $Fetch_Contributors.body[0].contributions\\n\\nLast Updated: $Fetch_Repo_Info.body.updated_at",
+          "from": "cwilson976@automation.test",
+          "subject": "GitHub Repo Stats: $Fetch_Repo_Info.body.name"
+        },
+        "parent_step_name": "Fetch_Contributors",
+        "edges": []
+      },
+      {
+        "id": "gh-05",
+        "name": "API_Error_Alert",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "kate_wilson304@demo.net",
+          "body": "Failed to fetch GitHub repository stats.\\n\\nAPI Status: $Fetch_Repo_Info.status\\nStatus Text: $Fetch_Repo_Info.status_text\\n\\nPlease check API availability.",
+          "from": "henry_taylor658@mailtest.com",
+          "subject": "GitHub API Error"
+        },
+        "parent_step_name": "API_Success",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "28",
+    "name": "36_get_switch",
+    "description": "",
+    "steps": [
+      {
+        "id": "a8b9c0d1-e2f3-4567-a456-901234567890",
+        "name": "Check_API",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://reqres.in/api/users/2",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Route_by_Status",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "b9c0d1e2-f3a4-5678-b567-012345678901",
+        "name": "Route_by_Status",
+        "node_type": "switch",
+        "credentials": null,
+        "node_config": {
+          "rules": [
+            {
+              "value": "$Check_API.status",
+              "compare": "200",
+              "operator": "=="
+            },
+            {
+              "value": "$Check_API.status",
+              "compare": "404",
+              "operator": "=="
+            },
+            {
+              "value": "$Check_API.status",
+              "compare": "500",
+              "operator": "=="
+            }
+          ]
+        },
+        "parent_step_name": "Check_API",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "29",
+    "name": "37_post_switch",
+    "description": "",
+    "steps": [
+      {
+        "id": "c4d5e6f7-a8b9-0123-c012-567890123456",
+        "name": "Test_Endpoint",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "body": {
+            "test": "data",
+            "method": "POST"
+          },
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Route_by_Method",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "d5e6f7a8-b9c0-1234-d123-678901234567",
+        "name": "Route_by_Method",
+        "node_type": "switch",
+        "credentials": null,
+        "node_config": {
+          "rules": [
+            {
+              "value": "$Test_Endpoint.body.method",
+              "compare": "POST",
+              "operator": "=="
+            },
+            {
+              "value": "$Test_Endpoint.body.method",
+              "compare": "GET",
+              "operator": "=="
+            },
+            {
+              "value": "$Test_Endpoint.body.method",
+              "compare": "PUT",
+              "operator": "=="
+            }
+          ]
+        },
+        "parent_step_name": "Test_Endpoint",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "30",
+    "name": "38_get_switch_email",
+    "description": "",
+    "steps": [
+      {
+        "id": "c0d1e2f3-a4b5-6789-c678-123456789012",
+        "name": "Get_User",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/5",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Route_by_User_ID",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "d1e2f3a4-b5c6-7890-d789-234567890123",
+        "name": "Route_by_User_ID",
+        "node_type": "switch",
+        "credentials": null,
+        "node_config": {
+          "rules": [
+            {
+              "value": "$Get_User.body.id",
+              "compare": "3",
+              "operator": "<=",
+              "target": "VIP_Email"
+            },
+            {
+              "value": "$Get_User.body.id",
+              "compare": "6",
+              "operator": "<=",
+              "target": "Premium_Email"
+            },
+            {
+              "value": "$Get_User.body.id",
+              "compare": "6",
+              "operator": ">",
+              "target": "Standard_Email"
+            }
+          ]
+        },
+        "parent_step_name": "Get_User",
+        "edges": [
+          {
+            "target_step_name": "VIP_Email",
+            "label": "Case: $Get_User.body.id <= 3"
+          },
+          {
+            "target_step_name": "Premium_Email",
+            "label": "Case: $Get_User.body.id <= 6"
+          },
+          {
+            "target_step_name": "Standard_Email",
+            "label": "Case: $Get_User.body.id > 6"
+          }
+        ]
+      },
+      {
+        "id": "e2f3a4b5-c6d7-8901-e890-345678901234",
+        "name": "VIP_Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "zackthomas598@example.com",
+          "body": "Hello $Get_User.body.name,\\n\\nAs a VIP member, you have access to exclusive services.\\n\\nBest regards,\\nVIP Team",
+          "from": "mia.martinez653@automation.test",
+          "subject": "VIP Services Available"
+        },
+        "parent_step_name": "Route_by_User_ID",
+        "edges": []
+      },
+      {
+        "id": "f3a4b5c6-d7e8-9012-f901-456789012345",
+        "name": "Premium_Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "frankwilson434@sample.io",
+          "body": "Hello $Get_User.body.name,\\n\\nEnjoy your premium membership benefits.\\n\\nBest regards,\\nPremium Team",
+          "from": "jack_thomas683@mailtest.com",
+          "subject": "Premium Member Benefits"
+        },
+        "parent_step_name": "Route_by_User_ID",
+        "edges": []
+      },
+      {
+        "id": "a4b5c6d7-e8f9-0123-a012-567890123456",
+        "name": "Standard_Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "leobrown189@devmail.net",
+          "body": "Hello $Get_User.body.name,\\n\\nThank you for joining us!\\n\\nBest regards,\\nSupport Team",
+          "from": "paultaylor219@automation.test",
+          "subject": "Welcome Standard Member"
+        },
+        "parent_step_name": "Route_by_User_ID",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "31",
+    "name": "40_get_switch_email_2",
+    "description": "",
+    "steps": [
+      {
+        "id": "b1c2d3e4-f5a6-7890-b789-234567890123",
+        "name": "Get_User_Region",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/1",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Region_Router",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "c2d3e4f5-a6b7-8901-c890-345678901234",
+        "name": "Region_Router",
+        "node_type": "switch",
+        "credentials": null,
+        "node_config": {
+          "rules": [
+            {
+              "value": "$Get_User_Region.body.address.city",
+              "compare": "Gwenborough",
+              "operator": "==",
+              "target": "Region_A_Email"
+            },
+            {
+              "value": "$Get_User_Region.body.address.city",
+              "compare": "Wisokyburgh",
+              "operator": "==",
+              "target": "Region_B_Email"
+            },
+            {
+              "value": "$Get_User_Region.body.address.city",
+              "compare": "McKenziehaven",
+              "operator": "==",
+              "target": "Region_C_Email"
+            }
+          ],
+          "default_target": "Default_Region_Email"
+        },
+        "parent_step_name": "Get_User_Region",
+        "edges": [
+          {
+            "target_step_name": "Region_A_Email",
+            "label": "Case: $Get_User_Region.body.address.city == Gwenborough"
+          },
+          {
+            "target_step_name": "Region_B_Email",
+            "label": "Case: $Get_User_Region.body.address.city == Wisokyburgh"
+          },
+          {
+            "target_step_name": "Region_C_Email",
+            "label": "Case: $Get_User_Region.body.address.city == McKenziehaven"
+          },
+          {
+            "target_step_name": "Default_Region_Email",
+            "label": "Default"
+          }
+        ]
+      },
+      {
+        "id": "d3e4f5a6-b7c8-9012-d901-456789012345",
+        "name": "Region_A_Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "frankdavis260@devmail.net",
+          "body": "Hello $Get_User_Region.body.name,\\n\\nWelcome from your local Region A office!\\n\\nRegards,\\nRegion A Team",
+          "from": "xanderson666@usertest.org",
+          "subject": "Welcome from Region A"
+        },
+        "parent_step_name": "Region_Router",
+        "edges": []
+      },
+      {
+        "id": "e4f5a6b7-c8d9-0123-e012-567890123456",
+        "name": "Region_B_Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "miawilliams337@testmail.org",
+          "body": "Hello $Get_User_Region.body.name,\\n\\nGreetings from Region B!\\n\\nRegards,\\nRegion B Team",
+          "from": "maya_jackson33@devmail.net",
+          "subject": "Welcome from Region B"
+        },
+        "parent_step_name": "Region_Router",
+        "edges": []
+      },
+      {
+        "id": "f5a6b7c8-d9e0-1234-f123-678901234567",
+        "name": "Region_C_Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "umiller673@sample.io",
+          "body": "Hello $Get_User_Region.body.name,\\n\\nYour Region C team welcomes you!\\n\\nRegards,\\nRegion C Team",
+          "from": "henry.moore435@workflow.dev",
+          "subject": "Welcome from Region C"
+        },
+        "parent_step_name": "Region_Router",
+        "edges": []
+      },
+      {
+        "id": "a6b7c8d9-e0f1-2345-a234-789012345678",
+        "name": "Default_Region_Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "samlopez261@demo.net",
+          "body": "Hello $Get_User_Region.body.name,\\n\\nWelcome from our headquarters!\\n\\nRegards,\\nSupport Team",
+          "from": "sophia_wilson139@sample.io",
+          "subject": "Welcome"
+        },
+        "parent_step_name": "Region_Router",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "32",
+    "name": "52_cascade_get_switch_email",
+    "description": "",
+    "steps": [
+      {
+        "id": "user-01",
+        "name": "Fetch_User",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/5",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Fetch_User_Posts",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "user-02",
+        "name": "Fetch_User_Posts",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts?userId=$Fetch_User.body.id&_limit=1",
+          "query": {},
+          "method": "GET"
+        },
+        "parent_step_name": "Fetch_User",
+        "edges": [
+          {
+            "target_step_name": "Route By Activity",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "user-03",
+        "name": "Route By Activity",
+        "node_type": "switch",
+        "credentials": null,
+        "node_config": {
+          "rules": [
+            {
+              "value": "$Fetch_User.body.id",
+              "compare": "3",
+              "operator": "<=",
+              "target": "High Activity Email"
+            },
+            {
+              "value": "$Fetch_User.body.id",
+              "compare": "7",
+              "operator": "<=",
+              "target": "Medium Activity Email"
+            }
+          ],
+          "default_target": "Low Activity Email"
+        },
+        "parent_step_name": "Fetch_User_Posts",
+        "edges": [
+          {
+            "target_step_name": "High Activity Email",
+            "label": "Case: $Fetch_User.body.id <= 3"
+          },
+          {
+            "target_step_name": "Medium Activity Email",
+            "label": "Case: $Fetch_User.body.id <= 7"
+          },
+          {
+            "target_step_name": "Low Activity Email",
+            "label": "Default"
+          }
+        ]
+      },
+      {
+        "id": "user-04",
+        "name": "High Activity Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "yara_rodriguez84@workflow.dev",
+          "body": "User Activity Report\\n\\nName: $Fetch_User.body.name\\nEmail: $Fetch_User.body.email\\nCompany: $Fetch_User.body.company.name\\n\\nLatest Post:\\nTitle: $Fetch_User_Posts.body[0].title\\nContent: $Fetch_User_Posts.body[0].body\\n\\nThis user is highly active.",
+          "from": "william.jackson549@devmail.net",
+          "subject": "High Activity User: $Fetch_User.body.name"
+        },
+        "parent_step_name": "Route By Activity",
+        "edges": []
+      },
+      {
+        "id": "user-05",
+        "name": "Medium Activity Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "liam_taylor218@demo.net",
+          "body": "User: $Fetch_User.body.name\\nEmail: $Fetch_User.body.email\\n\\nRecent Post: $Fetch_User_Posts.body[0].title\\n\\nMedium activity level.",
+          "from": "kate.smith355@sample.io",
+          "subject": "User Report: $Fetch_User.body.name"
+        },
+        "parent_step_name": "Route By Activity",
+        "edges": []
+      },
+      {
+        "id": "user-06",
+        "name": "Low Activity Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "vbrown752@sample.io",
+          "body": "Low activity user detected:\\n\\nName: $Fetch_User.body.name\\nEmail: $Fetch_User.body.email\\n\\nLatest Post: $Fetch_User_Posts.body[0].title\\n\\nConsider re-engagement campaign.",
+          "from": "grace.brown182@workflow.dev",
+          "subject": "Low Activity: $Fetch_User.body.name"
+        },
+        "parent_step_name": "Route By Activity",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "33",
+    "name": "55_api_health_check_retries",
+    "description": "",
+    "steps": [
+      {
+        "id": "health-01",
+        "name": "Check_API",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts/1",
+          "method": "GET",
+          "timeout": 5000
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "API Responding",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "health-02",
+        "name": "API Responding",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Check_API.status == 200",
+          "true_edge_id": "Get_System_Info",
+          "false_edge_id": "Retry_Check"
+        },
+        "parent_step_name": "Check_API",
+        "edges": [
+          {
+            "target_step_name": "Get_System_Info",
+            "label": "Condition met: $Check_API.status == 200"
+          },
+          {
+            "target_step_name": "Retry_Check",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "health-03",
+        "name": "Get_System_Info",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://dummyjson.com/products/1",
+          "method": "GET"
+        },
+        "parent_step_name": "API Responding",
+        "edges": [
+          {
+            "target_step_name": "Health Success Email",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "health-04",
+        "name": "Health Success Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "maya_johnson762@demo.net",
+          "body": "API Health Status: PASSED\\n\\nAPI Status: $Check_API.status\\nProduct Check: $Get_System_Info.body.title\\nPrice: $Get_System_Info.body.price\\n\\nAll systems operational.",
+          "from": "mia.gonzalez770@automation.test",
+          "subject": "API Health Check Passed"
+        },
+        "parent_step_name": "Get_System_Info",
+        "edges": []
+      },
+      {
+        "id": "health-05",
+        "name": "Retry_Check",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts/1",
+          "retry": 2,
+          "method": "GET",
+          "timeout": 5000
+        },
+        "parent_step_name": "API Responding",
+        "edges": [
+          {
+            "target_step_name": "Retry Succeeded",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "health-06",
+        "name": "Retry Succeeded",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Retry_Check.status == 200",
+          "true_edge_id": "Transient Issue Alert",
+          "false_edge_id": "Get_User_Context"
+        },
+        "parent_step_name": "Retry_Check",
+        "edges": [
+          {
+            "target_step_name": "Transient Issue Alert",
+            "label": "Condition met: $Retry_Check.status == 200"
+          },
+          {
+            "target_step_name": "Get_User_Context",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "health-07",
+        "name": "Transient Issue Alert",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "wendy_lopez218@automation.test",
+          "body": "API Health Alert\\n\\nInitial check failed but retry succeeded.\\n\\nFirst check status: $Check_API.status\\nRetry status: $Retry_Check.status\\n\\nThis may indicate intermittent issues.",
+          "from": "plopez676@devmail.net",
+          "subject": "API Transient Issue Recovered"
+        },
+        "parent_step_name": "Retry Succeeded",
+        "edges": []
+      },
+      {
+        "id": "health-08",
+        "name": "Get_User_Context",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://dummyjson.com/users/1",
+          "method": "GET"
+        },
+        "parent_step_name": "Retry Succeeded",
+        "edges": [
+          {
+            "target_step_name": "Critical Outage Alert",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "health-09",
+        "name": "Critical Outage Alert",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "nsmith910@devmail.net",
+          "body": "CRITICAL ALERT\\n\\nAPI is down after multiple retry attempts.\\n\\nInitial status: $Check_API.status\\nRetry status: $Retry_Check.status\\nReported by: $Get_User_Context.body.firstName $Get_User_Context.body.lastName\\nEmail: $Get_User_Context.body.email\\n\\nImmediate action required!",
+          "from": "alice.brown738@testmail.org",
+          "subject": "CRITICAL: API Down After Retries"
+        },
+        "parent_step_name": "Get_User_Context",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "34",
+    "name": "57_send_review_email_priority",
+    "description": "",
+    "steps": [
+      {
+        "id": "mod-01",
+        "name": "Fetch_New_Post",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts/15",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Get_Author_Info",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "mod-02",
+        "name": "Get_Author_Info",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/1",
+          "method": "GET"
+        },
+        "parent_step_name": "Fetch_New_Post",
+        "edges": [
+          {
+            "target_step_name": "Check_Author_History",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "mod-03",
+        "name": "Check_Author_History",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts?userId=2&_limit=5",
+          "method": "GET"
+        },
+        "parent_step_name": "Get_Author_Info",
+        "edges": [
+          {
+            "target_step_name": "Author_Trust_Level",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "mod-04",
+        "name": "Author_Trust_Level",
+        "node_type": "switch",
+        "credentials": null,
+        "node_config": {
+          "rules": [
+            {
+              "value": "$Get_Author_Info.body.id",
+              "compare": "2",
+              "operator": "<=",
+              "target": "Get_Request_Origin"
+            },
+            {
+              "value": "$Get_Author_Info.body.id",
+              "compare": "5",
+              "operator": "<=",
+              "target": "Has_Post_History"
+            }
+          ],
+          "default_target": "Manual_Review_Alert"
+        },
+        "parent_step_name": "Check_Author_History",
+        "edges": [
+          {
+            "target_step_name": "Get_Request_Origin",
+            "label": "Case: $Get_Author_Info.body.id <= 2"
+          },
+          {
+            "target_step_name": "Has_Post_History",
+            "label": "Case: $Get_Author_Info.body.id <= 5"
+          },
+          {
+            "target_step_name": "Manual_Review_Alert",
+            "label": "Default"
+          }
+        ]
+      },
+      {
+        "id": "mod-05",
+        "name": "Get_Request_Origin",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://dummyjson.com/products/1",
+          "method": "GET"
+        },
+        "parent_step_name": "Author_Trust_Level",
+        "edges": [
+          {
+            "target_step_name": "Auto_Approve_Email",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "mod-06",
+        "name": "Auto_Approve_Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "henryhernandez870@devmail.net",
+          "body": "Your post has been automatically approved!\\n\\nTitle: $Fetch_New_Post.body.title\\nAuthor: $Get_Author_Info.body.name\\nProduct Info: $Get_Request_Origin.body.title\\nPrice: $Get_Request_Origin.body.price\\n\\nYour trusted author status allowed instant publication.\\n\\nThank you!",
+          "from": "jackwilson755@example.com",
+          "subject": "Post Published: $Fetch_New_Post.body.title"
+        },
+        "parent_step_name": "Get_Request_Origin",
+        "edges": []
+      },
+      {
+        "id": "mod-08",
+        "name": "Has_Post_History",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Get_Author_Info.body.id <= 3",
+          "true_edge_id": "Quick_Review_Needed",
+          "false_edge_id": "Detailed_Review_Needed"
+        },
+        "parent_step_name": "Author_Trust_Level",
+        "edges": [
+          {
+            "target_step_name": "Quick_Review_Needed",
+            "label": "Condition met: $Get_Author_Info.body.id <= 3"
+          },
+          {
+            "target_step_name": "Detailed_Review_Needed",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "mod-09",
+        "name": "Quick_Review_Needed",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "henryrodriguez666@mailtest.com",
+          "body": "Post requires quick review:\\n\\nTitle: $Fetch_New_Post.body.title\\nAuthor: $Get_Author_Info.body.name\\nAuthor ID: $Get_Author_Info.body.id\\n\\nThis author has a good history. Quick review recommended.",
+          "from": "lwilliams815@workflow.dev",
+          "subject": "Quick Review: Post by $Get_Author_Info.body.name"
+        },
+        "parent_step_name": "Has_Post_History",
+        "edges": []
+      },
+      {
+        "id": "mod-10",
+        "name": "Detailed_Review_Needed",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "oliviahernandez866@example.com",
+          "body": "Post requires detailed review:\\n\\nTitle: $Fetch_New_Post.body.title\\nAuthor: $Get_Author_Info.body.name\\nEmail: $Get_Author_Info.body.email\\nAuthor ID: $Get_Author_Info.body.id\\n\\nNew or low-activity author.  Please review carefully.",
+          "from": "tararodriguez382@sample.io",
+          "subject": "Detailed Review: New Author Post"
+        },
+        "parent_step_name": "Has_Post_History",
+        "edges": []
+      },
+      {
+        "id": "mod-11",
+        "name": "Manual_Review_Alert",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "quinn_wilson861@automation.test",
+          "body": "HIGH PRIORITY REVIEW NEEDED:\\n\\nTitle: $Fetch_New_Post.body.title\\nAuthor: $Get_Author_Info.body.name\\nEmail: $Get_Author_Info.body.email\\nCompany: $Get_Author_Info.body.company.name\\n\\nUnknown author. Manual review required before publication.",
+          "from": "tara_gonzalez697@example.com",
+          "subject": "PRIORITY: High Risk Author Post"
+        },
+        "parent_step_name": "Author_Trust_Level",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "35",
+    "name": "59_data_consistency_check",
+    "description": "",
+    "steps": [
+      {
+        "id": "sync-01",
+        "name": "Fetch_Source_User",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/6",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Fetch_Target_User",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "sync-02",
+        "name": "Fetch_Target_User",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/5",
+          "method": "GET"
+        },
+        "parent_step_name": "Fetch_Source_User",
+        "edges": [
+          {
+            "target_step_name": "Both_APIs_Responded",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "sync-03",
+        "name": "Both_APIs_Responded",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Fetch_Source_User.status == 200 and $Fetch_Target_User.status == 200",
+          "true_edge_id": "Get_Request_Info",
+          "false_edge_id": "API_Failure_Type"
+        },
+        "parent_step_name": "Fetch_Target_User",
+        "edges": [
+          {
+            "target_step_name": "Get_Request_Info",
+            "label": "Condition met: $Fetch_Source_User.status == 200 and $Fetch_Target_User.status == 200"
+          },
+          {
+            "target_step_name": "API_Failure_Type",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "sync-04",
+        "name": "Get_Request_Info",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://dummyjson.com/products/1",
+          "method": "GET"
+        },
+        "parent_step_name": "Both_APIs_Responded",
+        "edges": [
+          {
+            "target_step_name": "Email_Match_Check",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "sync-05",
+        "name": "Email_Match_Check",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Fetch_Source_User.body.email != null",
+          "true_edge_id": "Data_In_Sync",
+          "false_edge_id": "Get_Sync_Timestamp"
+        },
+        "parent_step_name": "Get_Request_Info",
+        "edges": [
+          {
+            "target_step_name": "Data_In_Sync",
+            "label": "Condition met: $Fetch_Source_User.body.email != null"
+          },
+          {
+            "target_step_name": "Get_Sync_Timestamp",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "sync-06",
+        "name": "Data_In_Sync",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "eve.smith937@sample.io",
+          "body": "Data Consistency Check: PASSED\\n\\nSource System:\\nName: $Fetch_Source_User.body.name\\nEmail: $Fetch_Source_User.body.email\\nCompany: $Fetch_Source_User.body.company.name\\n\\nTarget System:\\nUser ID: $Fetch_Target_User.body.id\\nEmail: $Fetch_Target_User.body.email\\n\\nProduct Check: $Get_Request_Info.body.title\\n\\nData is synchronized.",
+          "from": "zacktaylor99@automation.test",
+          "subject": "Data Sync Verified - User 5"
+        },
+        "parent_step_name": "Email_Match_Check",
+        "edges": []
+      },
+      {
+        "id": "sync-08",
+        "name": "Get_Sync_Timestamp",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://dummyjson.com/users/1",
+          "method": "GET"
+        },
+        "parent_step_name": "Email_Match_Check",
+        "edges": [
+          {
+            "target_step_name": "Data_Mismatch_Alert",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "sync-09",
+        "name": "Data_Mismatch_Alert",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "swilson980@usertest.org",
+          "body": "ALERT: Data inconsistency detected!\\n\\nSource: $Fetch_Source_User.body.name ($Fetch_Source_User.body.email)\\nTarget: User ID $Fetch_Target_User.body.id\\n\\nData may be out of sync.  Manual review required.\\n\\nTimestamp User: $Get_Sync_Timestamp.body.firstName $Get_Sync_Timestamp.body.lastName",
+          "from": "iris_smith527@example.com",
+          "subject": "DATA MISMATCH DETECTED - User 5"
+        },
+        "parent_step_name": "Get_Sync_Timestamp",
+        "edges": []
+      },
+      {
+        "id": "sync-11",
+        "name": "API_Failure_Type",
+        "node_type": "switch",
+        "credentials": null,
+        "node_config": {
+          "rules": [
+            {
+              "value": "$Fetch_Source_User.status",
+              "compare": "200",
+              "operator": "!=",
+              "target": "Source_API_Down"
+            },
+            {
+              "value": "$Fetch_Target_User.status",
+              "compare": "200",
+              "operator": "!=",
+              "target": "Target_API_Down"
+            }
+          ]
+        },
+        "parent_step_name": "Both_APIs_Responded",
+        "edges": [
+          {
+            "target_step_name": "Source_API_Down",
+            "label": "Case: $Fetch_Source_User.status != 200"
+          },
+          {
+            "target_step_name": "Target_API_Down",
+            "label": "Case: $Fetch_Target_User.status != 200"
+          }
+        ]
+      },
+      {
+        "id": "sync-12",
+        "name": "Source_API_Down",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "sophiahernandez268@testmail.org",
+          "body": "Source API is not responding.\\n\\nStatus: $Fetch_Source_User.status\\nUser ID: 5\\n\\nPlease check source system.",
+          "from": "victor_lopez748@testmail.org",
+          "subject": "Source API Failure"
+        },
+        "parent_step_name": "API_Failure_Type",
+        "edges": []
+      },
+      {
+        "id": "sync-13",
+        "name": "Target_API_Down",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "xander.martin539@usertest.org",
+          "body": "Target API is not responding.\\n\\nStatus: $Fetch_Target_User.status\\nUser ID: 5\\n\\nPlease check target system.",
+          "from": "frankhernandez705@example.com",
+          "subject": "Target API Failure"
+        },
+        "parent_step_name": "API_Failure_Type",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "36",
+    "name": "60_multistage_user_verification",
+    "description": "",
+    "steps": [
+      {
+        "id": "ver-01",
+        "name": "Get_User_Record",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/users/1",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "User_Exists",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "ver-02",
+        "name": "User_Exists",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Get_User_Record.status == 200",
+          "true_edge_id": "Verify_Email_Format",
+          "false_edge_id": "User_Not_Found"
+        },
+        "parent_step_name": "Get_User_Record",
+        "edges": [
+          {
+            "target_step_name": "Verify_Email_Format",
+            "label": "Condition met: $Get_User_Record.status == 200"
+          },
+          {
+            "target_step_name": "User_Not_Found",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "ver-03",
+        "name": "Verify_Email_Format",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts",
+          "body": {
+            "email": "$Get_User_Record. body.email",
+            "validation": "email_format_check"
+          },
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "parent_step_name": "User_Exists",
+        "edges": [
+          {
+            "target_step_name": "Email_Valid",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "ver-04",
+        "name": "Email_Valid",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Verify_Email_Format.status == 201",
+          "true_edge_id": "Check_User_Activity",
+          "false_edge_id": "Email_Invalid_Alert"
+        },
+        "parent_step_name": "Verify_Email_Format",
+        "edges": [
+          {
+            "target_step_name": "Check_User_Activity",
+            "label": "Condition met: $Verify_Email_Format.status == 201"
+          },
+          {
+            "target_step_name": "Email_Invalid_Alert",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "ver-05",
+        "name": "Check_User_Activity",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://jsonplaceholder.typicode.com/posts?userId=6&_limit=3",
+          "method": "GET"
+        },
+        "parent_step_name": "Email_Valid",
+        "edges": [
+          {
+            "target_step_name": "Get_Additional_Context",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "ver-06",
+        "name": "Get_Additional_Context",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://dummyjson.com/products/1",
+          "method": "GET"
+        },
+        "parent_step_name": "Check_User_Activity",
+        "edges": [
+          {
+            "target_step_name": "Verification_Level",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "ver-07",
+        "name": "Verification_Level",
+        "node_type": "switch",
+        "credentials": null,
+        "node_config": {
+          "rules": [
+            {
+              "value": "$Get_User_Record.body.id",
+              "compare": "3",
+              "operator": "<=",
+              "target": "Full_Verification_Email"
+            },
+            {
+              "value": "$Get_User_Record.body.id",
+              "compare": "7",
+              "operator": "<=",
+              "target": "Partial_Verification"
+            }
+          ]
+        },
+        "parent_step_name": "Get_Additional_Context",
+        "edges": [
+          {
+            "target_step_name": "Full_Verification_Email",
+            "label": "Case: $Get_User_Record.body.id <= 3"
+          },
+          {
+            "target_step_name": "Partial_Verification",
+            "label": "Case: $Get_User_Record.body.id <= 7"
+          }
+        ]
+      },
+      {
+        "id": "ver-08",
+        "name": "Full_Verification_Email",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "quinn.wilson943@workflow.dev",
+          "body": "Congratulations $Get_User_Record.body.name!\\n\\nYour account has been fully verified.\\n\\nVerification Details:\\nEmail: $Get_User_Record.body.email\\nCompany: $Get_User_Record.body.company.name\\nWebsite: $Get_User_Record.body.website\\nPhone: $Get_User_Record.body.phone\\nActivity Posts Found: $Check_User_Activity.body[0].title\\n\\nYou now have full access to all features.\\n\\nBest regards,\\nVerification Team",
+          "from": "james_williams953@mailtest.com",
+          "subject": "Account Fully Verified - $Get_User_Record.body.name"
+        },
+        "parent_step_name": "Verification_Level",
+        "edges": []
+      },
+      {
+        "id": "ver-10",
+        "name": "Partial_Verification",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "evewilson450@devmail.net",
+          "body": "Hello $Get_User_Record.body.name,\\n\\nYour account is partially verified.\\n\\nCompleted:\\nEmail: $Get_User_Record.body.email\\nUser ID: $Get_User_Record.body.id\\nCompany: $Get_User_Record.body.company.name\\n\\nRecent Activity: $Check_User_Activity.body[0].title\\n\\nTo complete verification, please increase your activity.\\n\\nBest regards,\\nVerification Team",
+          "from": "umagarcia64@example.com",
+          "subject": "Account Partially Verified - $Get_User_Record.body.name"
+        },
+        "parent_step_name": "Verification_Level",
+        "edges": []
+      },
+      {
+        "id": "ver-12",
+        "name": "Email_Invalid_Alert",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "bob.rodriguez252@example.com",
+          "body": "Email validation failed for user.\\n\\nUser: $Get_User_Record.body.name\\nEmail: $Get_User_Record.body.email\\nUser ID: $Get_User_Record.body.id\\nCompany: $Get_User_Record.body.company.name\\nValidation Status: $Verify_Email_Format.status\\n\\nManual review required.",
+          "from": "diana.jackson774@usertest.org",
+          "subject": "Email Validation Failed - $Get_User_Record.body.name"
+        },
+        "parent_step_name": "Email_Valid",
+        "edges": []
+      },
+      {
+        "id": "ver-14",
+        "name": "User_Not_Found",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "paul_smith929@example.com",
+          "body": "User verification failed - user record not found.\\n\\nAPI Status: $Get_User_Record.status\\nStatus Text: $Get_User_Record.status_text\\n\\nPlease check user records or API availability.",
+          "from": "frank_lopez699@usertest.org",
+          "subject": "User Verification Failed - Not Found"
+        },
+        "parent_step_name": "User_Exists",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "38",
+    "name": "62_Currency_Exchange_Rate_Monitor",
+    "description": "",
+    "steps": [
+      {
+        "id": "fx-01",
+        "name": "Fetch_Exchange_Rates",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://api.exchangerate-api.com/v4/latest/USD",
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "API_Responded",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "fx-02",
+        "name": "API_Responded",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Fetch_Exchange_Rates.status == 200",
+          "true_edge_id": "Get_Historical_Data",
+          "false_edge_id": "API_Failure_Alert"
+        },
+        "parent_step_name": "Fetch_Exchange_Rates",
+        "edges": [
+          {
+            "target_step_name": "Get_Historical_Data",
+            "label": "Condition met: $Fetch_Exchange_Rates.status == 200"
+          },
+          {
+            "target_step_name": "API_Failure_Alert",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "fx-03",
+        "name": "Get_Historical_Data",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://api.exchangerate-api.com/v4/latest/EUR",
+          "method": "GET"
+        },
+        "parent_step_name": "API_Responded",
+        "edges": [
+          {
+            "target_step_name": "Rate_Analysis",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "fx-04",
+        "name": "Rate_Analysis",
+        "node_type": "switch",
+        "credentials": null,
+        "node_config": {
+          "rules": [
+            {
+              "value": "$Fetch_Exchange_Rates.body.rates.EUR",
+              "compare": "0.85",
+              "operator": "<",
+              "target": "Strong_USD_Alert"
+            },
+            {
+              "value": "$Fetch_Exchange_Rates.body.rates.EUR",
+              "compare": "0.95",
+              "operator": ">",
+              "target": "Weak_USD_Alert"
+            }
+          ],
+          "default_target": "Normal_Rate_Report"
+        },
+        "parent_step_name": "Get_Historical_Data",
+        "edges": [
+          {
+            "target_step_name": "Strong_USD_Alert",
+            "label": "Case: $Fetch_Exchange_Rates.body.rates.EUR < 0.85"
+          },
+          {
+            "target_step_name": "Weak_USD_Alert",
+            "label": "Case: $Fetch_Exchange_Rates.body.rates.EUR > 0.95"
+          },
+          {
+            "target_step_name": "Normal_Rate_Report",
+            "label": "Default"
+          }
+        ]
+      },
+      {
+        "id": "fx-05",
+        "name": "Strong_USD_Alert",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "leojones646@demo.net",
+          "body": "Currency Exchange Alert: USD STRONG\\n\\nCurrent Rates (Base: USD)\\nEUR: $Fetch_Exchange_Rates.body.rates.EUR\\nGBP: $Fetch_Exchange_Rates.body.rates.GBP\\nJPY: $Fetch_Exchange_Rates.body.rates.JPY\\nCHF: $Fetch_Exchange_Rates.body.rates.CHF\\n\\nEUR Reverse Rate: $Get_Historical_Data.body.rates.USD\\n\\nThe USD is particularly strong against EUR.\\nGood time for USD\u0393\u00e5\u00c6EUR conversions.\\n\\nLast Updated: $Fetch_Exchange_Rates.body.date",
+          "from": "iris.davis243@example.com",
+          "subject": "Strong USD Alert - EUR Rate Below 0.85"
+        },
+        "parent_step_name": "Rate_Analysis",
+        "edges": []
+      },
+      {
+        "id": "fx-06",
+        "name": "Weak_USD_Alert",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "diana_lopez368@demo.net",
+          "body": "Currency Exchange Alert: USD WEAK\\n\\nCurrent Rates (Base: USD)\\nEUR: $Fetch_Exchange_Rates.body.rates.EUR\\nGBP: $Fetch_Exchange_Rates.body.rates.GBP\\nJPY: $Fetch_Exchange_Rates.body.rates.JPY\\nCAD: $Fetch_Exchange_Rates.body.rates.CAD\\n\\nThe USD is weaker against EUR.\\nConsider waiting for EUR\u0393\u00e5\u00c6USD conversions.\\n\\nLast Updated: $Fetch_Exchange_Rates.body.date",
+          "from": "zackbrown451@example.com",
+          "subject": "Weak USD Alert - EUR Rate Above 0.95"
+        },
+        "parent_step_name": "Rate_Analysis",
+        "edges": []
+      },
+      {
+        "id": "fx-07",
+        "name": "Normal_Rate_Report",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "eve.williams200@usertest.org",
+          "body": "Daily Currency Exchange Report\\n\\nCurrent Rates (Base: USD)\\nEUR: $Fetch_Exchange_Rates.body.rates.EUR\\nGBP: $Fetch_Exchange_Rates.body.rates.GBP\\nJPY: $Fetch_Exchange_Rates.body.rates.JPY\\nAUD: $Fetch_Exchange_Rates.body.rates.AUD\\nCAD: $Fetch_Exchange_Rates.body.rates.CAD\\nCHF: $Fetch_Exchange_Rates.body.rates.CHF\\n\\nRates are within normal range.\\n\\nLast Updated: $Fetch_Exchange_Rates.body.date",
+          "from": "eve_wilson458@workflow.dev",
+          "subject": "Daily FX Report - Normal Rates"
+        },
+        "parent_step_name": "Rate_Analysis",
+        "edges": []
+      },
+      {
+        "id": "fx-08",
+        "name": "API_Failure_Alert",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "yara.brown950@devmail.net",
+          "body": "Failed to fetch exchange rates.\\n\\nAPI Status: $Fetch_Exchange_Rates.status\\nStatus Text: $Fetch_Exchange_Rates. status_text\\n\\nPlease check API availability or rate limits.",
+          "from": "charlie_martin149@automation.test",
+          "subject": "Exchange Rate API Failure"
+        },
+        "parent_step_name": "API_Responded",
+        "edges": []
+      }
+    ]
+  },
+  {
+    "id": "39",
+    "name": "63_Weather-Based_Activity_Recommendation",
+    "description": "",
+    "steps": [
+      {
+        "id": "wx-01",
+        "name": "Fetch_Current_Weather",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://api.open-meteo.com/v1/forecast",
+          "query": {
+            "latitude": "40.7128",
+            "longitude": "-74.0060",
+            "current_weather": "true"
+          },
+          "method": "GET"
+        },
+        "parent_step_name": null,
+        "edges": [
+          {
+            "target_step_name": "Weather_Available",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "wx-02",
+        "name": "Weather_Available",
+        "node_type": "conditional",
+        "credentials": null,
+        "node_config": {
+          "expression": "$Fetch_Current_Weather.status == 200",
+          "true_edge_id": "Fetch_Daily_Forecast",
+          "false_edge_id": "Weather_API_Error"
+        },
+        "parent_step_name": "Fetch_Current_Weather",
+        "edges": [
+          {
+            "target_step_name": "Fetch_Daily_Forecast",
+            "label": "Condition met: $Fetch_Current_Weather.status == 200"
+          },
+          {
+            "target_step_name": "Weather_API_Error",
+            "label": "Condition not met"
+          }
+        ]
+      },
+      {
+        "id": "wx-03",
+        "name": "Fetch_Daily_Forecast",
+        "node_type": "http",
+        "credentials": null,
+        "node_config": {
+          "url": "https://api.open-meteo.com/v1/forecast",
+          "query": {
+            "daily": "temperature_2m_max,temperature_2m_min",
+            "latitude": "40.7128",
+            "timezone": "America/New_York",
+            "longitude": "-74. 0060"
+          },
+          "method": "GET"
+        },
+        "parent_step_name": "Weather_Available",
+        "edges": [
+          {
+            "target_step_name": "Temperature_Range",
+            "label": "Next"
+          }
+        ]
+      },
+      {
+        "id": "wx-04",
+        "name": "Temperature_Range",
+        "node_type": "switch",
+        "credentials": null,
+        "node_config": {
+          "rules": [
+            {
+              "value": "$Fetch_Current_Weather.body.current_weather.temperature",
+              "compare": "10",
+              "operator": "<",
+              "target": "Cold_Weather_Activities"
+            },
+            {
+              "value": "$Fetch_Current_Weather.body.current_weather.temperature",
+              "compare": "25",
+              "operator": ">",
+              "target": "Hot_Weather_Activities"
+            }
+          ],
+          "default_target": "Moderate_Weather_Activities"
+        },
+        "parent_step_name": "Fetch_Daily_Forecast",
+        "edges": [
+          {
+            "target_step_name": "Cold_Weather_Activities",
+            "label": "Case: $Fetch_Current_Weather.body.current_weather.temperature < 10"
+          },
+          {
+            "target_step_name": "Hot_Weather_Activities",
+            "label": "Case: $Fetch_Current_Weather.body.current_weather.temperature > 25"
+          },
+          {
+            "target_step_name": "Moderate_Weather_Activities",
+            "label": "Default"
+          }
+        ]
+      },
+      {
+        "id": "wx-05",
+        "name": "Cold_Weather_Activities",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "xander.thomas800@devmail.net",
+          "body": "Weather Report for New York City\\n\\nCurrent Conditions:\\nTemperature: $Fetch_Current_Weather.body.current_weather.temperature\u252c\u2591C\\nWind Speed: $Fetch_Current_Weather.body.current_weather.windspeed km/h\\n\\nRecommended Activities:\\n\u0393\u00a5\u00e4\u2229\u2555\u00c5 Visit museums (MoMA, Met, Natural History)\\n\u0393\u00ff\u00f2 Try cozy cafes in Greenwich Village\\n\u2261\u0192\u00c4\u00a1 Catch a Broadway show\\n\u2261\u0192\u00a2\u00ec\u2229\u2555\u00c5 Indoor shopping at Brookfield Place\\n\u2261\u0192\u00f4\u00dc Browse bookstores in Union Square\\n\\nDress warmly and stay indoors!",
+          "from": "liam_garcia57@sample.io",
+          "subject": "Cold Weather Alert - Indoor Activities Recommended"
+        },
+        "parent_step_name": "Temperature_Range",
+        "edges": []
+      },
+      {
+        "id": "wx-06",
+        "name": "Hot_Weather_Activities",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "paulmartin500@automation.test",
+          "body": "Weather Report for New York City\\n\\nCurrent Conditions:\\nTemperature: $Fetch_Current_Weather.body.current_weather.temperature\u252c\u2591C\\nWind Speed: $Fetch_Current_Weather.body.current_weather.windspeed km/h\\n\\nRecommended Activities:\\n\u2261\u0192\u00c5\u00fb\u2229\u2555\u00c5 Visit Coney Island Beach\\n\u0393\u00a2\u2593 Relax in Central Park fountains\\n\u2261\u0192\u00ec\u00aa Get ice cream at Brooklyn Bridge Park\\n\u2261\u0192\u00dc\u00f1 Take Hudson River boat tour\\n\u2261\u0192\u00c6\u00aa Visit public pools or water parks\\n\\nStay hydrated and use sunscreen!",
+          "from": "kate_miller589@workflow.dev",
+          "subject": "Hot Weather Alert - Outdoor & Cooling Activities"
+        },
+        "parent_step_name": "Temperature_Range",
+        "edges": []
+      },
+      {
+        "id": "wx-07",
+        "name": "Moderate_Weather_Activities",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "ugarcia196@automation.test",
+          "body": "Weather Report for New York City\\n\\nCurrent Conditions:\\nTemperature: $Fetch_Current_Weather.body.current_weather.temperature\u252c\u2591C\\nWind Speed: $Fetch_Current_Weather.body.current_weather.windspeed km/h\\n\\nRecommended Activities:\\n\u2261\u0192\u00dc\u2562 Walk the High Line\\n\u2261\u0192\u00dc\u2524 Bike along Hudson River Greenway\\n\u2261\u0192\u00ee\u2502 Explore Central Park\\n\u2261\u0192\u00f9\u255c Visit Statue of Liberty\\n\u2261\u0192\u00ee\u00eb Walk Brooklyn Bridge\\n\u0393\u00ff\u00f2 Outdoor dining in SoHo\\n\\nPerfect weather for anything!",
+          "from": "xander.moore628@mailtest.com",
+          "subject": "Perfect Weather Day - All Activities Available"
+        },
+        "parent_step_name": "Temperature_Range",
+        "edges": []
+      },
+      {
+        "id": "wx-08",
+        "name": "Weather_API_Error",
+        "node_type": "smtp",
+        "credentials": "smtp",
+        "node_config": {
+          "to": "xander.taylor670@workflow.dev",
+          "body": "Failed to fetch weather data.\\n\\nAPI Status: $Fetch_Current_Weather.status\\nStatus Text: $Fetch_Current_Weather.status_text\\n\\nPlease check API availability.",
+          "from": "ebrown167@workflow.dev",
+          "subject": "Weather API Failure"
+        },
+        "parent_step_name": "Weather_Available",
+        "edges": []
+      }
+    ]
+  }
+]
