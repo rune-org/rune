@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-infra api-server api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev dev-infra-up dev-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
 
 # Default target
 help:
@@ -24,12 +24,14 @@ help:
 	@echo "API targets:"
 	@echo "  make api-install        - Install API dependencies (creates/uses venv)"
 	@echo "  make api-install-no-env - Install API dependencies to system Python"
-	@echo "  make api-dev            - Start API server in dev mode with Docker infrastructure"
-	@echo "  make api-infra-up       - Start API infrastructure only (postgres, redis, rabbitmq)"
-	@echo "  make api-infra-down     - Stop API infrastructure"
-	@echo "  make api-server    - Start FastAPI server in dev mode (hot-reload)"
-	@echo "  make api-lint      - Lint API code with ruff"
-	@echo "  make api-format    - Format API code with ruff"
+	@echo "  make api-dev            - Start FastAPI server in dev mode (hot-reload)"
+	@echo "  make api-lint           - Lint API code with ruff"
+	@echo "  make api-format         - Format API code with ruff"
+	@echo ""
+	@echo "Development Infrastructure:"
+	@echo "  make dev-infra-up       - Start shared infrastructure (postgres, redis, rabbitmq)"
+	@echo "  make dev-infra-down     - Stop shared infrastructure"
+	@echo "  Note: Run 'make dev-infra-up' before starting services"
 	@echo ""
 	@echo "Worker targets:"
 	@echo "  make worker-install - Install worker dependencies"
@@ -125,15 +127,15 @@ web-dev:
 	@echo "Starting frontend in development mode..."
 	cd apps/web && pnpm dev
 
-api-infra-up:
-	@echo "Starting API infrastructure services..."
+dev-infra-up:
+	@echo "Starting shared development infrastructure services..."
 	cd services/api && docker compose -f docker-compose.dev.yml up -d
 
-api-infra-down:
-	@echo "Stopping API infrastructure services..."
+dev-infra-down:
+	@echo "Stopping shared development infrastructure services..."
 	cd services/api && docker compose -f docker-compose.dev.yml down
 
-api-server:
+api-dev:
 	@echo "Starting FastAPI server in development mode..."
 	@if [ -d "services/api/venv" ] || [ -d "services/api/.venv" ]; then \
 		echo "Using virtual environment: services/api/venv"; \
@@ -144,8 +146,6 @@ api-server:
 		echo "   For best results, install dependencies with: make api-install"; \
 		cd services/api && fastapi dev src/app.py || (echo "❌ FastAPI not found. Please install dependencies: make api-install" && exit 1); \
 	fi
-
-api-dev: api-infra-up api-server
 
 worker-dev:
 	@echo "Starting worker in development mode..."

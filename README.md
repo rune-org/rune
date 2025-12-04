@@ -106,19 +106,22 @@ Run infrastructure in Docker, but run services locally for faster development.
 # 1. Install all dependencies (first time only)
 make install
 
+# 2. Start shared Docker infrastructure (required before running services)
+make dev-infra-up
+
 # In separate terminals, run services locally:
 
-# 2. Run frontend locally
+# 3. Run frontend locally
 make web-dev
 
-# 3. Run API locally (starts infrastructure and server)
+# 4. Run API locally
 make api-dev
 
-# 4. (Optional) Run worker locally
+# 5. (Optional) Run worker locally
 make worker-dev
 ```
 
-**Note**: The `api-dev` target starts both the Docker infrastructure services (PostgreSQL, Redis, RabbitMQ) and the API server. If you only need infrastructure, use `make api-infra-up` instead, then run `make api-server` separately.
+**Note**: The shared infrastructure (PostgreSQL, Redis, RabbitMQ) must be started with `make dev-infra-up` before running any services. Stop it with `make dev-infra-down` when done.
 
 ## Environment Configuration
 
@@ -154,6 +157,8 @@ Each service has its own `.env` file for local development:
 
 If you prefer to run services locally without Docker:
 
+**Prerequisite**: Start the shared infrastructure first with `make dev-infra-up` (PostgreSQL, Redis, RabbitMQ).
+
 ### Frontend (Next.js)
 
 ```bash
@@ -178,7 +183,7 @@ source venv/bin/activate  # or .venv/bin/activate
 python -m scripts.seed_user
 
 # Start server
-make api-server
+make api-dev
 ```
 
 **Requirements**: Python 3.13+
@@ -224,12 +229,16 @@ make worker-dev
 |---|---|
 | `make api-install` | Install API dependencies (creates/uses venv) |
 | `make api-install-no-env` | Install API dependencies to system Python |
-| `make api-dev` | Start API infrastructure and server in dev mode |
-| `make api-infra-up` | Start API infrastructure only (postgres, redis, rabbitmq) |
-| `make api-infra-down` | Stop API infrastructure |
-| `make api-server` | Start FastAPI server in dev mode (hot-reload) |
+| `make api-dev` | Start FastAPI server in dev mode (hot-reload) |
 | `make api-lint` | Lint API code with ruff |
 | `make api-format` | Format API code with ruff |
+
+### Development Infrastructure
+
+| Command | Description |
+|---|---|
+| `make dev-infra-up` | Start shared infrastructure (postgres, redis, rabbitmq) |
+| `make dev-infra-down` | Stop shared infrastructure |
 
 ### Worker
 
