@@ -19,10 +19,11 @@ import (
 type NodeExecutionMessage struct {
 	WorkflowID         string                 `json:"workflow_id"`
 	ExecutionID        string                 `json:"execution_id"`
-	CurrentNode        string                 `json:"current_node"`        // Node ID to execute
-	WorkflowDefinition core.Workflow         `json:"workflow_definition"` // Complete workflow structure
-	AccumulatedContext map[string]interface{} `json:"accumulated_context"` // Context with $<node_name> keys
+	CurrentNode        string                 `json:"current_node"`            // Node ID to execute
+	WorkflowDefinition core.Workflow          `json:"workflow_definition"`     // Complete workflow structure
+	AccumulatedContext map[string]interface{} `json:"accumulated_context"`     // Context with $<node_name> keys
 	LineageStack       []StackFrame           `json:"lineage_stack,omitempty"` // Stack of split contexts
+	FromNode           string                 `json:"from_node,omitempty"`     // Parent node that produced this message
 }
 
 // StackFrame represents a single level of split execution context.

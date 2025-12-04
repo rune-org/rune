@@ -8,6 +8,7 @@ import (
 	_ "rune-worker/pkg/nodes/custom/aggregator"
 	_ "rune-worker/pkg/nodes/custom/conditional"
 	_ "rune-worker/pkg/nodes/custom/http"
+	_ "rune-worker/pkg/nodes/custom/merge"
 	_ "rune-worker/pkg/nodes/custom/smtp"
 	_ "rune-worker/pkg/nodes/custom/split"
 	_ "rune-worker/pkg/nodes/custom/switch"

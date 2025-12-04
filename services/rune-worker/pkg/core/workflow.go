@@ -74,3 +74,24 @@ func (w *Workflow) GetIncomingEdges(nodeID string) []Edge {
 	}
 	return edges
 }
+
+// GetIncomingNodeIDs returns the IDs of all nodes that have edges pointing to the specified node.
+// This is useful for merge nodes to determine how many parent branches to expect.
+func (w *Workflow) GetIncomingNodeIDs(nodeID string) []string {
+	edges := w.GetIncomingEdges(nodeID)
+	nodeIDs := make([]string, 0, len(edges))
+	for _, edge := range edges {
+		nodeIDs = append(nodeIDs, edge.Src)
+	}
+	return nodeIDs
+}
+
+// GetOutgoingNodeIDs returns the IDs of all nodes that the specified node has edges pointing to.
+func (w *Workflow) GetOutgoingNodeIDs(nodeID string) []string {
+	edges := w.GetOutgoingEdges(nodeID)
+	nodeIDs := make([]string, 0, len(edges))
+	for _, edge := range edges {
+		nodeIDs = append(nodeIDs, edge.Dst)
+	}
+	return nodeIDs
+}

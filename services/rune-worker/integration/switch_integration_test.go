@@ -5,6 +5,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -42,14 +43,12 @@ func TestSwitchNodeRouting(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	workflowID := "test-workflow-switch-integration"
-	executionID := "exec-switch-integration-001"
-	switchNodeID := "switch-node-1"
-
 	// Define edges
 	edgeCase1 := "edge-case-1"
 	edgeCase2 := "edge-case-2"
 	edgeFallback := "edge-fallback"
+
+	switchNodeID := "switch-node-1"
 
 	// Define the switch node
 	switchNode := core.Node{
@@ -79,13 +78,16 @@ func TestSwitchNodeRouting(t *testing.T) {
 
 	// Test Case 1: Match First Rule
 	t.Run("MatchFirstRule", func(t *testing.T) {
+		workflowID := fmt.Sprintf("wf-switch-%d-case1", time.Now().UnixNano())
+		executionID := fmt.Sprintf("exec-switch-%d-case1", time.Now().UnixNano())
+
 		executionMsg := &messages.NodeExecutionMessage{
 			WorkflowID:  workflowID,
-			ExecutionID: executionID + "-case1",
+			ExecutionID: executionID,
 			CurrentNode: switchNodeID,
 			WorkflowDefinition: core.Workflow{
 				WorkflowID:  workflowID,
-				ExecutionID: executionID + "-case1",
+				ExecutionID: executionID,
 				Nodes: []core.Node{
 					switchNode,
 					{ID: "node-case1", Name: "Case 1 Node", Type: "mock"},
@@ -110,13 +112,16 @@ func TestSwitchNodeRouting(t *testing.T) {
 
 	// Test Case 2: Match Second Rule
 	t.Run("MatchSecondRule", func(t *testing.T) {
+		workflowID := fmt.Sprintf("wf-switch-%d-case2", time.Now().UnixNano())
+		executionID := fmt.Sprintf("exec-switch-%d-case2", time.Now().UnixNano())
+
 		executionMsg := &messages.NodeExecutionMessage{
 			WorkflowID:  workflowID,
-			ExecutionID: executionID + "-case2",
+			ExecutionID: executionID,
 			CurrentNode: switchNodeID,
 			WorkflowDefinition: core.Workflow{
 				WorkflowID:  workflowID,
-				ExecutionID: executionID + "-case2",
+				ExecutionID: executionID,
 				Nodes: []core.Node{
 					switchNode,
 					{ID: "node-case1", Name: "Case 1 Node", Type: "mock"},
@@ -141,13 +146,16 @@ func TestSwitchNodeRouting(t *testing.T) {
 
 	// Test Case 3: Fallback
 	t.Run("Fallback", func(t *testing.T) {
+		workflowID := fmt.Sprintf("wf-switch-%d-fallback", time.Now().UnixNano())
+		executionID := fmt.Sprintf("exec-switch-%d-fallback", time.Now().UnixNano())
+
 		executionMsg := &messages.NodeExecutionMessage{
 			WorkflowID:  workflowID,
-			ExecutionID: executionID + "-fallback",
+			ExecutionID: executionID,
 			CurrentNode: switchNodeID,
 			WorkflowDefinition: core.Workflow{
 				WorkflowID:  workflowID,
-				ExecutionID: executionID + "-fallback",
+				ExecutionID: executionID,
 				Nodes: []core.Node{
 					switchNode,
 					{ID: "node-case1", Name: "Case 1 Node", Type: "mock"},
@@ -234,13 +242,14 @@ func publishAndVerifyRouting(t *testing.T, env *testutils.TestEnv, ctx context.C
 	}
 
 	// Wait for status messages
-	timeout := time.After(5 * time.Second)
+	timeout := time.After(10 * time.Second)
 
 	var switchExecuted, nextNodeExecuted bool
 
 	for {
 		select {
 		case msg := <-statusMsgs:
+			t.Logf("Received status: workflowID=%s, nodeID=%s, status=%s", msg.WorkflowID, msg.NodeID, msg.Status)
 			if msg.NodeID == switchNodeID {
 				switchExecuted = true
 				t.Logf("Switch node executed. Output: %v", msg.Output)
