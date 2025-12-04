@@ -4,6 +4,7 @@ go 1.24
 
 require (
 	github.com/redis/go-redis/v9 v9.14.0
+	github.com/dop251/goja v0.0.0-20241120134114-1e1e0759f6ca
 	github.com/wagslane/go-rabbitmq v0.15.0
 )
 
