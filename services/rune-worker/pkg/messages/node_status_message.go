@@ -40,6 +40,7 @@ const (
 	StatusRunning = "running"
 	StatusSuccess = "success"
 	StatusFailed  = "failed"
+	StatusWaiting = "waiting"
 
 	AggregatorStateWaiting  = "waiting"
 	AggregatorStateReleased = "released"
@@ -65,10 +66,10 @@ func (m *NodeStatusMessage) Validate() error {
 
 	// Validate status value
 	switch m.Status {
-	case StatusRunning, StatusSuccess, StatusFailed:
+	case StatusRunning, StatusSuccess, StatusFailed, StatusWaiting:
 		// valid status
 	default:
-		return fmt.Errorf("invalid status: %s (must be 'running', 'success', or 'failed')", m.Status)
+		return fmt.Errorf("invalid status: %s (must be 'running', 'success', 'failed', or 'waiting')", m.Status)
 	}
 
 	// Validate status-specific requirements

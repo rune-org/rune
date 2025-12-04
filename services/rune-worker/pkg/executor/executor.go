@@ -91,12 +91,46 @@ func (e *Executor) Execute(ctx context.Context, msg *messages.NodeExecutionMessa
 	output, execErr := nodeInstance.Execute(ctx, execContext)
 	duration := time.Since(startTime)
 
-	// Step 7 & 8: Handle execution result
 	if execErr != nil {
 		return e.handleNodeFailure(ctx, msg, &node, execErr, duration)
 	}
 
+	if node.Type == "wait" {
+		return e.handleWaitNode(ctx, msg, &node, output, duration)
+	}
+
+	// Step 7 & 8: Handle execution result
 	return e.handleNodeSuccess(ctx, msg, &node, output, duration, startTime)
+}
+
+// handleWaitNode publishes a waiting status and stops further execution for this branch.
+func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration) error {
+	statusMsg := &messages.NodeStatusMessage{
+		WorkflowID:  msg.WorkflowID,
+		ExecutionID: msg.ExecutionID,
+		NodeID:      node.ID,
+		NodeName:    node.Name,
+		Status:      messages.StatusWaiting,
+		Output:      output,
+		ExecutedAt:  time.Now(),
+		DurationMs:  duration.Milliseconds(),
+	}
+
+	e.enrichStatusWithLineage(statusMsg, msg.LineageStack)
+
+	if err := e.publishStatus(ctx, statusMsg); err != nil {
+		slog.Error("failed to publish waiting status", "error", err)
+	}
+
+	slog.Info("wait node scheduled and branch suspended",
+		"workflow_id", msg.WorkflowID,
+		"execution_id", msg.ExecutionID,
+		"node_id", node.ID,
+		"resume_at", output["resume_at"],
+		"timer_id", output["timer_id"],
+	)
+
+	return nil
 }
 
 // buildExecutionContext creates the plugin.ExecutionContext from the message.
@@ -124,8 +158,10 @@ func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, nod
 		Type:         node.Type,
 		Parameters:   resolvedParams,
 		Input:        msg.AccumulatedContext,
+		FromNode:     msg.FromNode,
 		RedisClient:  e.redisClient,
 		LineageStack: msg.LineageStack,
+		Workflow:     msg.WorkflowDefinition,
 	}
 
 	// Set credentials if present (already resolved by master)
@@ -268,20 +304,22 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 	}
 
 	// Accumulate result into context with $<node_name> key
-	// Edit node is special: it transforms $json payload per RFC-007.
+	updatedContext := e.accumulateContext(msg.AccumulatedContext, node.Name, output)
+
+	// Edit node transforms the working payload; propagate to $json for downstream expressions.
 	if node.Type == "edit" {
-		updatedContext := make(map[string]any, len(msg.AccumulatedContext)+1)
-		for k, v := range msg.AccumulatedContext {
-			updatedContext[k] = v
+		updatedContext["$json"] = output
+	}
+
+	// Merge node returns a unified merged_context for downstream nodes
+	if node.Type == "merge" {
+		if merged, ok := output["merged_context"].(map[string]any); ok {
+			updatedContext = merged
 		}
-		if payload, ok := output["$json"].(map[string]any); ok {
-			updatedContext["$json"] = payload
-			updatedContext[fmt.Sprintf("$%s", node.Name)] = payload
-		} else {
-			updatedContext = e.accumulateContext(updatedContext, node.Name, output)
-		}
-		// Determine next nodes via graph traversal
-		nextNodes := e.determineNextNodes(&msg.WorkflowDefinition, node, output)
+	}
+
+	// Determine next nodes via graph traversal
+	nextNodes := e.determineNextNodes(&msg.WorkflowDefinition, node, output)
 
 		// Handle Split Node Fan-Out
 		if node.Type == "split" {
@@ -310,11 +348,6 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 
 	updatedContext := e.accumulateContext(msg.AccumulatedContext, node.Name, output)
 
-	// Edit node transforms the working payload; propagate to $json for downstream expressions.
-	if node.Type == "edit" {
-		updatedContext["$json"] = output
-	}
-
 	// Determine next nodes via graph traversal
 	nextNodes := e.determineNextNodes(&msg.WorkflowDefinition, node, output)
 
@@ -330,6 +363,30 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 		if _, closed := output["_barrier_closed"]; closed {
 			slog.Info("aggregator barrier closed, halting branch", "node_id", node.ID)
 			return nil // Do not publish next nodes or completion
+		}
+	}
+
+	// Handle Merge waiting/ignored branches
+	if node.Type == "merge" {
+		if waiting, ok := output["_merge_waiting"].(bool); ok && waiting {
+			slog.Info("merge waiting, parking branch", "node_id", node.ID)
+			return nil
+		}
+		if ignored, ok := output["_merge_ignored"].(bool); ok && ignored {
+			slog.Info("merge branch ignored due to wait_for_any", "node_id", node.ID)
+			return nil
+		}
+	}
+
+	// Handle Merge waiting/ignored branches
+	if node.Type == "merge" {
+		if waiting, ok := output["_merge_waiting"].(bool); ok && waiting {
+			slog.Info("merge waiting, parking branch", "node_id", node.ID)
+			return nil
+		}
+		if ignored, ok := output["_merge_ignored"].(bool); ok && ignored {
+			slog.Info("merge branch ignored due to wait_for_any", "node_id", node.ID)
+			return nil
 		}
 	}
 
@@ -376,6 +433,7 @@ func (e *Executor) handleSplitFanOut(ctx context.Context, msg *messages.NodeExec
 				WorkflowDefinition: msg.WorkflowDefinition,
 				AccumulatedContext: itemContext,
 				LineageStack:       newStack,
+				FromNode:           node.ID,
 			}
 
 			payload, err := nextMsg.Encode()
@@ -553,6 +611,7 @@ func (e *Executor) publishNextNodes(ctx context.Context, msg *messages.NodeExecu
 			WorkflowDefinition: msg.WorkflowDefinition,
 			AccumulatedContext: updatedContext,
 			LineageStack:       msg.LineageStack, // Propagate stack
+			FromNode:           msg.CurrentNode,
 		}
 
 		payload, err := nextMsg.Encode()
