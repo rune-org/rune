@@ -3,11 +3,19 @@
   <defs>
     <style>
       .cls-1 {
-        fill: #b80101;
+        animation: node-colors 10s ease-in-out infinite;
       }
 
       .cls-2 {
         fill: #fff;
+      }
+
+      @keyframes node-colors {
+        0%, 100% { fill: hsl(217, 91%, 60%); }
+        20% { fill: hsl(270, 70%, 65%); }
+        40% { fill: hsl(142, 76%, 56%); }
+        60% { fill: hsl(25, 95%, 63%); }
+        80% { fill: hsl(189, 85%, 62%); }
       }
     </style>
   </defs>
