@@ -83,7 +83,6 @@ export default function FlowCanvas({
   const [smithMessages, setSmithMessages] = useState<SmithChatMessage[]>([]);
   const [smithInput, setSmithInput] = useState("");
   const [smithSending, setSmithSending] = useState(false);
-  const [smithTrace, setSmithTrace] = useState<string[] | null>(null);
   const [smithShowTrace, setSmithShowTrace] = useState(false);
   const [pendingSmithPrompt, setPendingSmithPrompt] = useState<string | null>(null);
 
@@ -340,7 +339,6 @@ export default function FlowCanvas({
       setSmithMessages(history);
       setSmithInput("");
       setSmithSending(true);
-      setSmithTrace(null);
 
       let workflowContext: Record<string, unknown> | null = null;
       try {
@@ -380,14 +378,10 @@ export default function FlowCanvas({
           ...prev,
           {
             role: "smith",
-            content: smithData.response
-              ? smithData.response
-              : "Updated the workflow.",
+            content: smithData.response || "Updated the workflow.",
+            trace: smithShowTrace && smithData.trace ? smithData.trace : undefined,
           } as SmithChatMessage,
         ]);
-        setSmithTrace(
-          Array.isArray(smithData.trace) ? smithData.trace ?? null : null,
-        );
 
         applySmithWorkflow(smithData.workflow);
       } catch (err) {
@@ -491,17 +485,13 @@ export default function FlowCanvas({
       if (saved) {
         const parsed = JSON.parse(saved) as {
           messages?: SmithChatMessage[];
-          trace?: string[] | null;
         };
         setSmithMessages(parsed.messages ?? []);
-        setSmithTrace(parsed.trace ?? null);
       } else {
         setSmithMessages([]);
-        setSmithTrace(null);
       }
     } catch {
       setSmithMessages([]);
-      setSmithTrace(null);
     }
   }, [workflowId]);
 
@@ -513,13 +503,12 @@ export default function FlowCanvas({
         key,
         JSON.stringify({
           messages: smithMessages,
-          trace: smithTrace,
         }),
       );
     } catch {
       // ignore
     }
-  }, [smithMessages, smithTrace, workflowId]);
+  }, [smithMessages, workflowId]);
 
   useEffect(() => {
     if (isSmithOpen && smithMessages.length === 0) {
@@ -817,7 +806,6 @@ export default function FlowCanvas({
         onInputChange={setSmithInput}
         onSend={handleSmithSend}
         isSending={smithSending}
-        trace={smithTrace}
         showTrace={smithShowTrace}
         onToggleTrace={(next) => setSmithShowTrace(next)}
       />

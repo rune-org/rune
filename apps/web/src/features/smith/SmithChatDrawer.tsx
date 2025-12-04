@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Loader2, SendHorizontal, Sparkles, ChevronRight, Bot } from "lucide-react";
+import { Loader2, SendHorizontal, Sparkles, Bot, ChevronRight } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/cn";
 export type SmithChatMessage = {
   role: "user" | "smith";
   content: string;
+  trace?: string[];
 };
 
 type Props = {
@@ -22,7 +23,6 @@ type Props = {
   onInputChange: (next: string) => void;
   onSend: (content: string) => void;
   isSending: boolean;
-  trace?: string[] | null;
   showTrace?: boolean;
   onToggleTrace?: (next: boolean) => void;
 };
@@ -35,7 +35,6 @@ export function SmithChatDrawer({
   onInputChange,
   onSend,
   isSending,
-  trace,
   showTrace = false,
   onToggleTrace,
 }: Props) {
@@ -50,7 +49,7 @@ export function SmithChatDrawer({
     if (open) {
       setTimeout(scrollToBottom, 100);
     }
-  }, [open, messages, isSending, trace]);
+  }, [open, messages, isSending]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -129,21 +128,42 @@ export function SmithChatDrawer({
                             <Bot className="h-5 w-5 opacity-80" />
                         </div>
                     )}
-                    
-                    <div className={cn(
-                        "relative max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm select-text",
-                        msg.role === "user" 
-                            ? "bg-gradient-to-tr from-primary to-primary/90 text-primary-foreground rounded-br-sm selection:bg-white selection:text-primary" 
-                            : "bg-muted/50 text-foreground border border-border/50 rounded-bl-sm backdrop-blur-sm selection:bg-primary/20 selection:text-foreground"
-                    )}>
-                        {msg.content}
+
+                    <div className="flex flex-col gap-2 max-w-[85%]">
+                        <div className={cn(
+                            "relative rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm select-text",
+                            msg.role === "user"
+                                ? "bg-gradient-to-tr from-primary to-primary/90 text-primary-foreground rounded-br-sm selection:bg-white selection:text-primary"
+                                : "bg-muted/50 text-foreground border border-border/50 rounded-bl-sm backdrop-blur-sm selection:bg-primary/20 selection:text-foreground"
+                        )}>
+                            {msg.content}
+                        </div>
+
+                        {msg.role === "smith" && msg.trace && msg.trace.length > 0 && (
+                            <details className="group rounded-lg border border-border/40 bg-muted/20 [&_summary::-webkit-details-marker]:hidden">
+                                <summary className="flex cursor-pointer items-center gap-2 p-2 text-xs font-medium text-muted-foreground hover:text-foreground select-none">
+                                    <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
+                                    View Reasoning Steps
+                                </summary>
+                                <div className="border-t border-border/40 bg-background/40 px-3 py-2">
+                                    <ul className="space-y-1.5">
+                                        {msg.trace.map((step, stepIdx) => (
+                                            <li key={stepIdx} className="flex gap-2 text-[11px] text-muted-foreground/80 select-text">
+                                                <span className="font-mono opacity-50 select-none">{stepIdx + 1}.</span>
+                                                <span>{step}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </details>
+                        )}
                     </div>
                 </motion.div>
                 ))}
             </AnimatePresence>
 
             {isSending && (
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="flex gap-3 select-none"
@@ -152,38 +172,13 @@ export function SmithChatDrawer({
                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     </div>
                     <div className="flex items-center gap-1 rounded-2xl bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-                        <span className="animate-pulse">Thinking</span>
+                        <span className="animate-pulse">{showTrace ? "Reasoning" : "Thinking"}</span>
                         <span className="animate-bounce delay-75">.</span>
                         <span className="animate-bounce delay-150">.</span>
                         <span className="animate-bounce delay-300">.</span>
                     </div>
                 </motion.div>
             )}
-
-             {trace && trace.length > 0 && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mx-auto w-full max-w-[90%]"
-                >
-                    <details className="group rounded-lg border border-border/40 bg-muted/20 [&_summary::-webkit-details-marker]:hidden">
-                        <summary className="flex cursor-pointer items-center gap-2 p-2 text-xs font-medium text-muted-foreground hover:text-foreground select-none">
-                            <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
-                            View Reasoning Steps
-                        </summary>
-                        <div className="border-t border-border/40 bg-background/40 px-3 py-2">
-                            <ul className="space-y-1.5">
-                                {trace.map((line, idx) => (
-                                    <li key={idx} className="flex gap-2 text-[11px] text-muted-foreground/80 select-text">
-                                        <span className="font-mono opacity-50 select-none">{idx + 1}.</span>
-                                        <span>{line}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </details>
-                </motion.div>
-             )}
              <div ref={messagesEndRef} />
             </div>
         </div>
