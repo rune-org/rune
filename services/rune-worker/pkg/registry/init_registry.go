@@ -12,6 +12,7 @@ import (
 	_ "rune-worker/pkg/nodes/custom/smtp"
 	_ "rune-worker/pkg/nodes/custom/split"
 	_ "rune-worker/pkg/nodes/custom/switch"
+	_ "rune-worker/pkg/nodes/custom/wait"
 )
 
 // InitializeRegistry creates and populates the node registry with all available node types.

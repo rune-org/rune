@@ -3,6 +3,7 @@ module rune-worker
 go 1.24
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/redis/go-redis/v9 v9.14.0
 	github.com/wagslane/go-rabbitmq v0.15.0
 )
