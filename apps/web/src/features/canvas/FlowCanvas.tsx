@@ -740,7 +740,7 @@ export default function FlowCanvas({
               title="Ask Smith"
             >
               <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 opacity-0 blur-[2px] transition-opacity duration-500 group-hover:opacity-100" />
-              <div className="relative flex h-full w-full items-center justify-center rounded-full border border-border/60 bg-transparent transition-colors group-hover:bg-background/80">
+              <div className="relative flex h-full w-full items-center justify-center rounded-full border border-border/60 bg-background/20 backdrop-blur-md transition-colors group-hover:bg-background/80">
                 <Image
                   src="/icons/smith_logo_compact_white.svg"
                   alt="Smith"

@@ -115,8 +115,11 @@ export default function SmithQuickstartPage() {
             />
           </div>
           
-          <h1 className="mb-6 max-w-3xl bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-6xl lg:text-7xl">
-            Describe it, <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+          <h1 
+            className="mb-6 max-w-3xl bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-5xl font-bold tracking-tight text-transparent sm:text-6xl lg:text-7xl"
+            style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}
+          >
+             <span className="italic" style={{ fontFamily: 'var(--font-display), Playfair Display, serif' }}>Describe</span> it, <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-violet-500 bg-clip-text text-transparent">
             <br /> Smith builds it.</span>
           </h1>
           
