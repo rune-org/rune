@@ -103,26 +103,22 @@ make up
 Run infrastructure in Docker, but run services locally for faster development.
 
 ```bash
-# Start infrastructure (PostgreSQL, Redis, RabbitMQ)
-make api-dev
+# 1. Install all dependencies (first time only)
+make install
 
 # In separate terminals, run services locally:
 
-# 1. Run API locally
-cd services/api
-source .venv/bin/activate  # or create venv: python -m venv .venv
-pip install -r requirements.txt
-uvicorn src.app:app --reload --port 8000
-
 # 2. Run frontend locally
-cd apps/web
-pnpm install
-pnpm dev
+make web-dev
 
-# 3 (optional).: Run worker locally
-cd services/rune-worker
-go run cmd/worker/main.go
+# 3. Run API locally (starts infrastructure and server)
+make api-dev
+
+# 4. (Optional) Run worker locally
+make worker-dev
 ```
+
+**Note**: The `api-dev` target starts both the Docker infrastructure services (PostgreSQL, Redis, RabbitMQ) and the API server. If you only need infrastructure, use `make api-infra-up` instead, then run `make api-server` separately.
 
 ## Environment Configuration
 
@@ -161,10 +157,11 @@ If you prefer to run services locally without Docker:
 ### Frontend (Next.js)
 
 ```bash
-cd apps/web
-corepack enable
-pnpm install
-pnpm dev
+# Install dependencies (first time only)
+make web-install
+
+# Start development server
+make web-dev
 ```
 
 **Requirements**: Node.js 22, pnpm 9
@@ -172,49 +169,109 @@ pnpm dev
 ### API (FastAPI)
 
 ```bash
-cd services/api
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+# Install dependencies (creates venv automatically)
+make api-install
 
-# Run migrations and seed data
+# Run migrations and seed data (if needed)
+cd services/api
+source venv/bin/activate  # or .venv/bin/activate
 python -m scripts.seed_user
 
 # Start server
-uvicorn src.app:app --reload --port 8000
+make api-server
 ```
 
 **Requirements**: Python 3.13+
 
+**Note**: If you prefer to install to system Python instead of a virtual environment, use `make api-install-no-env` (not recommended).
+
 ### Worker (Go)
 
 ```bash
-cd services/rune-worker
-go mod download
-go run cmd/worker/main.go
+# Install dependencies (first time only)
+make worker-install
+
+# Start worker
+make worker-dev
 ```
 
 **Requirements**: Go 1.25+
 
 ## Available Make Commands
 
-# Development
-| Category | Command | Description |
-|---|---|---|
-| Development | `make install` | Install all dependencies |
-| Development | `make dev` | Start all services in development mode |
-| Development | `make build` | Build all services |
-| Docker | `make up` | Start all services with Docker |
-| Docker | `make down` | Stop all services |
-| Docker | `make restart` | Rebuild and restart all services |
-| Docker | `make status` | Show container status |
-| Docker | `make logs` | View all logs |
-| Testing & Quality | `make test` | Run all tests |
-| Testing & Quality | `make lint` | Run linters for all services |
-| Testing & Quality | `make format` | Format code for all services |
-| Testing & Quality | `make typecheck` | Run type checking |
-| Cleanup | `make clean` | Clean build artifacts |
-| Cleanup | `make docker-clean` | Remove all Docker resources |
+### Development
+
+| Command | Description |
+|---|---|
+| `make install` | Install all dependencies (frontend, API, worker) |
+| `make dev` | Start all services in development mode |
+| `make build` | Build all services |
+
+### Frontend
+
+| Command | Description |
+|---|---|
+| `make web-install` | Install frontend dependencies |
+| `make web-dev` | Start frontend in development mode |
+| `make web-build` | Build frontend |
+| `make web-lint` | Lint frontend code |
+| `make web-format` | Format frontend code with prettier |
+| `make web-typecheck` | Type check frontend code |
+
+### API
+
+| Command | Description |
+|---|---|
+| `make api-install` | Install API dependencies (creates/uses venv) |
+| `make api-install-no-env` | Install API dependencies to system Python |
+| `make api-dev` | Start API infrastructure and server in dev mode |
+| `make api-infra-up` | Start API infrastructure only (postgres, redis, rabbitmq) |
+| `make api-infra-down` | Stop API infrastructure |
+| `make api-server` | Start FastAPI server in dev mode (hot-reload) |
+| `make api-lint` | Lint API code with ruff |
+| `make api-format` | Format API code with ruff |
+
+### Worker
+
+| Command | Description |
+|---|---|
+| `make worker-install` | Install worker dependencies |
+| `make worker-dev` | Start worker in development mode |
+| `make worker-build` | Build worker |
+| `make worker-lint` | Lint worker code |
+| `make worker-format` | Format worker code |
+| `make worker-test` | Run worker tests |
+
+### Docker
+
+| Command | Description |
+|---|---|
+| `make up` | Start all services with Docker |
+| `make down` | Stop all services |
+| `make restart` | Rebuild and restart all services |
+| `make status` | Show container status |
+| `make logs` | View all logs |
+| `make logs-api` | View API logs |
+| `make logs-worker` | View worker logs |
+| `make logs-frontend` | View frontend logs |
+| `make db-shell` | Connect to PostgreSQL |
+| `make docker-clean` | Remove all Docker resources |
+
+### Testing & Quality
+
+| Command | Description |
+|---|---|
+| `make test` | Run all tests |
+| `make lint` | Run linters for all services |
+| `make format` | Format code for all services |
+| `make typecheck` | Run type checking |
+
+### Cleanup
+
+| Command | Description |
+|---|---|
+| `make clean` | Clean build artifacts |
+| `make clean-all` | Clean everything including dependencies |
 
 ## Troubleshooting
 
