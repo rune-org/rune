@@ -124,8 +124,10 @@ func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, nod
 		Type:         node.Type,
 		Parameters:   resolvedParams,
 		Input:        msg.AccumulatedContext,
+		FromNode:     msg.FromNode,
 		RedisClient:  e.redisClient,
 		LineageStack: msg.LineageStack,
+		Workflow:     msg.WorkflowDefinition,
 	}
 
 	// Set credentials if present (already resolved by master)
@@ -270,6 +272,13 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 	// Accumulate result into context with $<node_name> key
 	updatedContext := e.accumulateContext(msg.AccumulatedContext, node.Name, output)
 
+	// Merge node returns a unified merged_context for downstream nodes
+	if node.Type == "merge" {
+		if merged, ok := output["merged_context"].(map[string]any); ok {
+			updatedContext = merged
+		}
+	}
+
 	// Determine next nodes via graph traversal
 	nextNodes := e.determineNextNodes(&msg.WorkflowDefinition, node, output)
 
@@ -285,6 +294,18 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 		if _, closed := output["_barrier_closed"]; closed {
 			slog.Info("aggregator barrier closed, halting branch", "node_id", node.ID)
 			return nil // Do not publish next nodes or completion
+		}
+	}
+
+	// Handle Merge waiting/ignored branches
+	if node.Type == "merge" {
+		if waiting, ok := output["_merge_waiting"].(bool); ok && waiting {
+			slog.Info("merge waiting, parking branch", "node_id", node.ID)
+			return nil
+		}
+		if ignored, ok := output["_merge_ignored"].(bool); ok && ignored {
+			slog.Info("merge branch ignored due to wait_for_any", "node_id", node.ID)
+			return nil
 		}
 	}
 
@@ -331,6 +352,7 @@ func (e *Executor) handleSplitFanOut(ctx context.Context, msg *messages.NodeExec
 				WorkflowDefinition: msg.WorkflowDefinition,
 				AccumulatedContext: itemContext,
 				LineageStack:       newStack,
+				FromNode:           node.ID,
 			}
 
 			payload, err := nextMsg.Encode()
@@ -508,6 +530,7 @@ func (e *Executor) publishNextNodes(ctx context.Context, msg *messages.NodeExecu
 			WorkflowDefinition: msg.WorkflowDefinition,
 			AccumulatedContext: updatedContext,
 			LineageStack:       msg.LineageStack, // Propagate stack
+			FromNode:           msg.CurrentNode,
 		}
 
 		payload, err := nextMsg.Encode()
