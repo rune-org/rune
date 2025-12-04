@@ -45,7 +45,7 @@ func TestWaitNode_SchedulesTimer(t *testing.T) {
 		},
 		Input:       map[string]any{"foo": "bar"},
 		RedisClient: redisClient,
-		WorkflowDefinition: core.Workflow{
+		Workflow: core.Workflow{
 			WorkflowID:  "wf-1",
 			ExecutionID: "exec-1",
 			Nodes: []core.Node{
@@ -298,7 +298,7 @@ func TestWaitNode_FrozenStateIncludesContext(t *testing.T) {
 		},
 		Input:       inputContext,
 		RedisClient: redisClient,
-		WorkflowDefinition: core.Workflow{
+		Workflow: core.Workflow{
 			WorkflowID:  "wf-frozen-test",
 			ExecutionID: "exec-frozen-test",
 			Nodes: []core.Node{

@@ -82,7 +82,9 @@ func (n *MergeNode) handleWaitForAll(ctx context.Context, prefix string, execCtx
 		return nil, fmt.Errorf("merge node requires from_node when wait_mode=wait_for_all")
 	}
 
-	expected := len(n.workflow.GetIncomingEdges(n.nodeID))
+	// Get expected arrivals from workflow graph
+	incomingNodes := n.workflow.GetIncomingNodeIDs(n.nodeID)
+	expected := len(incomingNodes)
 	if expected == 0 {
 		expected = 1
 	}

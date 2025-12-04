@@ -42,9 +42,10 @@ func (n *WaitNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 		WorkflowID:         execCtx.WorkflowID,
 		ExecutionID:        execCtx.ExecutionID,
 		CurrentNode:        execCtx.NodeID,
-		WorkflowDefinition: execCtx.WorkflowDefinition,
+		WorkflowDefinition: execCtx.Workflow,
 		AccumulatedContext: execCtx.Input,
 		LineageStack:       execCtx.LineageStack,
+		FromNode:           execCtx.FromNode,
 	}
 
 	payload, err := frozen.Encode()
