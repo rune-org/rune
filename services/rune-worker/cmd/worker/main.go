@@ -9,7 +9,9 @@ import (
 
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
+	"rune-worker/pkg/platform/queue"
 	"rune-worker/pkg/registry"
+	"rune-worker/pkg/scheduler"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -78,11 +80,53 @@ func main() {
 		}
 	}()
 
+	// Create resume consumer for wait node resumption
+	resumeConsumer, err := messaging.NewResumeConsumer(cfg, redisClient)
+	if err != nil {
+		slog.Error("unable to create resume consumer", "error", err)
+		os.Exit(1)
+	}
+	defer func() {
+		slog.Info("shutting down resume consumer")
+		if err := resumeConsumer.Close(); err != nil {
+			slog.Error("error closing resume consumer", "error", err)
+		}
+	}()
+
+	// Create scheduler publisher
+	schedulerPub, err := queue.NewRabbitMQPublisher(cfg.RabbitURL)
+	if err != nil {
+		slog.Error("unable to create scheduler publisher", "error", err)
+		os.Exit(1)
+	}
+	defer func() {
+		if err := schedulerPub.Close(); err != nil {
+			slog.Error("error closing scheduler publisher", "error", err)
+		}
+	}()
+
+	// Create wait timer scheduler
+	sched := scheduler.NewScheduler(redisClient, schedulerPub, scheduler.Options{})
+
 	slog.Info("workflow consumer created successfully")
 
 	// Setup graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	// Start scheduler in background
+	go func() {
+		if err := sched.Run(ctx); err != nil && err != context.Canceled {
+			slog.Error("scheduler stopped with error", "error", err)
+		}
+	}()
+
+	// Start resume consumer in background
+	go func() {
+		if err := resumeConsumer.Run(ctx); err != nil && err != context.Canceled {
+			slog.Error("resume consumer stopped with error", "error", err)
+		}
+	}()
 
 	// Start consuming messages
 	slog.Info("workflow worker ready to process messages")

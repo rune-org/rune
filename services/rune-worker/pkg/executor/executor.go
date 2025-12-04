@@ -91,12 +91,46 @@ func (e *Executor) Execute(ctx context.Context, msg *messages.NodeExecutionMessa
 	output, execErr := nodeInstance.Execute(ctx, execContext)
 	duration := time.Since(startTime)
 
-	// Step 7 & 8: Handle execution result
 	if execErr != nil {
 		return e.handleNodeFailure(ctx, msg, &node, execErr, duration)
 	}
 
+	if node.Type == "wait" {
+		return e.handleWaitNode(ctx, msg, &node, output, duration)
+	}
+
+	// Step 7 & 8: Handle execution result
 	return e.handleNodeSuccess(ctx, msg, &node, output, duration, startTime)
+}
+
+// handleWaitNode publishes a waiting status and stops further execution for this branch.
+func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration) error {
+	statusMsg := &messages.NodeStatusMessage{
+		WorkflowID:  msg.WorkflowID,
+		ExecutionID: msg.ExecutionID,
+		NodeID:      node.ID,
+		NodeName:    node.Name,
+		Status:      messages.StatusWaiting,
+		Output:      output,
+		ExecutedAt:  time.Now(),
+		DurationMs:  duration.Milliseconds(),
+	}
+
+	e.enrichStatusWithLineage(statusMsg, msg.LineageStack)
+
+	if err := e.publishStatus(ctx, statusMsg); err != nil {
+		slog.Error("failed to publish waiting status", "error", err)
+	}
+
+	slog.Info("wait node scheduled and branch suspended",
+		"workflow_id", msg.WorkflowID,
+		"execution_id", msg.ExecutionID,
+		"node_id", node.ID,
+		"resume_at", output["resume_at"],
+		"timer_id", output["timer_id"],
+	)
+
+	return nil
 }
 
 // buildExecutionContext creates the plugin.ExecutionContext from the message.
@@ -118,14 +152,15 @@ func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, nod
 	}
 
 	execCtx := plugin.ExecutionContext{
-		ExecutionID:  msg.ExecutionID,
-		WorkflowID:   msg.WorkflowID,
-		NodeID:       node.ID,
-		Type:         node.Type,
-		Parameters:   resolvedParams,
-		Input:        msg.AccumulatedContext,
-		RedisClient:  e.redisClient,
-		LineageStack: msg.LineageStack,
+		ExecutionID:        msg.ExecutionID,
+		WorkflowID:         msg.WorkflowID,
+		NodeID:             node.ID,
+		Type:               node.Type,
+		Parameters:         resolvedParams,
+		Input:              msg.AccumulatedContext,
+		RedisClient:        e.redisClient,
+		LineageStack:       msg.LineageStack,
+		WorkflowDefinition: msg.WorkflowDefinition,
 	}
 
 	// Set credentials if present (already resolved by master)
