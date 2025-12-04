@@ -34,7 +34,9 @@ def create_node(node_type: str, name: str, params: str | dict = "{}") -> str:
         schema_key = "if"
 
     if schema_key not in NODE_SCHEMAS:
-        return json.dumps({"error": f"Unknown type '{node_type}'. Valid: {list(NODE_SCHEMAS.keys())}"})
+        return json.dumps(
+            {"error": f"Unknown type '{node_type}'. Valid: {list(NODE_SCHEMAS.keys())}"}
+        )
 
     try:
         if isinstance(params, dict):
@@ -52,17 +54,25 @@ def create_node(node_type: str, name: str, params: str | dict = "{}") -> str:
     if valid_field_names:
         unknown = set(parameters.keys()) - valid_field_names
         if unknown:
-            return json.dumps({
-                "error": f"Unknown fields for {node_type}: {list(unknown)}",
-                "valid_fields": list(valid_field_names),
-            }, indent=2)
+            return json.dumps(
+                {
+                    "error": f"Unknown fields for {node_type}: {list(unknown)}",
+                    "valid_fields": list(valid_field_names),
+                },
+                indent=2,
+            )
 
-        required = [f for f, desc in schema_fields.items() if "required" in str(desc).lower()]
+        required = [
+            f for f, desc in schema_fields.items() if "required" in str(desc).lower()
+        ]
         missing = [f for f in required if f not in parameters]
         if missing:
-            return json.dumps({
-                "error": f"Missing required fields for {node_type}: {missing}",
-            }, indent=2)
+            return json.dumps(
+                {
+                    "error": f"Missing required fields for {node_type}: {missing}",
+                },
+                indent=2,
+            )
 
     node_id = _generate_id()
     is_trigger = node_type == "trigger"
@@ -75,10 +85,13 @@ def create_node(node_type: str, name: str, params: str | dict = "{}") -> str:
         parameters=parameters,
     )
 
-    return json.dumps({
-        "node_id": node_id,
-        "node": node.model_dump(exclude_none=True),
-    }, indent=2)
+    return json.dumps(
+        {
+            "node_id": node_id,
+            "node": node.model_dump(exclude_none=True),
+        },
+        indent=2,
+    )
 
 
 def create_edge(src_id: str, dst_id: str, label: str = None) -> str:
@@ -101,10 +114,13 @@ def create_edge(src_id: str, dst_id: str, label: str = None) -> str:
         label=label,
     )
 
-    return json.dumps({
-        "edge_id": edge_id,
-        "edge": edge.model_dump(exclude_none=True),
-    }, indent=2)
+    return json.dumps(
+        {
+            "edge_id": edge_id,
+            "edge": edge.model_dump(exclude_none=True),
+        },
+        indent=2,
+    )
 
 
 def build_workflow(nodes_json: str, edges_json: str) -> str:
@@ -132,10 +148,13 @@ def build_workflow(nodes_json: str, edges_json: str) -> str:
     if errors:
         return json.dumps({"error": errors}, indent=2)
 
-    return json.dumps({
-        "nodes": nodes,
-        "edges": edges,
-    }, indent=2)
+    return json.dumps(
+        {
+            "nodes": nodes,
+            "edges": edges,
+        },
+        indent=2,
+    )
 
 
 def _validate(nodes: list, edges: list) -> list:
@@ -146,7 +165,9 @@ def _validate(nodes: list, edges: list) -> list:
         return ["No nodes provided"]
 
     # Check trigger
-    triggers = [n for n in nodes if n.get("trigger") or n.get("type") == "ManualTrigger"]
+    triggers = [
+        n for n in nodes if n.get("trigger") or n.get("type") == "ManualTrigger"
+    ]
     if len(triggers) != 1:
         errors.append(f"Need exactly 1 trigger node, found {len(triggers)}")
 

@@ -40,7 +40,8 @@ NODE_SCHEMAS = {
             " value: the variable or value to be evaluated."
             " operator is ONE OF: < | > | == | != | <= | >= | contains"
             " compare: is the variable or value to be evaluated against."
-            "(ALL THREE FIELDS REQUIRED, and must be enclosed in " " (string format))",
+            "(ALL THREE FIELDS REQUIRED, and must be enclosed in "
+            " (string format))",
         },
         "outputs": ["case 1", "case 2", "...", "fallback"],
         "edge_note": "Rule at index 0 maps to 'case 1', index 1 to 'case 2', etc. Use 'fallback' for default/else.",

@@ -27,7 +27,9 @@ class WorkflowSignature(dspy.Signature):
     history: str = dspy.InputField(desc="Conversation history", default="")
 
     response: str = dspy.OutputField(desc="Response to user")
-    workflow: str = dspy.OutputField(desc="Workflow JSON or empty if clarification needed")
+    workflow: str = dspy.OutputField(
+        desc="Workflow JSON or empty if clarification needed"
+    )
 
 
 class SmithAgent(dspy.Module):
@@ -35,7 +37,9 @@ class SmithAgent(dspy.Module):
 
     def __init__(self, max_iters: int = 5):
         super().__init__()
-        self.react = dspy.ReAct(WorkflowSignature, tools=SMITH_TOOLS, max_iters=max_iters)
+        self.react = dspy.ReAct(
+            WorkflowSignature, tools=SMITH_TOOLS, max_iters=max_iters
+        )
 
     def forward(self, request: str, history: str = "") -> dspy.Prediction:
         return self.react(request=request, history=history)

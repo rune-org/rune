@@ -75,7 +75,9 @@ class SmithAgentService:
 
         return "\n".join(f"{msg.role.title()}: {msg.content}" for msg in history)
 
-    def _parse_workflow(self, workflow_json: str | dict[str, Any] | None) -> dict[str, Any]:
+    def _parse_workflow(
+        self, workflow_json: str | dict[str, Any] | None
+    ) -> dict[str, Any]:
         if workflow_json is None:
             raise ValueError("Smith did not return workflow JSON.")
 
@@ -153,9 +155,7 @@ class SmithAgentService:
 
         return steps
 
-    def _attach_context(
-        self, prompt: str, workflow: dict[str, Any] | None
-    ) -> str:
+    def _attach_context(self, prompt: str, workflow: dict[str, Any] | None) -> str:
         """Include the current workflow JSON so the agent can edit in place."""
         if not workflow:
             return prompt
@@ -163,7 +163,9 @@ class SmithAgentService:
         try:
             workflow_json = json.dumps(workflow)
         except TypeError as exc:
-            raise ValueError(f"Workflow context must be JSON serializable: {exc}") from exc
+            raise ValueError(
+                f"Workflow context must be JSON serializable: {exc}"
+            ) from exc
 
         return (
             "You can edit the existing workflow below.\n"
