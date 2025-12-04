@@ -308,7 +308,9 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 
 	// Edit node transforms the working payload; propagate to $json for downstream expressions.
 	if node.Type == "edit" {
-		updatedContext["$json"] = output
+		if json, ok := output["$json"]; ok {
+			updatedContext["$json"] = json
+		}
 	}
 
 	// Merge node returns a unified merged_context for downstream nodes
@@ -317,36 +319,6 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 			updatedContext = merged
 		}
 	}
-
-	// Determine next nodes via graph traversal
-	nextNodes := e.determineNextNodes(&msg.WorkflowDefinition, node, output)
-
-		// Handle Split Node Fan-Out
-		if node.Type == "split" {
-			if items, ok := output["_split_items"].([]any); ok {
-				return e.handleSplitFanOut(ctx, msg, node, nextNodes, items, updatedContext)
-			}
-		}
-
-		// Handle Aggregator Barrier
-		if node.Type == "aggregator" {
-			if _, closed := output["_barrier_closed"]; closed {
-				slog.Info("aggregator barrier closed, halting branch", "node_id", node.ID)
-				return nil // Do not publish next nodes or completion
-			}
-		}
-
-		if len(nextNodes) == 0 {
-			// No more nodes to execute - workflow completed
-			slog.Info("workflow completed", "workflow_id", msg.WorkflowID, "execution_id", msg.ExecutionID, "final_context_keys", getKeys(updatedContext))
-			return e.publishCompletion(ctx, msg, messages.CompletionStatusCompleted, startTime, updatedContext)
-		}
-
-		// Publish execution messages for next nodes
-		return e.publishNextNodes(ctx, msg, nextNodes, updatedContext)
-	}
-
-	updatedContext := e.accumulateContext(msg.AccumulatedContext, node.Name, output)
 
 	// Determine next nodes via graph traversal
 	nextNodes := e.determineNextNodes(&msg.WorkflowDefinition, node, output)
@@ -363,18 +335,6 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 		if _, closed := output["_barrier_closed"]; closed {
 			slog.Info("aggregator barrier closed, halting branch", "node_id", node.ID)
 			return nil // Do not publish next nodes or completion
-		}
-	}
-
-	// Handle Merge waiting/ignored branches
-	if node.Type == "merge" {
-		if waiting, ok := output["_merge_waiting"].(bool); ok && waiting {
-			slog.Info("merge waiting, parking branch", "node_id", node.ID)
-			return nil
-		}
-		if ignored, ok := output["_merge_ignored"].(bool); ok && ignored {
-			slog.Info("merge branch ignored due to wait_for_any", "node_id", node.ID)
-			return nil
 		}
 	}
 

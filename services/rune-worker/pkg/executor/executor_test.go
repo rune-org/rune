@@ -140,7 +140,8 @@ func TestExecutor_EditNodeUpdatesJson(t *testing.T) {
 	reg := nodes.NewRegistry()
 
 	reg.Register("edit", func(execCtx plugin.ExecutionContext) plugin.Node {
-		return &MockNode{output: map[string]any{"field": "value"}}
+		// Edit node returns output wrapped in $json, matching the real implementation
+		return &MockNode{output: map[string]any{"$json": map[string]any{"field": "value"}}}
 	})
 
 	exec := NewExecutor(reg, pub, nil)
