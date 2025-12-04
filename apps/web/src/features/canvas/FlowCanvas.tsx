@@ -44,7 +44,7 @@ import {
 import { SmithChatDrawer, type SmithChatMessage } from "@/features/smith/SmithChatDrawer";
 import { graphToWorkflowData } from "@/lib/workflows";
 import { smith } from "@/lib/api";
-import { Sparkles } from "lucide-react";
+import Image from "next/image";
 
 type HistoryEntry = { nodes: CanvasNode[]; edges: Edge[] };
 const CLIPBOARD_SELECTION_TYPE = "rune.canvas.selection";
@@ -406,6 +406,7 @@ export default function FlowCanvas({
       nodes,
       smithMessages,
       smithSending,
+      smithShowTrace,
     ],
   );
 
@@ -735,11 +736,20 @@ export default function FlowCanvas({
             <button
               type="button"
               onClick={() => setIsSmithOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-primary/50 bg-primary/10 px-3 text-sm font-medium text-primary shadow-sm transition hover:bg-primary/15"
-              title="Open Smith (AI assistant)"
+              className="group relative flex h-13 w-13 items-center justify-center overflow-hidden rounded-full p-[1px] shadow-lg transition-all hover:shadow-primary/25 hover:scale-105 active:scale-95"
+              title="Ask Smith"
             >
-              <Sparkles className="h-4 w-4" />
-              Ask Smith
+              <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 opacity-0 blur-[2px] transition-opacity duration-500 group-hover:opacity-100" />
+              <div className="relative flex h-full w-full items-center justify-center rounded-full border border-border/60 bg-transparent transition-colors group-hover:bg-background/80">
+                <Image
+                  src="/icons/smith_logo_compact_white.svg"
+                  alt="Smith"
+                  width={30}
+                  height={30}
+                  
+                  priority
+                />
+              </div>
             </button>
           </div>
         </Panel>
