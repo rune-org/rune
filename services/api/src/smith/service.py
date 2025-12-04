@@ -38,7 +38,9 @@ class SmithAgentService:
         temperature = float(os.getenv("SMITH_TEMPERATURE", "0.3"))
         max_tokens = int(os.getenv("SMITH_MAX_TOKENS", "8192"))
 
-        dspy.configure(lm=dspy.LM(model_id, temperature=temperature, max_tokens=max_tokens))
+        dspy.configure(
+            lm=dspy.LM(model_id, temperature=temperature, max_tokens=max_tokens)
+        )
 
     def _get_agent(self, max_iters: int | None) -> SmithAgent:
         """Reuse Smith agent instances keyed by iteration limit."""
