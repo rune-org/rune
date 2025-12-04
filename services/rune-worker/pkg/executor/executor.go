@@ -306,6 +306,13 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 	// Accumulate result into context with $<node_name> key
 	updatedContext := e.accumulateContext(msg.AccumulatedContext, node.Name, output)
 
+	// Edit node transforms the working payload; propagate to $json for downstream expressions.
+	if node.Type == "edit" {
+		if json, ok := output["$json"]; ok {
+			updatedContext["$json"] = json
+		}
+	}
+
 	// Merge node returns a unified merged_context for downstream nodes
 	if node.Type == "merge" {
 		if merged, ok := output["merged_context"].(map[string]any); ok {
