@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends
 
 from src.core.exceptions import BadRequest
@@ -20,7 +22,8 @@ async def generate_workflow_from_prompt(
 ) -> ApiResponse[GeneratedWorkflow]:
     """Use Smith to convert a natural-language request into a workflow definition."""
     try:
-        result = smith.generate_workflow(
+        result = await asyncio.to_thread(
+            smith.generate_workflow,
             prompt=payload.prompt,
             history=payload.history,
             workflow=payload.workflow,
