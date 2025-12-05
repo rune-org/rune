@@ -46,6 +46,43 @@ const NODE_DEFAULTS: Record<
       body: "This is a test email",
     },
   },
+  wait: {
+    type: "wait",
+    data: {
+      label: "Wait",
+      amount: 1,
+      unit: "seconds",
+    },
+  },
+  edit: {
+    type: "edit",
+    data: {
+      label: "Edit",
+      mode: "assignments",
+      assignments: [{ name: "newField", value: "{{ $json.existingField }}", type: "string" }],
+    },
+  },
+  split: {
+    type: "split",
+    data: {
+      label: "Split",
+      array_field: "$json.items",
+    },
+  },
+  aggregator: {
+    type: "aggregator",
+    data: {
+      label: "Aggregator",
+    },
+  },
+  merge: {
+    type: "merge",
+    data: {
+      label: "Merge",
+      wait_mode: "wait_for_all",
+      timeout: 300,
+    },
+  },
 };
 
 // Helper function to calculate the node's position.
