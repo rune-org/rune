@@ -1289,6 +1289,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/smith/generate:
+    post:
+      tags:
+      - Workflows
+      summary: Generate Workflow From Prompt
+      description: Use Smith to convert a natural-language request into a workflow
+        definition.
+      operationId: generate_workflow_from_prompt_workflows_smith_generate_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateWorkflowRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_GeneratedWorkflow_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AdminPasswordResetResponse:
@@ -1446,6 +1473,25 @@ components:
       required:
       - data
       title: ApiResponse[FirstTimeSetupStatus]
+    ApiResponse_GeneratedWorkflow_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/GeneratedWorkflow'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[GeneratedWorkflow]
     ApiResponse_List_TemplateSummary__:
       properties:
         success:
@@ -2045,6 +2091,64 @@ components:
           default: Executive Summary
       type: object
       title: GenerateWorkflowDocsRequest
+    GenerateWorkflowRequest:
+      properties:
+        prompt:
+          type: string
+          title: Prompt
+        history:
+          items:
+            $ref: '#/components/schemas/SmithMessage'
+          type: array
+          title: History
+        workflow:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Workflow
+          description: Optional existing workflow JSON to give the agent full context.
+        include_trace:
+          type: boolean
+          title: Include Trace
+          description: Include Smith's reasoning/trajectory in the response.
+          default: false
+        max_iters:
+          anyOf:
+          - type: integer
+            maximum: 20.0
+            minimum: 1.0
+          - type: 'null'
+          title: Max Iters
+          description: Optional override for Smith's ReAct iteration limit.
+      type: object
+      required:
+      - prompt
+      title: GenerateWorkflowRequest
+      description: Request body for creating a workflow from natural language.
+    GeneratedWorkflow:
+      properties:
+        response:
+          type: string
+          title: Response
+        workflow:
+          additionalProperties: true
+          type: object
+          title: Workflow
+        trace:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Trace
+          description: Optional reasoning steps from the agent trajectory.
+      type: object
+      required:
+      - response
+      - workflow
+      title: GeneratedWorkflow
+      description: Smith LLM response packaged for the API.
     HTTPValidationError:
       properties:
         detail:
@@ -2099,6 +2203,23 @@ components:
       required:
       - refresh_token
       title: RefreshRequest
+    SmithMessage:
+      properties:
+        role:
+          type: string
+          enum:
+          - user
+          - smith
+          title: Role
+          default: user
+        content:
+          type: string
+          title: Content
+      type: object
+      required:
+      - content
+      title: SmithMessage
+      description: Single chat turn used to seed Smith with prior context.
     TemplateCreate:
       properties:
         name:

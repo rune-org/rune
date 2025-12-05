@@ -19,7 +19,7 @@ import "./styles/reactflow.css";
 
 // Start with an empty canvas by default
 import { nodeTypes } from "./nodes";
-import type { CanvasNode } from "./types";
+import type { CanvasEdge, CanvasNode } from "./types";
 import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
@@ -33,6 +33,7 @@ import { useExecutionSim } from "./hooks/useExecutionSim";
 import { useAutoLayout } from "./hooks/useAutoLayout";
 import { usePinNode } from "./hooks/usePinNode";
 import { sanitizeGraph, stringifyGraph } from "./lib/graphIO";
+import { applyAutoLayout } from "./lib/autoLayout";
 import { workflowDataToCanvas } from "@/lib/workflow-dsl";
 import { toast } from "@/components/ui/toast";
 import { createId } from "./utils/id";
@@ -40,6 +41,10 @@ import {
   switchFallbackHandleId,
   switchRuleHandleId,
 } from "./utils/switchHandles";
+import { SmithChatDrawer, type SmithChatMessage } from "@/features/smith/SmithChatDrawer";
+import { graphToWorkflowData } from "@/lib/workflows";
+import { smith } from "@/lib/api";
+import Image from "next/image";
 
 type HistoryEntry = { nodes: CanvasNode[]; edges: Edge[] };
 const CLIPBOARD_SELECTION_TYPE = "rune.canvas.selection";
@@ -52,7 +57,7 @@ export default function FlowCanvas({
   onPersist,
   onRun,
   saveDisabled = false,
-  workflowId,
+  workflowId = null,
 }: {
   externalNodes?: CanvasNode[];
   externalEdges?: Edge[];
@@ -74,6 +79,12 @@ export default function FlowCanvas({
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
   const [isImportTemplateOpen, setIsImportTemplateOpen] = useState(false);
+  const [isSmithOpen, setIsSmithOpen] = useState(false);
+  const [smithMessages, setSmithMessages] = useState<SmithChatMessage[]>([]);
+  const [smithInput, setSmithInput] = useState("");
+  const [smithSending, setSmithSending] = useState(false);
+  const [smithShowTrace, setSmithShowTrace] = useState(false);
+  const [pendingSmithPrompt, setPendingSmithPrompt] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(
@@ -144,6 +155,47 @@ export default function FlowCanvas({
   const { autoLayout } = useAutoLayout(nodes, edges, setNodes, setEdges, {
     onBeforeLayout: pushHistory,
   });
+
+  const applySmithWorkflow = useCallback(
+    (workflow: Record<string, unknown>) => {
+      const candidateNodes = Array.isArray(
+        (workflow as { nodes?: unknown }).nodes,
+      )
+        ? ((workflow as { nodes: Parameters<typeof workflowDataToCanvas>[0]["nodes"] })
+            .nodes ?? [])
+        : [];
+      const candidateEdges = Array.isArray(
+        (workflow as { edges?: unknown }).edges,
+      )
+        ? ((workflow as { edges: Parameters<typeof workflowDataToCanvas>[0]["edges"] })
+            .edges ?? [])
+        : [];
+
+      if (candidateNodes.length === 0) {
+        throw new Error("Smith returned an empty workflow");
+      }
+
+      const { nodes: canvasNodes, edges: canvasEdges } = workflowDataToCanvas({
+        nodes: candidateNodes,
+        edges: candidateEdges,
+      });
+      const sanitized = sanitizeGraph({
+        nodes: canvasNodes,
+        edges: canvasEdges,
+      });
+      const layouted = applyAutoLayout({
+        nodes: sanitized.nodes as CanvasNode[],
+        edges: sanitized.edges as Edge[],
+        respectPinned: true,
+      });
+
+      pushHistory();
+      setNodes(() => layouted.nodes as CanvasNode[]);
+      setEdges(() => layouted.edges as Edge[]);
+      toast.success("Smith updated the canvas");
+    },
+    [pushHistory, setEdges, setNodes],
+  );
 
   const copySelection = useCallback(async () => {
     const selectedNodeIds = new Set(
@@ -277,6 +329,81 @@ export default function FlowCanvas({
     [pushHistory, setNodes, setEdges],
   );
 
+  const handleSmithSend = useCallback(
+    async (content: string) => {
+      const trimmed = content.trim();
+      if (!trimmed || smithSending) return;
+
+      const userMessage: SmithChatMessage = { role: "user", content: trimmed };
+      const history = [...smithMessages, userMessage];
+      setSmithMessages(history);
+      setSmithInput("");
+      setSmithSending(true);
+
+      let workflowContext: Record<string, unknown> | null = null;
+      try {
+        workflowContext = graphToWorkflowData({
+          nodes: nodes as CanvasNode[],
+          edges: edges as CanvasEdge[],
+        });
+      } catch (err) {
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : "Unable to include current workflow for Smith.",
+        );
+        setSmithSending(false);
+        return;
+      }
+
+      try {
+        const response = await smith.generateWorkflow({
+          prompt: trimmed,
+          history: history.map((m) => ({ role: m.role, content: m.content })),
+          workflow: workflowContext,
+          include_trace: smithShowTrace,
+        });
+
+        const smithData = response.data?.data as
+          | { response?: string; workflow?: Record<string, unknown>; trace?: string[] }
+          | undefined;
+
+        if (!smithData?.workflow) {
+          throw new Error(
+            smithData?.response || "Smith response did not include a workflow.",
+          );
+        }
+
+        setSmithMessages((prev) => [
+          ...prev,
+          {
+            role: "smith",
+            content: smithData.response || "Updated the workflow.",
+            trace: smithShowTrace && smithData.trace ? smithData.trace : undefined,
+          } as SmithChatMessage,
+        ]);
+
+        applySmithWorkflow(smithData.workflow);
+      } catch (err) {
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : "Smith could not update the workflow",
+        );
+      } finally {
+        setSmithSending(false);
+      }
+    },
+    [
+      applySmithWorkflow,
+      edges,
+      nodes,
+      smithMessages,
+      smithSending,
+      smithShowTrace,
+    ],
+  );
+
   const importFromTemplate = useCallback(() => {
     setIsImportTemplateOpen(true);
   }, []);
@@ -349,6 +476,78 @@ export default function FlowCanvas({
     setEdges(externalEdges ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalNodes, externalEdges]);
+
+  // Restore per-workflow Smith chat history from localStorage
+  useEffect(() => {
+    const key = `smith-history-${workflowId ?? "scratch"}`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved) as {
+          messages?: SmithChatMessage[];
+        };
+        setSmithMessages(parsed.messages ?? []);
+      } else {
+        setSmithMessages([]);
+      }
+    } catch {
+      setSmithMessages([]);
+    }
+  }, [workflowId]);
+
+  // Persist per-workflow Smith chat history
+  useEffect(() => {
+    const key = `smith-history-${workflowId ?? "scratch"}`;
+    try {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          messages: smithMessages,
+        }),
+      );
+    } catch {
+      // ignore
+    }
+  }, [smithMessages, workflowId]);
+
+  useEffect(() => {
+    if (isSmithOpen && smithMessages.length === 0) {
+      setSmithMessages([
+        {
+          role: "smith",
+          content:
+            "Hi, I'm Smith. Describe what to build or edit and I'll wire the workflow for you.",
+        },
+      ]);
+    }
+  }, [isSmithOpen, smithMessages.length]);
+
+  // Auto-run Smith prompt seeded from quickstart/local storage
+  useEffect(() => {
+    if (!workflowId) return;
+    try {
+      const savedPrompt = localStorage.getItem(`smith-prompt-${workflowId}`);
+      const savedTracePref = localStorage.getItem(
+        `smith-show-trace-${workflowId}`,
+      );
+      if (savedPrompt) {
+        setPendingSmithPrompt(savedPrompt);
+        setSmithShowTrace(savedTracePref === "true");
+        localStorage.removeItem(`smith-prompt-${workflowId}`);
+        localStorage.removeItem(`smith-show-trace-${workflowId}`);
+      }
+    } catch {
+      // ignore
+    }
+  }, [workflowId]);
+
+  useEffect(() => {
+    if (pendingSmithPrompt && !smithSending) {
+      setIsSmithOpen(true);
+      void handleSmithSend(pendingSmithPrompt);
+      setPendingSmithPrompt(null);
+    }
+  }, [pendingSmithPrompt, smithSending, handleSmithSend]);
 
   // Paste to import graph DSL or clone selections
   useEffect(() => {
@@ -502,7 +701,7 @@ export default function FlowCanvas({
 
         {/* Toolbar */}
         <Panel position="top-left" className="pointer-events-auto z-[60]">
-          <div ref={toolbarRef}>
+          <div ref={toolbarRef} className="flex items-center gap-2">
             <Toolbar
               onExecute={() => {
                 reset();
@@ -523,6 +722,24 @@ export default function FlowCanvas({
               onAutoLayout={autoLayout}
               saveDisabled={saveDisabled}
             />
+            <button
+              type="button"
+              onClick={() => setIsSmithOpen(true)}
+              className="group relative flex h-13 w-13 items-center justify-center overflow-hidden rounded-full p-[1px] shadow-lg transition-all hover:shadow-primary/25 hover:scale-105 active:scale-95"
+              title="Ask Smith"
+            >
+              <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 opacity-0 blur-[2px] transition-opacity duration-500 group-hover:opacity-100" />
+              <div className="relative flex h-full w-full items-center justify-center rounded-full border border-border/60 bg-background/20 backdrop-blur-md transition-colors group-hover:bg-background/80">
+                <Image
+                  src="/icons/smith_logo_compact_white.svg"
+                  alt="Smith"
+                  width={30}
+                  height={30}
+                  
+                  priority
+                />
+              </div>
+            </button>
           </div>
         </Panel>
 
@@ -579,6 +796,18 @@ export default function FlowCanvas({
         open={isImportTemplateOpen}
         onOpenChange={setIsImportTemplateOpen}
         onSelect={handleTemplateSelect}
+      />
+
+      <SmithChatDrawer
+        open={isSmithOpen}
+        onOpenChange={setIsSmithOpen}
+        messages={smithMessages}
+        input={smithInput}
+        onInputChange={setSmithInput}
+        onSend={handleSmithSend}
+        isSending={smithSending}
+        showTrace={smithShowTrace}
+        onToggleTrace={(next) => setSmithShowTrace(next)}
       />
     </div>
   );
