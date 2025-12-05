@@ -174,6 +174,28 @@ export type ApiResponseFirstTimeSetupStatus = {
 };
 
 /**
+ * ApiResponse[GeneratedWorkflow]
+ */
+export type ApiResponseGeneratedWorkflow = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: GeneratedWorkflow;
+};
+
+/**
  * ApiResponse[List[TemplateSummary]]
  */
 export type ApiResponseListTemplateSummary = {
@@ -833,6 +855,66 @@ export type GenerateWorkflowDocsRequest = {
 };
 
 /**
+ * GenerateWorkflowRequest
+ *
+ * Request body for creating a workflow from natural language.
+ */
+export type GenerateWorkflowRequest = {
+    /**
+     * Prompt
+     */
+    prompt: string;
+    /**
+     * History
+     */
+    history?: Array<SmithMessage>;
+    /**
+     * Workflow
+     *
+     * Optional existing workflow JSON to give the agent full context.
+     */
+    workflow?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Include Trace
+     *
+     * Include Smith's reasoning/trajectory in the response.
+     */
+    include_trace?: boolean;
+    /**
+     * Max Iters
+     *
+     * Optional override for Smith's ReAct iteration limit.
+     */
+    max_iters?: number | null;
+};
+
+/**
+ * GeneratedWorkflow
+ *
+ * Smith LLM response packaged for the API.
+ */
+export type GeneratedWorkflow = {
+    /**
+     * Response
+     */
+    response: string;
+    /**
+     * Workflow
+     */
+    workflow: {
+        [key: string]: unknown;
+    };
+    /**
+     * Trace
+     *
+     * Optional reasoning steps from the agent trajectory.
+     */
+    trace?: Array<string> | null;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -884,6 +966,22 @@ export type RefreshRequest = {
      * Valid refresh token
      */
     refresh_token: string;
+};
+
+/**
+ * SmithMessage
+ *
+ * Single chat turn used to seed Smith with prior context.
+ */
+export type SmithMessage = {
+    /**
+     * Role
+     */
+    role?: 'user' | 'smith';
+    /**
+     * Content
+     */
+    content: string;
 };
 
 /**
@@ -2472,3 +2570,28 @@ export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses = {
 };
 
 export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponse = GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses[keyof GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses];
+
+export type GenerateWorkflowFromPromptWorkflowsSmithGeneratePostData = {
+    body: GenerateWorkflowRequest;
+    path?: never;
+    query?: never;
+    url: '/workflows/smith/generate';
+};
+
+export type GenerateWorkflowFromPromptWorkflowsSmithGeneratePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GenerateWorkflowFromPromptWorkflowsSmithGeneratePostError = GenerateWorkflowFromPromptWorkflowsSmithGeneratePostErrors[keyof GenerateWorkflowFromPromptWorkflowsSmithGeneratePostErrors];
+
+export type GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseGeneratedWorkflow;
+};
+
+export type GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponse = GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponses[keyof GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponses];

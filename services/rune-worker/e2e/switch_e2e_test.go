@@ -5,6 +5,9 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -21,13 +24,26 @@ import (
 
 // TestSwitchNodeE2E tests a workflow with a switch node that routes to different HTTP endpoints.
 // Scenarios:
-// 1. Case 1: Input "google" -> Fetch google.com
-// 2. Case 2: Input "yahoo" -> Fetch yahoo.com
-// 3. Case 3: Input "bing" -> Fetch bing.com
-// 4. Fallback: Input "other" -> Fetch httpbin.org/get (fallback)
+// 1. Case 1: Input "google" -> Fetch google endpoint
+// 2. Case 2: Input "yahoo" -> Fetch yahoo endpoint
+// 3. Case 3: Input "bing" -> Fetch bing endpoint
+// 4. Fallback: Input "other" -> Fetch fallback endpoint
 func TestSwitchNodeE2E(t *testing.T) {
 	env := setupE2ETest(t)
 	defer env.Cleanup(t)
+
+	// Create a local mock HTTP server for reliable testing
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query().Get("q")
+		response := map[string]any{
+			"query":  query,
+			"status": "ok",
+			"args":   map[string]any{"q": query},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
 
 	// Define common workflow elements
 	workflowID := "test-workflow-switch-e2e"
@@ -81,7 +97,7 @@ func TestSwitchNodeE2E(t *testing.T) {
 		Type: "http",
 		Parameters: map[string]interface{}{
 			"method": "GET",
-			"url":    "https://httpbin.org/get?q=google",
+			"url":    server.URL + "?q=google",
 		},
 	}
 	nodeYahoo := core.Node{
@@ -90,7 +106,7 @@ func TestSwitchNodeE2E(t *testing.T) {
 		Type: "http",
 		Parameters: map[string]interface{}{
 			"method": "GET",
-			"url":    "https://httpbin.org/get?q=yahoo",
+			"url":    server.URL + "?q=yahoo",
 		},
 	}
 	nodeBing := core.Node{
@@ -99,7 +115,7 @@ func TestSwitchNodeE2E(t *testing.T) {
 		Type: "http",
 		Parameters: map[string]interface{}{
 			"method": "GET",
-			"url":    "https://httpbin.org/get?q=bing",
+			"url":    server.URL + "?q=bing",
 		},
 	}
 	nodeFallback := core.Node{
@@ -108,7 +124,7 @@ func TestSwitchNodeE2E(t *testing.T) {
 		Type: "http",
 		Parameters: map[string]interface{}{
 			"method": "GET",
-			"url":    "https://httpbin.org/get?q=fallback",
+			"url":    server.URL + "?q=fallback",
 		},
 	}
 
@@ -237,7 +253,8 @@ func TestSwitchNodeE2E(t *testing.T) {
 		// Wait for completion
 		select {
 		case <-done:
-			// Success
+			// Success - wait a bit for remaining status messages
+			time.Sleep(100 * time.Millisecond)
 		case <-ctx.Done():
 			t.Fatal("Test timeout waiting for completion")
 		}
@@ -290,6 +307,6 @@ func TestSwitchNodeE2E(t *testing.T) {
 	})
 
 	t.Run("Fallback_Other", func(t *testing.T) {
-		runTestCase(t, "other", nodeFallbackID, "httpbin")
+		runTestCase(t, "other", nodeFallbackID, "fallback")
 	})
 }
