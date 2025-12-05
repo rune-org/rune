@@ -9,6 +9,12 @@ export type BaseData = {
   pinned?: boolean;
 };
 
+export type EditAssignment = {
+  name?: string;
+  value?: string;
+  type?: "string" | "number" | "boolean" | "json";
+};
+
 /** A map defining the specific data for each kind of node. */
 export type NodeDataMap = {
   trigger: BaseData;
@@ -42,6 +48,28 @@ export type NodeDataMap = {
     subject?: string;
     body?: string;
   };
+
+  wait: BaseData & {
+    amount?: number;
+    unit?: "seconds" | "minutes" | "hours" | "days";
+  };
+
+  edit: BaseData & {
+    mode?: "assignments" | "keep_only";
+    assignments?: EditAssignment[];
+  };
+
+  split: BaseData & {
+    array_field?: string;
+  };
+
+  aggregator: BaseData;
+
+  merge: BaseData & {
+    wait_mode?: "wait_for_all" | "wait_for_any";
+    timeout?: number;
+    branch_count?: number;
+  };
 };
 
 /** A union type of all possible node kinds. */
@@ -73,6 +101,26 @@ export const NODE_SCHEMA = {
     inputs: ["email"],
     outputs: ["sent", "error"],
   },
+  wait: {
+    inputs: ["input"],
+    outputs: ["resume"],
+  },
+  edit: {
+    inputs: ["input"],
+    outputs: ["output"],
+  },
+  split: {
+    inputs: ["input"],
+    outputs: ["item"],
+  },
+  aggregator: {
+    inputs: ["items"],
+    outputs: ["aggregated"],
+  },
+  merge: {
+    inputs: ["branch_1", "branch_2"],
+    outputs: ["merged"],
+  },
 } as const satisfies Record<NodeKind, { inputs: readonly string[]; outputs: readonly string[] }>;
 
 export type CanvasNode = {
@@ -85,6 +133,11 @@ export type HttpData = NodeDataMap["http"];
 export type SmtpData = NodeDataMap["smtp"];
 export type AgentData = NodeDataMap["agent"];
 export type TriggerData = NodeDataMap["trigger"];
+export type WaitData = NodeDataMap["wait"];
+export type EditData = NodeDataMap["edit"];
+export type SplitData = NodeDataMap["split"];
+export type AggregatorData = NodeDataMap["aggregator"];
+export type MergeData = NodeDataMap["merge"];
 
 export type CanvasEdge = Edge;
 

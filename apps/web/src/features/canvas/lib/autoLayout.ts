@@ -9,6 +9,11 @@ const NODE_DIMENSIONS: Record<NodeKind, { width: number; height: number }> = {
   switch: { width: 240, height: 180 },
   http: { width: 220, height: 80 },
   smtp: { width: 220, height: 80 },
+  wait: { width: 220, height: 72 },
+  edit: { width: 220, height: 72 },
+  split: { width: 220, height: 72 },
+  aggregator: { width: 220, height: 72 },
+  merge: { width: 200, height: 80 },
 };
 
 /**
@@ -61,10 +66,22 @@ function getSwitchNodeHeight(node: CanvasNode): number {
   return 64 + (rules.length + 1) * 64;
 }
 
+/**
+ * Calculate node height for merge nodes based on branch count.
+ */
+function getMergeNodeHeight(node: CanvasNode): number {
+  if (node.type !== "merge") return NODE_DIMENSIONS.merge.height;
+  const branchCount = node.data.branch_count ?? 2;
+  return Math.max(80, 48 + branchCount * 40);
+}
+
 function getNodeDimensions(node: CanvasNode): { width: number; height: number } {
   const base = NODE_DIMENSIONS[node.type] || { width: 200, height: 80 };
   if (node.type === "switch") {
     return { width: base.width, height: getSwitchNodeHeight(node) };
+  }
+  if (node.type === "merge") {
+    return { width: base.width, height: getMergeNodeHeight(node) };
   }
   return base;
 }
