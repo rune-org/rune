@@ -68,7 +68,6 @@ export type NodeDataMap = {
   merge: BaseData & {
     wait_mode?: "wait_for_all" | "wait_for_any";
     timeout?: number;
-    branch_count?: number;
   };
 };
 
@@ -118,7 +117,7 @@ export const NODE_SCHEMA = {
     outputs: ["aggregated"],
   },
   merge: {
-    inputs: ["branch_1", "branch_2"],
+    inputs: ["branches"],
     outputs: ["merged"],
   },
 } as const satisfies Record<NodeKind, { inputs: readonly string[]; outputs: readonly string[] }>;

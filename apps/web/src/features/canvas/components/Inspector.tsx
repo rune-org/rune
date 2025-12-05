@@ -82,11 +82,6 @@ function getNodeInputsOutputs(node: CanvasNode): {
     const outputs = rules.map((_, idx) => `case ${idx + 1}`).concat("fallback");
     return { inputs: ["input"], outputs };
   }
-  if (node.type === "merge") {
-    const branchCount = node.data.branch_count ?? 2;
-    const inputs = Array.from({ length: branchCount }, (_, idx) => `branch ${idx + 1}`);
-    return { inputs, outputs: ["merged"] };
-  }
   return NODE_SCHEMA[node.type] || { inputs: [], outputs: [] };
 }
 

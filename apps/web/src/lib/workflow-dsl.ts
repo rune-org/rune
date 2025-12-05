@@ -23,7 +23,6 @@ import {
   switchHandleLabelFromId,
   switchRuleHandleId,
 } from "@/features/canvas/utils/switchHandles";
-import { MERGE_BRANCH_HANDLE_PREFIX } from "@/features/canvas/utils/mergeHandles";
 
 export interface WorkflowNode<Params = Record<string, unknown>> {
   id: string;
@@ -258,21 +257,9 @@ function toWorkerParameters(
       const params: Record<string, unknown> = {};
       if (d.wait_mode) params.wait_mode = String(d.wait_mode);
       if (typeof d.timeout !== "undefined") params.timeout = Number(d.timeout);
-      if (typeof d.branch_count !== "undefined") params.branch_count = Number(d.branch_count);
-      // Map incoming edges to branch handles
+      // Branch count is determined by incoming edges
       const incoming = edges.filter((e) => e.target === n.id);
-      const branchCount = d.branch_count ?? 2;
-      const branches: Array<string | null> = Array(branchCount).fill(null);
-      incoming.forEach((edge) => {
-        const targetHandle = (edge as RFEdge & { targetHandle?: string }).targetHandle;
-        if (targetHandle?.startsWith(MERGE_BRANCH_HANDLE_PREFIX)) {
-          const idx = Number(targetHandle.replace(MERGE_BRANCH_HANDLE_PREFIX, ""));
-          if (!isNaN(idx) && idx >= 0 && idx < branchCount) {
-            branches[idx] = edge.id;
-          }
-        }
-      });
-      if (branches.some((b) => !!b)) params.branches = branches;
+      params.branch_count = incoming.length;
       return params;
     }
     default:
@@ -436,12 +423,6 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
           ? params.timeout
           : typeof params.timeout === "string"
             ? Number(params.timeout)
-            : undefined,
-      branch_count:
-        typeof params.branch_count === "number"
-          ? params.branch_count
-          : typeof params.branch_count === "string"
-            ? Number(params.branch_count)
             : undefined,
     };
     return mergeData;

@@ -91,20 +91,13 @@ export default function FlowCanvas({
 
   const isValidConnection = useCallback(
     (connection: Edge | Connection) => {
-      const { source, target, sourceHandle, targetHandle } = connection;
+      const { source, target, sourceHandle } = connection;
 
       if (source === target) return false;
 
       const sourceNode = nodes.find((node) => node.id === source);
       const targetNode = nodes.find((node) => node.id === target);
       if (!sourceNode || !targetNode) return false;
-
-      // Check if target handle already has an incoming connection
-      const existingTargetEdges = edges.filter((edge) => edge.target === target);
-      const targetHandleOccupied = existingTargetEdges.some(
-        (edge) => edge.targetHandle === targetHandle
-      );
-      if (targetHandleOccupied) return false;
 
       const existingSourceEdges = edges.filter((edge) => edge.source === source);
 

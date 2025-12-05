@@ -20,8 +20,6 @@ const WAIT_MODES = [
   { value: "wait_for_any", label: "Wait for any branch" },
 ] as const;
 
-const BRANCH_COUNTS = [2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
-
 export function MergeInspector({
   node,
   updateData,
@@ -33,35 +31,6 @@ export function MergeInspector({
 
   return (
     <div className="space-y-3">
-      <div>
-        <label className="block text-xs text-muted-foreground">
-          Number of Branches
-        </label>
-        <Select
-          value={String(node.data.branch_count ?? 2)}
-          onValueChange={(value) =>
-            updateMergeData((d) => ({
-              ...d,
-              branch_count: Number(value),
-            }))
-          }
-        >
-          <SelectTrigger className="h-8 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {BRANCH_COUNTS.map((count) => (
-              <SelectItem key={count} value={String(count)}>
-                {count} branches
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="mt-1 text-xs text-muted-foreground/70">
-          How many incoming branches to wait for.
-        </div>
-      </div>
-
       <div>
         <label className="block text-xs text-muted-foreground">Wait Mode</label>
         <Select
@@ -112,6 +81,13 @@ export function MergeInspector({
           </div>
         )}
       </div>
+
+      {isExpanded && (
+        <div className="rounded-[calc(var(--radius)-0.3rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
+          Connect multiple branches to this node. The number of incoming edges
+          determines how many branches are synchronized.
+        </div>
+      )}
     </div>
   );
 }
