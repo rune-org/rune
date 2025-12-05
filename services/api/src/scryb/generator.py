@@ -50,12 +50,14 @@ class DocumentationGenerator:
 
         DocumentationGenerator._bot = bot
 
-    def generate(self, workflow_data: dict[str, Any], target_audience: str) -> str:
+    async def generate(
+        self, workflow_data: dict[str, Any], target_audience: str
+    ) -> str:
         serializer = WorkflowSerializer(workflow_data)
         sir_workflow = serializer.serialize()
         serialized_data = sir_workflow.model_dump()
 
-        prediction = DocumentationGenerator._bot(
+        prediction = await DocumentationGenerator._bot.acall(
             workflow_json=serialized_data, target_audience=target_audience
         )
         return prediction.report
