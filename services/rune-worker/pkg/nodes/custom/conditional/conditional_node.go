@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/nodes"
 	"rune-worker/plugin"
 )
@@ -58,7 +59,7 @@ func init() {
 
 // RegisterConditional registers the conditional node type with the registry.
 func RegisterConditional(reg *nodes.Registry) {
-	reg.Register("conditional", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeConditional, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return NewConditionalNode(execCtx)
 	})
 }

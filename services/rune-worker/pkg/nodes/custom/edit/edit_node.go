@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dop251/goja"
-
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/nodes"
 	"rune-worker/plugin"
+
+	"github.com/dop251/goja"
 )
 
 const (
@@ -167,7 +168,7 @@ func init() {
 
 // RegisterEdit registers the edit node type.
 func RegisterEdit(reg *nodes.Registry) {
-	reg.Register("edit", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeEdit, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return NewEditNode(execCtx)
 	})
 }

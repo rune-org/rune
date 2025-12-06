@@ -62,7 +62,7 @@ func TestExecutor_SimpleLinearWorkflow(t *testing.T) {
 	reg := nodes.NewRegistry()
 
 	// Register mock node
-	reg.Register("mock", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeMock, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return &MockNode{
 			output: map[string]any{"result": "success"},
 		}
@@ -76,13 +76,13 @@ func TestExecutor_SimpleLinearWorkflow(t *testing.T) {
 			{
 				ID:         "node1",
 				Name:       "Node 1",
-				Type:       "mock",
+				Type:       core.NodeTypeMock,
 				Parameters: map[string]interface{}{},
 			},
 			{
 				ID:         "node2",
 				Name:       "Node 2",
-				Type:       "mock",
+				Type:       core.NodeTypeMock,
 				Parameters: map[string]interface{}{},
 			},
 		},
@@ -139,7 +139,7 @@ func TestExecutor_EditNodeUpdatesJson(t *testing.T) {
 	pub := NewMockPublisher()
 	reg := nodes.NewRegistry()
 
-	reg.Register("edit", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeEdit, func(execCtx plugin.ExecutionContext) plugin.Node {
 		// Edit node returns output wrapped in $json, matching the real implementation
 		return &MockNode{output: map[string]any{"$json": map[string]any{"field": "value"}}}
 	})
@@ -148,7 +148,7 @@ func TestExecutor_EditNodeUpdatesJson(t *testing.T) {
 
 	workflow := core.Workflow{
 		Nodes: []core.Node{
-			{ID: "edit1", Name: "Edit", Type: "edit", Parameters: map[string]any{}},
+			{ID: "edit1", Name: "Edit", Type: core.NodeTypeEdit, Parameters: map[string]any{}},
 		},
 	}
 
@@ -187,7 +187,7 @@ func TestExecutor_WorkflowCompletion(t *testing.T) {
 	pub := NewMockPublisher()
 	reg := nodes.NewRegistry()
 
-	reg.Register("mock", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeMock, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return &MockNode{
 			output: map[string]any{"result": "final"},
 		}
@@ -201,7 +201,7 @@ func TestExecutor_WorkflowCompletion(t *testing.T) {
 			{
 				ID:         "final_node",
 				Name:       "Final Node",
-				Type:       "mock",
+				Type:       core.NodeTypeMock,
 				Parameters: map[string]interface{}{},
 			},
 		},
@@ -247,7 +247,7 @@ func TestExecutor_NodeFailureHaltStrategy(t *testing.T) {
 	pub := NewMockPublisher()
 	reg := nodes.NewRegistry()
 
-	reg.Register("mock", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeMock, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return &MockNode{
 			err: &NodeExecutionError{Message: "simulated failure"},
 		}
@@ -261,7 +261,7 @@ func TestExecutor_NodeFailureHaltStrategy(t *testing.T) {
 			{
 				ID:         "failing_node",
 				Name:       "Failing Node",
-				Type:       "mock",
+				Type:       core.NodeTypeMock,
 				Parameters: map[string]interface{}{},
 				Error: &core.ErrorHandling{
 					Type: "halt",
@@ -305,7 +305,7 @@ func TestExecutor_ContextAccumulation(t *testing.T) {
 	pub := NewMockPublisher()
 	reg := nodes.NewRegistry()
 
-	reg.Register("mock", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeMock, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return &MockNode{
 			output: map[string]any{
 				"status": 200,
@@ -321,13 +321,13 @@ func TestExecutor_ContextAccumulation(t *testing.T) {
 			{
 				ID:         "node1",
 				Name:       "Test Node",
-				Type:       "mock",
+				Type:       core.NodeTypeMock,
 				Parameters: map[string]interface{}{},
 			},
 			{
 				ID:         "node2",
 				Name:       "Next Node",
-				Type:       "mock",
+				Type:       core.NodeTypeMock,
 				Parameters: map[string]interface{}{},
 			},
 		},
@@ -390,7 +390,7 @@ func TestExecutor_CredentialsHandling(t *testing.T) {
 
 	var receivedCredentials map[string]any
 
-	reg.Register("mock", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeMock, func(execCtx plugin.ExecutionContext) plugin.Node {
 		receivedCredentials = execCtx.GetCredentials()
 		return &MockNode{
 			output: map[string]any{"result": "ok"},
@@ -404,7 +404,7 @@ func TestExecutor_CredentialsHandling(t *testing.T) {
 			{
 				ID:         "node_with_creds",
 				Name:       "Node With Credentials",
-				Type:       "mock",
+				Type:       core.NodeTypeMock,
 				Parameters: map[string]interface{}{},
 				Credentials: &core.Credential{
 					ID:   "cred_123",

@@ -226,7 +226,7 @@ func init() {
 
 // RegisterMerge registers the merge node type in the registry.
 func RegisterMerge(reg *nodes.Registry) {
-	reg.Register("merge", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeMerge, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return NewMergeNode(execCtx)
 	})
 }

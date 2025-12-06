@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/messages"
 	"rune-worker/pkg/nodes"
 	"rune-worker/plugin"
@@ -128,7 +129,7 @@ func init() {
 
 // RegisterWait registers the wait node type.
 func RegisterWait(reg *nodes.Registry) {
-	reg.Register("wait", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeWait, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return NewWaitNode(execCtx)
 	})
 }

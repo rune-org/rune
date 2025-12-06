@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/nodes"
 	"rune-worker/plugin"
 )
@@ -88,7 +89,7 @@ func init() {
 
 // RegisterSwitch registers the switch node type.
 func RegisterSwitch(reg *nodes.Registry) {
-	reg.Register("switch", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeSwitch, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return NewSwitchNode(execCtx)
 	})
 }
