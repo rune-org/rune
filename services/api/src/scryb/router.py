@@ -35,6 +35,6 @@ async def generate_workflow_docs(
 
     # 2. Generate Documentation
     generator = DocumentationGenerator()
-    docs = generator.generate(workflow_data, style_request.target_audience)
+    docs = await generator.generate(workflow_data, style_request.target_audience)
 
     return ApiResponse(data=WorkflowDetailDocs(docs=docs))
