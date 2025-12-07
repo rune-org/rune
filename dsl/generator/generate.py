@@ -10,6 +10,7 @@ import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import glob
 
 try:
     from jinja2 import Environment, FileSystemLoader, Template
@@ -92,6 +93,31 @@ class DSLGenerator:
         
         print(f"Generated: {file_path.relative_to(self.repo_root)}")
     
+    def cleanup_backup_files(self) -> None:
+        """Delete all .bak backup files created during generation."""
+        # Directories where generated files are located
+        output_dirs = [
+            self.repo_root / "apps" / "web" / "src" / "lib",
+            self.repo_root / "apps" / "web" / "src" / "features" / "canvas",
+            self.repo_root / "services" / "api" / "src" / "smith",
+            self.repo_root / "services" / "api" / "src" / "workflow",
+            self.repo_root / "services" / "rune-worker" / "pkg" / "core",
+        ]
+        
+        deleted_count = 0
+        for output_dir in output_dirs:
+            if output_dir.exists():
+                # Find all .bak files in this directory
+                for bak_file in output_dir.glob("*.bak"):
+                    try:
+                        bak_file.unlink()
+                        deleted_count += 1
+                    except OSError as e:
+                        print(f"Warning: Could not delete {bak_file.relative_to(self.repo_root)}: {e}")
+        
+        if deleted_count > 0:
+            print(f"\nCleaned up {deleted_count} backup file(s)")
+    
     def generate_typescript(self) -> None:
         """Generate TypeScript interfaces and types."""
         print("\n=== Generating TypeScript ===")
@@ -168,6 +194,7 @@ class DSLGenerator:
         self.generate_typescript()
         self.generate_python()
         self.generate_go()
+        self.cleanup_backup_files()
         print("\n=== Generation Complete ===")
 
 
@@ -216,6 +243,8 @@ def main():
             generator.generate_python()
         if args.worker:
             generator.generate_go()
+        # Clean up backup files after any generation
+        generator.cleanup_backup_files()
 
 
 if __name__ == "__main__":
