@@ -1,3 +1,7 @@
+// ⚠️ GENERATED FILE - DO NOT EDIT MANUALLY
+// This file is generated from dsl/dsl-definition.json
+// To update, modify dsl/dsl-definition.json and run: make dsl-generate
+
 package core
 
 // Node represents a single executable node within the workflow.
@@ -7,7 +11,7 @@ type Node struct {
 	ID          string         `json:"id"`
 	Name        string         `json:"name"`
 	Trigger     bool           `json:"trigger"` // Marks trigger nodes (NOT executed here, only for graph structure)
-	Type        string         `json:"type"`
+	Type        string         `json:"type"`    // Valid types: "ManualTrigger", "http", "smtp", "conditional", "switch", "log", "agent"
 	Parameters  map[string]any `json:"parameters"`
 	Credentials *Credential    `json:"credentials,omitempty"`
 	Output      map[string]any `json:"output"`

@@ -1,3 +1,7 @@
+// ⚠️ GENERATED FILE - DO NOT EDIT MANUALLY
+// This file is generated from dsl/dsl-definition.json
+// To update, modify dsl/dsl-definition.json and run: make dsl-generate
+
 package core
 
 // Workflow models a workflow execution structure sent from the master service.

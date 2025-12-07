@@ -1,4 +1,4 @@
-export type CredentialType = string;
+import type { CredentialType } from "@/client/types.gen";
 
 export interface CredentialRef {
   type: CredentialType;

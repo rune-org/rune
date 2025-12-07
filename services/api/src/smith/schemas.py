@@ -1,3 +1,7 @@
+# ⚠️ GENERATED FILE - DO NOT EDIT MANUALLY
+# This file is generated from dsl/dsl-definition.json
+# To update, modify dsl/dsl-definition.json and run: make dsl-generate
+
 from pydantic import BaseModel, Field
 from typing import Any, Literal, Optional
 
@@ -7,7 +11,7 @@ class WorkflowNode(BaseModel):
 
     id: str
     name: str
-    type: str  # ManualTrigger, http, smtp, conditional, switch
+    type: str  # ManualTrigger, http, smtp, conditional, switch, log, agent
     trigger: bool = False
     parameters: dict[str, Any] = Field(default_factory=dict)
     output: dict[str, Any] = Field(default_factory=dict)

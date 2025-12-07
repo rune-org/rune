@@ -1,3 +1,7 @@
+// ⚠️ GENERATED FILE - DO NOT EDIT MANUALLY
+// This file is generated from dsl/dsl-definition.json
+// To update, modify dsl/dsl-definition.json and run: make dsl-generate
+
 import type { Edge, Node } from "@xyflow/react";
 import type { CredentialRef } from "@/lib/credentials";
 
@@ -12,35 +16,41 @@ export type BaseData = {
 /** A map defining the specific data for each kind of node. */
 export type NodeDataMap = {
   trigger: BaseData;
-
-  agent: BaseData;
-
-  if: BaseData & {
-    expression?: string;
-  };
-
-  switch: BaseData & {
-    rules?: SwitchRule[];
-  };
-
   http: BaseData & {
-    method?: "GET" | "POST" | "PUT" | "DELETE";
+    method?: string;
     url?: string;
-    headers?: Record<string, unknown>;
-    query?: Record<string, unknown>;
     body?: unknown;
-    timeout?: number;
-    retries?: number;
+    query?: Record<string, unknown>;
+    headers?: Record<string, unknown>;
+    retries?: string;
+    retryDelay?: string;
+    timeout?: string;
+    raise_on_status?: string;
     ignoreSSL?: boolean;
   };
-
   smtp: BaseData & {
-    from?: string;
-    to?: string;
-    cc?: string;
-    bcc?: string;
     subject?: string;
     body?: string;
+    to?: string;
+    from?: string;
+    cc?: unknown[];
+    bcc?: unknown[];
+  };
+  if: BaseData & {
+    expression?: string;
+    true_edge_id?: string;
+    false_edge_id?: string;
+  };
+  switch: BaseData & {
+    rules?: unknown[];
+    routes?: unknown[];
+  };
+  log: BaseData & {
+    message?: string;
+    level?: string;
+  };
+  agent: BaseData & {
+    prompt?: string;
   };
 };
 
@@ -48,30 +58,35 @@ export type NodeDataMap = {
 export type NodeKind = keyof NodeDataMap;
 
 /** Node schema defining inputs and outputs for each node type. */
+// TODO: Update inputs/outputs based on node type requirements from DSL
 export const NODE_SCHEMA = {
   trigger: {
-    inputs: [],
-    outputs: ["trigger"],
-  },
-  agent: {
-    inputs: ["input"],
-    outputs: ["response"],
-  },
-  if: {
-    inputs: ["condition"],
-    outputs: ["true", "false"],
-  },
-  switch: {
-    inputs: ["input"],
-    outputs: [], // dynamic based on configured rules
+    inputs: [], // TODO: Define based on node type
+    outputs: [], // TODO: Define based on node type
   },
   http: {
-    inputs: ["request"],
-    outputs: ["response", "error"],
+    inputs: [], // TODO: Define based on node type
+    outputs: [], // TODO: Define based on node type
   },
   smtp: {
-    inputs: ["email"],
-    outputs: ["sent", "error"],
+    inputs: [], // TODO: Define based on node type
+    outputs: [], // TODO: Define based on node type
+  },
+  if: {
+    inputs: [], // TODO: Define based on node type
+    outputs: [], // TODO: Define based on node type
+  },
+  switch: {
+    inputs: [], // TODO: Define based on node type
+    outputs: [], // TODO: Define based on node type
+  },
+  log: {
+    inputs: [], // TODO: Define based on node type
+    outputs: [], // TODO: Define based on node type
+  },
+  agent: {
+    inputs: [], // TODO: Define based on node type
+    outputs: [], // TODO: Define based on node type
   },
 } as const satisfies Record<NodeKind, { inputs: readonly string[]; outputs: readonly string[] }>;
 
@@ -79,12 +94,13 @@ export type CanvasNode = {
   [K in NodeKind]: Node<NodeDataMap[K]> & { type: K };
 }[NodeKind];
 
-export type IfData = NodeDataMap["if"];
-export type SwitchData = NodeDataMap["switch"];
+export type TriggerData = NodeDataMap["trigger"];
 export type HttpData = NodeDataMap["http"];
 export type SmtpData = NodeDataMap["smtp"];
+export type IfData = NodeDataMap["if"];
+export type SwitchData = NodeDataMap["switch"];
+export type LogData = NodeDataMap["log"];
 export type AgentData = NodeDataMap["agent"];
-export type TriggerData = NodeDataMap["trigger"];
 
 export type CanvasEdge = Edge;
 

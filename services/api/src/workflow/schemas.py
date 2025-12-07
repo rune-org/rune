@@ -1,6 +1,15 @@
+# ⚠️ GENERATED FILE - DO NOT EDIT MANUALLY
+# This file is generated from dsl/dsl-definition.json
+# To update, modify dsl/dsl-definition.json and run: make dsl-generate
+#
+# Manual sections are marked with "TODO: MANUAL UPDATE REQUIRED" comments
+
 from typing import Optional, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
+
+# Import generated DSL types
+from src.smith.schemas import Workflow
 
 
 class WorkflowListItem(BaseModel):
@@ -33,7 +42,9 @@ def normalize_and_validate_name(value: str, *, field_name: str = "name") -> str:
 class WorkflowCreate(BaseModel):
     name: str = Field(..., min_length=1)
     description: Optional[str] = Field(default="")
-    workflow_data: dict[str, Any] = Field(default_factory=dict)
+    # TODO: Type updated from dict[str, Any] to Workflow when DSL structure changes
+    # If you need to accept partial workflow data, use: workflow_data: Workflow | dict[str, Any]
+    workflow_data: Workflow = Field(default_factory=lambda: Workflow(nodes=[], edges=[]))
 
     @field_validator("name")
     @classmethod
@@ -55,7 +66,8 @@ class WorkflowUpdateStatus(BaseModel):
 
 
 class WorkflowUpdateData(BaseModel):
-    workflow_data: dict[str, Any] = Field(..., description="Updated workflow data")
+    # TODO: Type updated from dict[str, Any] to Workflow when DSL structure changes
+    workflow_data: Workflow = Field(..., description="Updated workflow data")
 
 
 class WorkflowDetail(BaseModel):
@@ -63,7 +75,8 @@ class WorkflowDetail(BaseModel):
     name: str
     description: Optional[str]
     is_active: bool
-    workflow_data: dict[str, Any]
+    # TODO: Type updated from dict[str, Any] to Workflow when DSL structure changes
+    workflow_data: Workflow
     version: int
     created_at: datetime
     updated_at: datetime
@@ -78,5 +91,6 @@ class NodeExecutionMessage(BaseModel):
     workflow_id: str
     execution_id: str
     current_node: str
-    workflow_definition: dict[str, Any]
+    # TODO: Type updated from dict[str, Any] to Workflow when DSL structure changes
+    workflow_definition: Workflow
     accumulated_context: dict[str, Any] = Field(default_factory=dict)

@@ -12,6 +12,7 @@ type Node struct {
 	Name        string         `json:"name"`
 	Trigger     bool           `json:"trigger"` // Marks trigger nodes (NOT executed here, only for graph structure)
 	Type        string         `json:"type"`    // Valid types: {% for node_type, node_def in dsl.node_types.items() %}"{{ node_def.worker_type }}"{% if not loop.last %}, {% endif %}{% endfor %}
+
 	Parameters  map[string]any `json:"parameters"`
 	Credentials *Credential    `json:"credentials,omitempty"`
 	Output      map[string]any `json:"output"`

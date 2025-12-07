@@ -1,4 +1,10 @@
 // Types and helpers for the frontend representation of the Workflow DSL
+// 
+// ⚠️ GENERATED FILE - DO NOT EDIT MANUALLY
+// This file is generated from dsl/dsl-definition.json
+// To update, modify dsl/dsl-definition.json and run: make dsl-generate
+//
+// Manual sections are marked with "TODO: MANUAL UPDATE REQUIRED" comments
 
 import type { Edge as RFEdge } from "@xyflow/react";
 import type { CSSProperties } from "react";
@@ -18,6 +24,10 @@ import {
   switchHandleLabelFromId,
   switchRuleHandleId,
 } from "@/features/canvas/utils/switchHandles";
+
+// ============================================================================
+// GENERATED: Core DSL Interfaces
+// ============================================================================
 
 export interface WorkflowNode<Params = Record<string, unknown>> {
   id: string;
@@ -51,23 +61,49 @@ export class MissingNodeCredentialsError extends Error {
   }
 }
 
-// ————————————————————————————————————————————————————————————————
-// Converters between ReactFlow canvas graph and DSL/worker payloads
-// ————————————————————————————————————————————————————————————————
+// ============================================================================
+// TODO: MANUAL UPDATE REQUIRED - Conversion Functions
+// ============================================================================
+// The following functions convert between ReactFlow canvas graph and DSL/worker payloads.
+// When DSL changes, update these functions accordingly.
+//
+// Recent DSL changes (check dsl/dsl-definition.json for details):
+// - ManualTrigger: Manual workflow trigger
+// - http: HTTP request node
+//   Parameters: method, url, body, query, headers, retry, retry_delay, timeout, raise_on_status, ignore_ssl
+// - smtp: Send email via SMTP
+//   Parameters: subject, body, to, from, cc, bcc
+// - conditional: Conditional branch node
+//   Parameters: expression, true_edge_id, false_edge_id
+// - switch: Multi-way branch based on rules
+//   Parameters: rules, routes
+// - log: Log information during workflow execution
+//   Parameters: message, level
+// - agent: AI agent node
+//   Parameters: prompt
+//
+// Update the following functions when:
+// - Node parameter structures change
+// - New node types are added
+// - Field names change
+// - Type mappings change
+// ============================================================================
 
 // Map canvas node type to worker DSL type identifiers
 function toWorkerType(canvasType: string): string {
   switch (canvasType) {
     case "trigger":
       return "ManualTrigger";
-    case "if":
-      return "conditional";
-    case "switch":
-      return "switch";
     case "http":
       return "http";
     case "smtp":
       return "smtp";
+    case "if":
+      return "conditional";
+    case "switch":
+      return "switch";
+    case "log":
+      return "log";
     case "agent":
       return "agent";
     default:
@@ -104,6 +140,7 @@ function emailArrayToString(value: unknown): string | undefined {
 }
 
 // Build parameter objects for supported node types
+// TODO: Update this function when node parameter schemas change in dsl-definition.json
 function toWorkerParameters(
   n: CanvasNode,
   edges: RFEdge[],
@@ -216,6 +253,7 @@ type NodeHydrator = (
   params: Record<string, unknown>,
 ) => CanvasNode["data"];
 
+// TODO: Update nodeHydrators when node parameter schemas change
 const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
   http: (base, params) => {
     const httpData: HttpData = {
@@ -305,6 +343,7 @@ function extractNodeCredential(node: CanvasNode): CredentialRef | undefined {
 }
 
 // Convert Canvas graph to a workflow_data blueprint (stored in API)
+// TODO: Update this function when WorkflowNode or WorkflowEdge structure changes
 export function canvasToWorkflowData(
   nodes: CanvasNode[],
   edges: RFEdge[],
@@ -344,6 +383,7 @@ export function canvasToWorkflowData(
 }
 
 // Convert stored workflow_data blueprint back to Canvas graph for editing
+// TODO: Update this function when WorkflowNode or WorkflowEdge structure changes
 export function workflowDataToCanvas(data: {
   nodes?: WorkflowNode[];
   edges?: WorkflowEdge[];

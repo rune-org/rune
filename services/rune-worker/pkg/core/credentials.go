@@ -1,7 +1,11 @@
+// ⚠️ GENERATED FILE - DO NOT EDIT MANUALLY
+// This file is generated from dsl/dsl-definition.json
+// To update, modify dsl/dsl-definition.json and run: make dsl-generate
+
 package core
 
 // Credential references a credential definition by type, ID, and name.
-type Credential struct {
+// Valid credential types: "smtp", "api_key", "oauth2", "username_password"type Credential struct {
 	ID     string         `json:"id"`
 	Name   string         `json:"name"`
 	Type   string         `json:"type"`   // e.g., "smtp", "api_key", "oauth2", "username_password"
