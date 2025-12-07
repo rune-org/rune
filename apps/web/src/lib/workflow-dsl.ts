@@ -67,7 +67,7 @@ export class MissingNodeCredentialsError extends Error {
 // The following functions convert between ReactFlow canvas graph and DSL/worker payloads.
 // When DSL changes, update these functions accordingly.
 //
-// Recent DSL changes (check dsl/dsl-definition.json for details):
+// Current DSL node types (reference - see dsl/dsl-definition.json for full details):
 // - ManualTrigger: Manual workflow trigger
 // - http: HTTP request node
 //   Parameters: method, url, body, query, headers, retry, retry_delay, timeout, raise_on_status, ignore_ssl
@@ -87,6 +87,9 @@ export class MissingNodeCredentialsError extends Error {
 // - New node types are added
 // - Field names change
 // - Type mappings change
+//
+// NOTE: This is a reference to CURRENT node types, not a changelog.
+// To see what changed, compare dsl/dsl-definition.json with previous versions.
 // ============================================================================
 
 // Map canvas node type to worker DSL type identifiers

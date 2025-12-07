@@ -5,7 +5,8 @@
 package core
 
 // Credential references a credential definition by type, ID, and name.
-// Valid credential types: "smtp", "api_key", "oauth2", "username_password"type Credential struct {
+// Valid credential types: "smtp", "api_key", "oauth2", "username_password"
+type Credential struct {
 	ID     string         `json:"id"`
 	Name   string         `json:"name"`
 	Type   string         `json:"type"`   // e.g., "smtp", "api_key", "oauth2", "username_password"

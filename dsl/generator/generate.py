@@ -98,6 +98,12 @@ class DSLGenerator:
         content = template.render(dsl=self.dsl_data)
         output_path = self.repo_root / "apps" / "web" / "src" / "features" / "canvas" / "types.ts"
         self.write_file(output_path, content)
+        
+        # Generate credentials.ts (NODE_TYPES_REQUIRING_CREDENTIALS)
+        template = self.env.get_template("typescript/credentials.ts.j2")
+        content = template.render(dsl=self.dsl_data)
+        output_path = self.repo_root / "apps" / "web" / "src" / "lib" / "credentials.ts"
+        self.write_file(output_path, content)
     
     def generate_python(self) -> None:
         """Generate Python Pydantic models."""
