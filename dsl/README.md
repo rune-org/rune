@@ -124,6 +124,23 @@ Some files cannot be fully generated due to complexity or framework-specific con
 
 **When to update**: When `CredentialType` enum changes (see above)
 
+#### `apps/web/src/client/types.gen.ts`
+**What to update**: `CredentialType` type should match backend enum
+- This file is auto-generated from the OpenAPI spec
+- The `CredentialType` union type should match the backend `CredentialType` enum
+
+**When to update**: When `CredentialType` enum changes in `db/models.py`
+
+**How to update**:
+1. Update `CredentialType` enum in `services/api/src/db/models.py` (see above)
+2. Regenerate the OpenAPI client (usually done automatically in CI/CD or via a script)
+3. Verify the `CredentialType` type in `types.gen.ts` matches:
+   ```typescript
+   export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'token' | 'custom' | 'smtp';
+   ```
+
+**Note**: If `types.gen.ts` is not auto-regenerated, you may need to manually update it or run the OpenAPI client generation script. Check your project's build process for how this file is generated.
+
 #### `services/api/src/smith/tools.py`
 **What to update**: Workflow validation logic
 - `_validate()` - Validates workflow structure (triggers, edges, nodes)
@@ -148,6 +165,75 @@ Some files cannot be fully generated due to complexity or framework-specific con
 2. Update `NODE_SCHEMAS` dictionary
 3. Ensure field descriptions match DSL definition
 
+## Contributing to the Generator
+
+### Updating Manual Functions in Templates
+
+If you modify one of the **manual functions** in a generated file (e.g., `canvasToWorkflowData()`, `workflowDataToCanvas()`, validation functions), you should also update the corresponding Jinja2 template to preserve your changes across regenerations.
+
+**Example**: If you update `canvasToWorkflowData()` in `workflow-dsl.ts`:
+1. Locate the template: `dsl/generator/templates/typescript/workflow-dsl.ts.j2`
+2. Find the section marked with `{% raw %}` or `{# MANUAL SECTION #}` comments
+3. Update the template with your changes
+4. Test by regenerating: `make dsl-generate`
+5. Verify your changes are preserved
+
+**Why**: The generator preserves manual sections, but if the template structure changes, your manual code might be lost. Keeping templates in sync ensures your changes persist.
+
+### Adding New Files That Use DSL Types
+
+If you create a **new file** that imports or interacts with DSL-generated structures, you have two options:
+
+#### Option 1: Add to Generator (Recommended for frequently-used patterns)
+
+If the new file follows a pattern that should be generated (e.g., a new service, a new type definition file):
+
+1. **Create a Jinja2 template**: Add a new template in `dsl/generator/templates/` (TypeScript, Python, or Go)
+2. **Update generator script**: Modify `dsl/generator/generate.py` to render and write the new template
+3. **Test**: Run `make dsl-generate` and verify the new file is generated correctly
+4. **Document**: Update `SCOPE.md` to list the new generated file
+
+**Example**: If you add a new `workflow-utils.ts` file with helper functions:
+```python
+# In generate.py
+def generate_typescript(self):
+    # ... existing code ...
+    
+    # Generate workflow-utils.ts
+    template = self.env.get_template("typescript/workflow-utils.ts.j2")
+    content = template.render(dsl=self.dsl_data)
+    output_path = self.repo_root / "apps" / "web" / "src" / "lib" / "workflow-utils.ts"
+    self.write_file(output_path, content)
+```
+
+#### Option 2: Raise an Issue (For one-off files or complex cases)
+
+If the file is:
+- A one-off utility that doesn't follow a pattern
+- Too complex to generate (requires significant business logic)
+- Framework-specific and not suitable for generation
+
+**Action**: Raise an issue on the repository with:
+- File path and description
+- Why it uses DSL types
+- Whether it should be generated or just documented as a dependent file
+- Any relevant code snippets
+
+The maintainers will either:
+- Add it to the generator if it's a common pattern
+- Document it in `SCOPE.md` as a dependent file
+- Provide guidance on how to handle it
+
+**Example Issue Title**: `[DSL Generator] Add workflow-utils.ts to generator or document as dependent file`
+
+### Updating Dependency Checker
+
+If you add a new file that uses DSL types, you may want to update `dsl/generator/check_dependencies.py` to ensure it's detected:
+
+1. Check if existing patterns already match your file
+2. If not, add appropriate patterns to detect the new file
+3. Test: Run `python3 dsl/generator/check_dependencies.py` and verify your file appears
+
 ## Dependent Files
 
 These files import or use generated DSL types and should be verified after regeneration:
@@ -171,6 +257,16 @@ These files import or use generated DSL types and should be verified after regen
 ### Worker
 - All files importing `core.Node`, `core.Workflow`, `core.Edge`, `core.Credential`, `core.ErrorHandling`
 - See `dsl/generator/check_dependencies.py` for complete list
+
+**Note**: To see the complete list of dependent files, run:
+```bash
+python3 dsl/generator/check_dependencies.py
+```
+
+Or save as JSON:
+```bash
+python3 dsl/generator/check_dependencies.py --json dependencies.json
+```
 
 ## Verification Checklist
 

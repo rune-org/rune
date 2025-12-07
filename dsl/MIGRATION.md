@@ -99,7 +99,9 @@ Some files that import DSL types may need updates:
 
 ### Step 8: Update CredentialType Enum
 
-If credential types changed, manually sync `services/api/src/db/models.py`:
+If credential types changed, manually sync the following files:
+
+#### Backend: `services/api/src/db/models.py`
 
 ```python
 class CredentialType(str, Enum):
@@ -109,6 +111,20 @@ class CredentialType(str, Enum):
     USERNAME_PASSWORD = "username_password"
     # ... ensure matches dsl-definition.json
 ```
+
+#### Frontend: `apps/web/src/client/types.gen.ts`
+
+This file is auto-generated from the OpenAPI spec. After updating the backend `CredentialType` enum:
+
+1. **Regenerate the OpenAPI client** (usually done automatically in CI/CD or via a script)
+2. **Verify** the `CredentialType` type in `types.gen.ts` matches the backend enum:
+
+```typescript
+export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'token' | 'custom' | 'smtp';
+// ... ensure matches backend CredentialType enum
+```
+
+**Note**: If `types.gen.ts` is not auto-regenerated, you may need to manually update it or run the OpenAPI client generation script. Check your project's build process for how this file is generated.
 
 ### Step 9: Test Everything
 
