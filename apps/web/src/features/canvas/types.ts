@@ -33,8 +33,8 @@ export type NodeDataMap = {
     body?: string;
     to?: string;
     from?: string;
-    cc?: unknown[];
-    bcc?: unknown[];
+    cc?: string;  // Frontend uses comma-separated string, converted to array in conversion functions
+    bcc?: string;  // Frontend uses comma-separated string, converted to array in conversion functions
   };
   if: BaseData & {
     expression?: string;

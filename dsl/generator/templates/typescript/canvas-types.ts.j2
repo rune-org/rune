@@ -34,7 +34,11 @@ export type NodeDataMap = {
 {% elif param_def.type == "object" %}
     {{ frontend_param_name }}?: Record<string, unknown>;
 {% elif param_def.type == "array" %}
+{% if frontend_param_name in ["cc", "bcc"] %}
+    {{ frontend_param_name }}?: string;  // Frontend uses comma-separated string, converted to array in conversion functions
+{% else %}
     {{ frontend_param_name }}?: unknown[];
+{% endif %}
 {% else %}
     {{ frontend_param_name }}?: unknown;
 {% endif %}

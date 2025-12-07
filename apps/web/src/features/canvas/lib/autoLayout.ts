@@ -9,6 +9,7 @@ const NODE_DIMENSIONS: Record<NodeKind, { width: number; height: number }> = {
   switch: { width: 240, height: 180 },
   http: { width: 220, height: 80 },
   smtp: { width: 220, height: 80 },
+  log: { width: 200, height: 72 },
 };
 
 /**
