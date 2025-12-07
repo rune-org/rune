@@ -25,11 +25,20 @@ class DSLGenerator:
         """Initialize generator with DSL definition file.
         
         Args:
-            dsl_file: Path to dsl-definition.json
+            dsl_file: Path to dsl-definition.json (relative to repo root or absolute)
             output_dir: Optional output directory (defaults to repo root)
         """
-        self.dsl_file = Path(dsl_file)
         self.repo_root = Path(__file__).parent.parent.parent
+        # Resolve dsl_file relative to repo root if it's a relative path
+        dsl_path = Path(dsl_file)
+        if not dsl_path.is_absolute():
+            # Try relative to repo root first
+            self.dsl_file = self.repo_root / dsl_path
+            # If that doesn't exist, try relative to current working directory
+            if not self.dsl_file.exists():
+                self.dsl_file = Path(dsl_file).resolve()
+        else:
+            self.dsl_file = dsl_path
         self.output_dir = Path(output_dir) if output_dir else self.repo_root
         self.dsl_data: Dict[str, Any] = {}
         
