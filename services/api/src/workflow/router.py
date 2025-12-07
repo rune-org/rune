@@ -135,8 +135,9 @@ async def update_workflow_data(
 
     **Requires:** EDIT permission (OWNER or EDITOR)
     """
-    # Convert Pydantic Workflow model to dict for database storage (JSONB field)
-    workflow_data_dict = payload.workflow_data.model_dump()
+     # Convert Pydantic Workflow model to dict for database storage (JSONB field)
+    # Use exclude_none=False to preserve credentials even if values is None
+    workflow_data_dict = payload.workflow_data.model_dump(exclude_none=False)
     wf = await service.update_workflow_data(workflow, workflow_data_dict)
     detail = WorkflowDetail.model_validate(wf)
     return ApiResponse(success=True, message="Workflow data updated", data=detail)

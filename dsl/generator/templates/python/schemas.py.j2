@@ -6,6 +6,19 @@ from pydantic import BaseModel, Field
 from typing import Any, Literal, Optional
 
 
+class Credential(BaseModel):
+    """Credential reference with optional values.
+    
+    When stored in workflow nodes, credentials are references (id, name, type only).
+    Values are added during credential resolution before execution.
+    """
+
+    id: str
+    name: str
+    type: str
+    values: Optional[dict[str, Any]] = None
+
+
 class WorkflowNode(BaseModel):
     """Worker DSL node."""
 
@@ -16,6 +29,7 @@ class WorkflowNode(BaseModel):
     trigger: bool = False
     parameters: dict[str, Any] = Field(default_factory=dict)
     output: dict[str, Any] = Field(default_factory=dict)
+    credentials: Optional[Credential] = None
     position: Optional[tuple[float, float]] = None
 
 

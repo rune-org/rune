@@ -7,16 +7,12 @@ from typing import Any, Literal, Optional
 
 
 class Credential(BaseModel):
-    """Credential reference with optional values.
-    
-    When stored in workflow nodes, credentials are references (id, name, type only).
-    Values are added during credential resolution before execution.
-    """
+    """Credential reference with values."""
 
     id: str
     name: str
     type: str
-    values: Optional[dict[str, Any]] = None
+    values: dict[str, Any] = Field(default_factory=dict)
 
 
 class WorkflowNode(BaseModel):
