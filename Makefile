@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev dev-infra-up dev-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev dev-infra-up dev-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-generate-frontend dsl-generate-backend dsl-generate-worker dsl-validate
 
 # Default target
 help:
@@ -40,6 +40,13 @@ help:
 	@echo "  make worker-lint    - Lint worker code"
 	@echo "  make worker-format  - Format worker code"
 	@echo "  make worker-test    - Run worker tests"
+	@echo ""
+	@echo "DSL Generator targets:"
+	@echo "  make dsl-generate           - Generate DSL code for all services"
+	@echo "  make dsl-generate-frontend  - Generate DSL code for frontend only"
+	@echo "  make dsl-generate-backend   - Generate DSL code for backend only"
+	@echo "  make dsl-generate-worker    - Generate DSL code for worker only"
+	@echo "  make dsl-validate           - Validate DSL definition JSON"
 	@echo ""
 	@echo "Docker targets:"
 	@echo "  make up                        - Start all services (alias for docker-up)"
@@ -214,6 +221,27 @@ format: web-format api-format worker-format
 
 typecheck: web-typecheck
 	@echo "✓ Type checking complete"
+
+# DSL Generator targets
+dsl-generate:
+	@echo "Generating DSL code for all services..."
+	@cd dsl/generator && python3 generate.py --all
+
+dsl-generate-frontend:
+	@echo "Generating DSL code for frontend..."
+	@cd dsl/generator && python3 generate.py --frontend
+
+dsl-generate-backend:
+	@echo "Generating DSL code for backend..."
+	@cd dsl/generator && python3 generate.py --backend
+
+dsl-generate-worker:
+	@echo "Generating DSL code for worker..."
+	@cd dsl/generator && python3 generate.py --worker
+
+dsl-validate:
+	@echo "Validating DSL definition..."
+	@python3 -c "import json; json.load(open('dsl/dsl-definition.json'))" && echo "✓ DSL definition is valid JSON"
 
 web-typecheck:
 	@echo "Type checking frontend..."
