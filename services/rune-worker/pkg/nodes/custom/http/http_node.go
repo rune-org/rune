@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -75,6 +76,33 @@ func NewHTTPNode(execCtx plugin.ExecutionContext) *HTTPNode {
 		for k, v := range headers {
 			if strVal, ok := v.(string); ok {
 				node.headers[k] = strVal
+			}
+		}
+	}
+
+	// Inject credentials into headers if available
+	creds := execCtx.GetCredentials()
+	if len(creds) > 0 {
+		if credType, ok := creds["type"].(string); ok {
+			switch credType {
+			case "basic_auth":
+				if _, exists := node.headers["Authorization"]; !exists {
+					username, _ := creds["username"].(string)
+					password, _ := creds["password"].(string)
+					if username != "" && password != "" {
+						auth := username + ":" + password
+						encodedAuth := base64.StdEncoding.EncodeToString([]byte(auth))
+						node.headers["Authorization"] = "Basic " + encodedAuth
+					}
+				}
+			case "header":
+				field, _ := creds["field"].(string)
+				value, _ := creds["value"].(string)
+				if field != "" && value != "" {
+					if _, exists := node.headers[field]; !exists {
+						node.headers[field] = value
+					}
+				}
 			}
 		}
 	}

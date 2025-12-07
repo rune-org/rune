@@ -10,11 +10,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listCredentialsDropdown } from "@/lib/api/credentials";
-import type { CredentialResponseDropDown, CredentialType } from "@/client/types.gen";
+import type {
+  CredentialResponseDropDown,
+  CredentialType,
+} from "@/client/types.gen";
 import type { CredentialRef } from "@/lib/credentials";
 
 interface CredentialSelectorProps {
-  credentialType: CredentialType;
+  credentialType: CredentialType | CredentialType[];
   value: CredentialRef | null | undefined;
   onChange: (credential: CredentialRef | null) => void;
   label?: string;
@@ -32,7 +35,9 @@ export function CredentialSelector({
   className = "",
   showHelp = false,
 }: CredentialSelectorProps) {
-  const [credentials, setCredentials] = useState<CredentialResponseDropDown[]>([]);
+  const [credentials, setCredentials] = useState<CredentialResponseDropDown[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,8 +48,11 @@ export function CredentialSelector({
       const response = await listCredentialsDropdown();
       if (response.data?.data) {
         // Filter credentials by type
-        const filtered = response.data.data.filter(
-          (cred) => cred.credential_type === credentialType
+        const types = Array.isArray(credentialType)
+          ? credentialType
+          : [credentialType];
+        const filtered = response.data.data.filter((cred) =>
+          types.includes(cred.credential_type)
         );
         setCredentials(filtered);
       }
@@ -67,7 +75,9 @@ export function CredentialSelector({
       return;
     }
 
-    const selected = credentials.find((cred) => cred.id.toString() === selectedId);
+    const selected = credentials.find(
+      (cred) => cred.id.toString() === selectedId
+    );
     if (selected) {
       onChange({
         id: selected.id.toString(),
@@ -95,10 +105,12 @@ export function CredentialSelector({
         </button>
       </div>
 
-      <Select value={selectedValue} onValueChange={handleValueChange} disabled={isLoading}>
-        <SelectTrigger
-          className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 text-sm"
-        >
+      <Select
+        value={selectedValue}
+        onValueChange={handleValueChange}
+        disabled={isLoading}
+      >
+        <SelectTrigger className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 text-sm">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -107,7 +119,9 @@ export function CredentialSelector({
           </SelectItem>
           {credentials.length === 0 && !isLoading && !error && (
             <SelectItem value="empty" disabled>
-              <span className="text-muted-foreground">No {credentialType} credentials found</span>
+              <span className="text-muted-foreground">
+                No {credentialType} credentials found
+              </span>
             </SelectItem>
           )}
           {credentials.map((cred) => (
