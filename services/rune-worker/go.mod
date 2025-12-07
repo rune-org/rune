@@ -2,6 +2,8 @@ module rune-worker
 
 go 1.24
 
+toolchain go1.24.11
+
 require (
 	github.com/dop251/goja v0.0.0-20251201205617-2bb4c724c0f9
 	github.com/go-redis/redismock/v9 v9.2.0

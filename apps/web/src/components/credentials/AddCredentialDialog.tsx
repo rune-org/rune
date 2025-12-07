@@ -138,6 +138,21 @@ const CREDENTIAL_FIELDS: Record<
       required: true,
     },
   ],
+  header: [
+    {
+      key: "field",
+      label: "Header Name",
+      type: "text",
+      placeholder: "X-API-Key",
+      required: true,
+    },
+    {
+      key: "value",
+      label: "Header Value",
+      type: "password",
+      required: true,
+    },
+  ],
   custom: [
     {
       key: "custom_data",
@@ -152,9 +167,10 @@ const CREDENTIAL_FIELDS: Record<
 export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [credentialType, setCredentialType] = useState<CredentialType>("api_key");
+  const [credentialType, setCredentialType] =
+    useState<CredentialType>("api_key");
   const [credentialData, setCredentialData] = useState<Record<string, string>>(
-    {},
+    {}
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -168,7 +184,9 @@ export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
       .map((f) => f.label);
 
     if (missingFields.length > 0) {
-      toast.error(`Please fill in required fields: ${missingFields.join(", ")}`);
+      toast.error(
+        `Please fill in required fields: ${missingFields.join(", ")}`
+      );
       return;
     }
 
@@ -250,8 +268,8 @@ export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {CREDENTIAL_TYPES.map((type) => (
-                    <SelectItem 
-                      key={type.value} 
+                    <SelectItem
+                      key={type.value}
                       value={type.value}
                       className="pl-8"
                     >

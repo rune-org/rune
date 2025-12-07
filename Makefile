@@ -128,8 +128,9 @@ worker-install:
 # Development targets
 # ======================
 
-dev: docker-up web-dev
-	@echo "All services started in development mode"
+dev: dev-infra-up
+	@echo "Starting all services in development mode..."
+	@$(MAKE) -j3 web-dev api-dev worker-dev
 
 web-dev:
 	@echo "Starting frontend in development mode..."
