@@ -120,7 +120,7 @@ export function CredentialSelector({
           {credentials.length === 0 && !isLoading && !error && (
             <SelectItem value="empty" disabled>
               <span className="text-muted-foreground">
-                No {credentialType} credentials found
+                No credentials found
               </span>
             </SelectItem>
           )}
