@@ -18,10 +18,25 @@ export type NodeDataMap = {
 {% for node_type, node_def in dsl.node_types.items() %}
   {{ node_def.frontend_type }}: BaseData{% if node_def.parameters %} & {
 {% for param_name, param_def in node_def.parameters.items() %}
-{% if param_name in node_def.get("frontend_parameter_mapping", {}) %}
-    {{ node_def.frontend_parameter_mapping[param_name] }}?: {% if param_def.type == "string" or param_def.type == "string|array" %}string{% elif param_def.type == "number" %}number{% elif param_def.type == "boolean" %}boolean{% elif param_def.type == "object" %}Record<string, unknown>{% elif param_def.type == "array" %}unknown[]{% else %}unknown{% endif %};
+{% set frontend_param_name = node_def.get("frontend_parameter_mapping", {}).get(param_name, param_name) %}
+{% if param_name == "rules" and param_def.type == "array" %}
+    {{ frontend_param_name }}?: SwitchRule[];
+{% elif param_def.get("enum") %}
+    {{ frontend_param_name }}?: {% for enum_val in param_def.enum %}"{{ enum_val }}"{% if not loop.last %} | {% endif %}{% endfor %};
+{% elif frontend_param_name in ["retries", "retryDelay", "timeout"] %}
+    {{ frontend_param_name }}?: number;
+{% elif param_def.type == "string" or param_def.type == "string|array" %}
+    {{ frontend_param_name }}?: string;
+{% elif param_def.type == "number" %}
+    {{ frontend_param_name }}?: number;
+{% elif param_def.type == "boolean" %}
+    {{ frontend_param_name }}?: boolean;
+{% elif param_def.type == "object" %}
+    {{ frontend_param_name }}?: Record<string, unknown>;
+{% elif param_def.type == "array" %}
+    {{ frontend_param_name }}?: unknown[];
 {% else %}
-    {{ param_name }}?: {% if param_def.type == "string" or param_def.type == "string|array" %}string{% elif param_def.type == "number" %}number{% elif param_def.type == "boolean" %}boolean{% elif param_def.type == "object" %}Record<string, unknown>{% elif param_def.type == "array" %}unknown[]{% else %}unknown{% endif %};
+    {{ frontend_param_name }}?: unknown;
 {% endif %}
 {% endfor %}
   }{% endif %};
@@ -32,14 +47,38 @@ export type NodeDataMap = {
 export type NodeKind = keyof NodeDataMap;
 
 /** Node schema defining inputs and outputs for each node type. */
-// TODO: Update inputs/outputs based on node type requirements from DSL
+// TODO: MANUAL UPDATE REQUIRED - Update inputs/outputs when node types change
+// This schema defines the inputs and outputs for each node type in the canvas.
+// When adding new node types or changing node behavior, update this schema accordingly.
 export const NODE_SCHEMA = {
-{% for node_type, node_def in dsl.node_types.items() %}
-  {{ node_def.frontend_type }}: {
-    inputs: [], // TODO: Define based on node type
-    outputs: [], // TODO: Define based on node type
+  trigger: {
+    inputs: [],
+    outputs: ["trigger"],
   },
-{% endfor %}
+  agent: {
+    inputs: ["input"],
+    outputs: ["response"],
+  },
+  if: {
+    inputs: ["condition"],
+    outputs: ["true", "false"],
+  },
+  switch: {
+    inputs: ["input"],
+    outputs: [], // dynamic based on configured rules
+  },
+  http: {
+    inputs: ["request"],
+    outputs: ["response", "error"],
+  },
+  smtp: {
+    inputs: ["email"],
+    outputs: ["sent", "error"],
+  },
+  log: {
+    inputs: ["message"],
+    outputs: ["logged"],
+  },
 } as const satisfies Record<NodeKind, { inputs: readonly string[]; outputs: readonly string[] }>;
 
 export type CanvasNode = {
@@ -52,8 +91,6 @@ export type {{ node_def.frontend_type | capitalize }}Data = NodeDataMap["{{ node
 
 export type CanvasEdge = Edge;
 
-{% for node_type, node_def in dsl.node_types.items() %}
-{% if node_type == "switch" %}
 export type SwitchRule = {
   value?: string;
   operator?: SwitchOperator;
@@ -68,5 +105,3 @@ export type SwitchOperator =
   | ">="
   | "<="
   | "contains";
-{% endif %}
-{% endfor %}

@@ -17,14 +17,14 @@ export type BaseData = {
 export type NodeDataMap = {
   trigger: BaseData;
   http: BaseData & {
-    method?: string;
+    method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
     url?: string;
     body?: unknown;
     query?: Record<string, unknown>;
     headers?: Record<string, unknown>;
-    retries?: string;
-    retryDelay?: string;
-    timeout?: string;
+    retries?: number;
+    retryDelay?: number;
+    timeout?: number;
     raise_on_status?: string;
     ignoreSSL?: boolean;
   };
@@ -42,12 +42,12 @@ export type NodeDataMap = {
     false_edge_id?: string;
   };
   switch: BaseData & {
-    rules?: unknown[];
+    rules?: SwitchRule[];
     routes?: unknown[];
   };
   log: BaseData & {
     message?: string;
-    level?: string;
+    level?: "debug" | "info" | "warn" | "error";
   };
   agent: BaseData & {
     prompt?: string;
@@ -58,35 +58,37 @@ export type NodeDataMap = {
 export type NodeKind = keyof NodeDataMap;
 
 /** Node schema defining inputs and outputs for each node type. */
-// TODO: Update inputs/outputs based on node type requirements from DSL
+// TODO: MANUAL UPDATE REQUIRED - Update inputs/outputs when node types change
+// This schema defines the inputs and outputs for each node type in the canvas.
+// When adding new node types or changing node behavior, update this schema accordingly.
 export const NODE_SCHEMA = {
   trigger: {
-    inputs: [], // TODO: Define based on node type
-    outputs: [], // TODO: Define based on node type
-  },
-  http: {
-    inputs: [], // TODO: Define based on node type
-    outputs: [], // TODO: Define based on node type
-  },
-  smtp: {
-    inputs: [], // TODO: Define based on node type
-    outputs: [], // TODO: Define based on node type
-  },
-  if: {
-    inputs: [], // TODO: Define based on node type
-    outputs: [], // TODO: Define based on node type
-  },
-  switch: {
-    inputs: [], // TODO: Define based on node type
-    outputs: [], // TODO: Define based on node type
-  },
-  log: {
-    inputs: [], // TODO: Define based on node type
-    outputs: [], // TODO: Define based on node type
+    inputs: [],
+    outputs: ["trigger"],
   },
   agent: {
-    inputs: [], // TODO: Define based on node type
-    outputs: [], // TODO: Define based on node type
+    inputs: ["input"],
+    outputs: ["response"],
+  },
+  if: {
+    inputs: ["condition"],
+    outputs: ["true", "false"],
+  },
+  switch: {
+    inputs: ["input"],
+    outputs: [], // dynamic based on configured rules
+  },
+  http: {
+    inputs: ["request"],
+    outputs: ["response", "error"],
+  },
+  smtp: {
+    inputs: ["email"],
+    outputs: ["sent", "error"],
+  },
+  log: {
+    inputs: ["message"],
+    outputs: ["logged"],
   },
 } as const satisfies Record<NodeKind, { inputs: readonly string[]; outputs: readonly string[] }>;
 
