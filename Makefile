@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev dev-infra-up dev-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-generate-frontend dsl-generate-backend dsl-generate-worker dsl-validate
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev dev-infra-up dev-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-generate-frontend dsl-generate-backend dsl-generate-worker dsl-validate dsl-check-deps
 
 # Default target
 help:
@@ -47,6 +47,7 @@ help:
 	@echo "  make dsl-generate-backend   - Generate DSL code for backend only"
 	@echo "  make dsl-generate-worker    - Generate DSL code for worker only"
 	@echo "  make dsl-validate           - Validate DSL definition JSON"
+	@echo "  make dsl-check-deps         - List files that depend on DSL-generated code"
 	@echo ""
 	@echo "Docker targets:"
 	@echo "  make up                        - Start all services (alias for docker-up)"
@@ -242,6 +243,10 @@ dsl-generate-worker:
 dsl-validate:
 	@echo "Validating DSL definition..."
 	@python3 -c "import json; json.load(open('dsl/dsl-definition.json'))" && echo "✓ DSL definition is valid JSON"
+
+dsl-check-deps:
+	@echo "Checking files that depend on DSL-generated code..."
+	@python3 dsl/generator/check_dependencies.py
 
 web-typecheck:
 	@echo "Type checking frontend..."
