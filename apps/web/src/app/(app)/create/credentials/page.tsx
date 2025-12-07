@@ -46,6 +46,9 @@ export default function CreateCredentialsPage() {
     }
   };
 
+
+  // TODO(fe): revisit after RBAC 
+
   const handleAddCredential = async (newCred: {
     name: string;
     credential_type: Credential["credential_type"];
