@@ -2,6 +2,8 @@ import type { Node } from "@xyflow/react";
 import type { HttpData, NodeDataMap } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
 import { JsonField } from "../JsonField";
+import { CredentialSelector } from "@/components/shared/CredentialSelector";
+import type { CredentialRef } from "@/lib/credentials";
 import {
   Select,
   SelectContent,
@@ -25,8 +27,24 @@ export function HttpInspector({
     updateData(node.id, "http", updater);
   };
 
+  const handleCredentialChange = (credential: CredentialRef | null) => {
+    updateHttpData((d) => ({
+      ...d,
+      credential,
+    }));
+  };
+
   return (
     <div className="space-y-3">
+      <CredentialSelector
+        credentialType={["basic_auth", "header", "api_key", "oauth2", "token"]}
+        value={node.data.credential}
+        onChange={handleCredentialChange}
+        label="Authentication"
+        placeholder="Select authentication"
+        showHelp={isExpanded}
+      />
+
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="block text-xs text-muted-foreground">Method</label>
