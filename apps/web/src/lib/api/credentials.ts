@@ -1,5 +1,6 @@
 import {
   createCredentialCredentialsPost,
+  deleteCredentialCredentialsCredentialIdDelete,
   listCredentialsCredentialsGet,
   listCredentialsDropdownCredentialsDropdownGet,
 } from "@/client";
@@ -28,4 +29,13 @@ export const listCredentials = () => listCredentialsCredentialsGet();
  */
 export const listCredentialsDropdown = () =>
   listCredentialsDropdownCredentialsDropdownGet();
+
+/**
+ * Delete a credential
+ * @param credentialId - The ID of the credential to delete
+ */
+export const deleteCredential = (credentialId: number) =>
+  deleteCredentialCredentialsCredentialIdDelete({
+    path: { credential_id: credentialId },
+  });
 
