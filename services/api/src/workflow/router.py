@@ -76,7 +76,7 @@ async def create_workflow(
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
     # Convert Pydantic Workflow model to dict for database storage (JSONB field)
-    workflow_data_dict = payload.workflow_data.model_dump()
+    workflow_data_dict = payload.workflow_data.model_dump(exclude_none=False)
     wf = await service.create(
         user_id=current_user.id,
         name=payload.name,
