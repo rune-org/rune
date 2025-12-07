@@ -15,7 +15,7 @@ class WorkflowNode(BaseModel):
     trigger: bool = False
     parameters: dict[str, Any] = Field(default_factory=dict)
     output: dict[str, Any] = Field(default_factory=dict)
-    position: Optional[tuple[int, int]] = None
+    position: Optional[tuple[float, float]] = None
 
 
 class WorkflowEdge(BaseModel):
