@@ -75,11 +75,13 @@ async def create_workflow(
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
+    # Convert Pydantic Workflow model to dict for database storage (JSONB field)
+    workflow_data_dict = payload.workflow_data.model_dump()
     wf = await service.create(
         user_id=current_user.id,
         name=payload.name,
         description=payload.description,
-        workflow_data=payload.workflow_data,
+        workflow_data=workflow_data_dict,
     )
 
     detail = WorkflowDetail.model_validate(wf)
@@ -133,7 +135,9 @@ async def update_workflow_data(
 
     **Requires:** EDIT permission (OWNER or EDITOR)
     """
-    wf = await service.update_workflow_data(workflow, payload.workflow_data)
+    # Convert Pydantic Workflow model to dict for database storage (JSONB field)
+    workflow_data_dict = payload.workflow_data.model_dump()
+    wf = await service.update_workflow_data(workflow, workflow_data_dict)
     detail = WorkflowDetail.model_validate(wf)
     return ApiResponse(success=True, message="Workflow data updated", data=detail)
 
