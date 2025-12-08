@@ -566,7 +566,7 @@ func TestEvaluator_StatusCodeRanges(t *testing.T) {
 			}
 
 			if result != tt.expected {
-				t.Errorf("Expected %v for status %d with expression %s, got %v", 
+				t.Errorf("Expected %v for status %d with expression %s, got %v",
 					tt.expected, tt.status, tt.expression, result)
 			}
 		})
