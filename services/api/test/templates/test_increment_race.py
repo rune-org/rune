@@ -125,6 +125,6 @@ async def test_increment_usage_count_concurrent(test_engine, template_id):
         # Read final usage_count and assert it equals number of workers
         final = await _read_usage(test_engine, template_id)
 
-        assert final == workers, (
-            f"run {i + 1}/{runs}: expected usage_count {workers}, got {final}"
-        )
+        assert (
+            final == workers
+        ), f"run {i + 1}/{runs}: expected usage_count {workers}, got {final}"

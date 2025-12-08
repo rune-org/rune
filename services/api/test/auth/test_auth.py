@@ -496,9 +496,9 @@ async def test_logout_clears_cookie(authenticated_client: AsyncClient):
 
     # Check that the cookie is being deleted (has Max-Age=0 or expires directive)
     set_cookie_header = str(response.headers.get("set-cookie", ""))
-    assert "access_token" in set_cookie_header, (
-        "Set-Cookie header should include access_token"
-    )
+    assert (
+        "access_token" in set_cookie_header
+    ), "Set-Cookie header should include access_token"
     assert (
         "Max-Age=0" in set_cookie_header or "max-age=0" in set_cookie_header.lower()
     ), "Cookie should be deleted with Max-Age=0"
@@ -1007,9 +1007,9 @@ async def test_token_lifetime_configuration_is_respected(
     actual_lifetime_seconds = decoded["exp"] - decoded["iat"]
     expected_lifetime_seconds = settings.access_token_expire_minutes * 60
 
-    assert actual_lifetime_seconds == expected_lifetime_seconds, (
-        f"Token lifetime {actual_lifetime_seconds}s does not match configured {expected_lifetime_seconds}s"
-    )
+    assert (
+        actual_lifetime_seconds == expected_lifetime_seconds
+    ), f"Token lifetime {actual_lifetime_seconds}s does not match configured {expected_lifetime_seconds}s"
 
     # Verify the token actually expires at the configured time
     expiry_time = datetime.fromtimestamp(decoded["exp"], tz=timezone.utc)
