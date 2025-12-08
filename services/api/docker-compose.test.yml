@@ -11,6 +11,8 @@ services:
       POSTGRES_DB: test_rune
     ports:
       - "5433:5432"
+    networks:
+      - test_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U test_user -d test_rune"]
       interval: 5s
@@ -25,6 +27,8 @@ services:
     container_name: rune-api-redis-test
     ports:
       - "6380:6379"
+    networks:
+      - test_network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -43,8 +47,47 @@ services:
     ports:
       - "5673:5672"      # AMQP port (shifted from default 5672)
       - "15673:15672"    # Management UI (shifted from default 15672)
+    networks:
+      - test_network
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ============================================================================
+  # TEST SCHEDULER DAEMON
+  # ============================================================================
+  test-scheduler-daemon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rune-api-scheduler-daemon-test
+    environment:
+      DATABASE_URL: postgresql+asyncpg://test_user:test_password@test-postgres:5432/test_rune
+      REDIS_HOST: test-redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: test-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: test_user
+      RABBITMQ_PASSWORD: test_password
+      SCHEDULER_POLL_INTERVAL: 2
+      SCHEDULER_LOOK_AHEAD_WINDOW: 60
+    depends_on:
+      test-postgres:
+        condition: service_healthy
+      test-redis:
+        condition: service_started
+      test-rabbitmq:
+        condition: service_healthy
+    command: python -m src.scheduler.daemon
+    networks:
+      - test_network
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+networks:
+  test_network:
+    driver: bridge
+
