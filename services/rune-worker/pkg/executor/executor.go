@@ -75,42 +75,45 @@ func (e *Executor) Execute(ctx context.Context, msg *messages.NodeExecutionMessa
 		"node_type", node.Type,
 	)
 
+	// Step 5 & 6: Build context and execute node
+	execContext := e.buildExecutionContext(msg, &node)
+
 	// Step 4: Publish "running" status
-	if err := e.publishRunningStatus(ctx, msg, &node); err != nil {
+	if err := e.publishRunningStatus(ctx, msg, &node, execContext.Input, execContext.Parameters); err != nil {
 		slog.Error("failed to publish running status", "error", err)
 		// Continue execution even if status publish fails
 	}
 
-	// Step 5 & 6: Build context and execute node
-	execContext := e.buildExecutionContext(msg, &node)
 	nodeInstance, err := e.registry.Create(node.Type, execContext)
 	if err != nil {
-		return e.handleNodeCreationFailure(ctx, msg, &node, err, startTime)
+		return e.handleNodeCreationFailure(ctx, msg, &node, err, startTime, execContext.Input, execContext.Parameters)
 	}
 
 	output, execErr := nodeInstance.Execute(ctx, execContext)
 	duration := time.Since(startTime)
 
 	if execErr != nil {
-		return e.handleNodeFailure(ctx, msg, &node, execErr, duration)
+		return e.handleNodeFailure(ctx, msg, &node, execErr, duration, execContext.Input, execContext.Parameters)
 	}
 
 	if node.Type == "wait" {
-		return e.handleWaitNode(ctx, msg, &node, output, duration)
+		return e.handleWaitNode(ctx, msg, &node, output, duration, execContext.Input, execContext.Parameters)
 	}
 
 	// Step 7 & 8: Handle execution result
-	return e.handleNodeSuccess(ctx, msg, &node, output, duration, startTime)
+	return e.handleNodeSuccess(ctx, msg, &node, output, duration, startTime, execContext.Input, execContext.Parameters)
 }
 
 // handleWaitNode publishes a waiting status and stops further execution for this branch.
-func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration) error {
+func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, input map[string]any, params map[string]any) error {
 	statusMsg := &messages.NodeStatusMessage{
 		WorkflowID:  msg.WorkflowID,
 		ExecutionID: msg.ExecutionID,
 		NodeID:      node.ID,
 		NodeName:    node.Name,
 		Status:      messages.StatusWaiting,
+		Input:       input,
+		Parameters:  params,
 		Output:      output,
 		ExecutedAt:  time.Now(),
 		DurationMs:  duration.Milliseconds(),
@@ -173,13 +176,15 @@ func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, nod
 }
 
 // publishRunningStatus publishes a "running" status message.
-func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node) error {
+func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, input map[string]any, params map[string]any) error {
 	statusMsg := &messages.NodeStatusMessage{
 		WorkflowID:  msg.WorkflowID,
 		ExecutionID: msg.ExecutionID,
 		NodeID:      node.ID,
 		NodeName:    node.Name,
 		Status:      messages.StatusRunning,
+		Input:       input,
+		Parameters:  params,
 		ExecutedAt:  time.Now(),
 		DurationMs:  0,
 	}
@@ -190,7 +195,7 @@ func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeE
 }
 
 // handleNodeCreationFailure handles the case when a node cannot be created from the registry.
-func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, err error, startTime time.Time) error {
+func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, err error, startTime time.Time, input map[string]any, params map[string]any) error {
 	duration := time.Since(startTime)
 	slog.Error("failed to create node", "error", err, "node_type", node.Type)
 
@@ -200,6 +205,8 @@ func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.
 		NodeID:      node.ID,
 		NodeName:    node.Name,
 		Status:      messages.StatusFailed,
+		Input:       input,
+		Parameters:  params,
 		Error: &messages.NodeError{
 			Message: fmt.Sprintf("failed to create node of type %s", node.Type),
 			Code:    "NODE_CREATION_FAILED",
@@ -218,7 +225,7 @@ func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.
 }
 
 // handleNodeFailure processes a node execution failure according to error handling strategy.
-func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, execErr error, duration time.Duration) error {
+func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, execErr error, duration time.Duration, input map[string]any, params map[string]any) error {
 	slog.Error("node execution failed",
 		"error", execErr,
 		"node_id", node.ID,
@@ -232,6 +239,8 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 		NodeID:      node.ID,
 		NodeName:    node.Name,
 		Status:      messages.StatusFailed,
+		Input:       input,
+		Parameters:  params,
 		Error: &messages.NodeError{
 			Message: execErr.Error(),
 			Code:    "NODE_EXECUTION_FAILED",
@@ -277,7 +286,7 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 }
 
 // handleNodeSuccess processes a successful node execution.
-func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, startTime time.Time) error {
+func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, startTime time.Time, input map[string]any, params map[string]any) error {
 	slog.Info("node execution succeeded",
 		"node_id", node.ID,
 		"node_name", node.Name,
@@ -291,6 +300,8 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 		NodeID:      node.ID,
 		NodeName:    node.Name,
 		Status:      messages.StatusSuccess,
+		Input:       input,
+		Parameters:  params,
 		Output:      output,
 		ExecutedAt:  time.Now(),
 		DurationMs:  duration.Milliseconds(),

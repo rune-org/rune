@@ -16,7 +16,7 @@ import (
 //
 // The master service publishes the initial message after trigger execution.
 // Workers consume, execute the node, then publish new messages for next nodes.
-type NodeExecutionMessage struct {
+type 	NodeExecutionMessage struct {
 	WorkflowID         string                 `json:"workflow_id"`
 	ExecutionID        string                 `json:"execution_id"`
 	CurrentNode        string                 `json:"current_node"`            // Node ID to execute

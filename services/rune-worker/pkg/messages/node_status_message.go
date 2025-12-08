@@ -15,6 +15,8 @@ type NodeStatusMessage struct {
 	NodeID          string                 `json:"node_id"`
 	NodeName        string                 `json:"node_name"`
 	Status          string                 `json:"status"` // "running", "success", "failed"
+	Input           map[string]interface{} `json:"input,omitempty"`
+	Parameters      map[string]interface{} `json:"parameters,omitempty"`
 	Output          map[string]interface{} `json:"output,omitempty"`
 	Error           *NodeError             `json:"error,omitempty"`
 	ExecutedAt      time.Time              `json:"executed_at"`
