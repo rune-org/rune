@@ -316,14 +316,6 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 		"duration_ms", duration.Milliseconds(),
 	)
 
-	// Handle Aggregator Barrier early to avoid publishing status for closed barrier branches.
-	if node.Type == "aggregator" {
-		if _, closed := output["_barrier_closed"]; closed {
-			slog.Info("aggregator barrier closed, halting branch", "node_id", node.ID)
-			return nil // Do not publish status, next nodes, or completion
-		}
-	}
-
 	// Publish success status
 	statusMsg := &messages.NodeStatusMessage{
 		WorkflowID:       msg.WorkflowID,
@@ -353,6 +345,14 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 	if node.Type == "edit" {
 		if json, ok := output["$json"]; ok {
 			updatedContext["$json"] = json
+		}
+	}
+
+	// Handle Aggregator Barrier early to avoid publishing status for closed barrier branches.
+	if node.Type == "aggregator" {
+		if _, closed := output["_barrier_closed"]; closed {
+			slog.Info("aggregator barrier closed, halting branch", "node_id", node.ID)
+			return nil // Do not publish status, next nodes, or completion
 		}
 	}
 
