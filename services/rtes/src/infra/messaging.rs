@@ -16,7 +16,9 @@ use tracing::{error, info};
 
 use crate::{
     api::state::AppState,
-    domain::models::{ExecutionResult, ExecutionStatus, ExecutionToken, WorkerMessage},
+    domain::models::{
+        CompletionMessage, ExecutionToken, NodeExecutionMessage, NodeStatusMessage, WorkerMessage,
+    },
     infra::storage::TokenStore,
 };
 
@@ -161,7 +163,7 @@ pub(crate) async fn start_status_consumer(
 
     while let Some(delivery) = stream.next().await {
         if let Ok(delivery) = delivery {
-            match serde_json::from_slice::<ExecutionStatus>(&delivery.data) {
+            match serde_json::from_slice::<NodeStatusMessage>(&delivery.data) {
                 Ok(status) => {
                     if let Err(e) = state.execution_store.save_status(&status).await {
                         error!("Failed to save status: {}", e);
@@ -172,7 +174,7 @@ pub(crate) async fn start_status_consumer(
                             })
                             .await;
                     } else {
-                        let _ = state.tx.send(WorkerMessage::Status(status));
+                        let _ = state.tx.send(WorkerMessage::NodeStatus(status));
                         let _ = delivery.ack(BasicAckOptions::default()).await;
                     }
                 },
@@ -237,7 +239,7 @@ pub(crate) async fn start_completion_consumer(
 
     while let Some(delivery) = stream.next().await {
         if let Ok(delivery) = delivery {
-            match serde_json::from_slice::<ExecutionResult>(&delivery.data) {
+            match serde_json::from_slice::<CompletionMessage>(&delivery.data) {
                 Ok(result) => {
                     if let Err(e) = state.execution_store.save_result(&result).await {
                         error!("Failed to save result: {}", e);
@@ -248,12 +250,79 @@ pub(crate) async fn start_completion_consumer(
                             })
                             .await;
                     } else {
-                        let _ = state.tx.send(WorkerMessage::Result(result));
+                        let _ = state.tx.send(WorkerMessage::WorkflowCompletion(result));
                         let _ = delivery.ack(BasicAckOptions::default()).await;
                     }
                 },
                 Err(e) => {
                     error!("Failed to deserialize result: {}", e);
+                    let _ = delivery
+                        .nack(BasicNackOptions { requeue: false, ..BasicNackOptions::default() })
+                        .await;
+                },
+            }
+        }
+    }
+    Ok(())
+}
+
+pub(crate) async fn start_execution_consumer(
+    amqp_addr: &str,
+    state: AppState,
+    cancel_token: CancellationToken,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let conn = Connection::connect(amqp_addr, ConnectionProperties::default()).await?;
+    let channel = conn.create_channel().await?;
+
+    let cfg = crate::config::Config::get();
+    let queue_name = &cfg.rabbitmq_execution_queue;
+
+    // Declare DLQ
+    let dlq_name = format!("{}.dlq", queue_name);
+    let _dlq = channel
+        .queue_declare(
+            &dlq_name,
+            QueueDeclareOptions { durable: true, ..QueueDeclareOptions::default() },
+            FieldTable::default(),
+        )
+        .await?;
+
+    // Declare Main Queue with DLQ args
+    let mut args = FieldTable::default();
+    args.insert("x-dead-letter-exchange".into(), AMQPValue::LongString("".into()));
+    args.insert("x-dead-letter-routing-key".into(), AMQPValue::LongString(dlq_name.into()));
+
+    let _queue = channel
+        .queue_declare(
+            queue_name,
+            QueueDeclareOptions { durable: true, ..QueueDeclareOptions::default() },
+            args,
+        )
+        .await?;
+
+    let mut consumer = channel
+        .basic_consume(
+            queue_name,
+            "rtes_execution_consumer",
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+
+    info!("Started execution consumer on queue: {}", queue_name);
+
+    let mut stream = Box::pin(consumer.take_until(cancel_token.cancelled()));
+
+    while let Some(delivery) = stream.next().await {
+        if let Ok(delivery) = delivery {
+            match serde_json::from_slice::<NodeExecutionMessage>(&delivery.data) {
+                Ok(msg) => {
+                    // We don't save execution messages to DB, just forward to WS
+                    let _ = state.tx.send(WorkerMessage::NodeExecution(msg));
+                    let _ = delivery.ack(BasicAckOptions::default()).await;
+                },
+                Err(e) => {
+                    error!("Failed to deserialize execution message: {}", e);
                     let _ = delivery
                         .nack(BasicNackOptions { requeue: false, ..BasicNackOptions::default() })
                         .await;

@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use mongodb::{Client as MongoClient, Collection, options::ClientOptions};
 use redis::{AsyncCommands, Client as RedisClient, RedisResult};
 
-use crate::domain::models::{ExecutionResult, ExecutionStatus, ExecutionToken};
+use crate::domain::models::{CompletionMessage, ExecutionToken, NodeStatusMessage};
 
 #[derive(Clone)]
 pub(crate) struct TokenStore {
@@ -23,13 +23,13 @@ impl ExecutionStore {
         Ok(Self { client, db_name: db_name.to_string() })
     }
 
-    fn status_collection(&self) -> Collection<ExecutionStatus> {
+    fn status_collection(&self) -> Collection<NodeStatusMessage> {
         self.client
             .database(&self.db_name)
             .collection("execution_status")
     }
 
-    fn result_collection(&self) -> Collection<ExecutionResult> {
+    fn result_collection(&self) -> Collection<CompletionMessage> {
         self.client
             .database(&self.db_name)
             .collection("execution_results")
@@ -37,7 +37,7 @@ impl ExecutionStore {
 
     pub(crate) async fn save_status(
         &self,
-        status: &ExecutionStatus,
+        status: &NodeStatusMessage,
     ) -> Result<(), mongodb::error::Error> {
         self.status_collection().insert_one(status).await?;
         Ok(())
@@ -45,7 +45,7 @@ impl ExecutionStore {
 
     pub(crate) async fn save_result(
         &self,
-        result: &ExecutionResult,
+        result: &CompletionMessage,
     ) -> Result<(), mongodb::error::Error> {
         self.result_collection().insert_one(result).await?;
         Ok(())
@@ -56,13 +56,13 @@ impl ExecutionStore {
         execution_id: &str,
         limit: i64,
         offset: u64,
-    ) -> Result<Vec<ExecutionStatus>, mongodb::error::Error> {
+    ) -> Result<Vec<NodeStatusMessage>, mongodb::error::Error> {
         let filter = mongodb::bson::doc! { "execution_id": execution_id };
         let mut cursor = self.status_collection()
             .find(filter)
             .limit(limit)
             .skip(offset)
-            .sort(mongodb::bson::doc! { "timestamp": 1 })
+            .sort(mongodb::bson::doc! { "executed_at": 1 })
             .await?;
         let mut statuses = Vec::new();
         while cursor.advance().await? {
@@ -74,7 +74,7 @@ impl ExecutionStore {
     pub(crate) async fn get_result(
         &self,
         execution_id: &str,
-    ) -> Result<Option<ExecutionResult>, mongodb::error::Error> {
+    ) -> Result<Option<CompletionMessage>, mongodb::error::Error> {
         let filter = mongodb::bson::doc! { "execution_id": execution_id };
         self.result_collection().find_one(filter).await
     }

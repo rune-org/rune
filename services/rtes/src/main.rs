@@ -77,6 +77,16 @@ fn spawn_consumers(amqp_url: &str, state: &api::state::AppState, cancel_token: C
             tracing::error!("Completion Consumer error: {}", e);
         }
     });
+
+    let url = amqp_url.to_string();
+    let s = state.clone();
+    let ct = cancel_token.clone();
+    tokio::spawn(async move {
+        info!("Connecting to RabbitMQ for Execution Consumer at {}", url);
+        if let Err(e) = infra::messaging::start_execution_consumer(&url, s, ct).await {
+            tracing::error!("Execution Consumer error: {}", e);
+        }
+    });
 }
 
 async fn start_server(

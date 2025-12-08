@@ -14,6 +14,7 @@ pub(crate) struct Config {
     pub mongodb_url: String,
     pub rabbitmq_status_queue: String,
     pub rabbitmq_completion_queue: String,
+    pub rabbitmq_execution_queue: String,
     pub port: u16,
 }
 
@@ -40,9 +41,11 @@ impl Config {
             mongodb_url: env::var("MONGODB_URL")
                 .unwrap_or_else(|_| "mongodb://localhost:27017".to_string()),
             rabbitmq_status_queue: env::var("RABBITMQ_STATUS_QUEUE")
-                .unwrap_or_else(|_| "execution.status".to_string()),
+                .unwrap_or_else(|_| "workflow.node.status".to_string()),
             rabbitmq_completion_queue: env::var("RABBITMQ_COMPLETION_QUEUE")
-                .unwrap_or_else(|_| "execution.completion".to_string()),
+                .unwrap_or_else(|_| "workflow.completion".to_string()),
+            rabbitmq_execution_queue: env::var("RABBITMQ_EXECUTION_QUEUE")
+                .unwrap_or_else(|_| "workflow.execution".to_string()),
             port: env::var("PORT")
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()
