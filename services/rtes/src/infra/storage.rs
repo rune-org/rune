@@ -1,14 +1,87 @@
-use crate::domain::models::ExecutionToken;
-use redis::{AsyncCommands, Client, RedisResult};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use mongodb::{Client as MongoClient, Collection, options::ClientOptions};
+use redis::{AsyncCommands, Client as RedisClient, RedisResult};
+
+use crate::domain::models::{ExecutionResult, ExecutionStatus, ExecutionToken};
 
 #[derive(Clone)]
 pub(crate) struct TokenStore {
-    client: Client,
+    client: RedisClient,
+}
+
+#[derive(Clone)]
+pub(crate) struct ExecutionStore {
+    client:  MongoClient,
+    db_name: String,
+}
+
+impl ExecutionStore {
+    pub(crate) async fn new(uri: &str, db_name: &str) -> Result<Self, mongodb::error::Error> {
+        let client_options = ClientOptions::parse(uri).await?;
+        let client = MongoClient::with_options(client_options)?;
+        Ok(Self { client, db_name: db_name.to_string() })
+    }
+
+    fn status_collection(&self) -> Collection<ExecutionStatus> {
+        self.client
+            .database(&self.db_name)
+            .collection("execution_status")
+    }
+
+    fn result_collection(&self) -> Collection<ExecutionResult> {
+        self.client
+            .database(&self.db_name)
+            .collection("execution_results")
+    }
+
+    pub(crate) async fn save_status(
+        &self,
+        status: &ExecutionStatus,
+    ) -> Result<(), mongodb::error::Error> {
+        self.status_collection().insert_one(status).await?;
+        Ok(())
+    }
+
+    pub(crate) async fn save_result(
+        &self,
+        result: &ExecutionResult,
+    ) -> Result<(), mongodb::error::Error> {
+        self.result_collection().insert_one(result).await?;
+        Ok(())
+    }
+
+    pub(crate) async fn get_status(
+        &self,
+        execution_id: &str,
+        limit: i64,
+        offset: u64,
+    ) -> Result<Vec<ExecutionStatus>, mongodb::error::Error> {
+        let filter = mongodb::bson::doc! { "execution_id": execution_id };
+        let mut cursor = self.status_collection()
+            .find(filter)
+            .limit(limit)
+            .skip(offset)
+            .sort(mongodb::bson::doc! { "timestamp": 1 })
+            .await?;
+        let mut statuses = Vec::new();
+        while cursor.advance().await? {
+            statuses.push(cursor.deserialize_current()?);
+        }
+        Ok(statuses)
+    }
+
+    pub(crate) async fn get_result(
+        &self,
+        execution_id: &str,
+    ) -> Result<Option<ExecutionResult>, mongodb::error::Error> {
+        let filter = mongodb::bson::doc! { "execution_id": execution_id };
+        self.result_collection().find_one(filter).await
+    }
 }
 
 impl TokenStore {
-    pub(crate) const fn new(client: Client) -> Self {
+    pub(crate) const fn new(client: RedisClient) -> Self {
         Self { client }
     }
 
@@ -23,13 +96,10 @@ impl TokenStore {
             redis::RedisError::from(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
         })?;
 
-        // Add to ZSET with score = exp
         let _: i64 = conn.zadd(&key, member, token.exp).await?;
         Ok(())
     }
 
-    #[allow(dead_code)]
-    #[allow(clippy::collapsible_if)]
     pub(crate) async fn validate_access(
         &self,
         user_id: &str,
@@ -44,18 +114,16 @@ impl TokenStore {
         let tokens = self.fetch_valid_tokens(&mut conn, &key).await?;
 
         for token_str in tokens {
-            if let Ok(token) = serde_json::from_str::<ExecutionToken>(&token_str) {
-                if self.check_token_permissions(&token, target_execution_id, target_workflow_id) {
-                    return Ok(true);
-                }
+            if let Ok(token) = serde_json::from_str::<ExecutionToken>(&token_str)
+                && self.check_token_permissions(&token, target_execution_id, target_workflow_id)
+            {
+                return Ok(true);
             }
         }
 
         Ok(false)
     }
 
-    #[allow(dead_code)]
-    #[allow(clippy::cast_possible_wrap)]
     async fn remove_expired_tokens(
         &self,
         conn: &mut redis::aio::MultiplexedConnection,
@@ -64,7 +132,8 @@ impl TokenStore {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
-            .as_secs() as i64;
+            .as_secs()
+            .cast_signed();
         let _: i64 = conn.zrembyscore(key, "-inf", now).await?;
         Ok(())
     }
@@ -78,7 +147,6 @@ impl TokenStore {
         conn.zrange(key, 0, -1).await
     }
 
-    #[allow(dead_code)]
     #[allow(clippy::unused_self)]
     fn check_token_permissions(
         &self,

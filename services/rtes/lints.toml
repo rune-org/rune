@@ -1,5 +1,3 @@
-# Production-grade lints for Rust 2024 (Rust 1.91+)
-
 [lints.rust]
 unsafe_code = "forbid"
 missing_debug_implementations = "warn"
@@ -36,4 +34,3 @@ must_use_candidate = "allow"
 doc_markdown = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
-multiple_crate_versions = "allow" # Common in large dependency trees

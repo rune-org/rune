@@ -1,4 +1,4 @@
-use opentelemetry::{KeyValue, global, trace::TracerProvider as _};
+use opentelemetry::{KeyValue, global, trace::TracerProvider};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{
     Resource,
@@ -22,7 +22,7 @@ pub(crate) fn init_telemetry(
     // 2. Traces
     let tracer_provider = init_tracer(endpoint, resource.clone())?;
     let tracer = tracer_provider.tracer("rtes");
-    
+
     // 3. Metrics
     let meter_provider = init_metrics(endpoint, resource.clone())?;
     global::set_meter_provider(meter_provider);
@@ -32,7 +32,7 @@ pub(crate) fn init_telemetry(
     let log_layer =
         opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge::new(&logger_provider);
 
-        // 5. Subscriber Registry
+    // 5. Subscriber Registry
     let telemetry_layer = tracing_opentelemetry::layer().with_tracer(tracer);
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
     let fmt_layer = tracing_subscriber::fmt::layer();

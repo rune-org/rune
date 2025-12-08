@@ -3,27 +3,43 @@
 //! This service handles execution tokens and real-time events.
 
 mod api;
+mod config;
 mod domain;
 mod infra;
 
-use std::env;
-
+use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let (redis_url, amqp_url, otel_endpoint) = load_config();
+    dotenvy::dotenv().ok();
+    config::Config::init()?;
+    let cfg = config::Config::get();
 
-    let tracer_provider = infra::telemetry::init_telemetry("rtes", &otel_endpoint)?;
+    let tracer_provider = infra::telemetry::init_telemetry("rtes", &cfg.otel_endpoint)?;
 
     info!("Starting RTES service...");
 
-    let client = redis::Client::open(redis_url)?;
+    let client = redis::Client::open(cfg.redis_url.as_str())?;
     let token_store = infra::storage::TokenStore::new(client);
 
-    spawn_consumer(amqp_url, token_store.clone());
+    let execution_store = infra::storage::ExecutionStore::new(&cfg.mongodb_url, "rtes_db").await?;
 
-    start_server().await?;
+    let state = api::state::AppState::new(token_store.clone(), execution_store);
+
+    let cancel_token = CancellationToken::new();
+    let cancel_token_clone = cancel_token.clone();
+
+    tokio::spawn(async move {
+        if let Ok(()) = tokio::signal::ctrl_c().await {
+            info!("Shutdown signal received");
+            cancel_token_clone.cancel();
+        }
+    });
+
+    spawn_consumers(&cfg.amqp_url, &state, cancel_token.clone());
+
+    start_server(state, cancel_token).await?;
 
     let _ = tracer_provider.shutdown();
     info!("RTES service stopped");
@@ -31,27 +47,52 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn load_config() -> (String, String, String) {
-    let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1/".to_string());
-    let amqp_url = env::var("AMQP_URL").unwrap_or_else(|_| "amqp://127.0.0.1:5672/%2f".to_string());
-    let otel_endpoint = env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
-        .unwrap_or_else(|_| "http://localhost:4317".to_string());
-    (redis_url, amqp_url, otel_endpoint)
-}
-
-fn spawn_consumer(amqp_url: String, token_store: infra::storage::TokenStore) {
+fn spawn_consumers(amqp_url: &str, state: &api::state::AppState, cancel_token: CancellationToken) {
+    let url = amqp_url.to_string();
+    let token_store = state.token_store.clone();
+    let ct = cancel_token.clone();
     tokio::spawn(async move {
-        info!("Connecting to RabbitMQ at {}", amqp_url);
-        if let Err(e) = infra::messaging::start_consumer(&amqp_url, token_store).await {
-            tracing::error!("Consumer error: {}", e);
+        info!("Connecting to RabbitMQ for Token Consumer at {}", url);
+        if let Err(e) = infra::messaging::start_token_consumer(&url, token_store, ct).await {
+            tracing::error!("Token Consumer error: {}", e);
+        }
+    });
+
+    let url = amqp_url.to_string();
+    let s = state.clone();
+    let ct = cancel_token.clone();
+    tokio::spawn(async move {
+        info!("Connecting to RabbitMQ for Status Consumer at {}", url);
+        if let Err(e) = infra::messaging::start_status_consumer(&url, s, ct).await {
+            tracing::error!("Status Consumer error: {}", e);
+        }
+    });
+
+    let url = amqp_url.to_string();
+    let s = state.clone();
+    let ct = cancel_token.clone();
+    tokio::spawn(async move {
+        info!("Connecting to RabbitMQ for Completion Consumer at {}", url);
+        if let Err(e) = infra::messaging::start_completion_consumer(&url, s, ct).await {
+            tracing::error!("Completion Consumer error: {}", e);
         }
     });
 }
 
-async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
-    let app = api::routes::app();
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+async fn start_server(
+    state: api::state::AppState,
+    cancel_token: CancellationToken,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let cfg = config::Config::get();
+    let app = api::routes::app(state);
+    let addr = format!("0.0.0.0:{}", cfg.port);
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
     info!("Listening on {}", listener.local_addr()?);
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async move {
+            cancel_token.cancelled().await;
+            info!("Server shutting down");
+        })
+        .await?;
     Ok(())
 }

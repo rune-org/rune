@@ -1,1 +1,92 @@
-// REST handlers
+use crate::api::state::AppState;
+use axum::{
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
+};
+use serde::Deserialize;
+use tracing::{error, warn};
+
+#[derive(Deserialize)]
+pub(crate) struct AuthQuery {
+    pub(crate) user_id: String,
+    pub(crate) workflow_id: String,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct StatusQuery {
+    pub(crate) user_id: String,
+    pub(crate) workflow_id: String,
+    pub(crate) limit: Option<i64>,
+    pub(crate) offset: Option<u64>,
+}
+
+pub(crate) async fn health_check() -> impl IntoResponse {
+    (StatusCode::OK, "OK")
+}
+
+pub(crate) async fn get_execution_status(
+    State(state): State<AppState>,
+    Path(execution_id): Path<String>,
+    Query(query): Query<StatusQuery>,
+) -> impl IntoResponse {
+    match state
+        .token_store
+        .validate_access(&query.user_id, Some(&execution_id), &query.workflow_id)
+        .await
+    {
+        Ok(true) => {
+            let limit = query.limit.unwrap_or(100);
+            let offset = query.offset.unwrap_or(0);
+            match state
+                .execution_store
+                .get_status(&execution_id, limit, offset)
+                .await
+            {
+                Ok(statuses) => Json(statuses).into_response(),
+                Err(e) => {
+                    error!("Database error: {}", e);
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Database Error").into_response()
+                }
+            }
+        }
+        Ok(false) => {
+            warn!("Unauthorized access attempt for execution: {}", execution_id);
+            (StatusCode::FORBIDDEN, "Unauthorized").into_response()
+        }
+        Err(e) => {
+            error!("Token validation error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal Error").into_response()
+        }
+    }
+}
+
+pub(crate) async fn get_execution_result(
+    State(state): State<AppState>,
+    Path(execution_id): Path<String>,
+    Query(auth): Query<AuthQuery>,
+) -> impl IntoResponse {
+    match state
+        .token_store
+        .validate_access(&auth.user_id, Some(&execution_id), &auth.workflow_id)
+        .await
+    {
+        Ok(true) => match state.execution_store.get_result(&execution_id).await {
+            Ok(Some(result)) => Json(result).into_response(),
+            Ok(None) => (StatusCode::NOT_FOUND, "Result not found").into_response(),
+            Err(e) => {
+                error!("Database error: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Database Error").into_response()
+            }
+        },
+        Ok(false) => {
+            warn!("Unauthorized access attempt for execution: {}", execution_id);
+            (StatusCode::FORBIDDEN, "Unauthorized").into_response()
+        }
+        Err(e) => {
+            error!("Token validation error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal Error").into_response()
+        }
+    }
+}

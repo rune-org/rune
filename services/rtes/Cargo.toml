@@ -2,12 +2,11 @@
 name = "rtes"
 version = "0.1.0"
 edition = "2024"
-description = "Rune Token Execution Service"
+description = "Real Time Execution Service"
 license = "MIT"
 repository = "https://github.com/rune-org/rune"
 readme = "README.md"
-keywords = ["rune", "execution", "token"]
-categories = ["web-programming"]
+keywords = ["rune", "execution"]
 
 [dependencies]
 # Core Async Runtime 
@@ -51,6 +50,9 @@ opentelemetry_sdk = { version = "0.31", features = [
     "logs",
 ] }
 opentelemetry-appender-tracing = "0.31"
+dotenvy = "0.15"
+tokio-stream = { version = "0.1.17", features = ["full"] }
+tokio-util = { version = "0.7.17", features = ["rt","full"] }
 
 
 [lints.rust]
