@@ -99,6 +99,42 @@ services:
       - frontend_network
     restart: unless-stopped
 
+  scheduler:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile.scheduler
+    container_name: rune-scheduler
+    env_file:
+      - .env
+    environment:
+      # Database Settings
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-rune}:${POSTGRES_PASSWORD:-rune_password}@postgres:5432/${POSTGRES_DB:-rune_db}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-rune}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rune_db}
+      # RabbitMQ Settings
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-rune}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rune_password}
+      RABBITMQ_QUEUE_NAME: workflow.execution
+      # Scheduler Settings
+      SCHEDULER_POLL_INTERVAL: ${SCHEDULER_POLL_INTERVAL:-30}
+      SCHEDULER_LOOK_AHEAD_SECONDS: ${SCHEDULER_LOOK_AHEAD_SECONDS:-60}
+      # Encryption Key
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend_network
+    restart: unless-stopped
+
   worker:
     build:
       context: ./services/rune-worker

@@ -21,6 +21,7 @@ from src.users.routers import admin_router, profile_router
 from src.credentials.router import router as credentials_router
 from src.scryb.router import router as scryb_router
 from src.smith.router import router as smith_router
+from src.scheduler.router import router as scheduler_router
 
 # Get settings
 settings = get_settings()
@@ -67,3 +68,4 @@ app.include_router(profile_router)
 app.include_router(credentials_router)
 app.include_router(scryb_router)
 app.include_router(smith_router)
+app.include_router(scheduler_router)

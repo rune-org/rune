@@ -1,8 +1,14 @@
 import copy
 from sqlmodel import select, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from src.db.models import Workflow, WorkflowUser, WorkflowRole, WorkflowCredential
+from src.db.models import (
+    Workflow,
+    WorkflowUser,
+    WorkflowRole,
+    WorkflowCredential,
+)
 from src.core.exceptions import NotFound, Forbidden
 from src.credentials.encryption import get_encryptor
 
@@ -18,8 +24,14 @@ class WorkflowService:
         self.db = db
         self.encryptor = get_encryptor()
 
-    async def list_for_user(self, user_id: int) -> list[Workflow]:
+    async def list_for_user(
+        self, user_id: int, include_schedule: bool = False
+    ) -> list[Workflow]:
         """Return workflows owned by `user_id`, newest first.
+
+        Args:
+            user_id: The user ID to filter by
+            include_schedule: If True, eagerly load schedule information via LEFT JOIN
 
         Used for the `GET /workflows` endpoint.
         """
@@ -30,6 +42,13 @@ class WorkflowService:
             .where(WorkflowUser.user_id == user_id)
             .order_by(Workflow.created_at.desc())
         )
+
+        # If include_schedule requested, add LEFT JOIN to get schedule info
+        if include_schedule:
+            # Use selectinload to eagerly load the schedule relationship
+            # This prevents N+1 queries when accessing workflow.schedule
+            statement = statement.options(selectinload(Workflow.schedule))
+
         result = await self.db.exec(statement)
         return result.all()
 
@@ -97,17 +116,6 @@ class WorkflowService:
         Caller is responsible for authorization. Returns the refreshed model.
         """
         workflow.name = name
-        await self.db.commit()
-        await self.db.refresh(workflow)
-        return workflow
-
-    async def update_status(self, workflow: Workflow, is_active: bool) -> Workflow:
-        """Set workflow active/inactive and persist.
-
-        This is intentionally simple — additional side-effects (e.g. scheduled
-        jobs) should be implemented at a higher layer if needed.
-        """
-        workflow.is_active = is_active
         await self.db.commit()
         await self.db.refresh(workflow)
         return workflow

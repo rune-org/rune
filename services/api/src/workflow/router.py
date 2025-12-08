@@ -1,13 +1,13 @@
 import uuid
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
 
 from src.workflow.schemas import (
     WorkflowListItem,
     WorkflowCreate,
     WorkflowDetail,
     WorkflowUpdateName,
-    WorkflowUpdateStatus,
     WorkflowUpdateData,
+    ScheduleInfo,
 )
 from src.workflow.service import WorkflowService
 from src.core.dependencies import (
@@ -43,13 +43,35 @@ def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
 
 @router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
 async def list_workflows(
+    include_schedule: bool = Query(
+        default=False,
+        description="Include schedule information for scheduled workflows",
+    ),
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
-    wfs = await service.list_for_user(current_user.id)
-    items = [
-        WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active) for wf in wfs
-    ]
+    """
+    List all workflows accessible by the current user.
+
+    Use `include_schedule=true` to get schedule information in a single query.
+    This is more efficient than fetching schedules separately for each workflow.
+    """
+    wfs = await service.list_for_user(
+        current_user.id, include_schedule=include_schedule
+    )
+
+    items = []
+    for wf in wfs:
+        # Build schedule info if loaded
+        schedule_info = None
+        if include_schedule and wf.schedule:
+            schedule_info = ScheduleInfo.model_validate(wf.schedule)
+
+        item = WorkflowListItem(
+            id=wf.id, name=wf.name, trigger_type=wf.trigger_type, schedule=schedule_info
+        )
+        items.append(item)
+
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
 
 
@@ -85,23 +107,6 @@ async def create_workflow(
     detail = WorkflowDetail.model_validate(wf)
 
     return ApiResponse(success=True, message="Workflow created", data=detail)
-
-
-@router.put("/{workflow_id}/status", response_model=ApiResponse[WorkflowDetail])
-@require_workflow_permission("edit")
-async def update_status(
-    payload: WorkflowUpdateStatus,
-    workflow: Workflow = Depends(get_workflow_with_permission),
-    service: WorkflowService = Depends(get_workflow_service),
-) -> ApiResponse[WorkflowDetail]:
-    """
-    Update workflow status (active/inactive).
-
-    **Requires:** EDIT permission (OWNER or EDITOR)
-    """
-    wf = await service.update_status(workflow, payload.is_active)
-    detail = WorkflowDetail.model_validate(wf)
-    return ApiResponse(success=True, message="Workflow status updated", data=detail)
 
 
 @router.put("/{workflow_id}/name", response_model=ApiResponse[WorkflowDetail])

@@ -32,6 +32,18 @@ class CredentialType(str, Enum):
     SMTP = "smtp"
 
 
+class TriggerType(str, Enum):
+    """Workflow automatic trigger type enumeration.
+
+    Note: ALL workflows can be manually run via API/UI.
+    This enum only tracks AUTOMATIC trigger types.
+    If trigger_type is NULL, workflow has no automatic triggers.
+    """
+
+    SCHEDULED = "scheduled"  # Triggered by scheduler at intervals
+    WEBHOOK = "webhook"  # Triggered by incoming webhook
+
+
 class TimestampModel(SQLModel):
     """Base model with created_at and updated_at timestamps."""
 
@@ -110,13 +122,32 @@ class Workflow(TimestampModel, table=True):
         sa_type=JSONB,
     )
 
-    is_active: bool = Field(default=False)
     version: int = Field(default=1)
+
+    # Automatic trigger type (NULL = manual-only workflow)
+    # ALL workflows can be manually run regardless of this field
+    # This field only indicates if workflow has AUTOMATIC triggers configured
+    trigger_type: Optional[TriggerType] = Field(
+        default=None,
+        sa_column=Column(
+            SQLAlchemyEnum(TriggerType, native_enum=False),
+            nullable=True,
+        ),
+        description="Automatic trigger type (scheduled/webhook/event). NULL = manual-only",
+    )
 
     workflow_users: list["WorkflowUser"] = Relationship(back_populates="workflow")
     credentials: list["WorkflowCredential"] = Relationship(
         back_populates="used_in_workflows",
         link_model=WorkflowCredentialLink,
+    )
+    # One-to-one relationship with schedule (nullable - only exists for scheduled workflows)
+    schedule: Optional["ScheduledWorkflow"] = Relationship(
+        back_populates="workflow",
+        sa_relationship_kwargs={
+            "uselist": False,
+            "lazy": "noload",
+        },  # Don't load by default
     )
 
 
@@ -269,3 +300,53 @@ class WorkflowCredential(TimestampModel, table=True):
         back_populates="credential",
         cascade_delete=True,
     )
+
+
+class ScheduledWorkflow(TimestampModel, table=True):
+    """
+    Tracks scheduled workflow executions.
+    Allows workflows to be triggered automatically at specified intervals.
+    """
+
+    __tablename__ = "scheduled_workflows"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workflow_id: int = Field(
+        foreign_key="workflows.id",
+        ondelete="CASCADE",
+        description="The workflow to execute on schedule",
+    )
+    is_active: bool = Field(
+        default=True,
+        description="Whether this schedule is currently active",
+    )
+    interval_seconds: int = Field(
+        gt=0,
+        description="Interval in seconds between executions (e.g., 300 for 5 minutes, 3600 for 1 hour)",
+    )
+    start_at: datetime = Field(
+        default_factory=datetime.now,
+        description="When this schedule should start (first execution time)",
+    )
+    next_run_at: datetime = Field(
+        description="When the next execution is scheduled",
+    )
+    last_run_at: Optional[datetime] = Field(
+        default=None,
+        description="When the last execution occurred",
+    )
+    run_count: int = Field(
+        default=0,
+        description="Total number of times this schedule has been executed",
+    )
+    failure_count: int = Field(
+        default=0,
+        description="Number of consecutive failures",
+    )
+    last_error: Optional[str] = Field(
+        default=None,
+        description="Last error message if execution failed",
+    )
+
+    # Relationships
+    workflow: Workflow = Relationship(back_populates="schedule")

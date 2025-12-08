@@ -48,7 +48,6 @@ async def sample_workflow(test_db, test_user):
             ],
             "edges": [{"id": "edge-1", "src": "node-1", "dst": "node-2"}],
         },
-        is_active=False,
         version=1,
     )
     test_db.add(workflow)
