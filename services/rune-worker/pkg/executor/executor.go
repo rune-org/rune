@@ -174,7 +174,9 @@ func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, nod
 
 	// Set credentials if present (already resolved by master)
 	if node.Credentials != nil && node.Credentials.Values != nil {
-		execCtx.SetCredentials(node.Credentials.Values)
+		creds := node.Credentials.Values
+		creds["type"] = node.Credentials.Type
+		execCtx.SetCredentials(creds)
 	}
 
 	return execCtx, usedKeys

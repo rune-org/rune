@@ -744,7 +744,7 @@ export type CredentialShareInfo = {
  *
  * Credential type enumeration.
  */
-export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'token' | 'custom' | 'smtp';
+export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'token' | 'custom' | 'smtp' | 'header';
 
 /**
  * CredentialUpdate
