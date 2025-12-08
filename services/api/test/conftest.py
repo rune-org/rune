@@ -206,9 +206,9 @@ async def authenticated_client(client: AsyncClient, test_user) -> AsyncClient:
     response = await client.post(
         "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
     )
-    assert (
-        response.status_code == 200
-    ), f"Login failed: {response.status_code} {response.text}"
+    assert response.status_code == 200, (
+        f"Login failed: {response.status_code} {response.text}"
+    )
 
     # Cookies are automatically stored in the client
     return client
@@ -225,9 +225,9 @@ async def admin_client(client: AsyncClient, test_admin) -> AsyncClient:
         "/auth/login",
         json={"email": "admin@example.com", "password": "adminpassword123"},
     )
-    assert (
-        response.status_code == 200
-    ), f"Admin login failed: {response.status_code} {response.text}"
+    assert response.status_code == 200, (
+        f"Admin login failed: {response.status_code} {response.text}"
+    )
 
     # Cookies are automatically stored in the client
     return client

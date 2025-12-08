@@ -237,9 +237,9 @@ async def test_update_profile_timestamps_updated(authenticated_client):
     new_created_at = datetime.fromisoformat(new_data["created_at"])
 
     # Verify updated_at changed (is greater than or equal, but should be greater due to update)
-    assert (
-        new_updated_at > initial_updated_at
-    ), f"New timestamp {new_updated_at} should be > old {initial_updated_at}"
+    assert new_updated_at > initial_updated_at, (
+        f"New timestamp {new_updated_at} should be > old {initial_updated_at}"
+    )
 
     # created_at should not change
     assert new_created_at == initial_created_at
