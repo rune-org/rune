@@ -1,0 +1,27 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+
+exporters:
+  otlphttp/openobserve:
+    endpoint: "http://openobserve:5080/api/default/v1/traces"
+    headers:
+      Authorization: "Basic YWRtaW5AZXhhbXBsZS5jb206cGFzc3dvcmQ=" # admin@example.com:password
+  logging:
+    loglevel: debug
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/openobserve, logging]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/openobserve, logging]
