@@ -24,6 +24,7 @@ type 	NodeExecutionMessage struct {
 	AccumulatedContext map[string]interface{} `json:"accumulated_context"`     // Context with $<node_name> keys
 	LineageStack       []StackFrame           `json:"lineage_stack,omitempty"` // Stack of split contexts
 	FromNode           string                 `json:"from_node,omitempty"`     // Parent node that produced this message
+	IsWorkerInitiated bool `json:"is_worker_initiated,omitempty"`
 }
 
 // StackFrame represents a single level of split execution context.

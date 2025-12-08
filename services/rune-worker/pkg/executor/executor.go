@@ -431,6 +431,7 @@ func (e *Executor) handleSplitFanOut(ctx context.Context, msg *messages.NodeExec
 				AccumulatedContext: itemContext,
 				LineageStack:       newStack,
 				FromNode:           node.ID,
+				IsWorkerInitiated:  true,
 			}
 
 			payload, err := nextMsg.Encode()
@@ -609,6 +610,7 @@ func (e *Executor) publishNextNodes(ctx context.Context, msg *messages.NodeExecu
 			AccumulatedContext: updatedContext,
 			LineageStack:       msg.LineageStack, // Propagate stack
 			FromNode:           msg.CurrentNode,
+			IsWorkerInitiated:  true,
 		}
 
 		payload, err := nextMsg.Encode()
