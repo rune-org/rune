@@ -80,33 +80,33 @@ func (e *Executor) Execute(ctx context.Context, msg *messages.NodeExecutionMessa
 	usedInputs := e.filterUsedInputs(execContext.Input, usedKeys)
 
 	// Step 4: Publish "running" status
-	if err := e.publishRunningStatus(ctx, msg, &node, execContext.Input, execContext.Parameters, usedKeys, usedInputs); err != nil {
+	if err := e.publishRunningStatus(ctx, msg, &node, execContext.Parameters, usedKeys, usedInputs); err != nil {
 		slog.Error("failed to publish running status", "error", err)
 		// Continue execution even if status publish fails
 	}
 
 	nodeInstance, err := e.registry.Create(node.Type, execContext)
 	if err != nil {
-		return e.handleNodeCreationFailure(ctx, msg, &node, err, startTime, execContext.Input, execContext.Parameters, usedKeys, usedInputs)
+		return e.handleNodeCreationFailure(ctx, msg, &node, err, startTime, execContext.Parameters, usedKeys, usedInputs)
 	}
 
 	output, execErr := nodeInstance.Execute(ctx, execContext)
 	duration := time.Since(startTime)
 
 	if execErr != nil {
-		return e.handleNodeFailure(ctx, msg, &node, execErr, duration, execContext.Input, execContext.Parameters, usedKeys, usedInputs)
+		return e.handleNodeFailure(ctx, msg, &node, execErr, duration, execContext.Parameters, usedKeys, usedInputs)
 	}
 
 	if node.Type == "wait" {
-		return e.handleWaitNode(ctx, msg, &node, output, duration, execContext.Input, execContext.Parameters, usedKeys, usedInputs)
+		return e.handleWaitNode(ctx, msg, &node, output, duration, execContext.Parameters, usedKeys, usedInputs)
 	}
 
 	// Step 7 & 8: Handle execution result
-	return e.handleNodeSuccess(ctx, msg, &node, output, duration, startTime, execContext.Input, execContext.Parameters, usedKeys, usedInputs)
+	return e.handleNodeSuccess(ctx, msg, &node, output, duration, startTime, execContext.Parameters, usedKeys, usedInputs)
 }
 
 // handleWaitNode publishes a waiting status and stops further execution for this branch.
-func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, input map[string]any, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
+func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
 	statusMsg := &messages.NodeStatusMessage{
 		WorkflowID:       msg.WorkflowID,
 		ExecutionID:      msg.ExecutionID,
@@ -196,7 +196,7 @@ func (e *Executor) filterUsedInputs(input map[string]any, usedKeys []string) map
 }
 
 // publishRunningStatus publishes a "running" status message.
-func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, input map[string]any, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
+func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
 	statusMsg := &messages.NodeStatusMessage{
 		WorkflowID:       msg.WorkflowID,
 		ExecutionID:      msg.ExecutionID,
@@ -216,7 +216,7 @@ func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeE
 }
 
 // handleNodeCreationFailure handles the case when a node cannot be created from the registry.
-func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, err error, startTime time.Time, input map[string]any, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
+func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, err error, startTime time.Time, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
 	duration := time.Since(startTime)
 	slog.Error("failed to create node", "error", err, "node_type", node.Type)
 
@@ -247,7 +247,7 @@ func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.
 }
 
 // handleNodeFailure processes a node execution failure according to error handling strategy.
-func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, execErr error, duration time.Duration, input map[string]any, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
+func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, execErr error, duration time.Duration, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
 	slog.Error("node execution failed",
 		"error", execErr,
 		"node_id", node.ID,
@@ -309,7 +309,7 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 }
 
 // handleNodeSuccess processes a successful node execution.
-func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, startTime time.Time, input map[string]any, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
+func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, startTime time.Time, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
 	slog.Info("node execution succeeded",
 		"node_id", node.ID,
 		"node_name", node.Name,
