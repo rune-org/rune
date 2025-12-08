@@ -174,7 +174,7 @@ pub(crate) async fn start_status_consumer(
                             })
                             .await;
                     } else {
-                        let _ = state.tx.send(WorkerMessage::NodeStatus(status));
+                        let _ = state.tx.send(WorkerMessage::NodeStatus(Box::new(status)));
                         let _ = delivery.ack(BasicAckOptions::default()).await;
                     }
                 },
@@ -250,7 +250,7 @@ pub(crate) async fn start_completion_consumer(
                             })
                             .await;
                     } else {
-                        let _ = state.tx.send(WorkerMessage::WorkflowCompletion(result));
+                        let _ = state.tx.send(WorkerMessage::WorkflowCompletion(Box::new(result)));
                         let _ = delivery.ack(BasicAckOptions::default()).await;
                     }
                 },
@@ -318,7 +318,7 @@ pub(crate) async fn start_execution_consumer(
             match serde_json::from_slice::<NodeExecutionMessage>(&delivery.data) {
                 Ok(msg) => {
                     // We don't save execution messages to DB, just forward to WS
-                    let _ = state.tx.send(WorkerMessage::NodeExecution(msg));
+                    let _ = state.tx.send(WorkerMessage::NodeExecution(Box::new(msg)));
                     let _ = delivery.ack(BasicAckOptions::default()).await;
                 },
                 Err(e) => {

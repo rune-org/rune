@@ -61,7 +61,7 @@ pub(crate) struct NodeExecutionMessage {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type")]
 pub(crate) enum WorkerMessage {
-    NodeStatus(NodeStatusMessage),
-    WorkflowCompletion(CompletionMessage),
-    NodeExecution(NodeExecutionMessage),
+    NodeStatus(Box<NodeStatusMessage>),
+    WorkflowCompletion(Box<CompletionMessage>),
+    NodeExecution(Box<NodeExecutionMessage>),
 }
