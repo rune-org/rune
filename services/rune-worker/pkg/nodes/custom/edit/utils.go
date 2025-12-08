@@ -27,6 +27,34 @@ func DeepCopyMap(src map[string]any) (map[string]any, error) {
 	return dst, nil
 }
 
+// GetNested retrieves a value from a map following dot notation.
+func GetNested(obj map[string]any, path string) (any, error) {
+	if obj == nil {
+		return nil, errors.New("source map is nil")
+	}
+	if path == "" {
+		return obj, nil
+	}
+
+	parts := strings.Split(path, ".")
+	var current any = obj
+
+	for i, key := range parts {
+		m, ok := current.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("cannot traverse '%s' on non-object at index %d", key, i)
+		}
+
+		val, exists := m[key]
+		if !exists {
+			return nil, fmt.Errorf("key '%s' not found", key)
+		}
+		current = val
+	}
+
+	return current, nil
+}
+
 // SetNested sets a value on a map following dot notation, creating maps along the path.
 func SetNested(obj map[string]any, path string, value any) error {
 	if obj == nil {
