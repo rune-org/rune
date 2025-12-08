@@ -76,47 +76,49 @@ func (e *Executor) Execute(ctx context.Context, msg *messages.NodeExecutionMessa
 	)
 
 	// Step 5 & 6: Build context and execute node
-	execContext := e.buildExecutionContext(msg, &node)
+	execContext, usedKeys := e.buildExecutionContext(msg, &node)
+	usedInputs := e.filterUsedInputs(execContext.Input, usedKeys)
 
 	// Step 4: Publish "running" status
-	if err := e.publishRunningStatus(ctx, msg, &node, execContext.Input, execContext.Parameters); err != nil {
+	if err := e.publishRunningStatus(ctx, msg, &node, execContext.Input, execContext.Parameters, usedKeys, usedInputs); err != nil {
 		slog.Error("failed to publish running status", "error", err)
 		// Continue execution even if status publish fails
 	}
 
 	nodeInstance, err := e.registry.Create(node.Type, execContext)
 	if err != nil {
-		return e.handleNodeCreationFailure(ctx, msg, &node, err, startTime, execContext.Input, execContext.Parameters)
+		return e.handleNodeCreationFailure(ctx, msg, &node, err, startTime, execContext.Input, execContext.Parameters, usedKeys, usedInputs)
 	}
 
 	output, execErr := nodeInstance.Execute(ctx, execContext)
 	duration := time.Since(startTime)
 
 	if execErr != nil {
-		return e.handleNodeFailure(ctx, msg, &node, execErr, duration, execContext.Input, execContext.Parameters)
+		return e.handleNodeFailure(ctx, msg, &node, execErr, duration, execContext.Input, execContext.Parameters, usedKeys, usedInputs)
 	}
 
 	if node.Type == "wait" {
-		return e.handleWaitNode(ctx, msg, &node, output, duration, execContext.Input, execContext.Parameters)
+		return e.handleWaitNode(ctx, msg, &node, output, duration, execContext.Input, execContext.Parameters, usedKeys, usedInputs)
 	}
 
 	// Step 7 & 8: Handle execution result
-	return e.handleNodeSuccess(ctx, msg, &node, output, duration, startTime, execContext.Input, execContext.Parameters)
+	return e.handleNodeSuccess(ctx, msg, &node, output, duration, startTime, execContext.Input, execContext.Parameters, usedKeys, usedInputs)
 }
 
 // handleWaitNode publishes a waiting status and stops further execution for this branch.
-func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, input map[string]any, params map[string]any) error {
+func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, input map[string]any, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
 	statusMsg := &messages.NodeStatusMessage{
-		WorkflowID:  msg.WorkflowID,
-		ExecutionID: msg.ExecutionID,
-		NodeID:      node.ID,
-		NodeName:    node.Name,
-		Status:      messages.StatusWaiting,
-		Input:       input,
-		Parameters:  params,
-		Output:      output,
-		ExecutedAt:  time.Now(),
-		DurationMs:  duration.Milliseconds(),
+		WorkflowID:       msg.WorkflowID,
+		ExecutionID:      msg.ExecutionID,
+		NodeID:           node.ID,
+		NodeName:         node.Name,
+		Status:           messages.StatusWaiting,
+		Parameters:       params,
+		Output:           output,
+		ExecutedAt:       time.Now(),
+		DurationMs:       duration.Milliseconds(),
+		AllUsedInputKeys: usedKeys,
+		UsedInputs:       usedInputs,
 	}
 
 	e.enrichStatusWithLineage(statusMsg, msg.LineageStack)
@@ -139,13 +141,16 @@ func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecuti
 // buildExecutionContext creates the plugin.ExecutionContext from the message.
 // Credentials are already resolved by the master service and included in the node definition.
 // Parameters are resolved using the resolver to handle dynamic references like $node.field.
-func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, node *core.Node) plugin.ExecutionContext {
+// It also returns the list of input keys used during parameter resolution.
+func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, node *core.Node) (plugin.ExecutionContext, []string) {
 	// Resolve dynamic parameter references before execution
 	resolvedParams := node.Parameters
+	var usedKeys []string
 	if len(node.Parameters) > 0 && msg.AccumulatedContext != nil {
 		r := resolver.NewResolver(msg.AccumulatedContext)
 		if params, err := r.ResolveParameters(node.Parameters); err == nil {
 			resolvedParams = params
+			usedKeys = r.GetUsedKeys()
 		} else {
 			slog.Warn("failed to resolve parameters, using original values",
 				"error", err,
@@ -172,21 +177,37 @@ func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, nod
 		execCtx.SetCredentials(node.Credentials.Values)
 	}
 
-	return execCtx
+	return execCtx, usedKeys
+}
+
+// filterUsedInputs extracts only the input entries that were referenced during parameter resolution.
+func (e *Executor) filterUsedInputs(input map[string]any, usedKeys []string) map[string]any {
+	if len(usedKeys) == 0 || len(input) == 0 {
+		return nil
+	}
+
+	filtered := make(map[string]any)
+	for _, key := range usedKeys {
+		if val, ok := input[key]; ok {
+			filtered[key] = val
+		}
+	}
+	return filtered
 }
 
 // publishRunningStatus publishes a "running" status message.
-func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, input map[string]any, params map[string]any) error {
+func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, input map[string]any, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
 	statusMsg := &messages.NodeStatusMessage{
-		WorkflowID:  msg.WorkflowID,
-		ExecutionID: msg.ExecutionID,
-		NodeID:      node.ID,
-		NodeName:    node.Name,
-		Status:      messages.StatusRunning,
-		Input:       input,
-		Parameters:  params,
-		ExecutedAt:  time.Now(),
-		DurationMs:  0,
+		WorkflowID:       msg.WorkflowID,
+		ExecutionID:      msg.ExecutionID,
+		NodeID:           node.ID,
+		NodeName:         node.Name,
+		Status:           messages.StatusRunning,
+		Parameters:       params,
+		AllUsedInputKeys: usedKeys,
+		UsedInputs:       usedInputs,
+		ExecutedAt:       time.Now(),
+		DurationMs:       0,
 	}
 
 	e.enrichStatusWithLineage(statusMsg, msg.LineageStack)
@@ -195,7 +216,7 @@ func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeE
 }
 
 // handleNodeCreationFailure handles the case when a node cannot be created from the registry.
-func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, err error, startTime time.Time, input map[string]any, params map[string]any) error {
+func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, err error, startTime time.Time, input map[string]any, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
 	duration := time.Since(startTime)
 	slog.Error("failed to create node", "error", err, "node_type", node.Type)
 
@@ -205,15 +226,16 @@ func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.
 		NodeID:      node.ID,
 		NodeName:    node.Name,
 		Status:      messages.StatusFailed,
-		Input:       input,
 		Parameters:  params,
 		Error: &messages.NodeError{
 			Message: fmt.Sprintf("failed to create node of type %s", node.Type),
 			Code:    "NODE_CREATION_FAILED",
 			Details: map[string]interface{}{"error": err.Error()},
 		},
-		ExecutedAt: time.Now(),
-		DurationMs: duration.Milliseconds(),
+		AllUsedInputKeys: usedKeys,
+		UsedInputs:       usedInputs,
+		ExecutedAt:       time.Now(),
+		DurationMs:       duration.Milliseconds(),
 	}
 
 	e.enrichStatusWithLineage(statusMsg, msg.LineageStack)
@@ -225,7 +247,7 @@ func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.
 }
 
 // handleNodeFailure processes a node execution failure according to error handling strategy.
-func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, execErr error, duration time.Duration, input map[string]any, params map[string]any) error {
+func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, execErr error, duration time.Duration, input map[string]any, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
 	slog.Error("node execution failed",
 		"error", execErr,
 		"node_id", node.ID,
@@ -239,14 +261,15 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 		NodeID:      node.ID,
 		NodeName:    node.Name,
 		Status:      messages.StatusFailed,
-		Input:       input,
 		Parameters:  params,
 		Error: &messages.NodeError{
 			Message: execErr.Error(),
 			Code:    "NODE_EXECUTION_FAILED",
 		},
-		ExecutedAt: time.Now(),
-		DurationMs: duration.Milliseconds(),
+		AllUsedInputKeys: usedKeys,
+		UsedInputs:       usedInputs,
+		ExecutedAt:       time.Now(),
+		DurationMs:       duration.Milliseconds(),
 	}
 
 	if err := e.publishStatus(ctx, statusMsg); err != nil {
@@ -286,25 +309,34 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 }
 
 // handleNodeSuccess processes a successful node execution.
-func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, startTime time.Time, input map[string]any, params map[string]any) error {
+func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, output map[string]any, duration time.Duration, startTime time.Time, input map[string]any, params map[string]any, usedKeys []string, usedInputs map[string]any) error {
 	slog.Info("node execution succeeded",
 		"node_id", node.ID,
 		"node_name", node.Name,
 		"duration_ms", duration.Milliseconds(),
 	)
 
+	// Handle Aggregator Barrier early to avoid publishing status for closed barrier branches.
+	if node.Type == "aggregator" {
+		if _, closed := output["_barrier_closed"]; closed {
+			slog.Info("aggregator barrier closed, halting branch", "node_id", node.ID)
+			return nil // Do not publish status, next nodes, or completion
+		}
+	}
+
 	// Publish success status
 	statusMsg := &messages.NodeStatusMessage{
-		WorkflowID:  msg.WorkflowID,
-		ExecutionID: msg.ExecutionID,
-		NodeID:      node.ID,
-		NodeName:    node.Name,
-		Status:      messages.StatusSuccess,
-		Input:       input,
-		Parameters:  params,
-		Output:      output,
-		ExecutedAt:  time.Now(),
-		DurationMs:  duration.Milliseconds(),
+		WorkflowID:       msg.WorkflowID,
+		ExecutionID:      msg.ExecutionID,
+		NodeID:           node.ID,
+		NodeName:         node.Name,
+		Status:           messages.StatusSuccess,
+		Parameters:       params,
+		Output:           output,
+		ExecutedAt:       time.Now(),
+		DurationMs:       duration.Milliseconds(),
+		AllUsedInputKeys: usedKeys,
+		UsedInputs:       usedInputs,
 	}
 
 	e.enrichStatusWithLineage(statusMsg, msg.LineageStack)
@@ -338,14 +370,6 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 	if node.Type == "split" {
 		if items, ok := output["_split_items"].([]any); ok {
 			return e.handleSplitFanOut(ctx, msg, node, nextNodes, items, updatedContext)
-		}
-	}
-
-	// Handle Aggregator Barrier
-	if node.Type == "aggregator" {
-		if _, closed := output["_barrier_closed"]; closed {
-			slog.Info("aggregator barrier closed, halting branch", "node_id", node.ID)
-			return nil // Do not publish next nodes or completion
 		}
 	}
 

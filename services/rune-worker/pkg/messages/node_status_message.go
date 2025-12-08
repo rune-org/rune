@@ -10,24 +10,25 @@ import (
 // This message is published to the workflow.node.status queue for
 // consumption by the master service to provide real-time updates to users.
 type NodeStatusMessage struct {
-	WorkflowID      string                 `json:"workflow_id"`
-	ExecutionID     string                 `json:"execution_id"`
-	NodeID          string                 `json:"node_id"`
-	NodeName        string                 `json:"node_name"`
-	Status          string                 `json:"status"` // "running", "success", "failed"
-	Input           map[string]interface{} `json:"input,omitempty"`
-	Parameters      map[string]interface{} `json:"parameters,omitempty"`
-	Output          map[string]interface{} `json:"output,omitempty"`
-	Error           *NodeError             `json:"error,omitempty"`
-	ExecutedAt      time.Time              `json:"executed_at"`
-	DurationMs      int64                  `json:"duration_ms"`
-	BranchID        string                 `json:"branch_id,omitempty"`
-	LineageStack    []StackFrame           `json:"lineage_stack,omitempty"`
-	SplitNodeID     string                 `json:"split_node_id,omitempty"`
-	ItemIndex       *int                   `json:"item_index,omitempty"`
-	TotalItems      *int                   `json:"total_items,omitempty"`
-	ProcessedCount  *int                   `json:"processed_count,omitempty"`
-	AggregatorState string                 `json:"aggregator_state,omitempty"`
+	WorkflowID       string                 `json:"workflow_id"`
+	ExecutionID      string                 `json:"execution_id"`
+	NodeID           string                 `json:"node_id"`
+	NodeName         string                 `json:"node_name"`
+	Status           string                 `json:"status"` // "running", "success", "failed"
+	Parameters       map[string]interface{} `json:"parameters,omitempty"`
+	Output           map[string]interface{} `json:"output,omitempty"`
+	Error            *NodeError             `json:"error,omitempty"`
+	ExecutedAt       time.Time              `json:"executed_at"`
+	DurationMs       int64                  `json:"duration_ms"`
+	BranchID         string                 `json:"branch_id,omitempty"`
+	LineageStack     []StackFrame           `json:"lineage_stack,omitempty"`
+	SplitNodeID      string                 `json:"split_node_id,omitempty"`
+	ItemIndex        *int                   `json:"item_index,omitempty"`
+	TotalItems       *int                   `json:"total_items,omitempty"`
+	ProcessedCount   *int                   `json:"processed_count,omitempty"`
+	AggregatorState  string                 `json:"aggregator_state,omitempty"`
+	AllUsedInputKeys []string               `json:"all_used_input_keys,omitempty"`
+	UsedInputs       map[string]any         `json:"used_inputs,omitempty"`
 }
 
 // NodeError contains error details when a node execution fails.
