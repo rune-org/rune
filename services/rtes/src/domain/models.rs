@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct ExecutionToken {
-    pub execution_id: Option<String>,
-    pub workflow_id: String,
-    pub iat: i64,
-    pub exp: i64,
-    pub user_id: String,
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub(crate) struct ExecutionToken {
+    pub(crate) execution_id: Option<String>,
+    pub(crate) workflow_id: String,
+    pub(crate) iat: i64,
+    pub(crate) exp: i64,
+    pub(crate) user_id: String,
 }

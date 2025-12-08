@@ -1,45 +1,102 @@
-use opentelemetry::global;
+use opentelemetry::{KeyValue, global, trace::TracerProvider as _};
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::propagation::TraceContextPropagator;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{EnvFilter, Registry};
+use opentelemetry_sdk::{
+    Resource,
+    logs::SdkLoggerProvider,
+    metrics::{PeriodicReader, SdkMeterProvider},
+    propagation::TraceContextPropagator,
+    trace::{self as sdktrace},
+};
+use tracing_subscriber::{EnvFilter, Registry, layer::SubscriberExt, util::SubscriberInitExt};
 
-pub fn init_telemetry(
-    service_name: &str,
+pub(crate) fn init_telemetry(
+    service_name: &'static str,
     endpoint: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<sdktrace::SdkTracerProvider, Box<dyn std::error::Error>> {
+    // 1. Set Propagator
     global::set_text_map_propagator(TraceContextPropagator::new());
 
-    let tracer = init_tracer(service_name, endpoint)?;
-    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    let resource = Resource::builder()
+        .with_attributes(vec![KeyValue::new("service.name", service_name)])
+        .build();
+    // 2. Traces
+    let tracer_provider = init_tracer(endpoint, resource.clone())?;
+    let tracer = tracer_provider.tracer("rtes");
+    
+    // 3. Metrics
+    let meter_provider = init_metrics(endpoint, resource.clone())?;
+    global::set_meter_provider(meter_provider);
+
+    // 4. Logs
+    let logger_provider = init_logs(endpoint, resource)?;
+    let log_layer =
+        opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge::new(&logger_provider);
+
+        // 5. Subscriber Registry
+    let telemetry_layer = tracing_opentelemetry::layer().with_tracer(tracer);
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let fmt_layer = tracing_subscriber::fmt::layer();
 
     Registry::default()
         .with(env_filter)
-        .with(telemetry)
-        .with(tracing_subscriber::fmt::layer())
+        .with(telemetry_layer)
+        .with(log_layer)
+        .with(fmt_layer)
         .init();
 
-    Ok(())
+    Ok(tracer_provider)
 }
 
 fn init_tracer(
-    service_name: &str,
     endpoint: &str,
-) -> Result<opentelemetry_sdk::trace::Tracer, opentelemetry::trace::TraceError> {
-    opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint(endpoint),
-        )
-        .with_trace_config(opentelemetry_sdk::trace::config().with_resource(
-            opentelemetry_sdk::Resource::new(vec![opentelemetry::KeyValue::new(
-                "service.name",
-                service_name.to_string(),
-            )]),
-        ))
-        .install_batch(opentelemetry_sdk::runtime::Tokio)
+    resource: Resource,
+) -> Result<sdktrace::SdkTracerProvider, Box<dyn std::error::Error>> {
+    let exporter = opentelemetry_otlp::SpanExporter::builder()
+        .with_http()
+        .with_endpoint(endpoint)
+        .build()?;
+
+    let provider = sdktrace::SdkTracerProvider::builder()
+        .with_batch_exporter(exporter)
+        .with_resource(resource)
+        .build();
+
+    global::set_tracer_provider(provider.clone());
+    Ok(provider)
+}
+
+fn init_metrics(
+    endpoint: &str,
+    resource: Resource,
+) -> Result<SdkMeterProvider, Box<dyn std::error::Error>> {
+    let exporter = opentelemetry_otlp::MetricExporter::builder()
+        .with_http()
+        .with_endpoint(endpoint)
+        .build()?;
+
+    let reader = PeriodicReader::builder(exporter).build();
+
+    let provider = SdkMeterProvider::builder()
+        .with_resource(resource)
+        .with_reader(reader)
+        .build();
+
+    Ok(provider)
+}
+
+fn init_logs(
+    endpoint: &str,
+    resource: Resource,
+) -> Result<SdkLoggerProvider, Box<dyn std::error::Error>> {
+    let exporter = opentelemetry_otlp::LogExporter::builder()
+        .with_http()
+        .with_endpoint(endpoint)
+        .build()?;
+
+    let provider = SdkLoggerProvider::builder()
+        .with_resource(resource)
+        .with_batch_exporter(exporter)
+        .build();
+
+    Ok(provider)
 }

@@ -2,6 +2,12 @@
 name = "rtes"
 version = "0.1.0"
 edition = "2024"
+description = "Rune Token Execution Service"
+license = "MIT"
+repository = "https://github.com/rune-org/rune"
+readme = "README.md"
+keywords = ["rune", "execution", "token"]
+categories = ["web-programming"]
 
 [dependencies]
 # Core Async Runtime 
@@ -27,24 +33,36 @@ futures = "0.3"
 
 # Observability
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-opentelemetry = "0.21"
-opentelemetry-otlp = "0.14"
-opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"] }
-tracing-opentelemetry = "0.22"
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+    "json",
+    "local-time",
+] }
+tracing-opentelemetry = "0.32"
+opentelemetry = "0.31"
+opentelemetry-otlp = { version = "0.31", features = [
+    "tonic",
+    "metrics",
+    "logs",
+] }
+opentelemetry_sdk = { version = "0.31", features = [
+    "rt-tokio",
+    "metrics",
+    "logs",
+] }
+opentelemetry-appender-tracing = "0.31"
 
-# Production-grade lints for Rust 2024 (Rust 1.91+)
 
 [lints.rust]
 unsafe_code = "forbid"
 missing_debug_implementations = "warn"
 missing_docs = "warn"
-rust_2018_idioms = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
 unreachable_pub = "warn"
 unused_must_use = "deny"
 unused_qualifications = "warn"
-future_incompatible = "warn"
-nonstandard_style = "warn"
+future_incompatible = { level = "warn", priority = -1 }
+nonstandard_style = { level = "warn", priority = -1 }
 
 [lints.clippy]
 # Groups
@@ -71,5 +89,5 @@ must_use_candidate = "allow"
 doc_markdown = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
-multiple_crate_versions = "allow" # Common in large dependency trees
-
+multiple_crate_versions = "allow"
+redundant_pub_crate = "allow"

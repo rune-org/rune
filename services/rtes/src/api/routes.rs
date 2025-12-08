@@ -1,6 +1,6 @@
 use axum::Router;
 
-pub fn app() -> Router {
+pub(crate) fn app() -> Router {
     Router::new()
         // .merge(ws::routes())
         // .merge(handlers::routes())

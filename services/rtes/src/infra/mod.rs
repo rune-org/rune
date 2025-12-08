@@ -1,3 +1,3 @@
-pub mod storage;
-pub mod messaging;
-pub mod telemetry;
+pub(crate) mod storage;
+pub(crate) mod messaging;
+pub(crate) mod telemetry;

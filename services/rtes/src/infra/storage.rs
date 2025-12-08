@@ -3,20 +3,20 @@ use redis::{AsyncCommands, Client, RedisResult};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone)]
-pub struct TokenStore {
+pub(crate) struct TokenStore {
     client: Client,
 }
 
 impl TokenStore {
-    pub fn new(client: Client) -> Self {
+    pub(crate) const fn new(client: Client) -> Self {
         Self { client }
     }
 
     fn get_key(user_id: &str) -> String {
-        format!("user_id_{}", user_id)
+        format!("user_id_{user_id}")
     }
 
-    pub async fn add_token(&self, token: &ExecutionToken) -> RedisResult<()> {
+    pub(crate) async fn add_token(&self, token: &ExecutionToken) -> RedisResult<()> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
         let key = Self::get_key(&token.user_id);
         let member = serde_json::to_string(token).map_err(|e| {
@@ -29,7 +29,8 @@ impl TokenStore {
     }
 
     #[allow(dead_code)]
-    pub async fn validate_access(
+    #[allow(clippy::collapsible_if)]
+    pub(crate) async fn validate_access(
         &self,
         user_id: &str,
         target_execution_id: Option<&str>,
@@ -54,6 +55,7 @@ impl TokenStore {
     }
 
     #[allow(dead_code)]
+    #[allow(clippy::cast_possible_wrap)]
     async fn remove_expired_tokens(
         &self,
         conn: &mut redis::aio::MultiplexedConnection,
@@ -77,6 +79,7 @@ impl TokenStore {
     }
 
     #[allow(dead_code)]
+    #[allow(clippy::unused_self)]
     fn check_token_permissions(
         &self,
         token: &ExecutionToken,
@@ -89,8 +92,7 @@ impl TokenStore {
 
         match (target_execution_id, &token.execution_id) {
             (Some(req_eid), Some(tok_eid)) => req_eid == tok_eid,
-            (Some(_), None) => true,
-            (None, None) => true,
+            (Some(_) | None, None) => true,
             (None, Some(_)) => false,
         }
     }

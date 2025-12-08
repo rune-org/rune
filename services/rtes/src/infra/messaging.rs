@@ -1,10 +1,10 @@
 use crate::domain::models::ExecutionToken;
 use crate::infra::storage::TokenStore;
 use futures::StreamExt;
-use lapin::{Connection, ConnectionProperties, options::*, types::FieldTable};
+use lapin::{options::{BasicAckOptions, BasicConsumeOptions, QueueDeclareOptions}, types::FieldTable, Connection, ConnectionProperties};
 use tracing::{error, info};
 
-pub async fn start_consumer(
+pub(crate) async fn start_consumer(
     amqp_addr: &str,
     token_store: TokenStore,
 ) -> Result<(), Box<dyn std::error::Error>> {

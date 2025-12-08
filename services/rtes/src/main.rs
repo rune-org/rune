@@ -1,15 +1,20 @@
+//! RTES - Rune Token Execution Service
+//!
+//! This service handles execution tokens and real-time events.
+
 mod api;
 mod domain;
 mod infra;
 
 use std::env;
+
 use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (redis_url, amqp_url, otel_endpoint) = load_config();
 
-    infra::telemetry::init_telemetry("rtes", &otel_endpoint)?;
+    let tracer_provider = infra::telemetry::init_telemetry("rtes", &otel_endpoint)?;
 
     info!("Starting RTES service...");
 
@@ -19,6 +24,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     spawn_consumer(amqp_url, token_store.clone());
 
     start_server().await?;
+
+    let _ = tracer_provider.shutdown();
+    info!("RTES service stopped");
 
     Ok(())
 }

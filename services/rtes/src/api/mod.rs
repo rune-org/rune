@@ -1,3 +1,3 @@
-pub mod routes;
-pub mod handlers;
-pub mod ws;
+pub(crate) mod routes;
+pub(crate) mod handlers;
+pub(crate) mod ws;
