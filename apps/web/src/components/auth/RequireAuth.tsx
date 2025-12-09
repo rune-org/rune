@@ -3,6 +3,7 @@
 import { useEffect, useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { AuthContext } from "@/lib/auth";
+import type { UserResponse } from "@/client/types.gen";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const ctx = useContext(AuthContext);
@@ -31,6 +32,16 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     }
   }, [ctx, router, pathname]);
 
+  // Redirect to change password page if user must change their password
+  useEffect(() => {
+    if (!ctx || ctx.state.loading || !ctx.state.user) return;
+
+    const user = ctx.state.user as UserResponse;
+    if (user.must_change_password) {
+      router.replace("/change-password");
+    }
+  }, [ctx, router]);
+
   if (!ctx || ctx.state.loading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
@@ -41,6 +52,16 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 
   if (!ctx.state.user) {
     return null;
+  }
+
+  // Block rendering if user must change password (will redirect)
+  const user = ctx.state.user as UserResponse;
+  if (user.must_change_password) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
+        Everything is temporary.. even your password.
+      </div>
+    );
   }
 
   return <>{children}</>;

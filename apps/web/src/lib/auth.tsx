@@ -38,6 +38,7 @@ type AuthContextValue = {
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   initialize: () => Promise<void>;
+  refetchProfile: () => Promise<boolean>;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -247,8 +248,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       refresh,
       initialize,
+      refetchProfile: fetchProfile,
     }),
-    [state, login, signUp, logout, refresh, initialize],
+    [state, login, signUp, logout, refresh, initialize, fetchProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
