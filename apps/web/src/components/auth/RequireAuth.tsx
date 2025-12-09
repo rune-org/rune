@@ -40,7 +40,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     if (user.must_change_password) {
       router.replace("/change-password");
     }
-  }, [ctx, router]);
+  }, [ctx, ctx?.state.user, router]);
 
   if (!ctx || ctx.state.loading) {
     return (
