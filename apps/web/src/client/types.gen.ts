@@ -969,6 +969,46 @@ export type RefreshRequest = {
 };
 
 /**
+ * ScheduleInfo
+ *
+ * Minimal schedule info for workflow list and detail views.
+ */
+export type ScheduleInfo = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Interval Seconds
+     */
+    interval_seconds: number;
+    /**
+     * Next Run At
+     */
+    next_run_at: string;
+    /**
+     * Last Run At
+     */
+    last_run_at: string | null;
+    /**
+     * Is Active
+     */
+    is_active: boolean;
+    /**
+     * Run Count
+     */
+    run_count: number;
+    /**
+     * Failure Count
+     */
+    failure_count: number;
+    /**
+     * Last Error
+     */
+    last_error: string | null;
+};
+
+/**
  * SmithMessage
  *
  * Single chat turn used to seed Smith with prior context.
@@ -1141,6 +1181,17 @@ export type TokenResponse = {
 };
 
 /**
+ * TriggerType
+ *
+ * Workflow automatic trigger type enumeration.
+ *
+ * Note: ALL workflows can be manually run via API/UI.
+ * This enum only tracks AUTOMATIC trigger types.
+ * If trigger_type is NULL, workflow has no automatic triggers.
+ */
+export type TriggerType = 'scheduled' | 'webhook';
+
+/**
  * UserCreate
  */
 export type UserCreate = {
@@ -1303,10 +1354,6 @@ export type WorkflowDetail = {
      */
     description: string | null;
     /**
-     * Is Active
-     */
-    is_active: boolean;
-    /**
      * Workflow Data
      */
     workflow_data: {
@@ -1316,6 +1363,7 @@ export type WorkflowDetail = {
      * Version
      */
     version: number;
+    trigger_type: TriggerType | null;
     /**
      * Created At
      */
@@ -1348,10 +1396,8 @@ export type WorkflowListItem = {
      * Name
      */
     name: string;
-    /**
-     * Is Active
-     */
-    is_active: boolean;
+    trigger_type?: TriggerType | null;
+    schedule?: ScheduleInfo | null;
 };
 
 /**
@@ -1476,16 +1522,6 @@ export type WorkflowUpdateName = {
     name: string;
 };
 
-/**
- * WorkflowUpdateStatus
- */
-export type WorkflowUpdateStatus = {
-    /**
-     * Is Active
-     */
-    is_active: boolean;
-};
-
 export type LoginAuthLoginPostData = {
     body: LoginRequest;
     path?: never;
@@ -1596,9 +1632,25 @@ export type FirstAdminSignupAuthFirstAdminSignupPostResponse = FirstAdminSignupA
 export type ListWorkflowsWorkflowsGetData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Include Schedule
+         *
+         * Include schedule information for scheduled workflows
+         */
+        include_schedule?: boolean;
+    };
     url: '/workflows/';
 };
+
+export type ListWorkflowsWorkflowsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListWorkflowsWorkflowsGetError = ListWorkflowsWorkflowsGetErrors[keyof ListWorkflowsWorkflowsGetErrors];
 
 export type ListWorkflowsWorkflowsGetResponses = {
     /**
@@ -1693,36 +1745,6 @@ export type GetWorkflowWorkflowsWorkflowIdGetResponses = {
 };
 
 export type GetWorkflowWorkflowsWorkflowIdGetResponse = GetWorkflowWorkflowsWorkflowIdGetResponses[keyof GetWorkflowWorkflowsWorkflowIdGetResponses];
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutData = {
-    body: WorkflowUpdateStatus;
-    path: {
-        /**
-         * Workflow Id
-         */
-        workflow_id: number;
-    };
-    query?: never;
-    url: '/workflows/{workflow_id}/status';
-};
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutError = UpdateStatusWorkflowsWorkflowIdStatusPutErrors[keyof UpdateStatusWorkflowsWorkflowIdStatusPutErrors];
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutResponses = {
-    /**
-     * Successful Response
-     */
-    200: ApiResponseWorkflowDetail;
-};
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutResponse = UpdateStatusWorkflowsWorkflowIdStatusPutResponses[keyof UpdateStatusWorkflowsWorkflowIdStatusPutResponses];
 
 export type UpdateNameWorkflowsWorkflowIdNamePutData = {
     body: WorkflowUpdateName;

@@ -119,7 +119,23 @@ paths:
       tags:
       - Workflows
       summary: List Workflows
+      description: 'List all workflows accessible by the current user.
+
+
+        Use `include_schedule=true` to get schedule information in a single query.
+
+        This is more efficient than fetching schedules separately for each workflow.'
       operationId: list_workflows_workflows__get
+      parameters:
+      - name: include_schedule
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Include schedule information for scheduled workflows
+          default: false
+          title: Include Schedule
+        description: Include schedule information for scheduled workflows
       responses:
         '200':
           description: Successful Response
@@ -127,17 +143,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_WorkflowListItem__'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
     post:
       tags:
       - Workflows
       summary: Create Workflow
+      description: 'Create a new workflow.
+
+
+        Automatically detects trigger type from workflow_data:
+
+        - If workflow contains schedule configuration in trigger node, creates schedule
+        automatically
+
+        - If workflow contains webhook configuration, sets up webhook trigger
+
+        - Otherwise, workflow is manual-only'
       operationId: create_workflow_workflows__post
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/WorkflowCreate'
-        required: true
       responses:
         '201':
           description: Successful Response
@@ -188,7 +221,10 @@ paths:
       description: 'Delete a workflow.
 
 
-        **Requires:** DELETE permission (OWNER only)'
+        **Requires:** DELETE permission (OWNER only)
+
+
+        Automatically deletes associated schedule if it exists.'
       operationId: delete_workflow_workflows__workflow_id__delete
       parameters:
       - name: workflow_id
@@ -200,42 +236,6 @@ paths:
       responses:
         '204':
           description: Successful Response
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/{workflow_id}/status:
-    put:
-      tags:
-      - Workflows
-      summary: Update Status
-      description: 'Update workflow status (active/inactive).
-
-
-        **Requires:** EDIT permission (OWNER or EDITOR)'
-      operationId: update_status_workflows__workflow_id__status_put
-      parameters:
-      - name: workflow_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          title: Workflow Id
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WorkflowUpdateStatus'
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_WorkflowDetail_'
         '422':
           description: Validation Error
           content:
@@ -286,7 +286,16 @@ paths:
       description: 'Update workflow data/definition.
 
 
-        **Requires:** EDIT permission (OWNER or EDITOR)'
+        **Requires:** EDIT permission (OWNER or EDITOR)
+
+
+        Automatically manages schedule based on workflow_data:
+
+        - Creates schedule if workflow_data contains schedule configuration
+
+        - Updates existing schedule if configuration changed
+
+        - Deletes schedule if schedule configuration removed'
       operationId: update_workflow_data_workflows__workflow_id__data_put
       parameters:
       - name: workflow_id
@@ -2203,6 +2212,50 @@ components:
       required:
       - refresh_token
       title: RefreshRequest
+    ScheduleInfo:
+      properties:
+        id:
+          type: integer
+          title: Id
+        interval_seconds:
+          type: integer
+          title: Interval Seconds
+        next_run_at:
+          type: string
+          format: date-time
+          title: Next Run At
+        last_run_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Run At
+        is_active:
+          type: boolean
+          title: Is Active
+        run_count:
+          type: integer
+          title: Run Count
+        failure_count:
+          type: integer
+          title: Failure Count
+        last_error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Error
+      type: object
+      required:
+      - id
+      - interval_seconds
+      - next_run_at
+      - last_run_at
+      - is_active
+      - run_count
+      - failure_count
+      - last_error
+      title: ScheduleInfo
+      description: Minimal schedule info for workflow list and detail views.
     SmithMessage:
       properties:
         role:
@@ -2365,6 +2418,20 @@ components:
       - refresh_token
       - expires_in
       title: TokenResponse
+    TriggerType:
+      type: string
+      enum:
+      - scheduled
+      - webhook
+      title: TriggerType
+      description: 'Workflow automatic trigger type enumeration.
+
+
+        Note: ALL workflows can be manually run via API/UI.
+
+        This enum only tracks AUTOMATIC trigger types.
+
+        If trigger_type is NULL, workflow has no automatic triggers.'
     UserCreate:
       properties:
         name:
@@ -2526,9 +2593,6 @@ components:
           - type: string
           - type: 'null'
           title: Description
-        is_active:
-          type: boolean
-          title: Is Active
         workflow_data:
           additionalProperties: true
           type: object
@@ -2536,6 +2600,10 @@ components:
         version:
           type: integer
           title: Version
+        trigger_type:
+          anyOf:
+          - $ref: '#/components/schemas/TriggerType'
+          - type: 'null'
         created_at:
           type: string
           format: date-time
@@ -2549,9 +2617,9 @@ components:
       - id
       - name
       - description
-      - is_active
       - workflow_data
       - version
+      - trigger_type
       - created_at
       - updated_at
       title: WorkflowDetail
@@ -2572,14 +2640,18 @@ components:
         name:
           type: string
           title: Name
-        is_active:
-          type: boolean
-          title: Is Active
+        trigger_type:
+          anyOf:
+          - $ref: '#/components/schemas/TriggerType'
+          - type: 'null'
+        schedule:
+          anyOf:
+          - $ref: '#/components/schemas/ScheduleInfo'
+          - type: 'null'
       type: object
       required:
       - id
       - name
-      - is_active
       title: WorkflowListItem
     WorkflowPermissionInfo:
       properties:
@@ -2696,12 +2768,3 @@ components:
       required:
       - name
       title: WorkflowUpdateName
-    WorkflowUpdateStatus:
-      properties:
-        is_active:
-          type: boolean
-          title: Is Active
-      type: object
-      required:
-      - is_active
-      title: WorkflowUpdateStatus
