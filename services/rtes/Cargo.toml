@@ -8,6 +8,10 @@ repository = "https://github.com/rune-org/rune"
 readme = "README.md"
 keywords = ["rune", "execution"]
 
+[lib]
+name = "rtes"
+path = "src/lib.rs"
+
 [dependencies]
 # Core Async Runtime 
 tokio = { version = "1", features = ["full"] }
@@ -26,7 +30,7 @@ mongodb = "3.4"
 redis = { version = "1", features = ["tokio-comp"] }
 
 # Utilities 
-uuid = { version = "1.19", features = ["serde", "v4"] }
+uuid = { version = "1.19", features = ["serde", "v4", "v5", "v7"] }
 chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
 
@@ -52,7 +56,7 @@ opentelemetry_sdk = { version = "0.31", features = [
 opentelemetry-appender-tracing = "0.31"
 dotenvy = "0.15"
 tokio-stream = { version = "0.1.17", features = ["full"] }
-tokio-util = { version = "0.7.17", features = ["rt","full"] }
+tokio-util = { version = "0.7.17", features = ["rt", "full"] }
 
 
 [lints.rust]

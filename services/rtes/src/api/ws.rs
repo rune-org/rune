@@ -14,6 +14,7 @@ use tracing::{error, info, warn};
 use crate::{api::state::AppState, domain::models::WorkerMessage};
 
 #[derive(Deserialize)]
+#[allow(clippy::struct_field_names)]
 pub(crate) struct AuthParams {
     pub(crate) user_id:      String,
     pub(crate) execution_id: String,
@@ -57,10 +58,12 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: AuthParams) {
                 WorkerMessage::NodeExecution(e) => e.execution_id == execution_id,
             };
 
-            if should_send && let Ok(json) = serde_json::to_string(&msg)
-                && sender.send(Message::Text(json.into())).await.is_err() {
-                    break;
-                }
+            if should_send
+                && let Ok(json) = serde_json::to_string(&msg)
+                && sender.send(Message::Text(json.into())).await.is_err()
+            {
+                break;
+            }
         }
     });
 

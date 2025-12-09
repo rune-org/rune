@@ -1,1 +1,3 @@
-pub(crate) mod models;
+#![allow(unreachable_pub)]
+
+pub mod models;

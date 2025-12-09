@@ -14,6 +14,7 @@ pub(crate) fn app(state: AppState) -> Router {
     Router::new()
         .route("/health", get(handlers::health_check))
         .route("/ws", any(ws::ws_handler))
+        .route("/executions/:id", get(handlers::get_execution_hydrated))
         .route("/executions/:id/status", get(handlers::get_execution_status))
         .route("/executions/:id/result", get(handlers::get_execution_result))
         .layer(cors)

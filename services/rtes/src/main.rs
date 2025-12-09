@@ -1,3 +1,5 @@
+#![allow(clippy::cargo_common_metadata)]
+
 //! RTES - Rune Token Execution Service
 //!
 //! This service handles execution tokens and real-time events.
@@ -31,13 +33,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cancel_token_clone = cancel_token.clone();
 
     tokio::spawn(async move {
-        if let Ok(()) = tokio::signal::ctrl_c().await {
+        if matches!(tokio::signal::ctrl_c().await, Ok(())) {
             info!("Shutdown signal received");
             cancel_token_clone.cancel();
         }
     });
 
-    spawn_consumers(&cfg.amqp_url, &state, cancel_token.clone());
+    spawn_consumers(&cfg.amqp_url, &state, &cancel_token);
 
     start_server(state, cancel_token).await?;
 
@@ -47,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn spawn_consumers(amqp_url: &str, state: &api::state::AppState, cancel_token: CancellationToken) {
+fn spawn_consumers(amqp_url: &str, state: &api::state::AppState, cancel_token: &CancellationToken) {
     let url = amqp_url.to_string();
     let token_store = state.token_store.clone();
     let ct = cancel_token.clone();

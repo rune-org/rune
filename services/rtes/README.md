@@ -65,9 +65,23 @@ cargo build --release
 
 ## Architecture
 
-1. **Consumer**: Listens to the `execution.token` queue on RabbitMQ.
-2. **Storage**: Upon receiving a token, it deserializes it and stores it in Redis.
-3. **API**: Exposes HTTP endpoints (and potentially WebSockets) for clients to interact with the execution service.
+1. **Consumers**:
+   - Tokens from `execution.token` → Redis (access control).
+   - Node execution messages from `workflow.worker.initiated` → hydrate the execution document (workflow definition cached/upserted).
+   - Node status messages from `workflow.node.status` → append to event log and hydrate per-node, per-lineage execution data.
+2. **Storage**:
+   - **Redis**: Execution token lookup.
+   - **MongoDB**: `execution_status` (immutable event log) and `executions` (hydrated document keyed by `lineage_hash`).
+3. **API**:
+   - `GET /executions/:id` returns the hydrated execution document (inputs/params/outputs per lineage).
+   - `GET /executions/:id/status` returns the raw status event stream.
+   - `GET /executions/:id/result` returns workflow completion.
+4. **WebSocket**:
+   - `GET /ws?execution_id=...` broadcasts per-node deltas including `lineage_hash`, resolved params, and outputs.
+
+## Operations
+
+- **TTL / Retention**: Configure MongoDB TTL indexes to prevent unbounded growth, e.g. on `executions.updated_at` and `execution_status.executed_at` based on your retention policy.
 
 ## License
 
