@@ -5,8 +5,9 @@ from datetime import datetime, timedelta
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.models import Workflow, WorkflowUser, WorkflowRole
-from src.scheduler.service import ScheduledWorkflowService
+from src.workflow.triggers import ScheduleTriggerService
 from src.workflow.service import WorkflowService
+from src.scheduler.service import ScheduledWorkflowService
 
 
 @pytest.fixture(scope="function")
@@ -16,8 +17,15 @@ async def workflow_service(test_db: AsyncSession) -> WorkflowService:
 
 
 @pytest.fixture(scope="function")
+async def schedule_trigger_service(test_db: AsyncSession) -> ScheduleTriggerService:
+    """Create a ScheduleTriggerService instance for API operations."""
+    return ScheduleTriggerService(db=test_db)
+
+
+# Fixture for daemon/execution tests - uses ScheduledWorkflowService
+@pytest.fixture(scope="function")
 async def scheduled_workflow_service(test_db: AsyncSession) -> ScheduledWorkflowService:
-    """Create a ScheduledWorkflowService instance."""
+    """Create a ScheduledWorkflowService instance for daemon operations."""
     return ScheduledWorkflowService(db=test_db)
 
 
@@ -110,7 +118,7 @@ async def multiple_workflows_with_triggers(
 @pytest.fixture(scope="function")
 async def overdue_workflow_schedule(
     workflow_with_trigger: Workflow,
-    scheduled_workflow_service: ScheduledWorkflowService,
+    scheduled_workflow_service: ScheduleTriggerService,
 ):
     """Create an overdue schedule (already due for execution)."""
     schedule = await scheduled_workflow_service.create_schedule(
@@ -124,7 +132,7 @@ async def overdue_workflow_schedule(
 @pytest.fixture(scope="function")
 async def future_workflow_schedule(
     workflow_with_trigger: Workflow,
-    scheduled_workflow_service: ScheduledWorkflowService,
+    scheduled_workflow_service: ScheduleTriggerService,
 ):
     """Create a schedule scheduled for the future."""
     schedule = await scheduled_workflow_service.create_schedule(

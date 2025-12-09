@@ -1,4 +1,4 @@
-"""Service for managing scheduled workflows."""
+"""Service for managing schedule triggers on workflows."""
 
 import logging
 from datetime import datetime, timedelta
@@ -11,8 +11,8 @@ from src.core.exceptions import NotFound, BadRequest
 logger = logging.getLogger(__name__)
 
 
-class ScheduledWorkflowService:
-    """Service for managing scheduled workflow executions."""
+class ScheduleTriggerService:
+    """Service for managing schedule trigger operations on workflows."""
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -25,7 +25,7 @@ class ScheduledWorkflowService:
         is_active: bool = True,
     ) -> ScheduledWorkflow:
         """
-        Create a new schedule for a workflow.
+        Create a new schedule trigger for a workflow.
 
         Args:
             workflow_id: ID of the workflow to schedule
@@ -35,13 +35,17 @@ class ScheduledWorkflowService:
 
         Returns:
             The created ScheduledWorkflow instance
+
+        Raises:
+            NotFound: If workflow doesn't exist
+            BadRequest: If workflow doesn't have trigger node or schedule already exists
         """
         # Verify workflow exists
         workflow = await self.db.get(Workflow, workflow_id)
         if not workflow:
             raise NotFound(detail="Workflow not found")
 
-        # Validate workflow has a trigger node (entry point for scheduled execution)
+        # Validate workflow has a trigger node
         if not self._has_trigger_node(workflow.workflow_data):
             raise BadRequest(
                 detail="Workflow must have a trigger node to be scheduled. "
@@ -83,42 +87,26 @@ class ScheduledWorkflowService:
         await self.db.refresh(schedule)
 
         logger.info(
-            f"Created schedule for workflow {workflow_id}: every {interval_seconds} seconds, trigger_type updated to SCHEDULED"
+            f"Created schedule trigger for workflow {workflow_id}: every {interval_seconds}s, is_active={is_active}"
         )
 
         return schedule
 
-    async def get_schedule_by_id(self, schedule_id: int) -> ScheduledWorkflow | None:
-        """Get a schedule by ID."""
-        return await self.db.get(ScheduledWorkflow, schedule_id)
+    async def get_schedule(self, workflow_id: int) -> ScheduledWorkflow | None:
+        """
+        Get schedule for a specific workflow.
 
-    async def get_schedule_by_workflow_id(
-        self, workflow_id: int
-    ) -> ScheduledWorkflow | None:
-        """Get schedule for a specific workflow."""
+        Args:
+            workflow_id: ID of the workflow
+
+        Returns:
+            ScheduledWorkflow if exists, None otherwise
+        """
         statement = select(ScheduledWorkflow).where(
             ScheduledWorkflow.workflow_id == workflow_id
         )
         result = await self.db.exec(statement)
         return result.first()
-
-    async def list_all_schedules(self) -> list[ScheduledWorkflow]:
-        """List all schedules."""
-        statement = select(ScheduledWorkflow).order_by(
-            ScheduledWorkflow.next_run_at.asc()
-        )
-        result = await self.db.exec(statement)
-        return result.all()
-
-    async def list_active_schedules(self) -> list[ScheduledWorkflow]:
-        """List all active schedules."""
-        statement = (
-            select(ScheduledWorkflow)
-            .where(ScheduledWorkflow.is_active)
-            .order_by(ScheduledWorkflow.next_run_at.asc())
-        )
-        result = await self.db.exec(statement)
-        return result.all()
 
     async def update_schedule(
         self,
@@ -128,9 +116,16 @@ class ScheduledWorkflowService:
         is_active: bool | None = None,
     ) -> ScheduledWorkflow:
         """
-        Update an existing schedule.
+        Update an existing schedule trigger.
 
-        Note: Can update interval, start_at, and is_active status.
+        Args:
+            schedule: The schedule to update
+            interval_seconds: New interval (optional)
+            start_at: New start time (optional)
+            is_active: New active status (optional)
+
+        Returns:
+            Updated ScheduledWorkflow instance
         """
         recalculate_next_run = False
 
@@ -145,7 +140,7 @@ class ScheduledWorkflowService:
         if is_active is not None:
             schedule.is_active = is_active
 
-        # Recalculate next run time if interval changed
+        # Recalculate next run time if interval or start time changed
         if recalculate_next_run:
             schedule.next_run_at = self._calculate_next_run(
                 datetime.now(), schedule.interval_seconds
@@ -155,16 +150,21 @@ class ScheduledWorkflowService:
         await self.db.refresh(schedule)
 
         logger.info(
-            f"Updated schedule {schedule.id} for workflow {schedule.workflow_id}"
+            f"Updated schedule trigger {schedule.id} for workflow {schedule.workflow_id}"
         )
 
         return schedule
 
     async def delete_schedule(self, schedule: ScheduledWorkflow) -> None:
-        """Delete a schedule and reset workflow trigger_type to None (manual-only)."""
+        """
+        Delete a schedule trigger and reset workflow trigger_type to None.
+
+        Args:
+            schedule: The schedule to delete
+        """
         workflow_id = schedule.workflow_id
 
-        # Get workflow and reset trigger_type to None (no automatic triggers)
+        # Get workflow and reset trigger_type to None (manual-only)
         workflow = await self.db.get(Workflow, workflow_id)
         if workflow:
             workflow.trigger_type = None
@@ -172,75 +172,10 @@ class ScheduledWorkflowService:
 
         await self.db.delete(schedule)
         await self.db.commit()
+
         logger.info(
-            f"Deleted schedule for workflow {workflow_id}, trigger_type reset to None (manual-only)"
+            f"Deleted schedule trigger for workflow {workflow_id}, trigger_type reset to None"
         )
-
-    async def get_schedules_due_for_execution(
-        self, look_ahead_seconds: int = 60
-    ) -> list[ScheduledWorkflow]:
-        """
-        Get schedules that are due for execution within the look-ahead window.
-
-        Args:
-            look_ahead_seconds: How many seconds ahead to look for due schedules
-
-        Returns:
-            List of schedules due for execution
-        """
-        now = datetime.now()
-        window = now + timedelta(seconds=look_ahead_seconds)
-
-        statement = (
-            select(ScheduledWorkflow)
-            .where(
-                ScheduledWorkflow.is_active,
-                ScheduledWorkflow.next_run_at <= window,
-            )
-            .order_by(ScheduledWorkflow.next_run_at.asc())
-        )
-
-        result = await self.db.exec(statement)
-        return result.all()
-
-    async def update_schedule_after_execution(
-        self,
-        schedule: ScheduledWorkflow,
-        success: bool,
-        error_message: str | None = None,
-    ) -> None:
-        """
-        Update schedule after an execution attempt.
-
-        Args:
-            schedule: The schedule that was executed
-            success: Whether the execution was successful
-            error_message: Error message if execution failed
-        """
-        schedule.last_run_at = datetime.now()
-        schedule.run_count += 1
-
-        if success:
-            schedule.failure_count = 0
-            schedule.last_error = None
-        else:
-            schedule.failure_count += 1
-            schedule.last_error = error_message
-
-            # Disable schedule after 5 consecutive failures
-            if schedule.failure_count >= 5:
-                schedule.is_active = False
-                logger.warning(
-                    f"Disabled schedule {schedule.id} after {schedule.failure_count} consecutive failures"
-                )
-
-        # Calculate next run time
-        schedule.next_run_at = self._calculate_next_run(
-            datetime.now(), schedule.interval_seconds
-        )
-
-        await self.db.commit()
-        await self.db.refresh(schedule)
 
     def _calculate_next_run(
         self, from_time: datetime, interval_seconds: int

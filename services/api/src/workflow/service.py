@@ -1,4 +1,5 @@
 import copy
+from datetime import datetime
 from sqlmodel import select, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -8,6 +9,8 @@ from src.db.models import (
     WorkflowUser,
     WorkflowRole,
     WorkflowCredential,
+    TriggerType,
+    ScheduledWorkflow,
 )
 from src.core.exceptions import NotFound, Forbidden
 from src.credentials.encryption import get_encryptor
@@ -83,13 +86,19 @@ class WorkflowService:
     ) -> Workflow:
         """Create and persist a new Workflow owned by `user_id`.
 
+        Automatically detects trigger type from workflow_data and sets trigger_type.
+        If trigger type is SCHEDULED, automatically creates the schedule.
         Commits the transaction and returns the refreshed model instance.
         """
+        # Detect trigger type from workflow data
+        trigger_type = self._detect_trigger_type(workflow_data)
+
         # Create the workflow record first, then add an OWNER entry in the workflow_users table
         wf = Workflow(
             name=name,
             description=description,
             workflow_data=workflow_data,
+            trigger_type=trigger_type,
         )
         self.db.add(wf)
         # Flush to assign the workflow primary key without committing yet
@@ -103,10 +112,32 @@ class WorkflowService:
         )
         self.db.add(owner)
 
-        # Commit both records in a single transaction
+        # If trigger type is SCHEDULED, create the schedule
+        if trigger_type == TriggerType.SCHEDULED:
+            schedule_config = self._extract_schedule_config(workflow_data)
+            if schedule_config:
+                start_at = schedule_config.get("start_at") or datetime.now()
+                interval_seconds = schedule_config["interval_seconds"]
+                is_active = schedule_config.get("is_active", True)
+
+                next_run_at = start_at
+                if isinstance(start_at, str):
+                    start_at = datetime.fromisoformat(start_at.replace("Z", "+00:00"))
+                    next_run_at = start_at
+
+                schedule = ScheduledWorkflow(
+                    workflow_id=wf.id,
+                    interval_seconds=interval_seconds,
+                    start_at=start_at,
+                    next_run_at=next_run_at,
+                    is_active=is_active,
+                )
+                self.db.add(schedule)
+
+        # Commit all records in a single transaction
         await self.db.commit()
 
-        # This is cheaper than refreshing after each commit.
+        # Refresh to load relationships
         await self.db.refresh(wf)
         return wf
 
@@ -125,9 +156,61 @@ class WorkflowService:
     ) -> Workflow:
         """Update the workflow's workflow_data field and persist the change.
 
+        Automatically detects and updates trigger_type based on workflow_data.
+        Also manages schedule creation/update/deletion based on trigger type changes.
         Caller is responsible for authorization. Returns the refreshed model.
         """
+        # Detect trigger type from new workflow data
+        new_trigger_type = self._detect_trigger_type(workflow_data)
+
+        # Get existing schedule if any
+        stmt = select(ScheduledWorkflow).where(
+            ScheduledWorkflow.workflow_id == workflow.id
+        )
+        result = await self.db.exec(stmt)
+        existing_schedule = result.first()
+
+        # Update workflow data and trigger type
         workflow.workflow_data = workflow_data
+        workflow.trigger_type = new_trigger_type
+
+        # Handle schedule changes based on trigger type
+        if new_trigger_type == TriggerType.SCHEDULED:
+            schedule_config = self._extract_schedule_config(workflow_data)
+            if schedule_config:
+                if existing_schedule:
+                    # Update existing schedule
+                    existing_schedule.interval_seconds = schedule_config[
+                        "interval_seconds"
+                    ]
+                    existing_schedule.is_active = schedule_config.get("is_active", True)
+                    # Recalculate next run if interval changed (daemon will adjust more precisely)
+                    existing_schedule.next_run_at = datetime.now()
+                    self.db.add(existing_schedule)
+                else:
+                    # Create new schedule
+                    start_at = schedule_config.get("start_at") or datetime.now()
+                    interval_seconds = schedule_config["interval_seconds"]
+                    is_active = schedule_config.get("is_active", True)
+
+                    if isinstance(start_at, str):
+                        start_at = datetime.fromisoformat(
+                            start_at.replace("Z", "+00:00")
+                        )
+
+                    schedule = ScheduledWorkflow(
+                        workflow_id=workflow.id,
+                        interval_seconds=interval_seconds,
+                        start_at=start_at,
+                        next_run_at=start_at,
+                        is_active=is_active,
+                    )
+                    self.db.add(schedule)
+        else:
+            # If trigger type is not SCHEDULED and there's an existing schedule, delete it
+            if existing_schedule:
+                await self.db.delete(existing_schedule)
+
         await self.db.commit()
         await self.db.refresh(workflow)
         return workflow
@@ -208,3 +291,85 @@ class WorkflowService:
                     }
 
         return resolved_data
+
+    def _detect_trigger_type(self, workflow_data: dict) -> TriggerType | None:
+        """Detect the trigger type from workflow data.
+
+        Analyzes the workflow nodes to determine if it has scheduled or webhook triggers.
+        Returns None for manual-only workflows.
+
+        Args:
+            workflow_data: The workflow definition containing nodes and edges
+
+        Returns:
+            TriggerType.SCHEDULED if workflow has schedule configuration
+            TriggerType.WEBHOOK if workflow has webhook configuration
+            None if workflow is manual-only
+        """
+        nodes = workflow_data.get("nodes", [])
+
+        for node in nodes:
+            # Check for trigger node with schedule configuration
+            if node.get("type") == "trigger" and node.get("trigger") is True:
+                node_data = node.get("data", {})
+
+                # Check if it has schedule configuration
+                if "schedule" in node_data:
+                    schedule_config = node_data["schedule"]
+                    # Validate schedule has required fields
+                    if (
+                        isinstance(schedule_config, dict)
+                        and "interval_seconds" in schedule_config
+                    ):
+                        return TriggerType.SCHEDULED
+
+                # Check if it has webhook configuration
+                if "webhook" in node_data:
+                    webhook_config = node_data["webhook"]
+                    # Validate webhook has required fields
+                    if isinstance(webhook_config, dict):
+                        return TriggerType.WEBHOOK
+
+        # No automatic trigger found
+        return None
+
+    def _extract_schedule_config(self, workflow_data: dict) -> dict | None:
+        """Extract schedule configuration from workflow data.
+
+        Args:
+            workflow_data: The workflow definition containing nodes
+
+        Returns:
+            Dictionary with schedule configuration or None if not found
+            Expected format: {"interval_seconds": int, "start_at": datetime, "is_active": bool}
+        """
+        nodes = workflow_data.get("nodes", [])
+
+        for node in nodes:
+            if node.get("type") == "trigger" and node.get("trigger") is True:
+                node_data = node.get("data", {})
+                schedule_config = node_data.get("schedule")
+
+                if (
+                    isinstance(schedule_config, dict)
+                    and "interval_seconds" in schedule_config
+                ):
+                    # Extract and validate configuration
+                    config = {
+                        "interval_seconds": schedule_config["interval_seconds"],
+                        "is_active": schedule_config.get("is_active", True),
+                    }
+
+                    # Parse start_at if provided
+                    if "start_at" in schedule_config:
+                        start_at = schedule_config["start_at"]
+                        if isinstance(start_at, str):
+                            config["start_at"] = datetime.fromisoformat(
+                                start_at.replace("Z", "+00:00")
+                            )
+                        elif isinstance(start_at, datetime):
+                            config["start_at"] = start_at
+
+                    return config
+
+        return None

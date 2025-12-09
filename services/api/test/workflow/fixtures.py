@@ -6,6 +6,7 @@ from argon2 import PasswordHasher
 
 from src.db.models import User, UserRole, Workflow, WorkflowUser, WorkflowRole
 from src.workflow.service import WorkflowService
+from src.workflow.triggers import ScheduleTriggerService
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -28,6 +29,12 @@ async def other_user(test_db):
 async def workflow_service(test_db):
     """Create a WorkflowService instance with test database."""
     return WorkflowService(db=test_db)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def schedule_trigger_service(test_db):
+    """Create a ScheduleTriggerService instance with test database."""
+    return ScheduleTriggerService(db=test_db)
 
 
 @pytest_asyncio.fixture(scope="function")

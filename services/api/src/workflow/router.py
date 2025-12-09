@@ -9,6 +9,9 @@ from src.workflow.schemas import (
     WorkflowUpdateData,
     ScheduleInfo,
 )
+from src.workflow.triggers import (
+    ScheduleTriggerService,
+)
 from src.workflow.service import WorkflowService
 from src.core.dependencies import (
     DatabaseDep,
@@ -31,6 +34,11 @@ router = APIRouter(prefix="/workflows", tags=["Workflows"])
 def get_workflow_service(db: DatabaseDep) -> WorkflowService:
     """Dependency to get workflow service instance."""
     return WorkflowService(db=db)
+
+
+def get_schedule_trigger_service(db: DatabaseDep) -> ScheduleTriggerService:
+    """Dependency to get schedule trigger service instance."""
+    return ScheduleTriggerService(db=db)
 
 
 def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
@@ -96,13 +104,33 @@ async def create_workflow(
     payload: WorkflowCreate,
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
+    schedule_trigger_service: ScheduleTriggerService = Depends(
+        get_schedule_trigger_service
+    ),
 ) -> ApiResponse[WorkflowDetail]:
+    """Create a new workflow.
+
+    Automatically detects trigger type from workflow_data:
+    - If workflow contains schedule configuration in trigger node, creates schedule automatically
+    - If workflow contains webhook configuration, sets up webhook trigger
+    - Otherwise, workflow is manual-only
+    """
     wf = await service.create(
         user_id=current_user.id,
         name=payload.name,
         description=payload.description,
         workflow_data=payload.workflow_data,
     )
+
+    # If workflow has schedule configuration, create the schedule automatically
+    schedule_config = service._extract_schedule_config(payload.workflow_data)
+    if schedule_config:
+        await schedule_trigger_service.create_schedule(
+            workflow_id=wf.id,
+            interval_seconds=schedule_config["interval_seconds"],
+            start_at=schedule_config.get("start_at"),
+            is_active=schedule_config.get("is_active", True),
+        )
 
     detail = WorkflowDetail.model_validate(wf)
 
@@ -132,13 +160,53 @@ async def update_workflow_data(
     payload: WorkflowUpdateData,
     workflow: Workflow = Depends(get_workflow_with_permission),
     service: WorkflowService = Depends(get_workflow_service),
+    schedule_trigger_service: ScheduleTriggerService = Depends(
+        get_schedule_trigger_service
+    ),
 ) -> ApiResponse[WorkflowDetail]:
     """
     Update workflow data/definition.
 
     **Requires:** EDIT permission (OWNER or EDITOR)
+
+    Automatically manages schedule based on workflow_data:
+    - Creates schedule if workflow_data contains schedule configuration
+    - Updates existing schedule if configuration changed
+    - Deletes schedule if schedule configuration removed
     """
+    # Get current schedule before updating
+    existing_schedule = await schedule_trigger_service.get_schedule(workflow.id)
+
+    # Update workflow data (this also updates trigger_type automatically)
     wf = await service.update_workflow_data(workflow, payload.workflow_data)
+
+    # Check new schedule configuration
+    schedule_config = service._extract_schedule_config(payload.workflow_data)
+
+    if schedule_config:
+        # Schedule configuration exists in new workflow_data
+        if existing_schedule:
+            # Update existing schedule
+            await schedule_trigger_service.update_schedule(
+                schedule=existing_schedule,
+                interval_seconds=schedule_config["interval_seconds"],
+                start_at=schedule_config.get("start_at"),
+                is_active=schedule_config.get("is_active", existing_schedule.is_active),
+            )
+        else:
+            # Create new schedule
+            await schedule_trigger_service.create_schedule(
+                workflow_id=wf.id,
+                interval_seconds=schedule_config["interval_seconds"],
+                start_at=schedule_config.get("start_at"),
+                is_active=schedule_config.get("is_active", True),
+            )
+    else:
+        # No schedule configuration in new workflow_data
+        if existing_schedule:
+            # Delete existing schedule
+            await schedule_trigger_service.delete_schedule(existing_schedule)
+
     detail = WorkflowDetail.model_validate(wf)
     return ApiResponse(success=True, message="Workflow data updated", data=detail)
 
@@ -149,12 +217,22 @@ async def delete_workflow(
     workflow: Workflow = Depends(get_workflow_with_permission),
     current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
+    schedule_trigger_service: ScheduleTriggerService = Depends(
+        get_schedule_trigger_service
+    ),
 ) -> None:
     """
     Delete a workflow.
 
     **Requires:** DELETE permission (OWNER only)
+
+    Automatically deletes associated schedule if it exists.
     """
+    # Delete schedule if it exists (will be deleted by cascade, but we do it explicitly for clarity)
+    existing_schedule = await schedule_trigger_service.get_schedule(workflow.id)
+    if existing_schedule:
+        await schedule_trigger_service.delete_schedule(existing_schedule)
+
     await service.delete(workflow)
     return
 
