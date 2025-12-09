@@ -22,6 +22,7 @@ type NodeStatusMessage struct {
 	DurationMs       int64                  `json:"duration_ms"`
 	BranchID         string                 `json:"branch_id,omitempty"`
 	LineageStack     []StackFrame           `json:"lineage_stack,omitempty"`
+	LineageHash      string                 `json:"lineage_hash,omitempty"`
 	SplitNodeID      string                 `json:"split_node_id,omitempty"`
 	ItemIndex        *int                   `json:"item_index,omitempty"`
 	TotalItems       *int                   `json:"total_items,omitempty"`
