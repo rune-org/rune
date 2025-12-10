@@ -66,6 +66,11 @@ services:
       - rabbitmq_dev_data:/var/lib/rabbitmq
     networks:
       - rune_dev_network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   # ==========================================================================
@@ -98,8 +103,10 @@ services:
       # Encryption Key (use from .env or default for development)
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
     depends_on:
-      - postgres
-      - rabbitmq
+      postgres:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
     networks:
       - rune_dev_network
     restart: unless-stopped

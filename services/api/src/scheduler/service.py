@@ -59,11 +59,12 @@ class ScheduledWorkflowService:
                 detail="Schedule already exists for this workflow. Update or delete the existing schedule first."
             )
 
-        if start_at is None:
-            start_at = datetime.now()
+        start_at = start_at or datetime.now()
 
         # Calculate next run time
-        next_run_at = self._calculate_next_run(start_at, interval_seconds)
+        next_run_at = self._calculate_next_run(
+            datetime.now(), interval_seconds, start_at=start_at, last_run_at=None
+        )
 
         schedule = ScheduledWorkflow(
             workflow_id=workflow_id,
@@ -148,7 +149,8 @@ class ScheduledWorkflowService:
         # Recalculate next run time if interval changed
         if recalculate_next_run:
             schedule.next_run_at = self._calculate_next_run(
-                datetime.now(), schedule.interval_seconds
+                datetime.now(), schedule.interval_seconds, 
+                start_at=schedule.start_at, last_run_at=schedule.last_run_at
             )
 
         await self.db.commit()
@@ -236,16 +238,27 @@ class ScheduledWorkflowService:
 
         # Calculate next run time
         schedule.next_run_at = self._calculate_next_run(
-            datetime.now(), schedule.interval_seconds
+            datetime.now(), schedule.interval_seconds,
+            start_at=schedule.start_at, last_run_at=schedule.last_run_at
         )
 
         await self.db.commit()
         await self.db.refresh(schedule)
 
     def _calculate_next_run(
-        self, from_time: datetime, interval_seconds: int
+        self, from_time: datetime, interval_seconds: int, start_at: datetime | None = None, last_run_at: datetime | None = None
     ) -> datetime:
-        """Calculate the next run time based on interval in seconds."""
+        """Calculate next run time.
+        
+        Simple logic:
+        - First run: use start_at if in future, otherwise run now
+        - Subsequent runs: add interval to current time
+        """
+        # First run
+        if last_run_at is None and start_at and start_at > from_time:
+            return start_at
+        
+        # Run now (first run with past start_at) or subsequent run
         return from_time + timedelta(seconds=interval_seconds)
 
     def _has_trigger_node(self, workflow_data: dict) -> bool:

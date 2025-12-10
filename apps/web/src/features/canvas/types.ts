@@ -13,6 +13,12 @@ export type BaseData = {
 export type NodeDataMap = {
   trigger: BaseData;
 
+  scheduled: BaseData & {
+    start_at?: string; // ISO 8601 datetime string
+    interval_seconds?: number; // Run every N seconds
+    is_active?: boolean; // Whether the schedule is active
+  };
+
   agent: BaseData;
 
   if: BaseData & {
@@ -53,6 +59,10 @@ export const NODE_SCHEMA = {
     inputs: [],
     outputs: ["trigger"],
   },
+  scheduled: {
+    inputs: [],
+    outputs: ["trigger"],
+  },
   agent: {
     inputs: ["input"],
     outputs: ["response"],
@@ -85,6 +95,7 @@ export type HttpData = NodeDataMap["http"];
 export type SmtpData = NodeDataMap["smtp"];
 export type AgentData = NodeDataMap["agent"];
 export type TriggerData = NodeDataMap["trigger"];
+export type ScheduledData = NodeDataMap["scheduled"];
 
 export type CanvasEdge = Edge;
 

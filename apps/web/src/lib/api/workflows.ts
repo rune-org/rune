@@ -3,7 +3,6 @@ import {
   getWorkflowWorkflowsWorkflowIdGet,
   createWorkflowWorkflowsPost,
   updateNameWorkflowsWorkflowIdNamePut,
-  updateStatusWorkflowsWorkflowIdStatusPut,
   deleteWorkflowWorkflowsWorkflowIdDelete,
   runWorkflowWorkflowsWorkflowIdRunPost,
   updateWorkflowDataWorkflowsWorkflowIdDataPut,
@@ -13,14 +12,12 @@ import {
 import type {
   WorkflowCreate,
   WorkflowUpdateName,
-  WorkflowUpdateStatus,
   WorkflowUpdateData,
   GenerateWorkflowDocsRequest,
   ListWorkflowsWorkflowsGetResponse,
   GetWorkflowWorkflowsWorkflowIdGetResponse,
   CreateWorkflowWorkflowsPostResponse,
   UpdateNameWorkflowsWorkflowIdNamePutResponse,
-  UpdateStatusWorkflowsWorkflowIdStatusPutResponse,
   DeleteWorkflowWorkflowsWorkflowIdDeleteResponse,
   RunWorkflowWorkflowsWorkflowIdRunPostResponse,
   UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse,
@@ -29,7 +26,10 @@ import type {
 
 // Readable wrappers for workflow-related SDK functions
 
-export const listWorkflows = () => listWorkflowsWorkflowsGet();
+export const listWorkflows = () => 
+  listWorkflowsWorkflowsGet({ 
+    query: { include_schedule: true } 
+  });
 
 export const getWorkflowById = (workflow_id: number) =>
   getWorkflowWorkflowsWorkflowIdGet({ path: { workflow_id } });
@@ -41,12 +41,6 @@ export const updateWorkflowName = (workflow_id: number, name: string) =>
   updateNameWorkflowsWorkflowIdNamePut({
     path: { workflow_id },
     body: { name } as WorkflowUpdateName,
-  });
-
-export const updateWorkflowStatus = (workflow_id: number, is_active: boolean) =>
-  updateStatusWorkflowsWorkflowIdStatusPut({
-    path: { workflow_id },
-    body: { is_active } as WorkflowUpdateStatus,
   });
 
 export const deleteWorkflow = (workflow_id: number) =>
@@ -79,8 +73,6 @@ export type GetWorkflowResponse = GetWorkflowWorkflowsWorkflowIdGetResponse;
 export type CreateWorkflowResponse = CreateWorkflowWorkflowsPostResponse;
 export type UpdateWorkflowNameResponse =
   UpdateNameWorkflowsWorkflowIdNamePutResponse;
-export type UpdateWorkflowStatusResponse =
-  UpdateStatusWorkflowsWorkflowIdStatusPutResponse;
 export type DeleteWorkflowResponse =
   DeleteWorkflowWorkflowsWorkflowIdDeleteResponse;
 export type RunWorkflowResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponse;

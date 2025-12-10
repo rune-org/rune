@@ -122,7 +122,12 @@ class WorkflowService:
 
                 next_run_at = start_at
                 if isinstance(start_at, str):
-                    start_at = datetime.fromisoformat(start_at.replace("Z", "+00:00"))
+                    parsed = datetime.fromisoformat(start_at.replace("Z", "+00:00"))
+                    start_at = parsed.replace(tzinfo=None)
+                    next_run_at = start_at
+                elif isinstance(start_at, datetime):
+                    # Remove timezone info if present
+                    start_at = start_at.replace(tzinfo=None)
                     next_run_at = start_at
 
                 schedule = ScheduledWorkflow(
@@ -179,13 +184,19 @@ class WorkflowService:
             schedule_config = self._extract_schedule_config(workflow_data)
             if schedule_config:
                 if existing_schedule:
-                    # Update existing schedule
-                    existing_schedule.interval_seconds = schedule_config[
-                        "interval_seconds"
-                    ]
+                    # Update existing schedule preserving continuity
+                    old_interval = existing_schedule.interval_seconds
+                    existing_schedule.interval_seconds = schedule_config["interval_seconds"]
                     existing_schedule.is_active = schedule_config.get("is_active", True)
-                    # Recalculate next run if interval changed (daemon will adjust more precisely)
-                    existing_schedule.next_run_at = datetime.now()
+                    
+                    # Recalculate next_run if interval changed
+                    if old_interval != existing_schedule.interval_seconds:
+                        existing_schedule.next_run_at = self._calculate_next_run_helper(
+                            datetime.now(), 
+                            existing_schedule.interval_seconds,
+                            existing_schedule.start_at,
+                            existing_schedule.last_run_at
+                        )
                     self.db.add(existing_schedule)
                 else:
                     # Create new schedule
@@ -193,16 +204,23 @@ class WorkflowService:
                     interval_seconds = schedule_config["interval_seconds"]
                     is_active = schedule_config.get("is_active", True)
 
+                    # Ensure timezone-naive datetime
                     if isinstance(start_at, str):
-                        start_at = datetime.fromisoformat(
-                            start_at.replace("Z", "+00:00")
-                        )
+                        parsed = datetime.fromisoformat(start_at.replace("Z", "+00:00"))
+                        start_at = parsed.replace(tzinfo=None)
+                    elif isinstance(start_at, datetime) and start_at.tzinfo is not None:
+                        start_at = start_at.replace(tzinfo=None)
+
+                    # Calculate next_run_at using smart logic
+                    next_run_at = self._calculate_next_run_helper(
+                        datetime.now(), interval_seconds, start_at, last_run_at=None
+                    )
 
                     schedule = ScheduledWorkflow(
                         workflow_id=workflow.id,
                         interval_seconds=interval_seconds,
                         start_at=start_at,
-                        next_run_at=start_at,
+                        next_run_at=next_run_at,
                         is_active=is_active,
                     )
                     self.db.add(schedule)
@@ -309,26 +327,17 @@ class WorkflowService:
         nodes = workflow_data.get("nodes", [])
 
         for node in nodes:
-            # Check for trigger node with schedule configuration
-            if node.get("type") == "trigger" and node.get("trigger") is True:
-                node_data = node.get("data", {})
-
-                # Check if it has schedule configuration
-                if "schedule" in node_data:
-                    schedule_config = node_data["schedule"]
-                    # Validate schedule has required fields
-                    if (
-                        isinstance(schedule_config, dict)
-                        and "interval_seconds" in schedule_config
-                    ):
-                        return TriggerType.SCHEDULED
-
-                # Check if it has webhook configuration
-                if "webhook" in node_data:
-                    webhook_config = node_data["webhook"]
-                    # Validate webhook has required fields
-                    if isinstance(webhook_config, dict):
-                        return TriggerType.WEBHOOK
+            node_type = node.get("type", "")
+            
+            # Check for ScheduleTrigger node type (DSL format)
+            if node_type == "ScheduleTrigger" and node.get("trigger") is True:
+                parameters = node.get("parameters", {})
+                if "interval_seconds" in parameters:
+                    return TriggerType.SCHEDULED
+            
+            # Check for WebhookTrigger node type (DSL format)
+            if node_type == "WebhookTrigger" and node.get("trigger") is True:
+                return TriggerType.WEBHOOK
 
         # No automatic trigger found
         return None
@@ -346,30 +355,50 @@ class WorkflowService:
         nodes = workflow_data.get("nodes", [])
 
         for node in nodes:
-            if node.get("type") == "trigger" and node.get("trigger") is True:
-                node_data = node.get("data", {})
-                schedule_config = node_data.get("schedule")
-
-                if (
-                    isinstance(schedule_config, dict)
-                    and "interval_seconds" in schedule_config
-                ):
+            node_type = node.get("type", "")
+            
+            # Check for ScheduleTrigger node type (DSL format)
+            if node_type == "ScheduleTrigger" and node.get("trigger") is True:
+                parameters = node.get("parameters", {})
+                
+                if "interval_seconds" in parameters:
                     # Extract and validate configuration
                     config = {
-                        "interval_seconds": schedule_config["interval_seconds"],
-                        "is_active": schedule_config.get("is_active", True),
+                        "interval_seconds": parameters["interval_seconds"],
+                        "is_active": parameters.get("is_active", True),
                     }
 
                     # Parse start_at if provided
-                    if "start_at" in schedule_config:
-                        start_at = schedule_config["start_at"]
+                    if "start_at" in parameters:
+                        start_at = parameters["start_at"]
                         if isinstance(start_at, str):
-                            config["start_at"] = datetime.fromisoformat(
+                            parsed = datetime.fromisoformat(
                                 start_at.replace("Z", "+00:00")
                             )
+                            # Remove timezone info for PostgreSQL (store as naive UTC)
+                            config["start_at"] = parsed.replace(tzinfo=None)
                         elif isinstance(start_at, datetime):
-                            config["start_at"] = start_at
+                            # Remove timezone info if present
+                            config["start_at"] = start_at.replace(tzinfo=None)
 
                     return config
 
         return None
+
+    def _calculate_next_run_helper(
+        self, from_time: datetime, interval_seconds: int, 
+        start_at: datetime | None = None, last_run_at: datetime | None = None
+    ) -> datetime:
+        """Helper to calculate next run time (matches ScheduledWorkflowService logic)."""
+        from datetime import timedelta
+        
+        # First run (never executed before)
+        if last_run_at is None and start_at:
+            # If start_at is in the past, run immediately
+            if start_at < from_time:
+                return from_time
+            # If start_at is in the future, wait for it
+            return start_at
+        
+        # Subsequent runs: add interval from current time
+        return from_time + timedelta(seconds=interval_seconds)

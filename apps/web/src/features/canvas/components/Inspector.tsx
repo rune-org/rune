@@ -26,6 +26,8 @@ import { IfInspector } from "./inspectors/IfInspector";
 import { HttpInspector } from "./inspectors/HttpInspector";
 import { SmtpInspector } from "./inspectors/SmtpInspector";
 import { SwitchInspector } from "./inspectors/SwitchInspector";
+import { TriggerInspector } from "./inspectors/TriggerInspector";
+import { ScheduledInspector } from "./inspectors/ScheduledInspector";
 import { toast } from "@/components/ui/toast";
 
 type InspectorProps = {
@@ -46,6 +48,10 @@ function renderInspectorForm(
   isExpanded: boolean,
 ) {
   switch (node.type) {
+    case "trigger":
+      return <TriggerInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "scheduled":
+      return <ScheduledInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "http":
       return <HttpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "if":

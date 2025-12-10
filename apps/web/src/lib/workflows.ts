@@ -18,23 +18,31 @@ export type WorkflowSummary = {
   id: string;
   name: string;
   /**
-   * Derived status – treated as active when `is_active` is true, otherwise draft.
+   * Status: active (scheduled + is_active=true), inactive (scheduled + is_active=false), draft (manual or no schedule)
    */
-  status: "active" | "draft";
+  status: "active" | "inactive" | "draft";
   /**
-   * Placeholder trigger type.
+   * Trigger type.
    */
   triggerType: string;
   /**
-   * Placeholder last run timestamp.
+   * Schedule information if the workflow is scheduled.
+   */
+  schedule?: {
+    is_active: boolean;
+    interval_seconds: number;
+    start_at?: string;
+  };
+  /**
+   * Last run timestamp.
    */
   lastRunAt: string | null;
   /**
-   * Placeholder run status.
+   * Run status.
    */
   lastRunStatus: "success" | "failed" | "running" | "n/a";
   /**
-   * Placeholder total run count.
+   * Total run count.
    */
   runs: number;
 };
@@ -52,11 +60,35 @@ export const defaultWorkflowSummary: WorkflowSummary = {
 export function listItemToWorkflowSummary(
   item: WorkflowListItem,
 ): WorkflowSummary {
+  const triggerType = item.trigger_type === "scheduled" 
+    ? "Scheduled" 
+    : item.trigger_type === "webhook" 
+    ? "Webhook" 
+    : "Manual";
+  
+  const lastRunAt = item.schedule?.last_run_at ?? null;
+  const runs = item.schedule?.run_count ?? 0;
+  const lastRunStatus = item.schedule?.last_error 
+    ? "failed" 
+    : lastRunAt 
+    ? "success" 
+    : "n/a";
+  
+  // Determine status: active (scheduled + active), inactive (scheduled + not active), draft (manual)
+  let status: "active" | "inactive" | "draft" = "draft";
+  if (item.trigger_type === "scheduled") {
+    status = item.schedule?.is_active ? "active" : "inactive";
+  }
+  
   return {
     ...defaultWorkflowSummary,
     id: String(item.id),
     name: item.name,
-    status: item.is_active ? "active" : "draft",
+    status,
+    triggerType,
+    lastRunAt,
+    lastRunStatus,
+    runs,
   };
 }
 

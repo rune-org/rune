@@ -35,7 +35,8 @@ import {
   deleteWorkflow,
   runWorkflow,
   updateWorkflowName,
-  updateWorkflowStatus,
+  updateWorkflowData,
+  getWorkflowById,
 } from "@/lib/api/workflows";
 import {
   Dialog,
@@ -47,6 +48,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ActivateWorkflowDialog } from "./ActivateWorkflowDialog";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "N/A";
@@ -64,6 +66,12 @@ function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
     return (
       <Badge className="bg-emerald-900/40 text-emerald-200" variant="secondary">
         Active
+      </Badge>
+    );
+  if (status === "inactive")
+    return (
+      <Badge className="bg-slate-900/40 text-slate-300" variant="secondary">
+        Inactive
       </Badge>
     );
   return (
@@ -92,38 +100,15 @@ export function WorkflowsTable() {
   const [deleteTarget, setDeleteTarget] = useState<WorkflowSummary | null>(
     null,
   );
+  const [activateTarget, setActivateTarget] = useState<WorkflowSummary | null>(
+    null,
+  );
 
   useEffect(() => {
-    if (workflows.length === 0) void actions.init();
+    // Always refresh workflows when component mounts to get latest data
+    void actions.refreshWorkflows();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleToggleActive = useCallback(
-    async (workflow: WorkflowSummary) => {
-      const workflowId = Number(workflow.id);
-      if (!Number.isFinite(workflowId)) return;
-
-      setPendingWorkflowId(workflow.id);
-      try {
-        await updateWorkflowStatus(workflowId, workflow.status !== "active");
-        toast.success(
-          workflow.status === "active"
-            ? "Workflow deactivated"
-            : "Workflow activated",
-        );
-        await actions.refreshWorkflows();
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to update workflow status.",
-        );
-      } finally {
-        setPendingWorkflowId(null);
-      }
-    },
-    [actions],
-  );
 
   const beginDelete = useCallback((workflow: WorkflowSummary) => {
     setDeleteTarget(workflow);
@@ -206,6 +191,101 @@ export function WorkflowsTable() {
     [actions, renameTarget],
   );
 
+  const performDeactivation = useCallback(
+    async (workflow: WorkflowSummary) => {
+      const workflowId = Number(workflow.id);
+      if (!Number.isFinite(workflowId)) return;
+
+      setPendingWorkflowId(workflow.id);
+      try {
+        const result = await getWorkflowById(workflowId);
+        if (!result.data?.data) throw new Error("Workflow not found");
+
+        const workflowData = result.data.data.workflow_data as Record<string, unknown>;
+        const nodes = workflowData.nodes as Array<Record<string, unknown>>;
+        const scheduledNode = nodes?.find((n: Record<string, unknown>) => n.type === "ScheduleTrigger") as Record<string, unknown> | undefined;
+        
+        if (scheduledNode) {
+          const parameters = (scheduledNode.parameters || {}) as Record<string, unknown>;
+          parameters.is_active = false;
+          scheduledNode.parameters = parameters;
+          
+          await updateWorkflowData(workflowId, workflowData);
+          toast.success("Workflow deactivated");
+          await actions.refreshWorkflows();
+        }
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to deactivate workflow.",
+        );
+      } finally {
+        setPendingWorkflowId(null);
+      }
+    },
+    [actions],
+  );
+
+  const handleToggleActive = useCallback(
+    async (workflow: WorkflowSummary) => {
+      // Deactivation is simple - just toggle off
+      if (workflow.status === "active") {
+        await performDeactivation(workflow);
+        return;
+      }
+
+      // Activation requires user input - open modal
+      setActivateTarget(workflow);
+    },
+    [performDeactivation],
+  );
+
+  const handleActivateSubmit = useCallback(
+    async (mode: "now" | "reconfigure", newStartAt?: string, newInterval?: number) => {
+      if (!activateTarget) return;
+      
+      const workflowId = Number(activateTarget.id);
+      if (!Number.isFinite(workflowId)) return;
+
+      setPendingWorkflowId(activateTarget.id);
+      try {
+        const result = await getWorkflowById(workflowId);
+        if (!result.data?.data) throw new Error("Workflow not found");
+
+        const workflowData = result.data.data.workflow_data as Record<string, unknown>;
+        const nodes = workflowData.nodes as Array<Record<string, unknown>>;
+        const scheduledNode = nodes?.find((n: Record<string, unknown>) => n.type === "ScheduleTrigger") as Record<string, unknown> | undefined;
+        
+        if (scheduledNode) {
+          const parameters = (scheduledNode.parameters || {}) as Record<string, unknown>;
+          
+          if (mode === "now") {
+            // Run now: set start_at to current time
+            parameters.start_at = new Date().toISOString().slice(0, 16);
+          } else {
+            // Reconfigure: use new values
+            if (newStartAt) parameters.start_at = newStartAt;
+            if (newInterval) parameters.interval_seconds = newInterval;
+          }
+          
+          parameters.is_active = true;
+          scheduledNode.parameters = parameters;
+          
+          await updateWorkflowData(workflowId, workflowData);
+          toast.success("Workflow activated");
+          await actions.refreshWorkflows();
+          setActivateTarget(null);
+        }
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to activate workflow.",
+        );
+      } finally {
+        setPendingWorkflowId(null);
+      }
+    },
+    [activateTarget, actions],
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = workflows;
@@ -231,7 +311,7 @@ export function WorkflowsTable() {
 
   const stats = useMemo(() => {
     const active = workflows.filter((w) => w.status === "active").length;
-    const draft = workflows.filter((w) => w.status === "draft").length;
+    const draft = workflows.filter((w) => w.status === "draft" || w.status === "inactive").length;
     const failed = workflows.filter((w) => w.lastRunStatus === "failed").length;
     const runs = workflows.reduce((sum, w) => sum + w.runs, 0);
     return { active, draft, failed, runs };
@@ -371,17 +451,19 @@ export function WorkflowsTable() {
                       Rename
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onSelect={() => handleToggleActive(w)}
-                      disabled={isRowPending(w.id)}
-                    >
-                      {w.status === "active" ? "Deactivate" : "Activate"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
                       onSelect={() => handleRun(w)}
                       disabled={isRowPending(w.id)}
                     >
                       Run
                     </DropdownMenuItem>
+                    {w.triggerType === "Scheduled" && (
+                      <DropdownMenuItem
+                        onSelect={() => handleToggleActive(w)}
+                        disabled={isRowPending(w.id)}
+                      >
+                        {w.status === "active" ? "Deactivate" : "Activate"}
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onSelect={() => beginDelete(w)}
@@ -414,6 +496,12 @@ export function WorkflowsTable() {
         workflow={deleteTarget}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
+        pending={pendingWorkflowId !== null}
+      />
+      <ActivateWorkflowDialog
+        workflow={activateTarget}
+        onClose={() => setActivateTarget(null)}
+        onSubmit={handleActivateSubmit}
         pending={pendingWorkflowId !== null}
       />
     </div>

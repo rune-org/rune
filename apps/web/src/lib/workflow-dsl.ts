@@ -9,6 +9,7 @@ import type {
   SwitchData,
   SwitchRule,
   SmtpData,
+  ScheduledData,
 } from "@/features/canvas/types";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
 import type { CredentialRef } from "@/lib/credentials";
@@ -60,6 +61,8 @@ function toWorkerType(canvasType: string): string {
   switch (canvasType) {
     case "trigger":
       return "ManualTrigger";
+    case "scheduled":
+      return "ScheduleTrigger";
     case "if":
       return "conditional";
     case "switch":
@@ -109,6 +112,20 @@ function toWorkerParameters(
   edges: RFEdge[],
 ): Record<string, unknown> {
   switch (n.type) {
+    case "scheduled": {
+      const d = (n.data || {}) as ScheduledData;
+      const params: Record<string, unknown> = {};
+      
+      if (d.start_at) params.start_at = d.start_at;
+      if (typeof d.interval_seconds === "number" && d.interval_seconds > 0) {
+        params.interval_seconds = d.interval_seconds;
+      }
+      if (typeof d.is_active === "boolean") {
+        params.is_active = d.is_active;
+      }
+      
+      return params;
+    }
     case "http": {
       const d = (n.data || {}) as HttpData;
       const params: Record<string, unknown> = {};
@@ -217,6 +234,18 @@ type NodeHydrator = (
 ) => CanvasNode["data"];
 
 const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
+  scheduled: (base, params) => {
+    const scheduledData: ScheduledData = {
+      ...base,
+      start_at: typeof params.start_at === "string" ? params.start_at : undefined,
+      interval_seconds: 
+        typeof params.interval_seconds === "number" 
+          ? params.interval_seconds 
+          : undefined,
+      is_active: typeof params.is_active === "boolean" ? params.is_active : undefined,
+    };
+    return scheduledData;
+  },
   http: (base, params) => {
     const httpData: HttpData = {
       ...base,
@@ -320,7 +349,7 @@ export function canvasToWorkflowData(
     return {
       id: n.id,
       name: nodeName(n),
-      trigger: n.type === "trigger",
+      trigger: n.type === "trigger" || n.type === "scheduled",
       type: toWorkerType(n.type), // store canonical type to simplify future use
       parameters: toWorkerParameters(n, edges),
       output: {},
@@ -356,7 +385,9 @@ export function workflowDataToCanvas(data: {
         ? "if"
         : n.type === "ManualTrigger"
           ? "trigger"
-          : n.type;
+          : n.type === "ScheduleTrigger"
+            ? "scheduled"
+            : n.type;
     const credentials = n.credentials ? { ...n.credentials } : undefined;
     const baseData = {
       label: n.name,

@@ -654,6 +654,7 @@ export default function FlowCanvas({
     const colorVars: Record<string, string> = {
       agent: "--node-agent",
       trigger: "--node-trigger",
+      scheduled: "--node-trigger",
       if: "--node-core",
       switch: "--node-core",
       http: "--node-http",
