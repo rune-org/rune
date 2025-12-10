@@ -252,7 +252,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { state } = useAuth();                  
   const user = state.user;
-  const isAdmin = user?.role === "admin";   // <-- detect admin
+  const isAdmin = user?.role === "admin";  
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
@@ -339,7 +339,7 @@ export function AppSidebar() {
               />
             ))}
 
-            {/* ✅ ADMIN-ONLY "Users" BUTTON */}
+            {/* ADMIN-ONLY "Users" BUTTON */}
             {isAdmin && (
               <Link
                 href="/admin/users"
