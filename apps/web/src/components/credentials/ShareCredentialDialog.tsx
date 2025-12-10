@@ -20,9 +20,9 @@ import {
   listCredentialShares,
   revokeCredentialAccess,
 } from "@/lib/api/credentials";
-import { listUsers } from "@/lib/api/users";
+import { listUsersForSharing } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth";
-import type { CredentialShareInfo, UserResponse } from "@/client/types.gen";
+import type { CredentialShareInfo, UserBasicInfo} from "@/client/types.gen";
 
 interface ShareCredentialDialogProps {
   open: boolean;
@@ -45,7 +45,7 @@ export function ShareCredentialDialog({
   const currentUserId = state.user?.id;
 
   const [shares, setShares] = useState<CredentialShareInfo[]>([]);
-  const [users, setUsers] = useState<UserResponse[]>([]);
+  const [users, setUsers] = useState<UserBasicInfo[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -56,7 +56,7 @@ export function ShareCredentialDialog({
     try {
       const [sharesRes, usersRes] = await Promise.all([
         listCredentialShares(credentialId),
-        listUsers(),
+        listUsersForSharing(),
       ]);
 
       if (sharesRes.data?.data) {

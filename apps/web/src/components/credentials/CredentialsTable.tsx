@@ -89,21 +89,26 @@ export function CredentialsTable({
     const loadShareInfo = async () => {
       const newShareInfoMap: Record<number, CredentialShareInfo & { shared_by_name?: string | null } | null> = {};
 
-      for (const cred of credentials) {
-        if (!cred.is_owner) {
+      // Filter to only non-owned credentials that need share info
+      const sharedCreds = credentials.filter(cred => !cred.is_owner);
+
+      const results = await Promise.all(
+        sharedCreds.map(async (cred) => {
           try {
             const result = await getMyShareInfo(cred.id);
-            if (result?.data) {
-              newShareInfoMap[cred.id] = result.data;
-            } else {
-              newShareInfoMap[cred.id] = null;
-            }
+            return { credId: cred.id, data: result?.data?.data ?? null };
           } catch (error) {
             console.error(`Failed to load share info for credential ${cred.id}:`, error);
-            newShareInfoMap[cred.id] = null;
+            return { credId: cred.id, data: null };
           }
-        }
+        })
+      );
+
+      // Build the map from results
+      for (const { credId, data } of results) {
+        newShareInfoMap[credId] = data;
       }
+
       setShareInfoMap(newShareInfoMap);
     };
 
@@ -115,27 +120,35 @@ export function CredentialsTable({
   // Load creator names for admin-viewed credentials (not owned and not shared with them)
   useEffect(() => {
     const loadCreatorNames = async () => {
-      const creatorIds = new Set<number>();
-
       // Collect unique creator IDs for credentials that are not owned and not shared
+      const creatorIds = new Set<number>();
       for (const cred of credentials) {
         if (!cred.is_owner && !shareInfoMap[cred.id] && cred.created_by) {
           creatorIds.add(cred.created_by);
         }
       }
 
-      // Fetch creator names
-      const newCreatorNameMap: Record<number, string> = { ...creatorNameMap };
-      for (const creatorId of creatorIds) {
-        if (!newCreatorNameMap[creatorId]) {
+      // Filter to only IDs we haven't fetched yet
+      const idsToFetch = Array.from(creatorIds).filter(id => !creatorNameMap[id]);
+
+      if (idsToFetch.length === 0) return;
+      const results = await Promise.all(
+        idsToFetch.map(async (creatorId) => {
           try {
             const result = await getUserById(creatorId);
-            if (result?.data?.data?.name) {
-              newCreatorNameMap[creatorId] = result.data.data.name;
-            }
+            return { creatorId, name: result?.data?.data?.name ?? null };
           } catch (error) {
             console.error(`Failed to load creator name for user ${creatorId}:`, error);
+            return { creatorId, name: null };
           }
+        })
+      );
+
+      // Build the updated map from results
+      const newCreatorNameMap: Record<number, string> = { ...creatorNameMap };
+      for (const { creatorId, name } of results) {
+        if (name) {
+          newCreatorNameMap[creatorId] = name;
         }
       }
 
@@ -146,7 +159,7 @@ export function CredentialsTable({
     if (credentials.length > 0 && Object.keys(shareInfoMap).length > 0) {
       loadCreatorNames();
     }
-  }, [credentials, shareInfoMap]);
+  }, [credentials, shareInfoMap, creatorNameMap]);
 
   const handleLeaveCredential = async (credentialId: number) => {
     if (!currentUserId) return;

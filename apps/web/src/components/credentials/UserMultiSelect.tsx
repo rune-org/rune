@@ -4,10 +4,10 @@ import * as React from "react";
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
-import { UserResponse } from "@/client/types.gen";
+import type { UserBasicInfo } from "@/client/types.gen";
 
 interface UserMultiSelectProps {
-    users: UserResponse[];
+    users: UserBasicInfo[];
     selectedUserIds: number[];
     onSelect: (userId: number) => void;
     onRemove: (userId: number) => void;

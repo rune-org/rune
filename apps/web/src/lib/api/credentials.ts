@@ -6,6 +6,7 @@ import {
   shareCredentialCredentialsCredentialIdSharePost,
   revokeCredentialAccessCredentialsCredentialIdShareUserIdDelete,
   listCredentialSharesCredentialsCredentialIdSharesGet,
+  getMyShareInfoCredentialsCredentialIdMyShareGet,
 } from "@/client";
 
 import type {
@@ -78,21 +79,8 @@ export const listCredentialShares = (credentialId: number) =>
  * This endpoint can be called by shared users to see their own share info
  * @param credentialId - The ID of the credential
  */
-export const getMyShareInfo = async (credentialId: number) => {
-  const response = await fetch(`/api/credentials/${credentialId}/my-share`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
+export const getMyShareInfo = (credentialId: number) =>
+  getMyShareInfoCredentialsCredentialIdMyShareGet({
+    path: { credential_id: credentialId },
   });
 
-  if (!response.ok) {
-    if (response.status === 404) {
-      return null; // User is not a shared user
-    }
-    throw new Error(`Failed to get share info: ${response.statusText}`);
-  }
-
-  return response.json();
-};
