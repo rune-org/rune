@@ -44,7 +44,6 @@ pub(crate) async fn start_token_consumer(
         .basic_qos(prefetch_count, BasicQosOptions::default())
         .await?;
 
-    // Declare DLQ
     let dlq_name = format!("{queue_name}.dlq");
     let _dlq = channel
         .queue_declare(
@@ -54,7 +53,6 @@ pub(crate) async fn start_token_consumer(
         )
         .await?;
 
-    // Declare Main Queue with DLQ args
     let mut args = FieldTable::default();
     args.insert("x-dead-letter-exchange".into(), AMQPValue::LongString("".into()));
     args.insert("x-dead-letter-routing-key".into(), AMQPValue::LongString(dlq_name.into()));
@@ -129,7 +127,6 @@ pub(crate) async fn start_execution_consumer(
     let cfg = crate::config::Config::get();
     let queue_name = &cfg.rabbitmq_execution_queue;
 
-    // Declare DLQ
     let dlq_name = format!("{queue_name}.dlq");
     let _dlq = channel
         .queue_declare(
@@ -139,7 +136,6 @@ pub(crate) async fn start_execution_consumer(
         )
         .await?;
 
-    // Declare Main Queue with DLQ args
     let mut args = FieldTable::default();
     args.insert("x-dead-letter-exchange".into(), AMQPValue::LongString("".into()));
     args.insert("x-dead-letter-routing-key".into(), AMQPValue::LongString(dlq_name.into()));
@@ -285,7 +281,6 @@ pub(crate) async fn start_completion_consumer(
     let cfg = crate::config::Config::get();
     let queue_name = &cfg.rabbitmq_completion_queue;
 
-    // Declare DLQ
     let dlq_name = format!("{queue_name}.dlq");
     let _dlq = channel
         .queue_declare(
@@ -295,7 +290,6 @@ pub(crate) async fn start_completion_consumer(
         )
         .await?;
 
-    // Declare Main Queue with DLQ args
     let mut args = FieldTable::default();
     args.insert("x-dead-letter-exchange".into(), AMQPValue::LongString("".into()));
     args.insert("x-dead-letter-routing-key".into(), AMQPValue::LongString(dlq_name.into()));

@@ -20,7 +20,7 @@ pub(crate) struct WsNodeUpdateDto {
     pub(crate) node_id: Option<String>,
     pub(crate) input:   Option<Value>,
     pub(crate) params:  Option<Value>,
-    pub(crate) output:  Option<String>,
+    pub(crate) output:  Option<Value>,
     pub(crate) status:  Option<String>,
 }
 
@@ -31,7 +31,7 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
                 node_id: Some(s.node_id.clone()),
                 input:   s.input.clone(),
                 params:  s.parameters.clone(),
-                output:  s.output.as_ref().map(ToString::to_string),
+                output:  s.output.clone(),
                 status:  Some(s.status.clone()),
             },
             WorkerMessage::WorkflowCompletion(_c) => Self {
