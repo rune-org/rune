@@ -896,6 +896,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /users/sharing:
+    get:
+      tags:
+      - Users
+      summary: List users for sharing
+      description: Get a list of users available for sharing credentials/workflows.
+        Returns minimal user info and excludes the current user.
+      operationId: list_users_for_sharing_users_sharing_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_list_UserBasicInfo__'
   /credentials/:
     get:
       tags:
@@ -1250,6 +1265,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_CredentialShareInfo__'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /credentials/{credential_id}/my-share:
+    get:
+      tags:
+      - credentials
+      summary: Get your own share info for a credential
+      description: 'Get your own share info for a credential that has been shared
+        with you.
+
+
+        This endpoint allows shared users to see when the credential was shared
+
+        with them and who shared it.'
+      operationId: get_my_share_info_credentials__credential_id__my_share_get
+      parameters:
+      - name: credential_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Credential Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_CredentialShareInfo_'
         '422':
           description: Validation Error
           content:
@@ -1771,6 +1819,28 @@ components:
       required:
       - data
       title: ApiResponse[list[CredentialShareInfo]]
+    ApiResponse_list_UserBasicInfo__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/UserBasicInfo'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[list[UserBasicInfo]]
     ApiResponse_list_UserResponse__:
       properties:
         success:
@@ -1972,6 +2042,12 @@ components:
           - type: integer
           - type: 'null'
           title: Shared By
+        shared_by_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Shared By Name
+          description: Name of the user who shared this credential
       type: object
       required:
       - user_id
@@ -1987,6 +2063,7 @@ components:
       - api_key
       - oauth2
       - basic_auth
+      - header
       - token
       - custom
       - smtp
@@ -2365,6 +2442,25 @@ components:
       - refresh_token
       - expires_in
       title: TokenResponse
+    UserBasicInfo:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        email:
+          type: string
+          format: email
+          title: Email
+      type: object
+      required:
+      - id
+      - name
+      - email
+      title: UserBasicInfo
+      description: Minimal user info for sharing purposes.
     UserCreate:
       properties:
         name:

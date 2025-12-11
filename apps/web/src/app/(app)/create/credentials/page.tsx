@@ -128,6 +128,7 @@ export default function CreateCredentialsPage() {
       <CredentialsTable
         credentials={credentials}
         onDelete={handleDeleteCredential}
+        onSharesChanged={loadCredentials}
         isLoading={isLoading}
       />
       <DeleteCredentialDialog

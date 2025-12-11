@@ -74,3 +74,13 @@ class UserPasswordChangeResponse(BaseModel):
     access_token: str = Field(
         ..., description="New access token with updated must_change_password flag"
     )
+
+
+class UserBasicInfo(BaseModel):
+    """Minimal user info for sharing purposes."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    email: EmailStr

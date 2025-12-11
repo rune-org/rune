@@ -45,6 +45,10 @@ class CredentialShareInfo(BaseModel):
     user_name: str
     shared_at: datetime
     shared_by: Optional[int]
+    shared_by_name: Optional[str] = Field(
+        default=None,
+        description="Name of the user who shared this credential",
+    )
 
 
 class CredentialResponse(BaseModel):

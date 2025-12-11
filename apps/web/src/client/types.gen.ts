@@ -514,6 +514,30 @@ export type ApiResponseListCredentialShareInfo = {
 };
 
 /**
+ * ApiResponse[list[UserBasicInfo]]
+ */
+export type ApiResponseListUserBasicInfo = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<UserBasicInfo>;
+};
+
+/**
  * ApiResponse[list[UserResponse]]
  */
 export type ApiResponseListUserResponse = {
@@ -737,6 +761,12 @@ export type CredentialShareInfo = {
      * Shared By
      */
     shared_by: number | null;
+    /**
+     * Shared By Name
+     *
+     * Name of the user who shared this credential
+     */
+    shared_by_name?: string | null;
 };
 
 /**
@@ -744,7 +774,7 @@ export type CredentialShareInfo = {
  *
  * Credential type enumeration.
  */
-export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'token' | 'custom' | 'smtp' | 'header';
+export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'header' | 'token' | 'custom' | 'smtp';
 
 /**
  * CredentialUpdate
@@ -1138,6 +1168,26 @@ export type TokenResponse = {
      * Access token expiration time in seconds
      */
     expires_in: number;
+};
+
+/**
+ * UserBasicInfo
+ *
+ * Minimal user info for sharing purposes.
+ */
+export type UserBasicInfo = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Email
+     */
+    email: string;
 };
 
 /**
@@ -2300,6 +2350,22 @@ export type ChangeMyPasswordProfileMeChangePasswordPostResponses = {
 
 export type ChangeMyPasswordProfileMeChangePasswordPostResponse = ChangeMyPasswordProfileMeChangePasswordPostResponses[keyof ChangeMyPasswordProfileMeChangePasswordPostResponses];
 
+export type ListUsersForSharingUsersSharingGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/users/sharing';
+};
+
+export type ListUsersForSharingUsersSharingGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListUserBasicInfo;
+};
+
+export type ListUsersForSharingUsersSharingGetResponse = ListUsersForSharingUsersSharingGetResponses[keyof ListUsersForSharingUsersSharingGetResponses];
+
 export type ListCredentialsCredentialsGetData = {
     body?: never;
     path?: never;
@@ -2540,6 +2606,36 @@ export type ListCredentialSharesCredentialsCredentialIdSharesGetResponses = {
 };
 
 export type ListCredentialSharesCredentialsCredentialIdSharesGetResponse = ListCredentialSharesCredentialsCredentialIdSharesGetResponses[keyof ListCredentialSharesCredentialsCredentialIdSharesGetResponses];
+
+export type GetMyShareInfoCredentialsCredentialIdMyShareGetData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    query?: never;
+    url: '/credentials/{credential_id}/my-share';
+};
+
+export type GetMyShareInfoCredentialsCredentialIdMyShareGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetMyShareInfoCredentialsCredentialIdMyShareGetError = GetMyShareInfoCredentialsCredentialIdMyShareGetErrors[keyof GetMyShareInfoCredentialsCredentialIdMyShareGetErrors];
+
+export type GetMyShareInfoCredentialsCredentialIdMyShareGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseCredentialShareInfo;
+};
+
+export type GetMyShareInfoCredentialsCredentialIdMyShareGetResponse = GetMyShareInfoCredentialsCredentialIdMyShareGetResponses[keyof GetMyShareInfoCredentialsCredentialIdMyShareGetResponses];
 
 export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostData = {
     body: GenerateWorkflowDocsRequest;
