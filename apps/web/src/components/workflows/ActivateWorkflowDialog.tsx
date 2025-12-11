@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { Clock, Play, Settings } from "lucide-react";
 import type { WorkflowSummary } from "@/lib/workflows";
 
 type ActivateWorkflowDialogProps = {
@@ -68,9 +69,12 @@ export function ActivateWorkflowDialog({
 
   return (
     <Dialog open={!!workflow} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] border-2 border-primary/20 bg-gradient-to-br from-background to-muted/20 shadow-2xl">
         <DialogHeader>
-          <DialogTitle>Activate Scheduled Workflow</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Activate Scheduled Workflow
+          </DialogTitle>
           <DialogDescription>
             Choose how to activate &ldquo;{workflow.name}&rdquo;
           </DialogDescription>
@@ -81,24 +85,30 @@ export function ActivateWorkflowDialog({
             <div className="space-y-3">
               <Button
                 variant="outline"
-                className="w-full h-auto py-4 px-4 flex flex-col items-start hover:bg-accent"
+                className="w-full h-auto py-4 px-4 flex flex-col items-start hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-2 hover:border-primary/50"
                 onClick={handleRunNow}
                 disabled={pending}
               >
-                <div className="font-semibold">Run Now</div>
-                <div className="text-sm text-muted-foreground text-left">
+                <div className="font-semibold flex items-center gap-2">
+                  <Play className="h-4 w-4" />
+                  Run Now
+                </div>
+                <div className="text-sm opacity-90 text-left">
                   Start executing immediately at the configured interval ({workflow.schedule?.interval_seconds || 60}s)
                 </div>
               </Button>
               
               <Button
                 variant="outline"
-                className="w-full h-auto py-4 px-4 flex flex-col items-start hover:bg-accent"
+                className="w-full h-auto py-4 px-4 flex flex-col items-start hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-2 hover:border-primary/50"
                 onClick={() => setMode("reconfigure")}
                 disabled={pending}
               >
-                <div className="font-semibold">Reconfigure Schedule</div>
-                <div className="text-sm text-muted-foreground text-left">
+                <div className="font-semibold flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Reconfigure Schedule
+                </div>
+                <div className="text-sm opacity-90 text-left">
                   Set a new start time and interval before activating
                 </div>
               </Button>
