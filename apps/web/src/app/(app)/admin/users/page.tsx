@@ -1,40 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Users, CheckCircle, AlertCircle, Trash2, Edit2, Copy } from "lucide-react";
-import { Toaster, toast } from "sonner";
+import { Users, Trash2, Edit2, Copy } from "lucide-react";
+import { toast } from "@/components/ui/toast";
 import {
   getAllUsersUsersGet,
   createUserUsersPost,
   updateUserUsersUserIdPut,
   deleteUserUsersUserIdDelete,
 } from "@/client";
-import type { UserResponse, UserCreate, AdminUserUpdate } from "@/client/types.gen";
+import type { UserResponse, UserCreate, AdminUserUpdate, CreateUserResponse } from "@/client/types.gen";
 import { useAuth } from "@/lib/auth";
 
 export default function UsersPage() {
+  const router = useRouter();
   const { state } = useAuth();
   const currentUser = state.user;
-
-  // Admin guard: only admins can use this page
-  if (!currentUser) {
-    return <div className="p-8 text-sm text-muted-foreground">Loading user...</div>;
-  }
-  if (currentUser.role !== "admin") {
-    return (
-      <div className="p-8">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold">Access denied</h3>
-          <p className="text-sm text-muted-foreground mt-2">
-            You do not have permission to view this page.
-          </p>
-        </Card>
-      </div>
-    );
-  }
 
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -86,6 +71,19 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    if (currentUser && currentUser.role !== "admin") {
+      router.replace("/create");
+    }
+  }, [currentUser, router]);
+
+  if (!currentUser) {
+    return <div className="p-8 text-sm text-muted-foreground">Loading user...</div>;
+  }
+  if (currentUser.role !== "admin") {
+    return null;
+  }
+
   // Invite flow
   const handleSendInvite = async () => {
     if (!inviteEmail) {
@@ -120,15 +118,13 @@ export default function UsersPage() {
         return;
       }
 
-      const created = data?.data ?? data ?? undefined;
+      const created = data?.data as CreateUserResponse | undefined;
 
       // If we got a created user + temporary password, open the persistent modal
-      if (created && (created.temporary_password || created.user)) {
-        const tmp = (created as any).temporary_password ?? "";
-        const createdUser = (created as any).user ?? (created as any);
+      if (created?.temporary_password && created?.user) {
         // Show persistent modal so admin can copy
-        setTempModalEmail(createdUser?.email ?? normalized);
-        setTempModalPassword(tmp);
+        setTempModalEmail(created.user.email ?? normalized);
+        setTempModalPassword(created.temporary_password);
         setTempModalOpen(true);
       } else {
         // fallback: simple toast
@@ -170,16 +166,16 @@ export default function UsersPage() {
   const handleUpdateUser = async () => {
     if (!editingUser) return;
 
-    const payload: Partial<AdminUserUpdate> = {
+    const payload: AdminUserUpdate = {
       name: editName,
       email: editEmail,
       role: editRole,
-    } as any;
+    };
 
     try {
-      const { data, error } = await updateUserUsersUserIdPut({
+      const { error } = await updateUserUsersUserIdPut({
         path: { user_id: Number(editingUser.id) },
-        body: payload as any,
+        body: payload,
       });
 
       if (error) {
@@ -208,7 +204,7 @@ export default function UsersPage() {
     if (!deletingUser) return;
 
     try {
-      const { data, error } = await deleteUserUsersUserIdDelete({
+      const { error } = await deleteUserUsersUserIdDelete({
         path: { user_id: Number(deletingUser.id) },
       });
 
@@ -235,9 +231,6 @@ export default function UsersPage() {
 
   return (
     <div className="flex flex-col w-full p-8 gap-6 relative">
-      {/* Sonner toaster (place once; safe to include on this page) */}
-      <Toaster richColors position="top-right" />
-
       {/* Header */}
       <div className="flex justify-between items-center mt-4">
         <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -293,10 +286,7 @@ export default function UsersPage() {
                         : "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{u.name}</span>
-                    <span className="text-xs text-muted-foreground">{u.email}</span>
-                  </div>
+                  <span className="font-medium">{u.name}</span>
                 </td>
 
                 <td className="py-4 px-4">{u.role}</td>
@@ -308,9 +298,11 @@ export default function UsersPage() {
                       <Edit2 className="w-4 h-4" />
                     </Button>
 
-                    <Button variant="destructive" className="p-2" onClick={() => openDeleteConfirm(u)} title="Delete">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {u.id !== currentUser.id && (
+                      <Button variant="destructive" className="p-2" onClick={() => openDeleteConfirm(u)} title="Delete">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>
