@@ -57,6 +57,7 @@ opentelemetry-appender-tracing = "0.31"
 dotenvy = "0.15"
 tokio-stream = { version = "0.1.17", features = ["full"] }
 tokio-util = { version = "0.7.17", features = ["rt", "full"] }
+jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
 
 
 [lints.rust]
@@ -97,3 +98,6 @@ missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 multiple_crate_versions = "allow"
 redundant_pub_crate = "allow"
+
+[dev-dependencies]
+tokio-tungstenite = "0.28.0"

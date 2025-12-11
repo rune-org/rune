@@ -37,5 +37,30 @@ services:
     depends_on:
       - openobserve
 
+  mongodb:
+    image: mongodb/mongodb-community-server:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db
+
+  rtes:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - rabbitmq
+      - mongodb
+      - otel-collector
+    environment:
+      RUST_LOG: info
+
 volumes:
   openobserve_data:
+  mongodb_data:

@@ -18,14 +18,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     config::Config::init()?;
     let cfg = config::Config::get();
 
-    let tracer_provider = infra::telemetry::init_telemetry("rtes", &cfg.otel_endpoint)?;
+    // let tracer_provider = infra::telemetry::init_telemetry("rtes", &cfg.otel_endpoint)?;
 
     info!("Starting RTES service...");
 
     let client = redis::Client::open(cfg.redis_url.as_str())?;
-    let token_store = infra::storage::TokenStore::new(client);
+    let token_store = infra::token_store::TokenStore::new(client);
 
-    let execution_store = infra::storage::ExecutionStore::new(&cfg.mongodb_url, "rtes_db").await?;
+    let execution_store =
+        infra::execution_store::ExecutionStore::new(&cfg.mongodb_url, "rtes_db").await?;
 
     let state = api::state::AppState::new(token_store.clone(), execution_store);
 
@@ -43,7 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     start_server(state, cancel_token).await?;
 
-    let _ = tracer_provider.shutdown();
+    // let _ = tracer_provider.shutdown();
     info!("RTES service stopped");
 
     Ok(())
@@ -64,6 +65,16 @@ fn spawn_consumers(amqp_url: &str, state: &api::state::AppState, cancel_token: &
     let s = state.clone();
     let ct = cancel_token.clone();
     tokio::spawn(async move {
+        info!("Connecting to RabbitMQ for Execution Consumer at {}", url);
+        if let Err(e) = infra::messaging::start_execution_consumer(&url, s, ct).await {
+            tracing::error!("Execution Consumer error: {}", e);
+        }
+    });
+
+    let url = amqp_url.to_string();
+    let s = state.clone();
+    let ct = cancel_token.clone();
+    tokio::spawn(async move {
         info!("Connecting to RabbitMQ for Status Consumer at {}", url);
         if let Err(e) = infra::messaging::start_status_consumer(&url, s, ct).await {
             tracing::error!("Status Consumer error: {}", e);
@@ -77,16 +88,6 @@ fn spawn_consumers(amqp_url: &str, state: &api::state::AppState, cancel_token: &
         info!("Connecting to RabbitMQ for Completion Consumer at {}", url);
         if let Err(e) = infra::messaging::start_completion_consumer(&url, s, ct).await {
             tracing::error!("Completion Consumer error: {}", e);
-        }
-    });
-
-    let url = amqp_url.to_string();
-    let s = state.clone();
-    let ct = cancel_token.clone();
-    tokio::spawn(async move {
-        info!("Connecting to RabbitMQ for Execution Consumer at {}", url);
-        if let Err(e) = infra::messaging::start_execution_consumer(&url, s, ct).await {
-            tracing::error!("Execution Consumer error: {}", e);
         }
     });
 }

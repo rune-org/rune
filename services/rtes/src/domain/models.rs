@@ -118,6 +118,7 @@ pub struct ExecutionDocument {
     #[serde(default)]
     pub accumulated_context: Value,
     pub nodes:               std::collections::HashMap<String, HydratedNode>,
+    pub status:              Option<String>,
     pub created_at:          Option<DateTime>,
     pub updated_at:          Option<DateTime>,
 }

@@ -16,6 +16,7 @@ pub(crate) struct Config {
     pub rabbitmq_completion_queue: String,
     pub rabbitmq_execution_queue: String,
     pub port: u16,
+    pub jwt_secret: String,
 }
 
 impl Config {
@@ -50,6 +51,7 @@ impl Config {
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()
                 .unwrap_or(3000),
+            jwt_secret: env::var("JWT_SECRET").unwrap_or_else(|_| "secret".to_string()),
         };
 
         CONFIG
