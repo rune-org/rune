@@ -231,8 +231,10 @@ api-format:
 
 worker-lint:
 	@echo "Linting worker..."
+	@echo "Vetting code..."
 	cd services/rune-worker && go vet ./...
-	cd services/rune-worker && go fmt ./...
+	@echo "Checking code formatting..."
+	@cd services/rune-worker && gofmt -l . | grep -q . && (echo "❌ Code formatting issues found. Run 'make worker-format' to fix." && gofmt -l . && exit 1) || echo "✓ Code formatting OK"
 
 worker-format:
 	@echo "Formatting worker code..."

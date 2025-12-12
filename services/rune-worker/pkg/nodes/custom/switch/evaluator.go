@@ -55,7 +55,7 @@ func (e *Evaluator) resolveValue(value string) (interface{}, error) {
 	if strings.HasPrefix(value, "{{") && strings.HasSuffix(value, "}}") {
 		value = strings.TrimSpace(value[2 : len(value)-2])
 	}
-	
+
 	if strings.HasPrefix(value, "$") {
 		return e.resolveReference(value)
 	}
