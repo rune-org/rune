@@ -1,4 +1,18 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev dev-infra-up dev-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
+
+# Detect OS: try 'uname' for Unix, if that fails we're on Windows
+UNAME := $(shell uname 2>/dev/null)
+ifeq ($(UNAME),)
+	DETECTED_OS := Windows
+	VENV_ACTIVATE := venv\Scripts\activate.bat
+	PYTHON := python
+	RM := rmdir /s /q
+else
+	DETECTED_OS := Unix
+	VENV_ACTIVATE := . venv/bin/activate
+	PYTHON := python3
+	RM := rm -rf
+endif
 
 # Default target
 help:
@@ -22,10 +36,16 @@ help:
 	@echo "  make web-typecheck - Type check frontend code"
 	@echo ""
 	@echo "API targets:"
-	@echo "  make api-install   - Install API dependencies"
-	@echo "  make api-dev       - Start API in dev mode"
-	@echo "  make api-lint      - Lint API code with ruff"
-	@echo "  make api-format    - Format API code with ruff"
+	@echo "  make api-install        - Install API dependencies (creates/uses venv)"
+	@echo "  make api-install-no-env - Install API dependencies to system Python"
+	@echo "  make api-dev            - Start FastAPI server in dev mode (hot-reload)"
+	@echo "  make api-lint           - Lint API code with ruff"
+	@echo "  make api-format         - Format API code with ruff"
+	@echo ""
+	@echo "Development Infrastructure:"
+	@echo "  make dev-infra-up       - Start shared infrastructure (postgres, redis, rabbitmq)"
+	@echo "  make dev-infra-down     - Stop shared infrastructure"
+	@echo "  Note: Run 'make dev-infra-up' before starting services"
 	@echo ""
 	@echo "Worker targets:"
 	@echo "  make worker-install - Install worker dependencies"
@@ -68,8 +88,53 @@ web-install:
 	cd apps/web && pnpm install
 
 api-install:
-	@echo "Installing API dependencies..."
-	cd services/api && pip install -r requirements.txt
+	@echo "Setting up API dependencies..."
+ifeq ($(DETECTED_OS),Windows)
+	@if not exist "services\api\venv" if not exist "services\api\.venv" (echo Creating virtual environment... && cd services\api && $(PYTHON) -m venv venv)
+	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && cd services\api && call venv\Scripts\activate.bat && pip install -r requirements.txt && echo ✓ API dependencies installed) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && cd services\api && call .venv\Scripts\activate.bat && pip install -r requirements.txt && echo ✓ API dependencies installed) else (echo ❌ Error: No virtual environment found && echo For best results: cd services\api ^&^& python -m venv venv && exit /b 1)
+else
+	@if [ ! -d "services/api/venv" ] && [ ! -d "services/api/.venv" ]; then \
+		echo "Creating virtual environment..."; \
+		cd services/api && $(PYTHON) -m venv venv; \
+	fi
+	@if [ -d "services/api/venv" ]; then \
+		echo "Using virtual environment: services/api/venv"; \
+		cd services/api && . venv/bin/activate && pip install -r requirements.txt; \
+		echo "✓ API dependencies installed"; \
+	elif [ -d "services/api/.venv" ]; then \
+		echo "Using virtual environment: services/api/.venv"; \
+		cd services/api && . .venv/bin/activate && pip install -r requirements.txt; \
+		echo "✓ API dependencies installed"; \
+	else \
+		echo "❌ Error: No virtual environment found and could not create one"; \
+		echo ""; \
+		echo "   For best results, create a virtual environment:"; \
+		echo "   cd services/api && $(PYTHON) -m venv venv"; \
+		echo ""; \
+		echo "   If you need to install to system Python (not recommended), use:"; \
+		echo "   make api-install-no-env"; \
+		exit 1; \
+	fi
+endif
+
+api-install-no-env:
+	@echo "⚠️  Warning: This will install packages to your system Python"
+	@echo "   For isolated dependencies, use 'make api-install' instead"
+	@echo ""
+ifeq ($(DETECTED_OS),Windows)
+	@echo Installing API dependencies to system Python...
+	cd services/api && pip install -r requirements.txt && echo ✓ API dependencies installed to system Python
+else
+	@read -p "Continue with system Python installation? [y/N]: " confirm && \
+		if [ "$$confirm" != "y" ] && [ "$$confirm" != "Y" ]; then \
+			echo "Installation cancelled."; \
+			exit 0; \
+		else \
+			echo "Installing API dependencies to system Python..."; \
+			cd services/api && pip install -r requirements.txt && \
+			echo "✓ API dependencies installed to system Python"; \
+		fi
+endif
 
 worker-install:
 	@echo "Installing worker dependencies..."
@@ -79,16 +144,37 @@ worker-install:
 # Development targets
 # ======================
 
-dev: docker-up web-dev
-	@echo "All services started in development mode"
+dev: dev-infra-up
+	@echo "Starting all services in development mode..."
+	@$(MAKE) -j3 web-dev api-dev worker-dev
 
 web-dev:
 	@echo "Starting frontend in development mode..."
 	cd apps/web && pnpm dev
 
-api-dev:
-	@echo "Starting API in development mode..."
+dev-infra-up:
+	@echo "Starting shared development infrastructure services..."
 	cd services/api && docker compose -f docker-compose.dev.yml up -d
+
+dev-infra-down:
+	@echo "Stopping shared development infrastructure services..."
+	cd services/api && docker compose -f docker-compose.dev.yml down
+
+api-dev:
+	@echo "Starting FastAPI server in development mode..."
+ifeq ($(DETECTED_OS),Windows)
+	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && echo Installing/updating dependencies... && cd services\api && call venv\Scripts\activate.bat && pip install -r requirements.txt && fastapi dev src\app.py) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && echo Installing/updating dependencies... && cd services\api && call .venv\Scripts\activate.bat && pip install -r requirements.txt && fastapi dev src\app.py) else (echo ⚠️  No virtual environment found. Using system Python. && echo For best results, install dependencies with: make api-install && cd services\api && fastapi dev src\app.py || (echo ❌ FastAPI not found. Please install dependencies: make api-install && exit /b 1))
+else
+	@if [ -d "services/api/venv" ] || [ -d "services/api/.venv" ]; then \
+		echo "Using virtual environment: services/api/venv"; \
+		echo "Installing/updating dependencies..."; \
+		cd services/api && . venv/bin/activate && pip install -r requirements.txt && fastapi dev src/app.py; \
+	else \
+		echo "⚠️  No virtual environment found. Using system Python."; \
+		echo "   For best results, install dependencies with: make api-install"; \
+		cd services/api && fastapi dev src/app.py || (echo "❌ FastAPI not found. Please install dependencies: make api-install" && exit 1); \
+	fi
+endif
 
 worker-dev:
 	@echo "Starting worker in development mode..."
@@ -145,8 +231,10 @@ api-format:
 
 worker-lint:
 	@echo "Linting worker..."
+	@echo "Vetting code..."
 	cd services/rune-worker && go vet ./...
-	cd services/rune-worker && go fmt ./...
+	@echo "Checking code formatting..."
+	@cd services/rune-worker && gofmt -l . | grep -q . && (echo "❌ Code formatting issues found. Run 'make worker-format' to fix." && gofmt -l . && exit 1) || echo "✓ Code formatting OK"
 
 worker-format:
 	@echo "Formatting worker code..."
@@ -237,13 +325,13 @@ db-shell:
 
 clean:
 	@echo "Cleaning build artifacts..."
-	rm -rf apps/web/.next
-	rm -rf apps/web/out
-	rm -rf services/rune-worker/bin
+	$(RM) apps/web/.next
+	$(RM) apps/web/out
+	$(RM) services/rune-worker/bin
 	@echo "✓ Build artifacts cleaned"
 
 clean-all: clean
 	@echo "Cleaning all dependencies..."
-	rm -rf apps/web/node_modules
-	rm -rf apps/web/.pnpm-store
+	$(RM) apps/web/node_modules
+	$(RM) apps/web/.pnpm-store
 	@echo "✓ All dependencies cleaned"

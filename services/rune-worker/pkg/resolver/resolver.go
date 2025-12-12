@@ -85,10 +85,20 @@ func (r *Resolver) resolveValue(value interface{}) (interface{}, error) {
 	}
 }
 
+// expressionPattern matches {{ ... }} expression blocks that should not be resolved
+var expressionPattern = regexp.MustCompile(`\{\{.*?\}\}`)
+
 // resolveString resolves references in a string value.
 // If the entire string is a reference (e.g., "$node.field"), it returns the actual value.
 // If the string contains embedded references (e.g., "User: $node.name"), it performs string interpolation.
+// Strings containing {{ ... }} expression blocks are returned as-is for later evaluation by nodes like edit.
 func (r *Resolver) resolveString(s string) (interface{}, error) {
+	// Skip resolution for strings containing {{ ... }} expression blocks
+	// These are meant to be evaluated by nodes like the edit node using their own expression engine
+	if expressionPattern.MatchString(s) {
+		return s, nil
+	}
+
 	// Check if the entire string is a single reference
 	if strings.HasPrefix(s, "$") && !strings.Contains(s[1:], "$") {
 		// Single reference - return the actual value (could be any type)

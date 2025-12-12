@@ -122,13 +122,16 @@ function CanvasPageInner() {
           throw new Error("Workflow not found");
         }
         const graph = detailToGraph(response.data.data);
-        const { nodes: filteredNodes, edges: filteredEdges } = sanitizeGraph({
+        const parsed = sanitizeGraph({
           nodes: graph.nodes,
           edges: graph.edges,
         });
+        const filteredNodes = parsed.nodes as CanvasNode[];
+        const filteredEdges = parsed.edges as CanvasEdge[];
+
         if (!abortController.signal.aborted) {
-          setNodes(filteredNodes as CanvasNode[]);
-          setEdges(filteredEdges as CanvasEdge[]);
+          setNodes(filteredNodes);
+          setEdges(filteredEdges);
         }
       } catch (err) {
         if (!abortController.signal.aborted) {
@@ -305,6 +308,7 @@ function CanvasPageInner() {
           onPersist={handlePersist}
           onRun={handleRun}
           saveDisabled={isSaving}
+          workflowId={numericWorkflowId}
         />
       </div>
 

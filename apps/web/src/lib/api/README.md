@@ -7,7 +7,7 @@
 
 ## Structure
 
-- `auth.ts`: login, refreshAccessToken, logout, getMyProfile, adminCreateUser.
+- `auth.ts`: login, refreshAccessToken, logout, getMyProfile, adminCreateUser, firstAdminSignup, checkFirstTimeSetup.
 - `workflows.ts`: listWorkflows, getWorkflowById, createWorkflow, updateWorkflowName, updateWorkflowStatus, deleteWorkflow, runWorkflow.
 - `users.ts`: admin list/get/create/update/delete + self‑service profile get/update.
 - `index.ts`: barrel export.

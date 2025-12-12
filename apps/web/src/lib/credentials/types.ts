@@ -31,6 +31,10 @@ export const CREDENTIAL_TYPE_CONFIG: Record<
     label: "SMTP",
     description: "Email server credentials",
   },
+  header: {
+    label: "Header Auth",
+    description: "Custom header authentication",
+  },
   custom: {
     label: "Custom",
     description: "Custom credential format",
@@ -78,6 +82,9 @@ export const CREDENTIAL_TYPE_BADGE_STYLES: Record<
   },
   smtp: {
     className: "bg-cyan-900/40 text-cyan-200",
+  },
+  header: {
+    className: "bg-pink-900/40 text-pink-200",
   },
   custom: {
     className: "bg-slate-800 text-slate-200",

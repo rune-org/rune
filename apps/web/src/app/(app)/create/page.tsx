@@ -31,8 +31,8 @@ const creationOptions = [
     title: "Ask an Agent",
     description: "Let AI help you build your workflow",
     icon: "/icons/AskAgentIcon.svg",
-    action: "Start Chat",
-    href: "/create/app"
+    action: "Start with Smith",
+    href: "/create/smith"
   }
 ];
 

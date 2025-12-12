@@ -19,6 +19,8 @@ export function SignInForm() {
   async function onSubmit(values: { email: string; password: string }) {
     const ok = await login(values.email, values.password);
     if (ok) {
+      // Redirect to /create - RequireAuth will handle redirecting to
+      // /change-password if the user needs to change their password
       const redirectParam = searchParams.get("redirect");
       const allowed = ["/create", "/create/app", "/profile", "/settings", "/admin"] as const;
       const isAllowed = (p: string | null): p is (typeof allowed)[number] => !!p && allowed.includes(p as (typeof allowed)[number]);

@@ -35,24 +35,37 @@ class WorkflowQueueService:
             workflow_data: The resolved workflow definition (nodes and edges)
         """
 
-        # Find the first node to execute from the workflow data
+        # Find trigger nodes and the first executable nodes
         nodes = workflow_data.get("nodes", [])
         edges = workflow_data.get("edges", [])
 
         if not nodes:
             raise ValueError("Workflow has no nodes to execute")
 
-        # Find the first node (node with no incoming edges)
-        incoming_nodes = {edge.get("dst") for edge in edges}
-        first_node = None
-        for node in nodes:
-            if node.get("id") not in incoming_nodes:
-                first_node = node.get("id")
-                break
+        # Validate trigger nodes - must have exactly one
+        trigger_nodes = [node for node in nodes if node.get("trigger", False)]
 
-        if not first_node:
-            # If all nodes have incoming edges, use the first node in the list
-            first_node = nodes[0].get("id")
+        if len(trigger_nodes) != 1:
+            raise ValueError("Workflow must have exactly one trigger node")
+
+        # Get the single trigger node
+        trigger_node = trigger_nodes[0]
+        trigger_node_id = trigger_node.get("id")
+
+        # Find the executable nodes the trigger points to
+        first_nodes = []
+
+        for edge in edges:
+            if edge.get("src") == trigger_node_id:
+                # This edge comes from the trigger node
+                dst_node_id = edge.get("dst")
+                first_nodes.append(dst_node_id)
+
+        if not first_nodes:
+            return None
+
+        # For now, use the first one (in the future, might send multiple messages)
+        first_node = first_nodes[0]
 
         payload = NodeExecutionMessage(
             workflow_id=str(workflow_id),

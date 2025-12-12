@@ -14,10 +14,19 @@ import { useAuth } from "@/lib/auth";
 const signUpSchema = z.object({
   name: z
     .string()
-    .min(2, "Name must be at least 2 characters long")
-    .max(64, "Name must be shorter than 64 characters"),
+    .min(3, "Name must be at least 3 characters long")
+    .max(40, "Name must be 40 characters or less"),
   email: z.string().email("Enter a valid email"),
-  password: z.string().min(8, "Password must include at least 8 characters"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(
+      /[!@#$%^&*(),.?":{}|<>]/,
+      "Password must contain at least one special character"
+    ),
 });
 
 type SignUpForm = z.infer<typeof signUpSchema>;
@@ -69,7 +78,9 @@ export function AuthForm() {
           <p className="text-xs text-red-400 mt-1">
             {form.formState.errors.name.message}
           </p>
-        ) : null}
+        ) : (
+          <p className="text-xs text-zinc-500 mt-1">3-40 characters</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="email" className="text-zinc-400">Email</Label>
@@ -101,7 +112,11 @@ export function AuthForm() {
           <p className="text-xs text-red-400 mt-1">
             {form.formState.errors.password.message}
           </p>
-        ) : null}
+        ) : (
+          <p className="text-xs text-zinc-500 mt-1">
+            8+ characters, uppercase, lowercase, number, and special character
+          </p>
+        )}
       </div>
       {state.error ? (
         <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3">

@@ -1,0 +1,3489 @@
+[
+    {
+        "id": 12,
+        "name": "09_new_user_welcome_email",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T15:32:25.062878",
+        "updated_at": "2025-11-26T16:46:35.081795",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e9c0d1e2-f3a4-5678-c345-789012345678",
+                    "dst": "f6a7b8c9-d0e1-2345-f234-678901234567",
+                    "src": "e5f6a7b8-c9d0-1234-e123-567890123456"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "e5f6a7b8-c9d0-1234-e123-567890123456",
+                    "name": "Create_New_User",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        150,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users",
+                        "body": {
+                            "name": "Jane Doe",
+                            "email": "jane.doe@example.com",
+                            "phone": "555-0123",
+                            "username": "janedoe"
+                        },
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                },
+                {
+                    "id": "f6a7b8c9-d0e1-2345-f234-678901234567",
+                    "name": "Send Welcome Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        450,
+                        250
+                    ],
+                    "parameters": {
+                        "to": "sophia.martinez963@workflow.dev",
+                        "body": "Hello $Create_New_User.body.name,\\n\\nWelcome to our platform! Your account has been successfully created.\\n\\nUsername: $Create_New_User.body.username\\nEmail: $Create_New_User.body.email\\n\\nWe're excited to have you on board!\\n\\nBest regards,\\nThe Team",
+                        "from": "mjohnson408@mailtest.com",
+                        "subject": "Welcome to Our Platform, $Create_New_User.body.name!"
+                    },
+                    "credentials": {
+                        "id": "1",
+                        "name": "sender_azure_82",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 11,
+        "name": "07_email_api_status",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T15:05:06.36732",
+        "updated_at": "2025-11-25T15:31:47.328248",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e7a8b9c0-d1e2-3456-a123-567890123456",
+                    "dst": "b2c3d4e5-f6a7-8901-b890-234567890123",
+                    "src": "a1b2c3d4-e5f6-7890-a789-123456789012"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "a1b2c3d4-e5f6-7890-a789-123456789012",
+                    "name": "Check_API_Health",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        150,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://httpbin.org/status/200",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "b2c3d4e5-f6a7-8901-b890-234567890123",
+                    "name": "Send Status Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        450,
+                        250
+                    ],
+                    "parameters": {
+                        "to": "zgonzalez611@automation.test",
+                        "body": "API Health Check Results:\\n\\nStatus Code: $Check_API_Health.status\\n\\nThe API is responding normally.",
+                        "from": "frank_taylor81@demo.net",
+                        "subject": "API Health Check - Status $Check_API_Health.status"
+                    },
+                    "credentials": {
+                        "id": "1",
+                        "name": "sender_mandrill_87",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 9,
+        "name": "05_get_posts",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T14:25:03.66753",
+        "updated_at": "2025-11-25T15:01:42.246636",
+        "description": "",
+        "workflow_data": {
+            "edges": [],
+            "nodes": [
+                {
+                    "id": "c7d8e9f0-a1b2-3456-c345-789012345678",
+                    "name": "Search_Posts",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        150,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts",
+                        "query": {
+                            "_limit": "5",
+                            "userId": "1"
+                        },
+                        "method": "GET"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 8,
+        "name": "02_post_user",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-24T20:55:44.250189",
+        "updated_at": "2025-11-25T15:01:54.701606",
+        "description": "",
+        "workflow_data": {
+            "edges": [],
+            "nodes": [
+                {
+                    "id": "c1d2e3f4-a5b6-7890-cdef-123456789012",
+                    "name": "Create_User",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        150,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users",
+                        "body": {
+                            "name": "Test User",
+                            "email": "testuser@example.com",
+                            "username": "testuser"
+                        },
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 10,
+        "name": "06_email_user_data",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T14:30:44.048094",
+        "updated_at": "2025-11-25T15:04:51.138178",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e6f7a8b9-c0d1-2345-f123-456789012345",
+                    "dst": "f0a1b2c3-d4e5-6789-f678-012345678901",
+                    "src": "e9f0a1b2-c3d4-5678-e567-901234567890"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "e9f0a1b2-c3d4-5678-e567-901234567890",
+                    "name": "Get_User_Data",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        150,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "f0a1b2c3-d4e5-6789-f678-012345678901",
+                    "name": "Email User Summary",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        450,
+                        250
+                    ],
+                    "parameters": {
+                        "to": "liam.garcia999@mailtest.com",
+                        "body": "User Details:\\nName: $Get_User_Data.body.name\\nEmail: $Get_User_Data.body.email\\nCompany: $Get_User_Data.body.company.name",
+                        "from": "gracemartinez342@workflow.dev",
+                        "subject": "User Data Retrieved"
+                    },
+                    "credentials": {
+                        "id": "1",
+                        "name": "outbound-aws",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 13,
+        "name": "11_cascade_http_get",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T15:40:18.125712",
+        "updated_at": "2025-11-29T01:29:16.6778",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e1f2a3b4-c5d6-7890-1234-567890123456",
+                    "dst": "d0e1f2a3-b4c5-6789-d678-123456789012",
+                    "src": "c9d0e1f2-a3b4-5678-c567-012345678901"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "c9d0e1f2-a3b4-5678-c567-012345678901",
+                    "name": "Get_User",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/5",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "d0e1f2a3-b4c5-6789-d678-123456789012",
+                    "name": "Get_User_Posts",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts",
+                        "query": {
+                            "userId": "$Get_User.body.id"
+                        },
+                        "method": "GET"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 14,
+        "name": "12_post_transform",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T17:00:41.729317",
+        "updated_at": "2025-11-25T18:28:22.995915",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e2a3b4c5-d6e7-8901-3456-789012345678",
+                    "dst": "a3b4c5d6-e7f8-9012-a901-456789012345",
+                    "src": "f2a3b4c5-d6e7-8901-f890-345678901234"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "f2a3b4c5-d6e7-8901-f890-345678901234",
+                    "name": "Fetch_Raw_Data",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/todos/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "a3b4c5d6-e7f8-9012-a901-456789012345",
+                    "name": "Transform_Data",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts",
+                        "body": {
+                            "completed": "$Fetch_Raw_Data.body.completed",
+                            "processed": true,
+                            "original_title": "$Fetch_Raw_Data.body.title"
+                        },
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 16,
+        "name": "13_cascade_http_get_then_post",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T18:04:46.57253",
+        "updated_at": "2025-11-25T21:43:15.129266",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e3c4d5e6-f7a8-9012-5678-901234567890",
+                    "dst": "d6e7f8a9-b0c1-2345-d234-789012345678",
+                    "src": "c5d6e7f8-a9b0-1234-c123-678901234567"
+                },
+                {
+                    "id": "f4d5e6f7-a8b9-0123-6789-012345678901",
+                    "dst": "e7f8a9b0-c1d2-3456-e345-890123456789",
+                    "src": "d6e7f8a9-b0c1-2345-d234-789012345678"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "c5d6e7f8-a9b0-1234-c123-678901234567",
+                    "name": "Step_One",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://dummyjson.com/products/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "d6e7f8a9-b0c1-2345-d234-789012345678",
+                    "name": "Step_Two",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://dummyjson.com/users/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "e7f8a9b0-c1d2-3456-e345-890123456789",
+                    "name": "Step_Three",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts",
+                        "body": {
+                            "user_name": "{{$Step_Two.body.firstName}}",
+                            "product_id": "{{$Step_One.body.id}}",
+                            "product_title": "{{$Step_One.body.title}}",
+                            "cascade_complete": true
+                        },
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 17,
+        "name": "15_cascade_http_get_then_email",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T18:57:35.458391",
+        "updated_at": "2025-11-25T21:33:13.388039",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e5f6a7b8-c9d0-1234-9012-345678901234",
+                    "dst": "d2e3f4a5-b6c7-8901-d890-345678901234",
+                    "src": "c1d2e3f4-a5b6-7890-c789-234567890123"
+                },
+                {
+                    "id": "f6a7b8c9-d0e1-2345-0123-456789012345",
+                    "dst": "e3f4a5b6-c7d8-9012-e901-456789012345",
+                    "src": "d2e3f4a5-b6c7-8901-d890-345678901234"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "c1d2e3f4-a5b6-7890-c789-234567890123",
+                    "name": "Stage_One",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/2",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "d2e3f4a5-b6c7-8901-d890-345678901234",
+                    "name": "Stage_Two",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts",
+                        "query": {
+                            "_limit": "3",
+                            "userId": "2"
+                        },
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "e3f4a5b6-c7d8-9012-e901-456789012345",
+                    "name": "Stage Three Notify",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        714.0622533915512,
+                        126.26341920485174
+                    ],
+                    "parameters": {
+                        "to": "cjackson819@automation.test",
+                        "body": "Sequential Processing Results:\\n\\nUser: $Stage_One.body.name\\nEmail: $Stage_One.body.email\\nPosts Retrieved: $Stage_Two.body\\n\\nProcessing completed successfully.",
+                        "from": "jackbrown85@usertest.org",
+                        "subject": "Processing Complete for $Stage_One.body.name"
+                    },
+                    "credentials": {
+                        "id": "1",
+                        "name": "outlook-alert",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 18,
+        "name": "16_if_statusOK",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T19:02:57.443389",
+        "updated_at": "2025-11-25T19:03:03.576925",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e6f7a8b9-c0d1-2345-1234-567890123456",
+                    "dst": "a5b6c7d8-e9f0-1234-a123-678901234567",
+                    "src": "f4a5b6c7-d8e9-0123-f012-567890123456"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "f4a5b6c7-d8e9-0123-f012-567890123456",
+                    "name": "Check_Endpoint",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        300
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "a5b6c7d8-e9f0-1234-a123-678901234567",
+                    "name": "Is Status OK",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        397.38834831011167,
+                        303.4822022531845
+                    ],
+                    "parameters": {
+                        "expression": "$Check_Endpoint.status == 200"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 21,
+        "name": "22_if_post_success",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T20:13:43.233781",
+        "updated_at": "2025-11-25T20:35:47.610152",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e2e3f4a5-b6c7-8901-9012-345678901234",
+                    "dst": "a9b0c1d2-e3f4-5678-a567-012345678901",
+                    "src": "f8a9b0c1-d2e3-4567-f456-901234567890"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "f8a9b0c1-d2e3-4567-f456-901234567890",
+                    "name": "Create_Resource",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        300
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts",
+                        "body": {
+                            "body": "Test content",
+                            "title": "Test Resource",
+                            "userId": 1
+                        },
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                },
+                {
+                    "id": "a9b0c1d2-e3f4-5678-a567-012345678901",
+                    "name": "Creation_Success",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        300
+                    ],
+                    "parameters": {
+                        "expression": "$Create_Resource.status == 201"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 19,
+        "name": "17_email_if_user_exist",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T20:01:14.102839",
+        "updated_at": "2025-11-25T20:01:24.072003",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e7a8b9c0-d1e2-3456-4567-890123456789",
+                    "dst": "e9f0a1b2-c3d4-5678-e567-012345678901",
+                    "src": "d8e9f0a1-b2c3-4567-d456-901234567890"
+                },
+                {
+                    "id": "f8b9c0d1-e2f3-4567-5678-901234567890",
+                    "dst": "f0a1b2c3-d4e5-6789-f678-123456789012",
+                    "src": "e9f0a1b2-c3d4-5678-e567-012345678901",
+                    "label": "true"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "d8e9f0a1-b2c3-4567-d456-901234567890",
+                    "name": "Fetch_User",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        300
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "e9f0a1b2-c3d4-5678-e567-012345678901",
+                    "name": "User_Found",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        300
+                    ],
+                    "parameters": {
+                        "expression": "$Fetch_User.status == 200",
+                        "true_edge_id": "f8b9c0d1-e2f3-4567-5678-901234567890"
+                    }
+                },
+                {
+                    "id": "f0a1b2c3-d4e5-6789-f678-123456789012",
+                    "name": "User_Exists_Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        200
+                    ],
+                    "parameters": {
+                        "to": "gmartin630@demo.net",
+                        "body": "User Details:\\nName: $Fetch_User.body.name\\nEmail: $Fetch_User.body.email\\nUsername: $Fetch_User.body.username\\n\\nUser exists in the system.",
+                        "from": "katejones387@example.com",
+                        "subject": "User Found: $Fetch_User.body.name"
+                    },
+                    "credentials": {
+                        "id": "1",
+                        "name": "office365-system",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 20,
+        "name": "19_email_if_api_error",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T20:10:13.93041",
+        "updated_at": "2025-11-25T20:10:18.202238",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e9b0c1d2-e3f4-5678-0123-456789012345",
+                    "dst": "a7b8c9d0-e1f2-3456-a345-890123456789",
+                    "src": "f6a7b8c9-d0e1-2345-f234-789012345678"
+                },
+                {
+                    "id": "f0c1d2e3-f4a5-6789-1234-567890123456",
+                    "dst": "b8c9d0e1-f2a3-4567-b456-901234567890",
+                    "src": "a7b8c9d0-e1f2-3456-a345-890123456789",
+                    "label": "true"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "f6a7b8c9-d0e1-2345-f234-789012345678",
+                    "name": "API_Call",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        300
+                    ],
+                    "parameters": {
+                        "url": "https://reqres.in/api/users/99999",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "a7b8c9d0-e1f2-3456-a345-890123456789",
+                    "name": "Has_Error",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        300
+                    ],
+                    "parameters": {
+                        "expression": "$API_Call.status >= 400",
+                        "true_edge_id": "f0c1d2e3-f4a5-6789-1234-567890123456"
+                    }
+                },
+                {
+                    "id": "b8c9d0e1-f2a3-4567-b456-901234567890",
+                    "name": "Error_Alert",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        200
+                    ],
+                    "parameters": {
+                        "to": "diana_miller801@sample.io",
+                        "body": "Error Alert!\\n\\nAPI returned error status: $API_Call.status\\nEndpoint: https://reqres.in/api/users/99999\\n\\nImmediate attention required.",
+                        "from": "zack.jones715@demo.net",
+                        "subject": "API Error Detected - Status $API_Call.status"
+                    },
+                    "credentials": {
+                        "id": "1",
+                        "name": "backup-aws-alert",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 22,
+        "name": "23_if_bad_data",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T20:16:56.913704",
+        "updated_at": "2025-11-25T20:17:06.100552",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e3f4a5b6-c7d8-9012-2345-678901234567",
+                    "dst": "e3f4a5b6-c7d8-9012-e901-456789012345",
+                    "src": "d2e3f4a5-b6c7-8901-d890-345678901234"
+                },
+                {
+                    "id": "a5b6c7d8-e9f0-1234-4567-890123456789",
+                    "dst": "a5b6c7d8-e9f0-1234-a123-678901234567",
+                    "src": "e3f4a5b6-c7d8-9012-e901-456789012345",
+                    "label": "false"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "d2e3f4a5-b6c7-8901-d890-345678901234",
+                    "name": "Fetch_Data",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        300
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/3",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "e3f4a5b6-c7d8-9012-e901-456789012345",
+                    "name": "Data_Quality_OK",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        300
+                    ],
+                    "parameters": {
+                        "expression": "$Fetch_Data.body.email != null",
+                        "false_edge_id": "a5b6c7d8-e9f0-1234-4567-890123456789"
+                    }
+                },
+                {
+                    "id": "a5b6c7d8-e9f0-1234-a123-678901234567",
+                    "name": "Quality_Alert",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        400
+                    ],
+                    "parameters": {
+                        "to": "frodriguez386@example.com",
+                        "body": "Data Quality Alert!\\n\\nIncomplete data detected for user ID: $Fetch_Data.body.id\\nMissing critical fields.\\n\\nPlease investigate immediately.",
+                        "from": "sam_anderson713@testmail.org",
+                        "subject": "Data Quality Issue Detected"
+                    },
+                    "credentials": {
+                        "id": "1",
+                        "name": "yahooSmtp",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 23,
+        "name": "25_get_check_post",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T20:22:56.042986",
+        "updated_at": "2025-11-25T20:23:05.399954",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e5b6c7d8-e9f0-1234-8901-234567890123",
+                    "dst": "a1b2c3d4-e5f6-7890-a789-234567890123",
+                    "src": "f0a1b2c3-d4e5-6789-f678-123456789012"
+                },
+                {
+                    "id": "f6c7d8e9-f0a1-2345-9012-345678901234",
+                    "dst": "b2c3d4e5-f6a7-8901-b890-345678901234",
+                    "src": "a1b2c3d4-e5f6-7890-a789-234567890123",
+                    "label": "true"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "f0a1b2c3-d4e5-6789-f678-123456789012",
+                    "name": "Get_Comment",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        300
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/comments/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "a1b2c3d4-e5f6-7890-a789-234567890123",
+                    "name": "Contains_Email",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        300
+                    ],
+                    "parameters": {
+                        "expression": "$Get_Comment.body.email != null",
+                        "true_edge_id": "f6c7d8e9-f0a1-2345-9012-345678901234"
+                    }
+                },
+                {
+                    "id": "b2c3d4e5-f6a7-8901-b890-345678901234",
+                    "name": "Process_With_Email",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        200
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts",
+                        "body": {
+                            "email": "$Get_Comment.body.email",
+                            "processed": true,
+                            "comment_id": "$Get_Comment.body.id"
+                        },
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 24,
+        "name": "26_get_nested_if",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-25T20:25:21.31812",
+        "updated_at": "2025-11-25T20:25:29.108584",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e6c7d8e9-f0a1-2345-1234-567890123456",
+                    "dst": "e5f6a7b8-c9d0-1234-e123-678901234567",
+                    "src": "d4e5f6a7-b8c9-0123-d012-567890123456"
+                },
+                {
+                    "id": "f7d8e9f0-a1b2-3456-2345-678901234567",
+                    "dst": "f6a7b8c9-d0e1-2345-f234-789012345678",
+                    "src": "e5f6a7b8-c9d0-1234-e123-678901234567",
+                    "label": "true"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "d4e5f6a7-b8c9-0123-d012-567890123456",
+                    "name": "Get_Post",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        50,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "e5f6a7b8-c9d0-1234-e123-678901234567",
+                    "name": "First_Check",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        320,
+                        350
+                    ],
+                    "parameters": {
+                        "expression": "$Get_Post.status == 200",
+                        "true_edge_id": "f7d8e9f0-a1b2-3456-2345-678901234567"
+                    }
+                },
+                {
+                    "id": "f6a7b8c9-d0e1-2345-f234-789012345678",
+                    "name": "Second_Check",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        590,
+                        250
+                    ],
+                    "parameters": {
+                        "expression": "$Get_Post.body.title != null"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 25,
+        "name": "27_get_nested_if_email",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T18:25:31.582326",
+        "updated_at": "2025-11-28T18:25:46.834047",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e7d8e9f0-a1b2-3456-6789-012345678901",
+                    "dst": "f8a9b0c1-d2e3-4567-f456-901234567890",
+                    "src": "e7f8a9b0-c1d2-3456-e345-890123456789"
+                },
+                {
+                    "id": "f8e9f0a1-b2c3-4567-7890-123456789012",
+                    "dst": "a9b0c1d2-e3f4-5678-a567-012345678901",
+                    "src": "f8a9b0c1-d2e3-4567-f456-901234567890",
+                    "label": "true"
+                },
+                {
+                    "id": "b0a1b2c3-d4e5-6789-9012-345678901234",
+                    "dst": "b0c1d2e3-f4a5-6789-b678-123456789012",
+                    "src": "a9b0c1d2-e3f4-5678-a567-012345678901",
+                    "label": "true"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "e7f8a9b0-c1d2-3456-e345-890123456789",
+                    "name": "Get_User_Info",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        50,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/4",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "f8a9b0c1-d2e3-4567-f456-901234567890",
+                    "name": "Check_Name",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        320,
+                        350
+                    ],
+                    "parameters": {
+                        "expression": "$Get_User_Info.body.name != null",
+                        "true_edge_id": "f8e9f0a1-b2c3-4567-7890-123456789012"
+                    }
+                },
+                {
+                    "id": "a9b0c1d2-e3f4-5678-a567-012345678901",
+                    "name": "Check_Email",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        590,
+                        250
+                    ],
+                    "parameters": {
+                        "expression": "$Get_User_Info.body.email != null",
+                        "true_edge_id": "b0a1b2c3-d4e5-6789-9012-345678901234"
+                    }
+                },
+                {
+                    "id": "b0c1d2e3-f4a5-6789-b678-123456789012",
+                    "name": "Send_Valid_User_Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        860,
+                        150
+                    ],
+                    "parameters": {
+                        "to": "zack.brown125@devmail.net",
+                        "body": "User validation complete:\\n\\nName: $Get_User_Info.body.name\\nEmail: $Get_User_Info.body.email\\n\\nAll required fields present.",
+                        "from": "xander.taylor648@demo.net",
+                        "subject": "User Validation: $Get_User_Info.body.name"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "main-outlook-notification",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 27,
+        "name": "30_get_if_post_tiered",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T18:46:14.214558",
+        "updated_at": "2025-11-28T18:46:33.690237",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e0a1b2c3-d4e5-6789-3456-789012345678",
+                    "dst": "b3c4d5e6-f7a8-9012-b901-456789012345",
+                    "src": "a2b3c4d5-e6f7-8901-a890-345678901234"
+                },
+                {
+                    "id": "f1b2c3d4-e5f6-7890-4567-890123456789",
+                    "dst": "c4d5e6f7-a8b9-0123-c012-567890123456",
+                    "src": "b3c4d5e6-f7a8-9012-b901-456789012345",
+                    "label": "true"
+                },
+                {
+                    "id": "a2c3d4e5-f6a7-8901-5678-901234567890",
+                    "dst": "d5e6f7a8-b9c0-1234-d123-678901234567",
+                    "src": "b3c4d5e6-f7a8-9012-b901-456789012345",
+                    "label": "false"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "a2b3c4d5-e6f7-8901-a890-345678901234",
+                    "name": "Get_Order",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        50,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts/10",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "b3c4d5e6-f7a8-9012-b901-456789012345",
+                    "name": "Tier_Check",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        390,
+                        354
+                    ],
+                    "parameters": {
+                        "expression": "$Get_Order.body.userId <= 3",
+                        "true_edge_id": "f1b2c3d4-e5f6-7890-4567-890123456789",
+                        "false_edge_id": "a2c3d4e5-f6a7-8901-5678-901234567890"
+                    }
+                },
+                {
+                    "id": "c4d5e6f7-a8b9-0123-c012-567890123456",
+                    "name": "Premium_Processing",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        710,
+                        280
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts",
+                        "body": {
+                            "tier": "premium",
+                            "order_id": "$Get_Order.body.id",
+                            "priority": "high"
+                        },
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                },
+                {
+                    "id": "d5e6f7a8-b9c0-1234-d123-678901234567",
+                    "name": "Standard_Processing",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        710,
+                        420
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts",
+                        "body": {
+                            "tier": "standard",
+                            "order_id": "$Get_Order.body.id",
+                            "priority": "normal"
+                        },
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 37,
+        "name": "61_GitHub_Repository_Stats_Tracker",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T23:26:28.396347",
+        "updated_at": "2025-11-29T02:32:40.395592",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e-gh-01",
+                    "dst": "gh-02",
+                    "src": "gh-01"
+                },
+                {
+                    "id": "e-gh-02",
+                    "dst": "gh-03",
+                    "src": "gh-02",
+                    "label": "true"
+                },
+                {
+                    "id": "e-gh-03",
+                    "dst": "gh-05",
+                    "src": "gh-02",
+                    "label": "false"
+                },
+                {
+                    "id": "e-gh-04",
+                    "dst": "gh-04",
+                    "src": "gh-03"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "gh-01",
+                    "name": "Fetch_Repo_Info",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        300
+                    ],
+                    "parameters": {
+                        "url": "https://api.github.com/repos/rune-org/rune",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "gh-02",
+                    "name": "API_Success",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        300
+                    ],
+                    "parameters": {
+                        "expression": "$Fetch_Repo_Info.status == 200",
+                        "true_edge_id": "e-gh-02",
+                        "false_edge_id": "e-gh-03"
+                    }
+                },
+                {
+                    "id": "gh-03",
+                    "name": "Fetch_Contributors",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        200
+                    ],
+                    "parameters": {
+                        "url": "https://api.github.com/repos/rune-org/rune/contributors?per_page=5",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "gh-04",
+                    "name": "Send_Stats_Report",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1000,
+                        200
+                    ],
+                    "parameters": {
+                        "to": "bob_jackson591@testmail.org",
+                        "body": "Repository Statistics Report\\n\\nRepo: $Fetch_Repo_Info.body.full_name\\nDescription: $Fetch_Repo_Info.body.description\\n\\nMetrics:\\nΓ¡É Stars: $Fetch_Repo_Info.body.stargazers_count\\n≡ƒì┤ Forks: $Fetch_Repo_Info.body.forks_count\\n≡ƒæÇ Watchers: $Fetch_Repo_Info.body.watchers_count\\n≡ƒÉ¢ Open Issues: $Fetch_Repo_Info.body.open_issues_count\\n\\nLanguage: $Fetch_Repo_Info.body.language\\nLicense: $Fetch_Repo_Info.body.license.name\\n\\nTop Contributor: $Fetch_Contributors.body[0].login\\nContributions: $Fetch_Contributors.body[0].contributions\\n\\nLast Updated: $Fetch_Repo_Info.body.updated_at",
+                        "from": "cwilson976@automation.test",
+                        "subject": "GitHub Repo Stats: $Fetch_Repo_Info.body.name"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "ses_staging_email",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "gh-05",
+                    "name": "API_Error_Alert",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        400
+                    ],
+                    "parameters": {
+                        "to": "kate_wilson304@demo.net",
+                        "body": "Failed to fetch GitHub repository stats.\\n\\nAPI Status: $Fetch_Repo_Info.status\\nStatus Text: $Fetch_Repo_Info.status_text\\n\\nPlease check API availability.",
+                        "from": "henry_taylor658@mailtest.com",
+                        "subject": "GitHub API Error"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "staging-aws-relay",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 28,
+        "name": "36_get_switch",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T19:35:09.67881",
+        "updated_at": "2025-11-28T19:35:18.952972",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e6a7b8c9-d0e1-2345-6789-012345678901",
+                    "dst": "b9c0d1e2-f3a4-5678-b567-012345678901",
+                    "src": "a8b9c0d1-e2f3-4567-a456-901234567890"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "a8b9c0d1-e2f3-4567-a456-901234567890",
+                    "name": "Check_API",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        150,
+                        400
+                    ],
+                    "parameters": {
+                        "url": "https://reqres.in/api/users/2",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "b9c0d1e2-f3a4-5678-b567-012345678901",
+                    "name": "Route_by_Status",
+                    "type": "switch",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        450,
+                        300
+                    ],
+                    "parameters": {
+                        "rules": [
+                            {
+                                "value": "$Check_API.status",
+                                "compare": "200",
+                                "operator": "=="
+                            },
+                            {
+                                "value": "$Check_API.status",
+                                "compare": "404",
+                                "operator": "=="
+                            },
+                            {
+                                "value": "$Check_API.status",
+                                "compare": "500",
+                                "operator": "=="
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 29,
+        "name": "37_post_switch",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T19:51:20.134344",
+        "updated_at": "2025-11-28T19:51:25.028996",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e7c9d0e1-f2a3-4567-7890-123456789012",
+                    "dst": "d5e6f7a8-b9c0-1234-d123-678901234567",
+                    "src": "c4d5e6f7-a8b9-0123-c012-567890123456"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "c4d5e6f7-a8b9-0123-c012-567890123456",
+                    "name": "Test_Endpoint",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        152.3195202148641,
+                        411.5976010743206
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts",
+                        "body": {
+                            "test": "data",
+                            "method": "POST"
+                        },
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                },
+                {
+                    "id": "d5e6f7a8-b9c0-1234-d123-678901234567",
+                    "name": "Route_by_Method",
+                    "type": "switch",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        492.3195202148641,
+                        291.5976010743206
+                    ],
+                    "parameters": {
+                        "rules": [
+                            {
+                                "value": "$Test_Endpoint.body.method",
+                                "compare": "POST",
+                                "operator": "=="
+                            },
+                            {
+                                "value": "$Test_Endpoint.body.method",
+                                "compare": "GET",
+                                "operator": "=="
+                            },
+                            {
+                                "value": "$Test_Endpoint.body.method",
+                                "compare": "PUT",
+                                "operator": "=="
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 30,
+        "name": "38_get_switch_email",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T19:57:01.362651",
+        "updated_at": "2025-11-28T19:57:07.349834",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e8d0e1f2-a3b4-5678-8901-234567890123",
+                    "dst": "d1e2f3a4-b5c6-7890-d789-234567890123",
+                    "src": "c0d1e2f3-a4b5-6789-c678-123456789012"
+                },
+                {
+                    "id": "f9e1f2a3-b4c5-6789-9012-345678901234",
+                    "dst": "e2f3a4b5-c6d7-8901-e890-345678901234",
+                    "src": "d1e2f3a4-b5c6-7890-d789-234567890123",
+                    "label": "case 1"
+                },
+                {
+                    "id": "a0f2a3b4-c5d6-7890-0123-456789012345",
+                    "dst": "f3a4b5c6-d7e8-9012-f901-456789012345",
+                    "src": "d1e2f3a4-b5c6-7890-d789-234567890123",
+                    "label": "case 2"
+                },
+                {
+                    "id": "b1a3b4c5-d6e7-8901-1234-567890123456",
+                    "dst": "a4b5c6d7-e8f9-0123-a012-567890123456",
+                    "src": "d1e2f3a4-b5c6-7890-d789-234567890123",
+                    "label": "case 3"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "c0d1e2f3-a4b5-6789-c678-123456789012",
+                    "name": "Get_User",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        150,
+                        400
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/5",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "d1e2f3a4-b5c6-7890-d789-234567890123",
+                    "name": "Route_by_User_ID",
+                    "type": "switch",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        490,
+                        280
+                    ],
+                    "parameters": {
+                        "rules": [
+                            {
+                                "value": "$Get_User.body.id",
+                                "compare": "3",
+                                "operator": "<="
+                            },
+                            {
+                                "value": "$Get_User.body.id",
+                                "compare": "6",
+                                "operator": "<="
+                            },
+                            {
+                                "value": "$Get_User.body.id",
+                                "compare": "6",
+                                "operator": ">"
+                            }
+                        ],
+                        "routes": [
+                            "f9e1f2a3-b4c5-6789-9012-345678901234",
+                            "a0f2a3b4-c5d6-7890-0123-456789012345",
+                            "b1a3b4c5-d6e7-8901-1234-567890123456",
+                            null
+                        ]
+                    }
+                },
+                {
+                    "id": "e2f3a4b5-c6d7-8901-e890-345678901234",
+                    "name": "VIP_Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        850,
+                        260
+                    ],
+                    "parameters": {
+                        "to": "zackthomas598@example.com",
+                        "body": "Hello $Get_User.body.name,\\n\\nAs a VIP member, you have access to exclusive services.\\n\\nBest regards,\\nVIP Team",
+                        "from": "mia.martinez653@automation.test",
+                        "subject": "VIP Services Available"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "postmark_backup_mailer",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "f3a4b5c6-d7e8-9012-f901-456789012345",
+                    "name": "Premium_Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        850,
+                        400
+                    ],
+                    "parameters": {
+                        "to": "frankwilson434@sample.io",
+                        "body": "Hello $Get_User.body.name,\\n\\nEnjoy your premium membership benefits.\\n\\nBest regards,\\nPremium Team",
+                        "from": "jack_thomas683@mailtest.com",
+                        "subject": "Premium Member Benefits"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "sender-mailgun",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "a4b5c6d7-e8f9-0123-a012-567890123456",
+                    "name": "Standard_Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        850,
+                        540
+                    ],
+                    "parameters": {
+                        "to": "leobrown189@devmail.net",
+                        "body": "Hello $Get_User.body.name,\\n\\nThank you for joining us!\\n\\nBest regards,\\nSupport Team",
+                        "from": "paultaylor219@automation.test",
+                        "subject": "Welcome Standard Member"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "email-mandrill",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 31,
+        "name": "40_get_switch_email_2",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T20:01:17.053449",
+        "updated_at": "2025-11-28T20:01:30.4855",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e0f2a3b4-c5d6-7890-2345-678901234567",
+                    "dst": "c2d3e4f5-a6b7-8901-c890-345678901234",
+                    "src": "b1c2d3e4-f5a6-7890-b789-234567890123"
+                },
+                {
+                    "id": "f1a3b4c5-d6e7-8901-3456-789012345678",
+                    "dst": "d3e4f5a6-b7c8-9012-d901-456789012345",
+                    "src": "c2d3e4f5-a6b7-8901-c890-345678901234",
+                    "label": "case 1"
+                },
+                {
+                    "id": "a2b4c5d6-e7f8-9012-4567-890123456789",
+                    "dst": "e4f5a6b7-c8d9-0123-e012-567890123456",
+                    "src": "c2d3e4f5-a6b7-8901-c890-345678901234",
+                    "label": "case 2"
+                },
+                {
+                    "id": "b3c5d6e7-f8a9-0123-5678-901234567890",
+                    "dst": "f5a6b7c8-d9e0-1234-f123-678901234567",
+                    "src": "c2d3e4f5-a6b7-8901-c890-345678901234",
+                    "label": "case 3"
+                },
+                {
+                    "id": "c4d6e7f8-a9b0-1234-6789-012345678901",
+                    "dst": "a6b7c8d9-e0f1-2345-a234-789012345678",
+                    "src": "c2d3e4f5-a6b7-8901-c890-345678901234",
+                    "label": "fallback"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "b1c2d3e4-f5a6-7890-b789-234567890123",
+                    "name": "Get_User_Region",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        150,
+                        400
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "c2d3e4f5-a6b7-8901-c890-345678901234",
+                    "name": "Region_Router",
+                    "type": "switch",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        490,
+                        280
+                    ],
+                    "parameters": {
+                        "rules": [
+                            {
+                                "value": "$Get_User_Region.body.address.city",
+                                "compare": "Gwenborough",
+                                "operator": "=="
+                            },
+                            {
+                                "value": "$Get_User_Region.body.address.city",
+                                "compare": "Wisokyburgh",
+                                "operator": "=="
+                            },
+                            {
+                                "value": "$Get_User_Region.body.address.city",
+                                "compare": "McKenziehaven",
+                                "operator": "=="
+                            }
+                        ],
+                        "routes": [
+                            "f1a3b4c5-d6e7-8901-3456-789012345678",
+                            "a2b4c5d6-e7f8-9012-4567-890123456789",
+                            "b3c5d6e7-f8a9-0123-5678-901234567890",
+                            "c4d6e7f8-a9b0-1234-6789-012345678901"
+                        ]
+                    }
+                },
+                {
+                    "id": "d3e4f5a6-b7c8-9012-d901-456789012345",
+                    "name": "Region_A_Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        850,
+                        190
+                    ],
+                    "parameters": {
+                        "to": "frankdavis260@devmail.net",
+                        "body": "Hello $Get_User_Region.body.name,\\n\\nWelcome from your local Region A office!\\n\\nRegards,\\nRegion A Team",
+                        "from": "xanderson666@usertest.org",
+                        "subject": "Welcome from Region A"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "postmarkSmtp",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "e4f5a6b7-c8d9-0123-e012-567890123456",
+                    "name": "Region_B_Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        850,
+                        330
+                    ],
+                    "parameters": {
+                        "to": "miawilliams337@testmail.org",
+                        "body": "Hello $Get_User_Region.body.name,\\n\\nGreetings from Region B!\\n\\nRegards,\\nRegion B Team",
+                        "from": "maya_jackson33@devmail.net",
+                        "subject": "Welcome from Region B"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "alert_mailgun_54",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "f5a6b7c8-d9e0-1234-f123-678901234567",
+                    "name": "Region_C_Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        850,
+                        470
+                    ],
+                    "parameters": {
+                        "to": "umiller673@sample.io",
+                        "body": "Hello $Get_User_Region.body.name,\\n\\nYour Region C team welcomes you!\\n\\nRegards,\\nRegion C Team",
+                        "from": "henry.moore435@workflow.dev",
+                        "subject": "Welcome from Region C"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "smtp-outlook",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "a6b7c8d9-e0f1-2345-a234-789012345678",
+                    "name": "Default_Region_Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        850,
+                        610
+                    ],
+                    "parameters": {
+                        "to": "samlopez261@demo.net",
+                        "body": "Hello $Get_User_Region.body.name,\\n\\nWelcome from our headquarters!\\n\\nRegards,\\nSupport Team",
+                        "from": "sophia_wilson139@sample.io",
+                        "subject": "Welcome"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "zohoAlert",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 32,
+        "name": "52_cascade_get_switch_email",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T21:10:39.9654",
+        "updated_at": "2025-11-28T22:09:39.035419",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e-user-01",
+                    "dst": "user-02",
+                    "src": "user-01"
+                },
+                {
+                    "id": "e-user-02",
+                    "dst": "user-03",
+                    "src": "user-02"
+                },
+                {
+                    "id": "e-user-03",
+                    "dst": "user-04",
+                    "src": "user-03",
+                    "label": "case 1"
+                },
+                {
+                    "id": "e-user-04",
+                    "dst": "user-05",
+                    "src": "user-03",
+                    "label": "case 2"
+                },
+                {
+                    "id": "e-user-05",
+                    "dst": "user-06",
+                    "src": "user-03",
+                    "label": "fallback"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "user-01",
+                    "name": "Fetch_User",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/5",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "user-02",
+                    "name": "Fetch_User_Posts",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        440,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts?userId=$Fetch_User.body.id&_limit=1",
+                        "query": {},
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "user-03",
+                    "name": "Route By Activity",
+                    "type": "switch",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        780,
+                        262
+                    ],
+                    "parameters": {
+                        "rules": [
+                            {
+                                "value": "$Fetch_User.body.id",
+                                "compare": "3",
+                                "operator": "<="
+                            },
+                            {
+                                "value": "$Fetch_User.body.id",
+                                "compare": "7",
+                                "operator": "<="
+                            }
+                        ],
+                        "routes": [
+                            "e-user-03",
+                            "e-user-04",
+                            "e-user-05"
+                        ]
+                    }
+                },
+                {
+                    "id": "user-04",
+                    "name": "High Activity Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1140,
+                        210
+                    ],
+                    "parameters": {
+                        "to": "yara_rodriguez84@workflow.dev",
+                        "body": "User Activity Report\\n\\nName: $Fetch_User.body.name\\nEmail: $Fetch_User.body.email\\nCompany: $Fetch_User.body.company.name\\n\\nLatest Post:\\nTitle: $Fetch_User_Posts.body[0].title\\nContent: $Fetch_User_Posts.body[0].body\\n\\nThis user is highly active.",
+                        "from": "william.jackson549@devmail.net",
+                        "subject": "High Activity User: $Fetch_User.body.name"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "mailer_mailgun_47",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "user-05",
+                    "name": "Medium Activity Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1140,
+                        350
+                    ],
+                    "parameters": {
+                        "to": "liam_taylor218@demo.net",
+                        "body": "User: $Fetch_User.body.name\\nEmail: $Fetch_User.body.email\\n\\nRecent Post: $Fetch_User_Posts.body[0].title\\n\\nMedium activity level.",
+                        "from": "kate.smith355@sample.io",
+                        "subject": "User Report: $Fetch_User.body.name"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "mailgun-email",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "user-06",
+                    "name": "Low Activity Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1140,
+                        490
+                    ],
+                    "parameters": {
+                        "to": "vbrown752@sample.io",
+                        "body": "Low activity user detected:\\n\\nName: $Fetch_User.body.name\\nEmail: $Fetch_User.body.email\\n\\nLatest Post: $Fetch_User_Posts.body[0].title\\n\\nConsider re-engagement campaign.",
+                        "from": "grace.brown182@workflow.dev",
+                        "subject": "Low Activity: $Fetch_User.body.name"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "mail-aws",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 33,
+        "name": "55_api_health_check_retries",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T21:17:52.256802",
+        "updated_at": "2025-11-28T21:17:58.239732",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e-h-01",
+                    "dst": "health-02",
+                    "src": "health-01"
+                },
+                {
+                    "id": "e-h-02",
+                    "dst": "health-03",
+                    "src": "health-02",
+                    "label": "true"
+                },
+                {
+                    "id": "e-h-03",
+                    "dst": "health-05",
+                    "src": "health-02",
+                    "label": "false"
+                },
+                {
+                    "id": "e-h-04",
+                    "dst": "health-04",
+                    "src": "health-03"
+                },
+                {
+                    "id": "e-h-05",
+                    "dst": "health-06",
+                    "src": "health-05"
+                },
+                {
+                    "id": "e-h-06",
+                    "dst": "health-07",
+                    "src": "health-06",
+                    "label": "true"
+                },
+                {
+                    "id": "e-h-07",
+                    "dst": "health-08",
+                    "src": "health-06",
+                    "label": "false"
+                },
+                {
+                    "id": "e-h-08",
+                    "dst": "health-09",
+                    "src": "health-08"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "health-01",
+                    "name": "Check_API",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        400
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts/1",
+                        "method": "GET",
+                        "timeout": 5000
+                    }
+                },
+                {
+                    "id": "health-02",
+                    "name": "API Responding",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        400
+                    ],
+                    "parameters": {
+                        "expression": "$Check_API.status == 200",
+                        "true_edge_id": "e-h-02",
+                        "false_edge_id": "e-h-03"
+                    }
+                },
+                {
+                    "id": "health-03",
+                    "name": "Get_System_Info",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://dummyjson.com/products/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "health-04",
+                    "name": "Health Success Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1000,
+                        250
+                    ],
+                    "parameters": {
+                        "to": "maya_johnson762@demo.net",
+                        "body": "API Health Status: PASSED\\n\\nAPI Status: $Check_API.status\\nProduct Check: $Get_System_Info.body.title\\nPrice: $Get_System_Info.body.price\\n\\nAll systems operational.",
+                        "from": "mia.gonzalez770@automation.test",
+                        "subject": "API Health Check Passed"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "alert-sparkpost",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "health-05",
+                    "name": "Retry_Check",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        500
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts/1",
+                        "retry": 2,
+                        "method": "GET",
+                        "timeout": 5000
+                    }
+                },
+                {
+                    "id": "health-06",
+                    "name": "Retry Succeeded",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1000,
+                        500
+                    ],
+                    "parameters": {
+                        "expression": "$Retry_Check.status == 200",
+                        "true_edge_id": "e-h-06",
+                        "false_edge_id": "e-h-07"
+                    }
+                },
+                {
+                    "id": "health-07",
+                    "name": "Transient Issue Alert",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1300,
+                        400
+                    ],
+                    "parameters": {
+                        "to": "wendy_lopez218@automation.test",
+                        "body": "API Health Alert\\n\\nInitial check failed but retry succeeded.\\n\\nFirst check status: $Check_API.status\\nRetry status: $Retry_Check.status\\n\\nThis may indicate intermittent issues.",
+                        "from": "plopez676@devmail.net",
+                        "subject": "API Transient Issue Recovered"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "relay_outlook_27",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "health-08",
+                    "name": "Get_User_Context",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1300,
+                        600
+                    ],
+                    "parameters": {
+                        "url": "https://dummyjson.com/users/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "health-09",
+                    "name": "Critical Outage Alert",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1600,
+                        600
+                    ],
+                    "parameters": {
+                        "to": "nsmith910@devmail.net",
+                        "body": "CRITICAL ALERT\\n\\nAPI is down after multiple retry attempts.\\n\\nInitial status: $Check_API.status\\nRetry status: $Retry_Check.status\\nReported by: $Get_User_Context.body.firstName $Get_User_Context.body.lastName\\nEmail: $Get_User_Context.body.email\\n\\nImmediate action required!",
+                        "from": "alice.brown738@testmail.org",
+                        "subject": "CRITICAL: API Down After Retries"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "aws_staging_system",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 34,
+        "name": "57_send_review_email_priority",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T21:41:32.069031",
+        "updated_at": "2025-11-28T21:41:37.457989",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e-m-01",
+                    "dst": "mod-02",
+                    "src": "mod-01"
+                },
+                {
+                    "id": "e-m-02",
+                    "dst": "mod-03",
+                    "src": "mod-02"
+                },
+                {
+                    "id": "e-m-03",
+                    "dst": "mod-04",
+                    "src": "mod-03"
+                },
+                {
+                    "id": "e-m-04",
+                    "dst": "mod-05",
+                    "src": "mod-04",
+                    "label": "case 1"
+                },
+                {
+                    "id": "e-m-05",
+                    "dst": "mod-08",
+                    "src": "mod-04",
+                    "label": "case 2"
+                },
+                {
+                    "id": "e-m-06",
+                    "dst": "mod-11",
+                    "src": "mod-04",
+                    "label": "fallback"
+                },
+                {
+                    "id": "e-m-07",
+                    "dst": "mod-06",
+                    "src": "mod-05"
+                },
+                {
+                    "id": "e-m-09",
+                    "dst": "mod-09",
+                    "src": "mod-08",
+                    "label": "true"
+                },
+                {
+                    "id": "e-m-10",
+                    "dst": "mod-10",
+                    "src": "mod-08",
+                    "label": "false"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "mod-01",
+                    "name": "Fetch_New_Post",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts/15",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "mod-02",
+                    "name": "Get_Author_Info",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "mod-03",
+                    "name": "Check_Author_History",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts?userId=2&_limit=5",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "mod-04",
+                    "name": "Author_Trust_Level",
+                    "type": "switch",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1000,
+                        200
+                    ],
+                    "parameters": {
+                        "rules": [
+                            {
+                                "value": "$Get_Author_Info.body.id",
+                                "compare": "2",
+                                "operator": "<="
+                            },
+                            {
+                                "value": "$Get_Author_Info.body.id",
+                                "compare": "5",
+                                "operator": "<="
+                            }
+                        ],
+                        "routes": [
+                            "e-m-04",
+                            "e-m-05",
+                            "e-m-06"
+                        ]
+                    }
+                },
+                {
+                    "id": "mod-05",
+                    "name": "Get_Request_Origin",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1350,
+                        50
+                    ],
+                    "parameters": {
+                        "url": "https://dummyjson.com/products/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "mod-06",
+                    "name": "Auto_Approve_Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1650,
+                        50
+                    ],
+                    "parameters": {
+                        "to": "henryhernandez870@devmail.net",
+                        "body": "Your post has been automatically approved!\\n\\nTitle: $Fetch_New_Post.body.title\\nAuthor: $Get_Author_Info.body.name\\nProduct Info: $Get_Request_Origin.body.title\\nPrice: $Get_Request_Origin.body.price\\n\\nYour trusted author status allowed instant publication.\\n\\nThank you!",
+                        "from": "jackwilson755@example.com",
+                        "subject": "Post Published: $Fetch_New_Post.body.title"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "alert-ses",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "mod-08",
+                    "name": "Has_Post_History",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1350,
+                        250
+                    ],
+                    "parameters": {
+                        "expression": "$Get_Author_Info.body.id <= 3",
+                        "true_edge_id": "e-m-09",
+                        "false_edge_id": "e-m-10"
+                    }
+                },
+                {
+                    "id": "mod-09",
+                    "name": "Quick_Review_Needed",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1650,
+                        200
+                    ],
+                    "parameters": {
+                        "to": "henryrodriguez666@mailtest.com",
+                        "body": "Post requires quick review:\\n\\nTitle: $Fetch_New_Post.body.title\\nAuthor: $Get_Author_Info.body.name\\nAuthor ID: $Get_Author_Info.body.id\\n\\nThis author has a good history. Quick review recommended.",
+                        "from": "lwilliams815@workflow.dev",
+                        "subject": "Quick Review: Post by $Get_Author_Info.body.name"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "email-ses",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "mod-10",
+                    "name": "Detailed_Review_Needed",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1650,
+                        350
+                    ],
+                    "parameters": {
+                        "to": "oliviahernandez866@example.com",
+                        "body": "Post requires detailed review:\\n\\nTitle: $Fetch_New_Post.body.title\\nAuthor: $Get_Author_Info.body.name\\nEmail: $Get_Author_Info.body.email\\nAuthor ID: $Get_Author_Info.body.id\\n\\nNew or low-activity author.  Please review carefully.",
+                        "from": "tararodriguez382@sample.io",
+                        "subject": "Detailed Review: New Author Post"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "main-aws-outbound",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "mod-11",
+                    "name": "Manual_Review_Alert",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1350,
+                        500
+                    ],
+                    "parameters": {
+                        "to": "quinn_wilson861@automation.test",
+                        "body": "HIGH PRIORITY REVIEW NEEDED:\\n\\nTitle: $Fetch_New_Post.body.title\\nAuthor: $Get_Author_Info.body.name\\nEmail: $Get_Author_Info.body.email\\nCompany: $Get_Author_Info.body.company.name\\n\\nUnknown author. Manual review required before publication.",
+                        "from": "tara_gonzalez697@example.com",
+                        "subject": "PRIORITY: High Risk Author Post"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "staging-mandrill-email",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 35,
+        "name": "59_data_consistency_check",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T22:17:04.870554",
+        "updated_at": "2025-11-28T22:17:09.610079",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e-sync-01",
+                    "dst": "sync-02",
+                    "src": "sync-01"
+                },
+                {
+                    "id": "e-sync-02",
+                    "dst": "sync-03",
+                    "src": "sync-02"
+                },
+                {
+                    "id": "e-sync-03",
+                    "dst": "sync-04",
+                    "src": "sync-03",
+                    "label": "true"
+                },
+                {
+                    "id": "e-sync-04",
+                    "dst": "sync-11",
+                    "src": "sync-03",
+                    "label": "false"
+                },
+                {
+                    "id": "e-sync-05",
+                    "dst": "sync-05",
+                    "src": "sync-04"
+                },
+                {
+                    "id": "e-sync-06",
+                    "dst": "sync-06",
+                    "src": "sync-05",
+                    "label": "true"
+                },
+                {
+                    "id": "e-sync-07",
+                    "dst": "sync-08",
+                    "src": "sync-05",
+                    "label": "false"
+                },
+                {
+                    "id": "e-sync-09",
+                    "dst": "sync-09",
+                    "src": "sync-08"
+                },
+                {
+                    "id": "e-sync-11",
+                    "dst": "sync-12",
+                    "src": "sync-11",
+                    "label": "case 1"
+                },
+                {
+                    "id": "e-sync-12",
+                    "dst": "sync-13",
+                    "src": "sync-11",
+                    "label": "case 2"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "sync-01",
+                    "name": "Fetch_Source_User",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/6",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "sync-02",
+                    "name": "Fetch_Target_User",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        440,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/5",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "sync-03",
+                    "name": "Both_APIs_Responded",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        780,
+                        354
+                    ],
+                    "parameters": {
+                        "expression": "$Fetch_Source_User.status == 200 and $Fetch_Target_User.status == 200",
+                        "true_edge_id": "e-sync-03",
+                        "false_edge_id": "e-sync-04"
+                    }
+                },
+                {
+                    "id": "sync-04",
+                    "name": "Get_Request_Info",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1110,
+                        212
+                    ],
+                    "parameters": {
+                        "url": "https://dummyjson.com/products/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "sync-05",
+                    "name": "Email_Match_Check",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1470,
+                        216
+                    ],
+                    "parameters": {
+                        "expression": "$Fetch_Source_User.body.email != null",
+                        "true_edge_id": "e-sync-06",
+                        "false_edge_id": "e-sync-07"
+                    }
+                },
+                {
+                    "id": "sync-06",
+                    "name": "Data_In_Sync",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1800,
+                        142
+                    ],
+                    "parameters": {
+                        "to": "eve.smith937@sample.io",
+                        "body": "Data Consistency Check: PASSED\\n\\nSource System:\\nName: $Fetch_Source_User.body.name\\nEmail: $Fetch_Source_User.body.email\\nCompany: $Fetch_Source_User.body.company.name\\n\\nTarget System:\\nUser ID: $Fetch_Target_User.body.id\\nEmail: $Fetch_Target_User.body.email\\n\\nProduct Check: $Get_Request_Info.body.title\\n\\nData is synchronized.",
+                        "from": "zacktaylor99@automation.test",
+                        "subject": "Data Sync Verified - User 5"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "aws_prod_alert",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "sync-08",
+                    "name": "Get_Sync_Timestamp",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1800,
+                        282
+                    ],
+                    "parameters": {
+                        "url": "https://dummyjson.com/users/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "sync-09",
+                    "name": "Data_Mismatch_Alert",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        2140,
+                        282
+                    ],
+                    "parameters": {
+                        "to": "swilson980@usertest.org",
+                        "body": "ALERT: Data inconsistency detected!\\n\\nSource: $Fetch_Source_User.body.name ($Fetch_Source_User.body.email)\\nTarget: User ID $Fetch_Target_User.body.id\\n\\nData may be out of sync.  Manual review required.\\n\\nTimestamp User: $Get_Sync_Timestamp.body.firstName $Get_Sync_Timestamp.body.lastName",
+                        "from": "iris_smith527@example.com",
+                        "subject": "DATA MISMATCH DETECTED - User 5"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "test-office365-outbound",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "sync-11",
+                    "name": "API_Failure_Type",
+                    "type": "switch",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1100,
+                        376
+                    ],
+                    "parameters": {
+                        "rules": [
+                            {
+                                "value": "$Fetch_Source_User.status",
+                                "compare": "200",
+                                "operator": "!="
+                            },
+                            {
+                                "value": "$Fetch_Target_User.status",
+                                "compare": "200",
+                                "operator": "!="
+                            }
+                        ],
+                        "routes": [
+                            "e-sync-11",
+                            "e-sync-12",
+                            null
+                        ]
+                    }
+                },
+                {
+                    "id": "sync-12",
+                    "name": "Source_API_Down",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1460,
+                        394
+                    ],
+                    "parameters": {
+                        "to": "sophiahernandez268@testmail.org",
+                        "body": "Source API is not responding.\\n\\nStatus: $Fetch_Source_User.status\\nUser ID: 5\\n\\nPlease check source system.",
+                        "from": "victor_lopez748@testmail.org",
+                        "subject": "Source API Failure"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "system-postmark",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "sync-13",
+                    "name": "Target_API_Down",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1460,
+                        534
+                    ],
+                    "parameters": {
+                        "to": "xander.martin539@usertest.org",
+                        "body": "Target API is not responding.\\n\\nStatus: $Fetch_Target_User.status\\nUser ID: 5\\n\\nPlease check target system.",
+                        "from": "frankhernandez705@example.com",
+                        "subject": "Target API Failure"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "prod-sendgrid-mailer",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 36,
+        "name": "60_multistage_user_verification",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T23:00:36.540898",
+        "updated_at": "2025-11-28T23:00:41.159689",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e-ver-01",
+                    "dst": "ver-02",
+                    "src": "ver-01"
+                },
+                {
+                    "id": "e-ver-02",
+                    "dst": "ver-03",
+                    "src": "ver-02",
+                    "label": "true"
+                },
+                {
+                    "id": "e-ver-03",
+                    "dst": "ver-14",
+                    "src": "ver-02",
+                    "label": "false"
+                },
+                {
+                    "id": "e-ver-04",
+                    "dst": "ver-04",
+                    "src": "ver-03"
+                },
+                {
+                    "id": "e-ver-05",
+                    "dst": "ver-05",
+                    "src": "ver-04",
+                    "label": "true"
+                },
+                {
+                    "id": "e-ver-06",
+                    "dst": "ver-12",
+                    "src": "ver-04",
+                    "label": "false"
+                },
+                {
+                    "id": "e-ver-07",
+                    "dst": "ver-06",
+                    "src": "ver-05"
+                },
+                {
+                    "id": "e-ver-08",
+                    "dst": "ver-07",
+                    "src": "ver-06"
+                },
+                {
+                    "id": "e-ver-09",
+                    "dst": "ver-08",
+                    "src": "ver-07",
+                    "label": "case 1"
+                },
+                {
+                    "id": "e-ver-10",
+                    "dst": "ver-10",
+                    "src": "ver-07",
+                    "label": "case 2"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "ver-01",
+                    "name": "Get_User_Record",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        106.0878583866131,
+                        395.1297132907095
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/users/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "ver-02",
+                    "name": "User_Exists",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        400
+                    ],
+                    "parameters": {
+                        "expression": "$Get_User_Record.status == 200",
+                        "true_edge_id": "e-ver-02",
+                        "false_edge_id": "e-ver-03"
+                    }
+                },
+                {
+                    "id": "ver-03",
+                    "name": "Verify_Email_Format",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        300
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts",
+                        "body": {
+                            "email": "$Get_User_Record. body.email",
+                            "validation": "email_format_check"
+                        },
+                        "method": "POST",
+                        "headers": {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                },
+                {
+                    "id": "ver-04",
+                    "name": "Email_Valid",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1000,
+                        300
+                    ],
+                    "parameters": {
+                        "expression": "$Verify_Email_Format.status == 201",
+                        "true_edge_id": "e-ver-05",
+                        "false_edge_id": "e-ver-06"
+                    }
+                },
+                {
+                    "id": "ver-05",
+                    "name": "Check_User_Activity",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1300,
+                        200
+                    ],
+                    "parameters": {
+                        "url": "https://jsonplaceholder.typicode.com/posts?userId=6&_limit=3",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "ver-06",
+                    "name": "Get_Additional_Context",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1600,
+                        200
+                    ],
+                    "parameters": {
+                        "url": "https://dummyjson.com/products/1",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "ver-07",
+                    "name": "Verification_Level",
+                    "type": "switch",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1900,
+                        100
+                    ],
+                    "parameters": {
+                        "rules": [
+                            {
+                                "value": "$Get_User_Record.body.id",
+                                "compare": "3",
+                                "operator": "<="
+                            },
+                            {
+                                "value": "$Get_User_Record.body.id",
+                                "compare": "7",
+                                "operator": "<="
+                            }
+                        ],
+                        "routes": [
+                            "e-ver-09",
+                            "e-ver-10",
+                            null
+                        ]
+                    }
+                },
+                {
+                    "id": "ver-08",
+                    "name": "Full_Verification_Email",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        2250,
+                        50
+                    ],
+                    "parameters": {
+                        "to": "quinn.wilson943@workflow.dev",
+                        "body": "Congratulations $Get_User_Record.body.name!\\n\\nYour account has been fully verified.\\n\\nVerification Details:\\nEmail: $Get_User_Record.body.email\\nCompany: $Get_User_Record.body.company.name\\nWebsite: $Get_User_Record.body.website\\nPhone: $Get_User_Record.body.phone\\nActivity Posts Found: $Check_User_Activity.body[0].title\\n\\nYou now have full access to all features.\\n\\nBest regards,\\nVerification Team",
+                        "from": "james_williams953@mailtest.com",
+                        "subject": "Account Fully Verified - $Get_User_Record.body.name"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "aws_staging_relay",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "ver-10",
+                    "name": "Partial_Verification",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        2250,
+                        250
+                    ],
+                    "parameters": {
+                        "to": "evewilson450@devmail.net",
+                        "body": "Hello $Get_User_Record.body.name,\\n\\nYour account is partially verified.\\n\\nCompleted:\\nEmail: $Get_User_Record.body.email\\nUser ID: $Get_User_Record.body.id\\nCompany: $Get_User_Record.body.company.name\\n\\nRecent Activity: $Check_User_Activity.body[0].title\\n\\nTo complete verification, please increase your activity.\\n\\nBest regards,\\nVerification Team",
+                        "from": "umagarcia64@example.com",
+                        "subject": "Account Partially Verified - $Get_User_Record.body.name"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "yahoo-alert",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "ver-12",
+                    "name": "Email_Invalid_Alert",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1300,
+                        400
+                    ],
+                    "parameters": {
+                        "to": "bob.rodriguez252@example.com",
+                        "body": "Email validation failed for user.\\n\\nUser: $Get_User_Record.body.name\\nEmail: $Get_User_Record.body.email\\nUser ID: $Get_User_Record.body.id\\nCompany: $Get_User_Record.body.company.name\\nValidation Status: $Verify_Email_Format.status\\n\\nManual review required.",
+                        "from": "diana.jackson774@usertest.org",
+                        "subject": "Email Validation Failed - $Get_User_Record.body.name"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "smtp_office365_97",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "ver-14",
+                    "name": "User_Not_Found",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        550
+                    ],
+                    "parameters": {
+                        "to": "paul_smith929@example.com",
+                        "body": "User verification failed - user record not found.\\n\\nAPI Status: $Get_User_Record.status\\nStatus Text: $Get_User_Record.status_text\\n\\nPlease check user records or API availability.",
+                        "from": "frank_lopez699@usertest.org",
+                        "subject": "User Verification Failed - Not Found"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "sendgrid_primary_email",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 38,
+        "name": "62_Currency_Exchange_Rate_Monitor",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-28T23:44:40.415666",
+        "updated_at": "2025-11-28T23:44:49.717405",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e-fx-01",
+                    "dst": "fx-02",
+                    "src": "fx-01"
+                },
+                {
+                    "id": "e-fx-02",
+                    "dst": "fx-03",
+                    "src": "fx-02",
+                    "label": "true"
+                },
+                {
+                    "id": "e-fx-03",
+                    "dst": "fx-08",
+                    "src": "fx-02",
+                    "label": "false"
+                },
+                {
+                    "id": "e-fx-04",
+                    "dst": "fx-04",
+                    "src": "fx-03"
+                },
+                {
+                    "id": "e-fx-05",
+                    "dst": "fx-05",
+                    "src": "fx-04",
+                    "label": "case 1"
+                },
+                {
+                    "id": "e-fx-06",
+                    "dst": "fx-06",
+                    "src": "fx-04",
+                    "label": "case 2"
+                },
+                {
+                    "id": "e-fx-07",
+                    "dst": "fx-07",
+                    "src": "fx-04",
+                    "label": "fallback"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "fx-01",
+                    "name": "Fetch_Exchange_Rates",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://api.exchangerate-api.com/v4/latest/USD",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "fx-02",
+                    "name": "API_Responded",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        350
+                    ],
+                    "parameters": {
+                        "expression": "$Fetch_Exchange_Rates.status == 200",
+                        "true_edge_id": "e-fx-02",
+                        "false_edge_id": "e-fx-03"
+                    }
+                },
+                {
+                    "id": "fx-03",
+                    "name": "Get_Historical_Data",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://api.exchangerate-api.com/v4/latest/EUR",
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "fx-04",
+                    "name": "Rate_Analysis",
+                    "type": "switch",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1000,
+                        150
+                    ],
+                    "parameters": {
+                        "rules": [
+                            {
+                                "value": "$Fetch_Exchange_Rates.body.rates.EUR",
+                                "compare": "0.85",
+                                "operator": "<"
+                            },
+                            {
+                                "value": "$Fetch_Exchange_Rates.body.rates.EUR",
+                                "compare": "0.95",
+                                "operator": ">"
+                            }
+                        ],
+                        "routes": [
+                            "e-fx-05",
+                            "e-fx-06",
+                            "e-fx-07"
+                        ]
+                    }
+                },
+                {
+                    "id": "fx-05",
+                    "name": "Strong_USD_Alert",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1350,
+                        50
+                    ],
+                    "parameters": {
+                        "to": "leojones646@demo.net",
+                        "body": "Currency Exchange Alert: USD STRONG\\n\\nCurrent Rates (Base: USD)\\nEUR: $Fetch_Exchange_Rates.body.rates.EUR\\nGBP: $Fetch_Exchange_Rates.body.rates.GBP\\nJPY: $Fetch_Exchange_Rates.body.rates.JPY\\nCHF: $Fetch_Exchange_Rates.body.rates.CHF\\n\\nEUR Reverse Rate: $Get_Historical_Data.body.rates.USD\\n\\nThe USD is particularly strong against EUR.\\nGood time for USDΓåÆEUR conversions.\\n\\nLast Updated: $Fetch_Exchange_Rates.body.date",
+                        "from": "iris.davis243@example.com",
+                        "subject": "Strong USD Alert - EUR Rate Below 0.85"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "notification_aws_18",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "fx-06",
+                    "name": "Weak_USD_Alert",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1350,
+                        250
+                    ],
+                    "parameters": {
+                        "to": "diana_lopez368@demo.net",
+                        "body": "Currency Exchange Alert: USD WEAK\\n\\nCurrent Rates (Base: USD)\\nEUR: $Fetch_Exchange_Rates.body.rates.EUR\\nGBP: $Fetch_Exchange_Rates.body.rates.GBP\\nJPY: $Fetch_Exchange_Rates.body.rates.JPY\\nCAD: $Fetch_Exchange_Rates.body.rates.CAD\\n\\nThe USD is weaker against EUR.\\nConsider waiting for EURΓåÆUSD conversions.\\n\\nLast Updated: $Fetch_Exchange_Rates.body.date",
+                        "from": "zackbrown451@example.com",
+                        "subject": "Weak USD Alert - EUR Rate Above 0.95"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "yahoo-alert",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "fx-07",
+                    "name": "Normal_Rate_Report",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1350,
+                        450
+                    ],
+                    "parameters": {
+                        "to": "eve.williams200@usertest.org",
+                        "body": "Daily Currency Exchange Report\\n\\nCurrent Rates (Base: USD)\\nEUR: $Fetch_Exchange_Rates.body.rates.EUR\\nGBP: $Fetch_Exchange_Rates.body.rates.GBP\\nJPY: $Fetch_Exchange_Rates.body.rates.JPY\\nAUD: $Fetch_Exchange_Rates.body.rates.AUD\\nCAD: $Fetch_Exchange_Rates.body.rates.CAD\\nCHF: $Fetch_Exchange_Rates.body.rates.CHF\\n\\nRates are within normal range.\\n\\nLast Updated: $Fetch_Exchange_Rates.body.date",
+                        "from": "eve_wilson458@workflow.dev",
+                        "subject": "Daily FX Report - Normal Rates"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "office365_prod_sender",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "fx-08",
+                    "name": "API_Failure_Alert",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        500
+                    ],
+                    "parameters": {
+                        "to": "yara.brown950@devmail.net",
+                        "body": "Failed to fetch exchange rates.\\n\\nAPI Status: $Fetch_Exchange_Rates.status\\nStatus Text: $Fetch_Exchange_Rates. status_text\\n\\nPlease check API availability or rate limits.",
+                        "from": "charlie_martin149@automation.test",
+                        "subject": "Exchange Rate API Failure"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "staging-mailgun-email",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "id": 39,
+        "name": "63_Weather-Based_Activity_Recommendation",
+        "version": 1,
+        "is_active": false,
+        "created_at": "2025-11-29T00:08:39.629267",
+        "updated_at": "2025-11-29T00:08:52.610481",
+        "description": "",
+        "workflow_data": {
+            "edges": [
+                {
+                    "id": "e-wx-01",
+                    "dst": "wx-02",
+                    "src": "wx-01"
+                },
+                {
+                    "id": "e-wx-02",
+                    "dst": "wx-03",
+                    "src": "wx-02",
+                    "label": "true"
+                },
+                {
+                    "id": "e-wx-03",
+                    "dst": "wx-08",
+                    "src": "wx-02",
+                    "label": "false"
+                },
+                {
+                    "id": "e-wx-04",
+                    "dst": "wx-04",
+                    "src": "wx-03"
+                },
+                {
+                    "id": "e-wx-05",
+                    "dst": "wx-05",
+                    "src": "wx-04",
+                    "label": "case 1"
+                },
+                {
+                    "id": "e-wx-06",
+                    "dst": "wx-06",
+                    "src": "wx-04",
+                    "label": "case 2"
+                },
+                {
+                    "id": "e-wx-07",
+                    "dst": "wx-07",
+                    "src": "wx-04",
+                    "label": "fallback"
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "wx-01",
+                    "name": "Fetch_Current_Weather",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        100,
+                        350
+                    ],
+                    "parameters": {
+                        "url": "https://api.open-meteo.com/v1/forecast",
+                        "query": {
+                            "latitude": "40.7128",
+                            "longitude": "-74.0060",
+                            "current_weather": "true"
+                        },
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "wx-02",
+                    "name": "Weather_Available",
+                    "type": "conditional",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        400,
+                        350
+                    ],
+                    "parameters": {
+                        "expression": "$Fetch_Current_Weather.status == 200",
+                        "true_edge_id": "e-wx-02",
+                        "false_edge_id": "e-wx-03"
+                    }
+                },
+                {
+                    "id": "wx-03",
+                    "name": "Fetch_Daily_Forecast",
+                    "type": "http",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        250
+                    ],
+                    "parameters": {
+                        "url": "https://api.open-meteo.com/v1/forecast",
+                        "query": {
+                            "daily": "temperature_2m_max,temperature_2m_min",
+                            "latitude": "40.7128",
+                            "timezone": "America/New_York",
+                            "longitude": "-74. 0060"
+                        },
+                        "method": "GET"
+                    }
+                },
+                {
+                    "id": "wx-04",
+                    "name": "Temperature_Range",
+                    "type": "switch",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1000,
+                        150
+                    ],
+                    "parameters": {
+                        "rules": [
+                            {
+                                "value": "$Fetch_Current_Weather.body.current_weather.temperature",
+                                "compare": "10",
+                                "operator": "<"
+                            },
+                            {
+                                "value": "$Fetch_Current_Weather.body.current_weather.temperature",
+                                "compare": "25",
+                                "operator": ">"
+                            }
+                        ],
+                        "routes": [
+                            "e-wx-05",
+                            "e-wx-06",
+                            "e-wx-07"
+                        ]
+                    }
+                },
+                {
+                    "id": "wx-05",
+                    "name": "Cold_Weather_Activities",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1350,
+                        50
+                    ],
+                    "parameters": {
+                        "to": "xander.thomas800@devmail.net",
+                        "body": "Weather Report for New York City\\n\\nCurrent Conditions:\\nTemperature: $Fetch_Current_Weather.body.current_weather.temperature┬░C\\nWind Speed: $Fetch_Current_Weather.body.current_weather.windspeed km/h\\n\\nRecommended Activities:\\nΓ¥ä∩╕Å Visit museums (MoMA, Met, Natural History)\\nΓÿò Try cozy cafes in Greenwich Village\\n≡ƒÄ¡ Catch a Broadway show\\n≡ƒ¢ì∩╕Å Indoor shopping at Brookfield Place\\n≡ƒôÜ Browse bookstores in Union Square\\n\\nDress warmly and stay indoors!",
+                        "from": "liam_garcia57@sample.io",
+                        "subject": "Cold Weather Alert - Indoor Activities Recommended"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "office365_demo_sender",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "wx-06",
+                    "name": "Hot_Weather_Activities",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1350,
+                        250
+                    ],
+                    "parameters": {
+                        "to": "paulmartin500@automation.test",
+                        "body": "Weather Report for New York City\\n\\nCurrent Conditions:\\nTemperature: $Fetch_Current_Weather.body.current_weather.temperature┬░C\\nWind Speed: $Fetch_Current_Weather.body.current_weather.windspeed km/h\\n\\nRecommended Activities:\\n≡ƒÅû∩╕Å Visit Coney Island Beach\\nΓ¢▓ Relax in Central Park fountains\\n≡ƒìª Get ice cream at Brooklyn Bridge Park\\n≡ƒÜñ Take Hudson River boat tour\\n≡ƒÆª Visit public pools or water parks\\n\\nStay hydrated and use sunscreen!",
+                        "from": "kate_miller589@workflow.dev",
+                        "subject": "Hot Weather Alert - Outdoor & Cooling Activities"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "mailgun-alert",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "wx-07",
+                    "name": "Moderate_Weather_Activities",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        1350,
+                        450
+                    ],
+                    "parameters": {
+                        "to": "ugarcia196@automation.test",
+                        "body": "Weather Report for New York City\\n\\nCurrent Conditions:\\nTemperature: $Fetch_Current_Weather.body.current_weather.temperature┬░C\\nWind Speed: $Fetch_Current_Weather.body.current_weather.windspeed km/h\\n\\nRecommended Activities:\\n≡ƒÜ╢ Walk the High Line\\n≡ƒÜ┤ Bike along Hudson River Greenway\\n≡ƒî│ Explore Central Park\\n≡ƒù╜ Visit Statue of Liberty\\n≡ƒîë Walk Brooklyn Bridge\\nΓÿò Outdoor dining in SoHo\\n\\nPerfect weather for anything!",
+                        "from": "xander.moore628@mailtest.com",
+                        "subject": "Perfect Weather Day - All Activities Available"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "awsAlert",
+                        "type": "smtp"
+                    }
+                },
+                {
+                    "id": "wx-08",
+                    "name": "Weather_API_Error",
+                    "type": "smtp",
+                    "output": {},
+                    "trigger": false,
+                    "position": [
+                        700,
+                        500
+                    ],
+                    "parameters": {
+                        "to": "xander.taylor670@workflow.dev",
+                        "body": "Failed to fetch weather data.\\n\\nAPI Status: $Fetch_Current_Weather.status\\nStatus Text: $Fetch_Current_Weather.status_text\\n\\nPlease check API availability.",
+                        "from": "ebrown167@workflow.dev",
+                        "subject": "Weather API Failure"
+                    },
+                    "credentials": {
+                        "id": "2",
+                        "name": "mandrill_prod_mailer",
+                        "type": "smtp"
+                    }
+                }
+            ]
+        }
+    }
+]
