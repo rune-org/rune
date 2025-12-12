@@ -56,3 +56,13 @@ services/rune-worker/go.sum
 
 # nginx
 nginx/ssl/
+
+# rust
+**/target/
+**/*.rs.bk
+**/*.rlib
+**/*.rmeta
+**/*.d
+**/*.lock
+**/Cargo.lock
+**/Cargo.toml.bk

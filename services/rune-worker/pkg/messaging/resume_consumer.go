@@ -114,6 +114,7 @@ func (c *ResumeConsumer) handleResume(ctx context.Context, payload []byte) error
 			WorkflowDefinition: msg.WorkflowDefinition,
 			AccumulatedContext: msg.AccumulatedContext,
 			LineageStack:       msg.LineageStack,
+			IsWorkerInitiated:  true,
 		}
 
 		msgBytes, err := nextMsg.Encode()

@@ -1,0 +1,71 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    ports:
+      - "5080:5080"
+    environment:
+      ZO_ROOT_USER_EMAIL: admin@example.com
+      ZO_ROOT_USER_PASSWORD: password
+      ZO_DATA_DIR: /data
+    volumes:
+      - openobserve_data:/data
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    depends_on:
+      - openobserve
+
+  mongodb:
+    image: mongodb/mongodb-community-server:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db
+
+  rtes:
+    profiles:
+      - app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - rabbitmq
+      - mongodb
+      - otel-collector
+    environment:
+      RUST_LOG: info
+      REDIS_URL: redis://redis/
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672/%2f
+      MONGODB_URL: mongodb://admin:password@mongodb:27017/?authSource=admin
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      PORT: 8080
+
+volumes:
+  openobserve_data:
+  mongodb_data:

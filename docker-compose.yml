@@ -47,6 +47,19 @@ services:
     networks:
       - backend_network
 
+  mongodb:
+    image: "mongodb/mongodb-community-server:latest"
+    container_name: rune-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-password}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - backend_network
+
   api:
     build:
       context: ./services/api
@@ -149,6 +162,57 @@ services:
       - frontend_network
     restart: unless-stopped
 
+  rtes:
+    build:
+      context: ./services/rtes
+      dockerfile: Dockerfile
+    container_name: rune-rtes
+    environment:
+      RUST_LOG: info
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-key-change-in-production}
+      REDIS_URL: redis://redis:6379/
+      AMQP_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/%2f
+      MONGODB_URL: mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-password}@mongodb:27017/?authSource=admin
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      PORT: 8080
+    networks:
+      - backend_network
+    depends_on:
+      - otel-collector
+      - rabbitmq
+      - redis
+      - mongodb
+    ports:
+      - "8080:8080"
+
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    container_name: rune-openobserve
+    environment:
+      ZO_ROOT_USER_EMAIL: root@example.com
+      ZO_ROOT_USER_PASSWORD: Complexpass#123
+      ZO_DATA_DIR: /data
+    volumes:
+      - openobserve_data:/data
+    ports:
+      - "5080:5080"
+    networks:
+      - backend_network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: rune-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - backend_network
+    depends_on:
+      - openobserve
+
 networks:
   frontend_network:
     driver: bridge
@@ -168,4 +232,8 @@ volumes:
   rabbitmq_data:
     driver: local
   redis_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  openobserve_data:
     driver: local
