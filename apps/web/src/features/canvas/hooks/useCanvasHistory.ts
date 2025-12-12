@@ -26,8 +26,6 @@ export type UseCanvasHistoryReturn = {
   canUndo: boolean;
   /** Whether redo is available */
   canRedo: boolean;
-  /** Clear all history */
-  clearHistory: () => void;
 };
 
 export function useCanvasHistory(
@@ -76,6 +74,10 @@ export function useCanvasHistory(
     // Save current state to redo stack
     redoStack.push(structuredClone({ nodes, edges }));
 
+    while (redoStack.length > maxSize) {
+      redoStack.shift();
+    }
+
     // Pop from undo stack
     const stateToRestore = undoStack.pop()!;
 
@@ -83,7 +85,7 @@ export function useCanvasHistory(
     syncState();
 
     return stateToRestore;
-  }, [nodes, edges, syncState]);
+  }, [nodes, edges, maxSize, syncState]);
 
   const redo = useCallback((): HistoryEntry | null => {
     const { undoStack, redoStack } = historyRef.current;
@@ -95,6 +97,10 @@ export function useCanvasHistory(
     // Save current state to undo stack
     undoStack.push(structuredClone({ nodes, edges }));
 
+    while (undoStack.length > maxSize) {
+      undoStack.shift();
+    }
+
     // Pop from redo stack
     const stateToRestore = redoStack.pop()!;
 
@@ -102,12 +108,7 @@ export function useCanvasHistory(
     syncState();
 
     return stateToRestore;
-  }, [nodes, edges, syncState]);
-
-  const clearHistory = useCallback(() => {
-    historyRef.current = { undoStack: [], redoStack: [] };
-    syncState();
-  }, [syncState]);
+  }, [nodes, edges, maxSize, syncState]);
 
   return {
     pushHistory,
@@ -115,6 +116,5 @@ export function useCanvasHistory(
     redo,
     canUndo,
     canRedo,
-    clearHistory,
   };
 }
