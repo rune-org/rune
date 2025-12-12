@@ -320,3 +320,39 @@ async def list_credential_shares(
         data=shares,
         message=f"Found {len(shares)} share(s)",
     )
+
+
+@router.get(
+    "/{credential_id}/my-share",
+    response_model=ApiResponse[CredentialShareInfo],
+    summary="Get your own share info for a credential",
+)
+async def get_my_share_info(
+    credential_id: int,
+    current_user: User = Depends(require_password_changed),
+    service: CredentialService = Depends(get_credential_service),
+    permission_service: CredentialPermissionService = Depends(get_permission_service),
+) -> ApiResponse[CredentialShareInfo]:
+    """
+    Get your own share info for a credential that has been shared with you.
+
+    This endpoint allows shared users to see when the credential was shared
+    with them and who shared it.
+    """
+    # Verify user has access to the credential
+    await service.get_credential(credential_id, current_user)
+
+    # Get the user's share info
+    share_info = await permission_service.get_user_share_info_full(
+        credential_id, current_user.id
+    )
+
+    if not share_info:
+        from src.core.exceptions import NotFound
+
+        raise NotFound(detail="You are not a shared user of this credential")
+
+    return ApiResponse(
+        data=share_info,
+        message="Share info retrieved successfully",
+    )

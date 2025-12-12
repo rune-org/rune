@@ -59,6 +59,23 @@ class UserService:
 
         return users
 
+    async def get_users_for_sharing(self, exclude_user_id: int) -> list[User]:
+        """
+        Retrieve all active users for sharing purposes.
+
+        Args:
+            exclude_user_id: The ID of the current user to exclude from the list
+
+        Returns:
+            List of active User objects (excluding the current user)
+        """
+        statement = select(User).where(
+            User.id != exclude_user_id,
+            User.is_active == True,  # noqa: E712
+        )
+        result = await self.db.exec(statement)
+        return result.all()
+
     async def get_user_by_id(self, user_id: int) -> User:
         """
         Retrieve a single user by their ID.

@@ -5,6 +5,7 @@ import { AppStateProvider } from "@/lib/state";
 import { AuthProvider } from "@/lib/auth";
 import { useEffect } from "react";
 import { setupClientInterceptors } from "@/lib/api/setupClientInterceptors";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function ClientProviders({ children }: { children: ReactNode }) {
   useEffect(() => {
@@ -13,7 +14,9 @@ export function ClientProviders({ children }: { children: ReactNode }) {
 
   return (
     <AuthProvider>
-      <AppStateProvider>{children}</AppStateProvider>
+      <AppStateProvider>
+        <TooltipProvider>{children}</TooltipProvider>
+      </AppStateProvider>
     </AuthProvider>
   );
 }
