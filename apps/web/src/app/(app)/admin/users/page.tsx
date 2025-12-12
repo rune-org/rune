@@ -30,6 +30,7 @@ export default function UsersPage() {
   // Invite modal state
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
   const [inviteRole, setInviteRole] = useState<"user" | "admin">("user");
 
   // Temporary password modal (persistent until closed)
@@ -90,6 +91,10 @@ export default function UsersPage() {
       toast.error("Please enter an email");
       return;
     }
+    if (!inviteName) {
+      toast.error("Please enter a name");
+      return;
+    }
 
     // Basic client-side email normalization & check
     const normalized = inviteEmail.trim().toLowerCase();
@@ -103,7 +108,7 @@ export default function UsersPage() {
     }
 
     const payload: UserCreate = {
-      name: normalized.split("@")[0],
+      name: inviteName,
       email: normalized,
       role: inviteRole,
     };
@@ -134,6 +139,7 @@ export default function UsersPage() {
       // Reset invite UI & refresh list
       setInviteOpen(false);
       setInviteEmail("");
+      setInviteName("");
       setInviteRole("user");
       await fetchUsers();
     } catch (err) {
@@ -316,6 +322,14 @@ export default function UsersPage() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-40">
           <Card className="p-6 w-full max-w-md bg-background border">
             <h3 className="text-lg font-semibold mb-4">Invite User</h3>
+
+            <input
+              type="text"
+              placeholder="Full Name"
+              className="w-full px-3 py-2 rounded-md bg-muted border text-sm mb-3"
+              value={inviteName}
+              onChange={(e) => setInviteName(e.target.value)}
+            />
 
             <input
               type="email"
