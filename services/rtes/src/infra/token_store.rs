@@ -1,6 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use redis::{AsyncCommands, Client as RedisClient, RedisResult};
+use tracing::info;
 
 use crate::domain::models::ExecutionToken;
 
@@ -112,8 +113,13 @@ impl TokenStore {
             return false;
         }
 
-        match (target_execution_id, &token.execution_id) {
-            (Some(req_eid), Some(tok_eid)) => req_eid == tok_eid,
+        info!(
+            "Token executionId: {}, Target executionId: {}",
+            token.execution_id.as_deref().unwrap_or("None"),
+            target_execution_id.unwrap_or("None")
+        );
+        match (target_execution_id, token.execution_id.as_deref()) {
+            (Some(req_eid), Some(tok_eid)) => *req_eid == *tok_eid,
             (Some(_) | None, None) => true,
             (None, Some(_)) => false,
         }

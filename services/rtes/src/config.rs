@@ -59,7 +59,7 @@ impl Config {
             rabbitmq_completion_queue: env::var("RABBITMQ_COMPLETION_QUEUE")
                 .unwrap_or_else(|_| "workflow.completion".to_string()),
             rabbitmq_execution_queue: env::var("RABBITMQ_EXECUTION_QUEUE")
-                .unwrap_or_else(|_| "workflow.execution".to_string()),
+                .unwrap_or_else(|_| "workflow.worker.initiated".to_string()),
             port: env::var("PORT")
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()

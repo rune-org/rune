@@ -75,11 +75,11 @@ func (e *Executor) Execute(ctx context.Context, msg *messages.NodeExecutionMessa
 		"node_type", node.Type,
 	)
 
-	// Step 5 & 6: Build context and execute node
+	// Step 4: Build context
 	execContext, usedKeys := e.buildExecutionContext(msg, &node)
 	usedInputs := e.filterUsedInputs(execContext.Input, usedKeys)
 
-	// Step 4: Publish "running" status
+	// Step 5: Publish "running" status
 	if err := e.publishRunningStatus(ctx, msg, &node, execContext.Parameters, usedKeys, usedInputs); err != nil {
 		slog.Error("failed to publish running status", "error", err)
 		// Continue execution even if status publish fails

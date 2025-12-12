@@ -61,7 +61,6 @@ impl ExecutionStore {
             "$setOnInsert": set_on_insert,
             "$set": {
                 "workflow_definition": bson::to_bson(&msg.workflow_definition)?,
-                "accumulated_context": bson::to_bson(&msg.accumulated_context)?,
                 "updated_at": now,
             }
         };
@@ -123,6 +122,7 @@ impl ExecutionStore {
             output:        msg.output.clone(),
             status:        Some(msg.status.clone()),
             error:         msg.error.clone(),
+            
             executed_at:   Some(msg.executed_at.clone()),
             duration_ms:   Some(msg.duration_ms),
             lineage_hash:  if lineage_hash == "default" {

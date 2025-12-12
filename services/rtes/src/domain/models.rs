@@ -106,6 +106,7 @@ pub struct NodeExecutionInstance {
 /// Node-level executions mapped by lineage.
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct HydratedNode {
+    #[serde(default)]
     pub executions: std::collections::HashMap<String, NodeExecutionInstance>,
 }
 
@@ -117,6 +118,7 @@ pub struct ExecutionDocument {
     pub workflow_definition: Value,
     #[serde(default)]
     pub accumulated_context: Value,
+    #[serde(default)]
     pub nodes:               std::collections::HashMap<String, HydratedNode>,
     pub status:              Option<String>,
     pub created_at:          Option<DateTime>,

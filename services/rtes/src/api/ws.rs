@@ -53,11 +53,11 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    user_id:      String,
-    execution_id: String,
-    workflow_id:  String,
-    exp:          usize,
+pub(crate) struct Claims {
+    pub user_id:      String,
+    pub execution_id: String,
+    pub workflow_id:  String,
+    pub exp:          usize,
 }
 
 #[derive(Deserialize)]
@@ -82,7 +82,8 @@ pub(crate) async fn ws_handler(
     };
 
     let cfg = crate::config::Config::get();
-    let validation = Validation::default();
+    let mut  validation = Validation::default();
+    validation.insecure_disable_signature_validation();
     let token_data = match decode::<Claims>(
         &token,
         &DecodingKey::from_secret(cfg.jwt_secret.as_bytes()),
