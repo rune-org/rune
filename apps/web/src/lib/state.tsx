@@ -12,6 +12,8 @@ import {
 import { auth, workflows as workflowsApi } from "@/lib/api";
 import type { UserResponse } from "@/client/types.gen";
 import { listItemToWorkflowSummary, type WorkflowSummary } from "@/lib/workflows";
+import { listWorkflowPermissions } from "@/lib/api/permissions";
+import type { WorkflowRole } from "@/lib/permissions";
 
 type UserProfile = {
   id: string;
@@ -107,11 +109,39 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const userData = profileRes.data.data;
       dispatch({ type: "setUser", user: toUserProfile(userData) });
       const workflowItems = workflowsRes.data.data ?? [];
+      
+      // Fetch roles for each workflow
+      const workflowsWithRoles = await Promise.all(
+        workflowItems.map(async (item) => {
+          try {
+            const permissions = await listWorkflowPermissions(String(item.id));
+            console.log(`Workflow ${item.id} permissions:`, permissions);
+            console.log(`Current user ID: ${userData.id}`);
+            
+            const currentUserPermission = permissions.find(
+              (p) => {
+                console.log(`Comparing permission user_id ${p.user_id} (${typeof p.user_id}) with current user ${userData.id} (${typeof userData.id})`);
+                return p.user_id === userData.id || String(p.user_id) === String(userData.id);
+              }
+            );
+            
+            if (currentUserPermission) {
+              console.log(`✓ Found role for workflow ${item.id}: ${currentUserPermission.role}`);
+              return { ...listItemToWorkflowSummary(item), role: currentUserPermission.role };
+            }
+            
+            console.warn(`⚠ User not found in permissions for workflow ${item.id}, defaulting to viewer`);
+            return { ...listItemToWorkflowSummary(item), role: "viewer" as WorkflowRole };
+          } catch (error) {
+            console.error(`❌ Failed to fetch permissions for workflow ${item.id}:`, error);
+            return { ...listItemToWorkflowSummary(item), role: "viewer" as WorkflowRole };
+          }
+        })
+      );
+      
       dispatch({
         type: "setWorkflows",
-        workflows: workflowItems.map((item) =>
-          listItemToWorkflowSummary(item),
-        ),
+        workflows: workflowsWithRoles,
       });
     } catch (e) {
       dispatch({ type: "error", error: (e as Error).message });
@@ -121,14 +151,48 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const refreshWorkflows = useCallback(async () => {
     try {
       dispatch({ type: "start" });
-      const res = await workflowsApi.listWorkflows();
-      if (!res.data) {
+      const [res, profileRes] = await Promise.all([
+        workflowsApi.listWorkflows(),
+        auth.getMyProfile(),
+      ]);
+      if (!res.data || !profileRes.data) {
         throw new Error("Unable to load workflows");
       }
       const items = res.data.data ?? [];
+      const userData = profileRes.data.data;
+      
+      // Fetch roles for each workflow
+      const workflowsWithRoles = await Promise.all(
+        items.map(async (item) => {
+          try {
+            const permissions = await listWorkflowPermissions(String(item.id));
+            console.log(`Workflow ${item.id} permissions:`, permissions);
+            console.log(`Current user ID: ${userData.id}`);
+            
+            const currentUserPermission = permissions.find(
+              (p) => {
+                console.log(`Comparing permission user_id ${p.user_id} (${typeof p.user_id}) with current user ${userData.id} (${typeof userData.id})`);
+                return p.user_id === userData.id || String(p.user_id) === String(userData.id);
+              }
+            );
+            
+            if (currentUserPermission) {
+              console.log(`✓ Found role for workflow ${item.id}: ${currentUserPermission.role}`);
+              return { ...listItemToWorkflowSummary(item), role: currentUserPermission.role };
+            }
+            
+            console.warn(`⚠ User not found in permissions for workflow ${item.id}, defaulting to viewer`);
+            return { ...listItemToWorkflowSummary(item), role: "viewer" as WorkflowRole };
+          } catch (error) {
+            console.error(`❌ Failed to fetch permissions for workflow ${item.id}:`, error);
+            return { ...listItemToWorkflowSummary(item), role: "viewer" as WorkflowRole };
+          }
+        })
+      );
+      
       dispatch({
         type: "setWorkflows",
-        workflows: items.map((item) => listItemToWorkflowSummary(item)),
+        workflows: workflowsWithRoles,
       });
     } catch (e) {
       dispatch({ type: "error", error: (e as Error).message });
