@@ -22,7 +22,9 @@ pub(crate) struct Config {
 
 impl Config {
     fn parse_bool_env(name: &str, default: bool) -> bool {
-        env::var(name).map_or(default, |v| matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "y" | "on"))
+        env::var(name).map_or(default, |v| {
+            matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "y" | "on")
+        })
     }
 
     pub(crate) fn init() -> Result<(), Box<dyn std::error::Error>> {
@@ -32,7 +34,7 @@ impl Config {
                 .unwrap_or_else(|_| "amqp://127.0.0.1:5672/%2f".to_string()),
             otel_endpoint: env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
                 .unwrap_or_else(|_| "http://localhost:4318".to_string()),
-            rabbitmq_token_queue: env::var("RABBITMQ_QUEUE_NAME")
+            rabbitmq_token_queue: env::var("RABBITMQ_TOKEN_QUEUE")
                 .unwrap_or_else(|_| "execution.token".to_string()),
             rabbitmq_consumer_tag: env::var("RABBITMQ_CONSUMER_TAG")
                 .unwrap_or_else(|_| "rtes_token_consumer".to_string()),
