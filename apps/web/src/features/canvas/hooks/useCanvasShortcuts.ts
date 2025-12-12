@@ -14,6 +14,7 @@ type CanvasShortcutsProps = {
   setEdges: (updater: (edges: Edge[]) => Edge[] | Edge[]) => void;
   onSave: () => void;
   onUndo: () => void;
+  onRedo: () => void;
   onCopy?: () => void;
   onSelectAll?: (firstId: string | null) => void;
   onPushHistory: () => void;
@@ -38,6 +39,7 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
         setEdges,
         onSave,
         onUndo,
+        onRedo,
         onCopy,
         onSelectAll,
         onPushHistory,
@@ -100,8 +102,21 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
         return;
       }
 
+      // redo
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        onRedo();
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        onRedo();
+        return;
+      }
+
       // undo
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() == "z") {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
         e.preventDefault();
         onUndo();
         return;
