@@ -47,6 +47,19 @@ services:
     networks:
       - backend_network
 
+  mongodb:
+    image: "mongodb/mongodb-community-server:latest"
+    container_name: rune-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-password}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - backend_network
+
   api:
     build:
       context: ./services/api
@@ -157,13 +170,20 @@ services:
     environment:
       RUST_LOG: info
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-key-change-in-production}
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      REDIS_URL: redis://redis:6379/
+      AMQP_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/%2f
+      MONGODB_URL: mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-password}@mongodb:27017/?authSource=admin
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      PORT: 8080
     networks:
       - backend_network
     depends_on:
       - otel-collector
       - rabbitmq
       - redis
+      - mongodb
+    ports:
+      - "8080:8080"
 
   openobserve:
     image: public.ecr.aws/zinclabs/openobserve:latest
@@ -212,6 +232,8 @@ volumes:
   rabbitmq_data:
     driver: local
   redis_data:
+    driver: local
+  mongodb_data:
     driver: local
   openobserve_data:
     driver: local
