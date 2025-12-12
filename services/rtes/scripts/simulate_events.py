@@ -46,7 +46,6 @@ def publish_status(channel, execution_id):
         "processed_count": None,
         "aggregator_state": None,
         "lineage_stack": [],
-        "lineage_hash": "hash-1",
         "used_inputs": None
     }
     channel.queue_declare(queue='workflow.node.status')

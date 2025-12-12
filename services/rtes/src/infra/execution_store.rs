@@ -13,6 +13,7 @@ use crate::domain::models::{
     NodeExecutionInstance,
     NodeExecutionMessage,
     NodeStatusMessage,
+    compute_lineage_hash,
 };
 
 #[derive(Clone)]
@@ -88,12 +89,22 @@ impl ExecutionStore {
         &self,
         msg: &NodeStatusMessage,
     ) -> Result<(), mongodb::error::Error> {
+        let computed_lineage_hash = msg
+            .lineage_stack
+            .as_ref()
+            .filter(|stack| !stack.is_empty())
+            .and_then(|stack| compute_lineage_hash(stack));
+
+        let lineage_hash = computed_lineage_hash
+            .or_else(|| msg.lineage_hash.clone())
+            .unwrap_or_else(|| "default".to_string());
+
         info!(
             execution_id = %msg.execution_id,
             workflow_id = %msg.workflow_id,
             node_id = %msg.node_id,
             status = %msg.status,
-            lineage_hash = %msg.lineage_hash.as_deref().unwrap_or("default"),
+            lineage_hash = %lineage_hash,
             mongodb_db = %self.db_name,
             "Updating node status"
         );
@@ -101,11 +112,6 @@ impl ExecutionStore {
             "execution_id": &msg.execution_id,
         };
 
-        let lineage_hash = msg
-            .lineage_hash
-            .clone()
-            .unwrap_or_else(|| "default".to_string());
-        
         let mut update_path = format!("nodes.{}", msg.node_id);
         if lineage_hash != "default" {
             update_path = format!("{update_path}.lineages.{lineage_hash}");
@@ -119,7 +125,11 @@ impl ExecutionStore {
             error:         msg.error.clone(),
             executed_at:   Some(msg.executed_at.clone()),
             duration_ms:   Some(msg.duration_ms),
-            lineage_hash:  msg.lineage_hash.clone(),
+            lineage_hash:  if lineage_hash == "default" {
+                None
+            } else {
+                Some(lineage_hash.clone())
+            },
             lineage_stack: msg.lineage_stack.clone(),
             used_inputs:   msg.used_inputs.clone(),
         };

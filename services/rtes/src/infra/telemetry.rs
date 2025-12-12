@@ -9,6 +9,24 @@ use opentelemetry_sdk::{
 };
 use tracing_subscriber::{EnvFilter, Registry, layer::SubscriberExt, util::SubscriberInitExt};
 
+fn otlp_base_endpoint(endpoint: &str) -> String {
+    let mut e = endpoint.trim_end_matches('/').to_string();
+
+    for suffix in ["/v1/traces", "/v1/metrics", "/v1/logs"] {
+        if e.ends_with(suffix) {
+            e.truncate(e.len().saturating_sub(suffix.len()));
+            e = e.trim_end_matches('/').to_string();
+            break;
+        }
+    }
+
+    e
+}
+
+fn otlp_endpoint(endpoint: &str, path: &str) -> String {
+    format!("{}/{}", otlp_base_endpoint(endpoint), path.trim_start_matches('/'))
+}
+
 pub(crate) fn init_telemetry(
     service_name: &'static str,
     endpoint: &str,
@@ -53,7 +71,7 @@ fn init_tracer(
 ) -> Result<sdktrace::SdkTracerProvider, Box<dyn std::error::Error>> {
     let exporter = opentelemetry_otlp::SpanExporter::builder()
         .with_http()
-        .with_endpoint(endpoint)
+        .with_endpoint(otlp_endpoint(endpoint, "/v1/traces"))
         .build()?;
 
     let provider = sdktrace::SdkTracerProvider::builder()
@@ -71,7 +89,7 @@ fn init_metrics(
 ) -> Result<SdkMeterProvider, Box<dyn std::error::Error>> {
     let exporter = opentelemetry_otlp::MetricExporter::builder()
         .with_http()
-        .with_endpoint(endpoint)
+        .with_endpoint(otlp_endpoint(endpoint, "/v1/metrics"))
         .build()?;
 
     let reader = PeriodicReader::builder(exporter).build();
@@ -90,7 +108,7 @@ fn init_logs(
 ) -> Result<SdkLoggerProvider, Box<dyn std::error::Error>> {
     let exporter = opentelemetry_otlp::LogExporter::builder()
         .with_http()
-        .with_endpoint(endpoint)
+        .with_endpoint(otlp_endpoint(endpoint, "/v1/logs"))
         .build()?;
 
     let provider = SdkLoggerProvider::builder()
