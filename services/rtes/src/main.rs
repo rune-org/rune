@@ -8,6 +8,7 @@ mod api;
 mod config;
 mod domain;
 mod infra;
+mod util;
 
 use tokio_util::sync::CancellationToken;
 use tracing::info;

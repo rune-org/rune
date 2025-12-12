@@ -10,7 +10,7 @@ pub(crate) fn app(state: AppState) -> Router {
 
     Router::new()
         .route("/health", get(handlers::health_check))
-        .route("/ws", any(ws::ws_handler))
+        .route("/rt", any(ws::ws_handler))
         .route("/executions/{id}", get(handlers::get_execution_hydrated))
         .layer(cors)
         .with_state(state)

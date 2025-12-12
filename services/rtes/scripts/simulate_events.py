@@ -200,7 +200,7 @@ if __name__ == "__main__":
         
         execution_id = "execution-" + str(uuid.uuid4())
         workflow_id = "workflow-1"
-        user_id = "user-1" + str(uuid.uuid4())
+        user_id = "user-1"
 
         publish_token(channel, execution_id, workflow_id, user_id)
 

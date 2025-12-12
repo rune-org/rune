@@ -8,14 +8,14 @@ use mongodb::{
 use serde_json::{Map, Value};
 use tracing::{info, warn};
 
-use crate::domain::models::{
+use crate::{domain::models::{
     CompletionMessage,
     ExecutionDocument,
     NodeExecutionInstance,
     NodeExecutionMessage,
     NodeStatusMessage,
     compute_lineage_hash,
-};
+}, retry_backoff};
 
 #[derive(Clone)]
 pub(crate) struct ExecutionStore {
@@ -146,7 +146,18 @@ impl ExecutionStore {
         if lineage_hash != "default" {
             update_path = format!("{update_path}.lineages.{lineage_hash}");
         }
-
+        // get the execution document node to update
+        let doc = retry_backoff!("get_execution_document", {
+            self.get_execution_document(&msg.execution_id).await
+        }).await?;
+        if doc.is_none() {
+            warn!(
+                execution_id = %msg.execution_id,
+                node_id = %msg.node_id,
+                "Execution document not found; cannot update node status"
+            );
+        }
+        let doc = doc.unwrap();
         let node_execution = NodeExecutionInstance {
             input:         msg.input.clone(),
             parameters:    msg.parameters.clone(),
@@ -155,6 +166,8 @@ impl ExecutionStore {
             error:         msg.error.clone(),
             executed_at:   Some(msg.executed_at.clone()),
             duration_ms:   Some(msg.duration_ms),
+            node_type:     doc.node_type.clone(),
+            name:          doc.name.clone(),
             lineage_hash:  if lineage_hash == "default" {
                 None
             } else {

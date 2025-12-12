@@ -101,13 +101,8 @@ pub struct NodeExecutionInstance {
     pub lineage_hash:  Option<String>,
     pub lineage_stack: Option<Vec<StackFrame>>,
     pub used_inputs:   Option<Value>,
-}
-
-/// Node-level executions mapped by lineage.
-#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
-pub struct HydratedNode {
-    #[serde(default)]
-    pub executions: std::collections::HashMap<String, NodeExecutionInstance>,
+    pub node_type:     Option<String>,
+    pub name:          Option<String>,
 }
 
 /// Stored hydrated execution document.
@@ -120,8 +115,10 @@ pub struct ExecutionDocument {
     #[serde(default)]
     pub accumulated_context: Value,
     #[serde(default)]
-    pub nodes:               std::collections::HashMap<String, HydratedNode>,
+    pub nodes:               std::collections::HashMap<String, NodeExecutionInstance>,
     pub status:              Option<String>,
+    pub name:                Option<String>,
+    pub node_type:           Option<String>,
     pub created_at:          Option<DateTime>,
     pub updated_at:          Option<DateTime>,
 }

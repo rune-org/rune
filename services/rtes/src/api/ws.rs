@@ -131,19 +131,18 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: AuthParams) {
         .await
     {
         for (node_id, node) in doc.nodes {
-            for (_lineage_hash, exec) in node.executions {
                 let dto = WsNodeUpdateDto {
                     node_id: Some(node_id.clone()),
-                    input:   exec.input,
-                    params:  exec.parameters,
-                    output:  exec.output,
-                    status:  exec.status,
+                    input:   node.input,
+                    params:  node.parameters,
+                    output:  node.output,
+                    status:  node.status,
                 };
                 if let Ok(json) = serde_json::to_string(&dto)
                     && sender.send(Message::Text(json.into())).await.is_err() {
                         return;
                     }
-            }
+            
         }
         if let Some(status) = doc.status {
             let dto = WsNodeUpdateDto {
