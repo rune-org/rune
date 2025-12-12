@@ -5,6 +5,7 @@ import { Logo } from "@/components/shared/Logo";
 import {
   Play,
   RotateCcw,
+  RotateCw,
   Save,
   Maximize,
   Upload,
@@ -25,6 +26,9 @@ import {
 type ToolbarProps = {
   onExecute: () => void;
   onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   onSave: () => void;
   onExportToClipboard: () => void;
   onExportToFile: () => void;
@@ -40,6 +44,9 @@ type ToolbarProps = {
 export function Toolbar({
   onExecute,
   onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
   onSave,
   onExportToClipboard,
   onExportToFile,
@@ -90,8 +97,11 @@ export function Toolbar({
       <Btn onClick={onExecute} title="Execute (simulate)">
         <Play className="h-4 w-4" /> Run
       </Btn>
-      <Btn onClick={onUndo} title="Undo">
+      <Btn onClick={onUndo} title="Undo (Ctrl+Z)" disabled={!canUndo}>
         <RotateCcw className="h-4 w-4" /> Undo
+      </Btn>
+      <Btn onClick={onRedo} title="Redo (Ctrl+Shift+Z)" disabled={!canRedo}>
+        <RotateCw className="h-4 w-4" /> Redo
       </Btn>
       <Btn onClick={onSave} title="Save" disabled={saveDisabled}>
         <Save className="h-4 w-4" /> Save
