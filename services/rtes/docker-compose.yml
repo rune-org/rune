@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   redis:
     image: redis:7-alpine
@@ -48,6 +46,8 @@ services:
       - mongodb_data:/data/db
 
   rtes:
+    profiles:
+      - app
     build:
       context: .
       dockerfile: Dockerfile
@@ -60,6 +60,11 @@ services:
       - otel-collector
     environment:
       RUST_LOG: info
+      REDIS_URL: redis://redis/
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672/%2f
+      MONGODB_URL: mongodb://admin:password@mongodb:27017/?authSource=admin
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      PORT: 8080
 
 volumes:
   openobserve_data:

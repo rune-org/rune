@@ -1,8 +1,4 @@
-use axum::{
-    Router,
-    http::Method,
-    routing::{any, get},
-};
+use axum::{Router, http::Method, routing::get};
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::api::{handlers, state::AppState, ws};

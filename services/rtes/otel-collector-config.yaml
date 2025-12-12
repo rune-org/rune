@@ -12,16 +12,16 @@ exporters:
     endpoint: "http://openobserve:5080/api/default/v1/traces"
     headers:
       Authorization: "Basic YWRtaW5AZXhhbXBsZS5jb206cGFzc3dvcmQ=" # admin@example.com:password
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlphttp/openobserve, logging]
+      exporters: [otlphttp/openobserve, debug]
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlphttp/openobserve, logging]
+      exporters: [otlphttp/openobserve, debug]

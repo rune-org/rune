@@ -5,6 +5,7 @@ use mongodb::{
     bson::{self, doc},
     options::ClientOptions,
 };
+use tracing::info;
 
 use crate::domain::models::{
     CompletionMessage,
@@ -22,8 +23,10 @@ pub(crate) struct ExecutionStore {
 
 impl ExecutionStore {
     pub(crate) async fn new(uri: &str, db_name: &str) -> Result<Self, mongodb::error::Error> {
+        info!(mongodb_uri = %uri, mongodb_db = %db_name, "Connecting to MongoDB");
         let client_options = ClientOptions::parse(uri).await?;
         let client = MongoClient::with_options(client_options)?;
+        info!(mongodb_db = %db_name, "MongoDB client initialized");
         Ok(Self { client, db_name: db_name.to_string() })
     }
 
@@ -35,6 +38,12 @@ impl ExecutionStore {
         &self,
         msg: &NodeExecutionMessage,
     ) -> Result<(), mongodb::error::Error> {
+        info!(
+            execution_id = %msg.execution_id,
+            workflow_id = %msg.workflow_id,
+            mongodb_db = %self.db_name,
+            "Upserting execution definition"
+        );
         let now = bson::DateTime::from_millis(Utc::now().timestamp_millis());
 
         let filter = doc! {
@@ -60,6 +69,7 @@ impl ExecutionStore {
             .update_one(filter, update)
             .upsert(true)
             .await?;
+        info!(execution_id = %msg.execution_id, "Upserted execution definition");
         Ok(())
     }
 
@@ -67,14 +77,26 @@ impl ExecutionStore {
         &self,
         execution_id: &str,
     ) -> Result<Option<ExecutionDocument>, mongodb::error::Error> {
+        info!(execution_id = %execution_id, mongodb_db = %self.db_name, "Fetching execution document");
         let filter = doc! { "execution_id": execution_id };
-        self.execution_collection().find_one(filter).await
+        let doc = self.execution_collection().find_one(filter).await?;
+        info!(execution_id = %execution_id, found = doc.is_some(), "Fetched execution document");
+        Ok(doc)
     }
 
     pub(crate) async fn update_node_status(
         &self,
         msg: &NodeStatusMessage,
     ) -> Result<(), mongodb::error::Error> {
+        info!(
+            execution_id = %msg.execution_id,
+            workflow_id = %msg.workflow_id,
+            node_id = %msg.node_id,
+            status = %msg.status,
+            lineage_hash = %msg.lineage_hash.as_deref().unwrap_or("default"),
+            mongodb_db = %self.db_name,
+            "Updating node status"
+        );
         let filter = doc! {
             "execution_id": &msg.execution_id,
         };
@@ -83,7 +105,11 @@ impl ExecutionStore {
             .lineage_hash
             .clone()
             .unwrap_or_else(|| "default".to_string());
-        let update_path = format!("nodes.{}.executions.{}", msg.node_id, lineage_hash);
+        
+        let mut update_path = format!("nodes.{}", msg.node_id);
+        if lineage_hash != "default" {
+            update_path = format!("{update_path}.lineages.{lineage_hash}");
+        }
 
         let node_execution = NodeExecutionInstance {
             input:         msg.input.clone(),
@@ -107,7 +133,15 @@ impl ExecutionStore {
 
         self.execution_collection()
             .update_one(filter, update)
+            .upsert(true)
             .await?;
+
+        info!(
+            execution_id = %msg.execution_id,
+            node_id = %msg.node_id,
+            status = %msg.status,
+            "Updated node status"
+        );
         Ok(())
     }
 
@@ -115,6 +149,13 @@ impl ExecutionStore {
         &self,
         msg: &CompletionMessage,
     ) -> Result<(), mongodb::error::Error> {
+        info!(
+            execution_id = %msg.execution_id,
+            workflow_id = %msg.workflow_id,
+            status = %msg.status,
+            mongodb_db = %self.db_name,
+            "Completing execution"
+        );
         let filter = doc! {
             "execution_id": &msg.execution_id,
         };
@@ -122,14 +163,15 @@ impl ExecutionStore {
         let update = doc! {
             "$set": {
                 "status": &msg.status,
-                "accumulated_context": bson::to_bson(&msg.final_context)?,
                 "updated_at": bson::DateTime::from_millis(Utc::now().timestamp_millis()),
             }
         };
 
         self.execution_collection()
             .update_one(filter, update)
+            .upsert(true)
             .await?;
+        info!(execution_id = %msg.execution_id, status = %msg.status, "Completed execution");
         Ok(())
     }
 }

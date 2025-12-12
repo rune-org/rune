@@ -8,10 +8,6 @@ repository = "https://github.com/rune-org/rune"
 readme = "README.md"
 keywords = ["rune", "execution"]
 
-[lib]
-name = "rtes"
-path = "src/lib.rs"
-
 [dependencies]
 # Core Async Runtime 
 tokio = { version = "1", features = ["full"] }

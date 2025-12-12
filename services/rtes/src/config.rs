@@ -7,10 +7,12 @@ pub(crate) struct Config {
     pub redis_url: String,
     pub amqp_url: String,
     pub otel_endpoint: String,
-    pub rabbitmq_queue_name: String,
+    pub rabbitmq_token_queue: String,
     pub rabbitmq_consumer_tag: String,
     pub rabbitmq_prefetch_count: u16,
     pub rabbitmq_concurrent_messages: usize,
+    pub rabbitmq_queue_durable: bool,
+    pub rabbitmq_enable_dlq: bool,
     pub mongodb_url: String,
     pub rabbitmq_status_queue: String,
     pub rabbitmq_completion_queue: String,
@@ -20,14 +22,23 @@ pub(crate) struct Config {
 }
 
 impl Config {
+    fn parse_bool_env(name: &str, default: bool) -> bool {
+        match env::var(name) {
+            Ok(v) => {
+                matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "y" | "on")
+            },
+            Err(_) => default,
+        }
+    }
+
     pub(crate) fn init() -> Result<(), Box<dyn std::error::Error>> {
         let config = Self {
             redis_url: env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1/".to_string()),
             amqp_url: env::var("AMQP_URL")
                 .unwrap_or_else(|_| "amqp://127.0.0.1:5672/%2f".to_string()),
             otel_endpoint: env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
-                .unwrap_or_else(|_| "http://localhost:4317".to_string()),
-            rabbitmq_queue_name: env::var("RABBITMQ_QUEUE_NAME")
+                .unwrap_or_else(|_| "http://localhost:4318".to_string()),
+            rabbitmq_token_queue: env::var("RABBITMQ_QUEUE_NAME")
                 .unwrap_or_else(|_| "execution.token".to_string()),
             rabbitmq_consumer_tag: env::var("RABBITMQ_CONSUMER_TAG")
                 .unwrap_or_else(|_| "rtes_token_consumer".to_string()),
@@ -39,6 +50,8 @@ impl Config {
                 .unwrap_or_else(|_| "10".to_string())
                 .parse()
                 .unwrap_or(10),
+            rabbitmq_queue_durable: Self::parse_bool_env("RABBITMQ_QUEUE_DURABLE", false),
+            rabbitmq_enable_dlq: Self::parse_bool_env("RABBITMQ_ENABLE_DLQ", false),
             mongodb_url: env::var("MONGODB_URL")
                 .unwrap_or_else(|_| "mongodb://localhost:27017".to_string()),
             rabbitmq_status_queue: env::var("RABBITMQ_STATUS_QUEUE")

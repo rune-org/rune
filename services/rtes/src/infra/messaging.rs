@@ -9,7 +9,7 @@ use lapin::{
         BasicQosOptions,
         QueueDeclareOptions,
     },
-    types::{AMQPValue, FieldTable},
+    types::FieldTable,
 };
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
@@ -26,6 +26,10 @@ use crate::{
     infra::token_store::TokenStore,
 };
 
+fn declare_options(durable: bool) -> QueueDeclareOptions {
+    QueueDeclareOptions { durable, ..QueueDeclareOptions::default() }
+}
+
 pub(crate) async fn start_token_consumer(
     amqp_addr: &str,
     token_store: TokenStore,
@@ -35,7 +39,7 @@ pub(crate) async fn start_token_consumer(
     let channel = conn.create_channel().await?;
 
     let cfg = crate::config::Config::get();
-    let queue_name = &cfg.rabbitmq_queue_name;
+    let queue_name = &cfg.rabbitmq_token_queue;
     let consumer_tag = &cfg.rabbitmq_consumer_tag;
     let prefetch_count = cfg.rabbitmq_prefetch_count;
     let concurrent_messages = cfg.rabbitmq_concurrent_messages;
@@ -44,24 +48,11 @@ pub(crate) async fn start_token_consumer(
         .basic_qos(prefetch_count, BasicQosOptions::default())
         .await?;
 
-    let dlq_name = format!("{queue_name}.dlq");
-    let _dlq = channel
-        .queue_declare(
-            &dlq_name,
-            QueueDeclareOptions { durable: true, ..QueueDeclareOptions::default() },
-            FieldTable::default(),
-        )
-        .await?;
-
-    let mut args = FieldTable::default();
-    args.insert("x-dead-letter-exchange".into(), AMQPValue::LongString("".into()));
-    args.insert("x-dead-letter-routing-key".into(), AMQPValue::LongString(dlq_name.into()));
-
     let _queue = channel
         .queue_declare(
             queue_name,
-            QueueDeclareOptions { durable: true, ..QueueDeclareOptions::default() },
-            args,
+            declare_options(cfg.rabbitmq_queue_durable),
+            FieldTable::default(),
         )
         .await?;
 
@@ -127,24 +118,11 @@ pub(crate) async fn start_execution_consumer(
     let cfg = crate::config::Config::get();
     let queue_name = &cfg.rabbitmq_execution_queue;
 
-    let dlq_name = format!("{queue_name}.dlq");
-    let _dlq = channel
-        .queue_declare(
-            &dlq_name,
-            QueueDeclareOptions { durable: true, ..QueueDeclareOptions::default() },
-            FieldTable::default(),
-        )
-        .await?;
-
-    let mut args = FieldTable::default();
-    args.insert("x-dead-letter-exchange".into(), AMQPValue::LongString("".into()));
-    args.insert("x-dead-letter-routing-key".into(), AMQPValue::LongString(dlq_name.into()));
-
     let _queue = channel
         .queue_declare(
             queue_name,
-            QueueDeclareOptions { durable: true, ..QueueDeclareOptions::default() },
-            args,
+            declare_options(cfg.rabbitmq_queue_durable),
+            FieldTable::default(),
         )
         .await?;
 
@@ -205,26 +183,11 @@ pub(crate) async fn start_status_consumer(
     let cfg = crate::config::Config::get();
     let queue_name = &cfg.rabbitmq_status_queue;
 
-    // Declare DLQ
-    let dlq_name = format!("{queue_name}.dlq");
-    let _dlq = channel
-        .queue_declare(
-            &dlq_name,
-            QueueDeclareOptions { durable: true, ..QueueDeclareOptions::default() },
-            FieldTable::default(),
-        )
-        .await?;
-
-    // Declare Main Queue with DLQ args
-    let mut args = FieldTable::default();
-    args.insert("x-dead-letter-exchange".into(), AMQPValue::LongString("".into()));
-    args.insert("x-dead-letter-routing-key".into(), AMQPValue::LongString(dlq_name.into()));
-
     let _queue = channel
         .queue_declare(
             queue_name,
-            QueueDeclareOptions { durable: true, ..QueueDeclareOptions::default() },
-            args,
+            declare_options(cfg.rabbitmq_queue_durable),
+            FieldTable::default(),
         )
         .await?;
 
@@ -281,24 +244,11 @@ pub(crate) async fn start_completion_consumer(
     let cfg = crate::config::Config::get();
     let queue_name = &cfg.rabbitmq_completion_queue;
 
-    let dlq_name = format!("{queue_name}.dlq");
-    let _dlq = channel
-        .queue_declare(
-            &dlq_name,
-            QueueDeclareOptions { durable: true, ..QueueDeclareOptions::default() },
-            FieldTable::default(),
-        )
-        .await?;
-
-    let mut args = FieldTable::default();
-    args.insert("x-dead-letter-exchange".into(), AMQPValue::LongString("".into()));
-    args.insert("x-dead-letter-routing-key".into(), AMQPValue::LongString(dlq_name.into()));
-
     let _queue = channel
         .queue_declare(
             queue_name,
-            QueueDeclareOptions { durable: true, ..QueueDeclareOptions::default() },
-            args,
+            declare_options(cfg.rabbitmq_queue_durable),
+            FieldTable::default(),
         )
         .await?;
 

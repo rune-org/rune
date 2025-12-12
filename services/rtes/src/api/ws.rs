@@ -136,7 +136,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: AuthParams) {
                     node_id: Some(node_id.clone()),
                     input:   exec.input,
                     params:  exec.parameters,
-                    output:  exec.output.as_ref().map(ToString::to_string),
+                    output:  exec.output,
                     status:  exec.status,
                 };
                 if let Ok(json) = serde_json::to_string(&dto) {

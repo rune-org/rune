@@ -18,7 +18,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     config::Config::init()?;
     let cfg = config::Config::get();
 
-    // let tracer_provider = infra::telemetry::init_telemetry("rtes", &cfg.otel_endpoint)?;
+    let tracer_provider = infra::telemetry::init_telemetry("rtes", &cfg.otel_endpoint)?;
 
     info!("Starting RTES service...");
 
@@ -44,7 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     start_server(state, cancel_token).await?;
 
-    // let _ = tracer_provider.shutdown();
+    let _ = tracer_provider.shutdown();
     info!("RTES service stopped");
 
     Ok(())
