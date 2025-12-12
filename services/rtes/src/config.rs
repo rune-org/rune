@@ -12,7 +12,6 @@ pub(crate) struct Config {
     pub rabbitmq_prefetch_count: u16,
     pub rabbitmq_concurrent_messages: usize,
     pub rabbitmq_queue_durable: bool,
-    pub rabbitmq_enable_dlq: bool,
     pub mongodb_url: String,
     pub rabbitmq_status_queue: String,
     pub rabbitmq_completion_queue: String,
@@ -23,12 +22,7 @@ pub(crate) struct Config {
 
 impl Config {
     fn parse_bool_env(name: &str, default: bool) -> bool {
-        match env::var(name) {
-            Ok(v) => {
-                matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "y" | "on")
-            },
-            Err(_) => default,
-        }
+        env::var(name).map_or(default, |v| matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "y" | "on"))
     }
 
     pub(crate) fn init() -> Result<(), Box<dyn std::error::Error>> {
@@ -51,7 +45,6 @@ impl Config {
                 .parse()
                 .unwrap_or(10),
             rabbitmq_queue_durable: Self::parse_bool_env("RABBITMQ_QUEUE_DURABLE", false),
-            rabbitmq_enable_dlq: Self::parse_bool_env("RABBITMQ_ENABLE_DLQ", false),
             mongodb_url: env::var("MONGODB_URL")
                 .unwrap_or_else(|_| "mongodb://localhost:27017".to_string()),
             rabbitmq_status_queue: env::var("RABBITMQ_STATUS_QUEUE")
@@ -64,7 +57,7 @@ impl Config {
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()
                 .unwrap_or(3000),
-            jwt_secret: env::var("JWT_SECRET").unwrap_or_else(|_| "secret".to_string()),
+            jwt_secret: env::var("JWT_SECRET_KEY").unwrap_or_else(|_| "secret".to_string()),
         };
 
         CONFIG

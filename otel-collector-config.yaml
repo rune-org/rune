@@ -11,22 +11,19 @@ processors:
 
 exporters:
   otlphttp/openobserve:
-    endpoint: "http://openobserve:5080/api/default"
+    endpoint: "http://openobserve:5080/api/default/v1/traces"
     headers:
-      Authorization: "Basic cm9vdEBleGFtcGxlLmNvbTpDb21wbGV4cGFzcyMxMjM=" # root@example.com:Complexpass#123
-    compression: gzip
+      Authorization: "Basic YWRtaW5AZXhhbXBsZS5jb206cGFzc3dvcmQ=" # admin@example.com:password
+  debug:
+    verbosity: detailed
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlphttp/openobserve]
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlphttp/openobserve]
+      exporters: [otlphttp/openobserve, debug]
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlphttp/openobserve]
+      exporters: [otlphttp/openobserve, debug]

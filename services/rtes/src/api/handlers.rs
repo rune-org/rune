@@ -35,8 +35,7 @@ pub(crate) async fn get_execution_hydrated(
     };
 
     let cfg = crate::config::Config::get();
-    let mut validation = Validation::default();
-    validation.insecure_disable_signature_validation();
+    let validation = Validation::default();
     let token_data = match decode::<Claims>(
         &token,
         &DecodingKey::from_secret(cfg.jwt_secret.as_bytes()),

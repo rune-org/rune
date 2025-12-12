@@ -82,8 +82,7 @@ pub(crate) async fn ws_handler(
     };
 
     let cfg = crate::config::Config::get();
-    let mut  validation = Validation::default();
-    validation.insecure_disable_signature_validation();
+    let validation = Validation::default();
     let token_data = match decode::<Claims>(
         &token,
         &DecodingKey::from_secret(cfg.jwt_secret.as_bytes()),
@@ -140,11 +139,10 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: AuthParams) {
                     output:  exec.output,
                     status:  exec.status,
                 };
-                if let Ok(json) = serde_json::to_string(&dto) {
-                    if sender.send(Message::Text(json.into())).await.is_err() {
+                if let Ok(json) = serde_json::to_string(&dto)
+                    && sender.send(Message::Text(json.into())).await.is_err() {
                         return;
                     }
-                }
             }
         }
         if let Some(status) = doc.status {
@@ -155,11 +153,10 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: AuthParams) {
                 output:  None,
                 status:  Some(status),
             };
-            if let Ok(json) = serde_json::to_string(&dto) {
-                if sender.send(Message::Text(json.into())).await.is_err() {
+            if let Ok(json) = serde_json::to_string(&dto)
+                && sender.send(Message::Text(json.into())).await.is_err() {
                     return;
                 }
-            }
         }
     }
 

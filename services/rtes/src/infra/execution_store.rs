@@ -3,9 +3,10 @@ use mongodb::{
     Client as MongoClient,
     Collection,
     bson::{self, doc},
-    options::ClientOptions,
+    options::{ClientOptions, UpdateOptions},
 };
-use tracing::info;
+use serde_json::{Map, Value};
+use tracing::{info, warn};
 
 use crate::domain::models::{
     CompletionMessage,
@@ -47,22 +48,40 @@ impl ExecutionStore {
         );
         let now = bson::DateTime::from_millis(Utc::now().timestamp_millis());
 
+        let normalized_workflow = normalize_workflow_definition(&msg.workflow_definition);
+        let edges_bson = normalized_workflow
+            .get("edges")
+            .cloned()
+            .unwrap_or_else(|| Value::Array(Vec::new()));
+
+        let mut nodes_doc = bson::Document::new();
+        if let Some(Value::Array(nodes)) = normalized_workflow.get("nodes") {
+            for node in nodes {
+                if let Some(node_id) = node.get("id").and_then(Value::as_str)
+                    && let Ok(node_bson) = bson::to_document(node)
+                {
+                    nodes_doc.insert(node_id.to_string(), bson::Bson::Document(node_bson.clone()));
+                }
+            }
+        }
+
         let filter = doc! {
             "execution_id": &msg.execution_id,
         };
 
-        let set_on_insert = doc! {
-            "execution_id": &msg.execution_id,
-            "workflow_id": &msg.workflow_id,
-            "created_at": now,
-        };
-
         let update = doc! {
-            "$setOnInsert": set_on_insert,
             "$set": {
-                "workflow_definition": bson::to_bson(&msg.workflow_definition)?,
+                "nodes": nodes_doc,
+                "edges": bson::to_bson(&edges_bson)?,
+                "accumulated_context": bson::to_bson(&msg.accumulated_context)?,
+                "workflow_id": &msg.workflow_id,
+                "execution_id": &msg.execution_id,
                 "updated_at": now,
-            }
+            },
+            "$setOnInsert": {
+                "created_at": now,
+            },
+            "$unset": { "workflow_definition": "" },
         };
 
         self.execution_collection()
@@ -88,6 +107,18 @@ impl ExecutionStore {
         &self,
         msg: &NodeStatusMessage,
     ) -> Result<(), mongodb::error::Error> {
+        let repair_pipeline = vec![doc! {
+            "$set": {
+                "nodes": {
+                    "$cond": [
+                        { "$isArray": "$nodes" },
+                        bson::Document::new(),
+                        "$nodes"
+                    ]
+                }
+            }
+        }];
+
         let computed_lineage_hash = msg
             .lineage_stack
             .as_ref()
@@ -122,7 +153,6 @@ impl ExecutionStore {
             output:        msg.output.clone(),
             status:        Some(msg.status.clone()),
             error:         msg.error.clone(),
-            
             executed_at:   Some(msg.executed_at.clone()),
             duration_ms:   Some(msg.duration_ms),
             lineage_hash:  if lineage_hash == "default" {
@@ -141,10 +171,52 @@ impl ExecutionStore {
             }
         };
 
-        self.execution_collection()
-            .update_one(filter, update)
-            .upsert(true)
-            .await?;
+        let max_retries: u32 = 5;
+        let mut backoff = std::time::Duration::from_millis(250);
+
+        for attempt in 0..=max_retries {
+            if let Err(e) = self
+                .execution_collection()
+                .update_one(doc! { "execution_id": &msg.execution_id }, repair_pipeline.clone())
+                .await
+            {
+                if attempt == max_retries {
+                    return Err(e);
+                }
+                warn!(
+                    execution_id = %msg.execution_id,
+                    attempt = attempt + 1,
+                    backoff_ms = backoff.as_millis(),
+                    "Node status repair failed; will retry with backoff"
+                );
+                tokio::time::sleep(backoff).await;
+                backoff = backoff.saturating_mul(2);
+                continue;
+            }
+
+            match self
+                .execution_collection()
+                .update_one(filter.clone(), update.clone())
+                .upsert(false)
+                .await
+            {
+                Ok(_) => break,
+                Err(e) => {
+                    if attempt == max_retries {
+                        return Err(e);
+                    }
+                    warn!(
+                        execution_id = %msg.execution_id,
+                        node_id = %msg.node_id,
+                        attempt = attempt + 1,
+                        backoff_ms = backoff.as_millis(),
+                        "Node status update failed; will retry with backoff"
+                    );
+                    tokio::time::sleep(backoff).await;
+                    backoff = backoff.saturating_mul(2);
+                },
+            }
+        }
 
         info!(
             execution_id = %msg.execution_id,
@@ -177,11 +249,196 @@ impl ExecutionStore {
             }
         };
 
-        self.execution_collection()
-            .update_one(filter, update)
-            .upsert(true)
-            .await?;
+        let max_retries: u32 = 5;
+        let mut backoff = std::time::Duration::from_secs(1);
+
+        for attempt in 0..=max_retries {
+            let result = self
+                .execution_collection()
+                .update_one(filter.clone(), update.clone())
+                .upsert(false)
+                .await?;
+
+            if result.matched_count > 0 {
+                break;
+            }
+
+            if attempt == max_retries {
+                warn!(
+                    execution_id = %msg.execution_id,
+                    workflow_id = %msg.workflow_id,
+                    "Completion received for missing execution document; retries exhausted; execution document still missing"
+                );
+                return Ok(());
+            }
+
+            warn!(
+            execution_id = %msg.execution_id,
+            workflow_id = %msg.workflow_id,
+            attempt = attempt + 1,
+            backoff_ms = backoff.as_millis(),
+            "Completion received for missing execution document; will retry with exponential backoff"
+            );
+
+            tokio::time::sleep(backoff).await;
+            backoff = backoff.saturating_mul(2);
+        }
         info!(execution_id = %msg.execution_id, status = %msg.status, "Completed execution");
         Ok(())
     }
+}
+
+fn normalize_workflow_definition(raw: &Value) -> Value {
+    let mut workflow = raw.as_object().cloned().unwrap_or_default();
+
+    let edges = normalize_edges(raw.get("edges"));
+    workflow.insert("edges".to_string(), Value::Array(edges));
+
+    let nodes_value = raw
+        .get("nodes")
+        .cloned()
+        .unwrap_or_else(|| Value::Array(vec![]));
+    let nodes = normalize_nodes(nodes_value);
+    workflow.insert("nodes".to_string(), Value::Array(nodes));
+
+    Value::Object(workflow)
+}
+
+fn normalize_edges(raw_edges: Option<&Value>) -> Vec<Value> {
+    match raw_edges {
+        Some(Value::Array(edges)) => edges.iter().map(normalize_edge).collect(),
+        Some(Value::Object(map)) => map
+            .iter()
+            .map(|(edge_id, edge_val)| normalize_edge_with_id(edge_val, Some(edge_id)))
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+fn normalize_edge(edge: &Value) -> Value {
+    normalize_edge_with_id(edge, None)
+}
+
+fn normalize_edge_with_id(edge: &Value, fallback_id: Option<&str>) -> Value {
+    let mut normalized: Map<String, Value> = Map::new();
+    let obj = edge.as_object();
+
+    let id = obj
+        .and_then(|o| o.get("id").and_then(Value::as_str))
+        .map(str::to_string)
+        .or_else(|| fallback_id.map(|id| id.to_string()))
+        .unwrap_or_default();
+
+    let src = obj
+        .and_then(|o| o.get("src").and_then(Value::as_str))
+        .unwrap_or_default()
+        .to_string();
+
+    let dst = obj
+        .and_then(|o| o.get("dst").and_then(Value::as_str))
+        .unwrap_or_default()
+        .to_string();
+
+    normalized.insert("id".to_string(), Value::String(id));
+    normalized.insert("src".to_string(), Value::String(src));
+    normalized.insert("dst".to_string(), Value::String(dst));
+
+    if let Some(o) = obj {
+        for (k, v) in o {
+            if !normalized.contains_key(k) {
+                normalized.insert(k.clone(), v.clone());
+            }
+        }
+    }
+
+    Value::Object(normalized)
+}
+
+fn normalize_nodes(raw_nodes: Value) -> Vec<Value> {
+    match raw_nodes {
+        Value::Array(nodes) => nodes.into_iter().map(normalize_node).collect(),
+        Value::Object(map) => map
+            .into_iter()
+            .map(|(id, node_val)| {
+                let mut node_map = Map::new();
+                node_map.insert("id".to_string(), Value::String(id.clone()));
+                match node_val {
+                    Value::Object(obj) => node_map.extend(obj),
+                    _ => {},
+                }
+                normalize_node(Value::Object(node_map))
+            })
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+fn normalize_node(node_val: Value) -> Value {
+    let mut normalized: Map<String, Value> = Map::new();
+
+    normalized.insert("id".to_string(), Value::String(String::new()));
+    normalized.insert("name".to_string(), Value::String(String::new()));
+    normalized.insert("trigger".to_string(), Value::Bool(false));
+    normalized.insert("type".to_string(), Value::String(String::new()));
+    normalized.insert("parameters".to_string(), Value::Object(Map::new()));
+    normalized.insert("output".to_string(), Value::Object(Map::new()));
+    normalized.insert("credentials".to_string(), Value::Null);
+    normalized.insert("error".to_string(), Value::Null);
+
+    if let Value::Object(obj) = node_val {
+        for (k, v) in obj {
+            normalized.insert(k, v);
+        }
+    }
+
+    let id = normalized
+        .get("id")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    normalized.insert("id".to_string(), Value::String(id));
+
+    let name = normalized
+        .get("name")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    normalized.insert("name".to_string(), Value::String(name));
+
+    let node_type = normalized
+        .get("type")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    normalized.insert("type".to_string(), Value::String(node_type));
+
+    let trigger = normalized
+        .get("trigger")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    normalized.insert("trigger".to_string(), Value::Bool(trigger));
+
+    let parameters = normalized
+        .get("parameters")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    normalized.insert("parameters".to_string(), Value::Object(parameters));
+
+    let output = normalized
+        .get("output")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    normalized.insert("output".to_string(), Value::Object(output));
+
+    if normalized.contains_key("credentials") {
+        normalized.insert("credentials".to_string(), Value::Null);
+    }
+
+    if !normalized.contains_key("error") {
+        normalized.insert("error".to_string(), Value::Null);
+    }
+
+    Value::Object(normalized)
 }

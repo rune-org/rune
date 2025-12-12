@@ -115,6 +115,7 @@ pub struct HydratedNode {
 pub struct ExecutionDocument {
     pub execution_id:        String,
     pub workflow_id:         String,
+    #[serde(default)]
     pub workflow_definition: Value,
     #[serde(default)]
     pub accumulated_context: Value,
