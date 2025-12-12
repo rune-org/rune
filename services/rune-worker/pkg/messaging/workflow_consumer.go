@@ -90,22 +90,17 @@ func (c *WorkflowConsumer) handleMessage(ctx context.Context, payload []byte) er
 		return fmt.Errorf("decode message: %w", err)
 	}
 
-	if msg.IsWorkerInitiated {
-		msgBytes, err := msg.Encode()
+	if !msg.IsWorkerInitiated {
+		var msgBytes, err = msg.Encode();
 		if err != nil {
-			slog.Error("failed to encode worker initiated message",
-				"error", err,
-				"workflow_id", msg.WorkflowID,
-				"execution_id", msg.ExecutionID,
-				"node_id", msg.CurrentNode)
-			return fmt.Errorf("encode worker initiated message: %w", err)
+			slog.Error("failed to encode message from master");
 		}
 		if err := c.publisher.Publish(ctx, "workflow.worker.initiated", msgBytes); err != nil {
 			slog.Error("failed to publish worker initiated message",
-				"error", err,
-				"workflow_id", msg.WorkflowID,
-				"execution_id", msg.ExecutionID,
-				"node_id", msg.CurrentNode)
+			"error", err,
+			"workflow_id", msg.WorkflowID,
+			"execution_id", msg.ExecutionID,
+			"node_id", msg.CurrentNode)
 			return fmt.Errorf("publish worker initiated message: %w", err)
 		}
 	}
