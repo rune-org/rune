@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/nodes"
 	"rune-worker/plugin"
 )
@@ -374,7 +375,7 @@ func init() {
 
 // RegisterHTTP registers the HTTP node type with the registry.
 func RegisterHTTP(reg *nodes.Registry) {
-	reg.Register("http", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeHTTP, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return NewHTTPNode(execCtx)
 	})
 }

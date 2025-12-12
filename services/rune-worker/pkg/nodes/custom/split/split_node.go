@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/nodes"
 	"rune-worker/plugin"
 
@@ -97,7 +98,7 @@ func init() {
 
 // RegisterSplit registers the split node type.
 func RegisterSplit(reg *nodes.Registry) {
-	reg.Register("split", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeSplit, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return NewSplitNode(execCtx)
 	})
 }
