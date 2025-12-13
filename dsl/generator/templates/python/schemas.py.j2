@@ -24,7 +24,8 @@ class WorkflowNode(BaseModel):
 
     id: str
     name: str
-    type: str  # ManualTrigger, http, smtp, conditional, switch, log, agent
+    type: str  # {% for node_type, node_def in dsl.node_types.items() %}{{ node_def.worker_type }}{% if not loop.last %}, {% endif %}{% endfor %}
+
     trigger: bool = False
     parameters: dict[str, Any] = Field(default_factory=dict)
     output: dict[str, Any] = Field(default_factory=dict)
@@ -85,3 +86,4 @@ class GeneratedWorkflow(BaseModel):
         default=None,
         description="Optional reasoning steps from the agent trajectory.",
     )
+

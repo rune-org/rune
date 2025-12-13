@@ -46,6 +46,10 @@ const NODE_DEFAULTS: Record<
       body: "This is a test email",
     },
   },
+  log: {
+    type: "log",
+    data: { label: "Log", message: "Log message", level: "info" },
+  },
 };
 
 // Helper function to calculate the node's position.

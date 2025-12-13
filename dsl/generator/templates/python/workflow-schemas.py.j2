@@ -94,3 +94,4 @@ class NodeExecutionMessage(BaseModel):
     # TODO: Type updated from dict[str, Any] to Workflow when DSL structure changes
     workflow_definition: Workflow
     accumulated_context: dict[str, Any] = Field(default_factory=dict)
+

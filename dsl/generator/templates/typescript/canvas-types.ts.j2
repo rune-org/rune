@@ -15,43 +15,36 @@ export type BaseData = {
 
 /** A map defining the specific data for each kind of node. */
 export type NodeDataMap = {
-  trigger: BaseData;
-  http: BaseData & {
-    method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-    url?: string;
-    body?: unknown;
-    query?: Record<string, unknown>;
-    headers?: Record<string, unknown>;
-    retries?: number;
-    retryDelay?: number;
-    timeout?: number;
-    raise_on_status?: string;
-    ignoreSSL?: boolean;
-  };
-  smtp: BaseData & {
-    subject?: string;
-    body?: string;
-    to?: string;
-    from?: string;
-    cc?: string;  // Frontend uses comma-separated string, converted to array in conversion functions
-    bcc?: string;  // Frontend uses comma-separated string, converted to array in conversion functions
-  };
-  if: BaseData & {
-    expression?: string;
-    true_edge_id?: string;
-    false_edge_id?: string;
-  };
-  switch: BaseData & {
-    rules?: SwitchRule[];
-    routes?: unknown[];
-  };
-  log: BaseData & {
-    message?: string;
-    level?: "debug" | "info" | "warn" | "error";
-  };
-  agent: BaseData & {
-    prompt?: string;
-  };
+{% for node_type, node_def in dsl.node_types.items() %}
+  {{ node_def.frontend_type }}: BaseData{% if node_def.parameters %} & {
+{% for param_name, param_def in node_def.parameters.items() %}
+{% set frontend_param_name = node_def.get("frontend_parameter_mapping", {}).get(param_name, param_name) %}
+{% if param_name == "rules" and param_def.type == "array" %}
+    {{ frontend_param_name }}?: SwitchRule[];
+{% elif param_def.get("enum") %}
+    {{ frontend_param_name }}?: {% for enum_val in param_def.enum %}"{{ enum_val }}"{% if not loop.last %} | {% endif %}{% endfor %};
+{% elif frontend_param_name in ["retries", "retryDelay", "timeout"] %}
+    {{ frontend_param_name }}?: number;
+{% elif param_def.type == "string" or param_def.type == "string|array" %}
+    {{ frontend_param_name }}?: string;
+{% elif param_def.type == "number" %}
+    {{ frontend_param_name }}?: number;
+{% elif param_def.type == "boolean" %}
+    {{ frontend_param_name }}?: boolean;
+{% elif param_def.type == "object" %}
+    {{ frontend_param_name }}?: Record<string, unknown>;
+{% elif param_def.type == "array" %}
+{% if frontend_param_name in ["cc", "bcc"] %}
+    {{ frontend_param_name }}?: string;  // Frontend uses comma-separated string, converted to array in conversion functions
+{% else %}
+    {{ frontend_param_name }}?: unknown[];
+{% endif %}
+{% else %}
+    {{ frontend_param_name }}?: unknown;
+{% endif %}
+{% endfor %}
+  }{% endif %};
+{% endfor %}
 };
 
 /** A union type of all possible node kinds. */
@@ -96,13 +89,9 @@ export type CanvasNode = {
   [K in NodeKind]: Node<NodeDataMap[K]> & { type: K };
 }[NodeKind];
 
-export type TriggerData = NodeDataMap["trigger"];
-export type HttpData = NodeDataMap["http"];
-export type SmtpData = NodeDataMap["smtp"];
-export type IfData = NodeDataMap["if"];
-export type SwitchData = NodeDataMap["switch"];
-export type LogData = NodeDataMap["log"];
-export type AgentData = NodeDataMap["agent"];
+{% for node_type, node_def in dsl.node_types.items() %}
+export type {{ node_def.frontend_type | capitalize }}Data = NodeDataMap["{{ node_def.frontend_type }}"];
+{% endfor %}
 
 export type CanvasEdge = Edge;
 
