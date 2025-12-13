@@ -11,9 +11,9 @@ processors:
 
 exporters:
   otlphttp/openobserve:
-    endpoint: "http://openobserve:5080/api/default/v1/traces"
+    endpoint: "http://openobserve:5080/api/default"
     headers:
-      Authorization: "Basic YWRtaW5AZXhhbXBsZS5jb206cGFzc3dvcmQ=" # admin@example.com:password
+      Authorization: "Basic YWRtaW5AZXhhbXBsZS5jb206NFkzOHB6bHV0ZXJBcko5SA==" # admin@example.com:password
   debug:
     verbosity: detailed
 
