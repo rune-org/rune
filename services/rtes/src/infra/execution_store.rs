@@ -3,19 +3,22 @@ use mongodb::{
     Client as MongoClient,
     Collection,
     bson::{self, doc},
-    options::{ClientOptions, UpdateOptions},
+    options::ClientOptions,
 };
 use serde_json::{Map, Value};
 use tracing::{info, warn};
 
-use crate::{domain::models::{
-    CompletionMessage,
-    ExecutionDocument,
-    NodeExecutionInstance,
-    NodeExecutionMessage,
-    NodeStatusMessage,
-    compute_lineage_hash,
-}, retry_backoff};
+use crate::{
+    domain::models::{
+        CompletionMessage,
+        ExecutionDocument,
+        NodeExecutionInstance,
+        NodeExecutionMessage,
+        NodeStatusMessage,
+        compute_lineage_hash,
+    },
+    retry_backoff,
+};
 
 #[derive(Clone)]
 pub(crate) struct ExecutionStore {
@@ -103,6 +106,7 @@ impl ExecutionStore {
         Ok(doc)
     }
 
+    #[allow(clippy::too_many_lines)]
     pub(crate) async fn update_node_status(
         &self,
         msg: &NodeStatusMessage,
@@ -142,47 +146,79 @@ impl ExecutionStore {
             "execution_id": &msg.execution_id,
         };
 
-        let mut update_path = format!("nodes.{}", msg.node_id);
-        if lineage_hash != "default" {
-            update_path = format!("{update_path}.lineages.{lineage_hash}");
-        }
-        // get the execution document node to update
+        let base_path = format!("nodes.{}", msg.node_id);
+
         let doc = retry_backoff!("get_execution_document", {
             self.get_execution_document(&msg.execution_id).await
-        }).await?;
-        if doc.is_none() {
+        })
+        .await?;
+
+        let Some(doc) = doc else {
             warn!(
                 execution_id = %msg.execution_id,
                 node_id = %msg.node_id,
                 "Execution document not found; cannot update node status"
             );
-        }
-        let doc = doc.unwrap();
+            return Ok(());
+        };
+
+        let (node_name, node_type) = doc.nodes.get(&msg.node_id).map_or((None, None), |n| {
+            let name = n.latest.as_ref().and_then(|l| l.name.clone()).or_else(|| {
+                n.extra
+                    .get("name")
+                    .and_then(Value::as_str)
+                    .map(String::from)
+            });
+            let node_type = n
+                .latest
+                .as_ref()
+                .and_then(|l| l.node_type.clone())
+                .or_else(|| {
+                    n.extra
+                        .get("type")
+                        .and_then(Value::as_str)
+                        .map(String::from)
+                });
+            (name, node_type)
+        });
         let node_execution = NodeExecutionInstance {
-            input:         msg.input.clone(),
-            parameters:    msg.parameters.clone(),
-            output:        msg.output.clone(),
-            status:        Some(msg.status.clone()),
-            error:         msg.error.clone(),
-            executed_at:   Some(msg.executed_at.clone()),
-            duration_ms:   Some(msg.duration_ms),
-            node_type:     doc.node_type.clone(),
-            name:          doc.name.clone(),
-            lineage_hash:  if lineage_hash == "default" {
+            input: msg.input.clone(),
+            parameters: msg.parameters.clone(),
+            output: msg.output.clone(),
+            status: Some(msg.status.clone()),
+            error: msg.error.clone(),
+            executed_at: Some(msg.executed_at.clone()),
+            duration_ms: Some(msg.duration_ms),
+            node_type,
+            name: node_name,
+            lineage_hash: if lineage_hash == "default" {
                 None
             } else {
                 Some(lineage_hash.clone())
             },
             lineage_stack: msg.lineage_stack.clone(),
-            used_inputs:   msg.used_inputs.clone(),
+            used_inputs: msg.used_inputs.clone(),
+            branch_id: msg.branch_id.clone(),
+            split_node_id: msg.split_node_id.clone(),
+            item_index: msg.item_index,
+            total_items: msg.total_items,
+            processed_count: msg.processed_count,
+            aggregator_state: msg.aggregator_state.clone(),
         };
 
-        let update = doc! {
-            "$set": {
-                update_path: bson::to_bson(&node_execution)?,
-                "updated_at": bson::DateTime::from_millis(Utc::now().timestamp_millis()),
-            }
+        let mut set_fields = doc! {
+            format!("{base_path}.latest"): bson::to_bson(&node_execution)?,
+            "updated_at": bson::DateTime::from_millis(Utc::now().timestamp_millis()),
         };
+
+        if lineage_hash != "default" {
+            set_fields.insert(
+                format!("{base_path}.lineages.{lineage_hash}"),
+                bson::to_bson(&node_execution)?,
+            );
+        }
+
+        let update = doc! { "$set": set_fields };
 
         let max_retries: u32 = 5;
         let mut backoff = std::time::Duration::from_millis(250);
@@ -339,7 +375,7 @@ fn normalize_edge_with_id(edge: &Value, fallback_id: Option<&str>) -> Value {
     let id = obj
         .and_then(|o| o.get("id").and_then(Value::as_str))
         .map(str::to_string)
-        .or_else(|| fallback_id.map(|id| id.to_string()))
+        .or_else(|| fallback_id.map(String::from))
         .unwrap_or_default();
 
     let src = obj
@@ -374,10 +410,9 @@ fn normalize_nodes(raw_nodes: Value) -> Vec<Value> {
             .into_iter()
             .map(|(id, node_val)| {
                 let mut node_map = Map::new();
-                node_map.insert("id".to_string(), Value::String(id.clone()));
-                match node_val {
-                    Value::Object(obj) => node_map.extend(obj),
-                    _ => {},
+                node_map.insert("id".to_string(), Value::String(id));
+                if let Value::Object(obj) = node_val {
+                    node_map.extend(obj);
                 }
                 normalize_node(Value::Object(node_map))
             })
