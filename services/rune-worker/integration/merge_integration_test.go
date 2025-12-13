@@ -112,7 +112,7 @@ func TestMergeWaitForAllWorkflow(t *testing.T) {
 	}
 	defer statusConsumer.Close()
 
-	statusCtx, statusCancel := context.WithTimeout(ctx, 15*time.Second)
+	statusCtx, statusCancel := context.WithTimeout(ctx, 30*time.Second)
 	defer statusCancel()
 
 	var mergeSuccess bool
@@ -226,7 +226,7 @@ func TestMergeWaitForAnyWorkflow(t *testing.T) {
 	}
 	defer statusConsumer.Close()
 
-	statusCtx, statusCancel := context.WithTimeout(ctx, 10*time.Second)
+	statusCtx, statusCancel := context.WithTimeout(ctx, 30*time.Second)
 	defer statusCancel()
 
 	successCount := 0

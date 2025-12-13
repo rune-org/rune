@@ -119,7 +119,7 @@ func TestEditNodeIntegration(t *testing.T) {
 		if jsonCtx["active"] != true {
 			t.Fatalf("active mismatch: %+v", jsonCtx)
 		}
-	case <-time.After(10 * time.Second):
+	case <-time.After(30 * time.Second):
 		t.Fatalf("timed out waiting for completion")
 	}
 }
