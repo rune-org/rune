@@ -424,7 +424,7 @@ async def test_create_credential_with_null_values_in_data(
 
 @pytest.mark.asyncio
 async def test_create_credential_with_extra_fields(authenticated_client: AsyncClient):
-    """Test that extra fields in request body are ignored."""
+    """Test that extra fields in request body are rejected."""
     response = await authenticated_client.post(
         "/credentials/",
         json={
@@ -436,10 +436,12 @@ async def test_create_credential_with_extra_fields(authenticated_client: AsyncCl
         },
     )
 
-    # Extra fields should be ignored, request should succeed  #TODO
-    assert response.status_code == 201
+    assert response.status_code == 422
     data = response.json()
-    assert data["success"] is True
+    assert data["success"] is False
+    assert data["message"] == "Validation Error(s)"
+    assert any("extra_field" in error.lower() for error in data.get("data", []))
+    assert any("another_field" in error.lower() for error in data.get("data", []))
 
 
 @pytest.mark.asyncio
