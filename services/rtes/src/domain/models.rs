@@ -3,6 +3,8 @@
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
+use serde::de::Deserializer;
 use uuid::Uuid;
 
 /// Execution context for branch / loop tracking.
@@ -103,6 +105,28 @@ pub struct NodeExecutionInstance {
     pub used_inputs:   Option<Value>,
     pub node_type:     Option<String>,
     pub name:          Option<String>,
+    #[serde(default)]
+    pub branch_id:        Option<String>,
+    #[serde(default)]
+    pub split_node_id:    Option<String>,
+    #[serde(default)]
+    pub item_index:       Option<i32>,
+    #[serde(default)]
+    pub total_items:      Option<i32>,
+    #[serde(default)]
+    pub processed_count:  Option<i32>,
+    #[serde(default)]
+    pub aggregator_state: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
+pub struct HydratedNode {
+    #[serde(default)]
+    pub latest:   Option<NodeExecutionInstance>,
+    #[serde(default)]
+    pub lineages: HashMap<String, NodeExecutionInstance>,
+    #[serde(flatten, default)]
+    pub extra:    HashMap<String, Value>,
 }
 
 /// Stored hydrated execution document.
@@ -114,8 +138,8 @@ pub struct ExecutionDocument {
     pub workflow_definition: Value,
     #[serde(default)]
     pub accumulated_context: Value,
-    #[serde(default)]
-    pub nodes:               std::collections::HashMap<String, NodeExecutionInstance>,
+    #[serde(default, deserialize_with = "deserialize_nodes")]
+    pub nodes:               HashMap<String, HydratedNode>,
     pub status:              Option<String>,
     pub name:                Option<String>,
     pub node_type:           Option<String>,
@@ -130,12 +154,64 @@ pub fn compute_lineage_hash(stack: &[StackFrame]) -> Option<String> {
         .map(|bytes| Uuid::new_v5(&Uuid::NAMESPACE_OID, &bytes).to_string())
 }
 
-/// Offloaded per-lineage node data stored in execution_node_data collection.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
-pub struct ExecutionNodeData {
-    pub execution_id: String,
-    pub workflow_id:  String,
-    pub node_id:      String,
-    pub lineage_hash: String,
-    pub data:         NodeExecutionInstance,
+fn deserialize_nodes<'de, D>(deserializer: D) -> Result<HashMap<String, HydratedNode>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let raw: HashMap<String, Value> = HashMap::deserialize(deserializer)?;
+    let mut result: HashMap<String, HydratedNode> = HashMap::new();
+
+    for (node_id, value) in raw {
+        let hydrated = match value {
+            Value::Object(obj) => {
+                if obj.contains_key("lineages") || obj.contains_key("latest") {
+                    let latest: Option<NodeExecutionInstance> = obj
+                        .get("latest")
+                        .cloned()
+                        .and_then(|v| serde_json::from_value(v).ok());
+
+                    let lineages: HashMap<String, NodeExecutionInstance> = obj
+                        .get("lineages")
+                        .cloned()
+                        .and_then(|v| serde_json::from_value(v).ok())
+                        .unwrap_or_default();
+
+                    let mut extra = obj.clone().into_iter().collect::<HashMap<_, _>>();
+                    extra.remove("latest");
+                    extra.remove("lineages");
+
+                    HydratedNode { latest, lineages, extra }
+                } else {
+                    serde_json::from_value::<NodeExecutionInstance>(Value::Object(obj.clone()))
+                        .map_or_else(
+                            |_| HydratedNode {
+                                latest: None,
+                                lineages: HashMap::new(),
+                                extra: obj.into_iter().collect::<HashMap<_, _>>(),
+                            },
+                            |instance| HydratedNode {
+                                latest: Some(instance),
+                                lineages: HashMap::new(),
+                                extra: HashMap::new(),
+                            },
+                        )
+                }
+            },
+            other => serde_json::from_value::<NodeExecutionInstance>(other.clone()).map_or_else(
+                |_| HydratedNode {
+                    latest: None,
+                    lineages: HashMap::new(),
+                    extra: HashMap::new(),
+                },
+                |instance| HydratedNode {
+                    latest: Some(instance),
+                    lineages: HashMap::new(),
+                    extra: HashMap::new(),
+                },
+            ),
+        };
+        result.insert(node_id, hydrated);
+    }
+
+    Ok(result)
 }

@@ -1,21 +1,16 @@
 use axum::{
     Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::IntoResponse,
 };
 use jsonwebtoken::{DecodingKey, Validation, decode};
-use serde::Deserialize;
 use tracing::{error, warn};
 
-use crate::api::{state::AppState, ws::{AuthParams, Claims}};
-
-#[derive(Deserialize)]
-pub(crate) struct AuthQuery {
-    pub(crate) user_id:     String,
-    pub(crate) workflow_id: String,
-    pub(crate) execution_id: String,
-}
+use crate::api::{
+    state::AppState,
+    ws::{AuthParams, Claims},
+};
 
 pub(crate) async fn health_check() -> impl IntoResponse {
     (StatusCode::OK, "OK")
@@ -29,8 +24,7 @@ pub(crate) async fn get_execution_hydrated(
     let token = match headers.get("Authorization") {
         Some(value) => value.to_str().unwrap_or("").replace("Bearer ", ""),
         None => {
-            return (axum::http::StatusCode::UNAUTHORIZED, "Missing Authorization header")
-                .into_response();
+            return (StatusCode::UNAUTHORIZED, "Missing Authorization header").into_response();
         },
     };
 

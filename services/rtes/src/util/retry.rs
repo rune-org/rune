@@ -5,7 +5,7 @@ use tracing::warn;
 
 /// Retry an async closure with exponential backoff (250ms base) up to five
 /// attempts.
-pub async fn with_backoff<F, Fut, T, E>(mut f: F, label: &'static str) -> Result<T, E>
+pub(crate) async fn with_backoff<F, Fut, T, E>(mut f: F, label: &'static str) -> Result<T, E>
 where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<T, E>>,
@@ -43,6 +43,6 @@ where
 #[macro_export]
 macro_rules! retry_backoff {
     ($label:expr, $body:block) => {
-        crate::util::retry::with_backoff(|| async move $body, $label)
+        $crate::util::retry::with_backoff(|| async move $body, $label)
     };
 }
