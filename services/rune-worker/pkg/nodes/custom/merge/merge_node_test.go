@@ -144,7 +144,7 @@ func TestMergeWaitForAnyIgnored(t *testing.T) {
 	t.Parallel()
 
 	client, mock := redismock.NewClientMock()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	execCtx := plugin.ExecutionContext{
 		ExecutionID: "exec1",
@@ -178,7 +178,7 @@ func TestMergeMissingFromNode(t *testing.T) {
 	t.Parallel()
 
 	client, _ := redismock.NewClientMock()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	execCtx := plugin.ExecutionContext{
 		ExecutionID: "exec1",

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"rune-worker/pkg/messages"
 	"rune-worker/pkg/nodes"
 	"rune-worker/plugin"
 
@@ -19,11 +18,10 @@ var aggregateScript string
 
 // AggregatorNode implements the fan-in pattern.
 type AggregatorNode struct {
-	redisClient  *redis.Client
-	nodeID       string
-	executionID  string
-	lineageStack []messages.StackFrame
-	input        map[string]any
+	redisClient *redis.Client
+	nodeID      string
+	executionID string
+	input       map[string]any
 }
 
 // NewAggregatorNode creates a new AggregatorNode instance.
