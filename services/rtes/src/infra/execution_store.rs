@@ -1,25 +1,23 @@
 use chrono::Utc;
 use mongodb::{
-    Client as MongoClient,
-    Collection,
+    Client as MongoClient, Collection,
     bson::{self, doc},
     options::{ClientOptions, UpdateOptions},
 };
 use serde_json::{Map, Value};
 use tracing::{info, warn};
 
-use crate::{domain::models::{
-    CompletionMessage,
-    ExecutionDocument,
-    NodeExecutionInstance,
-    NodeExecutionMessage,
-    NodeStatusMessage,
-    compute_lineage_hash,
-}, retry_backoff};
+use crate::{
+    domain::models::{
+        CompletionMessage, ExecutionDocument, NodeExecutionInstance, NodeExecutionMessage,
+        NodeStatusMessage, compute_lineage_hash,
+    },
+    retry_backoff,
+};
 
 #[derive(Clone)]
 pub(crate) struct ExecutionStore {
-    client:  MongoClient,
+    client: MongoClient,
     db_name: String,
 }
 
@@ -149,7 +147,8 @@ impl ExecutionStore {
         // get the execution document node to update
         let doc = retry_backoff!("get_execution_document", {
             self.get_execution_document(&msg.execution_id).await
-        }).await?;
+        })
+        .await?;
         if doc.is_none() {
             warn!(
                 execution_id = %msg.execution_id,
@@ -159,22 +158,22 @@ impl ExecutionStore {
         }
         let doc = doc.unwrap();
         let node_execution = NodeExecutionInstance {
-            input:         msg.input.clone(),
-            parameters:    msg.parameters.clone(),
-            output:        msg.output.clone(),
-            status:        Some(msg.status.clone()),
-            error:         msg.error.clone(),
-            executed_at:   Some(msg.executed_at.clone()),
-            duration_ms:   Some(msg.duration_ms),
-            node_type:     doc.node_type.clone(),
-            name:          doc.name.clone(),
-            lineage_hash:  if lineage_hash == "default" {
+            input: msg.input.clone(),
+            parameters: msg.parameters.clone(),
+            output: msg.output.clone(),
+            status: Some(msg.status.clone()),
+            error: msg.error.clone(),
+            executed_at: Some(msg.executed_at.clone()),
+            duration_ms: Some(msg.duration_ms),
+            node_type: doc.node_type.clone(),
+            name: doc.name.clone(),
+            lineage_hash: if lineage_hash == "default" {
                 None
             } else {
                 Some(lineage_hash.clone())
             },
             lineage_stack: msg.lineage_stack.clone(),
-            used_inputs:   msg.used_inputs.clone(),
+            used_inputs: msg.used_inputs.clone(),
         };
 
         let update = doc! {

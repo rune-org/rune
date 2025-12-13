@@ -1,12 +1,8 @@
 use futures::StreamExt;
 use lapin::{
-    Connection,
-    ConnectionProperties,
+    Connection, ConnectionProperties,
     options::{
-        BasicAckOptions,
-        BasicConsumeOptions,
-        BasicNackOptions,
-        BasicQosOptions,
+        BasicAckOptions, BasicConsumeOptions, BasicNackOptions, BasicQosOptions,
         QueueDeclareOptions,
     },
     types::FieldTable,
@@ -17,11 +13,7 @@ use tracing::{error, info};
 use crate::{
     api::state::AppState,
     domain::models::{
-        CompletionMessage,
-        ExecutionToken,
-        NodeExecutionMessage,
-        NodeStatusMessage,
-        WorkerMessage,
+        CompletionMessage, ExecutionToken, NodeExecutionMessage, NodeStatusMessage, WorkerMessage,
     },
     infra::token_store::TokenStore,
 };
