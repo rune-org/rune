@@ -109,7 +109,7 @@ async def test_login_missing_both_fields(client: AsyncClient, test_user):
 
 @pytest.mark.asyncio
 async def test_login_with_extra_fields(client: AsyncClient, test_user):
-    """Test login with extra fields (should be ignored)."""
+    """Test login with extra fields (should be rejected)."""
     response = await client.post(
         "/auth/login",
         json={
@@ -119,10 +119,12 @@ async def test_login_with_extra_fields(client: AsyncClient, test_user):
             "another_field": 12345,
         },
     )
-    # TODO: Prevent extra fields instead of ignoring them
-    assert response.status_code == 200
+    assert response.status_code == 422
     data = response.json()
-    assert data["success"] is True
+    assert data["success"] is False
+    assert data["message"] == "Validation Error(s)"
+    assert any("extra_field" in error.lower() for error in data.get("data", []))
+    assert any("another_field" in error.lower() for error in data.get("data", []))
 
 
 @pytest.mark.asyncio
@@ -310,7 +312,7 @@ async def test_refresh_token_empty_string(client: AsyncClient, test_user):
 
 @pytest.mark.asyncio
 async def test_refresh_token_with_extra_fields(client: AsyncClient, test_user):
-    """Test refresh endpoint with extra fields (should be ignored)."""
+    """Test refresh endpoint with extra fields (should be rejected)."""
     login_response = await client.post(
         "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
     )
@@ -324,10 +326,12 @@ async def test_refresh_token_with_extra_fields(client: AsyncClient, test_user):
             "another": 123,
         },
     )
-    # TODO: Prevent extra fields instead of ignoring them
-    assert response.status_code == 200
+    assert response.status_code == 422
     data = response.json()
-    assert data["success"] is True
+    assert data["success"] is False
+    assert data["message"] == "Validation Error(s)"
+    assert any("extra_field" in error.lower() for error in data.get("data", []))
+    assert any("another" in error.lower() for error in data.get("data", []))
 
 
 # ============================================================================
@@ -496,9 +500,9 @@ async def test_logout_clears_cookie(authenticated_client: AsyncClient):
 
     # Check that the cookie is being deleted (has Max-Age=0 or expires directive)
     set_cookie_header = str(response.headers.get("set-cookie", ""))
-    assert "access_token" in set_cookie_header, (
-        "Set-Cookie header should include access_token"
-    )
+    assert (
+        "access_token" in set_cookie_header
+    ), "Set-Cookie header should include access_token"
     assert (
         "Max-Age=0" in set_cookie_header or "max-age=0" in set_cookie_header.lower()
     ), "Cookie should be deleted with Max-Age=0"
@@ -1007,9 +1011,9 @@ async def test_token_lifetime_configuration_is_respected(
     actual_lifetime_seconds = decoded["exp"] - decoded["iat"]
     expected_lifetime_seconds = settings.access_token_expire_minutes * 60
 
-    assert actual_lifetime_seconds == expected_lifetime_seconds, (
-        f"Token lifetime {actual_lifetime_seconds}s does not match configured {expected_lifetime_seconds}s"
-    )
+    assert (
+        actual_lifetime_seconds == expected_lifetime_seconds
+    ), f"Token lifetime {actual_lifetime_seconds}s does not match configured {expected_lifetime_seconds}s"
 
     # Verify the token actually expires at the configured time
     expiry_time = datetime.fromtimestamp(decoded["exp"], tz=timezone.utc)
