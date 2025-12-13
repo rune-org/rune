@@ -56,6 +56,14 @@ class Settings(BaseSettings):
     # Encryption Settings
     encryption_key: str | None = None
 
+    # Smith AI Agent Settings
+    smith_model: str = "gemini-2.0-flash"
+    smith_temperature: float = 0.3
+    google_api_key: str | None = None
+
+    # Scryb Documentation Settings
+    scryb_model: str = "gemini/gemini-2.5-flash-lite"
+
     @computed_field
     @property
     def cookie_secure(self) -> bool:

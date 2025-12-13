@@ -1,8 +1,43 @@
 import json
 import uuid
+from typing import Literal
+
+from langchain.tools import tool
+from pydantic import BaseModel, Field
 
 from .prompts import NODE_SCHEMAS
 from .schemas import WorkflowNode, WorkflowEdge
+
+
+class CreateNodeArgs(BaseModel):
+    """Arguments for creating a workflow node."""
+
+    node_type: Literal["trigger", "http", "smtp", "conditional", "switch"] = Field(
+        ..., description="Node type: trigger, http, smtp, conditional, or switch"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    parameters: str | dict = Field(
+        default_factory=dict, description="JSON object with node-specific parameters"
+    )
+
+
+class CreateEdgeArgs(BaseModel):
+    """Arguments for creating an edge connecting two nodes."""
+
+    src_id: str = Field(..., description="Source node ID")
+    dst_id: str = Field(..., description="Destination node ID")
+    label: Literal["true", "false"] | None = Field(
+        default=None, description="For conditional nodes, use 'true' or 'false'"
+    )
+
+
+class BuildWorkflowArgs(BaseModel):
+    """Arguments for assembling nodes and edges into a complete workflow."""
+
+    nodes_json: str = Field(..., description="JSON array of nodes (from create_node)")
+    edges_json: str = Field(..., description="JSON array of edges (from create_edge)")
 
 
 def _generate_id() -> str:
@@ -10,17 +45,18 @@ def _generate_id() -> str:
     return str(uuid.uuid4())
 
 
-def create_node(node_type: str, name: str, params: str | dict = "{}") -> str:
-    """Create a workflow node.
+@tool(
+    args_schema=CreateNodeArgs,
+    description="Create a workflow node with specified type, name, and parameters. Returns JSON with node_id and node object, or error if invalid.",
+)
+def create_node(
+    node_type: Literal["trigger", "http", "smtp", "conditional", "switch"],
+    name: str,
+    parameters: str | dict = None,
+) -> str:
+    if parameters is None:
+        parameters = {}
 
-    Args:
-        node_type: trigger, http, smtp, conditional, or switch
-        name: Node name (needs to be short, informative, without spaces)
-        params: JSON object with node-specific parameters
-
-    Returns:
-        JSON with node_id and node object, or error if invalid.
-    """
     node_type = node_type.lower().strip()
 
     # Map canvas types to worker types
@@ -39,10 +75,10 @@ def create_node(node_type: str, name: str, params: str | dict = "{}") -> str:
         )
 
     try:
-        if isinstance(params, dict):
-            parameters = params
+        if isinstance(parameters, dict):
+            params_dict = parameters
         else:
-            parameters = json.loads(params) if params else {}
+            params_dict = json.loads(parameters) if parameters else {}
     except json.JSONDecodeError as e:
         return json.dumps({"error": f"Invalid JSON: {e}"})
 
@@ -52,7 +88,7 @@ def create_node(node_type: str, name: str, params: str | dict = "{}") -> str:
     valid_field_names = set(schema_fields.keys())
 
     if valid_field_names:
-        unknown = set(parameters.keys()) - valid_field_names
+        unknown = set(params_dict.keys()) - valid_field_names
         if unknown:
             return json.dumps(
                 {
@@ -65,7 +101,7 @@ def create_node(node_type: str, name: str, params: str | dict = "{}") -> str:
         required = [
             f for f, desc in schema_fields.items() if "required" in str(desc).lower()
         ]
-        missing = [f for f in required if f not in parameters]
+        missing = [f for f in required if f not in params_dict]
         if missing:
             return json.dumps(
                 {
@@ -82,7 +118,7 @@ def create_node(node_type: str, name: str, params: str | dict = "{}") -> str:
         name=name,
         type=worker_type,
         trigger=is_trigger,
-        parameters=parameters,
+        parameters=params_dict,
     )
 
     return json.dumps(
@@ -94,17 +130,13 @@ def create_node(node_type: str, name: str, params: str | dict = "{}") -> str:
     )
 
 
-def create_edge(src_id: str, dst_id: str, label: str = None) -> str:
-    """Create an edge connecting two nodes.
-
-    Args:
-        src_id: Source node ID
-        dst_id: Destination node ID
-        label: For conditional nodes, use "true" or "false"
-
-    Returns:
-        JSON with edge_id and edge object.
-    """
+@tool(
+    args_schema=CreateEdgeArgs,
+    description="Create an edge connecting two nodes. Returns JSON with edge_id and edge object.",
+)
+def create_edge(
+    src_id: str, dst_id: str, label: Literal["true", "false"] | None = None
+) -> str:
     edge_id = _generate_id()
 
     edge = WorkflowEdge(
@@ -123,16 +155,11 @@ def create_edge(src_id: str, dst_id: str, label: str = None) -> str:
     )
 
 
+@tool(
+    args_schema=BuildWorkflowArgs,
+    description="Assemble nodes and edges into a complete workflow. Returns JSON workflow in worker DSL format, or error.",
+)
 def build_workflow(nodes_json: str, edges_json: str) -> str:
-    """Assemble nodes and edges into a complete workflow.
-
-    Args:
-        nodes_json: JSON array of nodes (from create_node)
-        edges_json: JSON array of edges (from create_edge)
-
-    Returns:
-        JSON workflow in worker DSL format, or error.
-    """
     try:
         nodes_raw = json.loads(nodes_json)
         edges_raw = json.loads(edges_json)

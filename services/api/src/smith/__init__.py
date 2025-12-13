@@ -1,24 +1,8 @@
 """Smith AI Agent - Conversational workflow builder for Rune."""
 
-from .agent import SmithAgent, SmithAgentWithMemory
-from .schemas import (
-    GenerateWorkflowRequest,
-    GeneratedWorkflow,
-    SmithMessage,
-    Workflow,
-    WorkflowEdge,
-    WorkflowNode,
-)
-from .service import SmithAgentService
+from .service import setup_smith, SmithAgentService
 
 __all__ = [
-    "SmithAgent",
-    "SmithAgentWithMemory",
+    "setup_smith",
     "SmithAgentService",
-    "Workflow",
-    "WorkflowNode",
-    "WorkflowEdge",
-    "GenerateWorkflowRequest",
-    "GeneratedWorkflow",
-    "SmithMessage",
 ]

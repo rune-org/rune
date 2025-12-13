@@ -13,6 +13,7 @@ from src.core.exception_handlers import (
 from src.db.config import init_db
 from src.db.redis import close_redis
 from src.queue.rabbitmq import close_rabbitmq
+from src.smith.service import setup_smith
 from src.auth.router import router as auth_router
 from src.workflow.router import router as workflow_router
 from src.permissions.router import router as permissions_router
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI):
     # Startup
     print(f"Starting {settings.app_name} in {settings.environment.value} mode...")
     await init_db()
+    await setup_smith()
     yield
     # Shutdown
     await close_redis()

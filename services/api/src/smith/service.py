@@ -1,177 +1,168 @@
+"""Smith AI Agent Service - LangChain-based workflow generator with Redis checkpointing."""
+
 import json
-import os
-import re
-from typing import Any, Iterable
+import traceback
+import uuid
+from typing import AsyncGenerator
 
-import dspy
-from dotenv import load_dotenv
+from langchain_core.messages import AIMessageChunk, HumanMessage, ToolMessage
+from langgraph.checkpoint.redis.ashallow import AsyncShallowRedisSaver
 
-from src.smith.agent import SmithAgent
-from src.smith.schemas import GeneratedWorkflow, SmithMessage
+from src.core.config import get_settings
+from src.smith.agent import create_smith_agent
 
 
-DEFAULT_MODEL = "gemini/gemini-2.5-flash-lite"
-DEFAULT_MAX_ITERS = 5
+# This config ensures:
+# 1. Writes (updates) WILL reset the clock to 60 mins.
+# 2. Reads (viewing history) WILL NOT reset the clock.
+TTL_CONFIG = {"default_ttl": 60, "refresh_on_read": False}
+
+
+def _build_redis_url() -> str:
+    """Build Redis URL for checkpointer using DB 2."""
+    settings = get_settings()
+    host = settings.redis_host
+    port = settings.redis_port
+    password = settings.redis_password
+
+    if password:
+        return f"redis://:{password}@{host}:{port}/2"
+    return f"redis://{host}:{port}/2"
+
+
+# Module-level checkpointer and agent (shared across requests)
+_checkpointer: AsyncShallowRedisSaver | None = None
+_agent = None
+
+
+async def setup_smith() -> None:
+    """
+    Initialize the Redis checkpointer and agent at startup.
+
+    The asetup() call is idempotent - safe to call on every server restart.
+    It creates required Redis indices if they don't exist.
+    """
+    global _checkpointer, _agent
+
+    redis_url = _build_redis_url()
+    _checkpointer = AsyncShallowRedisSaver.from_conn_string(redis_url, ttl=TTL_CONFIG)
+
+    # Idempotent - creates indices if they don't exist
+    await _checkpointer.asetup()
+
+    _agent = create_smith_agent(checkpointer=_checkpointer)
+
+
+def _format_sse(payload: dict) -> str:
+    """Format payload as an SSE event."""
+    return f"data: {json.dumps(payload)}\n\n"
 
 
 class SmithAgentService:
     """
-    Thin service layer that keeps a warm Smith agent around for API calls.
+    Service layer for the Smith AI workflow builder.
 
-    ReAct with tools needs live reasoning on each request, so we favor a warm
-    cached agent over DSPy compile artifacts for user-dependent requests/chats.
+    Uses LangGraph with AsyncShallowRedisSaver for checkpointing and TTL support.
+    Checkpointer is initialized once at startup via setup_smith().
     """
 
-    _configured = False
-    _agents: dict[int, SmithAgent] = {}
+    def _get_agent(self):
+        """Get the Smith agent (must call setup_smith first)."""
+        if _agent is None:
+            raise RuntimeError("Smith not initialized. Call setup_smith() at startup.")
+        return _agent
 
-    def __init__(self):
-        if not SmithAgentService._configured:
-            self._configure_lm()
-            SmithAgentService._configured = True
-
-    def _configure_lm(self) -> None:
-        """Configure DSPy once for the process."""
-        load_dotenv()
-
-        model_id = os.getenv("SMITH_MODEL", DEFAULT_MODEL)
-        temperature = float(os.getenv("SMITH_TEMPERATURE", "0.3"))
-        max_tokens = int(os.getenv("SMITH_MAX_TOKENS", "8192"))
-
-        dspy.configure(
-            lm=dspy.LM(model_id, temperature=temperature, max_tokens=max_tokens)
-        )
-
-    def _get_agent(self, max_iters: int | None) -> SmithAgent:
-        """Reuse Smith agent instances keyed by iteration limit."""
-        iters = max_iters or int(os.getenv("SMITH_MAX_ITERS", DEFAULT_MAX_ITERS))
-
-        if iters not in SmithAgentService._agents:
-            SmithAgentService._agents[iters] = SmithAgent(max_iters=iters)
-
-        return SmithAgentService._agents[iters]
-
-    def generate_workflow(
+    async def stream_workflow(
         self,
-        prompt: str,
-        history: Iterable[SmithMessage] | None = None,
-        workflow: dict[str, Any] | None = None,
-        include_trace: bool = False,
-        max_iters: int | None = None,
-    ) -> GeneratedWorkflow:
-        """Run Smith against a prompt, optional history, and optional workflow context."""
-        agent = self._get_agent(max_iters)
-        history_str = self._format_history(history)
-        prompt_with_context = self._attach_context(prompt, workflow)
+        message: str,
+        session_id: str | None = None,
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream SSE events from the Smith agent.
 
-        result = agent(request=prompt_with_context, history=history_str)
+        Args:
+            message: The user's natural language request
+            session_id: Session ID for conversation persistence (user_id:workflow_id)
 
-        workflow = self._parse_workflow(result.workflow)
-        response = result.response.strip()
-        trace = self._format_trace(result) if include_trace else None
+        Yields:
+            SSE-formatted events (data: {...}\n\n)
+        """
+        agent = self._get_agent()
+        session_id = session_id or str(uuid.uuid4())
 
-        return GeneratedWorkflow(response=response, workflow=workflow, trace=trace)
+        config = {
+            "configurable": {
+                "thread_id": session_id,
+            }
+        }
 
-    def _format_history(self, history: Iterable[SmithMessage] | None) -> str:
-        if not history:
-            return ""
+        yield _format_sse({"type": "stream_start"})
 
-        return "\n".join(f"{msg.role.title()}: {msg.content}" for msg in history)
-
-    def _parse_workflow(
-        self, workflow_json: str | dict[str, Any] | None
-    ) -> dict[str, Any]:
-        if workflow_json is None:
-            raise ValueError("Smith did not return workflow JSON.")
-
-        if isinstance(workflow_json, dict):
-            return workflow_json
-
-        if not isinstance(workflow_json, str):
-            raise ValueError("Workflow output must be JSON text or object.")
-
-        content = workflow_json.strip()
-        if not content:
-            raise ValueError("Smith returned empty workflow JSON.")
-
-        # Handle ```json fenced blocks
-        if content.startswith("```"):
-            fenced = re.search(r"```(?:json)?\\s*(.*?)```", content, re.DOTALL)
-            if fenced:
-                content = fenced.group(1).strip()
-
-        # Try direct parse
-        parsed = self._try_json_parse(content)
-        if parsed is not None:
-            return parsed
-
-        # Try to salvage first JSON object in the text
-        match = re.search(r"\{[\\s\\S]*\}", content)
-        if match:
-            parsed = self._try_json_parse(match.group(0))
-            if parsed is not None:
-                return parsed
-
-        raise ValueError(
-            "Unable to parse Smith workflow output: expected JSON with nodes/edges."
-        )
-
-    def _try_json_parse(self, text: str) -> dict[str, Any] | None:
-        try:
-            parsed = json.loads(text)
-        except json.JSONDecodeError:
-            return None
-
-        if isinstance(parsed, dict):
-            return parsed
-        return None
-
-    def _format_trace(self, result: dspy.Prediction) -> list[str]:
-        if not hasattr(result, "trajectory") or not result.trajectory:
-            return []
-
-        trace = result.trajectory
-        steps: list[str] = []
-        step = 0
-        while True:
-            thought_key = f"thought_{step}"
-            tool_key = f"tool_name_{step}"
-            args_key = f"tool_args_{step}"
-            obs_key = f"observation_{step}"
-
-            if thought_key not in trace:
-                break
-
-            if thought_key in trace and trace[thought_key]:
-                steps.append(f"Thought {step + 1}: {trace[thought_key]}")
-
-            if tool_key in trace and trace[tool_key]:
-                tool_name = trace[tool_key]
-                tool_args = trace.get(args_key, {})
-                steps.append(f"Action {step + 1}: {tool_name} {tool_args}")
-
-            if obs_key in trace and trace[obs_key]:
-                obs = trace[obs_key]
-                steps.append(f"Observation {step + 1}: {obs}")
-
-            step += 1
-
-        return steps
-
-    def _attach_context(self, prompt: str, workflow: dict[str, Any] | None) -> str:
-        """Include the current workflow JSON so the agent can edit in place."""
-        if not workflow:
-            return prompt
+        input_messages = {"messages": [HumanMessage(content=message)]}
 
         try:
-            workflow_json = json.dumps(workflow)
-        except TypeError as exc:
-            raise ValueError(
-                f"Workflow context must be JSON serializable: {exc}"
-            ) from exc
+            async for event, _ in agent.astream(
+                input_messages,
+                config=config,
+                stream_mode="messages",
+            ):
+                try:
+                    if isinstance(event, AIMessageChunk):
+                        if event.content:
+                            yield _format_sse(
+                                {"type": "token", "content": event.content}
+                            )
 
-        return (
-            "You can edit the existing workflow below.\n"
-            "Return the full updated workflow JSON.\n\n"
-            f"Current workflow: {workflow_json}\n\nUser request: {prompt}"
-        )
+                        if (
+                            hasattr(event, "tool_call_chunks")
+                            and event.tool_call_chunks
+                        ):
+                            for call in event.tool_call_chunks:
+                                if "name" in call and "args" in call:
+                                    try:
+                                        yield _format_sse(
+                                            {
+                                                "type": "tool_call",
+                                                "name": call["name"],
+                                                "arguments": call["args"],
+                                                "call_id": call["id"],
+                                            }
+                                        )
+                                    except json.JSONDecodeError as err:
+                                        yield _format_sse(
+                                            {
+                                                "type": "error",
+                                                "message": f"Invalid tool args: {str(err)}",
+                                            }
+                                        )
+
+                    elif isinstance(event, ToolMessage):
+                        yield _format_sse(
+                            {
+                                "type": "tool_result",
+                                "output": event.content,
+                                "call_id": event.tool_call_id,
+                            }
+                        )
+
+                except Exception as parse_err:
+                    yield _format_sse(
+                        {
+                            "type": "warning",
+                            "message": f"Parse error: {str(parse_err)}",
+                        }
+                    )
+                    continue
+
+            # End event
+            yield _format_sse({"type": "stream_end"})
+
+        except Exception as err:
+            trace = traceback.format_exc()
+            yield _format_sse(
+                {
+                    "type": "error",
+                    "message": f"Stream error: {str(err)}",
+                    "trace": trace[:500],
+                }
+            )
