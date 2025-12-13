@@ -8,6 +8,7 @@ import {
   canvasToWorkflowData,
   workflowDataToCanvas,
 } from "@/lib/workflow-dsl";
+import type { WorkflowRole } from "@/lib/permissions";
 
 /**
  * UI-friendly summary of a workflow row (in the table view).
@@ -37,6 +38,11 @@ export type WorkflowSummary = {
    * Placeholder total run count.
    */
   runs: number;
+  /**
+   * User's role for this workflow (controls permissions).
+   * Defaults to "owner" until backend sends actual role.
+   */
+  role: WorkflowRole;
 };
 
 export const defaultWorkflowSummary: WorkflowSummary = {
@@ -47,16 +53,22 @@ export const defaultWorkflowSummary: WorkflowSummary = {
   lastRunAt: null,
   lastRunStatus: "n/a",
   runs: 0,
+  role: "owner", // Default to owner until backend sends actual role
 };
 
 export function listItemToWorkflowSummary(
   item: WorkflowListItem,
 ): WorkflowSummary {
+  // Backend doesn't yet send role in WorkflowListItem response
+  // When it does, use: (item as any).role || "owner"
+  const role: WorkflowRole = (item as any).role || "owner";
+  
   return {
     ...defaultWorkflowSummary,
     id: String(item.id),
     name: item.name,
     status: item.is_active ? "active" : "draft",
+    role,
   };
 }
 
