@@ -565,123 +565,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /templates/:
+  /users/sharing:
     get:
       tags:
-      - Templates
-      summary: List Templates
-      description: Get all templates accessible to the current user (public + their
-        own).
-      operationId: list_templates_templates__get
+      - Users
+      summary: List users for sharing
+      description: Get a list of users available for sharing credentials/workflows.
+        Returns minimal user info and excludes the current user.
+      operationId: list_users_for_sharing_users_sharing_get
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_List_TemplateSummary__'
-    post:
-      tags:
-      - Templates
-      summary: Create Template
-      description: Create a new template.
-      operationId: create_template_templates__post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TemplateCreate'
-        required: true
-      responses:
-        '201':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /templates/{template_id}:
-    get:
-      tags:
-      - Templates
-      summary: Get Template
-      description: Get a specific template by ID.
-      operationId: get_template_templates__template_id__get
-      parameters:
-      - name: template_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          title: Template Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-    delete:
-      tags:
-      - Templates
-      summary: Delete Template
-      description: Delete a template.
-      operationId: delete_template_templates__template_id__delete
-      parameters:
-      - name: template_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          title: Template Id
-      responses:
-        '204':
-          description: Successful Response
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /templates/{template_id}/use:
-    post:
-      tags:
-      - Templates
-      summary: Use Template
-      description: Mark a template as used (increment usage count) and return its
-        workflow data.
-      operationId: use_template_templates__template_id__use_post
-      parameters:
-      - name: template_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          title: Template Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_TemplateWorkflowData_'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ApiResponse_list_UserBasicInfo__'
   /users/:
     get:
       tags:
@@ -896,21 +794,123 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /users/sharing:
+  /templates/:
     get:
       tags:
-      - Users
-      summary: List users for sharing
-      description: Get a list of users available for sharing credentials/workflows.
-        Returns minimal user info and excludes the current user.
-      operationId: list_users_for_sharing_users_sharing_get
+      - Templates
+      summary: List Templates
+      description: Get all templates accessible to the current user (public + their
+        own).
+      operationId: list_templates_templates__get
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_list_UserBasicInfo__'
+                $ref: '#/components/schemas/ApiResponse_List_TemplateSummary__'
+    post:
+      tags:
+      - Templates
+      summary: Create Template
+      description: Create a new template.
+      operationId: create_template_templates__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /templates/{template_id}:
+    get:
+      tags:
+      - Templates
+      summary: Get Template
+      description: Get a specific template by ID.
+      operationId: get_template_templates__template_id__get
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Templates
+      summary: Delete Template
+      description: Delete a template.
+      operationId: delete_template_templates__template_id__delete
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /templates/{template_id}/use:
+    post:
+      tags:
+      - Templates
+      summary: Use Template
+      description: Mark a template as used (increment usage count) and return its
+        workflow data.
+      operationId: use_template_templates__template_id__use_post
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateWorkflowData_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /credentials/:
     get:
       tags:
@@ -1337,27 +1337,84 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/smith/generate:
+  /workflows/{workflow_id}/smith/generate:
     post:
       tags:
       - Workflows
-      summary: Generate Workflow From Prompt
-      description: Use Smith to convert a natural-language request into a workflow
-        definition.
-      operationId: generate_workflow_from_prompt_workflows_smith_generate_post
+      summary: Generate Workflow
+      description: 'Use Smith AI to generate a workflow from natural language.
+
+
+        Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
+
+        including AI tokens, tool calls, tool results, and completion status.
+
+
+        **Requires:** EDIT permission (OWNER or EDITOR)
+
+
+        **Headers:**
+
+        - `Accept: text/event-stream`
+
+
+        **Session Persistence:**
+
+        Conversations are persisted per user+workflow combination.
+
+        The same workflow_id will maintain conversation history for 60 minutes of
+        inactivity.'
+      operationId: generate_workflow_workflows__workflow_id__smith_generate_post
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/GenerateWorkflowRequest'
-        required: true
       responses:
         '200':
-          description: Successful Response
+          description: "\n## Server-Sent Events (SSE) Stream\n\nReturns a stream of\
+            \ SSE events. Each event has the format:\n```\ndata: <JSON payload>\\\
+            n\\n\n```\n\n### Event Types\n\n#### 1. `stream_start`\nStream has started.\n\
+            ```json\n{\"type\": \"stream_start\"}\n```\n\n#### 2. `token`\nAI-generated\
+            \ text token (streamed incrementally).\n```json\n{\"type\": \"token\"\
+            , \"content\": \"I'll create a workflow...\"}\n```\n\n#### 3. `tool_call`\n\
+            Agent is invoking a tool.\n```json\n{\n  \"type\": \"tool_call\",\n  \"\
+            name\": \"create_node\",\n  \"arguments\": \"{\\\"node_type\\\": \\\"\
+            trigger\\\", \\\"name\\\": \\\"Start\\\"}\",\n  \"call_id\": \"call_abc123\"\
+            \n}\n```\n**Available tools:** `create_node`, `create_edge`, `build_workflow`\n\
+            \n#### 4. `tool_result`\nResult returned from a tool execution.\n```json\n\
+            {\n  \"type\": \"tool_result\",\n  \"output\": \"{\\\"node_id\\\": \\\"\
+            uuid-123\\\", \\\"node\\\": {...}}\",\n  \"call_id\": \"call_abc123\"\n\
+            }\n```\n\n#### 5. `warning`\nNon-fatal issue (stream continues).\n```json\n\
+            {\"type\": \"warning\", \"message\": \"Parse error: unexpected token\"\
+            }\n```\n\n#### 6. `error`\nFatal error (stream ends).\n```json\n{\n  \"\
+            type\": \"error\",\n  \"message\": \"Stream error: Connection timeout\"\
+            ,\n  \"trace\": \"Traceback...\"\n}\n```\n\n#### 7. `stream_end`\nStream\
+            \ completed successfully.\n```json\n{\"type\": \"stream_end\"}\n```\n\n\
+            ### Example Flow\n\n```\ndata: {\"type\": \"stream_start\"}\n\ndata: {\"\
+            type\": \"token\", \"content\": \"I'll create a workflow for you.\"}\n\
+            \ndata: {\"type\": \"tool_call\", \"name\": \"create_node\", \"arguments\"\
+            : \"{\\\"node_type\\\": \\\"trigger\\\", \\\"name\\\": \\\"Start\\\"}\"\
+            , \"call_id\": \"call_1\"}\n\ndata: {\"type\": \"tool_result\", \"output\"\
+            : \"{\\\"node_id\\\": \\\"abc-123\\\", \\\"node\\\": {\\\"id\\\": \\\"\
+            abc-123\\\", \\\"name\\\": \\\"Start\\\", \\\"type\\\": \\\"ManualTrigger\\\
+            \", \\\"trigger\\\": true}}\", \"call_id\": \"call_1\"}\n\ndata: {\"type\"\
+            : \"tool_call\", \"name\": \"build_workflow\", \"arguments\": \"{\\\"\
+            nodes_json\\\": \\\"[...]\\\", \\\"edges_json\\\": \\\"[...]\\\"}\", \"\
+            call_id\": \"call_2\"}\n\ndata: {\"type\": \"tool_result\", \"output\"\
+            : \"{\\\"nodes\\\": [...], \\\"edges\\\": [...]}\", \"call_id\": \"call_2\"\
+            }\n\ndata: {\"type\": \"token\", \"content\": \"Done! Your workflow is\
+            \ ready.\"}\n\ndata: {\"type\": \"stream_end\"}\n```\n"
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_GeneratedWorkflow_'
+            text/event-stream: {}
         '422':
           description: Validation Error
           content:
@@ -1521,25 +1578,6 @@ components:
       required:
       - data
       title: ApiResponse[FirstTimeSetupStatus]
-    ApiResponse_GeneratedWorkflow_:
-      properties:
-        success:
-          type: boolean
-          title: Success
-          description: Whether the request was successful
-          default: true
-        message:
-          type: string
-          title: Message
-          description: Human-readable message
-          default: Success
-        data:
-          $ref: '#/components/schemas/GeneratedWorkflow'
-          description: Response data
-      type: object
-      required:
-      - data
-      title: ApiResponse[GeneratedWorkflow]
     ApiResponse_List_TemplateSummary__:
       properties:
         success:
@@ -1935,6 +1973,7 @@ components:
           type: object
           title: Credential Data
           description: Credential data (will be encrypted)
+      additionalProperties: false
       type: object
       required:
       - name
@@ -2091,6 +2130,7 @@ components:
           - type: 'null'
           title: Credential Data
           description: Credential data (will be encrypted)
+      additionalProperties: false
       type: object
       title: CredentialUpdate
       description: Schema for updating a credential.
@@ -2173,59 +2213,11 @@ components:
         prompt:
           type: string
           title: Prompt
-        history:
-          items:
-            $ref: '#/components/schemas/SmithMessage'
-          type: array
-          title: History
-        workflow:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Workflow
-          description: Optional existing workflow JSON to give the agent full context.
-        include_trace:
-          type: boolean
-          title: Include Trace
-          description: Include Smith's reasoning/trajectory in the response.
-          default: false
-        max_iters:
-          anyOf:
-          - type: integer
-            maximum: 20.0
-            minimum: 1.0
-          - type: 'null'
-          title: Max Iters
-          description: Optional override for Smith's ReAct iteration limit.
       type: object
       required:
       - prompt
       title: GenerateWorkflowRequest
       description: Request body for creating a workflow from natural language.
-    GeneratedWorkflow:
-      properties:
-        response:
-          type: string
-          title: Response
-        workflow:
-          additionalProperties: true
-          type: object
-          title: Workflow
-        trace:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: 'null'
-          title: Trace
-          description: Optional reasoning steps from the agent trajectory.
-      type: object
-      required:
-      - response
-      - workflow
-      title: GeneratedWorkflow
-      description: Smith LLM response packaged for the API.
     HTTPValidationError:
       properties:
         detail:
@@ -2247,6 +2239,7 @@ components:
           minLength: 1
           title: Password
           description: User's password
+      additionalProperties: false
       type: object
       required:
       - email
@@ -2276,27 +2269,11 @@ components:
           minLength: 1
           title: Refresh Token
           description: Valid refresh token
+      additionalProperties: false
       type: object
       required:
       - refresh_token
       title: RefreshRequest
-    SmithMessage:
-      properties:
-        role:
-          type: string
-          enum:
-          - user
-          - smith
-          title: Role
-          default: user
-        content:
-          type: string
-          title: Content
-      type: object
-      required:
-      - content
-      title: SmithMessage
-      description: Single chat turn used to seed Smith with prior context.
     TemplateCreate:
       properties:
         name:
