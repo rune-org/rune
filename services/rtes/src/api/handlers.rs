@@ -8,11 +8,14 @@ use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::Deserialize;
 use tracing::{error, warn};
 
-use crate::api::{state::AppState, ws::{AuthParams, Claims}};
+use crate::api::{
+    state::AppState,
+    ws::{AuthParams, Claims},
+};
 
 #[derive(Deserialize)]
 pub(crate) struct AuthQuery {
-    pub(crate) user_id:     String,
+    pub(crate) user_id: String,
     pub(crate) workflow_id: String,
     pub(crate) execution_id: String,
 }
@@ -49,9 +52,9 @@ pub(crate) async fn get_execution_hydrated(
     };
 
     let params = AuthParams {
-        user_id:      token_data.claims.user_id,
+        user_id: token_data.claims.user_id,
         execution_id: token_data.claims.execution_id,
-        workflow_id:  token_data.claims.workflow_id,
+        workflow_id: token_data.claims.workflow_id,
     };
     match state
         .token_store

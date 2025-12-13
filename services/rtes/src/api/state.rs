@@ -2,17 +2,14 @@ use tokio::sync::broadcast;
 
 use crate::{
     domain::models::WorkerMessage,
-    infra::{
-        execution_store::ExecutionStore,
-        token_store::TokenStore,
-    },
+    infra::{execution_store::ExecutionStore, token_store::TokenStore},
 };
 
 #[derive(Clone)]
 pub(crate) struct AppState {
-    pub(crate) token_store:     TokenStore,
+    pub(crate) token_store: TokenStore,
     pub(crate) execution_store: ExecutionStore,
-    pub(crate) tx:              broadcast::Sender<WorkerMessage>,
+    pub(crate) tx: broadcast::Sender<WorkerMessage>,
 }
 
 impl AppState {

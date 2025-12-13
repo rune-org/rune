@@ -1,7 +1,6 @@
 use axum::{
     extract::{
-        State,
-        WebSocketUpgrade,
+        State, WebSocketUpgrade,
         ws::{Message, WebSocket},
     },
     http::HeaderMap,
@@ -18,10 +17,10 @@ use crate::{api::state::AppState, domain::models::WorkerMessage};
 #[derive(Debug, Serialize, Clone, PartialEq)]
 pub(crate) struct WsNodeUpdateDto {
     pub(crate) node_id: Option<String>,
-    pub(crate) input:   Option<Value>,
-    pub(crate) params:  Option<Value>,
-    pub(crate) output:  Option<Value>,
-    pub(crate) status:  Option<String>,
+    pub(crate) input: Option<Value>,
+    pub(crate) params: Option<Value>,
+    pub(crate) output: Option<Value>,
+    pub(crate) status: Option<String>,
 }
 
 impl From<&WorkerMessage> for WsNodeUpdateDto {
@@ -29,24 +28,24 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
         match msg {
             WorkerMessage::NodeStatus(s) => Self {
                 node_id: Some(s.node_id.clone()),
-                input:   s.input.clone(),
-                params:  s.parameters.clone(),
-                output:  s.output.clone(),
-                status:  Some(s.status.clone()),
+                input: s.input.clone(),
+                params: s.parameters.clone(),
+                output: s.output.clone(),
+                status: Some(s.status.clone()),
             },
             WorkerMessage::WorkflowCompletion(_c) => Self {
                 node_id: None,
-                input:   None,
-                params:  None,
-                output:  None,
-                status:  Some("completed".to_string()),
+                input: None,
+                params: None,
+                output: None,
+                status: Some("completed".to_string()),
             },
             WorkerMessage::NodeExecution(_) => Self {
                 node_id: None,
-                input:   None,
-                params:  None,
-                output:  None,
-                status:  Some("unknown error".to_string()),
+                input: None,
+                params: None,
+                output: None,
+                status: Some("unknown error".to_string()),
             },
         }
     }
@@ -54,18 +53,18 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Claims {
-    pub user_id:      String,
+    pub user_id: String,
     pub execution_id: String,
-    pub workflow_id:  String,
-    pub exp:          usize,
+    pub workflow_id: String,
+    pub exp: usize,
 }
 
 #[derive(Deserialize)]
 #[allow(clippy::struct_field_names)]
 pub(crate) struct AuthParams {
-    pub(crate) user_id:      String,
+    pub(crate) user_id: String,
     pub(crate) execution_id: String,
-    pub(crate) workflow_id:  String,
+    pub(crate) workflow_id: String,
 }
 
 pub(crate) async fn ws_handler(
@@ -96,9 +95,9 @@ pub(crate) async fn ws_handler(
     };
 
     let params = AuthParams {
-        user_id:      token_data.claims.user_id,
+        user_id: token_data.claims.user_id,
         execution_id: token_data.claims.execution_id,
-        workflow_id:  token_data.claims.workflow_id,
+        workflow_id: token_data.claims.workflow_id,
     };
 
     match state
@@ -131,31 +130,32 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: AuthParams) {
         .await
     {
         for (node_id, node) in doc.nodes {
-                let dto = WsNodeUpdateDto {
-                    node_id: Some(node_id.clone()),
-                    input:   node.input,
-                    params:  node.parameters,
-                    output:  node.output,
-                    status:  node.status,
-                };
-                if let Ok(json) = serde_json::to_string(&dto)
-                    && sender.send(Message::Text(json.into())).await.is_err() {
-                        return;
-                    }
-            
+            let dto = WsNodeUpdateDto {
+                node_id: Some(node_id.clone()),
+                input: node.input,
+                params: node.parameters,
+                output: node.output,
+                status: node.status,
+            };
+            if let Ok(json) = serde_json::to_string(&dto)
+                && sender.send(Message::Text(json.into())).await.is_err()
+            {
+                return;
+            }
         }
         if let Some(status) = doc.status {
             let dto = WsNodeUpdateDto {
                 node_id: None,
-                input:   None,
-                params:  None,
-                output:  None,
-                status:  Some(status),
+                input: None,
+                params: None,
+                output: None,
+                status: Some(status),
             };
             if let Ok(json) = serde_json::to_string(&dto)
-                && sender.send(Message::Text(json.into())).await.is_err() {
-                    return;
-                }
+                && sender.send(Message::Text(json.into())).await.is_err()
+            {
+                return;
+            }
         }
     }
 
