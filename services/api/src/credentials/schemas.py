@@ -1,12 +1,14 @@
 from datetime import datetime
 from typing import Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.db.models import CredentialType
 
 
 class CredentialCreate(BaseModel):
     """Schema for creating a new credential."""
+
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., min_length=1, max_length=100, description="Credential name")
     credential_type: CredentialType = Field(..., description="Type of credential")
@@ -17,6 +19,8 @@ class CredentialCreate(BaseModel):
 
 class CredentialUpdate(BaseModel):
     """Schema for updating a credential."""
+
+    model_config = ConfigDict(extra="forbid")
 
     name: Optional[str] = Field(
         None, min_length=1, max_length=100, description="Credential name"
