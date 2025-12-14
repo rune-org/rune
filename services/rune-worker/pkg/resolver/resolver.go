@@ -15,14 +15,28 @@ import (
 //   - $node_name.array[0]
 //   - $node_name.body.values[0].val
 type Resolver struct {
-	context map[string]interface{}
+	context  map[string]interface{}
+	usedKeys map[string]bool
 }
 
 // NewResolver creates a new resolver with the given context.
 func NewResolver(context map[string]interface{}) *Resolver {
 	return &Resolver{
-		context: context,
+		context:  context,
+		usedKeys: make(map[string]bool),
 	}
+}
+
+// GetUsedKeys returns the list of context keys that were accessed during resolution.
+func (r *Resolver) GetUsedKeys() []string {
+	if len(r.usedKeys) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(r.usedKeys))
+	for k := range r.usedKeys {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // referencePattern matches $node_name.path.to.field or $node_name.array[0]
@@ -135,6 +149,11 @@ func (r *Resolver) resolveReference(ref string) (interface{}, error) {
 	// Split into node name and field path
 	parts := strings.SplitN(path, ".", 2)
 	nodeName := parts[0]
+
+	// Track usage for the resolved node key (context keys are stored with the $ prefix)
+	if r.usedKeys != nil {
+		r.usedKeys["$"+nodeName] = true
+	}
 
 	// Get the node data from context
 	nodeData, ok := r.context["$"+nodeName]

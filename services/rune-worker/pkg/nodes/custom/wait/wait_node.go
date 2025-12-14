@@ -46,6 +46,7 @@ func (n *WaitNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 		AccumulatedContext: execCtx.Input,
 		LineageStack:       execCtx.LineageStack,
 		FromNode:           execCtx.FromNode,
+		IsWorkerInitiated:  true,
 	}
 
 	payload, err := frozen.Encode()

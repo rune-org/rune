@@ -42,6 +42,7 @@ func TestEditNodeE2E_SimpleAssignment(t *testing.T) {
 					Type: "edit",
 					Parameters: map[string]interface{}{
 						"mode": "assignments",
+						"target_path": "baby",
 						"assignments": []interface{}{
 							map[string]interface{}{"name": "full_name", "value": "{{ $json.first_name + ' ' + $json.last_name }}", "type": "string"},
 							map[string]interface{}{"name": "is_active", "value": "true", "type": "boolean"},
@@ -53,7 +54,7 @@ func TestEditNodeE2E_SimpleAssignment(t *testing.T) {
 			Edges: []core.Edge{},
 		},
 		AccumulatedContext: map[string]interface{}{
-			"$json": map[string]interface{}{
+			"$baby": map[string]interface{}{
 				"first_name": "John",
 				"last_name":  "Doe",
 				"email":      "john@example.com",
