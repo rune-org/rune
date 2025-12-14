@@ -50,6 +50,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ActivateWorkflowDialog } from "./ActivateWorkflowDialog";
 
+// TODO(FE): Use executions websockets to get real-time updates on workflow runs
 function timeAgo(iso: string | null): string {
   if (!iso) return "N/A";
   const diff = Date.now() - new Date(iso).getTime();
