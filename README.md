@@ -10,19 +10,21 @@ rune/
 │   └── web/              # Next.js frontend application
 ├── services/
 │   ├── api/              # FastAPI backend service (Python)
-│   └── rune-worker/      # Workflow worker service (Go)
+│   ├── rune-worker/      # Workflow worker service (Go)
+│   └── scheduler/        # Standalone workflow scheduler (Python/Alpine)
 ├── docker-compose.yml    # Main Docker Compose configuration
 └── Makefile
 ```
 
 ## Services at a Glance
 
-| Component | Responsibilities | Location |
-| --- | --- | --- |
-| Frontend | Visual workflow builder, run history UI, auth flows | `apps/web` |
-| API | Workflow definitions, scheduling, user/org management, REST/GraphQL APIs | `services/api` |
-| Worker | Executes workflow steps, manages retries, interacts with external services | `services/rune-worker` |
-| Infrastructure | Shared dependencies: PostgreSQL, Redis, RabbitMQ, MinIO (optional) | `docker-compose.yml` |
+| Component      | Responsibilities                                                           | Location               |
+| -------------- | -------------------------------------------------------------------------- | ---------------------- |
+| Frontend       | Visual workflow builder, run history UI, auth flows                        | `apps/web`             |
+| API            | Workflow definitions, scheduling, user/org management, REST/GraphQL APIs   | `services/api`         |
+| Scheduler      | Triggers scheduled workflows at specified intervals (standalone service)   | `services/scheduler`   |
+| Worker         | Executes workflow steps, manages retries, interacts with external services | `services/rune-worker` |
+| Infrastructure | Shared dependencies: PostgreSQL, Redis, RabbitMQ, MinIO (optional)         | `docker-compose.yml`   |
 
 ## Tech Stack
 
@@ -149,6 +151,7 @@ WORKFLOW_CONCURRENCY=1
 ### Service-Specific Configuration
 
 Each service has its own `.env` file for local development:
+
 - `services/api/.env` - API configuration
 - `services/rune-worker/.env` - Worker configuration
 - `apps/web/.env.local` - Frontend configuration
@@ -206,80 +209,80 @@ make worker-dev
 
 ### Development
 
-| Command | Description |
-|---|---|
+| Command        | Description                                      |
+| -------------- | ------------------------------------------------ |
 | `make install` | Install all dependencies (frontend, API, worker) |
-| `make dev` | Start all services in development mode |
-| `make build` | Build all services |
+| `make dev`     | Start all services in development mode           |
+| `make build`   | Build all services                               |
 
 ### Frontend
 
-| Command | Description |
-|---|---|
-| `make web-install` | Install frontend dependencies |
-| `make web-dev` | Start frontend in development mode |
-| `make web-build` | Build frontend |
-| `make web-lint` | Lint frontend code |
-| `make web-format` | Format frontend code with prettier |
-| `make web-typecheck` | Type check frontend code |
+| Command              | Description                        |
+| -------------------- | ---------------------------------- |
+| `make web-install`   | Install frontend dependencies      |
+| `make web-dev`       | Start frontend in development mode |
+| `make web-build`     | Build frontend                     |
+| `make web-lint`      | Lint frontend code                 |
+| `make web-format`    | Format frontend code with prettier |
+| `make web-typecheck` | Type check frontend code           |
 
 ### API
 
-| Command | Description |
-|---|---|
-| `make api-install` | Install API dependencies (creates/uses venv) |
-| `make api-install-no-env` | Install API dependencies to system Python |
-| `make api-dev` | Start FastAPI server in dev mode (hot-reload) |
-| `make api-lint` | Lint API code with ruff |
-| `make api-format` | Format API code with ruff |
+| Command                   | Description                                   |
+| ------------------------- | --------------------------------------------- |
+| `make api-install`        | Install API dependencies (creates/uses venv)  |
+| `make api-install-no-env` | Install API dependencies to system Python     |
+| `make api-dev`            | Start FastAPI server in dev mode (hot-reload) |
+| `make api-lint`           | Lint API code with ruff                       |
+| `make api-format`         | Format API code with ruff                     |
 
 ### Development Infrastructure
 
-| Command | Description |
-|---|---|
-| `make dev-infra-up` | Start shared infrastructure (postgres, redis, rabbitmq) |
-| `make dev-infra-down` | Stop shared infrastructure |
+| Command               | Description                                             |
+| --------------------- | ------------------------------------------------------- |
+| `make dev-infra-up`   | Start shared infrastructure (postgres, redis, rabbitmq) |
+| `make dev-infra-down` | Stop shared infrastructure                              |
 
 ### Worker
 
-| Command | Description |
-|---|---|
-| `make worker-install` | Install worker dependencies |
-| `make worker-dev` | Start worker in development mode |
-| `make worker-build` | Build worker |
-| `make worker-lint` | Lint worker code |
-| `make worker-format` | Format worker code |
-| `make worker-test` | Run worker tests |
+| Command               | Description                      |
+| --------------------- | -------------------------------- |
+| `make worker-install` | Install worker dependencies      |
+| `make worker-dev`     | Start worker in development mode |
+| `make worker-build`   | Build worker                     |
+| `make worker-lint`    | Lint worker code                 |
+| `make worker-format`  | Format worker code               |
+| `make worker-test`    | Run worker tests                 |
 
 ### Docker
 
-| Command | Description |
-|---|---|
-| `make up` | Start all services with Docker |
-| `make down` | Stop all services |
-| `make restart` | Rebuild and restart all services |
-| `make status` | Show container status |
-| `make logs` | View all logs |
-| `make logs-api` | View API logs |
-| `make logs-worker` | View worker logs |
-| `make logs-frontend` | View frontend logs |
-| `make db-shell` | Connect to PostgreSQL |
-| `make docker-clean` | Remove all Docker resources |
+| Command              | Description                      |
+| -------------------- | -------------------------------- |
+| `make up`            | Start all services with Docker   |
+| `make down`          | Stop all services                |
+| `make restart`       | Rebuild and restart all services |
+| `make status`        | Show container status            |
+| `make logs`          | View all logs                    |
+| `make logs-api`      | View API logs                    |
+| `make logs-worker`   | View worker logs                 |
+| `make logs-frontend` | View frontend logs               |
+| `make db-shell`      | Connect to PostgreSQL            |
+| `make docker-clean`  | Remove all Docker resources      |
 
 ### Testing & Quality
 
-| Command | Description |
-|---|---|
-| `make test` | Run all tests |
-| `make lint` | Run linters for all services |
-| `make format` | Format code for all services |
-| `make typecheck` | Run type checking |
+| Command          | Description                  |
+| ---------------- | ---------------------------- |
+| `make test`      | Run all tests                |
+| `make lint`      | Run linters for all services |
+| `make format`    | Format code for all services |
+| `make typecheck` | Run type checking            |
 
 ### Cleanup
 
-| Command | Description |
-|---|---|
-| `make clean` | Clean build artifacts |
+| Command          | Description                             |
+| ---------------- | --------------------------------------- |
+| `make clean`     | Clean build artifacts                   |
 | `make clean-all` | Clean everything including dependencies |
 
 ## Troubleshooting
@@ -287,6 +290,7 @@ make worker-dev
 ### Port Conflicts
 
 If you get port binding errors, check if ports are already in use:
+
 ```bash
 # Check what's using a port
 lsof -i :3000  # Frontend

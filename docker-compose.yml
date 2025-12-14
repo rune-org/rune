@@ -101,31 +101,24 @@ services:
 
   scheduler:
     build:
-      context: ./services/api
-      dockerfile: Dockerfile.scheduler
+      context: ./services/scheduler
+      dockerfile: Dockerfile
     container_name: rune-scheduler
-    env_file:
-      - .env
     environment:
-      # Database Settings
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-rune}:${POSTGRES_PASSWORD:-rune_password}@postgres:5432/${POSTGRES_DB:-rune_db}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-rune}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
-      POSTGRES_DB: ${POSTGRES_DB:-rune_db}
-      # RabbitMQ Settings
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/
+      POSTGRES_DB: ${POSTGRES_DB:-rune}
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: ${RABBITMQ_USER:-rune}
+      RABBITMQ_USER: ${RABBITMQ_USER:-rune}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rune_password}
-      RABBITMQ_QUEUE_NAME: workflow.execution
-      # Scheduler Settings
+      RABBITMQ_QUEUE: workflow.execution
       SCHEDULER_POLL_INTERVAL: ${SCHEDULER_POLL_INTERVAL:-30}
-      SCHEDULER_LOOK_AHEAD_SECONDS: ${SCHEDULER_LOOK_AHEAD_SECONDS:-60}
-      # Encryption Key
+      SCHEDULER_LOOK_AHEAD: ${SCHEDULER_LOOK_AHEAD:-60}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     depends_on:
       postgres:
         condition: service_healthy
@@ -134,6 +127,17 @@ services:
     networks:
       - backend_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ps aux | grep -q '[p]ython.*main.py' || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   worker:
     build:
