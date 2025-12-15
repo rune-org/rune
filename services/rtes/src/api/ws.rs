@@ -1,5 +1,6 @@
 use axum::{
     extract::{
+        Query,
         State,
         WebSocketUpgrade,
         ws::{Message, WebSocket},
@@ -107,11 +108,32 @@ pub(crate) struct AuthParams {
     pub(crate) workflow_id:  String,
 }
 
+/// Query parameters for dev mode bypass
+#[derive(Debug, Deserialize, Default)]
+pub(crate) struct WsQueryParams {
+    pub(crate) execution_id: Option<String>,
+    pub(crate) workflow_id:  Option<String>,
+}
+
 pub(crate) async fn ws_handler(
     ws: WebSocketUpgrade,
     headers: HeaderMap,
+    Query(query): Query<WsQueryParams>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    // TODO(rtes): Remove this bypass when access proxy is ready
+    let skip_auth = std::env::var("RTES_SKIP_AUTH").is_ok();
+
+    if skip_auth {
+        warn!("RTES_SKIP_AUTH is set - bypassing authentication (DEV ONLY)");
+        let params = AuthParams {
+            user_id:      "dev-user".to_string(),
+            execution_id: query.execution_id.unwrap_or_else(|| "dev-execution".to_string()),
+            workflow_id:  query.workflow_id.unwrap_or_else(|| "dev-workflow".to_string()),
+        };
+        return ws.on_upgrade(move |socket| handle_socket(socket, state, params));
+    }
+
     let token = match headers.get("Authorization") {
         Some(value) => value.to_str().unwrap_or("").replace("Bearer ", ""),
         None => {
