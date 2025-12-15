@@ -19,10 +19,9 @@ from src.core.exceptions import BadRequest
 from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
 from src.core.responses import ApiResponse
-from src.core.config import get_settings
 from src.db.models import User, Workflow
 from src.queue.rabbitmq import get_rabbitmq
-from src.queue.service import WorkflowQueueService
+from src.queue.service import WorkflowQueueService, ExecutionTokenService
 
 
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
@@ -35,10 +34,12 @@ def get_workflow_service(db: DatabaseDep) -> WorkflowService:
 
 def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
     """Dependency to get workflow queue service instance."""
-    settings = get_settings()
-    return WorkflowQueueService(
-        connection=connection, queue_name=settings.rabbitmq_queue_name
-    )
+    return WorkflowQueueService(connection=connection)
+
+
+def get_token_service(connection=Depends(get_rabbitmq)) -> ExecutionTokenService:
+    """Dependency to get execution token service instance."""
+    return ExecutionTokenService(connection=connection)
 
 
 @router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
@@ -158,15 +159,18 @@ async def delete_workflow(
 @require_workflow_permission("execute")
 async def run_workflow(
     workflow: Workflow = Depends(get_workflow_with_permission),
+    current_user: User = Depends(require_password_changed),
     workflow_service: WorkflowService = Depends(get_workflow_service),
     queue_service: WorkflowQueueService = Depends(get_queue_service),
-) -> ApiResponse[dict]:
+    token_service: ExecutionTokenService = Depends(get_token_service),
+) -> ApiResponse[str]:
     """
     Queue a workflow for execution.
 
     Verifies the workflow exists and user has execute permission (OWNER or EDITOR),
     resolves all credential references in workflow nodes,
     then publishes a run message to RabbitMQ containing workflow details with resolved credentials.
+    Also publishes an execution token for RTES real-time updates.
 
     Returns execution_id for tracking the execution.
 
@@ -179,6 +183,13 @@ async def run_workflow(
 
     # Generate a unique execution ID
     execution_id = f"exec_{uuid.uuid4().hex[:16]}"
+
+    # Publish execution token for RTES authentication (with specific execution_id)
+    await token_service.publish_execution_token(
+        workflow_id=workflow.id,
+        user_id=current_user.id,
+        execution_id=execution_id,
+    )
 
     # Publish workflow run message to queue with resolved credentials
     try:
