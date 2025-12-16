@@ -182,7 +182,7 @@ async def run_workflow(
     )
 
     # Generate a unique execution ID
-    execution_id = f"exec_{uuid.uuid4().hex[:16]}"
+    execution_id = str(uuid.uuid4())
 
     # Publish execution token for RTES authentication (with specific execution_id)
     await token_service.publish_execution_token(
