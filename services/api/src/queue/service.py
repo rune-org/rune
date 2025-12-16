@@ -130,7 +130,7 @@ class WorkflowQueueService(BaseQueuePublisher):
             workflow_definition=workflow_data,
         )
 
-        await self._publish(self.queue_name, payload)
+        await self._publish(self.queue_name, payload,durable=False)
 
 
 class ExecutionTokenService(BaseQueuePublisher):
@@ -179,6 +179,6 @@ class ExecutionTokenService(BaseQueuePublisher):
             exp=now + ttl_seconds,
         )
 
-        await self._publish(self.queue_name, token)
+        await self._publish(self.queue_name, token,durable=False)
 
         return token
