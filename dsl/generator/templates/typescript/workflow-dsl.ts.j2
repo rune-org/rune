@@ -68,19 +68,12 @@ export class MissingNodeCredentialsError extends Error {
 // When DSL changes, update these functions accordingly.
 //
 // Current DSL node types (reference - see dsl/dsl-definition.json for full details):
-// - ManualTrigger: Manual workflow trigger
-// - http: HTTP request node
-//   Parameters: method, url, body, query, headers, retry, retry_delay, timeout, raise_on_status, ignore_ssl
-// - smtp: Send email via SMTP
-//   Parameters: subject, body, to, from, cc, bcc
-// - conditional: Conditional branch node
-//   Parameters: expression, true_edge_id, false_edge_id
-// - switch: Multi-way branch based on rules
-//   Parameters: rules, routes
-// - log: Log information during workflow execution
-//   Parameters: message, level
-// - agent: AI agent node
-//   Parameters: prompt
+{% for node_type, node_def in dsl.node_types.items() %}
+// - {{ node_type }}: {{ node_def.description }}
+{% if node_def.parameters %}
+//   Parameters: {{ node_def.parameters.keys() | list | join(", ") }}
+{% endif %}
+{% endfor %}
 //
 // Update the following functions when:
 // - Node parameter structures change
@@ -95,20 +88,10 @@ export class MissingNodeCredentialsError extends Error {
 // Map canvas node type to worker DSL type identifiers
 function toWorkerType(canvasType: string): string {
   switch (canvasType) {
-    case "trigger":
-      return "ManualTrigger";
-    case "http":
-      return "http";
-    case "smtp":
-      return "smtp";
-    case "if":
-      return "conditional";
-    case "switch":
-      return "switch";
-    case "log":
-      return "log";
-    case "agent":
-      return "agent";
+{% for node_type, node_def in dsl.node_types.items() %}
+    case "{{ node_def.frontend_type }}":
+      return "{{ node_def.worker_type }}";
+{% endfor %}
     default:
       return canvasType;
   }

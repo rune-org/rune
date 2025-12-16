@@ -1,0 +1,534 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "description": "Rune Workflow DSL Definition - Source of Truth",
+  
+  "core_structures": {
+    "Workflow": {
+      "description": "Root workflow structure",
+      "fields": {
+        "workflow_id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique identifier for the workflow definition"
+        },
+        "execution_id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique identifier for this specific execution instance"
+        },
+        "nodes": {
+          "type": "array",
+          "items": "Node",
+          "required": true,
+          "description": "Array of node definitions"
+        },
+        "edges": {
+          "type": "array",
+          "items": "Edge",
+          "required": true,
+          "description": "Array of edge definitions"
+        }
+      },
+      "frontend_fields": {
+        "id": {
+          "type": "string",
+          "required": false,
+          "description": "Workflow ID (UI only)"
+        },
+        "name": {
+          "type": "string",
+          "required": false,
+          "description": "Workflow name (UI only)"
+        },
+        "description": {
+          "type": "string",
+          "required": false,
+          "description": "Workflow description (UI only)"
+        },
+        "version": {
+          "type": "string",
+          "required": false,
+          "description": "Workflow version (UI only)"
+        },
+        "metadata": {
+          "type": "object",
+          "required": false,
+          "description": "Optional metadata (UI only)"
+        }
+      }
+    },
+    
+    "Node": {
+      "description": "Single executable node within the workflow",
+      "fields": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique identifier for the node within the workflow"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Human-readable node name"
+        },
+        "trigger": {
+          "type": "boolean",
+          "required": true,
+          "description": "Whether this node initiates workflow execution"
+        },
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "Node type identifier",
+          "enum": ["ManualTrigger", "http", "smtp", "conditional", "switch", "log", "agent"]
+        },
+        "parameters": {
+          "type": "object",
+          "required": true,
+          "description": "Type-specific configuration (may be empty)"
+        },
+        "output": {
+          "type": "object",
+          "required": true,
+          "description": "Placeholder for execution output (empty in definition)",
+          "default": {}
+        },
+        "credentials": {
+          "type": "Credential",
+          "required": false,
+          "description": "Complete credential object with values"
+        },
+        "error": {
+          "type": "ErrorHandling",
+          "required": false,
+          "description": "Error handling configuration"
+        }
+      },
+      "frontend_fields": {
+        "position": {
+          "type": "array",
+          "items": "number",
+          "length": 2,
+          "required": false,
+          "description": "Node position [x, y] in canvas (UI only)"
+        }
+      }
+    },
+    
+    "Edge": {
+      "description": "Directed connection between two nodes",
+      "fields": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique identifier for the edge"
+        },
+        "src": {
+          "type": "string",
+          "required": true,
+          "description": "Source node ID"
+        },
+        "dst": {
+          "type": "string",
+          "required": true,
+          "description": "Destination node ID"
+        }
+      },
+      "frontend_fields": {
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "Edge label (UI only)"
+        }
+      },
+      "backend_fields": {
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "Edge label (Backend only)"
+        }
+      }
+    },
+    
+    "Credential": {
+      "description": "Credential reference with values",
+      "fields": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique credential identifier"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Human-readable credential name"
+        },
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "Credential type identifier",
+          "enum": ["smtp", "api_key", "oauth2", "username_password"]
+        },
+        "values": {
+          "type": "object",
+          "required": true,
+          "description": "Type-specific credential values (actual secrets)"
+        }
+      }
+    },
+    
+    "ErrorHandling": {
+      "description": "Error handling configuration",
+      "fields": {
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "Error handling type",
+          "enum": ["halt", "ignore", "branch"]
+        },
+        "error_edge": {
+          "type": "string",
+          "required": false,
+          "description": "Edge ID to follow on error if type is 'branch'"
+        }
+      }
+    }
+  },
+  
+  "node_types": {
+    "ManualTrigger": {
+      "description": "Manual workflow trigger",
+      "worker_type": "ManualTrigger",
+      "frontend_type": "trigger",
+      "backend_type": "trigger",
+      "parameters": {},
+      "requires_credentials": false
+    },
+    
+    "http": {
+      "description": "HTTP request node",
+      "worker_type": "http",
+      "frontend_type": "http",
+      "backend_type": "http",
+      "parameters": {
+        "method": {
+          "type": "string",
+          "required": true,
+          "description": "HTTP method",
+          "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]
+        },
+        "url": {
+          "type": "string",
+          "required": true,
+          "description": "Target URL (supports template variables)"
+        },
+        "body": {
+          "type": "any",
+          "required": false,
+          "description": "Request body (JSON)"
+        },
+        "query": {
+          "type": "object",
+          "required": false,
+          "description": "URL query parameters as key-value pairs"
+        },
+        "headers": {
+          "type": "object",
+          "required": false,
+          "description": "HTTP headers as key-value pairs"
+        },
+        "retry": {
+          "type": "string",
+          "required": false,
+          "description": "Number of retry attempts",
+          "default": "0"
+        },
+        "retry_delay": {
+          "type": "string",
+          "required": false,
+          "description": "Delay between retries in seconds",
+          "default": "0"
+        },
+        "timeout": {
+          "type": "string",
+          "required": false,
+          "description": "Request timeout in seconds",
+          "default": "30"
+        },
+        "raise_on_status": {
+          "type": "string",
+          "required": false,
+          "description": "Comma-separated status code patterns to treat as errors (e.g., '4xx,5xx')"
+        },
+        "ignore_ssl": {
+          "type": "boolean",
+          "required": false,
+          "description": "Whether to ignore SSL certificate validation",
+          "default": false
+        }
+      },
+      "frontend_parameter_mapping": {
+        "retry": "retries",
+        "retry_delay": "retryDelay",
+        "ignore_ssl": "ignoreSSL"
+      },
+      "requires_credentials": false
+    },
+    
+    "smtp": {
+      "description": "Send email via SMTP",
+      "worker_type": "smtp",
+      "frontend_type": "smtp",
+      "backend_type": "smtp",
+      "parameters": {
+        "subject": {
+          "type": "string",
+          "required": true,
+          "description": "Email subject line"
+        },
+        "body": {
+          "type": "string",
+          "required": true,
+          "description": "Email body content (plain text or HTML)"
+        },
+        "to": {
+          "type": "string|array",
+          "required": true,
+          "description": "Primary recipient email address(es)"
+        },
+        "from": {
+          "type": "string",
+          "required": true,
+          "description": "Sender email address"
+        },
+        "cc": {
+          "type": "array",
+          "items": "string",
+          "required": false,
+          "description": "Carbon copy recipients"
+        },
+        "bcc": {
+          "type": "array",
+          "items": "string",
+          "required": false,
+          "description": "Blind carbon copy recipients"
+        }
+      },
+      "frontend_parameter_mapping": {
+        "to": "to",
+        "cc": "cc",
+        "bcc": "bcc"
+      },
+      "requires_credentials": true,
+      "credential_type": "smtp"
+    },
+    
+    "conditional": {
+      "description": "Conditional branch node",
+      "worker_type": "conditional",
+      "frontend_type": "if",
+      "backend_type": "conditional",
+      "parameters": {
+        "expression": {
+          "type": "string",
+          "required": false,
+          "description": "Condition expression (UI stores as single string)"
+        },
+        "true_edge_id": {
+          "type": "string",
+          "required": false,
+          "description": "Edge ID to follow when condition is true"
+        },
+        "false_edge_id": {
+          "type": "string",
+          "required": false,
+          "description": "Edge ID to follow when condition is false"
+        }
+      },
+      "requires_credentials": false
+    },
+    
+    "switch": {
+      "description": "Multi-way branch based on rules",
+      "worker_type": "switch",
+      "frontend_type": "switch",
+      "backend_type": "switch",
+      "parameters": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "value": {
+                "type": "string",
+                "required": true,
+                "description": "Left-hand side value to check"
+              },
+              "operator": {
+                "type": "string",
+                "required": true,
+                "description": "Comparison operator",
+                "enum": ["==", "!=", ">", "<", ">=", "<=", "contains"]
+              },
+              "compare": {
+                "type": "string",
+                "required": true,
+                "description": "Right-hand side value to compare against"
+              }
+            }
+          },
+          "required": false,
+          "description": "Ordered list of rules to evaluate"
+        },
+        "routes": {
+          "type": "array",
+          "items": "string",
+          "required": false,
+          "description": "Ordered list of Edge IDs corresponding to rules, plus optional fallback edge"
+        }
+      },
+      "requires_credentials": false
+    },
+    
+    "log": {
+      "description": "Log information during workflow execution",
+      "worker_type": "log",
+      "frontend_type": "log",
+      "backend_type": "log",
+      "parameters": {
+        "message": {
+          "type": "string",
+          "required": true,
+          "description": "Message to log (supports context variables)"
+        },
+        "level": {
+          "type": "string",
+          "required": false,
+          "description": "Log level",
+          "enum": ["debug", "info", "warn", "error"],
+          "default": "info"
+        }
+      },
+      "requires_credentials": false
+    },
+    
+    "agent": {
+      "description": "AI agent node",
+      "worker_type": "agent",
+      "frontend_type": "agent",
+      "backend_type": "agent",
+      "parameters": {
+        "prompt": {
+          "type": "string",
+          "required": true,
+          "description": "Agent prompt"
+        }
+      },
+      "requires_credentials": false
+    }
+  },
+  
+  "credential_types": {
+    "smtp": {
+      "description": "SMTP server credentials",
+      "values": {
+        "port": {
+          "type": "string",
+          "required": true
+        },
+        "host": {
+          "type": "string",
+          "required": true
+        },
+        "username": {
+          "type": "string",
+          "required": true
+        },
+        "password": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    "api_key": {
+      "description": "API key credentials",
+      "values": {
+        "key": {
+          "type": "string",
+          "required": true
+        },
+        "header_name": {
+          "type": "string",
+          "required": false
+        }
+      }
+    },
+    "oauth2": {
+      "description": "OAuth2 credentials",
+      "values": {
+        "client_id": {
+          "type": "string",
+          "required": true
+        },
+        "client_secret": {
+          "type": "string",
+          "required": true
+        },
+        "access_token": {
+          "type": "string",
+          "required": false
+        },
+        "refresh_token": {
+          "type": "string",
+          "required": false
+        },
+        "expires_at": {
+          "type": "string",
+          "required": false
+        }
+      }
+    },
+    "username_password": {
+      "description": "Username/password credentials",
+      "values": {
+        "username": {
+          "type": "string",
+          "required": true
+        },
+        "password": {
+          "type": "string",
+          "required": true
+        }
+      }
+    }
+  },
+  
+  "type_mappings": {
+    "typescript": {
+      "string": "string",
+      "number": "number",
+      "boolean": "boolean",
+      "object": "Record<string, unknown>",
+      "array": "unknown[]",
+      "any": "unknown"
+    },
+    "python": {
+      "string": "str",
+      "number": "int|float",
+      "boolean": "bool",
+      "object": "dict[str, Any]",
+      "array": "list",
+      "any": "Any"
+    },
+    "go": {
+      "string": "string",
+      "number": "int|float64",
+      "boolean": "bool",
+      "object": "map[string]any",
+      "array": "[]any",
+      "any": "any"
+    }
+  }
+}
+
