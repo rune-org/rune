@@ -53,6 +53,14 @@ export interface ExecutionState {
   startedAt?: string;
   completedAt?: string;
   totalDurationMs?: number;
+  /** True when viewing a historical execution (should not re-save) */
+  isHistorical?: boolean;
+}
+
+// Workflow graph snapshot for preserving state at execution time
+export interface WorkflowGraphSnapshot {
+  nodes: unknown[]; // CanvasNode[] serialized
+  edges: unknown[]; // Edge[] serialized
 }
 
 // Snapshot of execution state for history
@@ -65,6 +73,8 @@ export interface ExecutionSnapshot {
   completedAt?: string;
   totalDurationMs?: number;
   workflowName?: string;
+  /** Workflow graph at the time of execution */
+  workflowGraph?: WorkflowGraphSnapshot;
 }
 
 /**
