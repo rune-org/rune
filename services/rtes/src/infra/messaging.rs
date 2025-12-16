@@ -1,12 +1,16 @@
 use futures::StreamExt;
 use lapin::{
+    Channel,
     Connection,
     ConnectionProperties,
+    ExchangeKind,
     options::{
         BasicAckOptions,
         BasicConsumeOptions,
         BasicNackOptions,
         BasicQosOptions,
+        ExchangeDeclareOptions,
+        QueueBindOptions,
         QueueDeclareOptions,
     },
     types::FieldTable,
@@ -26,8 +30,49 @@ use crate::{
     infra::token_store::TokenStore,
 };
 
+const EXCHANGE_NAME: &str = "workflows";
+
 fn declare_options(durable: bool) -> QueueDeclareOptions {
     QueueDeclareOptions { durable, ..QueueDeclareOptions::default() }
+}
+
+/// Declare the workflows exchange (topic) if it doesn't exist.
+/// Note: durable is set to false to match the existing exchange created by the worker.
+async fn declare_exchange(channel: &Channel) -> Result<(), Box<dyn std::error::Error>> {
+    channel
+        .exchange_declare(
+            EXCHANGE_NAME,
+            ExchangeKind::Topic,
+            ExchangeDeclareOptions {
+                durable: false,
+                ..ExchangeDeclareOptions::default()
+            },
+            FieldTable::default(),
+        )
+        .await?;
+    Ok(())
+}
+
+/// Bind a queue to the workflows exchange with the given routing key.
+async fn bind_queue(
+    channel: &Channel,
+    queue_name: &str,
+    routing_key: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    channel
+        .queue_bind(
+            queue_name,
+            EXCHANGE_NAME,
+            routing_key,
+            QueueBindOptions::default(),
+            FieldTable::default(),
+        )
+        .await?;
+    info!(
+        "Bound queue '{}' to exchange '{}' with routing key '{}'",
+        queue_name, EXCHANGE_NAME, routing_key
+    );
+    Ok(())
 }
 
 pub(crate) async fn start_token_consumer(
@@ -118,6 +163,9 @@ pub(crate) async fn start_execution_consumer(
     let cfg = crate::config::Config::get();
     let queue_name = &cfg.rabbitmq_execution_queue;
 
+    // Declare the workflows exchange
+    declare_exchange(&channel).await?;
+
     let _queue = channel
         .queue_declare(
             queue_name,
@@ -125,6 +173,9 @@ pub(crate) async fn start_execution_consumer(
             FieldTable::default(),
         )
         .await?;
+
+    // Bind queue to exchange with the queue name as routing key
+    bind_queue(&channel, queue_name, queue_name).await?;
 
     let consumer = channel
         .basic_consume(
@@ -183,6 +234,9 @@ pub(crate) async fn start_status_consumer(
     let cfg = crate::config::Config::get();
     let queue_name = &cfg.rabbitmq_status_queue;
 
+    // Declare the workflows exchange
+    declare_exchange(&channel).await?;
+
     let _queue = channel
         .queue_declare(
             queue_name,
@@ -190,6 +244,9 @@ pub(crate) async fn start_status_consumer(
             FieldTable::default(),
         )
         .await?;
+
+    // Bind queue to exchange with the queue name as routing key
+    bind_queue(&channel, queue_name, queue_name).await?;
 
     let consumer = channel
         .basic_consume(
@@ -244,6 +301,9 @@ pub(crate) async fn start_completion_consumer(
     let cfg = crate::config::Config::get();
     let queue_name = &cfg.rabbitmq_completion_queue;
 
+    // Declare the workflows exchange
+    declare_exchange(&channel).await?;
+
     let _queue = channel
         .queue_declare(
             queue_name,
@@ -251,6 +311,9 @@ pub(crate) async fn start_completion_consumer(
             FieldTable::default(),
         )
         .await?;
+
+    // Bind queue to exchange with the queue name as routing key
+    bind_queue(&channel, queue_name, queue_name).await?;
 
     let consumer = channel
         .basic_consume(

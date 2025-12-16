@@ -1,7 +1,8 @@
+use std::collections::HashMap;
+
 use axum::{
     extract::{
-        State,
-        WebSocketUpgrade,
+        Path, State, WebSocketUpgrade,
         ws::{Message, WebSocket},
     },
     http::HeaderMap,
@@ -82,7 +83,7 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
                 split_node_id:    None,
                 branch_id:        None,
                 item_index:       None,
-                total_items:      None,
+                total_items:       None,
                 processed_count:  None,
                 aggregator_state: None,
                 used_inputs:      None,
@@ -91,27 +92,32 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
     }
 }
 
+/// JWT claims - uses frontend's existing JWT with 'sub' field for user_id
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Claims {
-    pub user_id:      String,
-    pub execution_id: String,
-    pub workflow_id:  String,
-    pub exp:          usize,
+    /// User ID from JWT 'sub' claim
+    pub sub: String,
+    /// Expiry timestamp
+    pub exp: usize,
+    /// Accept any other fields without failing deserialization
+    #[serde(flatten)]
+    pub extra: HashMap<String, Value>,
 }
 
-#[derive(Deserialize)]
-#[allow(clippy::struct_field_names)]
+/// Internal auth params for WebSocket connection
+#[derive(Debug)]
 pub(crate) struct AuthParams {
-    pub(crate) user_id:      String,
+    pub(crate) user_id: String,
     pub(crate) execution_id: String,
-    pub(crate) workflow_id:  String,
 }
 
 pub(crate) async fn ws_handler(
     ws: WebSocketUpgrade,
+    Path(execution_id): Path<String>,
     headers: HeaderMap,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    // Extract JWT from Authorization header (frontend's existing token)
     let token = match headers.get("Authorization") {
         Some(value) => value.to_str().unwrap_or("").replace("Bearer ", ""),
         None => {
@@ -120,6 +126,7 @@ pub(crate) async fn ws_handler(
         },
     };
 
+    // Decode frontend's JWT - only need 'sub' claim for user_id
     let cfg = crate::config::Config::get();
     let validation = Validation::default();
     let token_data = match decode::<Claims>(
@@ -134,20 +141,22 @@ pub(crate) async fn ws_handler(
         },
     };
 
+    let user_id = token_data.claims.sub;
     let params = AuthParams {
-        user_id:      token_data.claims.user_id,
-        execution_id: token_data.claims.execution_id,
-        workflow_id:  token_data.claims.workflow_id,
+        user_id: user_id.clone(),
+        execution_id: execution_id.clone(),
     };
 
+    // Validate access: user must have a grant for this execution in Redis
+    // (grants are published via API -> RabbitMQ -> RTES token consumer)
     match state
         .token_store
-        .validate_access(&params.user_id, Some(&params.execution_id), &params.workflow_id)
+        .validate_access_for_execution(&user_id, &execution_id)
         .await
     {
         Ok(true) => ws.on_upgrade(move |socket| handle_socket(socket, state, params)),
         Ok(false) => {
-            warn!("Unauthorized WS access attempt for user: {}", params.user_id);
+            warn!("Unauthorized WS access attempt for user: {} execution: {}", user_id, execution_id);
             (axum::http::StatusCode::FORBIDDEN, "Unauthorized").into_response()
         },
         Err(e) => {

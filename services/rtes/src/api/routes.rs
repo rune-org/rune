@@ -10,8 +10,13 @@ pub(crate) fn app(state: AppState) -> Router {
 
     Router::new()
         .route("/health", get(handlers::health_check))
-        .route("/rt", any(ws::ws_handler))
-        .route("/executions/{id}", get(handlers::get_execution_hydrated))
+        // WebSocket: Real-time updates for specific execution
+        .route("/rt/{execution_id}", any(ws::ws_handler))
+        // HTTP: Get specific past execution
+        .route("/executions/{execution_id}", get(handlers::get_execution))
+        // HTTP: Get all past executions for a workflow
+        .route("/workflows/{workflow_id}/executions", get(handlers::get_workflow_executions))
         .layer(cors)
         .with_state(state)
 }
+
