@@ -179,10 +179,14 @@ services:
     networks:
       - backend_network
     depends_on:
-      - otel-collector
-      - rabbitmq
-      - redis
-      - mongodb
+      otel-collector:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      mongodb:
+        condition: service_started
     ports:
       - "8080:8080"
 
