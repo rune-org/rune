@@ -8,7 +8,7 @@ import {
   snapshotToState,
   getExecutionById,
 } from "../stores/executionHistoryStore";
-import type { ExecutionState, RtesNodeUpdate } from "../types/execution";
+import type { ExecutionState, RtesNodeUpdate, WorkflowGraphSnapshot } from "../types/execution";
 import { runWorkflow } from "@/lib/api/workflows";
 
 export interface UseWorkflowExecutionOptions {
@@ -18,6 +18,8 @@ export interface UseWorkflowExecutionOptions {
   workflowName?: string;
   /** Auto-save executions to history */
   autoSaveHistory?: boolean;
+  /** Get the current workflow graph for saving with execution history */
+  getWorkflowGraph?: () => WorkflowGraphSnapshot | undefined;
 }
 
 export interface UseWorkflowExecutionReturn {
@@ -57,7 +59,7 @@ export interface UseWorkflowExecutionReturn {
 export function useWorkflowExecution(
   options: UseWorkflowExecutionOptions
 ): UseWorkflowExecutionReturn {
-  const { workflowId, workflowName, autoSaveHistory = true } = options;
+  const { workflowId, workflowName, autoSaveHistory = true, getWorkflowGraph } = options;
 
   const { state, dispatch } = useExecution();
   const [isStarting, setIsStarting] = useState(false);
@@ -88,18 +90,21 @@ export function useWorkflowExecution(
     }, []),
   });
 
-  // Save to history when execution completes
+  // Save to history when execution completes (but not when viewing historical)
   useEffect(() => {
     if (
       shouldSaveRef.current &&
       state.executionId &&
+      !state.isHistorical &&
       (state.status === "completed" ||
         state.status === "failed" ||
         state.status === "halted")
     ) {
-      saveExecutionState(state, workflowName);
+      // Capture workflow graph at time of completion
+      const workflowGraph = getWorkflowGraph?.();
+      saveExecutionState(state, workflowName, workflowGraph);
     }
-  }, [state, workflowName]);
+  }, [state, workflowName, getWorkflowGraph]);
 
   // Cleanup on unmount
   useEffect(() => {

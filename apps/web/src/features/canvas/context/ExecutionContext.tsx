@@ -50,6 +50,7 @@ function executionReducer(
         status: "running",
         startedAt: new Date().toISOString(),
         nodes: new Map(),
+        isHistorical: false,
       };
     }
 
@@ -145,7 +146,10 @@ function executionReducer(
     }
 
     case "LOAD_STATE": {
-      return action.state;
+      return {
+        ...action.state,
+        isHistorical: true,
+      };
     }
 
     default:

@@ -7,6 +7,7 @@ import {
   type ExecutionState,
   type ExecutionSnapshot,
   type NodeExecutionData,
+  type WorkflowGraphSnapshot,
 } from "../types/execution";
 
 const STORAGE_KEY = "rune_execution_history";
@@ -17,7 +18,8 @@ const MAX_HISTORY_SIZE = 50; // Maximum number of executions to store
  */
 export function stateToSnapshot(
   state: ExecutionState,
-  workflowName?: string
+  workflowName?: string,
+  workflowGraph?: WorkflowGraphSnapshot
 ): ExecutionSnapshot | null {
   if (!state.executionId || !state.workflowId) return null;
 
@@ -36,6 +38,7 @@ export function stateToSnapshot(
     completedAt: state.completedAt,
     totalDurationMs: state.totalDurationMs,
     workflowName,
+    workflowGraph,
   };
 }
 
@@ -129,9 +132,10 @@ export function saveExecutionSnapshot(snapshot: ExecutionSnapshot): void {
  */
 export function saveExecutionState(
   state: ExecutionState,
-  workflowName?: string
+  workflowName?: string,
+  workflowGraph?: WorkflowGraphSnapshot
 ): void {
-  const snapshot = stateToSnapshot(state, workflowName);
+  const snapshot = stateToSnapshot(state, workflowName, workflowGraph);
   if (snapshot) {
     saveExecutionSnapshot(snapshot);
   }

@@ -26,20 +26,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 interface ExecutionHistoryPanelProps {
   workflowId: number | null;
+  /** Restore workflow graph when loading historical execution */
+  onLoadWorkflowGraph?: (graph: { nodes: unknown[]; edges: unknown[] }) => void;
+  
+  onReturnToLive?: () => void;
 }
 
 function getStatusIcon(status: ExecutionSnapshot["status"]) {
@@ -137,7 +130,7 @@ function ExecutionHistoryItem({
 /**
  * Panel for browsing and loading past execution history.
  */
-export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps) {
+export function ExecutionHistoryPanel({ workflowId, onLoadWorkflowGraph, onReturnToLive }: ExecutionHistoryPanelProps) {
   const { state, dispatch } = useExecution();
   const [history, setHistory] = useState<ExecutionSnapshot[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -160,6 +153,15 @@ export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps
   const handleSelectExecution = (snapshot: ExecutionSnapshot) => {
     const executionState = snapshotToState(snapshot);
     dispatch({ type: "LOAD_STATE", state: executionState });
+
+    // Restore workflow graph if available
+    if (snapshot.workflowGraph && onLoadWorkflowGraph) {
+      onLoadWorkflowGraph({
+        nodes: snapshot.workflowGraph.nodes,
+        edges: snapshot.workflowGraph.edges,
+      });
+    }
+
     setIsOpen(false);
   };
 
@@ -168,15 +170,24 @@ export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps
     loadHistory();
   };
 
-  const handleClearHistory = () => {
-    if (workflowId) {
+  const handleClearHistory = useCallback(() => {
+    if (!workflowId) return;
+
+    const confirmed = window.confirm(
+      `Clear all ${history.length} execution records for this workflow? This cannot be undone.`
+    );
+
+    if (confirmed) {
       clearWorkflowHistory(workflowId);
-      loadHistory();
+      setHistory([]);
+      setIsOpen(false);
     }
-  };
+  }, [workflowId, history.length]);
 
   const handleReturnToLive = () => {
     dispatch({ type: "RESET" });
+    // Restore the original workflow graph (undo the historical load)
+    onReturnToLive?.();
     setIsOpen(false);
   };
 
@@ -208,28 +219,15 @@ export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps
           <div className="flex items-center justify-between">
             <h4 className="font-medium text-sm">Execution History</h4>
             {history.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs">
-                    <Trash2 className="mr-1 h-3 w-3" />
-                    Clear
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Clear execution history?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will remove all {history.length} execution records for this workflow. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleClearHistory}>
-                      Clear History
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleClearHistory}
+              >
+                <Trash2 className="mr-1 h-3 w-3" />
+                Clear
+              </Button>
             )}
           </div>
           {isViewingHistory && (
