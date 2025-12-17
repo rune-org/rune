@@ -1,86 +1,36 @@
 # RTES - Rune Token Execution Service
 
-RTES is a microservice responsible for handling executions and real-time events within the Rune ecosystem. It consumes events from a message queue, stores them for history retention, and provides real-time capabilities via WebSocket.
-
-## Development Setup
-
-### Prerequisites
-
-1. **Rust** (1.70+): Install via [rustup](https://rustup.rs/)
-2. **Docker**: For running backing services
-
-### 1. Start Backing Services
-
-From the `services/api` directory, start all required services:
-
-```bash
-cd services/api
-docker-compose -f docker-compose.dev.yml up -d
-```
-
-This starts:
-- PostgreSQL (for API)
-- Redis (for token storage)
-- RabbitMQ (for message queue)
-- MongoDB (for execution history storage)
-
-### 2. Configure Environment
-
-Copy the example environment file and adjust if needed:
-
-```bash
-cp .env.example .env
-```
-
-Key environment variables:
-- `REDIS_URL` - Redis connection string
-- `AMQP_URL` - RabbitMQ connection string (credentials must match docker-compose)
-- `MONGODB_URL` - MongoDB connection string
-- `PORT` - HTTP server port (default: 3001)
-- `RTES_SKIP_AUTH` - Set to `1` to bypass JWT authentication (dev only)
-
-### 3. Run RTES
-
-```bash
-cargo run
-```
-
-RTES will:
-1. Connect to Redis for token storage
-2. Connect to MongoDB for execution history
-3. Set up RabbitMQ exchange bindings automatically
-4. Start consuming messages from queues
-5. Start the HTTP/WebSocket server on the configured port
+RTES is a microservice responsible for handling executions and real-time events within the Rune ecosystem. It consumes events from a message queue, stores them in MongoDB for history retention, and provides real-time capabilities via WebSocket.
 
 ## API
 
-### WebSocket (Real-time Updates)
+All endpoints require `Authorization: Bearer <jwt_token>` header (also accepts `Authorization: <token>` directly).
 
-```
-ws://localhost:3001/rt?execution_id=<id>&workflow_id=<id>
-```
+- **Real-time WebSocket**: `ws://localhost:8080/rt/{execution_id}`
+- **Get execution**: `GET http://localhost:8080/executions/{execution_id}`
+- **List workflow executions**: `GET http://localhost:8080/workflows/{workflow_id}/executions`
 
-In dev mode (with `RTES_SKIP_AUTH=1`), pass execution_id as a query parameter. In production, use `Authorization: Bearer <token>` header.
+The WebSocket stream first loads every node state already persisted for the requested execution before relaying live updates that arrive afterwards, so clients immediately get the current graph followed by incremental events.
 
-The WebSocket connection:
-1. First sends all persisted node states for the execution
-2. Then streams live updates as they arrive
+## Authorization
 
-### REST Endpoints
+Before accessing any endpoint, the API service must publish an `ExecutionToken` to the `execution.token` RabbitMQ queue:
 
-- `GET /executions/{execution_id}` - Get execution details
-
-## Architecture
-
-```
-Worker → RabbitMQ (workflows exchange) → RTES → WebSocket → Frontend
-                                            ↓
-                                        MongoDB
+```json
+{
+  "user_id": "user-uuid",
+  "workflow_id": "workflow-uuid",
+  "execution_id": "exec-uuid-or-null",
+  "iat": 1702857600,
+  "exp": 1702861200
+}
 ```
 
-RTES automatically binds the following queues to the `workflows` exchange on startup:
-- `workflow.node.status` - Node execution status updates
-- `workflow.completion` - Workflow completion events
+Set `execution_id` to `null` for wildcard access to all executions within a workflow.
+
+## Limitations
+
+- **Split Node Executions**: Currently, split node executions (parallel branches/loops) are **not supported**. Any workflow utilizing these features will result in corrupted execution data within this service.
 
 ## Tech Stack
 
@@ -88,8 +38,7 @@ RTES automatically binds the following queues to the `workflows` exchange on sta
 - **Web Framework**: [Axum](https://github.com/tokio-rs/axum)
 - **Async Runtime**: [Tokio](https://tokio.rs/)
 - **Messaging**: [Lapin](https://github.com/clevercloud/lapin) (RabbitMQ)
-- **Token Storage**: [Redis](https://github.com/redis-rs/redis-rs)
-- **Execution Storage**: [MongoDB](https://www.mongodb.com/)
+- **Storage**: [MongoDB](https://www.mongodb.com/) & [Redis](https://github.com/redis-rs/redis-rs)
 - **Telemetry**: [OpenTelemetry](https://opentelemetry.io/) & [Tracing](https://github.com/tokio-rs/tracing)
 
 ## License

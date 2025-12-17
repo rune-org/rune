@@ -124,4 +124,37 @@ impl TokenStore {
             (None, Some(_)) => false,
         }
     }
+
+    /// Validate access for a specific execution (simpler version for WebSocket)
+    /// Checks if user has a grant for the given execution_id
+    pub(crate) async fn validate_access_for_execution(
+        &self,
+        user_id: &str,
+        target_execution_id: &str,
+    ) -> RedisResult<bool> {
+        let mut conn = self.client.get_multiplexed_async_connection().await?;
+        let key = Self::get_key(user_id);
+
+        self.remove_expired_tokens(&mut conn, &key).await?;
+
+        let tokens = self.fetch_valid_tokens(&mut conn, &key).await?;
+
+        for token_str in tokens {
+            if let Ok(token) = serde_json::from_str::<ExecutionToken>(&token_str) {
+                // Match if: execution matches exactly, OR token has wildcard (None execution)
+                let matches = match token.execution_id.as_deref() {
+                    Some(tok_eid) => tok_eid == target_execution_id,
+                    None => true, // Wildcard grant for workflow
+                };
+                if matches {
+                    info!("Access granted for user {} execution {}", user_id, target_execution_id);
+                    return Ok(true);
+                }
+            }
+        }
+
+        info!("Access denied for user {} execution {} - no matching grant found", user_id, target_execution_id);
+        Ok(false)
+    }
 }
+

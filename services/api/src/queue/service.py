@@ -1,20 +1,75 @@
+import time
 from aio_pika import RobustConnection, Message
-from src.workflow.schemas import NodeExecutionMessage
+from pydantic import BaseModel
+
+from src.queue.messages import NodeExecutionMessage, ExecutionTokenMessage
+from src.core.config import get_settings
 
 
-class WorkflowQueueService:
-    """Service for publishing workflow run messages to RabbitMQ."""
+class BaseQueuePublisher:
+    """
+    Base class for publishing messages to RabbitMQ.
 
-    def __init__(self, connection: RobustConnection, queue_name: str):
+    Provides shared functionality for queue declaration and message publishing.
+    Subclasses should use _publish() with their specific queue name.
+    """
+
+    def __init__(self, connection: RobustConnection):
+        """
+        Initialize the base publisher.
+
+        Args:
+            connection: RabbitMQ connection instance
+        """
+        self.connection = connection
+
+    async def _publish(
+        self,
+        queue_name: str,
+        message: BaseModel,
+        durable: bool = True,
+    ) -> None:
+        """
+        Publish a Pydantic model to a queue.
+
+        Args:
+            queue_name: Name of the queue to publish to
+            message: Pydantic model to serialize and publish
+            durable: Whether the queue should be durable (default: True)
+        """
+        channel = await self.connection.channel()
+
+        try:
+            # Declare the queue (idempotent - safe to call multiple times)
+            await channel.declare_queue(queue_name, durable=durable)
+
+            body_bytes = message.model_dump_json().encode("utf-8")
+
+            # Publish the message with persistence
+            await channel.default_exchange.publish(
+                Message(
+                    body=body_bytes,
+                    delivery_mode=2,  # Persistent message (survives broker restart)
+                ),
+                routing_key=queue_name,
+            )
+        finally:
+            await channel.close()
+
+
+class WorkflowQueueService(BaseQueuePublisher):
+    """Service for publishing workflow execution messages to RabbitMQ."""
+
+    def __init__(self, connection: RobustConnection):
         """
         Initialize the workflow queue service.
 
         Args:
             connection: RabbitMQ connection instance
-            queue_name: Name of the queue to use
         """
-        self.connection = connection
-        self.queue_name = queue_name
+        super().__init__(connection)
+        settings = get_settings()
+        self.queue_name = settings.rabbitmq_workflow_queue
 
     async def publish_workflow_run(
         self,
@@ -33,8 +88,10 @@ class WorkflowQueueService:
             workflow_id: The workflow database ID
             execution_id: Unique execution instance identifier
             workflow_data: The resolved workflow definition (nodes and edges)
-        """
 
+        Raises:
+            ValueError: If workflow has invalid structure
+        """
         # Find trigger nodes and the first executable nodes
         nodes = workflow_data.get("nodes", [])
         edges = workflow_data.get("edges", [])
@@ -57,7 +114,6 @@ class WorkflowQueueService:
 
         for edge in edges:
             if edge.get("src") == trigger_node_id:
-                # This edge comes from the trigger node
                 dst_node_id = edge.get("dst")
                 first_nodes.append(dst_node_id)
 
@@ -74,22 +130,55 @@ class WorkflowQueueService:
             workflow_definition=workflow_data,
         )
 
-        # Create a channel for this operation
-        channel = await self.connection.channel()
+        await self._publish(self.queue_name, payload,durable=False)
 
-        # Declare the queue (idempotent - safe to call multiple times)
-        await channel.declare_queue(self.queue_name, durable=True)
 
-        body_bytes = payload.model_dump_json().encode("utf-8")
+class ExecutionTokenService(BaseQueuePublisher):
+    """Service for publishing execution tokens to RTES."""
 
-        # Publish the message with persistence
-        await channel.default_exchange.publish(
-            Message(
-                body=body_bytes,
-                delivery_mode=2,  # Persistent message (survives broker restart)
-            ),
-            routing_key=self.queue_name,
+    def __init__(self, connection: RobustConnection):
+        """
+        Initialize the execution token service.
+
+        Args:
+            connection: RabbitMQ connection instance
+        """
+        super().__init__(connection)
+        settings = get_settings()
+        self.queue_name = settings.rabbitmq_token_queue
+
+    async def publish_execution_token(
+        self,
+        workflow_id: int | str,
+        user_id: int | str,
+        execution_id: str | None = None,
+        ttl_seconds: int = 3600,
+    ) -> ExecutionTokenMessage:
+        """
+        Publish an execution token to RTES.
+
+        The token allows the frontend to authenticate with RTES WebSocket
+        for real-time execution updates.
+
+        Args:
+            workflow_id: The workflow database ID
+            user_id: The user's database ID
+            execution_id: Unique execution instance identifier (None = wildcard access)
+            ttl_seconds: Token time-to-live in seconds (default: 1 hour)
+
+        Returns:
+            The published ExecutionTokenMessage
+        """
+
+        now = int(time.time())
+        token = ExecutionTokenMessage(
+            execution_id=execution_id,
+            workflow_id=str(workflow_id),
+            user_id=str(user_id),
+            iat=now,
+            exp=now + ttl_seconds,
         )
 
-        # Clean up the channel
-        await channel.close()
+        await self._publish(self.queue_name, token,durable=False)
+
+        return token
