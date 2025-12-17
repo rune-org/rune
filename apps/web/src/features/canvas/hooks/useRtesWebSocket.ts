@@ -24,7 +24,6 @@ export interface UseRtesWebSocketOptions {
   onStatusChange?: (status: WsConnectionStatus) => void;
   /** Callback when an error occurs */
   onError?: (error: Event | Error) => void;
-  // TODO(ash): Add token param when BE is ready
 }
 
 export interface UseRtesWebSocketReturn {
@@ -48,6 +47,8 @@ const DEFAULT_RTES_URL =
 const MAX_RECONNECT_ATTEMPTS = 5;
 const INITIAL_RECONNECT_DELAY = 1000; // 1 second
 const MAX_RECONNECT_DELAY = 30000; // 30 seconds
+// Initial delay before first connection to allow token to be stored in Redis
+const INITIAL_CONNECTION_DELAY = 500; // 500ms
 
 /**
  * Hook for managing WebSocket connection to RTES.
@@ -81,6 +82,7 @@ export function useRtesWebSocket(
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initialConnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
 
   // Update status and notify
@@ -103,6 +105,10 @@ export function useRtesWebSocket(
 
   // Clean up WebSocket and timeouts
   const cleanup = useCallback(() => {
+    if (initialConnectTimeoutRef.current) {
+      clearTimeout(initialConnectTimeoutRef.current);
+      initialConnectTimeoutRef.current = null;
+    }
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
@@ -132,8 +138,7 @@ export function useRtesWebSocket(
     updateStatus("connecting");
 
     try {
-      // TODO(ash): Add token as query param when proxy is ready
-      // For now, pass execution_id as query param (see RTES_SKIP_AUTH)
+      // Pass execution_id and workflow_id as query params for RTES token validation
       const params = new URLSearchParams();
       if (executionId) params.set("execution_id", executionId);
       if (workflowId) params.set("workflow_id", String(workflowId));
@@ -217,7 +222,13 @@ export function useRtesWebSocket(
     mountedRef.current = true;
 
     if (enabled && executionId) {
-      connect();
+      // Add initial delay to allow token to be stored in Redis before connecting
+      // This prevents race condition where frontend connects before RTES has the token
+      initialConnectTimeoutRef.current = setTimeout(() => {
+        if (mountedRef.current && enabled) {
+          connect();
+        }
+      }, INITIAL_CONNECTION_DELAY);
     } else {
       disconnect();
     }
