@@ -11,7 +11,8 @@ pub(crate) fn app(state: AppState) -> Router {
     Router::new()
         .route("/health", get(handlers::health_check))
         // WebSocket: Real-time updates for specific execution
-        .route("/rt/{execution_id}", any(ws::ws_handler))
+        // Uses query params: ?execution_id=...&workflow_id=...
+        .route("/rt", any(ws::ws_handler))
         // HTTP: Get specific past execution
         .route("/executions/{execution_id}", get(handlers::get_execution))
         // HTTP: Get all past executions for a workflow

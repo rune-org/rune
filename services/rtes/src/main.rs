@@ -41,11 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    // Set up RabbitMQ exchange and queue bindings before starting consumers
-    if let Err(e) = infra::messaging::setup_exchange_bindings(&cfg.amqp_url).await {
-        tracing::warn!("Failed to setup exchange bindings (may already exist): {}", e);
-    }
-
+    // Start RabbitMQ consumers (each consumer handles its own exchange/queue setup)
     spawn_consumers(&cfg.amqp_url, &state, &cancel_token);
 
     start_server(state, cancel_token).await?;

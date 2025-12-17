@@ -15,19 +15,32 @@ impl TokenStore {
         Self { client }
     }
 
-    fn get_key(user_id: &str) -> String {
+    fn get_user_key(user_id: &str) -> String {
         format!("user_id_{user_id}")
+    }
+
+    fn get_execution_key(execution_id: &str) -> String {
+        format!("execution_id_{execution_id}")
     }
 
     pub(crate) async fn add_token(&self, token: &ExecutionToken) -> RedisResult<()> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
-        let key = Self::get_key(&token.user_id);
         let member = serde_json::to_string(token).map_err(|e| {
             redis::RedisError::from(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
         })?;
 
-        let _: i64 = conn.zadd(&key, member, token.exp).await?;
-        self.ensure_key_ttl(&mut conn, &key, token.exp).await?;
+        // Index by user_id
+        let user_key = Self::get_user_key(&token.user_id);
+        let _: i64 = conn.zadd(&user_key, &member, token.exp).await?;
+        self.ensure_key_ttl(&mut conn, &user_key, token.exp).await?;
+
+        // Also index by execution_id if present (for WebSocket auth without JWT)
+        if let Some(execution_id) = &token.execution_id {
+            let exec_key = Self::get_execution_key(execution_id);
+            let _: i64 = conn.zadd(&exec_key, &member, token.exp).await?;
+            self.ensure_key_ttl(&mut conn, &exec_key, token.exp).await?;
+        }
+
         Ok(())
     }
 
@@ -38,7 +51,7 @@ impl TokenStore {
         target_workflow_id: &str,
     ) -> RedisResult<bool> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
-        let key = Self::get_key(user_id);
+        let key = Self::get_user_key(user_id);
 
         self.remove_expired_tokens(&mut conn, &key).await?;
 
@@ -127,13 +140,14 @@ impl TokenStore {
 
     /// Validate access for a specific execution (simpler version for WebSocket)
     /// Checks if user has a grant for the given execution_id
+    #[allow(dead_code)]
     pub(crate) async fn validate_access_for_execution(
         &self,
         user_id: &str,
         target_execution_id: &str,
     ) -> RedisResult<bool> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
-        let key = Self::get_key(user_id);
+        let key = Self::get_user_key(user_id);
 
         self.remove_expired_tokens(&mut conn, &key).await?;
 
@@ -154,6 +168,40 @@ impl TokenStore {
         }
 
         info!("Access denied for user {} execution {} - no matching grant found", user_id, target_execution_id);
+        Ok(false)
+    }
+
+    /// Validate access by execution_id only (for WebSocket without JWT)
+    /// Looks up token directly by execution_id index
+    pub(crate) async fn validate_execution_access(
+        &self,
+        target_execution_id: &str,
+        target_workflow_id: &str,
+    ) -> RedisResult<bool> {
+        let mut conn = self.client.get_multiplexed_async_connection().await?;
+        let key = Self::get_execution_key(target_execution_id);
+
+        self.remove_expired_tokens(&mut conn, &key).await?;
+
+        let tokens = self.fetch_valid_tokens(&mut conn, &key).await?;
+
+        for token_str in tokens {
+            if let Ok(token) = serde_json::from_str::<ExecutionToken>(&token_str) {
+                // Verify workflow_id matches
+                if token.workflow_id == target_workflow_id {
+                    info!(
+                        "Access granted for execution {} workflow {}",
+                        target_execution_id, target_workflow_id
+                    );
+                    return Ok(true);
+                }
+            }
+        }
+
+        info!(
+            "Access denied for execution {} workflow {} - no matching grant found",
+            target_execution_id, target_workflow_id
+        );
         Ok(false)
     }
 }

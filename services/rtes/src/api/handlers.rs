@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use axum::{
     Json,
     extract::{Path, State},
@@ -5,9 +7,23 @@ use axum::{
     response::IntoResponse,
 };
 use jsonwebtoken::{DecodingKey, Validation, decode};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tracing::{error, warn};
 
-use crate::api::{state::AppState, ws::Claims};
+use crate::api::state::AppState;
+
+/// JWT claims - uses frontend's existing JWT with 'sub' field for user_id
+#[derive(Debug, Serialize, Deserialize)]
+struct Claims {
+    /// User ID from JWT 'sub' claim
+    sub: String,
+    /// Expiry timestamp
+    exp: usize,
+    /// Accept any other fields without failing deserialization
+    #[serde(flatten)]
+    extra: HashMap<String, Value>,
+}
 
 pub(crate) async fn health_check() -> impl IntoResponse {
     (StatusCode::OK, "OK")

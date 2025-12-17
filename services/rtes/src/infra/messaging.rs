@@ -37,14 +37,14 @@ fn declare_options(durable: bool) -> QueueDeclareOptions {
 }
 
 /// Declare the workflows exchange (topic) if it doesn't exist.
-/// Note: durable is set to false to match the existing exchange created by the worker.
+/// Note: durable must match the existing exchange created by the worker.
 async fn declare_exchange(channel: &Channel) -> Result<(), Box<dyn std::error::Error>> {
     channel
         .exchange_declare(
             EXCHANGE_NAME,
             ExchangeKind::Topic,
             ExchangeDeclareOptions {
-                durable: false,
+                durable: true,
                 ..ExchangeDeclareOptions::default()
             },
             FieldTable::default(),
