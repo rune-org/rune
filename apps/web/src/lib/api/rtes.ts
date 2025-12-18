@@ -17,7 +17,7 @@ const RTES_WS_URL = process.env.NEXT_PUBLIC_RTES_WS_URL || "ws://localhost:3001/
 const RTES_BASE_URL = RTES_WS_URL
   .replace("wss://", "https://")
   .replace("ws://", "http://")
-  .replace("/rt", "");
+  .replace(/\/rt$/, "");
 
 /**
  * Execution document from RTES (matches Rust ExecutionDocument)
