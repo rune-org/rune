@@ -3,22 +3,21 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   History,
-  Trash2,
   Radio,
   CheckCircle,
   XCircle,
   Clock,
   ChevronRight,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { useExecution } from "../context/ExecutionContext";
 import {
-  getExecutionHistoryForWorkflow,
-  snapshotToState,
-  clearWorkflowHistory,
-  deleteExecution,
-} from "../stores/executionHistoryStore";
-import type { ExecutionSnapshot } from "../types/execution";
+  fetchWorkflowExecutions,
+  type RtesExecutionDocument,
+} from "@/lib/api/rtes";
+import type { ExecutionState, WorkflowExecutionStatus, NodeExecutionData } from "../types/execution";
+import { parseNodeStatus } from "../types/execution";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,13 +28,16 @@ import {
 
 interface ExecutionHistoryPanelProps {
   workflowId: number | null;
-  /** Restore workflow graph when loading historical execution */
-  onLoadWorkflowGraph?: (graph: { nodes: unknown[]; edges: unknown[] }) => void;
-  
-  onReturnToLive?: () => void;
 }
 
-function getStatusIcon(status: ExecutionSnapshot["status"]) {
+type ExecutionHistoryItem = {
+  executionId: string;
+  workflowId: number;
+  status: WorkflowExecutionStatus;
+  createdAt: string;
+};
+
+function getStatusIcon(status: WorkflowExecutionStatus) {
   switch (status) {
     case "completed":
       return <CheckCircle className="h-3.5 w-3.5 text-green-500" />;
@@ -65,18 +67,47 @@ function formatRelativeTime(date: string): string {
   return then.toLocaleDateString();
 }
 
-function ExecutionHistoryItem({
-  snapshot,
+/**
+ * Convert RTES ExecutionDocument to frontend ExecutionState
+ */
+function rtesDocToExecutionState(doc: RtesExecutionDocument): ExecutionState {
+  const nodesMap = new Map<string, NodeExecutionData>();
+
+  // Convert nodes from RTES format
+  for (const [nodeId, hydratedNode] of Object.entries(doc.nodes)) {
+    const latest = hydratedNode.latest;
+    if (latest) {
+      nodesMap.set(nodeId, {
+        nodeId,
+        status: parseNodeStatus(latest.status),
+        output: latest.output,
+        error: latest.error ? { message: latest.error.message, code: latest.error.code } : undefined,
+        executedAt: latest.executed_at,
+        durationMs: latest.duration_ms,
+      });
+    }
+  }
+
+  return {
+    executionId: doc.execution_id,
+    workflowId: parseInt(doc.workflow_id, 10),
+    status: (doc.status as WorkflowExecutionStatus) || "idle",
+    nodes: nodesMap,
+    startedAt: doc.created_at,
+    isHistorical: true,
+  };
+}
+
+function ExecutionHistoryListItem({
+  item,
   isActive,
   isLive,
   onSelect,
-  onDelete,
 }: {
-  snapshot: ExecutionSnapshot;
+  item: ExecutionHistoryItem;
   isActive: boolean;
   isLive: boolean;
   onSelect: () => void;
-  onDelete: () => void;
 }) {
   return (
     <div
@@ -88,11 +119,11 @@ function ExecutionHistoryItem({
       )}
       onClick={onSelect}
     >
-      {getStatusIcon(snapshot.status)}
+      {getStatusIcon(item.status)}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs truncate">
-            {snapshot.executionId.slice(0, 8)}
+            {item.executionId.slice(0, 8)}
           </span>
           {isLive && (
             <span className="flex items-center gap-1 text-[10px] font-medium text-blue-500">
@@ -102,45 +133,59 @@ function ExecutionHistoryItem({
           )}
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{formatRelativeTime(snapshot.startedAt)}</span>
-          {snapshot.totalDurationMs && (
-            <>
-              <span>·</span>
-              <span>{snapshot.totalDurationMs}ms</span>
-            </>
-          )}
+          <span>{formatRelativeTime(item.createdAt)}</span>
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-      >
-        <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-      </Button>
       <ChevronRight className="h-4 w-4 text-muted-foreground" />
     </div>
   );
 }
 
 /**
- * Panel for browsing and loading past execution history.
+ * Panel for browsing and loading past execution history from RTES.
  */
-export function ExecutionHistoryPanel({ workflowId, onLoadWorkflowGraph, onReturnToLive }: ExecutionHistoryPanelProps) {
+export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps) {
   const { state, dispatch } = useExecution();
-  const [history, setHistory] = useState<ExecutionSnapshot[]>([]);
+  const [history, setHistory] = useState<ExecutionHistoryItem[]>([]);
+  const [rtesDocuments, setRtesDocuments] = useState<Map<string, RtesExecutionDocument>>(new Map());
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Reload history when popover opens or workflowId changes
-  const loadHistory = useCallback(() => {
-    if (workflowId) {
-      setHistory(getExecutionHistoryForWorkflow(workflowId));
-    } else {
+  // Fetch history from RTES when popover opens
+  const loadHistory = useCallback(async () => {
+    if (!workflowId) {
       setHistory([]);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const documents = await fetchWorkflowExecutions(workflowId);
+
+      // Store full documents for later use
+      const docMap = new Map<string, RtesExecutionDocument>();
+      const items: ExecutionHistoryItem[] = [];
+
+      for (const doc of documents) {
+        docMap.set(doc.execution_id, doc);
+        items.push({
+          executionId: doc.execution_id,
+          workflowId: parseInt(doc.workflow_id, 10),
+          status: (doc.status as WorkflowExecutionStatus) || "idle",
+          createdAt: doc.created_at || new Date().toISOString(),
+        });
+      }
+
+      // Sort by created_at descending (most recent first)
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      setRtesDocuments(docMap);
+      setHistory(items);
+    } catch (error) {
+      console.error("[ExecutionHistory] Failed to load:", error);
+      setHistory([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [workflowId]);
 
@@ -150,44 +195,20 @@ export function ExecutionHistoryPanel({ workflowId, onLoadWorkflowGraph, onRetur
     }
   }, [isOpen, loadHistory]);
 
-  const handleSelectExecution = (snapshot: ExecutionSnapshot) => {
-    const executionState = snapshotToState(snapshot);
-    dispatch({ type: "LOAD_STATE", state: executionState });
-
-    // Restore workflow graph if available
-    if (snapshot.workflowGraph && onLoadWorkflowGraph) {
-      onLoadWorkflowGraph({
-        nodes: snapshot.workflowGraph.nodes,
-        edges: snapshot.workflowGraph.edges,
-      });
+  const handleSelectExecution = (executionId: string) => {
+    const doc = rtesDocuments.get(executionId);
+    if (!doc) {
+      console.warn("[ExecutionHistory] Document not found:", executionId);
+      return;
     }
 
+    const executionState = rtesDocToExecutionState(doc);
+    dispatch({ type: "LOAD_STATE", state: executionState });
     setIsOpen(false);
   };
 
-  const handleDeleteExecution = (executionId: string) => {
-    deleteExecution(executionId);
-    loadHistory();
-  };
-
-  const handleClearHistory = useCallback(() => {
-    if (!workflowId) return;
-
-    const confirmed = window.confirm(
-      `Clear all ${history.length} execution records for this workflow? This cannot be undone.`
-    );
-
-    if (confirmed) {
-      clearWorkflowHistory(workflowId);
-      setHistory([]);
-      setIsOpen(false);
-    }
-  }, [workflowId, history.length]);
-
   const handleReturnToLive = () => {
     dispatch({ type: "RESET" });
-    // Restore the original workflow graph (undo the historical load)
-    onReturnToLive?.();
     setIsOpen(false);
   };
 
@@ -195,7 +216,7 @@ export function ExecutionHistoryPanel({ workflowId, onLoadWorkflowGraph, onRetur
   const isViewingHistory =
     state.executionId !== null &&
     state.status !== "running" &&
-    history.some((h) => h.executionId === state.executionId);
+    state.isHistorical === true;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -207,28 +228,12 @@ export function ExecutionHistoryPanel({ workflowId, onLoadWorkflowGraph, onRetur
         >
           <History className="h-4 w-4" />
           History
-          {history.length > 0 && (
-            <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium">
-              {history.length}
-            </span>
-          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start" sideOffset={8}>
         <div className="border-b border-border p-3">
           <div className="flex items-center justify-between">
             <h4 className="font-medium text-sm">Execution History</h4>
-            {history.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handleClearHistory}
-              >
-                <Trash2 className="mr-1 h-3 w-3" />
-                Clear
-              </Button>
-            )}
           </div>
           {isViewingHistory && (
             <Button
@@ -243,7 +248,14 @@ export function ExecutionHistoryPanel({ workflowId, onLoadWorkflowGraph, onRetur
           )}
         </div>
         <div className="max-h-80 overflow-y-auto">
-          {history.length === 0 ? (
+          {isLoading ? (
+            <div className="p-6 text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground/50" />
+              <p className="mt-2 text-sm text-muted-foreground">
+                Loading history...
+              </p>
+            </div>
+          ) : history.length === 0 ? (
             <div className="p-6 text-center">
               <History className="mx-auto h-8 w-8 text-muted-foreground/50" />
               <p className="mt-2 text-sm text-muted-foreground">
@@ -255,17 +267,16 @@ export function ExecutionHistoryPanel({ workflowId, onLoadWorkflowGraph, onRetur
             </div>
           ) : (
             <div className="p-1">
-              {history.map((snapshot, index) => {
-                const isActive = state.executionId === snapshot.executionId;
+              {history.map((item, index) => {
+                const isActive = state.executionId === item.executionId;
                 const nextIsNotActive = history[index + 1] && state.executionId !== history[index + 1].executionId;
                 return (
-                  <div key={snapshot.executionId}>
-                    <ExecutionHistoryItem
-                      snapshot={snapshot}
+                  <div key={item.executionId}>
+                    <ExecutionHistoryListItem
+                      item={item}
                       isActive={isActive}
                       isLive={isActive && state.status === "running"}
-                      onSelect={() => handleSelectExecution(snapshot)}
-                      onDelete={() => handleDeleteExecution(snapshot.executionId)}
+                      onSelect={() => handleSelectExecution(item.executionId)}
                     />
                     {isActive && nextIsNotActive && (
                       <div className="my-1 mx-2 border-b border-border/60" />

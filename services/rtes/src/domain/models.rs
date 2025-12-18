@@ -7,6 +7,49 @@ use std::collections::HashMap;
 use serde::de::Deserializer;
 use uuid::Uuid;
 
+/// Custom serialization for bson::DateTime to output ISO 8601 strings
+mod datetime_iso {
+    use mongodb::bson::DateTime;
+    use serde::{self, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(date: &Option<DateTime>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match date {
+            Some(dt) => {
+                let iso_string = dt.try_to_rfc3339_string().unwrap_or_default();
+                serializer.serialize_some(&iso_string)
+            }
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<DateTime>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Try to deserialize as string first (ISO format), fallback to BSON format
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum DateTimeFormat {
+            IsoString(String),
+            BsonDateTime(DateTime),
+        }
+
+        let opt: Option<DateTimeFormat> = Option::deserialize(deserializer)?;
+        match opt {
+            Some(DateTimeFormat::IsoString(s)) => {
+                DateTime::parse_rfc3339_str(&s)
+                    .map(Some)
+                    .map_err(serde::de::Error::custom)
+            }
+            Some(DateTimeFormat::BsonDateTime(dt)) => Ok(Some(dt)),
+            None => Ok(None),
+        }
+    }
+}
+
 /// Execution context for branch / loop tracking.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
 pub struct StackFrame {
@@ -143,7 +186,9 @@ pub struct ExecutionDocument {
     pub status:              Option<String>,
     pub name:                Option<String>,
     pub node_type:           Option<String>,
+    #[serde(default, with = "datetime_iso")]
     pub created_at:          Option<DateTime>,
+    #[serde(default, with = "datetime_iso")]
     pub updated_at:          Option<DateTime>,
 }
 

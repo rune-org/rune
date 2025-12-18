@@ -23,6 +23,10 @@ impl TokenStore {
         format!("execution_id_{execution_id}")
     }
 
+    fn get_workflow_key(workflow_id: &str) -> String {
+        format!("workflow_id_{workflow_id}")
+    }
+
     pub(crate) async fn add_token(&self, token: &ExecutionToken) -> RedisResult<()> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
         let member = serde_json::to_string(token).map_err(|e| {
@@ -39,6 +43,13 @@ impl TokenStore {
             let exec_key = Self::get_execution_key(execution_id);
             let _: i64 = conn.zadd(&exec_key, &member, token.exp).await?;
             self.ensure_key_ttl(&mut conn, &exec_key, token.exp).await?;
+        }
+
+        // Also index by workflow_id for wildcard tokens (for HTTP history without JWT)
+        if token.execution_id.is_none() {
+            let wf_key = Self::get_workflow_key(&token.workflow_id);
+            let _: i64 = conn.zadd(&wf_key, &member, token.exp).await?;
+            self.ensure_key_ttl(&mut conn, &wf_key, token.exp).await?;
         }
 
         Ok(())
@@ -201,6 +212,35 @@ impl TokenStore {
         info!(
             "Access denied for execution {} workflow {} - no matching grant found",
             target_execution_id, target_workflow_id
+        );
+        Ok(false)
+    }
+
+    /// Validate access by workflow_id only (for HTTP endpoints without JWT)
+    /// Looks up token directly by workflow_id index (wildcard tokens)
+    pub(crate) async fn validate_workflow_access(
+        &self,
+        target_workflow_id: &str,
+    ) -> RedisResult<bool> {
+        let mut conn = self.client.get_multiplexed_async_connection().await?;
+        let key = Self::get_workflow_key(target_workflow_id);
+
+        self.remove_expired_tokens(&mut conn, &key).await?;
+
+        let tokens = self.fetch_valid_tokens(&mut conn, &key).await?;
+
+        if !tokens.is_empty() {
+            info!(
+                "Access granted for workflow {} - found {} valid token(s)",
+                target_workflow_id,
+                tokens.len()
+            );
+            return Ok(true);
+        }
+
+        info!(
+            "Access denied for workflow {} - no matching grant found",
+            target_workflow_id
         );
         Ok(false)
     }

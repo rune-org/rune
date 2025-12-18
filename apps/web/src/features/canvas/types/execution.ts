@@ -57,13 +57,14 @@ export interface ExecutionState {
   isHistorical?: boolean;
 }
 
-// Workflow graph snapshot for preserving state at execution time
+// TODO(rtes): Workflow graph snapshots should be stored by RTES
+// This type is kept for future RTES integration
 export interface WorkflowGraphSnapshot {
   nodes: unknown[]; // CanvasNode[] serialized
   edges: unknown[]; // Edge[] serialized
 }
 
-// Snapshot of execution state for history
+// TODO(rtes): Should be fetched from RTES API
 export interface ExecutionSnapshot {
   executionId: string;
   workflowId: number;
@@ -73,8 +74,6 @@ export interface ExecutionSnapshot {
   completedAt?: string;
   totalDurationMs?: number;
   workflowName?: string;
-  /** Workflow graph at the time of execution */
-  workflowGraph?: WorkflowGraphSnapshot;
 }
 
 /**

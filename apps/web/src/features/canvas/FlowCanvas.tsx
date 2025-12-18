@@ -107,11 +107,6 @@ function FlowCanvasInner({
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
   const updateNodeData = useUpdateNodeData(setNodes);
 
-  const getWorkflowGraph = useCallback(() => ({
-    nodes: nodes as unknown[],
-    edges: edges as unknown[],
-  }), [nodes, edges]);
-
   // Execution management
   const {
     executionState,
@@ -119,12 +114,7 @@ function FlowCanvasInner({
     startExecution,
     stopExecution,
     reset: resetExecution,
-  } = useWorkflowExecution({
-    workflowId,
-    workflowName: undefined,
-    autoSaveHistory: true,
-    getWorkflowGraph,
-  });
+  } = useWorkflowExecution({ workflowId });
 
   useExecutionEdgeSync(executionState, setEdges);
 
@@ -768,12 +758,6 @@ function FlowCanvasInner({
               executionStatus={executionState.status}
               isStartingExecution={isStartingExecution}
               workflowId={workflowId}
-              onLoadWorkflowGraph={(graph) => {
-                pushHistory();
-                setNodes(graph.nodes as CanvasNode[]);
-                setEdges(graph.edges as Edge[]);
-              }}
-              onReturnToLive={handleUndo}
             />
             <button
               type="button"

@@ -49,9 +49,6 @@ type ToolbarProps = {
   executionStatus?: WorkflowExecutionStatus;
   isStartingExecution?: boolean;
   workflowId?: number | null;
-
-  onLoadWorkflowGraph?: (graph: { nodes: unknown[]; edges: unknown[] }) => void;
-  onReturnToLive?: () => void;
 };
 
 export function Toolbar({
@@ -74,8 +71,6 @@ export function Toolbar({
   executionStatus = "idle",
   isStartingExecution = false,
   workflowId,
-  onLoadWorkflowGraph,
-  onReturnToLive,
 }: ToolbarProps) {
   const isExecuting = executionStatus === "running" || isStartingExecution;
   const Btn = ({
@@ -138,7 +133,7 @@ export function Toolbar({
           <Play className="h-4 w-4" /> Run
         </Btn>
       )}
-      <ExecutionHistoryPanel workflowId={workflowId ?? null} onLoadWorkflowGraph={onLoadWorkflowGraph} onReturnToLive={onReturnToLive} />
+      <ExecutionHistoryPanel workflowId={workflowId ?? null} />
       <Btn onClick={onUndo} title="Undo (Ctrl+Z)" disabled={!canUndo}>
         <RotateCcw className="h-4 w-4" /> Undo
       </Btn>

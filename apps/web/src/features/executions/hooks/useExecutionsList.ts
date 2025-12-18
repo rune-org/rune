@@ -1,47 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { getExecutionHistory } from "../../canvas/stores/executionHistoryStore";
-import type { ExecutionSnapshot } from "../../canvas/types/execution";
 import type { ExecutionListItem, ExecutionMetrics, ExecutionFilters, ExecutionDetail } from "../types";
-
-/**
- * Convert ExecutionSnapshot to ExecutionListItem for display.
- */
-function snapshotToListItem(snapshot: ExecutionSnapshot): ExecutionListItem {
-  const nodes = Object.values(snapshot.nodes);
-  const successfulNodes = nodes.filter((n) => n.status === "success").length;
-  const failedNodes = nodes.filter((n) => n.status === "failed").length;
-
-  return {
-    executionId: snapshot.executionId,
-    workflowId: snapshot.workflowId,
-    workflowName: snapshot.workflowName,
-    status: snapshot.status,
-    startedAt: snapshot.startedAt,
-    completedAt: snapshot.completedAt,
-    durationMs: snapshot.totalDurationMs,
-    nodeCount: nodes.length,
-    successfulNodes,
-    failedNodes,
-  };
-}
-
-/**
- * Convert ExecutionSnapshot to ExecutionDetail for detail view.
- */
-function snapshotToDetail(snapshot: ExecutionSnapshot): ExecutionDetail {
-  return {
-    executionId: snapshot.executionId,
-    workflowId: snapshot.workflowId,
-    workflowName: snapshot.workflowName,
-    status: snapshot.status,
-    startedAt: snapshot.startedAt,
-    completedAt: snapshot.completedAt,
-    durationMs: snapshot.totalDurationMs,
-    nodes: snapshot.nodes,
-  };
-}
 
 /**
  * Calculate metrics from execution history.
@@ -135,34 +95,21 @@ export interface UseExecutionsListReturn {
 }
 
 /**
- * TODO(fe): This currently uses localStorage, should be extended to fetch
+ * Hook for listing all executions across workflows.
+ *
+ * TODO(rtes): This hook needs a new RTES endpoint to fetch all executions.
+ * Currently returns empty data. The per-workflow execution history is
+ * available via ExecutionHistoryPanel which uses RTES.
+ *
+ * Required RTES endpoint: GET /executions (with optional filters)
  */
 export function useExecutionsList(): UseExecutionsListReturn {
-  const [rawSnapshots, setRawSnapshots] = useState<ExecutionSnapshot[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState<ExecutionFilters>({ status: "all" });
 
-  const loadExecutions = useCallback(() => {
-    setIsLoading(true);
-    try {
-      const history = getExecutionHistory();
-      setRawSnapshots(history);
-    } catch (error) {
-      console.error("Failed to load executions:", error);
-      setRawSnapshots([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadExecutions();
-  }, [loadExecutions]);
-
-  const allExecutions = useMemo(
-    () => rawSnapshots.map(snapshotToListItem),
-    [rawSnapshots]
-  );
+  // TODO(rtes): Implement fetching all executions from RTES
+  // This requires a new endpoint: GET /executions
+  const allExecutions: ExecutionListItem[] = useMemo(() => [], []);
 
   const executions = useMemo(
     () => applyFilters(allExecutions, filters),
@@ -171,32 +118,28 @@ export function useExecutionsList(): UseExecutionsListReturn {
 
   const metrics = useMemo(() => calculateMetrics(allExecutions), [allExecutions]);
 
+  const refresh = useCallback(() => {
+    // TODO(rtes): Implement refresh from RTES
+    console.warn("[useExecutionsList] RTES endpoint not implemented yet");
+  }, []);
+
   const getExecutionDetail = useCallback(
-    (executionId: string): ExecutionDetail | null => {
-      const snapshot = rawSnapshots.find((s) => s.executionId === executionId);
-      return snapshot ? snapshotToDetail(snapshot) : null;
+    (_executionId: string): ExecutionDetail | null => {
+      // TODO(rtes): Fetch from RTES using fetchExecution()
+      return null;
     },
-    [rawSnapshots]
+    []
   );
 
-  const deleteExecution = useCallback(
-    (executionId: string) => {
-      import("../../canvas/stores/executionHistoryStore").then(({ deleteExecution: del }) => {
-        del(executionId);
-        loadExecutions();
-      });
-    },
-    [loadExecutions]
-  );
+  const deleteExecution = useCallback((_executionId: string) => {
+    // TODO(rtes): Implement delete endpoint in RTES
+    console.warn("[useExecutionsList] Delete not implemented in RTES");
+  }, []);
 
   const clearHistory = useCallback(() => {
-    import("../../canvas/stores/executionHistoryStore").then(
-      ({ clearExecutionHistory }) => {
-        clearExecutionHistory();
-        loadExecutions();
-      }
-    );
-  }, [loadExecutions]);
+    // TODO(rtes): Implement clear endpoint in RTES
+    console.warn("[useExecutionsList] Clear not implemented in RTES");
+  }, []);
 
   return {
     executions,
@@ -205,7 +148,7 @@ export function useExecutionsList(): UseExecutionsListReturn {
     isLoading,
     filters,
     setFilters,
-    refresh: loadExecutions,
+    refresh,
     getExecutionDetail,
     deleteExecution,
     clearHistory,
