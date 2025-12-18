@@ -148,17 +148,21 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api
+        NEXT_PUBLIC_RTES_WS_URL: ws://localhost:8080/rt
     container_name: rune-frontend
     environment:
       # API Configuration
       NEXT_PUBLIC_API_BASE_URL: /api
       API_PROXY_TARGET: http://api:8000
+      # RTES Configuration
+      NEXT_PUBLIC_RTES_WS_URL: ws://localhost:8080/rt
       # Next.js Configuration
       NODE_ENV: production
     ports:
       - "3000:3000"
     depends_on:
       - api
+      - rtes
     networks:
       - frontend_network
     restart: unless-stopped
@@ -175,6 +179,7 @@ services:
       AMQP_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/%2f
       MONGODB_URL: mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-password}@mongodb:27017/?authSource=admin
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      CORS_ORIGIN: http://localhost:3000
       PORT: 8080
     networks:
       - backend_network
