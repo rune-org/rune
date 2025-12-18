@@ -14,9 +14,11 @@ WORKDIR /app
 # Install runtime dependencies only
 # - postgresql-libs: Required for asyncpg
 # - libffi: Required for some Python packages
+# - tzdata: Required for timezone support
 RUN apk add --no-cache \
     postgresql-libs \
-    libffi
+    libffi \
+    tzdata
 
 # Install build dependencies temporarily for compiling Python packages
 # These will be removed after pip install to minimize image size

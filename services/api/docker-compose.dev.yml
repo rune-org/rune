@@ -22,6 +22,8 @@ services:
     image: "postgres:17-alpine"
     container_name: rune-api-postgres-dev
     environment:
+      # Timezone Configuration
+      TZ: ${TZ:-UTC}
       POSTGRES_USER: ${POSTGRES_USER:-rune}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
       POSTGRES_DB: ${POSTGRES_DB:-rune_db}
@@ -41,6 +43,9 @@ services:
   redis:
     image: "redis:7-alpine"
     container_name: rune-api-redis-dev
+    environment:
+      # Timezone Configuration
+      TZ: ${TZ:-UTC}
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
@@ -56,6 +61,8 @@ services:
     image: rabbitmq:3-management-alpine
     container_name: rune-api-rabbitmq-dev
     environment:
+      # Timezone Configuration
+      TZ: ${TZ:-UTC}
       # Allow overriding via host env or .env when using docker-compose
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rune}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rune_password}
