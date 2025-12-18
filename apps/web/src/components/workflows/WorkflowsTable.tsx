@@ -260,7 +260,7 @@ export function WorkflowsTable() {
           const parameters = (scheduledNode.parameters || {}) as Record<string, unknown>;
           
           if (mode === "now") {
-            // Run now: set start_at to current time
+            // Run now: set start_at to current time and execute immediately
             parameters.start_at = new Date().toISOString().slice(0, 16);
           } else {
             // Reconfigure: use new values
@@ -272,7 +272,15 @@ export function WorkflowsTable() {
           scheduledNode.parameters = parameters;
           
           await updateWorkflowData(workflowId, workflowData);
-          toast.success("Workflow activated");
+          
+          // If "Run Now" mode, also trigger immediate execution
+          if (mode === "now") {
+            await runWorkflow(workflowId);
+            toast.success("Workflow activated and execution started");
+          } else {
+            toast.success("Workflow activated");
+          }
+          
           await actions.refreshWorkflows();
           setActivateTarget(null);
         }
