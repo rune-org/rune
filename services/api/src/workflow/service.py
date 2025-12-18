@@ -186,16 +186,18 @@ class WorkflowService:
                 if existing_schedule:
                     # Update existing schedule preserving continuity
                     old_interval = existing_schedule.interval_seconds
-                    existing_schedule.interval_seconds = schedule_config["interval_seconds"]
+                    existing_schedule.interval_seconds = schedule_config[
+                        "interval_seconds"
+                    ]
                     existing_schedule.is_active = schedule_config.get("is_active", True)
-                    
+
                     # Recalculate next_run if interval changed
                     if old_interval != existing_schedule.interval_seconds:
                         existing_schedule.next_run_at = self._calculate_next_run_helper(
-                            datetime.now(), 
+                            datetime.now(),
                             existing_schedule.interval_seconds,
                             existing_schedule.start_at,
-                            existing_schedule.last_run_at
+                            existing_schedule.last_run_at,
                         )
                     self.db.add(existing_schedule)
                 else:
@@ -328,13 +330,13 @@ class WorkflowService:
 
         for node in nodes:
             node_type = node.get("type", "")
-            
+
             # Check for ScheduleTrigger node type (DSL format)
             if node_type == "ScheduleTrigger" and node.get("trigger") is True:
                 parameters = node.get("parameters", {})
                 if "interval_seconds" in parameters:
                     return TriggerType.SCHEDULED
-            
+
             # Check for WebhookTrigger node type (DSL format)
             if node_type == "WebhookTrigger" and node.get("trigger") is True:
                 return TriggerType.WEBHOOK
@@ -356,11 +358,11 @@ class WorkflowService:
 
         for node in nodes:
             node_type = node.get("type", "")
-            
+
             # Check for ScheduleTrigger node type (DSL format)
             if node_type == "ScheduleTrigger" and node.get("trigger") is True:
                 parameters = node.get("parameters", {})
-                
+
                 if "interval_seconds" in parameters:
                     # Extract and validate configuration
                     config = {
@@ -386,12 +388,15 @@ class WorkflowService:
         return None
 
     def _calculate_next_run_helper(
-        self, from_time: datetime, interval_seconds: int, 
-        start_at: datetime | None = None, last_run_at: datetime | None = None
+        self,
+        from_time: datetime,
+        interval_seconds: int,
+        start_at: datetime | None = None,
+        last_run_at: datetime | None = None,
     ) -> datetime:
         """Helper to calculate next run time (matches ScheduledWorkflowService logic)."""
         from datetime import timedelta
-        
+
         # First run (never executed before)
         if last_run_at is None and start_at:
             # If start_at is in the past, run immediately
@@ -399,6 +404,6 @@ class WorkflowService:
                 return from_time
             # If start_at is in the future, wait for it
             return start_at
-        
+
         # Subsequent runs: add interval from current time
         return from_time + timedelta(seconds=interval_seconds)
