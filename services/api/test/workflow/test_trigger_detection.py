@@ -134,8 +134,8 @@ class TestTriggerTypeDetection:
             workflow_data=workflow_data,
         )
 
-        # Verify trigger_type defaults to None (manual)
-        assert workflow.trigger_type is None
+        # Verify trigger_type defaults to MANUAL
+        assert workflow.trigger_type == TriggerType.MANUAL
 
         # Manual workflows should not have a schedule
         schedule = await schedule_trigger_service.get_schedule(workflow.id)
@@ -174,7 +174,7 @@ class TestTriggerTypeDetection:
             workflow_data=workflow_data,
         )
 
-        assert workflow.trigger_type is None
+        assert workflow.trigger_type == TriggerType.MANUAL
         schedule = await schedule_trigger_service.get_schedule(workflow.id)
         assert schedule is None
 
@@ -282,8 +282,8 @@ class TestTriggerTypeDetection:
             workflow_data=updated_workflow_data,
         )
 
-        # Verify trigger_type changed to None (manual)
-        assert updated_workflow.trigger_type is None
+        # Verify trigger_type changed to MANUAL
+        assert updated_workflow.trigger_type == TriggerType.MANUAL
 
         # Verify schedule was deleted
         schedule = await schedule_trigger_service.get_schedule(workflow.id)

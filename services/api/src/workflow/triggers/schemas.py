@@ -12,9 +12,6 @@ class ScheduleInfo(BaseModel):
     next_run_at: datetime
     last_run_at: datetime | None
     is_active: bool
-    run_count: int
-    failure_count: int
-    last_error: str | None
 
     model_config = {"from_attributes": True}
 
@@ -74,9 +71,6 @@ class ScheduleDetail(BaseModel):
     start_at: datetime
     next_run_at: datetime
     last_run_at: datetime | None
-    run_count: int
-    failure_count: int
-    last_error: str | None
     created_at: datetime
     updated_at: datetime
 

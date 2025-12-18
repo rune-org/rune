@@ -284,13 +284,6 @@ class WorkflowScheduler:
         self.db_pool = DatabasePool(Config.database_dsn())
         self.message_queue = MessageQueue(Config.rabbitmq_url(), Config.RABBITMQ_QUEUE)
         self.running = False
-        self.stats = {
-            "total_checks": 0,
-            "total_executions": 0,
-            "total_failures": 0,
-            "last_check": None,
-            "last_execution": None
-        }
     
     async def start(self):
         """Start the scheduler service."""
@@ -342,12 +335,6 @@ class WorkflowScheduler:
         
         self.running = False
         
-        # Log final statistics
-        logger.info(f"Final Statistics:")
-        logger.info(f"  - Total Checks: {self.stats['total_checks']}")
-        logger.info(f"  - Total Executions: {self.stats['total_executions']}")
-        logger.info(f"  - Total Failures: {self.stats['total_failures']}")
-        
         # Close connections
         await self.message_queue.close()
         await self.db_pool.close()
@@ -362,7 +349,6 @@ class WorkflowScheduler:
         while self.running:
             try:
                 await self._check_and_execute_schedules()
-                self.stats["last_check"] = datetime.now()
                 
             except Exception as e:
                 logger.error(f"Error in polling loop: {e}")
@@ -381,12 +367,7 @@ class WorkflowScheduler:
                 mq_healthy = await self.message_queue.healthcheck()
                 
                 if db_healthy and mq_healthy:
-                    logger.info(
-                        f"HEALTHCHECK OK | "
-                        f"Checks: {self.stats['total_checks']} | "
-                        f"Executions: {self.stats['total_executions']} | "
-                        f"Failures: {self.stats['total_failures']}"
-                    )
+                    logger.info("HEALTHCHECK OK")
                 else:
                     logger.error(
                         f"HEALTHCHECK FAILED | "
@@ -401,8 +382,6 @@ class WorkflowScheduler:
     
     async def _check_and_execute_schedules(self):
         """Check for due schedules and execute them."""
-        self.stats["total_checks"] += 1
-        
         now = datetime.now()
         look_ahead_time = now + timedelta(seconds=Config.LOOK_AHEAD_SECONDS)
         
@@ -413,8 +392,6 @@ class WorkflowScheduler:
                 sw.workflow_id,
                 sw.next_run_at,
                 sw.interval_seconds,
-                sw.run_count,
-                sw.failure_count,
                 w.workflow_data,
                 w.name as workflow_name
             FROM scheduled_workflows sw
@@ -468,8 +445,7 @@ class WorkflowScheduler:
             
             logger.info(
                 f"Executing schedule {schedule_id} | "
-                f"Workflow: {workflow_name} (ID: {workflow_id}) | "
-                f"Run count: {row['run_count']}"
+                f"Workflow: {workflow_name} (ID: {workflow_id})"
             )
             
             # Publish workflow to RabbitMQ
@@ -484,8 +460,6 @@ class WorkflowScheduler:
                 await self._update_schedule_after_execution(
                     conn, schedule_id, interval_seconds, success=True
                 )
-                self.stats["total_executions"] += 1
-                self.stats["last_execution"] = datetime.now()
                 
                 logger.info(
                     f"Successfully executed schedule {schedule_id} "
@@ -497,7 +471,6 @@ class WorkflowScheduler:
                     conn, schedule_id, interval_seconds, success=False,
                     error_message="Failed to publish to RabbitMQ"
                 )
-                self.stats["total_failures"] += 1
                 
                 logger.error(
                     f"Failed to execute schedule {schedule_id} "
@@ -505,7 +478,6 @@ class WorkflowScheduler:
                 )
                 
         except Exception as e:
-            self.stats["total_failures"] += 1
             logger.error(
                 f"Error executing schedule {schedule_id} "
                 f"(workflow: {workflow_name}): {e}"
@@ -545,9 +517,6 @@ class WorkflowScheduler:
                 SET
                     last_run_at = $1,
                     next_run_at = $2,
-                    run_count = run_count + 1,
-                    failure_count = 0,
-                    last_error = NULL,
                     updated_at = $1
                 WHERE id = $3
             """
@@ -558,13 +527,10 @@ class WorkflowScheduler:
                 SET
                     last_run_at = $1,
                     next_run_at = $2,
-                    run_count = run_count + 1,
-                    failure_count = failure_count + 1,
-                    last_error = $3,
                     updated_at = $1
-                WHERE id = $4
+                WHERE id = $3
             """
-            await conn.execute(update_query, now, next_run_at, error_message, schedule_id)
+            await conn.execute(update_query, now, next_run_at, schedule_id)
         
         logger.debug(
             f"Updated schedule {schedule_id}: next_run_at={next_run_at.isoformat()}, "

@@ -7,7 +7,7 @@ from src.db.models import TriggerType
 class WorkflowListItem(BaseModel):
     id: int
     name: str
-    trigger_type: Optional[TriggerType] = None
+    trigger_type: TriggerType = TriggerType.MANUAL
     schedule: Optional["ScheduleInfo"] = None  # Populated when include_schedule=true
 
 
@@ -19,9 +19,6 @@ class ScheduleInfo(BaseModel):
     next_run_at: datetime
     last_run_at: datetime | None
     is_active: bool
-    run_count: int
-    failure_count: int
-    last_error: str | None
 
     model_config = {"from_attributes": True}
 
@@ -77,9 +74,7 @@ class WorkflowDetail(BaseModel):
     description: Optional[str]
     workflow_data: dict[str, Any]
     version: int
-    trigger_type: Optional[
-        TriggerType
-    ]  # None = manual-only, otherwise automatic trigger type
+    trigger_type: TriggerType  # manual/scheduled/webhook
     created_at: datetime
     updated_at: datetime
 

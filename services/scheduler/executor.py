@@ -65,8 +65,7 @@ class ScheduleExecutor:
             
             logger.info(
                 f"Executing schedule {schedule_id} | "
-                f"Workflow: {workflow_name} (ID: {workflow_id}) | "
-                f"Run count: {row['run_count']}"
+                f"Workflow: {workflow_name} (ID: {workflow_id})"
             )
             
             # Parse workflow_data if it's a string
@@ -176,9 +175,6 @@ class ScheduleExecutor:
                 SET
                     last_run_at = $1,
                     next_run_at = $2,
-                    run_count = run_count + 1,
-                    failure_count = 0,
-                    last_error = NULL,
                     updated_at = $1
                 WHERE id = $3
             """
@@ -189,14 +185,11 @@ class ScheduleExecutor:
                 SET
                     last_run_at = $1,
                     next_run_at = $2,
-                    run_count = run_count + 1,
-                    failure_count = failure_count + 1,
-                    last_error = $3,
                     updated_at = $1
-                WHERE id = $4
+                WHERE id = $3
             """
             await conn.execute(
-                update_query, now, next_run_at, error_message, schedule_id
+                update_query, now, next_run_at, schedule_id
             )
         
         logger.debug(

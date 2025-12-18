@@ -83,12 +83,6 @@ class WorkflowScheduler:
         
         self.running = False
         
-        # Log final statistics
-        logger.info(f"Final Statistics:")
-        logger.info(f"  - Total Checks: {self.stats['total_checks']}")
-        logger.info(f"  - Total Executions: {self.executor.stats['total_executions']}")
-        logger.info(f"  - Total Failures: {self.executor.stats['total_failures']}")
-        
         # Close connections
         await self.message_queue.close()
         await self.db_pool.close()
@@ -153,8 +147,6 @@ class WorkflowScheduler:
                 sw.workflow_id,
                 sw.next_run_at,
                 sw.interval_seconds,
-                sw.run_count,
-                sw.failure_count,
                 w.workflow_data,
                 w.name as workflow_name
             FROM scheduled_workflows sw

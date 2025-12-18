@@ -67,12 +67,7 @@ export function listItemToWorkflowSummary(
     : "Manual";
   
   const lastRunAt = item.schedule?.last_run_at ?? null;
-  const runs = item.schedule?.run_count ?? 0;
-  const lastRunStatus = item.schedule?.last_error 
-    ? "failed" 
-    : lastRunAt 
-    ? "success" 
-    : "n/a";
+  const lastRunStatus = lastRunAt ? "success" : "n/a";
   
   // Determine status: active (scheduled + active), inactive (scheduled + not active), draft (manual)
   let status: "active" | "inactive" | "draft" = "draft";
@@ -87,8 +82,7 @@ export function listItemToWorkflowSummary(
     status,
     triggerType,
     lastRunAt,
-    lastRunStatus,
-    runs,
+    lastRunStatus
   };
 }
 

@@ -33,13 +33,13 @@ class CredentialType(str, Enum):
 
 
 class TriggerType(str, Enum):
-    """Workflow automatic trigger type enumeration.
+    """Workflow trigger type enumeration.
 
     Note: ALL workflows can be manually run via API/UI.
-    This enum only tracks AUTOMATIC trigger types.
-    If trigger_type is NULL, workflow has no automatic triggers.
+    This enum tracks both automatic and manual trigger types.
     """
 
+    MANUAL = "manual"  # Manual-only workflow (no automatic triggers)
     SCHEDULED = "scheduled"  # Triggered by scheduler at intervals
     WEBHOOK = "webhook"  # Triggered by incoming webhook
 
@@ -124,16 +124,15 @@ class Workflow(TimestampModel, table=True):
 
     version: int = Field(default=1)
 
-    # Automatic trigger type (NULL = manual-only workflow)
+    # Trigger type - defaults to MANUAL for workflows with no automatic triggers
     # ALL workflows can be manually run regardless of this field
-    # This field only indicates if workflow has AUTOMATIC triggers configured
-    trigger_type: Optional[TriggerType] = Field(
-        default=None,
+    # This field indicates the trigger type: MANUAL, SCHEDULED, or WEBHOOK
+    trigger_type: TriggerType = Field(
+        default=TriggerType.MANUAL,
         sa_column=Column(
-            SQLAlchemyEnum(TriggerType, native_enum=False),
-            nullable=True,
+            SQLAlchemyEnum(TriggerType, name="trigger_type", native_enum=True)
         ),
-        description="Automatic trigger type (scheduled/webhook/event). NULL = manual-only",
+        description="Trigger type (manual/scheduled/webhook). Defaults to MANUAL",
     )
 
     workflow_users: list["WorkflowUser"] = Relationship(back_populates="workflow")
@@ -334,18 +333,6 @@ class ScheduledWorkflow(TimestampModel, table=True):
     last_run_at: Optional[datetime] = Field(
         default=None,
         description="When the last execution occurred",
-    )
-    run_count: int = Field(
-        default=0,
-        description="Total number of times this schedule has been executed",
-    )
-    failure_count: int = Field(
-        default=0,
-        description="Number of consecutive failures",
-    )
-    last_error: Optional[str] = Field(
-        default=None,
-        description="Last error message if execution failed",
     )
 
     # Relationships

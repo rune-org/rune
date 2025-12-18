@@ -310,11 +310,11 @@ class WorkflowService:
 
         return resolved_data
 
-    def _detect_trigger_type(self, workflow_data: dict) -> TriggerType | None:
+    def _detect_trigger_type(self, workflow_data: dict) -> TriggerType:
         """Detect the trigger type from workflow data.
 
         Analyzes the workflow nodes to determine if it has scheduled or webhook triggers.
-        Returns None for manual-only workflows.
+        Returns TriggerType.MANUAL for manual-only workflows.
 
         Args:
             workflow_data: The workflow definition containing nodes and edges
@@ -322,7 +322,7 @@ class WorkflowService:
         Returns:
             TriggerType.SCHEDULED if workflow has schedule configuration
             TriggerType.WEBHOOK if workflow has webhook configuration
-            None if workflow is manual-only
+            TriggerType.MANUAL if workflow is manual-only
         """
         nodes = workflow_data.get("nodes", [])
 
@@ -339,8 +339,8 @@ class WorkflowService:
             if node_type == "WebhookTrigger" and node.get("trigger") is True:
                 return TriggerType.WEBHOOK
 
-        # No automatic trigger found
-        return None
+        # No automatic trigger found - default to manual
+        return TriggerType.MANUAL
 
     def _extract_schedule_config(self, workflow_data: dict) -> dict | None:
         """Extract schedule configuration from workflow data.
