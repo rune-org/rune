@@ -1,14 +1,11 @@
 """Service for managing schedule triggers on workflows."""
 
-import logging
 from datetime import datetime, timedelta
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.models import ScheduledWorkflow, Workflow, TriggerType
 from src.core.exceptions import NotFound, BadRequest
-
-logger = logging.getLogger(__name__)
 
 
 class ScheduleTriggerService:
@@ -86,10 +83,6 @@ class ScheduleTriggerService:
         await self.db.commit()
         await self.db.refresh(schedule)
 
-        logger.info(
-            f"Created schedule trigger for workflow {workflow_id}: every {interval_seconds}s, is_active={is_active}"
-        )
-
         return schedule
 
     async def get_schedule(self, workflow_id: int) -> ScheduledWorkflow | None:
@@ -149,10 +142,6 @@ class ScheduleTriggerService:
         await self.db.commit()
         await self.db.refresh(schedule)
 
-        logger.info(
-            f"Updated schedule trigger {schedule.id} for workflow {schedule.workflow_id}"
-        )
-
         return schedule
 
     async def delete_schedule(self, schedule: ScheduledWorkflow) -> None:
@@ -172,10 +161,6 @@ class ScheduleTriggerService:
 
         await self.db.delete(schedule)
         await self.db.commit()
-
-        logger.info(
-            f"Deleted schedule trigger for workflow {workflow_id}, trigger_type reset to None"
-        )
 
     def _calculate_next_run(
         self, from_time: datetime, interval_seconds: int
