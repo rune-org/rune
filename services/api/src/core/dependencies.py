@@ -1,5 +1,6 @@
 from typing import Annotated
 from fastapi import Depends, Request
+from fastapi.security import OAuth2PasswordBearer
 from redis.asyncio import Redis
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -25,9 +26,32 @@ Usage:
         return result.all()
 """
 
+# OAuth2 scheme for Bearer token authentication (API/script clients)
+# auto_error=False allows cookie authentication to take precedence
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
-async def get_current_user(request: Request) -> User:
+
+async def get_current_user(
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),
+) -> User:
+    """
+    Extract and validate the current user from the request.
+
+    Supports two authentication methods:
+    1. HTTP-only cookie (preferred for browser clients)
+    2. OAuth2 Bearer token (for API/script clients)
+
+    The cookie is checked first, then the OAuth2 bearer token as a fallback.
+    """
+    access_token = None
+
+    # First, try to get token from HTTP-only cookie (browser clients)
     access_token = request.cookies.get("access_token", None)
+
+    # If no cookie, use OAuth2 bearer token (API/script clients)
+    if not access_token and token:
+        access_token = token
 
     if not access_token:
         raise Unauthorized(detail="Not authenticated")
@@ -36,7 +60,7 @@ async def get_current_user(request: Request) -> User:
         user = decode_access_token(access_token)
         return user
     except Exception as e:
-        # Re-raise token-specific errors as it  is, wrap others in Unauthorized
+        # Re-raise token-specific errors as is, wrap others in Unauthorized
         if isinstance(e, (Unauthorized,)):
             raise
         raise Unauthorized(detail="Invalid access token")

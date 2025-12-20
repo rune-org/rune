@@ -17,6 +17,7 @@ import {
   Settings,
   User,
   Workflow,
+  Users,        
 } from "lucide-react";
 
 import { Logo } from "@/components/shared/Logo";
@@ -209,6 +210,7 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
           )}
         </button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent align={isExpanded ? "end" : "start"} side="top" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col gap-1">
@@ -217,22 +219,26 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+
         <DropdownMenuItem asChild>
           <Link href="/profile" className="flex items-center gap-2 cursor-pointer">
             <User className="h-4 w-4" />
             <span>Profile</span>
           </Link>
         </DropdownMenuItem>
+
         <DropdownMenuItem asChild>
           <Link href="/settings" className="flex items-center gap-2 cursor-pointer">
             <Settings className="h-4 w-4" />
             <span>Settings</span>
           </Link>
         </DropdownMenuItem>
+
         <DropdownMenuSeparator />
-        <DropdownMenuItem 
+
+        <DropdownMenuItem
           onClick={handleLogout}
-          className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+          className="flex items-center gap-2 cursor-pointer text-destructive"
         >
           <LogOut className="h-4 w-4" />
           <span>Log out</span>
@@ -244,6 +250,10 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { state } = useAuth();                  
+  const user = state.user;
+  const isAdmin = user?.role === "admin";  
+
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
   useEffect(() => {
@@ -270,6 +280,8 @@ export function AppSidebar() {
       )}
     >
       <div className="flex h-full flex-col justify-between py-6">
+        
+        {/* Top section */}
         <div className="flex flex-col gap-4">
           <div
             className={cn(
@@ -302,6 +314,7 @@ export function AppSidebar() {
               </span>
             </button>
           </div>
+
           <nav className="flex flex-col items-stretch gap-3 px-2">
             {topNav.map((item) => (
               <NavLink
@@ -313,6 +326,8 @@ export function AppSidebar() {
             ))}
           </nav>
         </div>
+
+        {/* Bottom section */}
         <div className="flex flex-col items-stretch gap-3 px-2">
           <nav className="flex flex-col items-stretch gap-3">
             {bottomNav.map((item) => (
@@ -323,7 +338,33 @@ export function AppSidebar() {
                 isExpanded={isExpanded}
               />
             ))}
+
+            {/* ADMIN-ONLY "Users" BUTTON */}
+            {isAdmin && (
+              <Link
+                href="/admin/users"
+                className={cn(
+                  "group relative flex h-12 w-full items-center rounded-xl border border-transparent text-sm font-medium text-muted-foreground motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out",
+                  "hover:border-border/70 hover:bg-muted/40 hover:text-foreground",
+                  isExpanded ? "justify-start gap-3 px-3" : "justify-center px-0"
+                )}
+              >
+                <Users className="h-5 w-5" />
+                <span
+                  aria-hidden={!isExpanded}
+                  className={cn(
+                    "pointer-events-none select-none overflow-hidden whitespace-nowrap text-sm motion-safe:transition-all",
+                    isExpanded
+                      ? "ml-1.5 max-w-[12rem] opacity-100"
+                      : "max-w-0 opacity-0"
+                  )}
+                >
+                  Users
+                </span>
+              </Link>
+            )}
           </nav>
+
           <ProfileDropdown isExpanded={isExpanded} />
         </div>
       </div>

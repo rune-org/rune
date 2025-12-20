@@ -28,6 +28,7 @@ import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
 import { useAddNode } from "./hooks/useAddNode";
 import { useConditionalConnect } from "./hooks/useConditionalConnect";
+import { useCanvasHistory } from "./hooks/useCanvasHistory";
 import { useUpdateNodeData } from "./hooks/useUpdateNodeData";
 import { useExecutionSim } from "./hooks/useExecutionSim";
 import { useAutoLayout } from "./hooks/useAutoLayout";
@@ -46,10 +47,8 @@ import { graphToWorkflowData } from "@/lib/workflows";
 import { smith } from "@/lib/api";
 import Image from "next/image";
 
-type HistoryEntry = { nodes: CanvasNode[]; edges: Edge[] };
 const CLIPBOARD_SELECTION_TYPE = "rune.canvas.selection";
 const PASTE_OFFSET = 32;
-const MAX_HISTORY_SIZE = 50;
 
 export default function FlowCanvas({
   externalNodes,
@@ -91,7 +90,6 @@ export default function FlowCanvas({
     null,
   );
   const toolbarRef = useRef<HTMLDivElement | null>(null);
-  const historyRef = useRef<HistoryEntry[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const onConnect = useConditionalConnect(setEdges);
@@ -99,6 +97,7 @@ export default function FlowCanvas({
   const { run, reset } = useExecutionSim(nodes, edges, setNodes, setEdges);
   const updateNodeData = useUpdateNodeData(setNodes);
   const { togglePin } = usePinNode(setNodes);
+  const { pushHistory, undo, redo, canUndo, canRedo } = useCanvasHistory(nodes, edges);
 
   const isValidConnection = useCallback(
     (connection: Edge | Connection) => {
@@ -144,13 +143,6 @@ export default function FlowCanvas({
     if (!onPersist) return;
     return onPersist({ nodes, edges });
   }, [onPersist, nodes, edges]);
-
-  const pushHistory = useCallback(() => {
-    historyRef.current.push(structuredClone({ nodes, edges }));
-    if (historyRef.current.length > MAX_HISTORY_SIZE) {
-      historyRef.current.shift();
-    }
-  }, [nodes, edges]);
 
   const { autoLayout } = useAutoLayout(nodes, edges, setNodes, setEdges, {
     onBeforeLayout: pushHistory,
@@ -240,13 +232,21 @@ export default function FlowCanvas({
     }
   }, [edges, nodes, selectedNodeId]);
 
-  const undo = useCallback(() => {
-    const lastState = historyRef.current.pop();
-    if (lastState) {
-      setNodes(lastState.nodes);
-      setEdges(lastState.edges);
+  const handleUndo = useCallback(() => {
+    const state = undo();
+    if (state) {
+      setNodes(state.nodes);
+      setEdges(state.edges);
     }
-  }, [setEdges, setNodes]);
+  }, [undo, setNodes, setEdges]);
+
+  const handleRedo = useCallback(() => {
+    const state = redo();
+    if (state) {
+      setNodes(state.nodes);
+      setEdges(state.edges);
+    }
+  }, [redo, setNodes, setEdges]);
 
   // Export handlers
   const exportToClipboard = useCallback(async () => {
@@ -443,9 +443,8 @@ export default function FlowCanvas({
     onSave: () => {
       void persistGraph();
     },
-    onUndo: () => {
-      void undo();
-    },
+    onUndo: handleUndo,
+    onRedo: handleRedo,
     onCopy: () => {
       void copySelection();
     },
@@ -709,7 +708,10 @@ export default function FlowCanvas({
                 void run();
                 if (onRun) void onRun({ nodes, edges });
               }}
-              onUndo={undo}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              canUndo={canUndo}
+              canRedo={canRedo}
               onSave={async () => {
                 await persistGraph();
               }}

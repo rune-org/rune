@@ -27,6 +27,7 @@ class CredentialType(str, Enum):
     API_KEY = "api_key"
     OAUTH2 = "oauth2"
     BASIC_AUTH = "basic_auth"
+    HEADER = "header"
     TOKEN = "token"
     CUSTOM = "custom"
     SMTP = "smtp"

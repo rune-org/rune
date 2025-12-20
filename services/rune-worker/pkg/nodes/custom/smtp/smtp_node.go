@@ -50,6 +50,10 @@ func NewSMTPNode(execCtx plugin.ExecutionContext) *SMTPNode {
 		if port, err := strconv.Atoi(portStr); err == nil {
 			node.port = port
 		}
+	} else if portFloat, ok := creds["port"].(float64); ok {
+		node.port = int(portFloat)
+	} else if portInt, ok := creds["port"].(int); ok {
+		node.port = portInt
 	}
 
 	// Extract username from credentials
@@ -113,7 +117,7 @@ func NewSMTPNode(execCtx plugin.ExecutionContext) *SMTPNode {
 	}
 
 	// TODO(worker): update parsing logic for the other fields if needed to match the parsing logic of subject and body
-	
+
 	return node
 }
 

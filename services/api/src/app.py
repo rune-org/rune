@@ -17,7 +17,7 @@ from src.auth.router import router as auth_router
 from src.workflow.router import router as workflow_router
 from src.permissions.router import router as permissions_router
 from src.templates.router import router as templates_router
-from src.users.routers import admin_router, profile_router
+from src.users.routers import admin_router, profile_router, sharing_router
 from src.credentials.router import router as credentials_router
 from src.scryb.router import router as scryb_router
 from src.smith.router import router as smith_router
@@ -61,9 +61,10 @@ app.add_exception_handler(Exception, generic_exception_handler)
 app.include_router(auth_router)
 app.include_router(workflow_router)
 app.include_router(permissions_router)
-app.include_router(templates_router)
+app.include_router(sharing_router)  # Register before admin_router for /users/sharing
 app.include_router(admin_router)
 app.include_router(profile_router)
+app.include_router(templates_router)
 app.include_router(credentials_router)
 app.include_router(scryb_router)
 app.include_router(smith_router)
