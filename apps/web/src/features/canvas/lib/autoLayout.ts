@@ -110,7 +110,7 @@ export function applyAutoLayout({
   // Find an anchor node to preserve the user's canvas position.
   const anchorNode =
     pinnedNodes[0] ||
-    nodes.find((n) => n.type === "trigger") ||
+    nodes.find((n) => n.type === "trigger" || n.type === "scheduled") ||
     nodes[0];
 
   // Calculate offset to anchor the new layout to the existing canvas position
