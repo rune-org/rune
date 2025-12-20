@@ -1013,6 +1013,10 @@ export type ScheduleInfo = {
      */
     interval_seconds: number;
     /**
+     * Start At
+     */
+    start_at: string;
+    /**
      * Next Run At
      */
     next_run_at: string;
@@ -1024,18 +1028,6 @@ export type ScheduleInfo = {
      * Is Active
      */
     is_active: boolean;
-    /**
-     * Run Count
-     */
-    run_count: number;
-    /**
-     * Failure Count
-     */
-    failure_count: number;
-    /**
-     * Last Error
-     */
-    last_error: string | null;
 };
 
 /**
@@ -1213,13 +1205,12 @@ export type TokenResponse = {
 /**
  * TriggerType
  *
- * Workflow automatic trigger type enumeration.
+ * Workflow trigger type enumeration.
  *
  * Note: ALL workflows can be manually run via API/UI.
- * This enum only tracks AUTOMATIC trigger types.
- * If trigger_type is NULL, workflow has no automatic triggers.
+ * This enum tracks both automatic and manual trigger types.
  */
-export type TriggerType = 'scheduled' | 'webhook';
+export type TriggerType = 'manual' | 'scheduled' | 'webhook';
 
 /**
  * UserBasicInfo
@@ -1413,7 +1404,7 @@ export type WorkflowDetail = {
      * Version
      */
     version: number;
-    trigger_type: TriggerType | null;
+    trigger_type: TriggerType;
     /**
      * Created At
      */
@@ -1446,7 +1437,7 @@ export type WorkflowListItem = {
      * Name
      */
     name: string;
-    trigger_type?: TriggerType | null;
+    trigger_type?: TriggerType;
     schedule?: ScheduleInfo | null;
 };
 
@@ -2014,136 +2005,21 @@ export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses = {
 
 export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponse = UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses[keyof UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses];
 
-export type ListTemplatesTemplatesGetData = {
+export type ListUsersForSharingUsersSharingGetData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/templates/';
+    url: '/users/sharing';
 };
 
-export type ListTemplatesTemplatesGetResponses = {
+export type ListUsersForSharingUsersSharingGetResponses = {
     /**
      * Successful Response
      */
-    200: ApiResponseListTemplateSummary;
+    200: ApiResponseListUserBasicInfo;
 };
 
-export type ListTemplatesTemplatesGetResponse = ListTemplatesTemplatesGetResponses[keyof ListTemplatesTemplatesGetResponses];
-
-export type CreateTemplateTemplatesPostData = {
-    body: TemplateCreate;
-    path?: never;
-    query?: never;
-    url: '/templates/';
-};
-
-export type CreateTemplateTemplatesPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type CreateTemplateTemplatesPostError = CreateTemplateTemplatesPostErrors[keyof CreateTemplateTemplatesPostErrors];
-
-export type CreateTemplateTemplatesPostResponses = {
-    /**
-     * Successful Response
-     */
-    201: ApiResponseTemplateDetail;
-};
-
-export type CreateTemplateTemplatesPostResponse = CreateTemplateTemplatesPostResponses[keyof CreateTemplateTemplatesPostResponses];
-
-export type DeleteTemplateTemplatesTemplateIdDeleteData = {
-    body?: never;
-    path: {
-        /**
-         * Template Id
-         */
-        template_id: number;
-    };
-    query?: never;
-    url: '/templates/{template_id}';
-};
-
-export type DeleteTemplateTemplatesTemplateIdDeleteErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type DeleteTemplateTemplatesTemplateIdDeleteError = DeleteTemplateTemplatesTemplateIdDeleteErrors[keyof DeleteTemplateTemplatesTemplateIdDeleteErrors];
-
-export type DeleteTemplateTemplatesTemplateIdDeleteResponses = {
-    /**
-     * Successful Response
-     */
-    204: void;
-};
-
-export type DeleteTemplateTemplatesTemplateIdDeleteResponse = DeleteTemplateTemplatesTemplateIdDeleteResponses[keyof DeleteTemplateTemplatesTemplateIdDeleteResponses];
-
-export type GetTemplateTemplatesTemplateIdGetData = {
-    body?: never;
-    path: {
-        /**
-         * Template Id
-         */
-        template_id: number;
-    };
-    query?: never;
-    url: '/templates/{template_id}';
-};
-
-export type GetTemplateTemplatesTemplateIdGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetTemplateTemplatesTemplateIdGetError = GetTemplateTemplatesTemplateIdGetErrors[keyof GetTemplateTemplatesTemplateIdGetErrors];
-
-export type GetTemplateTemplatesTemplateIdGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: ApiResponseTemplateDetail;
-};
-
-export type GetTemplateTemplatesTemplateIdGetResponse = GetTemplateTemplatesTemplateIdGetResponses[keyof GetTemplateTemplatesTemplateIdGetResponses];
-
-export type UseTemplateTemplatesTemplateIdUsePostData = {
-    body?: never;
-    path: {
-        /**
-         * Template Id
-         */
-        template_id: number;
-    };
-    query?: never;
-    url: '/templates/{template_id}/use';
-};
-
-export type UseTemplateTemplatesTemplateIdUsePostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UseTemplateTemplatesTemplateIdUsePostError = UseTemplateTemplatesTemplateIdUsePostErrors[keyof UseTemplateTemplatesTemplateIdUsePostErrors];
-
-export type UseTemplateTemplatesTemplateIdUsePostResponses = {
-    /**
-     * Successful Response
-     */
-    200: ApiResponseTemplateWorkflowData;
-};
-
-export type UseTemplateTemplatesTemplateIdUsePostResponse = UseTemplateTemplatesTemplateIdUsePostResponses[keyof UseTemplateTemplatesTemplateIdUsePostResponses];
+export type ListUsersForSharingUsersSharingGetResponse = ListUsersForSharingUsersSharingGetResponses[keyof ListUsersForSharingUsersSharingGetResponses];
 
 export type GetAllUsersUsersGetData = {
     body?: never;
@@ -2372,21 +2248,136 @@ export type ChangeMyPasswordProfileMeChangePasswordPostResponses = {
 
 export type ChangeMyPasswordProfileMeChangePasswordPostResponse = ChangeMyPasswordProfileMeChangePasswordPostResponses[keyof ChangeMyPasswordProfileMeChangePasswordPostResponses];
 
-export type ListUsersForSharingUsersSharingGetData = {
+export type ListTemplatesTemplatesGetData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/users/sharing';
+    url: '/templates/';
 };
 
-export type ListUsersForSharingUsersSharingGetResponses = {
+export type ListTemplatesTemplatesGetResponses = {
     /**
      * Successful Response
      */
-    200: ApiResponseListUserBasicInfo;
+    200: ApiResponseListTemplateSummary;
 };
 
-export type ListUsersForSharingUsersSharingGetResponse = ListUsersForSharingUsersSharingGetResponses[keyof ListUsersForSharingUsersSharingGetResponses];
+export type ListTemplatesTemplatesGetResponse = ListTemplatesTemplatesGetResponses[keyof ListTemplatesTemplatesGetResponses];
+
+export type CreateTemplateTemplatesPostData = {
+    body: TemplateCreate;
+    path?: never;
+    query?: never;
+    url: '/templates/';
+};
+
+export type CreateTemplateTemplatesPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateTemplateTemplatesPostError = CreateTemplateTemplatesPostErrors[keyof CreateTemplateTemplatesPostErrors];
+
+export type CreateTemplateTemplatesPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ApiResponseTemplateDetail;
+};
+
+export type CreateTemplateTemplatesPostResponse = CreateTemplateTemplatesPostResponses[keyof CreateTemplateTemplatesPostResponses];
+
+export type DeleteTemplateTemplatesTemplateIdDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Template Id
+         */
+        template_id: number;
+    };
+    query?: never;
+    url: '/templates/{template_id}';
+};
+
+export type DeleteTemplateTemplatesTemplateIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteTemplateTemplatesTemplateIdDeleteError = DeleteTemplateTemplatesTemplateIdDeleteErrors[keyof DeleteTemplateTemplatesTemplateIdDeleteErrors];
+
+export type DeleteTemplateTemplatesTemplateIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteTemplateTemplatesTemplateIdDeleteResponse = DeleteTemplateTemplatesTemplateIdDeleteResponses[keyof DeleteTemplateTemplatesTemplateIdDeleteResponses];
+
+export type GetTemplateTemplatesTemplateIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Template Id
+         */
+        template_id: number;
+    };
+    query?: never;
+    url: '/templates/{template_id}';
+};
+
+export type GetTemplateTemplatesTemplateIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetTemplateTemplatesTemplateIdGetError = GetTemplateTemplatesTemplateIdGetErrors[keyof GetTemplateTemplatesTemplateIdGetErrors];
+
+export type GetTemplateTemplatesTemplateIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseTemplateDetail;
+};
+
+export type GetTemplateTemplatesTemplateIdGetResponse = GetTemplateTemplatesTemplateIdGetResponses[keyof GetTemplateTemplatesTemplateIdGetResponses];
+
+export type UseTemplateTemplatesTemplateIdUsePostData = {
+    body?: never;
+    path: {
+        /**
+         * Template Id
+         */
+        template_id: number;
+    };
+    query?: never;
+    url: '/templates/{template_id}/use';
+};
+
+export type UseTemplateTemplatesTemplateIdUsePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UseTemplateTemplatesTemplateIdUsePostError = UseTemplateTemplatesTemplateIdUsePostErrors[keyof UseTemplateTemplatesTemplateIdUsePostErrors];
+
+export type UseTemplateTemplatesTemplateIdUsePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseTemplateWorkflowData;
+};
+
+export type UseTemplateTemplatesTemplateIdUsePostResponse = UseTemplateTemplatesTemplateIdUsePostResponses[keyof UseTemplateTemplatesTemplateIdUsePostResponses];
 
 export type ListCredentialsCredentialsGetData = {
     body?: never;

@@ -16,6 +16,7 @@ class ScheduleInfo(BaseModel):
 
     id: int
     interval_seconds: int
+    start_at: datetime
     next_run_at: datetime
     last_run_at: datetime | None
     is_active: bool

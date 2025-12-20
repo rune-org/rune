@@ -72,6 +72,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
+      security:
+      - OAuth2PasswordBearer: []
   /auth/first-time-setup:
     get:
       tags:
@@ -126,6 +128,8 @@ paths:
 
         This is more efficient than fetching schedules separately for each workflow.'
       operationId: list_workflows_workflows__get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: include_schedule
         in: query
@@ -165,6 +169,8 @@ paths:
 
         - Otherwise, workflow is manual-only'
       operationId: create_workflow_workflows__post
+      security:
+      - OAuth2PasswordBearer: []
       requestBody:
         required: true
         content:
@@ -194,6 +200,8 @@ paths:
 
         **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)'
       operationId: get_workflow_workflows__workflow_id__get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -226,6 +234,8 @@ paths:
 
         Automatically deletes associated schedule if it exists.'
       operationId: delete_workflow_workflows__workflow_id__delete
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -252,6 +262,8 @@ paths:
 
         **Requires:** EDIT permission (OWNER or EDITOR)'
       operationId: update_name_workflows__workflow_id__name_put
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -297,6 +309,8 @@ paths:
 
         - Deletes schedule if schedule configuration removed'
       operationId: update_workflow_data_workflows__workflow_id__data_put
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -344,6 +358,8 @@ paths:
 
         **Requires:** EXECUTE permission (OWNER or EDITOR, not VIEWER)'
       operationId: run_workflow_workflows__workflow_id__run_post
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -392,6 +408,8 @@ paths:
 
         - ADMIN: can share workflows (bypass)'
       operationId: share_workflow_workflows__workflow_id__share_post
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -444,6 +462,8 @@ paths:
 
         - ADMIN: can revoke access (bypass)'
       operationId: revoke_access_workflows__workflow_id__share__user_id__delete
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -496,6 +516,8 @@ paths:
 
         - ADMIN: can view permissions (bypass)'
       operationId: list_workflow_permissions_workflows__workflow_id__permissions_get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -542,6 +564,8 @@ paths:
 
         - ADMIN: can update roles (bypass)'
       operationId: update_user_role_workflows__workflow_id__permissions__user_id__patch
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -574,123 +598,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /templates/:
+  /users/sharing:
     get:
       tags:
-      - Templates
-      summary: List Templates
-      description: Get all templates accessible to the current user (public + their
-        own).
-      operationId: list_templates_templates__get
+      - Users
+      summary: List users for sharing
+      description: Get a list of users available for sharing credentials/workflows.
+        Returns minimal user info and excludes the current user.
+      operationId: list_users_for_sharing_users_sharing_get
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_List_TemplateSummary__'
-    post:
-      tags:
-      - Templates
-      summary: Create Template
-      description: Create a new template.
-      operationId: create_template_templates__post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TemplateCreate'
-        required: true
-      responses:
-        '201':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /templates/{template_id}:
-    get:
-      tags:
-      - Templates
-      summary: Get Template
-      description: Get a specific template by ID.
-      operationId: get_template_templates__template_id__get
-      parameters:
-      - name: template_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          title: Template Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-    delete:
-      tags:
-      - Templates
-      summary: Delete Template
-      description: Delete a template.
-      operationId: delete_template_templates__template_id__delete
-      parameters:
-      - name: template_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          title: Template Id
-      responses:
-        '204':
-          description: Successful Response
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /templates/{template_id}/use:
-    post:
-      tags:
-      - Templates
-      summary: Use Template
-      description: Mark a template as used (increment usage count) and return its
-        workflow data.
-      operationId: use_template_templates__template_id__use_post
-      parameters:
-      - name: template_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          title: Template Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_TemplateWorkflowData_'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ApiResponse_list_UserBasicInfo__'
+      security:
+      - OAuth2PasswordBearer: []
   /users/:
     get:
       tags:
@@ -705,6 +629,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_UserResponse__'
+      security:
+      - OAuth2PasswordBearer: []
     post:
       tags:
       - Users
@@ -730,6 +656,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
   /users/{user_id}:
     get:
       tags:
@@ -737,6 +665,8 @@ paths:
       summary: Admin gets user by ID
       description: Admin retrieves a single user by their id.
       operationId: get_user_by_id_users__user_id__get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -763,6 +693,8 @@ paths:
       summary: Admin updates user
       description: Admin can update an existing user's information excluding its password.
       operationId: update_user_users__user_id__put
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -795,6 +727,8 @@ paths:
       summary: Delete user
       description: Permanently delete a user from the system.
       operationId: delete_user_users__user_id__delete
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -819,6 +753,8 @@ paths:
       description: Admin generates a temporary password for a user. User must change
         it.
       operationId: reset_user_password_users__user_id__reset_password_post
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -853,6 +789,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_UserResponse_'
+      security:
+      - OAuth2PasswordBearer: []
     put:
       tags:
       - Profile
@@ -878,6 +816,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
   /profile/me/change-password:
     post:
       tags:
@@ -905,21 +845,135 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /users/sharing:
+      security:
+      - OAuth2PasswordBearer: []
+  /templates/:
     get:
       tags:
-      - Users
-      summary: List users for sharing
-      description: Get a list of users available for sharing credentials/workflows.
-        Returns minimal user info and excludes the current user.
-      operationId: list_users_for_sharing_users_sharing_get
+      - Templates
+      summary: List Templates
+      description: Get all templates accessible to the current user (public + their
+        own).
+      operationId: list_templates_templates__get
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_list_UserBasicInfo__'
+                $ref: '#/components/schemas/ApiResponse_List_TemplateSummary__'
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - Templates
+      summary: Create Template
+      description: Create a new template.
+      operationId: create_template_templates__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /templates/{template_id}:
+    get:
+      tags:
+      - Templates
+      summary: Get Template
+      description: Get a specific template by ID.
+      operationId: get_template_templates__template_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Templates
+      summary: Delete Template
+      description: Delete a template.
+      operationId: delete_template_templates__template_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /templates/{template_id}/use:
+    post:
+      tags:
+      - Templates
+      summary: Use Template
+      description: Mark a template as used (increment usage count) and return its
+        workflow data.
+      operationId: use_template_templates__template_id__use_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateWorkflowData_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /credentials/:
     get:
       tags:
@@ -950,6 +1004,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_CredentialResponse__'
+      security:
+      - OAuth2PasswordBearer: []
     post:
       tags:
       - credentials
@@ -989,6 +1045,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
   /credentials/dropdown:
     get:
       tags:
@@ -1017,6 +1075,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_CredentialResponseDropDown__'
+      security:
+      - OAuth2PasswordBearer: []
   /credentials/{credential_id}:
     get:
       tags:
@@ -1038,6 +1098,8 @@ paths:
 
         - SHARED USER: can view shared credential'
       operationId: get_credential_credentials__credential_id__get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1083,6 +1145,8 @@ paths:
 
         - SHARED USER: cannot update'
       operationId: update_credential_credentials__credential_id__patch
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1129,6 +1193,8 @@ paths:
 
         - SHARED USER: cannot delete'
       operationId: delete_credential_credentials__credential_id__delete
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1168,6 +1234,8 @@ paths:
 
         - SHARED USER: cannot share'
       operationId: share_credential_credentials__credential_id__share_post
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1217,6 +1285,8 @@ paths:
 
         - SHARED USER: can only revoke their own access (user_id must be their own)'
       operationId: revoke_credential_access_credentials__credential_id__share__user_id__delete
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1260,6 +1330,8 @@ paths:
 
         - SHARED USER: cannot view shares'
       operationId: list_credential_shares_credentials__credential_id__shares_get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1293,6 +1365,8 @@ paths:
 
         with them and who shared it.'
       operationId: get_my_share_info_credentials__credential_id__my_share_get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1320,6 +1394,8 @@ paths:
       summary: Generate Workflow Docs
       description: Generate documentation for the specified workflow.
       operationId: generate_workflow_docs_workflows__workflow_id__docs_post
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -1944,6 +2020,7 @@ components:
           type: object
           title: Credential Data
           description: Credential data (will be encrypted)
+      additionalProperties: false
       type: object
       required:
       - name
@@ -2100,6 +2177,7 @@ components:
           - type: 'null'
           title: Credential Data
           description: Credential data (will be encrypted)
+      additionalProperties: false
       type: object
       title: CredentialUpdate
       description: Schema for updating a credential.
@@ -2256,6 +2334,7 @@ components:
           minLength: 1
           title: Password
           description: User's password
+      additionalProperties: false
       type: object
       required:
       - email
@@ -2285,6 +2364,7 @@ components:
           minLength: 1
           title: Refresh Token
           description: Valid refresh token
+      additionalProperties: false
       type: object
       required:
       - refresh_token
@@ -2297,6 +2377,10 @@ components:
         interval_seconds:
           type: integer
           title: Interval Seconds
+        start_at:
+          type: string
+          format: date-time
+          title: Start At
         next_run_at:
           type: string
           format: date-time
@@ -2310,27 +2394,14 @@ components:
         is_active:
           type: boolean
           title: Is Active
-        run_count:
-          type: integer
-          title: Run Count
-        failure_count:
-          type: integer
-          title: Failure Count
-        last_error:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Last Error
       type: object
       required:
       - id
       - interval_seconds
+      - start_at
       - next_run_at
       - last_run_at
       - is_active
-      - run_count
-      - failure_count
-      - last_error
       title: ScheduleInfo
       description: Minimal schedule info for workflow list and detail views.
     SmithMessage:
@@ -2498,17 +2569,16 @@ components:
     TriggerType:
       type: string
       enum:
+      - manual
       - scheduled
       - webhook
       title: TriggerType
-      description: 'Workflow automatic trigger type enumeration.
+      description: 'Workflow trigger type enumeration.
 
 
         Note: ALL workflows can be manually run via API/UI.
 
-        This enum only tracks AUTOMATIC trigger types.
-
-        If trigger_type is NULL, workflow has no automatic triggers.'
+        This enum tracks both automatic and manual trigger types.'
     UserBasicInfo:
       properties:
         id:
@@ -2697,9 +2767,7 @@ components:
           type: integer
           title: Version
         trigger_type:
-          anyOf:
-          - $ref: '#/components/schemas/TriggerType'
-          - type: 'null'
+          $ref: '#/components/schemas/TriggerType'
         created_at:
           type: string
           format: date-time
@@ -2737,9 +2805,8 @@ components:
           type: string
           title: Name
         trigger_type:
-          anyOf:
-          - $ref: '#/components/schemas/TriggerType'
-          - type: 'null'
+          $ref: '#/components/schemas/TriggerType'
+          default: manual
         schedule:
           anyOf:
           - $ref: '#/components/schemas/ScheduleInfo'
@@ -2864,3 +2931,10 @@ components:
       required:
       - name
       title: WorkflowUpdateName
+  securitySchemes:
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          scopes: {}
+          tokenUrl: auth/login
