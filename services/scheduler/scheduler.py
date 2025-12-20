@@ -428,8 +428,8 @@ class WorkflowScheduler:
 
                 logger.info(f"Found {len(rows)} schedule(s) due for execution")
 
-                # Execute schedules concurrently
-                tasks = [self._execute_schedule(row, conn) for row in rows]
+                # Execute schedules concurrently - each task will acquire its own connection
+                tasks = [self._execute_schedule(row) for row in rows]
 
                 await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -437,7 +437,7 @@ class WorkflowScheduler:
             logger.error(f"Failed to check schedules: {e}")
             logger.error(traceback.format_exc())
 
-    async def _execute_schedule(self, row: asyncpg.Record, conn: asyncpg.Connection):
+    async def _execute_schedule(self, row: asyncpg.Record):
         """Execute a single scheduled workflow."""
         schedule_id = row["schedule_id"]
         workflow_id = row["workflow_id"]
@@ -468,30 +468,32 @@ class WorkflowScheduler:
                 workflow_data=row["workflow_data"],
             )
 
-            if success:
-                # Update schedule with success
-                await self._update_schedule_after_execution(
-                    conn, schedule_id, interval_seconds, success=True
-                )
+            # Acquire a dedicated connection for this task's database operations
+            async with self.db_pool.pool.acquire() as conn:
+                if success:
+                    # Update schedule with success
+                    await self._update_schedule_after_execution(
+                        conn, schedule_id, interval_seconds, success=True
+                    )
 
-                logger.info(
-                    f"Successfully executed schedule {schedule_id} "
-                    f"(workflow: {workflow_name})"
-                )
-            else:
-                # Update schedule with failure
-                await self._update_schedule_after_execution(
-                    conn,
-                    schedule_id,
-                    interval_seconds,
-                    success=False,
-                    error_message="Failed to publish to RabbitMQ",
-                )
+                    logger.info(
+                        f"Successfully executed schedule {schedule_id} "
+                        f"(workflow: {workflow_name})"
+                    )
+                else:
+                    # Update schedule with failure
+                    await self._update_schedule_after_execution(
+                        conn,
+                        schedule_id,
+                        interval_seconds,
+                        success=False,
+                        error_message="Failed to publish to RabbitMQ",
+                    )
 
-                logger.error(
-                    f"Failed to execute schedule {schedule_id} "
-                    f"(workflow: {workflow_name}): RabbitMQ publish failed"
-                )
+                    logger.error(
+                        f"Failed to execute schedule {schedule_id} "
+                        f"(workflow: {workflow_name}): RabbitMQ publish failed"
+                    )
 
         except Exception as e:
             logger.error(
@@ -502,13 +504,14 @@ class WorkflowScheduler:
 
             # Still update schedule to prevent it from getting stuck
             try:
-                await self._update_schedule_after_execution(
-                    conn,
-                    schedule_id,
-                    interval_seconds,
-                    success=False,
-                    error_message=str(e),
-                )
+                async with self.db_pool.pool.acquire() as conn:
+                    await self._update_schedule_after_execution(
+                        conn,
+                        schedule_id,
+                        interval_seconds,
+                        success=False,
+                        error_message=str(e),
+                    )
             except Exception as update_error:
                 logger.critical(
                     f"CRITICAL: Failed to update schedule {schedule_id} after error: {update_error}"

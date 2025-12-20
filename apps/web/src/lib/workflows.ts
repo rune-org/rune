@@ -31,7 +31,7 @@ export type WorkflowSummary = {
   schedule?: {
     is_active: boolean;
     interval_seconds: number;
-    start_at?: string;
+    start_at: string;
   };
   /**
    * Last run timestamp.
@@ -81,6 +81,11 @@ export function listItemToWorkflowSummary(
     name: item.name,
     status,
     triggerType,
+    schedule: item.schedule ? {
+      is_active: item.schedule.is_active,
+      interval_seconds: item.schedule.interval_seconds,
+      start_at: item.schedule.start_at,
+    } : undefined,
     lastRunAt,
     lastRunStatus
   };

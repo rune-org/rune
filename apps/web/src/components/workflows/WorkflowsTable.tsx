@@ -49,6 +49,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ActivateWorkflowDialog } from "./ActivateWorkflowDialog";
+import { updateScheduleInWorkflowData } from "@/lib/workflow-dsl";
 
 // TODO(FE): Use executions websockets to get real-time updates on workflow runs
 function timeAgo(iso: string | null): string {
@@ -203,18 +204,15 @@ export function WorkflowsTable() {
         if (!result.data?.data) throw new Error("Workflow not found");
 
         const workflowData = result.data.data.workflow_data as Record<string, unknown>;
-        const nodes = workflowData.nodes as Array<Record<string, unknown>>;
-        const scheduledNode = nodes?.find((n: Record<string, unknown>) => n.type === "ScheduleTrigger") as Record<string, unknown> | undefined;
         
-        if (scheduledNode) {
-          const parameters = (scheduledNode.parameters || {}) as Record<string, unknown>;
-          parameters.is_active = false;
-          scheduledNode.parameters = parameters;
-          
-          await updateWorkflowData(workflowId, workflowData);
-          toast.success("Workflow deactivated");
-          await actions.refreshWorkflows();
-        }
+        // Use workflow-dsl helper to update schedule
+        const updatedWorkflowData = updateScheduleInWorkflowData(workflowData, {
+          is_active: false,
+        });
+
+        await updateWorkflowData(workflowId, updatedWorkflowData);
+        toast.success("Workflow deactivated");
+        await actions.refreshWorkflows();
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Failed to deactivate workflow.",
@@ -253,37 +251,37 @@ export function WorkflowsTable() {
         if (!result.data?.data) throw new Error("Workflow not found");
 
         const workflowData = result.data.data.workflow_data as Record<string, unknown>;
-        const nodes = workflowData.nodes as Array<Record<string, unknown>>;
-        const scheduledNode = nodes?.find((n: Record<string, unknown>) => n.type === "ScheduleTrigger") as Record<string, unknown> | undefined;
         
-        if (scheduledNode) {
-          const parameters = (scheduledNode.parameters || {}) as Record<string, unknown>;
-          
-          if (mode === "now") {
-            // Run now: set start_at to current time and execute immediately
-            parameters.start_at = new Date().toISOString().slice(0, 16);
-          } else {
-            // Reconfigure: use new values
-            if (newStartAt) parameters.start_at = newStartAt;
-            if (newInterval) parameters.interval_seconds = newInterval;
-          }
-          
-          parameters.is_active = true;
-          scheduledNode.parameters = parameters;
-          
-          await updateWorkflowData(workflowId, workflowData);
-          
-          // If "Run Now" mode, also trigger immediate execution
-          if (mode === "now") {
-            await runWorkflow(workflowId);
-            toast.success("Workflow activated and execution started");
-          } else {
-            toast.success("Workflow activated");
-          }
-          
-          await actions.refreshWorkflows();
-          setActivateTarget(null);
+        // Prepare schedule update using workflow-dsl helper
+        const scheduleUpdate: {
+          is_active: boolean;
+          start_at?: string;
+          interval_seconds?: number;
+        } = { is_active: true };
+
+        if (mode === "now") {
+          // Run now: set start_at to current time
+          scheduleUpdate.start_at = new Date().toISOString().slice(0, 16);
+        } else {
+          // Reconfigure: use new values if provided
+          if (newStartAt) scheduleUpdate.start_at = newStartAt;
+          if (newInterval) scheduleUpdate.interval_seconds = newInterval;
         }
+
+        const updatedWorkflowData = updateScheduleInWorkflowData(workflowData, scheduleUpdate);
+        
+        await updateWorkflowData(workflowId, updatedWorkflowData);
+        
+        // If "Run Now" mode, also trigger immediate execution
+        if (mode === "now") {
+          await runWorkflow(workflowId);
+          toast.success("Workflow activated and execution started");
+        } else {
+          toast.success("Workflow activated");
+        }
+        
+        await actions.refreshWorkflows();
+        setActivateTarget(null);
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Failed to activate workflow.",

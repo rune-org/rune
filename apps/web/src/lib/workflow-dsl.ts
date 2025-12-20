@@ -452,3 +452,76 @@ export function workflowDataToCanvas(data: {
 
   return { nodes, edges };
 }
+
+/**
+ * Extract schedule information from workflow data.
+ * 
+ * @param workflowData The workflow_data object containing nodes and edges
+ * @returns Schedule parameters if a ScheduleTrigger node exists, null otherwise
+ */
+export function getScheduleFromWorkflowData(
+  workflowData: Record<string, unknown>
+): { is_active: boolean; start_at?: string; interval_seconds?: number } | null {
+  const nodes = workflowData.nodes as Array<Record<string, unknown>> | undefined;
+  if (!nodes) return null;
+
+  const scheduledNode = nodes.find(
+    (n: Record<string, unknown>) => n.type === "ScheduleTrigger"
+  ) as Record<string, unknown> | undefined;
+
+  if (!scheduledNode) return null;
+
+  const parameters = (scheduledNode.parameters || {}) as Record<string, unknown>;
+  
+  return {
+    is_active: typeof parameters.is_active === "boolean" ? parameters.is_active : false,
+    start_at: typeof parameters.start_at === "string" ? parameters.start_at : undefined,
+    interval_seconds: typeof parameters.interval_seconds === "number" ? parameters.interval_seconds : undefined,
+  };
+}
+
+/**
+ * Update schedule parameters in workflow data.
+ * Creates a new workflow_data object with updated schedule parameters.
+ * 
+ * @param workflowData The workflow_data object to update
+ * @param scheduleUpdate The schedule parameters to update
+ * @returns A new workflow_data object with updated schedule parameters
+ */
+export function updateScheduleInWorkflowData(
+  workflowData: Record<string, unknown>,
+  scheduleUpdate: {
+    is_active?: boolean;
+    start_at?: string;
+    interval_seconds?: number;
+  }
+): Record<string, unknown> {
+  const nodes = (workflowData.nodes as Array<Record<string, unknown>> | undefined) || [];
+  
+  const updatedNodes = nodes.map((n: Record<string, unknown>) => {
+    if (n.type !== "ScheduleTrigger") return n;
+
+    const parameters = (n.parameters || {}) as Record<string, unknown>;
+    const updatedParameters = { ...parameters };
+
+    if (scheduleUpdate.is_active !== undefined) {
+      updatedParameters.is_active = scheduleUpdate.is_active;
+    }
+    if (scheduleUpdate.start_at !== undefined) {
+      updatedParameters.start_at = scheduleUpdate.start_at;
+    }
+    if (scheduleUpdate.interval_seconds !== undefined) {
+      updatedParameters.interval_seconds = scheduleUpdate.interval_seconds;
+    }
+
+    return {
+      ...n,
+      parameters: updatedParameters,
+    };
+  });
+
+  return {
+    ...workflowData,
+    nodes: updatedNodes,
+  };
+}
