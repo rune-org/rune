@@ -330,6 +330,7 @@ class ScheduledWorkflow(TimestampModel, table=True):
     )
     next_run_at: datetime = Field(
         description="When the next execution is scheduled",
+        index=True,
     )
     last_run_at: Optional[datetime] = Field(
         default=None,
