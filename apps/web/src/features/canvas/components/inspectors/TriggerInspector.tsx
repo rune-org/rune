@@ -13,7 +13,7 @@ export function TriggerInspector({
 }: TriggerInspectorProps) {
   return (
     <div className="space-y-3">
-      <div className="text-sm text-foreground\">
+      <div className="text-sm text-foreground">
         This is a <strong>Manual Trigger</strong> node.
       </div>
       {isExpanded && (
