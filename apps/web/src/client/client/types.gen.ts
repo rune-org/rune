@@ -11,6 +11,8 @@ import type {
 } from '../core/types.gen';
 import type { Middleware } from './utils.gen';
 
+export type ResponseStyle = 'data' | 'fields';
+
 export interface Config<T extends ClientOptions = ClientOptions>
   extends Omit<RequestInit, 'body' | 'headers' | 'method'>,
     CoreConfig {
@@ -25,6 +27,13 @@ export interface Config<T extends ClientOptions = ClientOptions>
    * @default globalThis.fetch
    */
   fetch?: typeof fetch;
+  /**
+   * Please don't use the Fetch client for Next.js applications. The `next`
+   * options won't have any effect.
+   *
+   * Install {@link https://www.npmjs.com/package/@hey-api/client-next `@hey-api/client-next`} instead.
+   */
+  next?: never;
   /**
    * Return the response data parsed in a specified format. By default, `auto`
    * will infer the appropriate method from the `Content-Type` response header.
@@ -42,6 +51,12 @@ export interface Config<T extends ClientOptions = ClientOptions>
     | 'stream'
     | 'text';
   /**
+   * Should we return only data or multiple fields (data, error, response, etc.)?
+   *
+   * @default 'fields'
+   */
+  responseStyle?: ResponseStyle;
+  /**
    * Throw an error instead of returning it in the response?
    *
    * @default false
@@ -51,9 +66,11 @@ export interface Config<T extends ClientOptions = ClientOptions>
 
 export interface RequestOptions<
   TData = unknown,
+  TResponseStyle extends ResponseStyle = 'fields',
   ThrowOnError extends boolean = boolean,
   Url extends string = string,
 > extends Config<{
+      responseStyle: TResponseStyle;
       throwOnError: ThrowOnError;
     }>,
     Pick<
@@ -80,9 +97,10 @@ export interface RequestOptions<
 }
 
 export interface ResolvedRequestOptions<
+  TResponseStyle extends ResponseStyle = 'fields',
   ThrowOnError extends boolean = boolean,
   Url extends string = string,
-> extends RequestOptions<unknown, ThrowOnError, Url> {
+> extends RequestOptions<unknown, TResponseStyle, ThrowOnError, Url> {
   serializedBody?: string;
 }
 
@@ -90,32 +108,50 @@ export type RequestResult<
   TData = unknown,
   TError = unknown,
   ThrowOnError extends boolean = boolean,
+  TResponseStyle extends ResponseStyle = 'fields',
 > = ThrowOnError extends true
-  ? Promise<{
-      data: TData extends Record<string, unknown> ? TData[keyof TData] : TData;
-      response: Response;
-    }>
-  : Promise<
-      (
-        | {
+  ? Promise<
+      TResponseStyle extends 'data'
+        ? TData extends Record<string, unknown>
+          ? TData[keyof TData]
+          : TData
+        : {
             data: TData extends Record<string, unknown>
               ? TData[keyof TData]
               : TData;
-            error: undefined;
+            request: Request;
+            response: Response;
           }
-        | {
-            data: undefined;
-            error: TError extends Record<string, unknown>
-              ? TError[keyof TError]
-              : TError;
+    >
+  : Promise<
+      TResponseStyle extends 'data'
+        ?
+            | (TData extends Record<string, unknown>
+                ? TData[keyof TData]
+                : TData)
+            | undefined
+        : (
+            | {
+                data: TData extends Record<string, unknown>
+                  ? TData[keyof TData]
+                  : TData;
+                error: undefined;
+              }
+            | {
+                data: undefined;
+                error: TError extends Record<string, unknown>
+                  ? TError[keyof TError]
+                  : TError;
+              }
+          ) & {
+            request: Request;
+            response: Response;
           }
-      ) & {
-        response: Response;
-      }
     >;
 
 export interface ClientOptions {
   baseUrl?: string;
+  responseStyle?: ResponseStyle;
   throwOnError?: boolean;
 }
 
@@ -123,26 +159,32 @@ type MethodFn = <
   TData = unknown,
   TError = unknown,
   ThrowOnError extends boolean = false,
+  TResponseStyle extends ResponseStyle = 'fields',
 >(
-  options: Omit<RequestOptions<TData, ThrowOnError>, 'method'>,
-) => RequestResult<TData, TError, ThrowOnError>;
+  options: Omit<RequestOptions<TData, TResponseStyle, ThrowOnError>, 'method'>,
+) => RequestResult<TData, TError, ThrowOnError, TResponseStyle>;
 
 type SseFn = <
   TData = unknown,
   TError = unknown,
   ThrowOnError extends boolean = false,
+  TResponseStyle extends ResponseStyle = 'fields',
 >(
-  options: Omit<RequestOptions<TData, ThrowOnError>, 'method'>,
+  options: Omit<RequestOptions<TData, TResponseStyle, ThrowOnError>, 'method'>,
 ) => Promise<ServerSentEventsResult<TData, TError>>;
 
 type RequestFn = <
   TData = unknown,
   TError = unknown,
   ThrowOnError extends boolean = false,
+  TResponseStyle extends ResponseStyle = 'fields',
 >(
-  options: Omit<RequestOptions<TData, ThrowOnError>, 'method'> &
-    Pick<Required<RequestOptions<TData, ThrowOnError>>, 'method'>,
-) => RequestResult<TData, TError, ThrowOnError>;
+  options: Omit<RequestOptions<TData, TResponseStyle, ThrowOnError>, 'method'> &
+    Pick<
+      Required<RequestOptions<TData, TResponseStyle, ThrowOnError>>,
+      'method'
+    >,
+) => RequestResult<TData, TError, ThrowOnError, TResponseStyle>;
 
 type BuildUrlFn = <
   TData extends {
@@ -162,7 +204,7 @@ export type Client = CoreClient<
   BuildUrlFn,
   SseFn
 > & {
-  interceptors: Middleware<Response, unknown, ResolvedRequestOptions>;
+  interceptors: Middleware<Request, Response, unknown, ResolvedRequestOptions>;
 };
 
 /**
@@ -191,8 +233,9 @@ export type Options<
   TData extends TDataShape = TDataShape,
   ThrowOnError extends boolean = boolean,
   TResponse = unknown,
+  TResponseStyle extends ResponseStyle = 'fields',
 > = OmitKeys<
-  RequestOptions<TResponse, ThrowOnError>,
+  RequestOptions<TResponse, TResponseStyle, ThrowOnError>,
   'body' | 'path' | 'query' | 'url'
 > &
   ([TData] extends [never] ? unknown : Omit<TData, 'url'>);
