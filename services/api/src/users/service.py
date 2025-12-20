@@ -1,4 +1,4 @@
-from sqlmodel import select
+from sqlmodel import select, or_
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.models import User
 from src.core.exceptions import AlreadyExists, NotFound, Unauthorized
@@ -73,6 +73,41 @@ class UserService:
             User.id != exclude_user_id,
             User.is_active == True,  # noqa: E712
         )
+        result = await self.db.exec(statement)
+        return result.all()
+
+    async def search_users_for_sharing(
+        self,
+        exclude_user_id: int,
+        search: str | None = None,
+        limit: int = 10,
+    ) -> list[User]:
+        """
+        Search active users for sharing purposes with optional filtering.
+
+        Args:
+            exclude_user_id: The ID of the current user to exclude
+            search: Optional search term to filter by name or email
+            limit: Maximum number of results to return (default: 10)
+
+        Returns:
+            List of matching active User objects
+        """
+        statement = select(User).where(
+            User.id != exclude_user_id,
+            User.is_active,
+        )
+
+        if search and search.strip():
+            search_term = f"%{search.strip().lower()}%"
+            statement = statement.where(
+                or_(
+                    User.name.ilike(search_term),
+                    User.email.ilike(search_term),
+                )
+            )
+
+        statement = statement.limit(limit)
         result = await self.db.exec(statement)
         return result.all()
 
