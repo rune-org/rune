@@ -257,9 +257,6 @@ function toWorkerParameters(
       const params: Record<string, unknown> = {};
       if (d.wait_mode) params.wait_mode = String(d.wait_mode);
       if (typeof d.timeout !== "undefined") params.timeout = Number(d.timeout);
-      // Branch count is determined by incoming edges
-      const incoming = edges.filter((e) => e.target === n.id);
-      params.branch_count = incoming.length;
       return params;
     }
     default:
