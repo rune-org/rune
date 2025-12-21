@@ -9,6 +9,11 @@ import type {
   SwitchData,
   SwitchRule,
   SmtpData,
+  WaitData,
+  EditData,
+  SplitData,
+  AggregatorData,
+  MergeData,
 } from "@/features/canvas/types";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
 import type { CredentialRef } from "@/lib/credentials";
@@ -70,6 +75,16 @@ function toWorkerType(canvasType: string): string {
       return "smtp";
     case "agent":
       return "agent";
+    case "wait":
+      return "wait";
+    case "edit":
+      return "edit";
+    case "split":
+      return "split";
+    case "aggregator":
+      return "aggregator";
+    case "merge":
+      return "merge";
     default:
       return canvasType;
   }
@@ -206,6 +221,44 @@ function toWorkerParameters(
       if (d.body) params.body = String(d.body);
       return params;
     }
+    case "wait": {
+      const d = (n.data || {}) as WaitData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.amount !== "undefined") params.amount = Number(d.amount);
+      if (d.unit) params.unit = String(d.unit);
+      return params;
+    }
+    case "edit": {
+      const d = (n.data || {}) as EditData;
+      const params: Record<string, unknown> = {};
+      if (d.mode) params.mode = String(d.mode);
+      if (Array.isArray(d.assignments) && d.assignments.length > 0) {
+        params.assignments = d.assignments.map((a) => ({
+          name: a.name || "",
+          value: a.value || "",
+          type: a.type || "string",
+        }));
+      }
+      return params;
+    }
+    case "split": {
+      const d = (n.data || {}) as SplitData;
+      const params: Record<string, unknown> = {};
+      // Worker expects 'input_array' parameter
+      if (d.array_field) params.input_array = String(d.array_field);
+      return params;
+    }
+    case "aggregator": {
+      // Aggregator has no configurable parameters
+      return {};
+    }
+    case "merge": {
+      const d = (n.data || {}) as MergeData;
+      const params: Record<string, unknown> = {};
+      if (d.wait_mode) params.wait_mode = String(d.wait_mode);
+      if (typeof d.timeout !== "undefined") params.timeout = Number(d.timeout);
+      return params;
+    }
     default:
       return {};
   }
@@ -291,6 +344,85 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
       body: typeof params.body === "string" ? params.body : undefined,
     };
     return smtpData;
+  },
+  wait: (base, params) => {
+    const waitData: WaitData = {
+      ...base,
+      amount:
+        typeof params.amount === "number"
+          ? params.amount
+          : typeof params.amount === "string"
+            ? Number(params.amount)
+            : undefined,
+      unit:
+        typeof params.unit === "string"
+          ? (params.unit as WaitData["unit"])
+          : undefined,
+    };
+    return waitData;
+  },
+  edit: (base, params) => {
+    const editData: EditData = {
+      ...base,
+      mode:
+        typeof params.mode === "string"
+          ? (params.mode as EditData["mode"])
+          : undefined,
+      assignments: Array.isArray(params.assignments)
+        ? (params.assignments as unknown[]).map((a) => {
+            const assignment = a as Record<string, unknown>;
+            return {
+              name:
+                typeof assignment.name === "string"
+                  ? assignment.name
+                  : undefined,
+              value:
+                typeof assignment.value === "string"
+                  ? assignment.value
+                  : undefined,
+              type:
+                typeof assignment.type === "string"
+                  ? (assignment.type as "string" | "number" | "boolean" | "json")
+                  : undefined,
+            };
+          })
+        : [],
+    };
+    return editData;
+  },
+  split: (base, params) => {
+    const splitData: SplitData = {
+      ...base,
+      array_field:
+        typeof params.input_array === "string"
+          ? params.input_array
+          : typeof params.array_field === "string"
+            ? params.array_field
+            : undefined,
+    };
+    return splitData;
+  },
+  aggregator: (base) => {
+    const aggregatorData: AggregatorData = {
+      ...base,
+    };
+    return aggregatorData;
+  },
+  merge: (base, params) => {
+    const mergeData: MergeData = {
+      ...base,
+      wait_mode:
+        typeof params.wait_mode === "string"
+          ? (params.wait_mode as MergeData["wait_mode"])
+          : undefined,
+      timeout:
+        typeof params.timeout === "number"
+          ? params.timeout
+          : typeof params.timeout === "string"
+            ? Number(params.timeout)
+            : undefined,
+    };
+    return mergeData;
   },
 };
 
