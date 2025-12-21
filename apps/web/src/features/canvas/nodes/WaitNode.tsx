@@ -7,6 +7,7 @@ import { BaseNode } from "./BaseNode";
 import type { WaitData } from "../types";
 
 export const WaitNode = memo(function WaitNode({
+  id,
   data,
 }: NodeProps<Node<WaitData>>) {
   const amount = data.amount ?? 1;
@@ -14,6 +15,7 @@ export const WaitNode = memo(function WaitNode({
 
   return (
     <BaseNode
+      nodeId={id}
       icon={<Clock className="h-4 w-4 text-muted-foreground" />}
       label={data.label ?? "Wait"}
       bgClassName="bg-node-core-bg"
