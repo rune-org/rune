@@ -13,7 +13,7 @@ const NODE_DIMENSIONS: Record<NodeKind, { width: number; height: number }> = {
   edit: { width: 220, height: 72 },
   split: { width: 220, height: 72 },
   aggregator: { width: 220, height: 72 },
-  merge: { width: 200, height: 80 },
+  merge: { width: 220, height: 80 },
 };
 
 /**
