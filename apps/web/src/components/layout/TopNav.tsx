@@ -10,14 +10,19 @@ import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/cn";
 import { siteConfig } from "@/lib/site";
 import { useAuth } from "@/lib/auth";
+import { checkFirstTimeSetup } from "@/lib/api/auth";
 
 export function TopNav() {
   const pathname = usePathname();
   const { state } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    checkFirstTimeSetup().then(({ data }) => {
+      setShowSignUp(data?.data.requires_setup ?? false);
+    });
   }, []);
 
   return (
@@ -53,7 +58,7 @@ export function TopNav() {
           })}
         </nav>
         <div className="flex flex-1 items-center justify-end gap-5">
-          {mounted && !state.user && (
+          {mounted && !state.user && showSignUp && (
             <Link
               href="/sign-up"
               className="hidden h-10 items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex relative top-[2px]"

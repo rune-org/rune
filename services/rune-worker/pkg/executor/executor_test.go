@@ -135,6 +135,53 @@ func TestExecutor_SimpleLinearWorkflow(t *testing.T) {
 	}
 }
 
+func TestExecutor_EditNodeUpdatesJson(t *testing.T) {
+	pub := NewMockPublisher()
+	reg := nodes.NewRegistry()
+
+	reg.Register("edit", func(execCtx plugin.ExecutionContext) plugin.Node {
+		// Edit node returns output wrapped in $json, matching the real implementation
+		return &MockNode{output: map[string]any{"$json": map[string]any{"field": "value"}}}
+	})
+
+	exec := NewExecutor(reg, pub, nil)
+
+	workflow := core.Workflow{
+		Nodes: []core.Node{
+			{ID: "edit1", Name: "Edit", Type: "edit", Parameters: map[string]any{}},
+		},
+	}
+
+	msg := &messages.NodeExecutionMessage{
+		WorkflowID:         "wf_edit",
+		ExecutionID:        "exec_edit",
+		CurrentNode:        "edit1",
+		WorkflowDefinition: workflow,
+		AccumulatedContext: map[string]any{"$json": map[string]any{"foo": "bar"}},
+	}
+
+	if err := exec.Execute(context.Background(), msg); err != nil {
+		t.Fatalf("execute error: %v", err)
+	}
+
+	// Verify completion status exists (no next nodes)
+	completionMsgs := pub.GetPublishedMessages("workflow.completion")
+	if len(completionMsgs) != 1 {
+		t.Fatalf("expected completion message, got %d", len(completionMsgs))
+	}
+
+	// Verify updated context contains $json with edit output
+	var completion messages.CompletionMessage
+	_ = json.Unmarshal(completionMsgs[0], &completion)
+	jsonCtx, ok := completion.FinalContext["$json"].(map[string]any)
+	if !ok {
+		t.Fatalf("$json not found in final context")
+	}
+	if jsonCtx["field"] != "value" {
+		t.Fatalf("$json not updated: %+v", jsonCtx)
+	}
+}
+
 func TestExecutor_WorkflowCompletion(t *testing.T) {
 	// Setup mock publisher and registry
 	pub := NewMockPublisher()

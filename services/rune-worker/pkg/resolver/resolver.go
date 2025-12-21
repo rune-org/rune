@@ -15,14 +15,28 @@ import (
 //   - $node_name.array[0]
 //   - $node_name.body.values[0].val
 type Resolver struct {
-	context map[string]interface{}
+	context  map[string]interface{}
+	usedKeys map[string]bool
 }
 
 // NewResolver creates a new resolver with the given context.
 func NewResolver(context map[string]interface{}) *Resolver {
 	return &Resolver{
-		context: context,
+		context:  context,
+		usedKeys: make(map[string]bool),
 	}
+}
+
+// GetUsedKeys returns the list of context keys that were accessed during resolution.
+func (r *Resolver) GetUsedKeys() []string {
+	if len(r.usedKeys) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(r.usedKeys))
+	for k := range r.usedKeys {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // referencePattern matches $node_name.path.to.field or $node_name.array[0]
@@ -85,10 +99,20 @@ func (r *Resolver) resolveValue(value interface{}) (interface{}, error) {
 	}
 }
 
+// expressionPattern matches {{ ... }} expression blocks that should not be resolved
+var expressionPattern = regexp.MustCompile(`\{\{.*?\}\}`)
+
 // resolveString resolves references in a string value.
 // If the entire string is a reference (e.g., "$node.field"), it returns the actual value.
 // If the string contains embedded references (e.g., "User: $node.name"), it performs string interpolation.
+// Strings containing {{ ... }} expression blocks are returned as-is for later evaluation by nodes like edit.
 func (r *Resolver) resolveString(s string) (interface{}, error) {
+	// Skip resolution for strings containing {{ ... }} expression blocks
+	// These are meant to be evaluated by nodes like the edit node using their own expression engine
+	if expressionPattern.MatchString(s) {
+		return s, nil
+	}
+
 	// Check if the entire string is a single reference
 	if strings.HasPrefix(s, "$") && !strings.Contains(s[1:], "$") {
 		// Single reference - return the actual value (could be any type)
@@ -125,6 +149,11 @@ func (r *Resolver) resolveReference(ref string) (interface{}, error) {
 	// Split into node name and field path
 	parts := strings.SplitN(path, ".", 2)
 	nodeName := parts[0]
+
+	// Track usage for the resolved node key (context keys are stored with the $ prefix)
+	if r.usedKeys != nil {
+		r.usedKeys["$"+nodeName] = true
+	}
 
 	// Get the node data from context
 	nodeData, ok := r.context["$"+nodeName]

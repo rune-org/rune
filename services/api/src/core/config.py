@@ -26,11 +26,11 @@ class Settings(BaseSettings):
     )
 
     # Database Settings
-    postgres_user: str = "postgres"
-    postgres_password: str = "postgres"
+    postgres_user: str = "rune"
+    postgres_password: str = "rune_password"
     postgres_host: str = "localhost"
     postgres_port: int = 5432
-    postgres_db: str = "rune"
+    postgres_db: str = "rune_db"
     database_url: str | None = None
 
     # JWT Settings

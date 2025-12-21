@@ -9,6 +9,7 @@ argon2-cffi==23.1.0
 redis==6.4.0
 aio-pika==9.5.7
 cryptography==46.0.3
+dspy==3.0.4
 
 # Test dependencies
 pytest==8.3.4

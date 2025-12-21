@@ -7,14 +7,19 @@ import { useRouter } from "next/navigation";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { useAuth } from "@/lib/auth";
+import { checkFirstTimeSetup } from "@/lib/api/auth";
 
 export default function SignInPage() {
   const router = useRouter();
   const { state } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    checkFirstTimeSetup().then(({ data }) => {
+      setShowSignUp(data?.data.requires_setup ?? false);
+    });
   }, []);
 
   useEffect(() => {
@@ -47,12 +52,14 @@ export default function SignInPage() {
         title="Welcome back"
         description="Sign in to continue building automation."
         footer={
-          <span>
-            New to Rune?{" "}
-            <Link href="/sign-up" className="text-white hover:underline underline-offset-4 transition-all">
-              Create an account
-            </Link>
-          </span>
+          showSignUp ? (
+            <span>
+              New to Rune?{" "}
+              <Link href="/sign-up" className="text-white hover:underline underline-offset-4 transition-all">
+                Create an account
+              </Link>
+            </span>
+          ) : undefined
         }
       >
         <Suspense

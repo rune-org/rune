@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard"
+  ],
+  "enabled": true,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": [
+      "security"
+    ],
+    "assignees": [
+      "ashmod"
+    ],
+    "schedule": [
+      "at any time"
+    ]
+  },
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "major",
+        "pin",
+        "digest"
+      ],
+      "enabled": false
+    }
+  ]
+}

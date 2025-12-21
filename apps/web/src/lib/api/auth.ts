@@ -4,6 +4,9 @@ import {
   logoutAuthLogoutPost,
   getMyProfileProfileMeGet,
   createUserUsersPost,
+  firstAdminSignupAuthFirstAdminSignupPost,
+  checkFirstTimeSetupAuthFirstTimeSetupGet,
+  changeMyPasswordProfileMeChangePasswordPost,
 } from "@/client";
 
 import type {
@@ -11,6 +14,7 @@ import type {
   LoginAuthLoginPostResponse,
   RefreshAuthRefreshPostResponse,
   LogoutAuthLogoutPostResponse,
+  ChangeMyPasswordProfileMeChangePasswordPostResponse,
 } from "@/client/types.gen";
 
 // Readable wrappers for auth-related SDK functions
@@ -28,12 +32,22 @@ export const getMyProfile = () => getMyProfileProfileMeGet({});
 export const adminCreateUser = (
   name: string,
   email: string,
-  password: string,
   role: "user" | "admin" = "user",
-) => createUserUsersPost({ body: { name, email, password, role } });
+) => createUserUsersPost({ body: { name, email, role } });
+
+export const firstAdminSignup = (name: string, email: string, password: string) =>
+  firstAdminSignupAuthFirstAdminSignupPost({ body: { name, email, password } });
+
+export const checkFirstTimeSetup = () => checkFirstTimeSetupAuthFirstTimeSetupGet();
+
+export const changeMyPassword = (oldPassword: string, newPassword: string) =>
+  changeMyPasswordProfileMeChangePasswordPost({
+    body: { old_password: oldPassword, new_password: newPassword },
+  });
 
 // Useful types to consume in app code
 export type MyProfileResponse = GetMyProfileProfileMeGetResponse;
 export type LoginResponse = LoginAuthLoginPostResponse;
 export type RefreshResponse = RefreshAuthRefreshPostResponse;
 export type LogoutResponse = LogoutAuthLogoutPostResponse;
+export type ChangeMyPasswordResponse = ChangeMyPasswordProfileMeChangePasswordPostResponse;
