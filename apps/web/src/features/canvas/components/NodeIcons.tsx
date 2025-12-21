@@ -1,6 +1,17 @@
 "use client";
 
-import { Bot, Globe, Mail, Play, GitBranch } from "lucide-react";
+import {
+  Bot,
+  Clock,
+  Combine,
+  GitBranch,
+  Globe,
+  Layers,
+  Mail,
+  Pencil,
+  Play,
+  Split,
+} from "lucide-react";
 import type { NodeKind } from "../types";
 
 export function iconFor(kind: NodeKind) {
@@ -16,6 +27,16 @@ export function iconFor(kind: NodeKind) {
       return Globe;
     case "smtp":
       return Mail;
+    case "wait":
+      return Clock;
+    case "edit":
+      return Pencil;
+    case "split":
+      return Split;
+    case "aggregator":
+      return Layers;
+    case "merge":
+      return Combine;
     default:
       return Play;
   }

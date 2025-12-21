@@ -28,6 +28,10 @@ import { SmtpInspector } from "./inspectors/SmtpInspector";
 import { SwitchInspector } from "./inspectors/SwitchInspector";
 import { RuntimeDataPanel } from "./inspectors/RuntimeDataPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WaitInspector } from "./inspectors/WaitInspector";
+import { EditInspector } from "./inspectors/EditInspector";
+import { SplitInspector } from "./inspectors/SplitInspector";
+import { MergeInspector } from "./inspectors/MergeInspector";
 import { toast } from "@/components/ui/toast";
 import { Activity } from "lucide-react";
 
@@ -59,6 +63,14 @@ function renderInspectorForm(
       );
     case "smtp":
       return <SmtpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "wait":
+      return <WaitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "edit":
+      return <EditInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "split":
+      return <SplitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "merge":
+      return <MergeInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     default:
       return null;
   }

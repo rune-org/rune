@@ -128,13 +128,14 @@ function FlowCanvasInner({
       if (source === target) return false;
 
       const sourceNode = nodes.find((node) => node.id === source);
-      if (!sourceNode) return false;
+      const targetNode = nodes.find((node) => node.id === target);
+      if (!sourceNode || !targetNode) return false;
 
-      const existingEdges = edges.filter((edge) => edge.source === source);
+      const existingSourceEdges = edges.filter((edge) => edge.source === source);
 
-      // For "if" nodes: allow max 2 edges (true/false)
+      // For "if" nodes: allow max 1 edge per output handle (true/false)
       if (sourceNode.type === "if") {
-        const hasEdgeFromHandle = existingEdges.some(
+        const hasEdgeFromHandle = existingSourceEdges.some(
           (edge) => edge.sourceHandle === sourceHandle
         );
         return !hasEdgeFromHandle;
@@ -149,14 +150,14 @@ function FlowCanvasInner({
           switchFallbackHandleId(),
         ]);
         if (!sourceHandle || !allowedHandles.has(String(sourceHandle))) return false;
-        const hasEdgeFromHandle = existingEdges.some(
+        const hasEdgeFromHandle = existingSourceEdges.some(
           (edge) => edge.sourceHandle === sourceHandle,
         );
         return !hasEdgeFromHandle;
       }
 
-      // For all other nodes: allow max 1 edge
-      return existingEdges.length === 0;
+      // For all other nodes: allow max 1 outgoing edge
+      return existingSourceEdges.length === 0;
     },
     [nodes, edges]
   );
@@ -679,6 +680,11 @@ function FlowCanvasInner({
       switch: "--node-core",
       http: "--node-http",
       smtp: "--node-email",
+      wait: "--node-core",
+      edit: "--node-core",
+      split: "--node-core",
+      aggregator: "--node-core",
+      merge: "--node-core",
     };
     const varName = colorVars[type];
     return varName
