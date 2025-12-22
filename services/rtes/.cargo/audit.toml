@@ -10,7 +10,3 @@ ignore = [
     # Mitigation: JWT validation happens server-side, not exposed to timing attacks
     "RUSTSEC-2023-0071",
 ]
-
-[output]
-# Show informational warnings
-informational_warnings = ["unmaintained"]
