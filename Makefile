@@ -324,41 +324,63 @@ logs-frontend:
 # ======================
 # Database targets
 # ======================
-# NOTE: Run these from services/api directory with venv activated:
-#   cd services/api && source .venv/bin/activate  (Linux/Mac)
-#   cd services/api && .\.venv\Scripts\activate   (Windows)
+# All migration commands automatically activate the API virtual environment
 
 db-shell:
 	docker exec -it rune-postgres psql -U rune -d rune_db
 
-# Alembic Migration Commands (run from services/api with venv activated)
+# Alembic Migration Commands - automatically handles venv activation
 db-migrate:
 	@echo "Applying all pending migrations..."
-	alembic upgrade head
+ifeq ($(DETECTED_OS),Windows)
+	cd services/api && .venv\Scripts\python -m alembic upgrade head
+else
+	cd services/api && . .venv/bin/activate && alembic upgrade head
+endif
 
 db-rollback:
 	@echo "Rolling back last migration..."
-	alembic downgrade -1
-	
+ifeq ($(DETECTED_OS),Windows)
+	cd services/api && .venv\Scripts\python -m alembic downgrade -1
+else
+	cd services/api && . .venv/bin/activate && alembic downgrade -1
+endif
+
 db-history:
 	@echo "Migration history:"
-	alembic history
+ifeq ($(DETECTED_OS),Windows)
+	cd services/api && .venv\Scripts\python -m alembic history
+else
+	cd services/api && . .venv/bin/activate && alembic history
+endif
 
 db-current:
 	@echo "Current database version:"
-	alembic current
+ifeq ($(DETECTED_OS),Windows)
+	cd services/api && .venv\Scripts\python -m alembic current
+else
+	cd services/api && . .venv/bin/activate && alembic current
+endif
 
 db-revision:
 	@echo "Generating migration from model changes..."
-	alembic revision --autogenerate -m "$(msg)"
+ifeq ($(DETECTED_OS),Windows)
+	cd services/api && .venv\Scripts\python -m alembic revision --autogenerate -m "$(msg)"
+else
+	cd services/api && . .venv/bin/activate && alembic revision --autogenerate -m "$(msg)"
+endif
 
 db-reset:
 	@echo "Resetting database (WARNING: destroys all data)..."
-	docker compose -f docker-compose.dev.yml down -v
-	docker compose -f docker-compose.dev.yml up -d
+	cd services/api && docker compose -f docker-compose.dev.yml down -v
+	cd services/api && docker compose -f docker-compose.dev.yml up -d
 	@echo "Waiting for database to start..."
 	@sleep 3
-	alembic upgrade head
+ifeq ($(DETECTED_OS),Windows)
+	cd services/api && .venv\Scripts\python -m alembic upgrade head
+else
+	cd services/api && . .venv/bin/activate && alembic upgrade head
+endif
 	@echo "✓ Database reset complete"
 
 # ======================
