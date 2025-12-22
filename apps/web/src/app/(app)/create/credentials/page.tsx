@@ -46,6 +46,9 @@ export default function CreateCredentialsPage() {
     }
   };
 
+
+  // TODO(fe): revisit after RBAC 
+
   const handleAddCredential = async (newCred: {
     name: string;
     credential_type: Credential["credential_type"];
@@ -86,20 +89,17 @@ export default function CreateCredentialsPage() {
 
     const id = deleteDialog.credentialId;
     
-    // Optimistic update - remove from UI immediately
-    setCredentials((prev) => prev.filter((c) => c.id !== id));
-    toast.success("Credential deleted successfully");
     
-    // TODO: Call API to delete on backend
-    // try {
-    //   await credentialsAPI.deleteCredential(id);
-    //   toast.success("Credential deleted successfully");
-    // } catch (err) {
-    //   console.error("Failed to delete credential:", err);
-    //   // Reload credentials to restore UI state on error
-    //   loadCredentials();
-    //   toast.error("Failed to delete credential. Please try again.");
-    // }
+    try {
+      await credentialsAPI.deleteCredential(id);
+      setCredentials((prev) => prev.filter((c) => c.id !== id));
+      toast.success("Credential deleted successfully");
+    } catch (err) {
+      console.error("Failed to delete credential:", err);
+      // Reload credentials to restore UI state on error
+      loadCredentials();
+      toast.error("Failed to delete credential. Please try again.");
+    }
   };
 
   if (error) {
@@ -128,6 +128,7 @@ export default function CreateCredentialsPage() {
       <CredentialsTable
         credentials={credentials}
         onDelete={handleDeleteCredential}
+        onSharesChanged={loadCredentials}
         isLoading={isLoading}
       />
       <DeleteCredentialDialog

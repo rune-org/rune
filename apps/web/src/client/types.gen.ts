@@ -5,6 +5,24 @@ export type ClientOptions = {
 };
 
 /**
+ * AdminPasswordResetResponse
+ */
+export type AdminPasswordResetResponse = {
+    /**
+     * Temporary Password
+     *
+     * Temporary password for the user to use
+     */
+    temporary_password: string;
+    /**
+     * User Id
+     *
+     * ID of the user whose password was reset
+     */
+    user_id: number;
+};
+
+/**
  * AdminUserUpdate
  */
 export type AdminUserUpdate = {
@@ -21,6 +39,50 @@ export type AdminUserUpdate = {
      * Is Active
      */
     is_active?: boolean | null;
+};
+
+/**
+ * ApiResponse[AdminPasswordResetResponse]
+ */
+export type ApiResponseAdminPasswordResetResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: AdminPasswordResetResponse;
+};
+
+/**
+ * ApiResponse[CreateUserResponse]
+ */
+export type ApiResponseCreateUserResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: CreateUserResponse;
 };
 
 /**
@@ -43,6 +105,94 @@ export type ApiResponseCredentialResponse = {
      * Response data
      */
     data: CredentialResponse;
+};
+
+/**
+ * ApiResponse[CredentialShareInfo]
+ */
+export type ApiResponseCredentialShareInfo = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: CredentialShareInfo;
+};
+
+/**
+ * ApiResponse[FirstAdminSignupResponse]
+ */
+export type ApiResponseFirstAdminSignupResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: FirstAdminSignupResponse;
+};
+
+/**
+ * ApiResponse[FirstTimeSetupStatus]
+ */
+export type ApiResponseFirstTimeSetupStatus = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: FirstTimeSetupStatus;
+};
+
+/**
+ * ApiResponse[GeneratedWorkflow]
+ */
+export type ApiResponseGeneratedWorkflow = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: GeneratedWorkflow;
 };
 
 /**
@@ -160,6 +310,28 @@ export type ApiResponseTokenResponse = {
 };
 
 /**
+ * ApiResponse[UserPasswordChangeResponse]
+ */
+export type ApiResponseUserPasswordChangeResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: UserPasswordChangeResponse;
+};
+
+/**
  * ApiResponse[UserResponse]
  */
 export type ApiResponseUserResponse = {
@@ -182,6 +354,28 @@ export type ApiResponseUserResponse = {
 };
 
 /**
+ * ApiResponse[WorkflowDetailDocs]
+ */
+export type ApiResponseWorkflowDetailDocs = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: WorkflowDetailDocs;
+};
+
+/**
  * ApiResponse[WorkflowDetail]
  */
 export type ApiResponseWorkflowDetail = {
@@ -201,6 +395,50 @@ export type ApiResponseWorkflowDetail = {
      * Response data
      */
     data: WorkflowDetail;
+};
+
+/**
+ * ApiResponse[WorkflowPermissionListResponse]
+ */
+export type ApiResponseWorkflowPermissionListResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: WorkflowPermissionListResponse;
+};
+
+/**
+ * ApiResponse[WorkflowShareResponse]
+ */
+export type ApiResponseWorkflowShareResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: WorkflowShareResponse;
 };
 
 /**
@@ -249,6 +487,54 @@ export type ApiResponseListCredentialResponse = {
      * Response data
      */
     data: Array<CredentialResponse>;
+};
+
+/**
+ * ApiResponse[list[CredentialShareInfo]]
+ */
+export type ApiResponseListCredentialShareInfo = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<CredentialShareInfo>;
+};
+
+/**
+ * ApiResponse[list[UserBasicInfo]]
+ */
+export type ApiResponseListUserBasicInfo = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<UserBasicInfo>;
 };
 
 /**
@@ -324,6 +610,22 @@ export type ApiResponseStr = {
 };
 
 /**
+ * CreateUserResponse
+ */
+export type CreateUserResponse = {
+    /**
+     * Newly created user
+     */
+    user: UserResponse;
+    /**
+     * Temporary Password
+     *
+     * Temporary password for the user to use on first login
+     */
+    temporary_password: string;
+};
+
+/**
  * CredentialCreate
  *
  * Schema for creating a new credential.
@@ -376,6 +678,30 @@ export type CredentialResponse = {
      * Updated At
      */
     updated_at: string;
+    /**
+     * Is Owner
+     *
+     * Whether current user is the owner of this credential
+     */
+    is_owner?: boolean;
+    /**
+     * Can Share
+     *
+     * Whether current user can share this credential
+     */
+    can_share?: boolean;
+    /**
+     * Can Edit
+     *
+     * Whether current user can edit this credential
+     */
+    can_edit?: boolean;
+    /**
+     * Can Delete
+     *
+     * Whether current user can delete this credential
+     */
+    can_delete?: boolean;
 };
 
 /**
@@ -396,11 +722,227 @@ export type CredentialResponseDropDown = {
 };
 
 /**
+ * CredentialShare
+ *
+ * Schema for sharing a credential with a user.
+ */
+export type CredentialShare = {
+    /**
+     * User Id
+     *
+     * ID of user to share with
+     */
+    user_id: number;
+};
+
+/**
+ * CredentialShareInfo
+ *
+ * Information about a credential share.
+ */
+export type CredentialShareInfo = {
+    /**
+     * User Id
+     */
+    user_id: number;
+    /**
+     * User Email
+     */
+    user_email: string;
+    /**
+     * User Name
+     */
+    user_name: string;
+    /**
+     * Shared At
+     */
+    shared_at: string;
+    /**
+     * Shared By
+     */
+    shared_by: number | null;
+    /**
+     * Shared By Name
+     *
+     * Name of the user who shared this credential
+     */
+    shared_by_name?: string | null;
+};
+
+/**
  * CredentialType
  *
  * Credential type enumeration.
  */
-export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'token' | 'custom' | 'smtp';
+export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'header' | 'token' | 'custom' | 'smtp';
+
+/**
+ * CredentialUpdate
+ *
+ * Schema for updating a credential.
+ */
+export type CredentialUpdate = {
+    /**
+     * Name
+     *
+     * Credential name
+     */
+    name?: string | null;
+    /**
+     * Type of credential
+     */
+    credential_type?: CredentialType | null;
+    /**
+     * Credential Data
+     *
+     * Credential data (will be encrypted)
+     */
+    credential_data?: {
+        [key: string]: unknown;
+    } | null;
+};
+
+/**
+ * FirstAdminSignupRequest
+ *
+ * Request schema for first-time admin account creation.
+ */
+export type FirstAdminSignupRequest = {
+    /**
+     * Name
+     *
+     * Admin's full name
+     */
+    name: string;
+    /**
+     * Email
+     *
+     * Admin's email address
+     */
+    email: string;
+    /**
+     * Password
+     *
+     * Admin's password
+     */
+    password: string;
+};
+
+/**
+ * FirstAdminSignupResponse
+ *
+ * Response schema for successful first-time admin signup.
+ */
+export type FirstAdminSignupResponse = {
+    /**
+     * User Id
+     *
+     * ID of the newly created admin user
+     */
+    user_id: number;
+    /**
+     * Name
+     *
+     * Admin's name
+     */
+    name: string;
+    /**
+     * Email
+     *
+     * Admin's email
+     */
+    email: string;
+};
+
+/**
+ * FirstTimeSetupStatus
+ *
+ * Response schema for first-time setup status check.
+ */
+export type FirstTimeSetupStatus = {
+    /**
+     * Requires Setup
+     *
+     * Whether the system requires first-time admin setup
+     */
+    requires_setup: boolean;
+    /**
+     * Message
+     *
+     * Status message
+     */
+    message: string;
+};
+
+/**
+ * GenerateWorkflowDocsRequest
+ */
+export type GenerateWorkflowDocsRequest = {
+    /**
+     * Target Audience
+     */
+    target_audience?: 'Technical Developer' | 'Executive Summary';
+};
+
+/**
+ * GenerateWorkflowRequest
+ *
+ * Request body for creating a workflow from natural language.
+ */
+export type GenerateWorkflowRequest = {
+    /**
+     * Prompt
+     */
+    prompt: string;
+    /**
+     * History
+     */
+    history?: Array<SmithMessage>;
+    /**
+     * Workflow
+     *
+     * Optional existing workflow JSON to give the agent full context.
+     */
+    workflow?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Include Trace
+     *
+     * Include Smith's reasoning/trajectory in the response.
+     */
+    include_trace?: boolean;
+    /**
+     * Max Iters
+     *
+     * Optional override for Smith's ReAct iteration limit.
+     */
+    max_iters?: number | null;
+};
+
+/**
+ * GeneratedWorkflow
+ *
+ * Smith LLM response packaged for the API.
+ */
+export type GeneratedWorkflow = {
+    /**
+     * Response
+     */
+    response: string;
+    /**
+     * Workflow
+     */
+    workflow: {
+        [key: string]: unknown;
+    };
+    /**
+     * Trace
+     *
+     * Optional reasoning steps from the agent trajectory.
+     */
+    trace?: Array<string> | null;
+};
 
 /**
  * HTTPValidationError
@@ -457,6 +999,22 @@ export type RefreshRequest = {
 };
 
 /**
+ * SmithMessage
+ *
+ * Single chat turn used to seed Smith with prior context.
+ */
+export type SmithMessage = {
+    /**
+     * Role
+     */
+    role?: 'user' | 'smith';
+    /**
+     * Content
+     */
+    content: string;
+};
+
+/**
  * TemplateCreate
  *
  * Schema for creating a new template.
@@ -477,7 +1035,7 @@ export type TemplateCreate = {
     /**
      * Workflow Data
      */
-    workflow_data?: {
+    workflow_data: {
         [key: string]: unknown;
     };
     /**
@@ -613,6 +1171,26 @@ export type TokenResponse = {
 };
 
 /**
+ * UserBasicInfo
+ *
+ * Minimal user info for sharing purposes.
+ */
+export type UserBasicInfo = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Email
+     */
+    email: string;
+};
+
+/**
  * UserCreate
  */
 export type UserCreate = {
@@ -625,13 +1203,43 @@ export type UserCreate = {
      */
     email: string;
     /**
-     * Password
-     */
-    password: string;
-    /**
      * User role: 'user' or 'admin'
      */
     role?: UserRole;
+};
+
+/**
+ * UserPasswordChange
+ */
+export type UserPasswordChange = {
+    /**
+     * Old Password
+     *
+     * Current password for verification
+     */
+    old_password: string;
+    /**
+     * New Password
+     *
+     * New password
+     */
+    new_password: string;
+};
+
+/**
+ * UserPasswordChangeResponse
+ */
+export type UserPasswordChangeResponse = {
+    /**
+     * Updated user information
+     */
+    user: UserResponse;
+    /**
+     * Access Token
+     *
+     * New access token with updated must_change_password flag
+     */
+    access_token: string;
 };
 
 /**
@@ -675,6 +1283,12 @@ export type UserResponse = {
      * Last login timestamp
      */
     last_login_at?: string | null;
+    /**
+     * Must Change Password
+     *
+     * Flag indicating user must change password
+     */
+    must_change_password: boolean;
 };
 
 /**
@@ -763,6 +1377,16 @@ export type WorkflowDetail = {
 };
 
 /**
+ * WorkflowDetailDocs
+ */
+export type WorkflowDetailDocs = {
+    /**
+     * Docs
+     */
+    docs: string;
+};
+
+/**
  * WorkflowListItem
  */
 export type WorkflowListItem = {
@@ -778,6 +1402,104 @@ export type WorkflowListItem = {
      * Is Active
      */
     is_active: boolean;
+};
+
+/**
+ * WorkflowPermissionInfo
+ *
+ * Information about a user's permission on a workflow.
+ */
+export type WorkflowPermissionInfo = {
+    /**
+     * User Id
+     */
+    user_id: number;
+    /**
+     * User Email
+     */
+    user_email: string;
+    /**
+     * User Name
+     */
+    user_name: string;
+    role: WorkflowRole;
+    /**
+     * Granted At
+     */
+    granted_at: string;
+    /**
+     * Granted By
+     */
+    granted_by?: number | null;
+};
+
+/**
+ * WorkflowPermissionListResponse
+ *
+ * List of all users with access to a workflow.
+ */
+export type WorkflowPermissionListResponse = {
+    /**
+     * Workflow Id
+     */
+    workflow_id: number;
+    /**
+     * Permissions
+     */
+    permissions: Array<WorkflowPermissionInfo>;
+};
+
+/**
+ * WorkflowRole
+ *
+ * Workflow role enumeration.
+ */
+export type WorkflowRole = 'viewer' | 'editor' | 'owner';
+
+/**
+ * WorkflowRoleUpdateRequest
+ *
+ * Request to update a user's role on a workflow.
+ */
+export type WorkflowRoleUpdateRequest = {
+    /**
+     * New role to assign (EDITOR or VIEWER, not OWNER)
+     */
+    role: WorkflowRole;
+};
+
+/**
+ * WorkflowShareRequest
+ *
+ * Request to share a workflow with another user.
+ */
+export type WorkflowShareRequest = {
+    /**
+     * User Id
+     *
+     * ID of the user to share with
+     */
+    user_id: number;
+    /**
+     * Role to grant (EDITOR or VIEWER, not OWNER)
+     */
+    role: WorkflowRole;
+};
+
+/**
+ * WorkflowShareResponse
+ *
+ * Response after sharing a workflow.
+ */
+export type WorkflowShareResponse = {
+    /**
+     * Status
+     */
+    status?: string;
+    /**
+     * Message
+     */
+    message: string;
 };
 
 /**
@@ -879,6 +1601,47 @@ export type LogoutAuthLogoutPostResponses = {
 };
 
 export type LogoutAuthLogoutPostResponse = LogoutAuthLogoutPostResponses[keyof LogoutAuthLogoutPostResponses];
+
+export type CheckFirstTimeSetupAuthFirstTimeSetupGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/auth/first-time-setup';
+};
+
+export type CheckFirstTimeSetupAuthFirstTimeSetupGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseFirstTimeSetupStatus;
+};
+
+export type CheckFirstTimeSetupAuthFirstTimeSetupGetResponse = CheckFirstTimeSetupAuthFirstTimeSetupGetResponses[keyof CheckFirstTimeSetupAuthFirstTimeSetupGetResponses];
+
+export type FirstAdminSignupAuthFirstAdminSignupPostData = {
+    body: FirstAdminSignupRequest;
+    path?: never;
+    query?: never;
+    url: '/auth/first-admin-signup';
+};
+
+export type FirstAdminSignupAuthFirstAdminSignupPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type FirstAdminSignupAuthFirstAdminSignupPostError = FirstAdminSignupAuthFirstAdminSignupPostErrors[keyof FirstAdminSignupAuthFirstAdminSignupPostErrors];
+
+export type FirstAdminSignupAuthFirstAdminSignupPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseFirstAdminSignupResponse;
+};
+
+export type FirstAdminSignupAuthFirstAdminSignupPostResponse = FirstAdminSignupAuthFirstAdminSignupPostResponses[keyof FirstAdminSignupAuthFirstAdminSignupPostResponses];
 
 export type ListWorkflowsWorkflowsGetData = {
     body?: never;
@@ -1101,6 +1864,134 @@ export type RunWorkflowWorkflowsWorkflowIdRunPostResponses = {
 
 export type RunWorkflowWorkflowsWorkflowIdRunPostResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponses[keyof RunWorkflowWorkflowsWorkflowIdRunPostResponses];
 
+export type ShareWorkflowWorkflowsWorkflowIdSharePostData = {
+    body: WorkflowShareRequest;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/share';
+};
+
+export type ShareWorkflowWorkflowsWorkflowIdSharePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ShareWorkflowWorkflowsWorkflowIdSharePostError = ShareWorkflowWorkflowsWorkflowIdSharePostErrors[keyof ShareWorkflowWorkflowsWorkflowIdSharePostErrors];
+
+export type ShareWorkflowWorkflowsWorkflowIdSharePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseWorkflowShareResponse;
+};
+
+export type ShareWorkflowWorkflowsWorkflowIdSharePostResponse = ShareWorkflowWorkflowsWorkflowIdSharePostResponses[keyof ShareWorkflowWorkflowsWorkflowIdSharePostResponses];
+
+export type RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: number;
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/share/{user_id}';
+};
+
+export type RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteError = RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteErrors[keyof RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteErrors];
+
+export type RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseWorkflowShareResponse;
+};
+
+export type RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteResponse = RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteResponses[keyof RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteResponses];
+
+export type ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetData = {
+    body?: never;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/permissions';
+};
+
+export type ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetError = ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetErrors[keyof ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetErrors];
+
+export type ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseWorkflowPermissionListResponse;
+};
+
+export type ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetResponse = ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetResponses[keyof ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetResponses];
+
+export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchData = {
+    body: WorkflowRoleUpdateRequest;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: number;
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/permissions/{user_id}';
+};
+
+export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchError = UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchErrors[keyof UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchErrors];
+
+export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseWorkflowShareResponse;
+};
+
+export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponse = UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses[keyof UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses];
+
 export type ListTemplatesTemplatesGetData = {
     body?: never;
     path?: never;
@@ -1268,7 +2159,7 @@ export type CreateUserUsersPostResponses = {
     /**
      * Successful Response
      */
-    201: ApiResponseUserResponse;
+    201: ApiResponseCreateUserResponse;
 };
 
 export type CreateUserUsersPostResponse = CreateUserUsersPostResponses[keyof CreateUserUsersPostResponses];
@@ -1363,6 +2254,36 @@ export type UpdateUserUsersUserIdPutResponses = {
 
 export type UpdateUserUsersUserIdPutResponse = UpdateUserUsersUserIdPutResponses[keyof UpdateUserUsersUserIdPutResponses];
 
+export type ResetUserPasswordUsersUserIdResetPasswordPostData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: number;
+    };
+    query?: never;
+    url: '/users/{user_id}/reset-password';
+};
+
+export type ResetUserPasswordUsersUserIdResetPasswordPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ResetUserPasswordUsersUserIdResetPasswordPostError = ResetUserPasswordUsersUserIdResetPasswordPostErrors[keyof ResetUserPasswordUsersUserIdResetPasswordPostErrors];
+
+export type ResetUserPasswordUsersUserIdResetPasswordPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseAdminPasswordResetResponse;
+};
+
+export type ResetUserPasswordUsersUserIdResetPasswordPostResponse = ResetUserPasswordUsersUserIdResetPasswordPostResponses[keyof ResetUserPasswordUsersUserIdResetPasswordPostResponses];
+
 export type GetMyProfileProfileMeGetData = {
     body?: never;
     path?: never;
@@ -1403,6 +2324,47 @@ export type UpdateMyProfileProfileMePutResponses = {
 };
 
 export type UpdateMyProfileProfileMePutResponse = UpdateMyProfileProfileMePutResponses[keyof UpdateMyProfileProfileMePutResponses];
+
+export type ChangeMyPasswordProfileMeChangePasswordPostData = {
+    body: UserPasswordChange;
+    path?: never;
+    query?: never;
+    url: '/profile/me/change-password';
+};
+
+export type ChangeMyPasswordProfileMeChangePasswordPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ChangeMyPasswordProfileMeChangePasswordPostError = ChangeMyPasswordProfileMeChangePasswordPostErrors[keyof ChangeMyPasswordProfileMeChangePasswordPostErrors];
+
+export type ChangeMyPasswordProfileMeChangePasswordPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseUserPasswordChangeResponse;
+};
+
+export type ChangeMyPasswordProfileMeChangePasswordPostResponse = ChangeMyPasswordProfileMeChangePasswordPostResponses[keyof ChangeMyPasswordProfileMeChangePasswordPostResponses];
+
+export type ListUsersForSharingUsersSharingGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/users/sharing';
+};
+
+export type ListUsersForSharingUsersSharingGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListUserBasicInfo;
+};
+
+export type ListUsersForSharingUsersSharingGetResponse = ListUsersForSharingUsersSharingGetResponses[keyof ListUsersForSharingUsersSharingGetResponses];
 
 export type ListCredentialsCredentialsGetData = {
     body?: never;
@@ -1460,3 +2422,272 @@ export type ListCredentialsDropdownCredentialsDropdownGetResponses = {
 };
 
 export type ListCredentialsDropdownCredentialsDropdownGetResponse = ListCredentialsDropdownCredentialsDropdownGetResponses[keyof ListCredentialsDropdownCredentialsDropdownGetResponses];
+
+export type DeleteCredentialCredentialsCredentialIdDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    query?: never;
+    url: '/credentials/{credential_id}';
+};
+
+export type DeleteCredentialCredentialsCredentialIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteCredentialCredentialsCredentialIdDeleteError = DeleteCredentialCredentialsCredentialIdDeleteErrors[keyof DeleteCredentialCredentialsCredentialIdDeleteErrors];
+
+export type DeleteCredentialCredentialsCredentialIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteCredentialCredentialsCredentialIdDeleteResponse = DeleteCredentialCredentialsCredentialIdDeleteResponses[keyof DeleteCredentialCredentialsCredentialIdDeleteResponses];
+
+export type GetCredentialCredentialsCredentialIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    query?: never;
+    url: '/credentials/{credential_id}';
+};
+
+export type GetCredentialCredentialsCredentialIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetCredentialCredentialsCredentialIdGetError = GetCredentialCredentialsCredentialIdGetErrors[keyof GetCredentialCredentialsCredentialIdGetErrors];
+
+export type GetCredentialCredentialsCredentialIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseCredentialResponse;
+};
+
+export type GetCredentialCredentialsCredentialIdGetResponse = GetCredentialCredentialsCredentialIdGetResponses[keyof GetCredentialCredentialsCredentialIdGetResponses];
+
+export type UpdateCredentialCredentialsCredentialIdPatchData = {
+    body: CredentialUpdate;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    query?: never;
+    url: '/credentials/{credential_id}';
+};
+
+export type UpdateCredentialCredentialsCredentialIdPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateCredentialCredentialsCredentialIdPatchError = UpdateCredentialCredentialsCredentialIdPatchErrors[keyof UpdateCredentialCredentialsCredentialIdPatchErrors];
+
+export type UpdateCredentialCredentialsCredentialIdPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseCredentialResponse;
+};
+
+export type UpdateCredentialCredentialsCredentialIdPatchResponse = UpdateCredentialCredentialsCredentialIdPatchResponses[keyof UpdateCredentialCredentialsCredentialIdPatchResponses];
+
+export type ShareCredentialCredentialsCredentialIdSharePostData = {
+    body: CredentialShare;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    query?: never;
+    url: '/credentials/{credential_id}/share';
+};
+
+export type ShareCredentialCredentialsCredentialIdSharePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ShareCredentialCredentialsCredentialIdSharePostError = ShareCredentialCredentialsCredentialIdSharePostErrors[keyof ShareCredentialCredentialsCredentialIdSharePostErrors];
+
+export type ShareCredentialCredentialsCredentialIdSharePostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ApiResponseCredentialShareInfo;
+};
+
+export type ShareCredentialCredentialsCredentialIdSharePostResponse = ShareCredentialCredentialsCredentialIdSharePostResponses[keyof ShareCredentialCredentialsCredentialIdSharePostResponses];
+
+export type RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+        /**
+         * User Id
+         */
+        user_id: number;
+    };
+    query?: never;
+    url: '/credentials/{credential_id}/share/{user_id}';
+};
+
+export type RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteError = RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteErrors[keyof RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteErrors];
+
+export type RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteResponse = RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteResponses[keyof RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteResponses];
+
+export type ListCredentialSharesCredentialsCredentialIdSharesGetData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    query?: never;
+    url: '/credentials/{credential_id}/shares';
+};
+
+export type ListCredentialSharesCredentialsCredentialIdSharesGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListCredentialSharesCredentialsCredentialIdSharesGetError = ListCredentialSharesCredentialsCredentialIdSharesGetErrors[keyof ListCredentialSharesCredentialsCredentialIdSharesGetErrors];
+
+export type ListCredentialSharesCredentialsCredentialIdSharesGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListCredentialShareInfo;
+};
+
+export type ListCredentialSharesCredentialsCredentialIdSharesGetResponse = ListCredentialSharesCredentialsCredentialIdSharesGetResponses[keyof ListCredentialSharesCredentialsCredentialIdSharesGetResponses];
+
+export type GetMyShareInfoCredentialsCredentialIdMyShareGetData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    query?: never;
+    url: '/credentials/{credential_id}/my-share';
+};
+
+export type GetMyShareInfoCredentialsCredentialIdMyShareGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetMyShareInfoCredentialsCredentialIdMyShareGetError = GetMyShareInfoCredentialsCredentialIdMyShareGetErrors[keyof GetMyShareInfoCredentialsCredentialIdMyShareGetErrors];
+
+export type GetMyShareInfoCredentialsCredentialIdMyShareGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseCredentialShareInfo;
+};
+
+export type GetMyShareInfoCredentialsCredentialIdMyShareGetResponse = GetMyShareInfoCredentialsCredentialIdMyShareGetResponses[keyof GetMyShareInfoCredentialsCredentialIdMyShareGetResponses];
+
+export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostData = {
+    body: GenerateWorkflowDocsRequest;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/docs';
+};
+
+export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostError = GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors[keyof GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors];
+
+export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseWorkflowDetailDocs;
+};
+
+export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponse = GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses[keyof GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses];
+
+export type GenerateWorkflowFromPromptWorkflowsSmithGeneratePostData = {
+    body: GenerateWorkflowRequest;
+    path?: never;
+    query?: never;
+    url: '/workflows/smith/generate';
+};
+
+export type GenerateWorkflowFromPromptWorkflowsSmithGeneratePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GenerateWorkflowFromPromptWorkflowsSmithGeneratePostError = GenerateWorkflowFromPromptWorkflowsSmithGeneratePostErrors[keyof GenerateWorkflowFromPromptWorkflowsSmithGeneratePostErrors];
+
+export type GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseGeneratedWorkflow;
+};
+
+export type GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponse = GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponses[keyof GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponses];

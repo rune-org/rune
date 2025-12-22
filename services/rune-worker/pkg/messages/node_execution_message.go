@@ -16,13 +16,15 @@ import (
 //
 // The master service publishes the initial message after trigger execution.
 // Workers consume, execute the node, then publish new messages for next nodes.
-type NodeExecutionMessage struct {
+type 	NodeExecutionMessage struct {
 	WorkflowID         string                 `json:"workflow_id"`
 	ExecutionID        string                 `json:"execution_id"`
-	CurrentNode        string                 `json:"current_node"`        // Node ID to execute
-	WorkflowDefinition core.Workflow         `json:"workflow_definition"` // Complete workflow structure
-	AccumulatedContext map[string]interface{} `json:"accumulated_context"` // Context with $<node_name> keys
+	CurrentNode        string                 `json:"current_node"`            // Node ID to execute
+	WorkflowDefinition core.Workflow          `json:"workflow_definition"`     // Complete workflow structure
+	AccumulatedContext map[string]interface{} `json:"accumulated_context"`     // Context with $<node_name> keys
 	LineageStack       []StackFrame           `json:"lineage_stack,omitempty"` // Stack of split contexts
+	FromNode           string                 `json:"from_node,omitempty"`     // Parent node that produced this message
+	IsWorkerInitiated bool `json:"is_worker_initiated,omitempty"`
 }
 
 // StackFrame represents a single level of split execution context.

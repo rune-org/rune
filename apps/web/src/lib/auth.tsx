@@ -15,7 +15,7 @@ import {
   logout as apiLogout,
   refreshAccessToken as apiRefresh,
   getMyProfile as apiGetMyProfile,
-  adminCreateUser,
+  firstAdminSignup,
   type MyProfileResponse,
   type LoginResponse,
   type RefreshResponse,
@@ -38,6 +38,7 @@ type AuthContextValue = {
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   initialize: () => Promise<void>;
+  refetchProfile: () => Promise<boolean>;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -215,7 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (name: string, email: string, password: string) => {
       setLoading(true);
       setError(null);
-      const { error } = await adminCreateUser(name, email, password);
+      const { error } = await firstAdminSignup(name, email, password);
       if (error) {
         setError(getErrorMessage(error));
         setLoading(false);
@@ -247,8 +248,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       refresh,
       initialize,
+      refetchProfile: fetchProfile,
     }),
-    [state, login, signUp, logout, refresh, initialize],
+    [state, login, signUp, logout, refresh, initialize, fetchProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

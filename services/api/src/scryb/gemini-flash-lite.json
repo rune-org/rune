@@ -1,0 +1,36 @@
+{
+  "predict": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Generates documentation for an automation workflow based on its JSON definition\nand a specific target audience.\n\n**1. Task Overview**\n\nYour primary goal is to create a Markdown report that documents an automation workflow. You will be given two inputs:\n- `workflow_json`: A JSON object defining the entire workflow, including its steps, configurations, and connections.\n- `target_audience`: A string specifying the intended reader of the documentation (e.g., \"Technical Developer\", \"Executive Summary\").\n\nThe content, structure, and level of detail of your report must be tailored to the specified `target_audience`.\n\n**2. Understanding the `workflow_json` Input**\n\nThe `workflow_json` object has the following structure:\n- `name`: The name of the workflow.\n- `steps`: An array of objects, where each object represents a single step in the workflow.\n\nEach `step` object contains:\n- `id`: A unique identifier for the step.\n- `name`: The human-readable name of the step.\n- `node_type`: The type of action the step performs. Common types include:\n    - `http`: Makes an HTTP request. `node_config` will contain properties like `url`, `method`, `headers`, `body`, and `query`.\n    - `conditional`: A simple if/else branch. `node_config` contains an `expression` to evaluate.\n    - `switch`: A multi-way branch. `node_config` contains an array of `rules`.\n    - `smtp`: Sends an email. `node_config` contains `to`, `from`, `subject`, and `body`.\n- `credentials`: The name of the credentials used for the step (if any).\n- `edges`: An array defining the transitions to subsequent steps. Each edge has a `target_step_name` and a `label`.\n\n**3. Audience-Specific Documentation Requirements**\n\n**A. Target Audience: \"Technical Developer\"**\n\nThis report should be a detailed technical specification.\n\n- **Structure:**\n    1.  Start with a main heading in the format `# Workflow: [workflow_name]`.\n    2.  Provide a brief, high-level overview of the workflow's purpose, inferring its goal from the sequence of steps.\n    3.  Create a \"Steps\" section with a numbered list, detailing each step in execution order.\n    4.  Conclude with the following summary sections: \"Data Flow and Variables\", \"Dependencies\", and \"Error Handling\".\n\n- **Step Details:** For each step in the numbered list, you must include:\n    - A heading for the step (e.g., `1. **Step_Name**`).\n    - **ID**: The step's `id`.\n    - **Node Type**: The step's `node_type`.\n    - **Description**: A concise, one-sentence summary of what the step does.\n    - **Credentials**: The name of the credentials, if present. If not, state \"None\".\n    - **Configuration**: A detailed breakdown of the `node_config`.\n        - For `http` nodes, list the URL, Method, Headers, Query, and Body. Format Headers, Query, and Body as JSON code blocks. If a property like `body` is not applicable (e.g., for a GET request), state \"Not applicable\". If a property like `headers` is not present, state \"Not specified\".\n        - For `conditional` nodes, list the `Expression`.\n        - For `switch` nodes, translate the `rules` into a human-readable list (e.g., \"If `$variable` is less than or equal to `value` -> `target_step`\").\n        - For `smtp` nodes, list the From, To, Subject, and Body. **Crucially, you must reproduce the content of these fields exactly as they appear in the JSON.** Fields like `subject` and `body` often contain a mix of static text and dynamic variables (e.g., `User Found: $Step.body.name`). Do not omit the static text. Format the Body as a plain text code block.\n    - **Transitions**: A list of all outgoing `edges`, using the format \"`<label>` -> `<target_step_name>`\". If a step is a terminal node (no outgoing edges), state \"None (End of this path)\".\n\n- **Summary Sections:**\n    - **Data Flow and Variables**: List the key variables used throughout the workflow. For each variable, explain its source (e.g., `$Step_Name.body.property`) and its purpose.\n    - **Dependencies**: List all external dependencies, such as API endpoints or required services (e.g., an SMTP server).\n    - **Error Handling**: If not explicitly defined in the JSON, state that error handling is not configured and that it should be considered for a production environment.\n\n- **Formatting:**\n    - Use Markdown code blocks (with language identifiers like `json` or `plain` where appropriate) for payloads, headers, and email bodies.\n    - Accurately identify and reproduce variables used within configurations. Note that variable syntax can differ (e.g., `$Step_Name.body.property` or `{{$Step_Name.body.property}}`).\n    - Maintain **absolute accuracy**. Do not alter, add, or omit any part of a value from the JSON. This is especially critical for configuration strings that mix static text and variables. For example, if a `subject` is `\"User Found: $Fetch_User.body.name\"`, you must reproduce the entire string, not just the variable part.\n\n**B. Target Audience: \"Executive Summary\"**\n\nThis report should be a high-level, non-technical overview focused on business value.\n\n- **Style:** Use clear, business-oriented language. Avoid all technical jargon (e.g., API, HTTP, POST, JSON, SMTP, node, variable).\n- **Structure:**\n    1.  Use a business-friendly title for the workflow.\n    2.  **Purpose:** Explain the business problem this workflow solves.\n    3.  **Key Actions:** Describe the main stages of the process in simple terms. Translate technical actions into business functions (e.g., an `http` POST to create a user becomes \"User Account Provisioning\"; an `smtp` step becomes \"Automated Welcome Communication\").\n    4.  **Outcome / Business Value:** Summarize the result and benefits of the automation (e.g., \"improves user engagement,\" \"ensures a consistent onboarding experience,\" \"reduces manual effort\").\n- **Content:** Keep it concise and focused on the \"what\" and \"why,\" not the \"how.\" Do not break down the workflow step-by-step. Instead, group actions into logical business functions.",
+      "fields": [
+        {
+          "prefix": "Workflow Json:",
+          "description": "The raw JSON domain-specific language of the workflow."
+        },
+        {
+          "prefix": "Target Audience:",
+          "description": "The persona to write for."
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Report:",
+          "description": "The generated documentation report in Markdown format."
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.13",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

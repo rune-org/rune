@@ -218,6 +218,24 @@ func TestResolver_ResolveString(t *testing.T) {
 			want:    "Alice has 42 items",
 			wantErr: false,
 		},
+		{
+			name:    "expression block - should not be resolved",
+			input:   "{{ $node1.name + ' ' + $node1.count }}",
+			want:    "{{ $node1.name + ' ' + $node1.count }}",
+			wantErr: false,
+		},
+		{
+			name:    "expression block with math - should not be resolved",
+			input:   "{{ $json.quantity * $json.price }}",
+			want:    "{{ $json.quantity * $json.price }}",
+			wantErr: false,
+		},
+		{
+			name:    "mixed expression and plain text - only expression preserved",
+			input:   "{{ $node1.count * 2 }}",
+			want:    "{{ $node1.count * 2 }}",
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {

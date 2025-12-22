@@ -3,6 +3,7 @@ package plugin
 import (
 	"context"
 
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/messages"
 )
 
@@ -19,9 +20,11 @@ type ExecutionContext struct {
 	Type         string
 	Parameters   map[string]any
 	Input        map[string]any
+	FromNode     string
 	credentials  map[string]any
 	RedisClient  interface{}
 	LineageStack []messages.StackFrame
+	Workflow     core.Workflow
 }
 
 // GetCredentials returns a read-only copy of the resolved credentials for this node.
