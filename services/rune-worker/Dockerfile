@@ -16,10 +16,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     ./cmd/worker
 
 
-FROM alpine:latest
-
-# Install timezone data for Go applications
-RUN apk add --no-cache tzdata
+FROM scratch
 
 # Copy CA certificates for HTTPS requests
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/

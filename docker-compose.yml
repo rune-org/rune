@@ -68,8 +68,6 @@ services:
     env_file:
       - .env
     environment:
-      # Timezone Configuration
-      TZ: ${TZ:-UTC}
       # Database Settings
       DATABASE_URL: postgresql://${POSTGRES_USER:-rune}:${POSTGRES_PASSWORD:-rune_password}@postgres:5432/${POSTGRES_DB:-rune_db}
       POSTGRES_HOST: postgres
@@ -120,8 +118,6 @@ services:
       dockerfile: Dockerfile
     container_name: rune-scheduler
     environment:
-      # Timezone Configuration
-      TZ: ${TZ:-UTC}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-rune}
@@ -159,8 +155,6 @@ services:
     env_file:
       - .env
     environment:
-      # Timezone Configuration
-      TZ: ${TZ:-UTC}
       # Database Settings
       DATABASE_URL: postgresql://${POSTGRES_USER:-rune}:${POSTGRES_PASSWORD:-rune_password}@postgres:5432/${POSTGRES_DB:-rune_db}
       # RabbitMQ Settings
@@ -190,8 +184,6 @@ services:
         NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api
     container_name: rune-frontend
     environment:
-      # Timezone Configuration
-      TZ: ${TZ:-UTC}
       # API Configuration
       NEXT_PUBLIC_API_BASE_URL: /api
       API_PROXY_TARGET: http://api:8000

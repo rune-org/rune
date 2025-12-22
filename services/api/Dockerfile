@@ -3,10 +3,7 @@ FROM python:3.13-slim
 # Set the working directory
 WORKDIR /app
 
-# Install timezone data and other dependencies
-RUN apt-get update && apt-get install -y \
-    tzdata \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y
 
 # Copy the current directory contents into the container at /app
 COPY . /app
