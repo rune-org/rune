@@ -51,28 +51,21 @@ def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
 
 @router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
 async def list_workflows(
-    include_schedule: bool = Query(
-        default=False,
-        description="Include schedule information for scheduled workflows",
-    ),
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
     """
     List all workflows accessible by the current user.
 
-    Use `include_schedule=true` to get schedule information in a single query.
-    This is more efficient than fetching schedules separately for each workflow.
+    Schedule information (is_active only) is automatically included for scheduled workflows.
     """
-    wfs = await service.list_for_user(
-        current_user.id, include_schedule=include_schedule
-    )
+    wfs = await service.list_for_user(current_user.id, include_schedule=True)
 
     items = []
     for wf in wfs:
-        # Build schedule info if loaded
+        # Build schedule info if loaded (only is_active field)
         schedule_info = None
-        if include_schedule and wf.schedule:
+        if wf.schedule:
             schedule_info = ScheduleInfo.model_validate(wf.schedule)
 
         item = WorkflowListItem(

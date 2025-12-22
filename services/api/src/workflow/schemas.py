@@ -8,17 +8,12 @@ class WorkflowListItem(BaseModel):
     id: int
     name: str
     trigger_type: TriggerType = TriggerType.MANUAL
-    schedule: Optional["ScheduleInfo"] = None  # Populated when include_schedule=true
+    schedule: Optional["ScheduleInfo"] = None  # Populated for scheduled workflows
 
 
 class ScheduleInfo(BaseModel):
     """Minimal schedule info for workflow list and detail views."""
 
-    id: int
-    interval_seconds: int
-    start_at: datetime
-    next_run_at: datetime
-    last_run_at: datetime | None
     is_active: bool
 
     model_config = {"from_attributes": True}

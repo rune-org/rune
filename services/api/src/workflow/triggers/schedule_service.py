@@ -146,17 +146,17 @@ class ScheduleTriggerService:
 
     async def delete_schedule(self, schedule: ScheduledWorkflow) -> None:
         """
-        Delete a schedule trigger and reset workflow trigger_type to None.
+        Delete a schedule trigger and reset workflow trigger_type to manual.
 
         Args:
             schedule: The schedule to delete
         """
         workflow_id = schedule.workflow_id
 
-        # Get workflow and reset trigger_type to None (manual-only)
+        # Get workflow and reset trigger_type to manual
         workflow = await self.db.get(Workflow, workflow_id)
         if workflow:
-            workflow.trigger_type = None
+            workflow.trigger_type = TriggerType.MANUAL
             self.db.add(workflow)
 
         await self.db.delete(schedule)
