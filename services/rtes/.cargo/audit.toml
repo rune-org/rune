@@ -1,0 +1,16 @@
+# Security audit configuration
+# https://docs.rs/cargo-audit/latest/cargo_audit/
+
+[advisories]
+# Advisories to ignore (with justification)
+ignore = [
+    # rsa timing sidechannel - no fix available yet
+    # Tracked: https://github.com/RustCrypto/RSA/issues/19
+    # Risk: Medium severity, requires precise timing measurements
+    # Mitigation: JWT validation happens server-side, not exposed to timing attacks
+    "RUSTSEC-2023-0071",
+]
+
+[output]
+# Show informational warnings
+informational_warnings = ["unmaintained"]
