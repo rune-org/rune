@@ -398,6 +398,6 @@ class WorkflowService:
         # If start_at is provided and in the future, wait for it
         if start_at and start_at > from_time:
             return start_at
-        
+
         # Otherwise, schedule for next interval from now
         return from_time + timedelta(seconds=interval_seconds)

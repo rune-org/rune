@@ -6,9 +6,9 @@ from src.db.models import TriggerType
 
 class ScheduleInfo(BaseModel):
     """Minimal schedule info for workflow list views - only is_active."""
-    
+
     is_active: bool
-    
+
     model_config = {"from_attributes": True}
 
 
