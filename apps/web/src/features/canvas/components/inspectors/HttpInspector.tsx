@@ -12,6 +12,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const HTTP_CREDENTIAL_TYPES: ("basic_auth" | "header" | "api_key" | "oauth2" | "token")[] = [
+  "basic_auth",
+  "header",
+  "api_key",
+  "oauth2",
+  "token",
+];
+
 type HttpInspectorProps = {
   node: Node<HttpData>;
   updateData: ReturnType<typeof useUpdateNodeData>;
@@ -37,7 +45,7 @@ export function HttpInspector({
   return (
     <div className="space-y-3">
       <CredentialSelector
-        credentialType={["basic_auth", "header", "api_key", "oauth2", "token"]}
+        credentialType={HTTP_CREDENTIAL_TYPES}
         value={node.data.credential}
         onChange={handleCredentialChange}
         label="Authentication"
