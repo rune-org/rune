@@ -4,7 +4,7 @@
     <img src="assets/Logo.svg">
 </picture>
 
-<h3 align="center">Describe your workflow. <strong>Automate your world.</strong></h3>
+<h3 align="center">Describe your workflow. <strong><em>Automate your world.</em></strong></h3>
 
 ---
 
