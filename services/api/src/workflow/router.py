@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, status
 
 from src.workflow.schemas import (
     WorkflowListItem,
