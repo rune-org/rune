@@ -7,6 +7,7 @@ import { BaseNode } from "./BaseNode";
 import type { EditData } from "../types";
 
 export const EditNode = memo(function EditNode({
+  id,
   data,
 }: NodeProps<Node<EditData>>) {
   const assignments = data.assignments ?? [];
@@ -14,6 +15,7 @@ export const EditNode = memo(function EditNode({
 
   return (
     <BaseNode
+      nodeId={id}
       icon={<Pencil className="h-4 w-4 text-muted-foreground" />}
       label={data.label ?? "Edit"}
       bgClassName="bg-node-core-bg"

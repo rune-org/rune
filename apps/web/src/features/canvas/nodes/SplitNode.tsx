@@ -7,10 +7,12 @@ import { BaseNode } from "./BaseNode";
 import type { SplitData } from "../types";
 
 export const SplitNode = memo(function SplitNode({
+  id,
   data,
 }: NodeProps<Node<SplitData>>) {
   return (
     <BaseNode
+      nodeId={id}
       icon={<Split className="h-4 w-4 text-muted-foreground" />}
       label={data.label ?? "Split"}
       bgClassName="bg-node-core-bg"

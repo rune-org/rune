@@ -1,14 +1,13 @@
 use axum::{
     extract::{
+        Query,
         State,
         WebSocketUpgrade,
         ws::{Message, WebSocket},
     },
-    http::HeaderMap,
     response::IntoResponse,
 };
 use futures::{sink::SinkExt, stream::StreamExt};
-use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{error, info, warn};
@@ -91,63 +90,46 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct Claims {
-    pub user_id:      String,
-    pub execution_id: String,
-    pub workflow_id:  String,
-    pub exp:          usize,
-}
-
-#[derive(Deserialize)]
-#[allow(clippy::struct_field_names)]
-pub(crate) struct AuthParams {
-    pub(crate) user_id:      String,
+/// Query params for WebSocket connection
+#[derive(Debug, Deserialize)]
+pub(crate) struct WsQueryParams {
     pub(crate) execution_id: String,
     pub(crate) workflow_id:  String,
 }
 
+/// Internal params for WebSocket connection
+#[derive(Debug)]
+pub(crate) struct WsParams {
+    pub(crate) execution_id: String,
+}
+
 pub(crate) async fn ws_handler(
     ws: WebSocketUpgrade,
-    headers: HeaderMap,
+    Query(query): Query<WsQueryParams>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let token = match headers.get("Authorization") {
-        Some(value) => value.to_str().unwrap_or("").replace("Bearer ", ""),
-        None => {
-            return (axum::http::StatusCode::UNAUTHORIZED, "Missing Authorization header")
-                .into_response();
-        },
-    };
+    let execution_id = query.execution_id;
+    let workflow_id = query.workflow_id;
 
-    let cfg = crate::config::Config::get();
-    let validation = Validation::default();
-    let token_data = match decode::<Claims>(
-        &token,
-        &DecodingKey::from_secret(cfg.jwt_secret.as_bytes()),
-        &validation,
-    ) {
-        Ok(c) => c,
-        Err(e) => {
-            warn!("Invalid JWT token: {}", e);
-            return (axum::http::StatusCode::UNAUTHORIZED, "Invalid Token").into_response();
-        },
-    };
+    info!("WebSocket connection attempt for execution: {} workflow: {}", execution_id, workflow_id);
 
-    let params = AuthParams {
-        user_id:      token_data.claims.user_id,
-        execution_id: token_data.claims.execution_id,
-        workflow_id:  token_data.claims.workflow_id,
-    };
-
+    // Validate access: execution must have a valid grant in Redis
+    // (grants are published via API -> RabbitMQ -> RTES token consumer when /run is
+    // called)
     match state
         .token_store
-        .validate_access(&params.user_id, Some(&params.execution_id), &params.workflow_id)
+        .validate_execution_access(&execution_id, &workflow_id)
         .await
     {
-        Ok(true) => ws.on_upgrade(move |socket| handle_socket(socket, state, params)),
+        Ok(true) => {
+            let params = WsParams { execution_id: execution_id.clone() };
+            ws.on_upgrade(move |socket| handle_socket(socket, state, params))
+        },
         Ok(false) => {
-            warn!("Unauthorized WS access attempt for user: {}", params.user_id);
+            warn!(
+                "Unauthorized WS access attempt for execution: {} workflow: {}",
+                execution_id, workflow_id
+            );
             (axum::http::StatusCode::FORBIDDEN, "Unauthorized").into_response()
         },
         Err(e) => {
@@ -158,7 +140,7 @@ pub(crate) async fn ws_handler(
 }
 
 #[allow(clippy::too_many_lines)]
-async fn handle_socket(socket: WebSocket, state: AppState, params: AuthParams) {
+async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
     let (mut sender, mut receiver) = socket.split();
     let mut rx = state.tx.subscribe();
 

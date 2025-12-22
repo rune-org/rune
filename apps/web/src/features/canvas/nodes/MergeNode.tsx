@@ -7,6 +7,7 @@ import type { MergeData } from "../types";
 import { BaseNode } from "./BaseNode";
 
 export const MergeNode = memo(function MergeNode({
+  id,
   data,
 }: NodeProps<Node<MergeData>>) {
   const waitMode = data.wait_mode ?? "wait_for_all";
@@ -14,6 +15,7 @@ export const MergeNode = memo(function MergeNode({
 
   return (
     <BaseNode
+      nodeId={id}
       icon={<Combine className="h-4 w-4 text-muted-foreground" />}
       label={data.label ?? "Merge"}
       bgClassName="bg-node-core-bg"
