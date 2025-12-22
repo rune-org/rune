@@ -48,13 +48,13 @@ jobs:
         run: cargo +nightly fmt --all -- --check
 
       - name: Lint with Clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings -D clippy::unwrap_used
+        run: cargo +stable clippy --all-targets --all-features -- -D warnings -D clippy::unwrap_used
 
       - name: Security Audit
-        run: cargo audit
+        run: cargo +stable audit
 
       - name: Run Tests
-        run: cargo test --all-features
+        run: cargo +stable test --all-features
 
   docker-build:
     name: Build Docker Image (Cargo Chef)
