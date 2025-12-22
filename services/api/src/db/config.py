@@ -1,5 +1,6 @@
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.core.config import Settings, get_settings, Environment
 
@@ -65,11 +66,16 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Initialize database by importing models.
-
-    For schema changes, use Alembic migrations:
+    """Initialize database by creating tables from SQLModel definitions.
+    
+    This automatically creates all tables on fresh installations.
+    For schema updates on existing databases, use Alembic migrations manually:
         alembic upgrade head
     """
     import src.db.models  # noqa: F401
-
-    print("Database initialized!")
+    
+    async_engine = get_async_engine()
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+    
+    print("✓ Database initialized!")
