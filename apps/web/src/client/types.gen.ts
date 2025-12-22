@@ -1001,29 +1001,9 @@ export type RefreshRequest = {
 /**
  * ScheduleInfo
  *
- * Minimal schedule info for workflow list and detail views.
+ * Minimal schedule info for workflow list views - only is_active.
  */
 export type ScheduleInfo = {
-    /**
-     * Id
-     */
-    id: number;
-    /**
-     * Interval Seconds
-     */
-    interval_seconds: number;
-    /**
-     * Start At
-     */
-    start_at: string;
-    /**
-     * Next Run At
-     */
-    next_run_at: string;
-    /**
-     * Last Run At
-     */
-    last_run_at: string | null;
     /**
      * Is Active
      */
@@ -1673,25 +1653,9 @@ export type FirstAdminSignupAuthFirstAdminSignupPostResponse = FirstAdminSignupA
 export type ListWorkflowsWorkflowsGetData = {
     body?: never;
     path?: never;
-    query?: {
-        /**
-         * Include Schedule
-         *
-         * Include schedule information for scheduled workflows
-         */
-        include_schedule?: boolean;
-    };
+    query?: never;
     url: '/workflows/';
 };
-
-export type ListWorkflowsWorkflowsGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ListWorkflowsWorkflowsGetError = ListWorkflowsWorkflowsGetErrors[keyof ListWorkflowsWorkflowsGetErrors];
 
 export type ListWorkflowsWorkflowsGetResponses = {
     /**

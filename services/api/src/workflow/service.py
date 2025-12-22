@@ -197,7 +197,6 @@ class WorkflowService:
                             datetime.now(),
                             existing_schedule.interval_seconds,
                             existing_schedule.start_at,
-                            existing_schedule.last_run_at,
                         )
                     self.db.add(existing_schedule)
                 else:
@@ -215,7 +214,7 @@ class WorkflowService:
 
                     # Calculate next_run_at using smart logic
                     next_run_at = self._calculate_next_run_helper(
-                        datetime.now(), interval_seconds, start_at, last_run_at=None
+                        datetime.now(), interval_seconds, start_at
                     )
 
                     schedule = ScheduledWorkflow(
@@ -392,18 +391,13 @@ class WorkflowService:
         from_time: datetime,
         interval_seconds: int,
         start_at: datetime | None = None,
-        last_run_at: datetime | None = None,
     ) -> datetime:
-        """Helper to calculate next run time (matches ScheduledWorkflowService logic)."""
+        """Helper to calculate next run time."""
         from datetime import timedelta
 
-        # First run (never executed before)
-        if last_run_at is None and start_at:
-            # If start_at is in the past, run immediately
-            if start_at < from_time:
-                return from_time
-            # If start_at is in the future, wait for it
+        # If start_at is provided and in the future, wait for it
+        if start_at and start_at > from_time:
             return start_at
-
-        # Subsequent runs: add interval from current time
+        
+        # Otherwise, schedule for next interval from now
         return from_time + timedelta(seconds=interval_seconds)

@@ -173,10 +173,6 @@ scheduled_workflows:
   - is_active: boolean
   - next_run_at: timestamp
   - interval_seconds: integer
-  - run_count: integer
-  - failure_count: integer
-  - last_run_at: timestamp
-  - last_error: text
   - updated_at: timestamp
 
 workflows:
@@ -197,8 +193,6 @@ SELECT
     sw.workflow_id,
     sw.next_run_at,
     sw.interval_seconds,
-    sw.run_count,
-    sw.failure_count,
     w.workflow_data,
     w.name as workflow_name
 FROM scheduled_workflows sw
@@ -212,27 +206,11 @@ ORDER BY sw.next_run_at ASC
 ### Update Schedule After Execution
 
 ```sql
--- Success
 UPDATE scheduled_workflows
 SET
-    last_run_at = $1,
-    next_run_at = $2,
-    run_count = run_count + 1,
-    failure_count = 0,
-    last_error = NULL,
-    updated_at = $1
+    next_run_at = $1,
+    updated_at = $2
 WHERE id = $3
-
--- Failure
-UPDATE scheduled_workflows
-SET
-    last_run_at = $1,
-    next_run_at = $2,
-    run_count = run_count + 1,
-    failure_count = failure_count + 1,
-    last_error = $3,
-    updated_at = $1
-WHERE id = $4
 ```
 
 ## Error Handling

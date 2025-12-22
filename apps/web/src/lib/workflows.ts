@@ -27,22 +27,21 @@ export type WorkflowSummary = {
   triggerType: string;
   /**
    * Schedule information if the workflow is scheduled.
+   * Only contains is_active status. Full schedule details are fetched from workflow detail endpoint.
    */
   schedule?: {
     is_active: boolean;
-    interval_seconds: number;
-    start_at: string;
   };
   /**
-   * Last run timestamp.
+   * Last run timestamp - will be fetched from RTES (execution service).
    */
   lastRunAt: string | null;
   /**
-   * Run status.
+   * Run status - will be fetched from RTES (execution service).
    */
   lastRunStatus: "success" | "failed" | "running" | "n/a";
   /**
-   * Total run count.
+   * Total run count - will be fetched from RTES (execution service).
    */
   runs: number;
 };
@@ -66,9 +65,6 @@ export function listItemToWorkflowSummary(
     ? "Webhook" 
     : "Manual";
   
-  const lastRunAt = item.schedule?.last_run_at ?? null;
-  const lastRunStatus = lastRunAt ? "success" : "n/a";
-  
   // Determine status: active (scheduled + active), inactive (scheduled + not active), draft (manual)
   let status: "active" | "inactive" | "draft" = "draft";
   if (item.trigger_type === "scheduled") {
@@ -83,11 +79,9 @@ export function listItemToWorkflowSummary(
     triggerType,
     schedule: item.schedule ? {
       is_active: item.schedule.is_active,
-      interval_seconds: item.schedule.interval_seconds,
-      start_at: item.schedule.start_at,
     } : undefined,
-    lastRunAt,
-    lastRunStatus
+    lastRunAt: null,
+    lastRunStatus: "n/a",
   };
 }
 

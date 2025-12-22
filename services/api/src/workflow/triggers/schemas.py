@@ -4,19 +4,6 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
 
-class ScheduleInfo(BaseModel):
-    """Minimal schedule info for workflow list and detail views."""
-
-    id: int
-    interval_seconds: int
-    start_at: datetime
-    next_run_at: datetime
-    last_run_at: datetime | None
-    is_active: bool
-
-    model_config = {"from_attributes": True}
-
-
 class ScheduleCreate(BaseModel):
     """Schema for creating a new schedule trigger."""
 
@@ -71,7 +58,6 @@ class ScheduleDetail(BaseModel):
     interval_seconds: int
     start_at: datetime
     next_run_at: datetime
-    last_run_at: datetime | None
     created_at: datetime
     updated_at: datetime
 

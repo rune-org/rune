@@ -332,10 +332,6 @@ class ScheduledWorkflow(TimestampModel, table=True):
         description="When the next execution is scheduled",
         index=True,
     )
-    last_run_at: Optional[datetime] = Field(
-        default=None,
-        description="When the last execution occurred",
-    )
 
     # Relationships
     workflow: Workflow = Relationship(back_populates="schedule")

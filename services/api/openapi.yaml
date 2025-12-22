@@ -124,22 +124,9 @@ paths:
       description: 'List all workflows accessible by the current user.
 
 
-        Use `include_schedule=true` to get schedule information in a single query.
-
-        This is more efficient than fetching schedules separately for each workflow.'
+        Schedule information (is_active only) is automatically included for scheduled
+        workflows.'
       operationId: list_workflows_workflows__get
-      security:
-      - OAuth2PasswordBearer: []
-      parameters:
-      - name: include_schedule
-        in: query
-        required: false
-        schema:
-          type: boolean
-          description: Include schedule information for scheduled workflows
-          default: false
-          title: Include Schedule
-        description: Include schedule information for scheduled workflows
       responses:
         '200':
           description: Successful Response
@@ -147,12 +134,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_WorkflowListItem__'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
     post:
       tags:
       - Workflows
@@ -169,14 +152,12 @@ paths:
 
         - Otherwise, workflow is manual-only'
       operationId: create_workflow_workflows__post
-      security:
-      - OAuth2PasswordBearer: []
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/WorkflowCreate'
+        required: true
       responses:
         '201':
           description: Successful Response
@@ -190,6 +171,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
   /workflows/{workflow_id}:
     get:
       tags:
@@ -2371,39 +2354,14 @@ components:
       title: RefreshRequest
     ScheduleInfo:
       properties:
-        id:
-          type: integer
-          title: Id
-        interval_seconds:
-          type: integer
-          title: Interval Seconds
-        start_at:
-          type: string
-          format: date-time
-          title: Start At
-        next_run_at:
-          type: string
-          format: date-time
-          title: Next Run At
-        last_run_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Last Run At
         is_active:
           type: boolean
           title: Is Active
       type: object
       required:
-      - id
-      - interval_seconds
-      - start_at
-      - next_run_at
-      - last_run_at
       - is_active
       title: ScheduleInfo
-      description: Minimal schedule info for workflow list and detail views.
+      description: Minimal schedule info for workflow list views - only is_active.
     SmithMessage:
       properties:
         role:

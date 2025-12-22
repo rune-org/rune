@@ -179,26 +179,14 @@ class ScheduleExecutor:
         now = datetime.now()
         next_run_at = now + timedelta(seconds=interval_seconds)
 
-        if success:
-            update_query = """
-                UPDATE scheduled_workflows
-                SET
-                    last_run_at = $1,
-                    next_run_at = $2,
-                    updated_at = $1
-                WHERE id = $3
-            """
-            await conn.execute(update_query, now, next_run_at, schedule_id)
-        else:
-            update_query = """
-                UPDATE scheduled_workflows
-                SET
-                    last_run_at = $1,
-                    next_run_at = $2,
-                    updated_at = $1
-                WHERE id = $3
-            """
-            await conn.execute(update_query, now, next_run_at, schedule_id)
+        update_query = """
+            UPDATE scheduled_workflows
+            SET
+                next_run_at = $1,
+                updated_at = $2
+            WHERE id = $3
+        """
+        await conn.execute(update_query, next_run_at, now, schedule_id)
 
         logger.debug(
             f"Updated schedule {schedule_id}: next_run_at={next_run_at.isoformat()}, "

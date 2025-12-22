@@ -4,19 +4,19 @@ from pydantic import BaseModel, Field, field_validator
 from src.db.models import TriggerType
 
 
+class ScheduleInfo(BaseModel):
+    """Minimal schedule info for workflow list views - only is_active."""
+    
+    is_active: bool
+    
+    model_config = {"from_attributes": True}
+
+
 class WorkflowListItem(BaseModel):
     id: int
     name: str
     trigger_type: TriggerType = TriggerType.MANUAL
-    schedule: Optional["ScheduleInfo"] = None  # Populated for scheduled workflows
-
-
-class ScheduleInfo(BaseModel):
-    """Minimal schedule info for workflow list and detail views."""
-
-    is_active: bool
-
-    model_config = {"from_attributes": True}
+    schedule: Optional[ScheduleInfo] = None  # Populated for scheduled workflows
 
 
 def normalize_and_validate_name(value: str, *, field_name: str = "name") -> str:

@@ -36,15 +36,13 @@ export function ActivateWorkflowDialog({
 
   const intervalSeconds = days * 86400 + hours * 3600 + minutes * 60 + seconds;
 
+  // Since we don't have interval_seconds in the list response, start with a default
   useEffect(() => {
-    if (workflow?.schedule) {
-      const totalSec = workflow.schedule.interval_seconds || 60;
-      setDays(Math.floor(totalSec / 86400));
-      setHours(Math.floor((totalSec % 86400) / 3600));
-      setMinutes(Math.floor((totalSec % 3600) / 60));
-      setSeconds(totalSec % 60);
+    // Only initialize once when dialog opens, defaults to 1 minute
+    if (workflow && days === 0 && hours === 0 && minutes === 1 && seconds === 0) {
+      // Keep defaults
     }
-  }, [workflow]);
+  }, [workflow, days, hours, minutes, seconds]);
 
   const handleClose = () => {
     setMode("select");
@@ -94,7 +92,7 @@ export function ActivateWorkflowDialog({
                   Run Now
                 </div>
                 <div className="text-sm opacity-90 text-left">
-                  Start executing immediately at the configured interval ({workflow.schedule?.interval_seconds || 60}s)
+                  Start executing immediately at the configured interval
                 </div>
               </Button>
               
