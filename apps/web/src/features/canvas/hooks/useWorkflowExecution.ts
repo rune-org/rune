@@ -120,7 +120,6 @@ export function useWorkflowExecution(
         throw new Error("No execution ID returned from API");
       }
 
-      console.log("[Execution] Started:", executionId);
 
       // Dispatch start action
       dispatch({

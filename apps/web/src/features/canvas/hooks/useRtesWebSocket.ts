@@ -147,7 +147,6 @@ export function useRtesWebSocket(
 
       ws.onopen = () => {
         if (!mountedRef.current) return;
-        console.log("[RTES WS] Connected to", wsUrl);
         reconnectAttemptRef.current = 0;
         updateStatus("connected");
         setLastError(null);
@@ -173,7 +172,6 @@ export function useRtesWebSocket(
 
       ws.onclose = (event) => {
         if (!mountedRef.current) return;
-        console.log("[RTES WS] Disconnected:", event.code, event.reason);
 
         // Attempt to reconnect if not a clean close and we haven't exceeded max attempts
         if (
@@ -182,9 +180,6 @@ export function useRtesWebSocket(
           reconnectAttemptRef.current < MAX_RECONNECT_ATTEMPTS
         ) {
           const delay = getReconnectDelay();
-          console.log(
-            `[RTES WS] Reconnecting in ${delay}ms (attempt ${reconnectAttemptRef.current + 1}/${MAX_RECONNECT_ATTEMPTS})`
-          );
           updateStatus("reconnecting");
           reconnectAttemptRef.current++;
           reconnectTimeoutRef.current = setTimeout(() => {
