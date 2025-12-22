@@ -4,35 +4,83 @@ import * as React from "react";
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
+import { searchUsersForSharing } from "@/lib/api/users";
 import type { UserBasicInfo } from "@/client/types.gen";
 
 interface UserMultiSelectProps {
-    users: UserBasicInfo[];
-    selectedUserIds: number[];
-    onSelect: (userId: number) => void;
+    selectedUsers: UserBasicInfo[];
+    onSelect: (user: UserBasicInfo) => void;
     onRemove: (userId: number) => void;
     disabled?: boolean;
 }
 
 export function UserMultiSelect({
-    users,
-    selectedUserIds,
+    selectedUsers,
     onSelect,
     onRemove,
     disabled,
 }: UserMultiSelectProps) {
     const [inputValue, setInputValue] = React.useState("");
     const [open, setOpen] = React.useState(false);
+    const [isSearching, setIsSearching] = React.useState(false);
+    const [searchResults, setSearchResults] = React.useState<UserBasicInfo[]>([]);
     const inputRef = React.useRef<HTMLInputElement>(null);
     const wrapperRef = React.useRef<HTMLDivElement>(null);
+    const debounceRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-    const selectedUsers = users.filter((u) => selectedUserIds.includes(u.id));
-    const availableUsers = users.filter(
-        (u) =>
-            !selectedUserIds.includes(u.id) &&
-            (u.name?.toLowerCase().includes(inputValue.toLowerCase()) ||
-                u.email?.toLowerCase().includes(inputValue.toLowerCase()))
+    // Get IDs of already selected users for filtering
+    const selectedUserIds = React.useMemo(
+        () => new Set(selectedUsers.map((u) => u.id)),
+        [selectedUsers]
     );
+
+    // Filter out already-selected users from search results
+    const availableUsers = React.useMemo(
+        () => searchResults.filter((u) => !selectedUserIds.has(u.id)),
+        [searchResults, selectedUserIds]
+    );
+
+    // Debounced search function
+    const searchUsers = React.useCallback(async (query: string) => {
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
+        debounceRef.current = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+                const response = await searchUsersForSharing(query, 20);
+                if (response.data?.data) {
+                    setSearchResults(response.data.data);
+                }
+            } catch (error) {
+                console.error("Failed to search users:", error);
+                setSearchResults([]);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 300); // 300ms debounce
+    }, []);
+
+    // Trigger search when input changes
+    React.useEffect(() => {
+        // Only search if there's input and dropdown is open
+        if (inputValue.trim() && open) {
+            searchUsers(inputValue);
+        } else if (!inputValue.trim() && open) {
+            // Fetch initial results when opening with no input
+            searchUsers("");
+        }
+    }, [inputValue, open, searchUsers]);
+
+    // Clean up debounce on unmount
+    React.useEffect(() => {
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+        };
+    }, []);
 
     const handleUnselect = (userId: number) => {
         onRemove(userId);
@@ -42,8 +90,8 @@ export function UserMultiSelect({
         const input = inputRef.current;
         if (input) {
             if (e.key === "Delete" || e.key === "Backspace") {
-                if (input.value === "" && selectedUserIds.length > 0) {
-                    handleUnselect(selectedUserIds[selectedUserIds.length - 1]);
+                if (input.value === "" && selectedUsers.length > 0) {
+                    handleUnselect(selectedUsers[selectedUsers.length - 1].id);
                 }
             }
             if (e.key === "Escape") {
@@ -108,44 +156,54 @@ export function UserMultiSelect({
                     onKeyDown={handleKeyDown}
                     onFocus={() => setOpen(true)}
                     placeholder={
-                        selectedUsers.length === 0 ? "Add people, groups, etc..." : ""
+                        selectedUsers.length === 0 ? "Search for users..." : ""
                     }
                     className="ml-1 flex-1 bg-transparent outline-none placeholder:text-muted-foreground min-w-[120px]"
                     disabled={disabled}
                 />
             </div>
 
-            {open && availableUsers.length > 0 && (
+            {open && (
                 <div className="absolute top-full z-50 mt-2 w-full overflow-hidden rounded-[calc(var(--radius)-0.125rem)] border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95">
                     <div className="max-h-[200px] overflow-y-auto p-1">
-                        {availableUsers.map((user) => (
-                            <div
-                                key={user.id}
-                                className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
-                                onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                }}
-                                onClick={() => {
-                                    onSelect(user.id);
-                                    setInputValue("");
-                                    inputRef.current?.focus();
-                                }}
-                            >
-                                <div className="flex flex-col">
-                                    <span>{user.name}</span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {user.email}
-                                    </span>
-                                </div>
+                        {isSearching ? (
+                            <div className="flex items-center justify-center py-4 text-muted-foreground">
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+                                <span className="ml-2 text-sm">Searching...</span>
                             </div>
-                        ))}
+                        ) : availableUsers.length > 0 ? (
+                            availableUsers.map((user) => (
+                                <div
+                                    key={user.id}
+                                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                    }}
+                                    onClick={() => {
+                                        onSelect(user);
+                                        setInputValue("");
+                                        inputRef.current?.focus();
+                                    }}
+                                >
+                                    <div className="flex flex-col">
+                                        <span>{user.name}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {user.email}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : inputValue ? (
+                            <div className="py-4 text-center text-sm text-muted-foreground">
+                                No users found matching &quot;{inputValue}&quot;
+                            </div>
+                        ) : (
+                            <div className="py-4 text-center text-sm text-muted-foreground">
+                                Type to search for users
+                            </div>
+                        )}
                     </div>
-                </div>
-            )}
-            {open && availableUsers.length === 0 && inputValue && (
-                <div className="absolute top-full z-50 mt-2 w-full rounded-[calc(var(--radius)-0.125rem)] border bg-popover p-2 text-sm text-muted-foreground shadow-lg">
-                    No users found.
                 </div>
             )}
         </div>

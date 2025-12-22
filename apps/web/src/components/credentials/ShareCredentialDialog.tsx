@@ -20,9 +20,8 @@ import {
   listCredentialShares,
   revokeCredentialAccess,
 } from "@/lib/api/credentials";
-import { listUsersForSharing } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth";
-import type { CredentialShareInfo, UserBasicInfo} from "@/client/types.gen";
+import type { CredentialShareInfo, UserBasicInfo } from "@/client/types.gen";
 
 interface ShareCredentialDialogProps {
   open: boolean;
@@ -45,25 +44,17 @@ export function ShareCredentialDialog({
   const currentUserId = state.user?.id;
 
   const [shares, setShares] = useState<CredentialShareInfo[]>([]);
-  const [users, setUsers] = useState<UserBasicInfo[]>([]);
-  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<UserBasicInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [revokingUserId, setRevokingUserId] = useState<number | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadShares = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [sharesRes, usersRes] = await Promise.all([
-        listCredentialShares(credentialId),
-        listUsersForSharing(),
-      ]);
-
+      const sharesRes = await listCredentialShares(credentialId);
       if (sharesRes.data?.data) {
         setShares(sharesRes.data.data);
-      }
-      if (usersRes.data?.data) {
-        setUsers(usersRes.data.data);
       }
     } catch (error) {
       console.error("Failed to load sharing data:", error);
@@ -73,29 +64,25 @@ export function ShareCredentialDialog({
     }
   }, [credentialId]);
 
-  // Load shares and users when dialog opens
+  // Load shares when dialog opens (users are fetched on-demand by UserMultiSelect)
   useEffect(() => {
     if (open) {
-      loadData();
+      loadShares();
+      // Clear selection when dialog opens
+      setSelectedUsers([]);
     }
-  }, [open, loadData]);
+  }, [open, loadShares]);
 
-  // Filter out users who already have access and the current user (can't share with yourself)
-  const availableUsers = users.filter(
-    (user) =>
-      user.id !== currentUserId &&
-      !shares.some((share) => share.user_id === user.id)
-  );
-
-  // Helper to get user name by ID
-  const getUserNameById = (userId: number | null): string | null => {
-    if (!userId) return null;
-    const user = users.find((u) => u.id === userId);
-    return user?.name ?? null;
+  // Helper to get user name by ID from shares (since we no longer have full user list)
+  const getSharerName = (share: CredentialShareInfo): string | null => {
+    if (!share.shared_by) return null;
+    // Check if the sharer is in current shares (they might have shared with others)
+    const sharerAsShare = shares.find((s) => s.user_id === share.shared_by);
+    return sharerAsShare?.user_name ?? null;
   };
 
   const handleShare = async () => {
-    if (selectedUserIds.length === 0) {
+    if (selectedUsers.length === 0) {
       toast.error("Please select users to share with");
       return;
     }
@@ -103,9 +90,9 @@ export function ShareCredentialDialog({
     setIsSharing(true);
     try {
       await Promise.all(
-        selectedUserIds.map((userId) =>
+        selectedUsers.map((user) =>
           shareCredential(credentialId, {
-            user_id: userId,
+            user_id: user.id,
           })
         )
       );
@@ -116,7 +103,7 @@ export function ShareCredentialDialog({
         setShares(sharesRes.data.data);
       }
 
-      setSelectedUserIds([]);
+      setSelectedUsers([]);
       toast.success("Credential shared successfully");
       onSharesChanged?.();
       onOpenChange(false);
@@ -147,6 +134,22 @@ export function ShareCredentialDialog({
     }
   };
 
+  const handleSelectUser = (user: UserBasicInfo) => {
+    // Don't add if already selected or if user already has access
+    if (
+      selectedUsers.some((u) => u.id === user.id) ||
+      shares.some((s) => s.user_id === user.id) ||
+      user.id === currentUserId
+    ) {
+      return;
+    }
+    setSelectedUsers((prev) => [...prev, user]);
+  };
+
+  const handleRemoveUser = (userId: number) => {
+    setSelectedUsers((prev) => prev.filter((u) => u.id !== userId));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -168,15 +171,11 @@ export function ShareCredentialDialog({
               <label className="text-sm font-medium">Share with people</label>
               <div className="flex flex-col gap-3">
                 <UserMultiSelect
-                  users={availableUsers}
-                  selectedUserIds={selectedUserIds}
-                  onSelect={(id) => setSelectedUserIds((prev) => [...prev, id])}
-                  onRemove={(id) =>
-                    setSelectedUserIds((prev) => prev.filter((uid) => uid !== id))
-                  }
+                  selectedUsers={selectedUsers}
+                  onSelect={handleSelectUser}
+                  onRemove={handleRemoveUser}
                   disabled={isLoading || isSharing}
                 />
-
               </div>
             </div>
           )}
@@ -200,7 +199,7 @@ export function ShareCredentialDialog({
             ) : (
               <div className="max-h-[200px] overflow-y-auto rounded-md border">
                 {shares.map((share) => {
-                  const sharedByName = getUserNameById(share.shared_by);
+                  const sharedByName = getSharerName(share);
                   return (
                     <div
                       key={share.user_id}
@@ -247,7 +246,7 @@ export function ShareCredentialDialog({
           </Button>
           <Button
             onClick={handleShare}
-            disabled={selectedUserIds.length === 0 || isSharing}
+            disabled={selectedUsers.length === 0 || isSharing}
             className="gap-2"
           >
             <UserPlus className="h-4 w-4" />
@@ -255,6 +254,6 @@ export function ShareCredentialDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog >
+    </Dialog>
   );
 }

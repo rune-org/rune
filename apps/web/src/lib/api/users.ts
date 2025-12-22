@@ -28,6 +28,11 @@ export const listUsers = () => getAllUsersUsersGet();
 
 export const listUsersForSharing = () => listUsersForSharingUsersSharingGet();
 
+export const searchUsersForSharing = (search?: string, limit: number = 10) =>
+  listUsersForSharingUsersSharingGet({
+    query: { search, limit },
+  });
+
 export const getUserById = (user_id: number) =>
   getUserByIdUsersUserIdGet({ path: { user_id } });
 
