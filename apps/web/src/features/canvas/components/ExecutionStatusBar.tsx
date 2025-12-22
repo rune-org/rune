@@ -12,6 +12,7 @@ interface StatusConfig {
   icon: React.ReactNode;
   text: string;
   className: string;
+  ariaLabel: string;
 }
 
 function getStatusConfig(
@@ -22,29 +23,35 @@ function getStatusConfig(
   switch (status) {
     case "running":
       return {
-        icon: <Loader2 className="h-4 w-4 animate-spin" />,
+        icon: <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />,
         text: "Executing workflow...",
         className: "bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400",
+        ariaLabel: "Workflow execution in progress",
       };
     case "completed":
       return {
-        icon: <CheckCircle className="h-4 w-4" />,
+        icon: <CheckCircle className="h-4 w-4" aria-hidden="true" />,
         text: totalDurationMs
           ? `Completed in ${totalDurationMs}ms`
           : "Workflow completed",
         className: "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400",
+        ariaLabel: totalDurationMs
+          ? `Workflow completed successfully in ${totalDurationMs} milliseconds`
+          : "Workflow completed successfully",
       };
     case "failed":
       return {
-        icon: <XCircle className="h-4 w-4" />,
+        icon: <XCircle className="h-4 w-4" aria-hidden="true" />,
         text: error ?? "Workflow failed",
         className: "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400",
+        ariaLabel: `Workflow failed: ${error ?? "Unknown error"}`,
       };
     case "halted":
       return {
-        icon: <AlertTriangle className="h-4 w-4" />,
+        icon: <AlertTriangle className="h-4 w-4" aria-hidden="true" />,
         text: "Workflow halted",
         className: "bg-yellow-500/10 border-yellow-500/30 text-yellow-600 dark:text-yellow-400",
+        ariaLabel: "Workflow execution halted",
       };
     case "idle":
     default:
@@ -120,6 +127,9 @@ export function ExecutionStatusBar() {
       )}
     >
       <div
+        role="status"
+        aria-live="polite"
+        aria-label={statusConfig.ariaLabel}
         className={cn(
           "flex items-center gap-3 rounded-lg border px-4 py-2.5 shadow-lg backdrop-blur-sm transition-all duration-300",
           statusConfig.className
@@ -132,8 +142,8 @@ export function ExecutionStatusBar() {
           <>
             <div className="mx-2 h-4 w-px bg-current opacity-20" />
             <div className="flex items-center gap-2 text-xs opacity-80">
-              <Clock className="h-3 w-3" />
-              <span>
+              <Clock className="h-3 w-3" aria-hidden="true" />
+              <span aria-label={`${completedNodes} of ${totalNodes} nodes completed${runningNodes > 0 ? `, ${runningNodes} currently running` : ""}`}>
                 {completedNodes}/{totalNodes} nodes
                 {runningNodes > 0 && ` (${runningNodes} running)`}
               </span>
@@ -142,7 +152,11 @@ export function ExecutionStatusBar() {
         )}
 
         {state.executionId && (
-          <div className="ml-2 rounded bg-current/10 px-2 py-0.5 text-[10px] font-mono opacity-60">
+          <div
+            className="ml-2 rounded bg-current/10 px-2 py-0.5 text-[10px] font-mono opacity-60"
+            aria-label={`Execution ID: ${state.executionId}`}
+            title={state.executionId}
+          >
             {state.executionId.slice(0, 8)}...
           </div>
         )}
@@ -151,9 +165,9 @@ export function ExecutionStatusBar() {
           <button
             onClick={dismiss}
             className="ml-1 rounded-full p-0.5 opacity-60 transition-opacity hover:opacity-100"
-            title="Dismiss"
+            aria-label="Dismiss status notification"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         )}
       </div>
