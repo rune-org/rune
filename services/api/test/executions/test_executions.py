@@ -154,7 +154,7 @@ class TestExecutionsQueuePublishing:
         # Purge any existing messages
         channel = await test_rabbitmq.channel()
         queue = await channel.declare_queue(
-            test_settings.rabbitmq_token_queue, durable=True
+            test_settings.rabbitmq_token_queue, durable=False
         )
         await queue.purge()
 
@@ -191,7 +191,7 @@ class TestExecutionsQueuePublishing:
         # Purge any existing messages
         channel = await test_rabbitmq.channel()
         queue = await channel.declare_queue(
-            test_settings.rabbitmq_token_queue, durable=True
+            test_settings.rabbitmq_token_queue, durable=False
         )
         await queue.purge()
 
@@ -223,7 +223,7 @@ class TestExecutionsQueuePublishing:
         # Purge any existing messages
         channel = await test_rabbitmq.channel()
         queue = await channel.declare_queue(
-            test_settings.rabbitmq_token_queue, durable=True
+            test_settings.rabbitmq_token_queue, durable=False
         )
         await queue.purge()
 
@@ -249,7 +249,7 @@ class TestExecutionsQueuePublishing:
         # Purge any existing messages
         channel = await test_rabbitmq.channel()
         queue = await channel.declare_queue(
-            test_settings.rabbitmq_token_queue, durable=True
+            test_settings.rabbitmq_token_queue, durable=False
         )
         await queue.purge()
 
