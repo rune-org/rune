@@ -11,6 +11,7 @@ mod infra;
 mod util;
 
 use std::future::Future;
+
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
@@ -70,24 +71,16 @@ async fn run_consumer_with_retry<F, Fut>(
             return;
         }
         attempt += 1;
-        info!(
-            "Connecting to RabbitMQ for {} at {} (attempt {})",
-            name, amqp_url, attempt
-        );
+        info!("Connecting to RabbitMQ for {} at {} (attempt {})", name, amqp_url, attempt);
         match start(amqp_url.clone(), cancel_token.clone()).await {
             Ok(()) => return,
             Err(e) => {
-                tracing::error!(
-                    "{} error: {} - retrying in {:?}",
-                    name,
-                    e,
-                    RABBITMQ_RETRY_DELAY
-                );
+                tracing::error!("{} error: {} - retrying in {:?}", name, e, RABBITMQ_RETRY_DELAY);
                 if cancel_token.is_cancelled() {
                     return;
                 }
                 tokio::time::sleep(RABBITMQ_RETRY_DELAY).await;
-            }
+            },
         }
     }
 }

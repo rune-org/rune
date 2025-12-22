@@ -1,10 +1,10 @@
 #![allow(unreachable_pub)]
 
-use mongodb::bson::DateTime;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::collections::HashMap;
-use serde::de::Deserializer;
+
+use mongodb::bson::DateTime;
+use serde::{Deserialize, Serialize, de::Deserializer};
+use serde_json::Value;
 use uuid::Uuid;
 
 /// Custom serialization for bson::DateTime to output ISO 8601 strings
@@ -20,7 +20,7 @@ mod datetime_iso {
             Some(dt) => {
                 let iso_string = dt.try_to_rfc3339_string().unwrap_or_default();
                 serializer.serialize_some(&iso_string)
-            }
+            },
             None => serializer.serialize_none(),
         }
     }
@@ -39,11 +39,9 @@ mod datetime_iso {
 
         let opt: Option<DateTimeFormat> = Option::deserialize(deserializer)?;
         match opt {
-            Some(DateTimeFormat::IsoString(s)) => {
-                DateTime::parse_rfc3339_str(&s)
-                    .map(Some)
-                    .map_err(serde::de::Error::custom)
-            }
+            Some(DateTimeFormat::IsoString(s)) => DateTime::parse_rfc3339_str(&s)
+                .map(Some)
+                .map_err(serde::de::Error::custom),
             Some(DateTimeFormat::BsonDateTime(dt)) => Ok(Some(dt)),
             None => Ok(None),
         }
@@ -136,18 +134,18 @@ pub enum WorkerMessage {
 /// A single execution instance for a node, keyed by lineage_hash.
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct NodeExecutionInstance {
-    pub input:         Option<Value>,
-    pub parameters:    Option<Value>,
-    pub output:        Option<Value>,
-    pub status:        Option<String>,
-    pub error:         Option<NodeError>,
-    pub executed_at:   Option<String>,
-    pub duration_ms:   Option<i64>,
-    pub lineage_hash:  Option<String>,
-    pub lineage_stack: Option<Vec<StackFrame>>,
-    pub used_inputs:   Option<Value>,
-    pub node_type:     Option<String>,
-    pub name:          Option<String>,
+    pub input:            Option<Value>,
+    pub parameters:       Option<Value>,
+    pub output:           Option<Value>,
+    pub status:           Option<String>,
+    pub error:            Option<NodeError>,
+    pub executed_at:      Option<String>,
+    pub duration_ms:      Option<i64>,
+    pub lineage_hash:     Option<String>,
+    pub lineage_stack:    Option<Vec<StackFrame>>,
+    pub used_inputs:      Option<Value>,
+    pub node_type:        Option<String>,
+    pub name:             Option<String>,
     #[serde(default)]
     pub branch_id:        Option<String>,
     #[serde(default)]
@@ -230,28 +228,28 @@ where
                     serde_json::from_value::<NodeExecutionInstance>(Value::Object(obj.clone()))
                         .map_or_else(
                             |_| HydratedNode {
-                                latest: None,
+                                latest:   None,
                                 lineages: HashMap::new(),
-                                extra: obj.into_iter().collect::<HashMap<_, _>>(),
+                                extra:    obj.into_iter().collect::<HashMap<_, _>>(),
                             },
                             |instance| HydratedNode {
-                                latest: Some(instance),
+                                latest:   Some(instance),
                                 lineages: HashMap::new(),
-                                extra: HashMap::new(),
+                                extra:    HashMap::new(),
                             },
                         )
                 }
             },
             other => serde_json::from_value::<NodeExecutionInstance>(other.clone()).map_or_else(
                 |_| HydratedNode {
-                    latest: None,
+                    latest:   None,
                     lineages: HashMap::new(),
-                    extra: HashMap::new(),
+                    extra:    HashMap::new(),
                 },
                 |instance| HydratedNode {
-                    latest: Some(instance),
+                    latest:   Some(instance),
                     lineages: HashMap::new(),
-                    extra: HashMap::new(),
+                    extra:    HashMap::new(),
                 },
             ),
         };

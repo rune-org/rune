@@ -62,7 +62,8 @@ impl Config {
                 .parse()
                 .unwrap_or(3000),
             jwt_secret: env::var("JWT_SECRET_KEY").unwrap_or_else(|_| "secret".to_string()),
-            cors_origin: env::var("CORS_ORIGIN").unwrap_or_else(|_| "http://localhost:3000".to_string()),
+            cors_origin: env::var("CORS_ORIGIN")
+                .unwrap_or_else(|_| "http://localhost:3000".to_string()),
         };
 
         CONFIG

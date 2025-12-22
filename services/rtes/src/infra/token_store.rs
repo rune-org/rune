@@ -178,7 +178,10 @@ impl TokenStore {
             }
         }
 
-        info!("Access denied for user {} execution {} - no matching grant found", user_id, target_execution_id);
+        info!(
+            "Access denied for user {} execution {} - no matching grant found",
+            user_id, target_execution_id
+        );
         Ok(false)
     }
 
@@ -238,11 +241,7 @@ impl TokenStore {
             return Ok(true);
         }
 
-        info!(
-            "Access denied for workflow {} - no matching grant found",
-            target_workflow_id
-        );
+        info!("Access denied for workflow {} - no matching grant found", target_workflow_id);
         Ok(false)
     }
 }
-

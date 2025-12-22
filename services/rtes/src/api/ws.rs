@@ -1,6 +1,8 @@
 use axum::{
     extract::{
-        Query, State, WebSocketUpgrade,
+        Query,
+        State,
+        WebSocketUpgrade,
         ws::{Message, WebSocket},
     },
     response::IntoResponse,
@@ -79,7 +81,7 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
                 split_node_id:    None,
                 branch_id:        None,
                 item_index:       None,
-                total_items:       None,
+                total_items:      None,
                 processed_count:  None,
                 aggregator_state: None,
                 used_inputs:      None,
@@ -92,7 +94,7 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
 #[derive(Debug, Deserialize)]
 pub(crate) struct WsQueryParams {
     pub(crate) execution_id: String,
-    pub(crate) workflow_id: String,
+    pub(crate) workflow_id:  String,
 }
 
 /// Internal params for WebSocket connection
@@ -109,22 +111,18 @@ pub(crate) async fn ws_handler(
     let execution_id = query.execution_id;
     let workflow_id = query.workflow_id;
 
-    info!(
-        "WebSocket connection attempt for execution: {} workflow: {}",
-        execution_id, workflow_id
-    );
+    info!("WebSocket connection attempt for execution: {} workflow: {}", execution_id, workflow_id);
 
     // Validate access: execution must have a valid grant in Redis
-    // (grants are published via API -> RabbitMQ -> RTES token consumer when /run is called)
+    // (grants are published via API -> RabbitMQ -> RTES token consumer when /run is
+    // called)
     match state
         .token_store
         .validate_execution_access(&execution_id, &workflow_id)
         .await
     {
         Ok(true) => {
-            let params = WsParams {
-                execution_id: execution_id.clone(),
-            };
+            let params = WsParams { execution_id: execution_id.clone() };
             ws.on_upgrade(move |socket| handle_socket(socket, state, params))
         },
         Ok(false) => {

@@ -1,16 +1,31 @@
-use axum::{Router, http::{HeaderValue, Method}, routing::{any, get}};
+use axum::{
+    Router,
+    http::{HeaderValue, Method},
+    routing::{any, get},
+};
 use tower_http::cors::CorsLayer;
 
-use crate::api::{handlers, state::AppState, ws};
-use crate::config::Config;
+use crate::{
+    api::{handlers, state::AppState, ws},
+    config::Config,
+};
 
 pub(crate) fn app(state: AppState) -> Router {
     let cfg = Config::get();
     let cors = CorsLayer::new()
-        .allow_origin(cfg.cors_origin.parse::<HeaderValue>().unwrap_or_else(|_| {
-            HeaderValue::from_static("http://localhost:3000")
-        }))
-        .allow_methods([Method::GET, Method::POST, Method::OPTIONS, Method::PUT, Method::DELETE, Method::PATCH])
+        .allow_origin(
+            cfg.cors_origin
+                .parse::<HeaderValue>()
+                .unwrap_or_else(|_| HeaderValue::from_static("http://localhost:3000")),
+        )
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::OPTIONS,
+            Method::PUT,
+            Method::DELETE,
+            Method::PATCH,
+        ])
         .allow_headers([axum::http::header::AUTHORIZATION, axum::http::header::CONTENT_TYPE])
         .allow_credentials(true);
 
@@ -28,4 +43,3 @@ pub(crate) fn app(state: AppState) -> Router {
         .layer(cors)
         .with_state(state)
 }
-

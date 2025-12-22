@@ -112,7 +112,7 @@ impl ExecutionStore {
         workflow_id: &str,
     ) -> Result<Vec<ExecutionDocument>, mongodb::error::Error> {
         use futures::TryStreamExt;
-        
+
         info!(workflow_id = %workflow_id, mongodb_db = %self.db_name, "Fetching executions for workflow");
         let filter = doc! { "workflow_id": workflow_id };
         let cursor = self.execution_collection().find(filter).await?;
