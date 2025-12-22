@@ -67,15 +67,15 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     """Initialize database by creating tables from SQLModel definitions.
-    
+
     This automatically creates all tables on fresh installations.
     For schema updates on existing databases, use Alembic migrations manually:
         alembic upgrade head
     """
     import src.db.models  # noqa: F401
-    
+
     async_engine = get_async_engine()
     async with async_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
-    
+
     print("✓ Database initialized!")
