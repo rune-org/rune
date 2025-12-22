@@ -167,10 +167,10 @@ impl TokenStore {
         for token_str in tokens {
             if let Ok(token) = serde_json::from_str::<ExecutionToken>(&token_str) {
                 // Match if: execution matches exactly, OR token has wildcard (None execution)
-                let matches = match token.execution_id.as_deref() {
-                    Some(tok_eid) => tok_eid == target_execution_id,
-                    None => true, // Wildcard grant for workflow
-                };
+                let matches = token
+                    .execution_id
+                    .as_deref()
+                    .is_none_or(|tok_eid| tok_eid == target_execution_id);
                 if matches {
                     info!("Access granted for user {} execution {}", user_id, target_execution_id);
                     return Ok(true);

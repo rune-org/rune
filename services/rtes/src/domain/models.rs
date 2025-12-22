@@ -12,6 +12,7 @@ mod datetime_iso {
     use mongodb::bson::DateTime;
     use serde::{self, Deserialize, Deserializer, Serializer};
 
+    #[allow(clippy::ref_option)] // serde `with` requires &Option<T> signature
     pub fn serialize<S>(date: &Option<DateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
