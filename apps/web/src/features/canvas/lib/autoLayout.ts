@@ -9,6 +9,11 @@ const NODE_DIMENSIONS: Record<NodeKind, { width: number; height: number }> = {
   switch: { width: 240, height: 180 },
   http: { width: 220, height: 80 },
   smtp: { width: 220, height: 80 },
+  wait: { width: 220, height: 72 },
+  edit: { width: 220, height: 72 },
+  split: { width: 220, height: 72 },
+  aggregator: { width: 220, height: 72 },
+  merge: { width: 220, height: 80 },
 };
 
 /**
