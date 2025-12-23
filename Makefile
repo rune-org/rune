@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status db-shell db-migrate db-rollback db-history db-current db-revision db-reset
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status db-shell db-reset
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
@@ -328,60 +328,6 @@ logs-frontend:
 
 db-shell:
 	docker exec -it rune-postgres psql -U rune -d rune_db
-
-# Alembic Migration Commands - automatically handles venv activation
-db-migrate:
-	@echo "Applying all pending migrations..."
-ifeq ($(DETECTED_OS),Windows)
-	cd services/api && .venv\Scripts\python -m alembic upgrade head
-else
-	cd services/api && . .venv/bin/activate && alembic upgrade head
-endif
-
-db-rollback:
-	@echo "Rolling back last migration..."
-ifeq ($(DETECTED_OS),Windows)
-	cd services/api && .venv\Scripts\python -m alembic downgrade -1
-else
-	cd services/api && . .venv/bin/activate && alembic downgrade -1
-endif
-
-db-history:
-	@echo "Migration history:"
-ifeq ($(DETECTED_OS),Windows)
-	cd services/api && .venv\Scripts\python -m alembic history
-else
-	cd services/api && . .venv/bin/activate && alembic history
-endif
-
-db-current:
-	@echo "Current database version:"
-ifeq ($(DETECTED_OS),Windows)
-	cd services/api && .venv\Scripts\python -m alembic current
-else
-	cd services/api && . .venv/bin/activate && alembic current
-endif
-
-db-revision:
-	@echo "Generating migration from model changes..."
-ifeq ($(DETECTED_OS),Windows)
-	cd services/api && .venv\Scripts\python -m alembic revision --autogenerate -m "$(msg)"
-else
-	cd services/api && . .venv/bin/activate && alembic revision --autogenerate -m "$(msg)"
-endif
-
-db-reset:
-	@echo "Resetting database (WARNING: destroys all data)..."
-	cd services/api && docker compose -f docker-compose.dev.yml down -v
-	cd services/api && docker compose -f docker-compose.dev.yml up -d
-	@echo "Waiting for database to start..."
-	@sleep 3
-ifeq ($(DETECTED_OS),Windows)
-	cd services/api && .venv\Scripts\python -m alembic upgrade head
-else
-	cd services/api && . .venv/bin/activate && alembic upgrade head
-endif
-	@echo "✓ Database reset complete"
 
 # ======================
 # Cleanup targets
