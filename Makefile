@@ -1,5 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status db-shell db-reset
-
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev dev-infra-up dev-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
 ifeq ($(UNAME),)
@@ -54,15 +53,6 @@ help:
 	@echo "  make worker-lint    - Lint worker code"
 	@echo "  make worker-format  - Format worker code"
 	@echo "  make worker-test    - Run worker tests"
-	@echo ""
-	@echo "Database targets (run with venv activated):"
-	@echo "  make db-migrate        - Apply all pending migrations"
-	@echo "  make db-revision msg=x - Generate migration from model changes"
-	@echo "  make db-rollback       - Rollback last migration"
-	@echo "  make db-history        - Show migration history"
-	@echo "  make db-current        - Show current DB version"
-	@echo "  make db-reset          - Reset DB and run all migrations"
-	@echo "  make db-shell          - Open PostgreSQL shell"
 	@echo ""
 	@echo "Docker targets:"
 	@echo "  make up                        - Start all services (alias for docker-up)"
@@ -324,7 +314,6 @@ logs-frontend:
 # ======================
 # Database targets
 # ======================
-# All migration commands automatically activate the API virtual environment
 
 db-shell:
 	docker exec -it rune-postgres psql -U rune -d rune_db
