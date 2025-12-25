@@ -8,7 +8,9 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
+  Copy,
 } from "lucide-react";
+import { toast } from "@/components/ui/toast";
 import { useNodeExecution } from "../../context/ExecutionContext";
 import type { NodeExecutionStatus, NodeExecutionData } from "../../types/execution";
 import { cn } from "@/lib/cn";
@@ -74,7 +76,7 @@ function StatusBadge({ status, durationMs }: { status: NodeExecutionStatus; dura
 }
 
 /**
- * TODO(fe): For now we display as JSON but this can be prettified.
+ * TODO(ash): Replace raw JSON display with a prettified display
  */
 function JsonViewer({ label, data }: { label: string; data: unknown }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -99,21 +101,37 @@ function JsonViewer({ label, data }: { label: string; data: unknown }) {
 
   if (data === undefined || data === null) return null;
 
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(jsonString);
+    toast.success("Copied to clipboard");
+  };
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-1">
-      <CollapsibleTrigger className="flex w-full items-center gap-2 text-xs font-medium uppercase text-muted-foreground hover:text-foreground transition-colors">
-        {isOpen ? (
-          <ChevronDown className="h-3 w-3" />
-        ) : (
-          <ChevronRight className="h-3 w-3" />
+      <div className="flex items-center gap-2">
+        <CollapsibleTrigger className="flex flex-1 items-center gap-2 text-xs font-medium uppercase text-muted-foreground hover:text-foreground transition-colors">
+          {isOpen ? (
+            <ChevronDown className="h-3 w-3" />
+          ) : (
+            <ChevronRight className="h-3 w-3" />
+          )}
+          {label}
+          {!isOpen && (
+            <span className="ml-2 truncate text-[10px] font-normal opacity-60">
+              {preview}
+            </span>
+          )}
+        </CollapsibleTrigger>
+        {isOpen && (
+          <button
+            onClick={handleCopy}
+            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+            title="Copy to clipboard"
+          >
+            <Copy className="h-3 w-3" />
+          </button>
         )}
-        {label}
-        {!isOpen && (
-          <span className="ml-2 truncate text-[10px] font-normal opacity-60">
-            {preview}
-          </span>
-        )}
-      </CollapsibleTrigger>
+      </div>
       <CollapsibleContent>
         <pre className="max-h-48 overflow-auto rounded-md bg-muted/30 p-3 text-xs font-mono">
           {jsonString}
