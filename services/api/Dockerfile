@@ -3,13 +3,18 @@ FROM python:3.13-slim
 # Set the working directory
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Copy only requirements first to leverage Docker cache
+COPY requirements.txt .
 
-# Install any needed packages specified in requirements.txt
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application
+COPY . /app
 
 EXPOSE 8000
 
