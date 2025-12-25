@@ -574,6 +574,10 @@ function FlowCanvasInner({
   // Paste to import graph DSL or clone selections
   useEffect(() => {
     const handler = (e: ClipboardEvent) => {
+      // Ignore paste events from dialogs (e.g., expanded inspector)
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[role="dialog"]')) return;
+
       const text = e.clipboardData?.getData("text");
       if (!text) return;
       let raw: unknown;

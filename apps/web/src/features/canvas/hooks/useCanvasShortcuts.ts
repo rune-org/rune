@@ -55,6 +55,9 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
 
       if (isEditable) return;
 
+      // Ignore shortcuts when focus is inside a dialog (e.g., expanded inspector)
+      if (target?.closest('[role="dialog"]')) return;
+
       // delete selected node(s)/edge(s)
       if (e.key === "Delete" || e.key === "Backspace") {
         const selectedNodeIds = new Set(
