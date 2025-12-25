@@ -15,6 +15,8 @@ import {
   FileJson,
   FileBox,
   ChevronDown,
+  Loader2,
+  Square,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -22,9 +24,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ExecutionHistoryPanel } from "./ExecutionHistoryPanel";
+import type { WorkflowExecutionStatus } from "../types/execution";
+import { cn } from "@/lib/cn";
 
 type ToolbarProps = {
   onExecute: () => void;
+  onStop?: () => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -39,10 +45,15 @@ type ToolbarProps = {
   onFitView?: () => void;
   onAutoLayout?: () => void;
   saveDisabled?: boolean;
+
+  executionStatus?: WorkflowExecutionStatus;
+  isStartingExecution?: boolean;
+  workflowId?: number | null;
 };
 
 export function Toolbar({
   onExecute,
+  onStop,
   onUndo,
   onRedo,
   canUndo,
@@ -57,7 +68,11 @@ export function Toolbar({
   onFitView,
   onAutoLayout,
   saveDisabled = false,
+  executionStatus = "idle",
+  isStartingExecution = false,
+  workflowId,
 }: ToolbarProps) {
+  const isExecuting = executionStatus === "running" || isStartingExecution;
   const Btn = ({
     onClick,
     title,
@@ -94,9 +109,31 @@ export function Toolbar({
         <Logo href="" variant="glyph" className="h-5 w-5 translate-x-[1.5px]" />
       </Link>
 
-      <Btn onClick={onExecute} title="Execute (simulate)">
-        <Play className="h-4 w-4" /> Run
-      </Btn>
+      {isExecuting ? (
+        <>
+          <button
+            title="Running..."
+            disabled
+            className={cn(
+              "inline-flex h-8 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border px-2.5 text-xs",
+              "border-blue-500/60 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+            )}
+          >
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {isStartingExecution ? "Starting..." : "Running..."}
+          </button>
+          {onStop && (
+            <Btn onClick={onStop} title="Stop execution">
+              <Square className="h-4 w-4" /> Stop
+            </Btn>
+          )}
+        </>
+      ) : (
+        <Btn onClick={onExecute} title="Execute workflow">
+          <Play className="h-4 w-4" /> Run
+        </Btn>
+      )}
+      <ExecutionHistoryPanel workflowId={workflowId ?? null} />
       <Btn onClick={onUndo} title="Undo (Ctrl+Z)" disabled={!canUndo}>
         <RotateCcw className="h-4 w-4" /> Undo
       </Btn>

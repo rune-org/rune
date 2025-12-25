@@ -1841,6 +1841,70 @@ export type RunWorkflowWorkflowsWorkflowIdRunPostResponses = {
 
 export type RunWorkflowWorkflowsWorkflowIdRunPostResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponses[keyof RunWorkflowWorkflowsWorkflowIdRunPostResponses];
 
+export type GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetData = {
+    body?: never;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/executions';
+};
+
+export type GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetError = GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetErrors[keyof GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetErrors];
+
+export type GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseNoneType;
+};
+
+export type GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponse = GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponses[keyof GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponses];
+
+export type GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Execution Id
+         */
+        execution_id: string;
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/executions/{execution_id}';
+};
+
+export type GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetError = GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetErrors[keyof GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetErrors];
+
+export type GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseNoneType;
+};
+
+export type GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponse = GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponses[keyof GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponses];
+
 export type ShareWorkflowWorkflowsWorkflowIdSharePostData = {
     body: WorkflowShareRequest;
     path: {

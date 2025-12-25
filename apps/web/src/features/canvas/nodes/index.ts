@@ -6,6 +6,11 @@ import { IfNode } from "./IfNode";
 import { SwitchNode } from "./SwitchNode";
 import { HttpNode } from "./HttpNode";
 import { SmtpNode } from "./SmtpNode";
+import { WaitNode } from "./WaitNode";
+import { EditNode } from "./EditNode";
+import { SplitNode } from "./SplitNode";
+import { AggregatorNode } from "./AggregatorNode";
+import { MergeNode } from "./MergeNode";
 
 export const nodeTypes: NodeTypes = {
   agent: AgentNode,
@@ -15,4 +20,9 @@ export const nodeTypes: NodeTypes = {
   switch: SwitchNode,
   http: HttpNode,
   smtp: SmtpNode,
+  wait: WaitNode,
+  edit: EditNode,
+  split: SplitNode,
+  aggregator: AggregatorNode,
+  merge: MergeNode,
 };

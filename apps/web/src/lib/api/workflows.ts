@@ -7,6 +7,8 @@ import {
   runWorkflowWorkflowsWorkflowIdRunPost,
   updateWorkflowDataWorkflowsWorkflowIdDataPut,
   generateWorkflowDocsWorkflowsWorkflowIdDocsPost,
+  getWorkflowExecutionsWorkflowsWorkflowIdExecutionsGet,
+  getExecutionWorkflowsWorkflowIdExecutionsExecutionIdGet,
 } from "@/client";
 
 import type {
@@ -22,6 +24,8 @@ import type {
   RunWorkflowWorkflowsWorkflowIdRunPostResponse,
   UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse,
   GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponse,
+  GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponse,
+  GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponse,
 } from "@/client/types.gen";
 
 // Readable wrappers for workflow-related SDK functions
@@ -67,6 +71,16 @@ export const generateWorkflowDocs = (
     body: { target_audience },
   });
 
+/** Request access to view all executions for a workflow (publishes wildcard token to RTES) */
+export const requestExecutionAccess = (workflow_id: number) =>
+  getWorkflowExecutionsWorkflowsWorkflowIdExecutionsGet({ path: { workflow_id } });
+
+/** Request access to view a specific execution (publishes scoped token to RTES) */
+export const requestSpecificExecutionAccess = (workflow_id: number, execution_id: string) =>
+  getExecutionWorkflowsWorkflowIdExecutionsExecutionIdGet({
+    path: { workflow_id, execution_id },
+  });
+
 // Useful response types
 export type ListWorkflowsResponse = ListWorkflowsWorkflowsGetResponse;
 export type GetWorkflowResponse = GetWorkflowWorkflowsWorkflowIdGetResponse;
@@ -80,3 +94,7 @@ export type UpdateWorkflowDataResponse =
   UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse;
 export type GenerateWorkflowDocsResponse =
   GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponse;
+export type RequestExecutionAccessResponse =
+  GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponse;
+export type RequestSpecificExecutionAccessResponse =
+  GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponse;

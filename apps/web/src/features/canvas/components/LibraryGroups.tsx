@@ -180,8 +180,13 @@ export function LibraryGroups({ containerRef, onAdd }: LibraryProps) {
         title="Core"
         icon={GitBranch}
         items={[
+          { label: "Aggregator", type: "aggregator" },
+          { label: "Edit", type: "edit" },
           { label: "If", type: "if" },
+          { label: "Merge", type: "merge" },
+          { label: "Split", type: "split" },
           { label: "Switch", type: "switch" },
+          { label: "Wait", type: "wait" },
         ]}
         colorClass="bg-node-core"
       />
