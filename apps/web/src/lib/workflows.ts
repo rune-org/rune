@@ -66,7 +66,7 @@ export function listItemToWorkflowSummary(
     : "Manual";
   
   // Determine status based on is_active flag (defaults to inactive if no schedule)
-  const status: "active" | "inactive" = item.schedule?.is_active ? "active" : "inactive";
+  const status = item.schedule?.is_active ? "active" : "inactive";
   
   return {
     ...defaultWorkflowSummary,
