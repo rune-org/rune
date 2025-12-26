@@ -117,7 +117,7 @@ async def create_workflow(
     )
 
     # If workflow has schedule configuration, create the schedule automatically
-    schedule_config = service._extract_schedule_config(payload.workflow_data)
+    schedule_config = service.extract_schedule_config(payload.workflow_data)
     if schedule_config:
         await schedule_trigger_service.create_schedule(
             workflow_id=wf.id,
@@ -175,7 +175,7 @@ async def update_workflow_data(
     wf = await service.update_workflow_data(workflow, payload.workflow_data)
 
     # Check new schedule configuration
-    schedule_config = service._extract_schedule_config(payload.workflow_data)
+    schedule_config = service.extract_schedule_config(payload.workflow_data)
 
     if schedule_config:
         # Schedule configuration exists in new workflow_data
