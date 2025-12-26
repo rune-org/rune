@@ -88,7 +88,7 @@ class MessageQueue:
                 workflow_data = json_lib.loads(workflow_data)
 
             # Generate unique execution ID (same format as API)
-            execution_id = f"exec_{uuid.uuid4().hex[:16]}"
+            execution_id = str(uuid.uuid4())
 
             # === CLONED FROM API: services/api/src/queue/service.py ===
 
