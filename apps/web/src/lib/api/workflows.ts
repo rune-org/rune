@@ -30,10 +30,7 @@ import type {
 
 // Readable wrappers for workflow-related SDK functions
 
-export const listWorkflows = () => 
-  listWorkflowsWorkflowsGet({ 
-    query: { include_schedule: true } 
-  });
+export const listWorkflows = () => listWorkflowsWorkflowsGet();
 
 export const getWorkflowById = (workflow_id: number) =>
   getWorkflowWorkflowsWorkflowIdGet({ path: { workflow_id } });

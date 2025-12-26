@@ -18,9 +18,9 @@ export type WorkflowSummary = {
   id: string;
   name: string;
   /**
-   * Status: active (scheduled + is_active=true), inactive (scheduled + is_active=false), draft (manual or no schedule)
+   * Status: active (is_active=true), inactive (is_active=false)
    */
-  status: "active" | "inactive" | "draft";
+  status: "active" | "inactive";
   /**
    * Trigger type.
    */
@@ -49,7 +49,7 @@ export type WorkflowSummary = {
 export const defaultWorkflowSummary: WorkflowSummary = {
   id: "",
   name: "Untitled Workflow",
-  status: "draft",
+  status: "inactive",
   triggerType: "Manual",
   lastRunAt: null,
   lastRunStatus: "n/a",
@@ -65,11 +65,8 @@ export function listItemToWorkflowSummary(
     ? "Webhook" 
     : "Manual";
   
-  // Determine status: active (scheduled + active), inactive (scheduled + not active), draft (manual)
-  let status: "active" | "inactive" | "draft" = "draft";
-  if (item.trigger_type === "scheduled") {
-    status = item.schedule?.is_active ? "active" : "inactive";
-  }
+  // Determine status based on is_active flag (defaults to inactive if no schedule)
+  const status: "active" | "inactive" = item.schedule?.is_active ? "active" : "inactive";
   
   return {
     ...defaultWorkflowSummary,
