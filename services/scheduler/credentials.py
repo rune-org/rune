@@ -75,8 +75,9 @@ class CredentialResolver:
                     credential = await db_conn.fetchrow(query, credential_id)
 
                     if not credential:
-                        logger.error(f"Credential with ID {credential_id} not found")
-                        continue
+                        error_msg = f"Credential with ID {credential_id} not found"
+                        logger.error(error_msg)
+                        raise ValueError(error_msg)
 
                     logger.info(
                         f"Found credential: {credential['name']} (type: {credential['credential_type']})"

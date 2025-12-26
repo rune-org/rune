@@ -4,7 +4,6 @@ import json
 import logging
 import traceback
 from datetime import datetime, timedelta
-from typing import Optional
 from cryptography.fernet import Fernet
 
 import asyncpg
@@ -92,7 +91,6 @@ class ScheduleExecutor:
                         schedule_id,
                         interval_seconds,
                         success=False,
-                        error_message=f"Credential resolution failed: {e}",
                     )
                     self.stats["total_failures"] += 1
                     return
@@ -123,7 +121,6 @@ class ScheduleExecutor:
                         schedule_id,
                         interval_seconds,
                         success=False,
-                        error_message="Failed to publish to RabbitMQ",
                     )
                 self.stats["total_failures"] += 1
 
@@ -148,7 +145,6 @@ class ScheduleExecutor:
                         schedule_id,
                         interval_seconds,
                         success=False,
-                        error_message=str(e),
                     )
             except Exception as update_error:
                 logger.critical(
@@ -162,7 +158,6 @@ class ScheduleExecutor:
         schedule_id: int,
         interval_seconds: int,
         success: bool,
-        error_message: Optional[str] = None,
     ):
         """
         Update schedule metadata after execution.
@@ -174,7 +169,6 @@ class ScheduleExecutor:
             schedule_id: Schedule ID to update
             interval_seconds: Interval for next execution
             success: Whether execution was successful
-            error_message: Error message if failed
         """
         now = datetime.now()
         next_run_at = now + timedelta(seconds=interval_seconds)

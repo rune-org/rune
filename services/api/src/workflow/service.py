@@ -114,7 +114,7 @@ class WorkflowService:
 
         # If trigger type is SCHEDULED, create the schedule
         if trigger_type == TriggerType.SCHEDULED:
-            schedule_config = self._extract_schedule_config(workflow_data)
+            schedule_config = self.extract_schedule_config(workflow_data)
             if schedule_config:
                 start_at = schedule_config.get("start_at") or datetime.now()
                 interval_seconds = schedule_config["interval_seconds"]
@@ -343,7 +343,7 @@ class WorkflowService:
         # No automatic trigger found - default to manual
         return TriggerType.MANUAL
 
-    def _extract_schedule_config(self, workflow_data: dict) -> dict | None:
+    def extract_schedule_config(self, workflow_data: dict) -> dict | None:
         """Extract schedule configuration from workflow data.
 
         Args:
