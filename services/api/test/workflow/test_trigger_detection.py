@@ -22,14 +22,11 @@ class TestTriggerTypeDetection:
             "nodes": [
                 {
                     "id": "trigger-1",
-                    "type": "trigger",
+                    "type": "ScheduleTrigger",
                     "trigger": True,
-                    "data": {
-                        "label": "Schedule Trigger",
-                        "schedule": {
-                            "interval_seconds": 3600,
-                            "is_active": True,
-                        },
+                    "parameters": {
+                        "interval_seconds": 3600,
+                        "is_active": True,
                     },
                 },
                 {
@@ -69,15 +66,8 @@ class TestTriggerTypeDetection:
             "nodes": [
                 {
                     "id": "trigger-1",
-                    "type": "trigger",
+                    "type": "WebhookTrigger",
                     "trigger": True,
-                    "data": {
-                        "label": "Webhook Trigger",
-                        "webhook": {
-                            "method": "POST",
-                            "path": "/webhook/test",
-                        },
-                    },
                 },
                 {
                     "id": "action-1",
@@ -154,9 +144,7 @@ class TestTriggerTypeDetection:
             "nodes": [
                 {
                     "id": "trigger-1",
-                    "type": "trigger",
-                    "trigger": True,
-                    "data": {"label": "Manual Trigger"},
+                    "type": "action",
                 },
                 {
                     "id": "action-1",
@@ -183,14 +171,11 @@ class TestTriggerTypeDetection:
             "nodes": [
                 {
                     "id": "trigger-1",
-                    "type": "trigger",
+                    "type": "ScheduleTrigger",
                     "trigger": True,
-                    "data": {
-                        "label": "Schedule Trigger",
-                        "schedule": {
-                            "interval_seconds": 7200,
-                            "is_active": True,
-                        },
+                    "parameters": {
+                        "interval_seconds": 7200,
+                        "is_active": True,
                     },
                 },
                 {
@@ -229,14 +214,11 @@ class TestTriggerTypeDetection:
             "nodes": [
                 {
                     "id": "trigger-1",
-                    "type": "trigger",
+                    "type": "ScheduleTrigger",
                     "trigger": True,
-                    "data": {
-                        "label": "Schedule Trigger",
-                        "schedule": {
-                            "interval_seconds": 1800,
-                            "is_active": True,
-                        },
+                    "parameters": {
+                        "interval_seconds": 1800,
+                        "is_active": True,
                     },
                 },
                 {
@@ -264,9 +246,7 @@ class TestTriggerTypeDetection:
             "nodes": [
                 {
                     "id": "trigger-1",
-                    "type": "trigger",
-                    "trigger": True,
-                    "data": {"label": "Manual Trigger"},
+                    "type": "action",
                 },
                 {
                     "id": "action-1",
@@ -302,14 +282,11 @@ class TestTriggerTypeDetection:
             "nodes": [
                 {
                     "id": "trigger-1",
-                    "type": "trigger",
+                    "type": "ScheduleTrigger",
                     "trigger": True,
-                    "data": {
-                        "label": "Schedule Trigger",
-                        "schedule": {
-                            "interval_seconds": 3600,
-                            "is_active": True,
-                        },
+                    "parameters": {
+                        "interval_seconds": 3600,
+                        "is_active": True,
                     },
                 },
                 {

@@ -181,7 +181,7 @@ class WorkflowService:
 
         # Handle schedule changes based on trigger type
         if new_trigger_type == TriggerType.SCHEDULED:
-            schedule_config = self._extract_schedule_config(workflow_data)
+            schedule_config = self.extract_schedule_config(workflow_data)
             if schedule_config:
                 if existing_schedule:
                     # Update existing schedule preserving continuity
