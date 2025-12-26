@@ -6,7 +6,7 @@ RTES is a microservice responsible for handling executions and real-time events 
 
 All endpoints require `Authorization: Bearer <jwt_token>` header (also accepts `Authorization: <token>` directly).
 
-- **Real-time WebSocket**: `ws://localhost:8080/rt/{execution_id}`
+- **Real-time WebSocket**: `ws://localhost:8080/rt?execution_id={execution_id}&workflow_id={workflow_id}`
 - **Get execution**: `GET http://localhost:8080/executions/{execution_id}`
 - **List workflow executions**: `GET http://localhost:8080/workflows/{workflow_id}/executions`
 
