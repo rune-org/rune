@@ -78,4 +78,4 @@ async def init_db() -> None:
     async with async_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
-    print("✓ Database initialized!")
+    print("Database initialized!")
