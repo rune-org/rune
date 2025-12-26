@@ -81,7 +81,6 @@ class MessageQueue:
             True if successful, False otherwise
         """
         try:
-
             # Parse workflow_data if it's a string (from database)
             if isinstance(workflow_data, str):
                 workflow_data = json.loads(workflow_data)
