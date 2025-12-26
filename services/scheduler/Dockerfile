@@ -1,12 +1,5 @@
-# ============================================================================
-# RUNE Workflow Scheduler - Standalone Service
-# ============================================================================
-# Alpine-based minimal Python image for reduced footprint
-FROM python:3.11-alpine
+FROM python:3.13-alpine
 
-LABEL maintainer="RUNE Team"
-LABEL description="Standalone workflow scheduler service"
-LABEL version="1.0"
 
 # Set working directory
 WORKDIR /app
@@ -38,19 +31,12 @@ COPY *.py .
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONPATH=/app
-ENV LOG_LEVEL=INFO
+
 
 # Health check - verify the scheduler process is running
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
     CMD ps aux | grep -q '[p]ython.*main.py' || exit 1
 
-# Run as non-root user for security
-RUN addgroup -g 1000 scheduler && \
-    adduser -D -u 1000 -G scheduler scheduler && \
-    chown -R scheduler:scheduler /app
-
-USER scheduler
 
 # Run the scheduler
 CMD ["python", "-u", "main.py"]
