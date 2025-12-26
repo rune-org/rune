@@ -1,9 +1,9 @@
 """Database connection pool management."""
 
+import asyncio
 import asyncpg
 import logging
 from typing import Optional
-import asyncio
 
 
 logger = logging.getLogger("scheduler.database")
