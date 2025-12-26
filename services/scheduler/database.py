@@ -5,6 +5,8 @@ import asyncpg
 import logging
 from typing import Optional
 
+from config import Config
+
 
 logger = logging.getLogger("scheduler.database")
 
@@ -23,6 +25,8 @@ class DatabasePool:
         self.dsn = dsn
         self.max_retries = max_retries
         self.pool: Optional[asyncpg.Pool] = None
+        self.min_pool_size = Config.DB_POOL_MIN_SIZE
+        self.max_pool_size = Config.DB_POOL_MAX_SIZE
 
     async def connect(self) -> asyncpg.Pool:
         """Establish database connection with retry logic."""
@@ -33,12 +37,14 @@ class DatabasePool:
                 )
                 self.pool = await asyncpg.create_pool(
                     self.dsn,
-                    min_size=2,
-                    max_size=10,
+                    min_size=self.min_pool_size,
+                    max_size=self.max_pool_size,
                     command_timeout=60,
                     server_settings={"application_name": "rune-scheduler"},
                 )
-                logger.info("Database connection pool established")
+                logger.info(
+                    f"Database connection pool established (min={self.min_pool_size}, max={self.max_pool_size})"
+                )
                 return self.pool
             except Exception as e:
                 logger.error(f"Database connection attempt {attempt} failed: {e}")

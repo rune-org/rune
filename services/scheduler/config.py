@@ -23,9 +23,14 @@ class Config:
     # Scheduler Configuration
     POLL_INTERVAL = int(os.getenv("SCHEDULER_POLL_INTERVAL", "30"))
     LOOK_AHEAD_SECONDS = int(os.getenv("SCHEDULER_LOOK_AHEAD", "60"))
+    HEALTHCHECK_INTERVAL = int(os.getenv("SCHEDULER_HEALTHCHECK_INTERVAL", "60"))
 
     # Encryption Configuration
     ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY", "")
+
+    # Database Pool Configuration
+    DB_POOL_MIN_SIZE = int(os.getenv("DB_POOL_MIN_SIZE", "1"))
+    DB_POOL_MAX_SIZE = int(os.getenv("DB_POOL_MAX_SIZE", "10"))
 
     # Logging Configuration
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
