@@ -70,20 +70,14 @@ function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
         Active
       </Badge>
     );
-  if (status === "inactive")
-    return (
-      <Badge className="bg-slate-900/40 text-slate-300" variant="secondary">
-        Inactive
-      </Badge>
-    );
   return (
-    <Badge className="bg-amber-900/40 text-amber-200" variant="secondary">
-      Draft
+    <Badge className="bg-slate-900/40 text-slate-300" variant="secondary">
+      Inactive
     </Badge>
   );
 }
 
-type StatFilter = "all" | "active" | "runs" | "draft" | "failed";
+type StatFilter = "all" | "active" | "runs" | "inactive" | "failed";
 
 export function WorkflowsTable() {
   const {
@@ -300,8 +294,8 @@ export function WorkflowsTable() {
       case "active":
         list = list.filter((w) => w.status === "active");
         break;
-      case "draft":
-        list = list.filter((w) => w.status === "draft");
+      case "inactive":
+        list = list.filter((w) => w.status === "inactive");
         break;
       case "failed":
         list = list.filter((w) => w.lastRunStatus === "failed");
@@ -318,10 +312,10 @@ export function WorkflowsTable() {
 
   const stats = useMemo(() => {
     const active = workflows.filter((w) => w.status === "active").length;
-    const draft = workflows.filter((w) => w.status === "draft" || w.status === "inactive").length;
+    const inactive = workflows.filter((w) => w.status === "inactive").length;
     const failed = workflows.filter((w) => w.lastRunStatus === "failed").length;
     const runs = workflows.reduce((sum, w) => sum + w.runs, 0);
-    return { active, draft, failed, runs };
+    return { active, inactive, failed, runs };
   }, [workflows]);
 
   const isRowPending = useCallback(
@@ -361,15 +355,15 @@ export function WorkflowsTable() {
           </button>
           <button
             type="button"
-            onClick={() => setFilter((f) => (f === "draft" ? "all" : "draft"))}
-            aria-pressed={filter === "draft"}
+            onClick={() => setFilter((f) => (f === "inactive" ? "all" : "inactive"))}
+            aria-pressed={filter === "inactive"}
             className={
-              filter === "draft"
+              filter === "inactive"
                 ? "text-accent"
                 : "text-muted-foreground hover:text-foreground"
             }
           >
-            <span className="font-semibold">{stats.draft}</span> Draft
+            <span className="font-semibold">{stats.inactive}</span> Inactive
           </button>
           <button
             type="button"
