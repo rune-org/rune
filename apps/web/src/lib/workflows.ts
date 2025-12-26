@@ -17,9 +17,6 @@ import {
 export type WorkflowSummary = {
   id: string;
   name: string;
-  /**
-   * Status: active (is_active=true), inactive (is_active=false)
-   */
   status: "active" | "inactive";
   /**
    * Trigger type.
