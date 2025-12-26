@@ -142,8 +142,6 @@ class MessageQueue:
 
             body_bytes = json.dumps(payload).encode("utf-8")
 
-            body_bytes = json.dumps(payload).encode("utf-8")
-
             message = Message(
                 body=body_bytes,
                 delivery_mode=DeliveryMode.PERSISTENT,
