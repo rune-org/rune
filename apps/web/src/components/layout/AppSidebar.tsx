@@ -14,10 +14,9 @@ import {
   LayoutGrid,
   LogOut,
   Play,
-  Settings,
   User,
   Workflow,
-  Users,        
+  Users,
 } from "lucide-react";
 
 import { Logo } from "@/components/shared/Logo";
@@ -227,12 +226,7 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
           </Link>
         </DropdownMenuItem>
 
-        <DropdownMenuItem asChild>
-          <Link href="/settings" className="flex items-center gap-2 cursor-pointer">
-            <Settings className="h-4 w-4" />
-            <span>Settings</span>
-          </Link>
-        </DropdownMenuItem>
+        {/* TODO: Implement settings page with wired backend functionality */}
 
         <DropdownMenuSeparator />
 

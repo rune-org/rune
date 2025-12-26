@@ -22,7 +22,7 @@ export function SignInForm() {
       // Redirect to /create - RequireAuth will handle redirecting to
       // /change-password if the user needs to change their password
       const redirectParam = searchParams.get("redirect");
-      const allowed = ["/create", "/create/app", "/profile", "/settings", "/admin"] as const;
+      const allowed = ["/create", "/create/app", "/profile", "/admin"] as const;
       const isAllowed = (p: string | null): p is (typeof allowed)[number] => !!p && allowed.includes(p as (typeof allowed)[number]);
       const target = isAllowed(redirectParam) ? redirectParam : "/create";
       router.push(target);
