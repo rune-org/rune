@@ -1,9 +1,10 @@
 """RabbitMQ message queue management."""
 
+import uuid
 import json
 import logging
-from typing import Any, Optional
 import asyncio
+from typing import Any, Optional
 
 import aio_pika
 from aio_pika import Message, DeliveryMode
@@ -80,13 +81,10 @@ class MessageQueue:
             True if successful, False otherwise
         """
         try:
-            import uuid
-            import json as json_lib
 
             # Parse workflow_data if it's a string (from database)
             if isinstance(workflow_data, str):
-                workflow_data = json_lib.loads(workflow_data)
-
+                workflow_data = json.loads(workflow_data)
             # Generate unique execution ID (same format as API)
             execution_id = str(uuid.uuid4())
 
