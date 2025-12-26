@@ -1,8 +1,17 @@
 import copy
+from datetime import datetime
 from sqlmodel import select, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from src.db.models import Workflow, WorkflowUser, WorkflowRole, WorkflowCredential
+from src.db.models import (
+    Workflow,
+    WorkflowUser,
+    WorkflowRole,
+    WorkflowCredential,
+    TriggerType,
+    ScheduledWorkflow,
+)
 from src.core.exceptions import NotFound, Forbidden
 from src.credentials.encryption import get_encryptor
 
@@ -18,8 +27,14 @@ class WorkflowService:
         self.db = db
         self.encryptor = get_encryptor()
 
-    async def list_for_user(self, user_id: int) -> list[Workflow]:
+    async def list_for_user(
+        self, user_id: int, include_schedule: bool = False
+    ) -> list[Workflow]:
         """Return workflows owned by `user_id`, newest first.
+
+        Args:
+            user_id: The user ID to filter by
+            include_schedule: If True, eagerly load schedule information via LEFT JOIN
 
         Used for the `GET /workflows` endpoint.
         """
@@ -30,6 +45,13 @@ class WorkflowService:
             .where(WorkflowUser.user_id == user_id)
             .order_by(Workflow.created_at.desc())
         )
+
+        # If include_schedule requested, add LEFT JOIN to get schedule info
+        if include_schedule:
+            # Use selectinload to eagerly load the schedule relationship
+            # This prevents N+1 queries when accessing workflow.schedule
+            statement = statement.options(selectinload(Workflow.schedule))
+
         result = await self.db.exec(statement)
         return result.all()
 
@@ -64,13 +86,19 @@ class WorkflowService:
     ) -> Workflow:
         """Create and persist a new Workflow owned by `user_id`.
 
+        Automatically detects trigger type from workflow_data and sets trigger_type.
+        If trigger type is SCHEDULED, automatically creates the schedule.
         Commits the transaction and returns the refreshed model instance.
         """
+        # Detect trigger type from workflow data
+        trigger_type = self._detect_trigger_type(workflow_data)
+
         # Create the workflow record first, then add an OWNER entry in the workflow_users table
         wf = Workflow(
             name=name,
             description=description,
             workflow_data=workflow_data,
+            trigger_type=trigger_type,
         )
         self.db.add(wf)
         # Flush to assign the workflow primary key without committing yet
@@ -84,10 +112,37 @@ class WorkflowService:
         )
         self.db.add(owner)
 
-        # Commit both records in a single transaction
+        # If trigger type is SCHEDULED, create the schedule
+        if trigger_type == TriggerType.SCHEDULED:
+            schedule_config = self.extract_schedule_config(workflow_data)
+            if schedule_config:
+                start_at = schedule_config.get("start_at") or datetime.now()
+                interval_seconds = schedule_config["interval_seconds"]
+                is_active = schedule_config.get("is_active", True)
+
+                next_run_at = start_at
+                if isinstance(start_at, str):
+                    parsed = datetime.fromisoformat(start_at.replace("Z", "+00:00"))
+                    start_at = parsed.replace(tzinfo=None)
+                    next_run_at = start_at
+                elif isinstance(start_at, datetime):
+                    # Remove timezone info if present
+                    start_at = start_at.replace(tzinfo=None)
+                    next_run_at = start_at
+
+                schedule = ScheduledWorkflow(
+                    workflow_id=wf.id,
+                    interval_seconds=interval_seconds,
+                    start_at=start_at,
+                    next_run_at=next_run_at,
+                    is_active=is_active,
+                )
+                self.db.add(schedule)
+
+        # Commit all records in a single transaction
         await self.db.commit()
 
-        # This is cheaper than refreshing after each commit.
+        # Refresh to load relationships
         await self.db.refresh(wf)
         return wf
 
@@ -101,25 +156,80 @@ class WorkflowService:
         await self.db.refresh(workflow)
         return workflow
 
-    async def update_status(self, workflow: Workflow, is_active: bool) -> Workflow:
-        """Set workflow active/inactive and persist.
-
-        This is intentionally simple — additional side-effects (e.g. scheduled
-        jobs) should be implemented at a higher layer if needed.
-        """
-        workflow.is_active = is_active
-        await self.db.commit()
-        await self.db.refresh(workflow)
-        return workflow
-
     async def update_workflow_data(
         self, workflow: Workflow, workflow_data: dict
     ) -> Workflow:
         """Update the workflow's workflow_data field and persist the change.
 
+        Automatically detects and updates trigger_type based on workflow_data.
+        Also manages schedule creation/update/deletion based on trigger type changes.
         Caller is responsible for authorization. Returns the refreshed model.
         """
+        # Detect trigger type from new workflow data
+        new_trigger_type = self._detect_trigger_type(workflow_data)
+
+        # Get existing schedule if any
+        stmt = select(ScheduledWorkflow).where(
+            ScheduledWorkflow.workflow_id == workflow.id
+        )
+        result = await self.db.exec(stmt)
+        existing_schedule = result.first()
+
+        # Update workflow data and trigger type
         workflow.workflow_data = workflow_data
+        workflow.trigger_type = new_trigger_type
+
+        # Handle schedule changes based on trigger type
+        if new_trigger_type == TriggerType.SCHEDULED:
+            schedule_config = self.extract_schedule_config(workflow_data)
+            if schedule_config:
+                if existing_schedule:
+                    # Update existing schedule preserving continuity
+                    old_interval = existing_schedule.interval_seconds
+                    existing_schedule.interval_seconds = schedule_config[
+                        "interval_seconds"
+                    ]
+                    existing_schedule.is_active = schedule_config.get("is_active", True)
+
+                    # Recalculate next_run if interval changed
+                    if old_interval != existing_schedule.interval_seconds:
+                        existing_schedule.next_run_at = self._calculate_next_run_helper(
+                            datetime.now(),
+                            existing_schedule.interval_seconds,
+                            existing_schedule.start_at,
+                        )
+                    self.db.add(existing_schedule)
+                else:
+                    # Create new schedule
+                    start_at = schedule_config.get("start_at") or datetime.now()
+                    interval_seconds = schedule_config["interval_seconds"]
+                    is_active = schedule_config.get("is_active", True)
+
+                    # Ensure timezone-naive datetime
+                    if isinstance(start_at, str):
+                        parsed = datetime.fromisoformat(start_at.replace("Z", "+00:00"))
+                        start_at = parsed.replace(tzinfo=None)
+                    elif isinstance(start_at, datetime) and start_at.tzinfo is not None:
+                        start_at = start_at.replace(tzinfo=None)
+
+                    # Calculate next_run_at using smart logic
+                    next_run_at = self._calculate_next_run_helper(
+                        datetime.now(), interval_seconds, start_at
+                    )
+
+                    schedule = ScheduledWorkflow(
+                        workflow_id=workflow.id,
+                        interval_seconds=interval_seconds,
+                        start_at=start_at,
+                        next_run_at=next_run_at,
+                        is_active=is_active,
+                    )
+                    self.db.add(schedule)
+        else:
+            # If trigger type is not SCHEDULED and there's an existing schedule, delete it
+            if existing_schedule:
+                await self.db.delete(existing_schedule)
+
         await self.db.commit()
         await self.db.refresh(workflow)
         return workflow
@@ -200,3 +310,94 @@ class WorkflowService:
                     }
 
         return resolved_data
+
+    def _detect_trigger_type(self, workflow_data: dict) -> TriggerType:
+        """Detect the trigger type from workflow data.
+
+        Analyzes the workflow nodes to determine if it has scheduled or webhook triggers.
+        Returns TriggerType.MANUAL for manual-only workflows.
+
+        Args:
+            workflow_data: The workflow definition containing nodes and edges
+
+        Returns:
+            TriggerType.SCHEDULED if workflow has schedule configuration
+            TriggerType.WEBHOOK if workflow has webhook configuration
+            TriggerType.MANUAL if workflow is manual-only
+        """
+        nodes = workflow_data.get("nodes", [])
+
+        for node in nodes:
+            node_type = node.get("type", "")
+
+            # Check for ScheduleTrigger node type (DSL format)
+            if node_type == "ScheduleTrigger" and node.get("trigger") is True:
+                parameters = node.get("parameters", {})
+                if "interval_seconds" in parameters:
+                    return TriggerType.SCHEDULED
+
+            # Check for WebhookTrigger node type (DSL format)
+            if node_type == "WebhookTrigger" and node.get("trigger") is True:
+                return TriggerType.WEBHOOK
+
+        # No automatic trigger found - default to manual
+        return TriggerType.MANUAL
+
+    def extract_schedule_config(self, workflow_data: dict) -> dict | None:
+        """Extract schedule configuration from workflow data.
+
+        Args:
+            workflow_data: The workflow definition containing nodes
+
+        Returns:
+            Dictionary with schedule configuration or None if not found
+            Expected format: {"interval_seconds": int, "start_at": datetime, "is_active": bool}
+        """
+        nodes = workflow_data.get("nodes", [])
+
+        for node in nodes:
+            node_type = node.get("type", "")
+
+            # Check for ScheduleTrigger node type (DSL format)
+            if node_type == "ScheduleTrigger" and node.get("trigger") is True:
+                parameters = node.get("parameters", {})
+
+                if "interval_seconds" in parameters:
+                    # Extract and validate configuration
+                    config = {
+                        "interval_seconds": parameters["interval_seconds"],
+                        "is_active": parameters.get("is_active", True),
+                    }
+
+                    # Parse start_at if provided
+                    if "start_at" in parameters:
+                        start_at = parameters["start_at"]
+                        if isinstance(start_at, str):
+                            parsed = datetime.fromisoformat(
+                                start_at.replace("Z", "+00:00")
+                            )
+                            # Remove timezone info for PostgreSQL (store as naive UTC)
+                            config["start_at"] = parsed.replace(tzinfo=None)
+                        elif isinstance(start_at, datetime):
+                            # Remove timezone info if present
+                            config["start_at"] = start_at.replace(tzinfo=None)
+
+                    return config
+
+        return None
+
+    def _calculate_next_run_helper(
+        self,
+        from_time: datetime,
+        interval_seconds: int,
+        start_at: datetime | None = None,
+    ) -> datetime:
+        """Helper to calculate next run time."""
+        from datetime import timedelta
+
+        # If start_at is provided and in the future, wait for it
+        if start_at and start_at > from_time:
+            return start_at
+
+        # Otherwise, schedule for next interval from now
+        return from_time + timedelta(seconds=interval_seconds)

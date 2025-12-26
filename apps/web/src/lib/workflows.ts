@@ -17,24 +17,28 @@ import {
 export type WorkflowSummary = {
   id: string;
   name: string;
+  status: "active" | "inactive";
   /**
-   * Derived status – treated as active when `is_active` is true, otherwise draft.
-   */
-  status: "active" | "draft";
-  /**
-   * Placeholder trigger type.
+   * Trigger type.
    */
   triggerType: string;
   /**
-   * Placeholder last run timestamp.
+   * Schedule information if the workflow is scheduled.
+   * Only contains is_active status. Full schedule details are fetched from workflow detail endpoint.
+   */
+  schedule?: {
+    is_active: boolean;
+  };
+  /**
+   * Last run timestamp - will be fetched from RTES (execution service).
    */
   lastRunAt: string | null;
   /**
-   * Placeholder run status.
+   * Run status - will be fetched from RTES (execution service).
    */
   lastRunStatus: "success" | "failed" | "running" | "n/a";
   /**
-   * Placeholder total run count.
+   * Total run count - will be fetched from RTES (execution service).
    */
   runs: number;
 };
@@ -42,7 +46,7 @@ export type WorkflowSummary = {
 export const defaultWorkflowSummary: WorkflowSummary = {
   id: "",
   name: "Untitled Workflow",
-  status: "draft",
+  status: "inactive",
   triggerType: "Manual",
   lastRunAt: null,
   lastRunStatus: "n/a",
@@ -52,11 +56,26 @@ export const defaultWorkflowSummary: WorkflowSummary = {
 export function listItemToWorkflowSummary(
   item: WorkflowListItem,
 ): WorkflowSummary {
+  const triggerType = item.trigger_type === "scheduled" 
+    ? "Scheduled" 
+    : item.trigger_type === "webhook" 
+    ? "Webhook" 
+    : "Manual";
+  
+  // Determine status based on is_active flag (defaults to inactive if no schedule)
+  const status = item.schedule?.is_active ? "active" : "inactive";
+  
   return {
     ...defaultWorkflowSummary,
     id: String(item.id),
     name: item.name,
-    status: item.is_active ? "active" : "draft",
+    status,
+    triggerType,
+    schedule: item.schedule ? {
+      is_active: item.schedule.is_active,
+    } : undefined,
+    lastRunAt: null,
+    lastRunStatus: "n/a",
   };
 }
 

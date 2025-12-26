@@ -18,6 +18,8 @@ export function iconFor(kind: NodeKind) {
   switch (kind) {
     case "trigger":
       return Play;
+    case "scheduled":
+      return Clock;
     case "agent":
       return Bot;
     case "if":

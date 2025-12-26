@@ -132,7 +132,7 @@ Rune follows a polyglot microservices architecture, using the right tool for eac
 - **Worker (Go)** - Executes workflows recursively, node by node, with fault tolerance
 - **RTES (Rust)** - Streams execution state in real-time over WebSockets
 - **Frontend (Next.js/React)** - Visual canvas built on React Flow
-
+- **Scheduler (Python)** – Manages and triggers scheduled nodes to ensure timely execution of workflows
 ---
 
 ## Development
