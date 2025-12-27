@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/messages"
 	"rune-worker/pkg/nodes"
 	"rune-worker/plugin"
@@ -125,7 +126,7 @@ func init() {
 
 // RegisterAggregator registers the aggregator node type.
 func RegisterAggregator(reg *nodes.Registry) {
-	reg.Register("aggregator", func(execCtx plugin.ExecutionContext) plugin.Node {
+	reg.Register(core.NodeTypeAggregator, func(execCtx plugin.ExecutionContext) plugin.Node {
 		return NewAggregatorNode(execCtx)
 	})
 }

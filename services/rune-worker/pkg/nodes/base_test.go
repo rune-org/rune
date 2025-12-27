@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/nodes"
 	"rune-worker/plugin"
 )
@@ -23,8 +24,8 @@ func TestRegisterNode(t *testing.T) {
 	reg := nodes.NewRegistry()
 
 	// Register a mock node
-	reg.Register("mock", func(execCtx plugin.ExecutionContext) plugin.Node {
-		return &MockNode{Type: "mock"}
+	reg.Register(core.NodeTypeMock, func(execCtx plugin.ExecutionContext) plugin.Node {
+		return &MockNode{Type: core.NodeTypeMock}
 	})
 
 	// Create a node instance
@@ -33,7 +34,7 @@ func TestRegisterNode(t *testing.T) {
 		WorkflowID: "test-workflow",
 	}
 
-	node, err := reg.Create("mock", execCtx)
+	node, err := reg.Create(core.NodeTypeMock, execCtx)
 	if err != nil {
 		t.Fatalf("Failed to create node: %v", err)
 	}
@@ -48,8 +49,8 @@ func TestRegisterNode(t *testing.T) {
 		t.Fatalf("Failed to execute node: %v", err)
 	}
 
-	if result["type"] != "mock" {
-		t.Errorf("Expected type 'mock', got '%v'", result["type"])
+	if result["type"] != core.NodeTypeMock {
+		t.Errorf("Expected type '%s', got '%v'", core.NodeTypeMock, result["type"])
 	}
 }
 
@@ -92,8 +93,8 @@ func TestThreadSafeRetrieval(t *testing.T) {
 	reg := nodes.NewRegistry()
 
 	// Register a node
-	reg.Register("concurrent", func(execCtx plugin.ExecutionContext) plugin.Node {
-		return &MockNode{Type: "concurrent"}
+	reg.Register(core.NodeTypeConcurrent, func(execCtx plugin.ExecutionContext) plugin.Node {
+		return &MockNode{Type: core.NodeTypeConcurrent}
 	})
 
 	var wg sync.WaitGroup
@@ -104,7 +105,7 @@ func TestThreadSafeRetrieval(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			node, err := reg.Create("concurrent", execCtx)
+			node, err := reg.Create(core.NodeTypeConcurrent, execCtx)
 			if err != nil {
 				t.Errorf("Failed to create node: %v", err)
 				return
@@ -157,7 +158,7 @@ func TestGetAllTypes(t *testing.T) {
 	reg := nodes.NewRegistry()
 
 	// Register multiple node types
-	nodeTypes := []string{"http", "conditional", "log", "email"}
+	nodeTypes := []string{core.NodeTypeHTTP, core.NodeTypeConditional, "log", "email"}
 	for _, nodeType := range nodeTypes {
 		reg.Register(nodeType, func(execCtx plugin.ExecutionContext) plugin.Node {
 			return &MockNode{Type: nodeType}
