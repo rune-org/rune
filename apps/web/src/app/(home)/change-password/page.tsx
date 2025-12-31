@@ -10,7 +10,7 @@ import type { UserResponse } from "@/client/types.gen";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
-  const { state } = useAuth();
+  const { state, refetchProfile } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -30,6 +30,12 @@ export default function ChangePasswordPage() {
       router.replace("/create");
     }
   }, [mounted, state.loading, state.user, router]);
+
+  const handleSuccess = async () => {
+    // Refetch the user profile to get the updated must_change_password flag
+    await refetchProfile();
+    router.push("/create");
+  };
 
   if (!mounted || state.loading) {
     return (
@@ -60,7 +66,7 @@ export default function ChangePasswordPage() {
         title="Set your password"
         description="For security, please create a new password to continue using Rune."
       >
-        <ChangePasswordForm />
+        <ChangePasswordForm variant="page" onSuccess={handleSuccess} />
       </AuthCard>
     </div>
   );
