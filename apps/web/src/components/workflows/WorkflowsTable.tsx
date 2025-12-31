@@ -100,12 +100,6 @@ export function WorkflowsTable() {
     null,
   );
 
-  useEffect(() => {
-    // Always refresh workflows when component mounts to get latest data
-    void actions.refreshWorkflows();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const beginDelete = useCallback((workflow: WorkflowSummary) => {
     setDeleteTarget(workflow);
   }, []);

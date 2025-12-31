@@ -167,6 +167,8 @@ export const updateNameWorkflowsWorkflowIdNamePut = <ThrowOnError extends boolea
  * - Creates schedule if workflow_data contains schedule configuration
  * - Updates existing schedule if configuration changed
  * - Deletes schedule if schedule configuration removed
+ *
+ * Note: Schedule management is handled entirely by WorkflowService.update_workflow_data
  */
 export const updateWorkflowDataWorkflowsWorkflowIdDataPut = <ThrowOnError extends boolean = false>(options: Options<UpdateWorkflowDataWorkflowsWorkflowIdDataPutData, ThrowOnError>) => (options.client ?? client).put<UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses, UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

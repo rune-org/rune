@@ -35,14 +35,14 @@ export function ActivateWorkflowDialog({
   const [seconds, setSeconds] = useState(0);
 
   const intervalSeconds = days * 86400 + hours * 3600 + minutes * 60 + seconds;
+  const MAX_INTERVAL_SECONDS = 31536000; // 1 year in seconds
 
-  // Since we don't have interval_seconds in the list response, start with a default
-  useEffect(() => {
-    // Only initialize once when dialog opens, defaults to 1 minute
-    if (workflow && days === 0 && hours === 0 && minutes === 1 && seconds === 0) {
-      // Keep defaults
-    }
-  }, [workflow, days, hours, minutes, seconds]);
+  const handleStartTimeQuickSelect = (offset: number) => {
+    const now = new Date();
+    const targetTime = new Date(now.getTime() + offset * 60000); // offset in minutes
+    const localDateTimeString = targetTime.toISOString().slice(0, 16);
+    setNewStartAt(localDateTimeString);
+  };
 
   const handleClose = () => {
     setMode("select");
@@ -55,11 +55,24 @@ export function ActivateWorkflowDialog({
   };
 
   const handleReconfigureSubmit = () => {
-    if (!newStartAt || intervalSeconds <= 0) {
-      toast.error("Please provide valid start time and interval");
+    if (!newStartAt) {
+      toast.error("Please provide a start time");
       return;
     }
-    onSubmit("reconfigure", newStartAt, intervalSeconds);
+    if (intervalSeconds <= 0) {
+      toast.error("Interval must be greater than 0");
+      return;
+    }
+    if (intervalSeconds > MAX_INTERVAL_SECONDS) {
+      toast.error("Interval cannot exceed 1 year (31536000 seconds)");
+      return;
+    }
+    
+    // Convert datetime-local (YYYY-MM-DDTHH:mm) to UTC ISO string
+    const localDate = new Date(newStartAt);
+    const utcIsoString = localDate.toISOString();
+    
+    onSubmit("reconfigure", utcIsoString, intervalSeconds);
     handleClose();
   };
 
@@ -120,9 +133,47 @@ export function ActivateWorkflowDialog({
                 id="start-at"
                 type="datetime-local"
                 value={newStartAt}
-                onChange={(e) => setNewStartAt(e.target.value)}
+                onInput={(e) => setNewStartAt(e.currentTarget.value)}
                 required
               />
+              <div className="flex gap-1 flex-wrap">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleStartTimeQuickSelect(0)}
+                  className="text-xs h-7"
+                >
+                  Now
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleStartTimeQuickSelect(5)}
+                  className="text-xs h-7"
+                >
+                  +5m
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleStartTimeQuickSelect(15)}
+                  className="text-xs h-7"
+                >
+                  +15m
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleStartTimeQuickSelect(30)}
+                  className="text-xs h-7"
+                >
+                  +30m
+                </Button>
+              </div>
             </div>
             
             <div className="space-y-2">

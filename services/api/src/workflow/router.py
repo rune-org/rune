@@ -167,39 +167,11 @@ async def update_workflow_data(
     - Creates schedule if workflow_data contains schedule configuration
     - Updates existing schedule if configuration changed
     - Deletes schedule if schedule configuration removed
+    
+    Note: Schedule management is handled entirely by WorkflowService.update_workflow_data
     """
-    # Get current schedule before updating
-    existing_schedule = await schedule_trigger_service.get_schedule(workflow.id)
-
-    # Update workflow data (this also updates trigger_type automatically)
+    # Update workflow data (this automatically manages schedule creation/update/deletion)
     wf = await service.update_workflow_data(workflow, payload.workflow_data)
-
-    # Check new schedule configuration
-    schedule_config = service.extract_schedule_config(payload.workflow_data)
-
-    if schedule_config:
-        # Schedule configuration exists in new workflow_data
-        if existing_schedule:
-            # Update existing schedule
-            await schedule_trigger_service.update_schedule(
-                schedule=existing_schedule,
-                interval_seconds=schedule_config["interval_seconds"],
-                start_at=schedule_config.get("start_at"),
-                is_active=schedule_config.get("is_active", existing_schedule.is_active),
-            )
-        else:
-            # Create new schedule
-            await schedule_trigger_service.create_schedule(
-                workflow_id=wf.id,
-                interval_seconds=schedule_config["interval_seconds"],
-                start_at=schedule_config.get("start_at"),
-                is_active=schedule_config.get("is_active", True),
-            )
-    else:
-        # No schedule configuration in new workflow_data
-        if existing_schedule:
-            # Delete existing schedule
-            await schedule_trigger_service.delete_schedule(existing_schedule)
 
     detail = WorkflowDetail.model_validate(wf)
     return ApiResponse(success=True, message="Workflow data updated", data=detail)

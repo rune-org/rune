@@ -290,7 +290,10 @@ paths:
 
         - Updates existing schedule if configuration changed
 
-        - Deletes schedule if schedule configuration removed'
+        - Deletes schedule if schedule configuration removed
+
+
+        Note: Schedule management is handled entirely by WorkflowService.update_workflow_data'
       operationId: update_workflow_data_workflows__workflow_id__data_put
       security:
       - OAuth2PasswordBearer: []
