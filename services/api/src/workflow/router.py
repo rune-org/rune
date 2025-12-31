@@ -167,7 +167,7 @@ async def update_workflow_data(
     - Creates schedule if workflow_data contains schedule configuration
     - Updates existing schedule if configuration changed
     - Deletes schedule if schedule configuration removed
-    
+
     Note: Schedule management is handled entirely by WorkflowService.update_workflow_data
     """
     # Update workflow data (this automatically manages schedule creation/update/deletion)
