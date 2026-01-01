@@ -1,0 +1,2 @@
+[console_scripts]
+rune = cli.main:main
