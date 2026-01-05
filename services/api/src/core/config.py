@@ -46,7 +46,8 @@ class Settings(BaseSettings):
     redis_password: str | None = None
 
     # RabbitMQ Settings
-    rabbitmq_queue_name: str = "workflow_runs"
+    rabbitmq_workflow_queue: str = "workflow.execution"
+    rabbitmq_token_queue: str = "execution.token"
     rabbitmq_host: str = "localhost"
     rabbitmq_port: int = 5672
     rabbitmq_username: str = "guest"

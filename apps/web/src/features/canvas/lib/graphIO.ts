@@ -88,6 +88,7 @@ export function sanitizeGraph(
         (e as RFEdge & EdgeMeta).labelBgBorderRadius ?? 4;
       return {
         ...e,
+        type: "default",
         label: edgeLabel,
         labelStyle,
         labelShowBg,
@@ -121,6 +122,7 @@ export function sanitizeGraph(
         (e as RFEdge & EdgeMeta).labelBgBorderRadius ?? 4;
       return {
         ...e,
+        type: "default",
         sourceHandle: switchHandle,
         label: edgeLabel,
         labelStyle,
@@ -130,7 +132,7 @@ export function sanitizeGraph(
         labelBgBorderRadius,
       } as RFEdge;
     }
-    return e;
+    return { ...e, type: "default" } as RFEdge;
   });
 
   return { nodes, edges };

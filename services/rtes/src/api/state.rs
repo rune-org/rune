@@ -2,10 +2,7 @@ use tokio::sync::broadcast;
 
 use crate::{
     domain::models::WorkerMessage,
-    infra::{
-        execution_store::ExecutionStore,
-        token_store::TokenStore,
-    },
+    infra::{execution_store::ExecutionStore, token_store::TokenStore},
 };
 
 #[derive(Clone)]

@@ -18,6 +18,8 @@ pub(crate) struct Config {
     pub rabbitmq_execution_queue: String,
     pub port: u16,
     pub jwt_secret: String,
+    /// CORS allowed origin for HTTP endpoints (required for credentials)
+    pub cors_origin: String,
 }
 
 impl Config {
@@ -60,6 +62,8 @@ impl Config {
                 .parse()
                 .unwrap_or(3000),
             jwt_secret: env::var("JWT_SECRET_KEY").unwrap_or_else(|_| "secret".to_string()),
+            cors_origin: env::var("CORS_ORIGIN")
+                .unwrap_or_else(|_| "http://localhost:3000".to_string()),
         };
 
         CONFIG

@@ -30,9 +30,12 @@ import { useAddNode } from "./hooks/useAddNode";
 import { useConditionalConnect } from "./hooks/useConditionalConnect";
 import { useCanvasHistory } from "./hooks/useCanvasHistory";
 import { useUpdateNodeData } from "./hooks/useUpdateNodeData";
-import { useExecutionSim } from "./hooks/useExecutionSim";
 import { useAutoLayout } from "./hooks/useAutoLayout";
 import { usePinNode } from "./hooks/usePinNode";
+import { useWorkflowExecution } from "./hooks/useWorkflowExecution";
+import { useExecutionEdgeSync } from "./hooks/useExecutionEdgeSync";
+import { ExecutionProvider } from "./context/ExecutionContext";
+import { ExecutionStatusBar } from "./components/ExecutionStatusBar";
 import { sanitizeGraph, stringifyGraph } from "./lib/graphIO";
 import { applyAutoLayout } from "./lib/autoLayout";
 import { workflowDataToCanvas } from "@/lib/workflow-dsl";
@@ -50,24 +53,32 @@ import Image from "next/image";
 const CLIPBOARD_SELECTION_TYPE = "rune.canvas.selection";
 const PASTE_OFFSET = 32;
 
-export default function FlowCanvas({
-  externalNodes,
-  externalEdges,
-  onPersist,
-  onRun,
-  saveDisabled = false,
-  workflowId = null,
-}: {
+type FlowCanvasProps = {
   externalNodes?: CanvasNode[];
   externalEdges?: Edge[];
   onPersist?: (graph: {
     nodes: CanvasNode[];
     edges: Edge[];
   }) => Promise<void> | void;
-  onRun?: (graph: { nodes: CanvasNode[]; edges: Edge[] }) => Promise<void> | void;
   saveDisabled?: boolean;
   workflowId?: number | null;
-}) {
+};
+
+export default function FlowCanvas(props: FlowCanvasProps) {
+  return (
+    <ExecutionProvider>
+      <FlowCanvasInner {...props} />
+    </ExecutionProvider>
+  );
+}
+
+function FlowCanvasInner({
+  externalNodes,
+  externalEdges,
+  onPersist,
+  saveDisabled = false,
+  workflowId = null,
+}: FlowCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>(
     externalNodes && externalNodes.length ? externalNodes : [],
   );
@@ -94,8 +105,19 @@ export default function FlowCanvas({
 
   const onConnect = useConditionalConnect(setEdges);
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
-  const { run, reset } = useExecutionSim(nodes, edges, setNodes, setEdges);
   const updateNodeData = useUpdateNodeData(setNodes);
+
+  // Execution management
+  const {
+    executionState,
+    isStarting: isStartingExecution,
+    startExecution,
+    stopExecution,
+    reset: resetExecution,
+  } = useWorkflowExecution({ workflowId });
+
+  useExecutionEdgeSync(executionState, setEdges);
+
   const { togglePin } = usePinNode(setNodes);
   const { pushHistory, undo, redo, canUndo, canRedo } = useCanvasHistory(nodes, edges);
 
@@ -106,13 +128,14 @@ export default function FlowCanvas({
       if (source === target) return false;
 
       const sourceNode = nodes.find((node) => node.id === source);
-      if (!sourceNode) return false;
+      const targetNode = nodes.find((node) => node.id === target);
+      if (!sourceNode || !targetNode) return false;
 
-      const existingEdges = edges.filter((edge) => edge.source === source);
+      const existingSourceEdges = edges.filter((edge) => edge.source === source);
 
-      // For "if" nodes: allow max 2 edges (true/false)
+      // For "if" nodes: allow max 1 edge per output handle (true/false)
       if (sourceNode.type === "if") {
-        const hasEdgeFromHandle = existingEdges.some(
+        const hasEdgeFromHandle = existingSourceEdges.some(
           (edge) => edge.sourceHandle === sourceHandle
         );
         return !hasEdgeFromHandle;
@@ -127,14 +150,14 @@ export default function FlowCanvas({
           switchFallbackHandleId(),
         ]);
         if (!sourceHandle || !allowedHandles.has(String(sourceHandle))) return false;
-        const hasEdgeFromHandle = existingEdges.some(
+        const hasEdgeFromHandle = existingSourceEdges.some(
           (edge) => edge.sourceHandle === sourceHandle,
         );
         return !hasEdgeFromHandle;
       }
 
-      // For all other nodes: allow max 1 edge
-      return existingEdges.length === 0;
+      // For all other nodes: allow max 1 outgoing edge
+      return existingSourceEdges.length === 0;
     },
     [nodes, edges]
   );
@@ -551,6 +574,10 @@ export default function FlowCanvas({
   // Paste to import graph DSL or clone selections
   useEffect(() => {
     const handler = (e: ClipboardEvent) => {
+      // Ignore paste events from dialogs (e.g., expanded inspector)
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[role="dialog"]')) return;
+
       const text = e.clipboardData?.getData("text");
       if (!text) return;
       let raw: unknown;
@@ -657,6 +684,11 @@ export default function FlowCanvas({
       switch: "--node-core",
       http: "--node-http",
       smtp: "--node-email",
+      wait: "--node-core",
+      edit: "--node-core",
+      split: "--node-core",
+      aggregator: "--node-core",
+      merge: "--node-core",
     };
     const varName = colorVars[type];
     return varName
@@ -671,6 +703,7 @@ export default function FlowCanvas({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        defaultEdgeOptions={{ type: "default" }}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -702,11 +735,20 @@ export default function FlowCanvas({
         <Panel position="top-left" className="pointer-events-auto z-[60]">
           <div ref={toolbarRef} className="flex items-center gap-2">
             <Toolbar
-              onExecute={() => {
-                reset();
-                void run();
-                if (onRun) void onRun({ nodes, edges });
+              onExecute={async () => {
+                resetExecution();
+                // Auto-save before execution
+                if (onPersist) {
+                  try {
+                    await onPersist({ nodes, edges });
+                  } catch (err) {
+                    console.error("Failed to save before execution:", err);
+                    return; // Don't execute if save fails
+                  }
+                }
+                void startExecution();
               }}
+              onStop={stopExecution}
               onUndo={handleUndo}
               onRedo={handleRedo}
               canUndo={canUndo}
@@ -723,6 +765,9 @@ export default function FlowCanvas({
               onFitView={() => rfInstanceRef.current?.fitView()}
               onAutoLayout={autoLayout}
               saveDisabled={saveDisabled}
+              executionStatus={executionState.status}
+              isStartingExecution={isStartingExecution}
+              workflowId={workflowId}
             />
             <button
               type="button"
@@ -756,6 +801,9 @@ export default function FlowCanvas({
           onTogglePin={togglePin}
           workflowId={workflowId}
         />
+
+        {/* Execution Status Bar */}
+        <ExecutionStatusBar />
 
         {/* Hints */}
         <Panel
