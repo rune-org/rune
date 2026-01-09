@@ -6,8 +6,11 @@ from src.workflow.schemas import (
     WorkflowCreate,
     WorkflowDetail,
     WorkflowUpdateName,
-    WorkflowUpdateStatus,
     WorkflowUpdateData,
+    ScheduleInfo,
+)
+from src.workflow.triggers import (
+    ScheduleTriggerService,
 )
 from src.workflow.service import WorkflowService
 from src.core.dependencies import (
@@ -32,6 +35,11 @@ def get_workflow_service(db: DatabaseDep) -> WorkflowService:
     return WorkflowService(db=db)
 
 
+def get_schedule_trigger_service(db: DatabaseDep) -> ScheduleTriggerService:
+    """Dependency to get schedule trigger service instance."""
+    return ScheduleTriggerService(db=db)
+
+
 def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
     """Dependency to get workflow queue service instance."""
     return WorkflowQueueService(connection=connection)
@@ -47,10 +55,25 @@ async def list_workflows(
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
-    wfs = await service.list_for_user(current_user.id)
-    items = [
-        WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active) for wf in wfs
-    ]
+    """
+    List all workflows accessible by the current user.
+
+    Schedule information (is_active only) is automatically included for scheduled workflows.
+    """
+    wfs = await service.list_for_user(current_user.id, include_schedule=True)
+
+    items = []
+    for wf in wfs:
+        # Build schedule info if loaded (only is_active field)
+        schedule_info = None
+        if wf.schedule:
+            schedule_info = ScheduleInfo.model_validate(wf.schedule)
+
+        item = WorkflowListItem(
+            id=wf.id, name=wf.name, trigger_type=wf.trigger_type, schedule=schedule_info
+        )
+        items.append(item)
+
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
 
 
@@ -75,7 +98,17 @@ async def create_workflow(
     payload: WorkflowCreate,
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
+    schedule_trigger_service: ScheduleTriggerService = Depends(
+        get_schedule_trigger_service
+    ),
 ) -> ApiResponse[WorkflowDetail]:
+    """Create a new workflow.
+
+    Automatically detects trigger type from workflow_data:
+    - If workflow contains schedule configuration in trigger node, creates schedule automatically
+    - If workflow contains webhook configuration, sets up webhook trigger
+    - Otherwise, workflow is manual-only
+    """
     wf = await service.create(
         user_id=current_user.id,
         name=payload.name,
@@ -83,26 +116,19 @@ async def create_workflow(
         workflow_data=payload.workflow_data,
     )
 
+    # If workflow has schedule configuration, create the schedule automatically
+    schedule_config = service.extract_schedule_config(payload.workflow_data)
+    if schedule_config:
+        await schedule_trigger_service.create_schedule(
+            workflow_id=wf.id,
+            interval_seconds=schedule_config["interval_seconds"],
+            start_at=schedule_config.get("start_at"),
+            is_active=schedule_config.get("is_active", True),
+        )
+
     detail = WorkflowDetail.model_validate(wf)
 
     return ApiResponse(success=True, message="Workflow created", data=detail)
-
-
-@router.put("/{workflow_id}/status", response_model=ApiResponse[WorkflowDetail])
-@require_workflow_permission("edit")
-async def update_status(
-    payload: WorkflowUpdateStatus,
-    workflow: Workflow = Depends(get_workflow_with_permission),
-    service: WorkflowService = Depends(get_workflow_service),
-) -> ApiResponse[WorkflowDetail]:
-    """
-    Update workflow status (active/inactive).
-
-    **Requires:** EDIT permission (OWNER or EDITOR)
-    """
-    wf = await service.update_status(workflow, payload.is_active)
-    detail = WorkflowDetail.model_validate(wf)
-    return ApiResponse(success=True, message="Workflow status updated", data=detail)
 
 
 @router.put("/{workflow_id}/name", response_model=ApiResponse[WorkflowDetail])
@@ -128,13 +154,25 @@ async def update_workflow_data(
     payload: WorkflowUpdateData,
     workflow: Workflow = Depends(get_workflow_with_permission),
     service: WorkflowService = Depends(get_workflow_service),
+    schedule_trigger_service: ScheduleTriggerService = Depends(
+        get_schedule_trigger_service
+    ),
 ) -> ApiResponse[WorkflowDetail]:
     """
     Update workflow data/definition.
 
     **Requires:** EDIT permission (OWNER or EDITOR)
+
+    Automatically manages schedule based on workflow_data:
+    - Creates schedule if workflow_data contains schedule configuration
+    - Updates existing schedule if configuration changed
+    - Deletes schedule if schedule configuration removed
+
+    Note: Schedule management is handled entirely by WorkflowService.update_workflow_data
     """
+    # Update workflow data (this automatically manages schedule creation/update/deletion)
     wf = await service.update_workflow_data(workflow, payload.workflow_data)
+
     detail = WorkflowDetail.model_validate(wf)
     return ApiResponse(success=True, message="Workflow data updated", data=detail)
 
@@ -145,12 +183,22 @@ async def delete_workflow(
     workflow: Workflow = Depends(get_workflow_with_permission),
     current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
+    schedule_trigger_service: ScheduleTriggerService = Depends(
+        get_schedule_trigger_service
+    ),
 ) -> None:
     """
     Delete a workflow.
 
     **Requires:** DELETE permission (OWNER only)
+
+    Automatically deletes associated schedule if it exists.
     """
+    # Delete schedule if it exists (will be deleted by cascade, but we do it explicitly for clarity)
+    existing_schedule = await schedule_trigger_service.get_schedule(workflow.id)
+    if existing_schedule:
+        await schedule_trigger_service.delete_schedule(existing_schedule)
+
     await service.delete(workflow)
     return
 

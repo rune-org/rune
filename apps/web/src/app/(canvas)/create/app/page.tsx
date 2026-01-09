@@ -165,6 +165,9 @@ function CanvasPageInner() {
           }
 
           toast.success("Workflow updated");
+          
+          // Refresh workflows list to update trigger type and schedule status
+          void refreshWorkflows();
         } catch (err) {
           if (err instanceof MissingNodeCredentialsError) {
             const nodeList = err.nodes

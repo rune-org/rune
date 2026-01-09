@@ -35,7 +35,8 @@ import {
   deleteWorkflow,
   runWorkflow,
   updateWorkflowName,
-  updateWorkflowStatus,
+  updateWorkflowData,
+  getWorkflowById,
 } from "@/lib/api/workflows";
 import {
   Dialog,
@@ -47,7 +48,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ActivateWorkflowDialog } from "./ActivateWorkflowDialog";
+import { updateScheduleInWorkflowData } from "@/lib/workflow-dsl";
 
+// TODO(FE): Use executions websockets to get real-time updates on workflow runs
 function timeAgo(iso: string | null): string {
   if (!iso) return "N/A";
   const diff = Date.now() - new Date(iso).getTime();
@@ -67,13 +71,13 @@ function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
       </Badge>
     );
   return (
-    <Badge className="bg-amber-900/40 text-amber-200" variant="secondary">
-      Draft
+    <Badge className="bg-slate-900/40 text-slate-300" variant="secondary">
+      Inactive
     </Badge>
   );
 }
 
-type StatFilter = "all" | "active" | "runs" | "draft" | "failed";
+type StatFilter = "all" | "active" | "runs" | "inactive" | "failed";
 
 export function WorkflowsTable() {
   const {
@@ -92,37 +96,8 @@ export function WorkflowsTable() {
   const [deleteTarget, setDeleteTarget] = useState<WorkflowSummary | null>(
     null,
   );
-
-  useEffect(() => {
-    if (workflows.length === 0) void actions.init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleToggleActive = useCallback(
-    async (workflow: WorkflowSummary) => {
-      const workflowId = Number(workflow.id);
-      if (!Number.isFinite(workflowId)) return;
-
-      setPendingWorkflowId(workflow.id);
-      try {
-        await updateWorkflowStatus(workflowId, workflow.status !== "active");
-        toast.success(
-          workflow.status === "active"
-            ? "Workflow deactivated"
-            : "Workflow activated",
-        );
-        await actions.refreshWorkflows();
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to update workflow status.",
-        );
-      } finally {
-        setPendingWorkflowId(null);
-      }
-    },
-    [actions],
+  const [activateTarget, setActivateTarget] = useState<WorkflowSummary | null>(
+    null,
   );
 
   const beginDelete = useCallback((workflow: WorkflowSummary) => {
@@ -206,6 +181,106 @@ export function WorkflowsTable() {
     [actions, renameTarget],
   );
 
+  const performDeactivation = useCallback(
+    async (workflow: WorkflowSummary) => {
+      const workflowId = Number(workflow.id);
+      if (!Number.isFinite(workflowId)) return;
+
+      setPendingWorkflowId(workflow.id);
+      try {
+        const result = await getWorkflowById(workflowId);
+        if (!result.data?.data) throw new Error("Workflow not found");
+
+        const workflowData = result.data.data.workflow_data as Record<string, unknown>;
+        
+        // Use workflow-dsl helper to update schedule
+        const updatedWorkflowData = updateScheduleInWorkflowData(workflowData, {
+          is_active: false,
+        });
+
+        await updateWorkflowData(workflowId, updatedWorkflowData);
+        toast.success("Workflow deactivated");
+        await actions.refreshWorkflows();
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to deactivate workflow.",
+        );
+      } finally {
+        setPendingWorkflowId(null);
+      }
+    },
+    [actions],
+  );
+
+  const handleToggleActive = useCallback(
+    async (workflow: WorkflowSummary) => {
+      // Deactivation is simple - just toggle off
+      if (workflow.status === "active") {
+        await performDeactivation(workflow);
+        return;
+      }
+
+      // Activation requires user input - open modal
+      setActivateTarget(workflow);
+    },
+    [performDeactivation],
+  );
+
+  const handleActivateSubmit = useCallback(
+    async (mode: "now" | "reconfigure", newStartAt?: string, newInterval?: number) => {
+      if (!activateTarget) return;
+      
+      const workflowId = Number(activateTarget.id);
+      if (!Number.isFinite(workflowId)) return;
+
+      setPendingWorkflowId(activateTarget.id);
+      try {
+        const result = await getWorkflowById(workflowId);
+        if (!result.data?.data) throw new Error("Workflow not found");
+
+        const workflowData = result.data.data.workflow_data as Record<string, unknown>;
+        
+        // Prepare schedule update using workflow-dsl helper
+        const scheduleUpdate: {
+          is_active: boolean;
+          start_at?: string;
+          interval_seconds?: number;
+        } = { is_active: true };
+
+        if (mode === "now") {
+          // Run now: set start_at to current time
+          scheduleUpdate.start_at = new Date().toISOString().slice(0, 16);
+        } else {
+          // Reconfigure: use new values if provided
+          if (newStartAt) scheduleUpdate.start_at = newStartAt;
+          if (newInterval) scheduleUpdate.interval_seconds = newInterval;
+        }
+
+        const updatedWorkflowData = updateScheduleInWorkflowData(workflowData, scheduleUpdate);
+        
+        await updateWorkflowData(workflowId, updatedWorkflowData);
+        
+        // If "Run Now" mode, also trigger immediate execution
+        if (mode === "now") {
+          await runWorkflow(workflowId);
+          toast.success("Workflow activated and execution started");
+        } else {
+          toast.success("Workflow activated");
+        }
+        
+        await actions.refreshWorkflows();
+        setActivateTarget(null);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to activate workflow.",
+        );
+      } finally {
+        setPendingWorkflowId(null);
+      }
+    },
+    [activateTarget, actions],
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = workflows;
@@ -213,8 +288,8 @@ export function WorkflowsTable() {
       case "active":
         list = list.filter((w) => w.status === "active");
         break;
-      case "draft":
-        list = list.filter((w) => w.status === "draft");
+      case "inactive":
+        list = list.filter((w) => w.status === "inactive");
         break;
       case "failed":
         list = list.filter((w) => w.lastRunStatus === "failed");
@@ -231,10 +306,10 @@ export function WorkflowsTable() {
 
   const stats = useMemo(() => {
     const active = workflows.filter((w) => w.status === "active").length;
-    const draft = workflows.filter((w) => w.status === "draft").length;
+    const inactive = workflows.filter((w) => w.status === "inactive").length;
     const failed = workflows.filter((w) => w.lastRunStatus === "failed").length;
     const runs = workflows.reduce((sum, w) => sum + w.runs, 0);
-    return { active, draft, failed, runs };
+    return { active, inactive, failed, runs };
   }, [workflows]);
 
   const isRowPending = useCallback(
@@ -274,15 +349,15 @@ export function WorkflowsTable() {
           </button>
           <button
             type="button"
-            onClick={() => setFilter((f) => (f === "draft" ? "all" : "draft"))}
-            aria-pressed={filter === "draft"}
+            onClick={() => setFilter((f) => (f === "inactive" ? "all" : "inactive"))}
+            aria-pressed={filter === "inactive"}
             className={
-              filter === "draft"
+              filter === "inactive"
                 ? "text-accent"
                 : "text-muted-foreground hover:text-foreground"
             }
           >
-            <span className="font-semibold">{stats.draft}</span> Draft
+            <span className="font-semibold">{stats.inactive}</span> Inactive
           </button>
           <button
             type="button"
@@ -371,17 +446,19 @@ export function WorkflowsTable() {
                       Rename
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onSelect={() => handleToggleActive(w)}
-                      disabled={isRowPending(w.id)}
-                    >
-                      {w.status === "active" ? "Deactivate" : "Activate"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
                       onSelect={() => handleRun(w)}
                       disabled={isRowPending(w.id)}
                     >
                       Run
                     </DropdownMenuItem>
+                    {w.triggerType === "Scheduled" && (
+                      <DropdownMenuItem
+                        onSelect={() => handleToggleActive(w)}
+                        disabled={isRowPending(w.id)}
+                      >
+                        {w.status === "active" ? "Deactivate" : "Activate"}
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onSelect={() => beginDelete(w)}
@@ -414,6 +491,12 @@ export function WorkflowsTable() {
         workflow={deleteTarget}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
+        pending={pendingWorkflowId !== null}
+      />
+      <ActivateWorkflowDialog
+        workflow={activateTarget}
+        onClose={() => setActivateTarget(null)}
+        onSubmit={handleActivateSubmit}
         pending={pendingWorkflowId !== null}
       />
     </div>

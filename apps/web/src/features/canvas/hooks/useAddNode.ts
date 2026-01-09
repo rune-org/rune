@@ -14,6 +14,13 @@ const NODE_DEFAULTS: Record<
     type: "trigger",
     data: { label: "Trigger" },
   },
+  scheduled: {
+    type: "scheduled",
+    data: {
+      label: "Scheduled Trigger",
+      interval_seconds: 3600,
+    },
+  },
   agent: {
     type: "agent",
     data: { label: "Agent" },

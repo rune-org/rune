@@ -4,6 +4,7 @@ import type { CanvasNode, NodeKind } from "../types";
 
 const NODE_DIMENSIONS: Record<NodeKind, { width: number; height: number }> = {
   trigger: { width: 160, height: 48 },
+  scheduled: { width: 160, height: 48 },
   agent: { width: 220, height: 80 },
   if: { width: 200, height: 72 },
   switch: { width: 240, height: 180 },
@@ -114,7 +115,7 @@ export function applyAutoLayout({
   // Find an anchor node to preserve the user's canvas position.
   const anchorNode =
     pinnedNodes[0] ||
-    nodes.find((n) => n.type === "trigger") ||
+    nodes.find((n) => n.type === "trigger" || n.type === "scheduled") ||
     nodes[0];
 
   // Calculate offset to anchor the new layout to the existing canvas position

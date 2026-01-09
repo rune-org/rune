@@ -1,0 +1,4 @@
+# Minimal dependencies for standalone scheduler
+asyncpg==0.30.0
+aio-pika==9.5.7
+cryptography==46.0.3

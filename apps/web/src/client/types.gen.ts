@@ -999,6 +999,18 @@ export type RefreshRequest = {
 };
 
 /**
+ * ScheduleInfo
+ *
+ * Minimal schedule info for workflow list views - only is_active.
+ */
+export type ScheduleInfo = {
+    /**
+     * Is Active
+     */
+    is_active: boolean;
+};
+
+/**
  * SmithMessage
  *
  * Single chat turn used to seed Smith with prior context.
@@ -1169,6 +1181,16 @@ export type TokenResponse = {
      */
     expires_in: number;
 };
+
+/**
+ * TriggerType
+ *
+ * Workflow trigger type enumeration.
+ *
+ * Note: ALL workflows can be manually run via API/UI.
+ * This enum tracks both automatic and manual trigger types.
+ */
+export type TriggerType = 'manual' | 'scheduled' | 'webhook';
 
 /**
  * UserBasicInfo
@@ -1353,10 +1375,6 @@ export type WorkflowDetail = {
      */
     description: string | null;
     /**
-     * Is Active
-     */
-    is_active: boolean;
-    /**
      * Workflow Data
      */
     workflow_data: {
@@ -1366,6 +1384,7 @@ export type WorkflowDetail = {
      * Version
      */
     version: number;
+    trigger_type: TriggerType;
     /**
      * Created At
      */
@@ -1398,10 +1417,8 @@ export type WorkflowListItem = {
      * Name
      */
     name: string;
-    /**
-     * Is Active
-     */
-    is_active: boolean;
+    trigger_type?: TriggerType;
+    schedule?: ScheduleInfo | null;
 };
 
 /**
@@ -1524,16 +1541,6 @@ export type WorkflowUpdateName = {
      * Name
      */
     name: string;
-};
-
-/**
- * WorkflowUpdateStatus
- */
-export type WorkflowUpdateStatus = {
-    /**
-     * Is Active
-     */
-    is_active: boolean;
 };
 
 export type LoginAuthLoginPostData = {
@@ -1743,36 +1750,6 @@ export type GetWorkflowWorkflowsWorkflowIdGetResponses = {
 };
 
 export type GetWorkflowWorkflowsWorkflowIdGetResponse = GetWorkflowWorkflowsWorkflowIdGetResponses[keyof GetWorkflowWorkflowsWorkflowIdGetResponses];
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutData = {
-    body: WorkflowUpdateStatus;
-    path: {
-        /**
-         * Workflow Id
-         */
-        workflow_id: number;
-    };
-    query?: never;
-    url: '/workflows/{workflow_id}/status';
-};
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutError = UpdateStatusWorkflowsWorkflowIdStatusPutErrors[keyof UpdateStatusWorkflowsWorkflowIdStatusPutErrors];
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutResponses = {
-    /**
-     * Successful Response
-     */
-    200: ApiResponseWorkflowDetail;
-};
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutResponse = UpdateStatusWorkflowsWorkflowIdStatusPutResponses[keyof UpdateStatusWorkflowsWorkflowIdStatusPutResponses];
 
 export type UpdateNameWorkflowsWorkflowIdNamePutData = {
     body: WorkflowUpdateName;

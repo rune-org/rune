@@ -170,7 +170,10 @@ export function LibraryGroups({ containerRef, onAdd }: LibraryProps) {
       <Group
         title="Triggers"
         icon={Play}
-        items={[{ label: "Manual Trigger", type: "trigger" }]}
+        items={[
+          { label: "Manual Trigger", type: "trigger" },
+          { label: "Scheduled Trigger", type: "scheduled" },
+        ]}
         colorClass="bg-node-trigger"
       />
       <Group

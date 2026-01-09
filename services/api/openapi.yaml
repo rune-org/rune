@@ -121,6 +121,11 @@ paths:
       tags:
       - Workflows
       summary: List Workflows
+      description: 'List all workflows accessible by the current user.
+
+
+        Schedule information (is_active only) is automatically included for scheduled
+        workflows.'
       operationId: list_workflows_workflows__get
       responses:
         '200':
@@ -135,6 +140,17 @@ paths:
       tags:
       - Workflows
       summary: Create Workflow
+      description: 'Create a new workflow.
+
+
+        Automatically detects trigger type from workflow_data:
+
+        - If workflow contains schedule configuration in trigger node, creates schedule
+        automatically
+
+        - If workflow contains webhook configuration, sets up webhook trigger
+
+        - Otherwise, workflow is manual-only'
       operationId: create_workflow_workflows__post
       requestBody:
         content:
@@ -196,7 +212,10 @@ paths:
       description: 'Delete a workflow.
 
 
-        **Requires:** DELETE permission (OWNER only)'
+        **Requires:** DELETE permission (OWNER only)
+
+
+        Automatically deletes associated schedule if it exists.'
       operationId: delete_workflow_workflows__workflow_id__delete
       security:
       - OAuth2PasswordBearer: []
@@ -210,44 +229,6 @@ paths:
       responses:
         '204':
           description: Successful Response
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/{workflow_id}/status:
-    put:
-      tags:
-      - Workflows
-      summary: Update Status
-      description: 'Update workflow status (active/inactive).
-
-
-        **Requires:** EDIT permission (OWNER or EDITOR)'
-      operationId: update_status_workflows__workflow_id__status_put
-      security:
-      - OAuth2PasswordBearer: []
-      parameters:
-      - name: workflow_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          title: Workflow Id
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WorkflowUpdateStatus'
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_WorkflowDetail_'
         '422':
           description: Validation Error
           content:
@@ -300,7 +281,19 @@ paths:
       description: 'Update workflow data/definition.
 
 
-        **Requires:** EDIT permission (OWNER or EDITOR)'
+        **Requires:** EDIT permission (OWNER or EDITOR)
+
+
+        Automatically manages schedule based on workflow_data:
+
+        - Creates schedule if workflow_data contains schedule configuration
+
+        - Updates existing schedule if configuration changed
+
+        - Deletes schedule if schedule configuration removed
+
+
+        Note: Schedule management is handled entirely by WorkflowService.update_workflow_data'
       operationId: update_workflow_data_workflows__workflow_id__data_put
       security:
       - OAuth2PasswordBearer: []
@@ -2444,6 +2437,16 @@ components:
       required:
       - refresh_token
       title: RefreshRequest
+    ScheduleInfo:
+      properties:
+        is_active:
+          type: boolean
+          title: Is Active
+      type: object
+      required:
+      - is_active
+      title: ScheduleInfo
+      description: Minimal schedule info for workflow list views - only is_active.
     SmithMessage:
       properties:
         role:
@@ -2606,6 +2609,19 @@ components:
       - refresh_token
       - expires_in
       title: TokenResponse
+    TriggerType:
+      type: string
+      enum:
+      - manual
+      - scheduled
+      - webhook
+      title: TriggerType
+      description: 'Workflow trigger type enumeration.
+
+
+        Note: ALL workflows can be manually run via API/UI.
+
+        This enum tracks both automatic and manual trigger types.'
     UserBasicInfo:
       properties:
         id:
@@ -2786,9 +2802,6 @@ components:
           - type: string
           - type: 'null'
           title: Description
-        is_active:
-          type: boolean
-          title: Is Active
         workflow_data:
           additionalProperties: true
           type: object
@@ -2796,6 +2809,8 @@ components:
         version:
           type: integer
           title: Version
+        trigger_type:
+          $ref: '#/components/schemas/TriggerType'
         created_at:
           type: string
           format: date-time
@@ -2809,9 +2824,9 @@ components:
       - id
       - name
       - description
-      - is_active
       - workflow_data
       - version
+      - trigger_type
       - created_at
       - updated_at
       title: WorkflowDetail
@@ -2832,14 +2847,17 @@ components:
         name:
           type: string
           title: Name
-        is_active:
-          type: boolean
-          title: Is Active
+        trigger_type:
+          $ref: '#/components/schemas/TriggerType'
+          default: manual
+        schedule:
+          anyOf:
+          - $ref: '#/components/schemas/ScheduleInfo'
+          - type: 'null'
       type: object
       required:
       - id
       - name
-      - is_active
       title: WorkflowListItem
     WorkflowPermissionInfo:
       properties:
@@ -2956,15 +2974,6 @@ components:
       required:
       - name
       title: WorkflowUpdateName
-    WorkflowUpdateStatus:
-      properties:
-        is_active:
-          type: boolean
-          title: Is Active
-      type: object
-      required:
-      - is_active
-      title: WorkflowUpdateStatus
   securitySchemes:
     OAuth2PasswordBearer:
       type: oauth2

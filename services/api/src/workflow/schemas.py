@@ -1,12 +1,22 @@
 from typing import Optional, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
+from src.db.models import TriggerType
+
+
+class ScheduleInfo(BaseModel):
+    """Minimal schedule info for workflow list views - only is_active."""
+
+    is_active: bool
+
+    model_config = {"from_attributes": True}
 
 
 class WorkflowListItem(BaseModel):
     id: int
     name: str
-    is_active: bool
+    trigger_type: TriggerType = TriggerType.MANUAL
+    schedule: Optional[ScheduleInfo] = None  # Populated for scheduled workflows
 
 
 def normalize_and_validate_name(value: str, *, field_name: str = "name") -> str:
@@ -50,10 +60,6 @@ class WorkflowUpdateName(BaseModel):
         return normalize_and_validate_name(v)
 
 
-class WorkflowUpdateStatus(BaseModel):
-    is_active: bool
-
-
 class WorkflowUpdateData(BaseModel):
     workflow_data: dict[str, Any] = Field(..., description="Updated workflow data")
 
@@ -62,9 +68,9 @@ class WorkflowDetail(BaseModel):
     id: int
     name: str
     description: Optional[str]
-    is_active: bool
     workflow_data: dict[str, Any]
     version: int
+    trigger_type: TriggerType  # manual/scheduled/webhook
     created_at: datetime
     updated_at: datetime
 
