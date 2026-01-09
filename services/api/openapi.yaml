@@ -1497,12 +1497,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/{workflow_id}/smith/generate:
+  /smith/{workflow_id}:
     post:
       tags:
-      - Workflows
+      - Smith
       summary: Generate Workflow
-      description: 'Use Smith AI to generate a workflow from natural language.
+      description: 'Use Smith AI to generate/update a workflow from natural language.
 
 
         Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
@@ -1523,8 +1523,27 @@ paths:
         Conversations are persisted per user+workflow combination.
 
         The same workflow_id will maintain conversation history for 60 minutes of
-        inactivity.'
-      operationId: generate_workflow_workflows__workflow_id__smith_generate_post
+        inactivity.
+
+
+        **Event Types:**
+
+        - `stream_start`: Stream has started
+
+        - `token`: AI-generated text token
+
+        - `tool_call`: Agent is calling a tool (e.g., create_node, create_edge)
+
+        - `tool_result`: Result from a tool call
+
+        - `workflow_state`: Final workflow structure with nodes and edges
+
+        - `stream_end`: Stream has completed successfully
+
+        - `error`: An error occurred during processing'
+      operationId: generate_workflow_smith__workflow_id__post
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -1540,47 +1559,190 @@ paths:
               $ref: '#/components/schemas/GenerateWorkflowRequest'
       responses:
         '200':
-          description: "\n## Server-Sent Events (SSE) Stream\n\nReturns a stream of\
-            \ SSE events. Each event has the format:\n```\ndata: <JSON payload>\\\
-            n\\n\n```\n\n### Event Types\n\n#### 1. `stream_start`\nStream has started.\n\
-            ```json\n{\"type\": \"stream_start\"}\n```\n\n#### 2. `token`\nAI-generated\
-            \ text token (streamed incrementally).\n```json\n{\"type\": \"token\"\
-            , \"content\": \"I'll create a workflow...\"}\n```\n\n#### 3. `tool_call`\n\
-            Agent is invoking a tool.\n```json\n{\n  \"type\": \"tool_call\",\n  \"\
-            name\": \"create_node\",\n  \"arguments\": \"{\\\"node_type\\\": \\\"\
-            trigger\\\", \\\"name\\\": \\\"Start\\\"}\",\n  \"call_id\": \"call_abc123\"\
-            \n}\n```\n**Available tools:** `create_node`, `create_edge`, `build_workflow`\n\
-            \n#### 4. `tool_result`\nResult returned from a tool execution.\n```json\n\
-            {\n  \"type\": \"tool_result\",\n  \"output\": \"{\\\"node_id\\\": \\\"\
-            uuid-123\\\", \\\"node\\\": {...}}\",\n  \"call_id\": \"call_abc123\"\n\
-            }\n```\n\n#### 5. `warning`\nNon-fatal issue (stream continues).\n```json\n\
-            {\"type\": \"warning\", \"message\": \"Parse error: unexpected token\"\
-            }\n```\n\n#### 6. `error`\nFatal error (stream ends).\n```json\n{\n  \"\
-            type\": \"error\",\n  \"message\": \"Stream error: Connection timeout\"\
-            ,\n  \"trace\": \"Traceback...\"\n}\n```\n\n#### 7. `stream_end`\nStream\
-            \ completed successfully.\n```json\n{\"type\": \"stream_end\"}\n```\n\n\
-            ### Example Flow\n\n```\ndata: {\"type\": \"stream_start\"}\n\ndata: {\"\
-            type\": \"token\", \"content\": \"I'll create a workflow for you.\"}\n\
-            \ndata: {\"type\": \"tool_call\", \"name\": \"create_node\", \"arguments\"\
-            : \"{\\\"node_type\\\": \\\"trigger\\\", \\\"name\\\": \\\"Start\\\"}\"\
-            , \"call_id\": \"call_1\"}\n\ndata: {\"type\": \"tool_result\", \"output\"\
-            : \"{\\\"node_id\\\": \\\"abc-123\\\", \\\"node\\\": {\\\"id\\\": \\\"\
-            abc-123\\\", \\\"name\\\": \\\"Start\\\", \\\"type\\\": \\\"ManualTrigger\\\
-            \", \\\"trigger\\\": true}}\", \"call_id\": \"call_1\"}\n\ndata: {\"type\"\
-            : \"tool_call\", \"name\": \"build_workflow\", \"arguments\": \"{\\\"\
-            nodes_json\\\": \\\"[...]\\\", \\\"edges_json\\\": \\\"[...]\\\"}\", \"\
-            call_id\": \"call_2\"}\n\ndata: {\"type\": \"tool_result\", \"output\"\
-            : \"{\\\"nodes\\\": [...], \\\"edges\\\": [...]}\", \"call_id\": \"call_2\"\
-            }\n\ndata: {\"type\": \"token\", \"content\": \"Done! Your workflow is\
-            \ ready.\"}\n\ndata: {\"type\": \"stream_end\"}\n```\n"
+          description: Server-Sent Events (SSE) stream
           content:
-            text/event-stream: {}
+            text/event-stream:
+              schema:
+                type: string
+                format: binary
+                description: Server-Sent Events stream with JSON payloads
+              examples:
+                stream_start:
+                  summary: Stream Start Event
+                  value: 'data: {"type": "stream_start"}
+
+
+                    '
+                token:
+                  summary: AI Token Event
+                  value: 'data: {"type": "token", "content": "I will create a workflow..."}
+
+
+                    '
+                tool_call:
+                  summary: Tool Call Event
+                  value: 'data: {"type": "tool_call", "name": "create_node", "arguments":
+                    {...}, "call_id": "..."}
+
+
+                    '
+                tool_result:
+                  summary: Tool Result Event
+                  value: 'data: {"type": "tool_result", "output": {...}, "call_id":
+                    "..."}
+
+
+                    '
+                warning:
+                  summary: Warning Event
+                  value: 'data: {"type": "warning", "message": "Parse error: unexpected
+                    token"}
+
+
+                    '
+                workflow_state:
+                  summary: Workflow State Event
+                  value: 'data: {"type": "workflow_state", "workflow_nodes": [...],
+                    "workflow_edges": [...]}
+
+
+                    '
+                stream_end:
+                  summary: Stream End Event
+                  value: 'data: {"type": "stream_end"}
+
+
+                    '
+                error:
+                  summary: Error Event
+                  value: 'data: {"type": "error", "message": "Error description"}
+
+
+                    '
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /smith:
+    post:
+      tags:
+      - Smith
+      summary: Generate New Workflow
+      description: 'Use Smith AI to generate a new workflow from natural language
+        (without a workflow_id).
+
+
+        Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
+
+        including AI tokens, tool calls, tool results, and completion status.
+
+
+        **Headers:**
+
+        - `Accept: text/event-stream`
+
+
+        **Session Persistence:**
+
+        Creates a new temporary session. The returned workflow structure can be
+
+        saved to create a new workflow.
+
+
+        **Event Types:**
+
+        - `stream_start`: Stream has started
+
+        - `token`: AI-generated text token
+
+        - `tool_call`: Agent is calling a tool (e.g., create_node, create_edge)
+
+        - `tool_result`: Result from a tool call
+
+        - `workflow_state`: Final workflow structure with nodes and edges
+
+        - `stream_end`: Stream has completed successfully
+
+        - `error`: An error occurred during processing'
+      operationId: generate_new_workflow_smith_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateWorkflowRequest'
+        required: true
+      responses:
+        '200':
+          description: Server-Sent Events (SSE) stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                format: binary
+                description: Server-Sent Events stream with JSON payloads
+              examples:
+                stream_start:
+                  summary: Stream Start Event
+                  value: 'data: {"type": "stream_start"}
+
+
+                    '
+                token:
+                  summary: AI Token Event
+                  value: 'data: {"type": "token", "content": "I will create a workflow..."}
+
+
+                    '
+                tool_call:
+                  summary: Tool Call Event
+                  value: 'data: {"type": "tool_call", "name": "create_node", "arguments":
+                    {...}, "call_id": "..."}
+
+
+                    '
+                tool_result:
+                  summary: Tool Result Event
+                  value: 'data: {"type": "tool_result", "output": {...}, "call_id":
+                    "..."}
+
+
+                    '
+                warning:
+                  summary: Warning Event
+                  value: 'data: {"type": "warning", "message": "Parse error: unexpected
+                    token"}
+
+
+                    '
+                workflow_state:
+                  summary: Workflow State Event
+                  value: 'data: {"type": "workflow_state", "workflow_nodes": [...],
+                    "workflow_edges": [...]}
+
+
+                    '
+                stream_end:
+                  summary: Stream End Event
+                  value: 'data: {"type": "stream_end"}
+
+
+                    '
+                error:
+                  summary: Error Event
+                  value: 'data: {"type": "error", "message": "Error description"}
+
+
+                    '
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
 components:
   schemas:
     AdminPasswordResetResponse:

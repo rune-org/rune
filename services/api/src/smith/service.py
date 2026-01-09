@@ -1,81 +1,54 @@
-"""Smith AI Agent Service - LangChain-based workflow generator with Redis checkpointing."""
-
 import json
 import traceback
 import uuid
 from typing import AsyncGenerator
 
+from langgraph.graph.state import CompiledStateGraph
 from langchain_core.messages import AIMessageChunk, HumanMessage, ToolMessage
-from langgraph.checkpoint.redis.ashallow import AsyncShallowRedisSaver
-
-from src.core.config import get_settings
-from src.smith.agent import create_smith_agent
-
-
-# This config ensures:
-# 1. Writes (updates) WILL reset the clock to 60 mins.
-# 2. Reads (viewing history) WILL NOT reset the clock.
-TTL_CONFIG = {"default_ttl": 60, "refresh_on_read": False}
-
-
-def _build_redis_url() -> str:
-    """Build Redis URL for checkpointer using DB 2."""
-    settings = get_settings()
-    host = settings.redis_host
-    port = settings.redis_port
-    password = settings.redis_password
-
-    if password:
-        return f"redis://:{password}@{host}:{port}/2"
-    return f"redis://{host}:{port}/2"
-
-
-# Module-level checkpointer and agent (shared across requests)
-_checkpointer: AsyncShallowRedisSaver | None = None
-_agent = None
-
-
-async def setup_smith() -> None:
-    """
-    Initialize the Redis checkpointer and agent at startup.
-
-    The asetup() call is idempotent - safe to call on every server restart.
-    It creates required Redis indices if they don't exist.
-    """
-    global _checkpointer, _agent
-
-    redis_url = _build_redis_url()
-    _checkpointer = AsyncShallowRedisSaver.from_conn_string(redis_url, ttl=TTL_CONFIG)
-
-    # Idempotent - creates indices if they don't exist
-    await _checkpointer.asetup()
-
-    _agent = create_smith_agent(checkpointer=_checkpointer)
-
-
-def _format_sse(payload: dict) -> str:
-    """Format payload as an SSE event."""
-    return f"data: {json.dumps(payload)}\n\n"
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 
 class SmithAgentService:
     """
     Service layer for the Smith AI workflow builder.
 
-    Uses LangGraph with AsyncShallowRedisSaver for checkpointing and TTL support.
-    Checkpointer is initialized once at startup via setup_smith().
+    Uses LangGraph with AsyncPostgresSaver for checkpointing.
+    Agent is passed in from app.state (initialized at startup).
     """
 
-    def _get_agent(self):
-        """Get the Smith agent (must call setup_smith first)."""
-        if _agent is None:
-            raise RuntimeError("Smith not initialized. Call setup_smith() at startup.")
-        return _agent
+    def __init__(self, agent, checkpointer=None):
+        """
+        Initialize the service with a Smith agent.
+
+        Args:
+            agent: The LangGraph agent from app.state.smith_agent
+            checkpointer: Optional PostgreSQL checkpointer for thread management
+        """
+        self._agent: CompiledStateGraph = agent
+        self._checkpointer: AsyncPostgresSaver = checkpointer
+
+    async def clear_thread(self, session_id: str) -> bool:
+        """
+        Clear all checkpoints for a given session/thread.
+
+        Args:
+            session_id: The session ID (thread_id) to clear
+
+        Returns:
+            True if successful, False if checkpointer is not available
+        """
+        if self._checkpointer is None:
+            return False
+
+        await self._checkpointer.adelete_thread(session_id)
+        return True
 
     async def stream_workflow(
         self,
         message: str,
         session_id: str | None = None,
+        existing_nodes: list | None = None,
+        existing_edges: list | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Stream SSE events from the Smith agent.
@@ -83,11 +56,17 @@ class SmithAgentService:
         Args:
             message: The user's natural language request
             session_id: Session ID for conversation persistence (user_id:workflow_id)
+            existing_nodes: Existing workflow nodes to populate state (from workflow_data)
+            existing_edges: Existing workflow edges to populate state (from workflow_data)
 
         Yields:
             SSE-formatted events (data: {...}\n\n)
         """
-        agent = self._get_agent()
+
+        def _format_sse(payload: dict) -> str:
+            """Format payload as an SSE event."""
+            return f"data: {json.dumps(payload)}\n\n"
+
         session_id = session_id or str(uuid.uuid4())
 
         config = {
@@ -98,10 +77,15 @@ class SmithAgentService:
 
         yield _format_sse({"type": "stream_start"})
 
-        input_messages = {"messages": [HumanMessage(content=message)]}
+        # Initialize workflow state with existing data or empty arrays
+        input_messages = {
+            "messages": [HumanMessage(content=message)],
+            "workflow_nodes": existing_nodes if existing_nodes is not None else [],
+            "workflow_edges": existing_edges if existing_edges is not None else [],
+        }
 
         try:
-            async for event, _ in agent.astream(
+            async for event, _ in self._agent.astream(
                 input_messages,
                 config=config,
                 stream_mode="messages",
@@ -137,13 +121,38 @@ class SmithAgentService:
                                         )
 
                     elif isinstance(event, ToolMessage):
+                        # Parse tool output to extract node/edge objects
+                        output = {}
+                        try:
+                            parsed = json.loads(event.content)
+                            if "node" in parsed:
+                                output["node"] = parsed["node"]
+                            if "edge" in parsed:
+                                output["edge"] = parsed["edge"]
+                        except (json.JSONDecodeError, TypeError):
+                            output = event.content
+
                         yield _format_sse(
                             {
                                 "type": "tool_result",
-                                "output": event.content,
+                                "output": output,
                                 "call_id": event.tool_call_id,
                             }
                         )
+
+                    # Get current state to extract workflow structure
+                    current_state = await self._agent.aget_state(config)
+                    workflow_nodes = current_state.values.get("workflow_nodes", [])
+                    workflow_edges = current_state.values.get("workflow_edges", [])
+
+                    # Send workflow structure to update UI after each event
+                    yield _format_sse(
+                        {
+                            "type": "workflow_state",
+                            "workflow_nodes": workflow_nodes,
+                            "workflow_edges": workflow_edges,
+                        }
+                    )
 
                 except Exception as parse_err:
                     yield _format_sse(
@@ -154,15 +163,15 @@ class SmithAgentService:
                     )
                     continue
 
-            # End event
+            # End event after streaming is complete
             yield _format_sse({"type": "stream_end"})
 
         except Exception as err:
             trace = traceback.format_exc()
+            print(f"Smith Agent Error:\n{trace}")
             yield _format_sse(
                 {
                     "type": "error",
                     "message": f"Stream error: {str(err)}",
-                    "trace": trace[:500],
                 }
             )

@@ -1,11 +1,18 @@
-"""Smith AI Agent using LangChain/LangGraph with Redis checkpointer."""
-
-from langchain.agents import create_agent
+from langchain.agents import create_agent, AgentState
 from langchain_google_genai import ChatGoogleGenerativeAI
+from typing import NotRequired
 
 from src.core.config import get_settings
 from src.smith.prompts import SYSTEM_PROMPT
 from src.smith.tools import SMITH_TOOLS
+
+
+class SmithAgentState(AgentState):
+    """Extended agent state with workflow tracking."""
+
+    workflow_nodes: NotRequired[list[dict]]
+    workflow_edges: NotRequired[list[dict]]
+    current_workflow_id: NotRequired[str]
 
 
 def create_smith_model() -> ChatGoogleGenerativeAI:
@@ -21,21 +28,22 @@ def create_smith_model() -> ChatGoogleGenerativeAI:
 
 def create_smith_agent(checkpointer=None):
     """
-    Create a Smith agent with optional checkpointer.
+    Create a Smith agent with workflow state tracking.
 
     Args:
         checkpointer: Optional LangGraph checkpointer for persistence
 
     Returns:
-        A LangGraph agent executor
+        A LangGraph agent executor with workflow state tracking
     """
     model = create_smith_model()
 
     agent_executor = create_agent(
         model=model,
         tools=SMITH_TOOLS,
-        prompt=SYSTEM_PROMPT,
+        system_prompt=SYSTEM_PROMPT,
         checkpointer=checkpointer,
+        state_schema=SmithAgentState,
     )
 
     return agent_executor
