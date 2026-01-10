@@ -10,7 +10,7 @@ redis==6.4.0
 aio-pika==9.5.7
 cryptography==46.0.3
 dspy==3.0.4
-langchain-core==1.2.0
+langchain-core==1.2.5
 langchain-google-genai==3.2.0
 langgraph-checkpoint-postgres==3.0.2
 langchain==1.1.3
