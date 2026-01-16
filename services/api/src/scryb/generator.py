@@ -3,6 +3,7 @@ import dspy
 from typing import Any, Literal
 from dotenv import load_dotenv
 from src.scryb.serializer import WorkflowSerializer
+from src.core.config import get_settings
 
 
 class WorkflowDocumentation(dspy.Signature):
@@ -33,10 +34,11 @@ class DocumentationGenerator:
 
     def _setup_dspy(self):
         load_dotenv()
+        settings = get_settings()
         # Use Google AI Studio (Gemini)
         # Expects GOOGLE_API_KEY in environment variables
         lm = dspy.LM(
-            "gemini/gemini-2.5-flash-lite",
+            settings.scryb_model,
         )
         dspy.configure(lm=lm)
 

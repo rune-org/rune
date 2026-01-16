@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "@/components/ui/toast";
 import { changeMyPassword } from "@/lib/api/auth";
 import { cn } from "@/lib/cn";
@@ -127,9 +128,8 @@ export function ChangePasswordForm({
         >
           Current Password
         </Label>
-        <Input
+        <PasswordInput
           id="oldPassword"
-          type="password"
           placeholder="Enter your current password"
           className={cn(
             !isDialog &&
@@ -152,9 +152,8 @@ export function ChangePasswordForm({
         >
           New Password
         </Label>
-        <Input
+        <PasswordInput
           id="newPassword"
-          type="password"
           placeholder="Create a secure password"
           className={cn(
             !isDialog &&
@@ -181,9 +180,8 @@ export function ChangePasswordForm({
         >
           Confirm New Password
         </Label>
-        <Input
+        <PasswordInput
           id="confirmPassword"
-          type="password"
           placeholder="Confirm your new password"
           className={cn(
             !isDialog &&

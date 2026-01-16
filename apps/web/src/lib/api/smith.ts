@@ -1,15 +1,40 @@
-import { generateWorkflowFromPromptWorkflowsSmithGeneratePost } from "@/client";
-import type {
-  GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponse,
-  GenerateWorkflowRequest,
-} from "@/client/types.gen";
+import { generateNewWorkflowSmithPost } from "@/client";
+import type { GenerateWorkflowRequest } from "@/client/types.gen";
 
-export type SmithGenerateRequest = GenerateWorkflowRequest & {
-  include_trace?: boolean;
-};
-export type SmithGenerateApiResponse =
-  GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponse;
+export type SmithSSEEvent =
+  | { type: "stream_start" }
+  | { type: "token"; content: string }
+  | { type: "tool_call"; name: string; arguments: string; call_id: string }
+  | { type: "tool_result"; output: string; call_id: string }
+  | { type: "warning"; message: string }
+  | {
+    type: "workflow_state";
+    workflow_nodes: WorkflowNode[];
+    workflow_edges: WorkflowEdge[];
+  }
+  | { type: "error"; message: string; trace?: string }
+  | { type: "stream_end" };
 
-// Wrapper around the generated SDK function for consistency with other API helpers
-export const generateWorkflow = (payload: SmithGenerateRequest) =>
-  generateWorkflowFromPromptWorkflowsSmithGeneratePost({ body: payload });
+
+export interface WorkflowNode {
+  id: string;
+  name: string;
+  type: string;
+  trigger: boolean;
+  parameters: Record<string, unknown>;
+  output: Record<string, unknown>;
+  position: [number, number];
+}
+
+export interface WorkflowEdge {
+  id: string;
+  src: string;
+  dst: string;
+  label?: string;
+}
+
+export const streamGenerateNewWorkflow = (prompt: string) =>
+  generateNewWorkflowSmithPost({
+    body: { prompt },
+  });
+export type { GenerateWorkflowRequest };

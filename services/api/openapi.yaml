@@ -1497,14 +1497,176 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/smith/generate:
+  /smith/{workflow_id}:
     post:
       tags:
-      - Workflows
-      summary: Generate Workflow From Prompt
-      description: Use Smith to convert a natural-language request into a workflow
-        definition.
-      operationId: generate_workflow_from_prompt_workflows_smith_generate_post
+      - Smith
+      summary: Generate Workflow
+      description: 'Use Smith AI to generate/update a workflow from natural language.
+
+
+        Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
+
+        including AI tokens, tool calls, tool results, and completion status.
+
+
+        **Requires:** EDIT permission (OWNER or EDITOR)
+
+
+        **Headers:**
+
+        - `Accept: text/event-stream`
+
+
+        **Session Persistence:**
+
+        Conversations are persisted per user+workflow combination.
+
+        The same workflow_id will maintain conversation history for 60 minutes of
+        inactivity.
+
+
+        **Event Types:**
+
+        - `stream_start`: Stream has started
+
+        - `token`: AI-generated text token
+
+        - `tool_call`: Agent is calling a tool (e.g., create_node, create_edge)
+
+        - `tool_result`: Result from a tool call
+
+        - `workflow_state`: Final workflow structure with nodes and edges
+
+        - `stream_end`: Stream has completed successfully
+
+        - `error`: An error occurred during processing'
+      operationId: generate_workflow_smith__workflow_id__post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateWorkflowRequest'
+      responses:
+        '200':
+          description: Server-Sent Events (SSE) stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                format: binary
+                description: Server-Sent Events stream with JSON payloads
+              examples:
+                stream_start:
+                  summary: Stream Start Event
+                  value: 'data: {"type": "stream_start"}
+
+
+                    '
+                token:
+                  summary: AI Token Event
+                  value: 'data: {"type": "token", "content": "I will create a workflow..."}
+
+
+                    '
+                tool_call:
+                  summary: Tool Call Event
+                  value: 'data: {"type": "tool_call", "name": "create_node", "arguments":
+                    {...}, "call_id": "..."}
+
+
+                    '
+                tool_result:
+                  summary: Tool Result Event
+                  value: 'data: {"type": "tool_result", "output": {...}, "call_id":
+                    "..."}
+
+
+                    '
+                warning:
+                  summary: Warning Event
+                  value: 'data: {"type": "warning", "message": "Parse error: unexpected
+                    token"}
+
+
+                    '
+                workflow_state:
+                  summary: Workflow State Event
+                  value: 'data: {"type": "workflow_state", "workflow_nodes": [...],
+                    "workflow_edges": [...]}
+
+
+                    '
+                stream_end:
+                  summary: Stream End Event
+                  value: 'data: {"type": "stream_end"}
+
+
+                    '
+                error:
+                  summary: Error Event
+                  value: 'data: {"type": "error", "message": "Error description"}
+
+
+                    '
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /smith:
+    post:
+      tags:
+      - Smith
+      summary: Generate New Workflow
+      description: 'Use Smith AI to generate a new workflow from natural language
+        (without a workflow_id).
+
+
+        Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
+
+        including AI tokens, tool calls, tool results, and completion status.
+
+
+        **Headers:**
+
+        - `Accept: text/event-stream`
+
+
+        **Session Persistence:**
+
+        Creates a new temporary session. The returned workflow structure can be
+
+        saved to create a new workflow.
+
+
+        **Event Types:**
+
+        - `stream_start`: Stream has started
+
+        - `token`: AI-generated text token
+
+        - `tool_call`: Agent is calling a tool (e.g., create_node, create_edge)
+
+        - `tool_result`: Result from a tool call
+
+        - `workflow_state`: Final workflow structure with nodes and edges
+
+        - `stream_end`: Stream has completed successfully
+
+        - `error`: An error occurred during processing'
+      operationId: generate_new_workflow_smith_post
       requestBody:
         content:
           application/json:
@@ -1513,17 +1675,74 @@ paths:
         required: true
       responses:
         '200':
-          description: Successful Response
+          description: Server-Sent Events (SSE) stream
           content:
-            application/json:
+            text/event-stream:
               schema:
-                $ref: '#/components/schemas/ApiResponse_GeneratedWorkflow_'
+                type: string
+                format: binary
+                description: Server-Sent Events stream with JSON payloads
+              examples:
+                stream_start:
+                  summary: Stream Start Event
+                  value: 'data: {"type": "stream_start"}
+
+
+                    '
+                token:
+                  summary: AI Token Event
+                  value: 'data: {"type": "token", "content": "I will create a workflow..."}
+
+
+                    '
+                tool_call:
+                  summary: Tool Call Event
+                  value: 'data: {"type": "tool_call", "name": "create_node", "arguments":
+                    {...}, "call_id": "..."}
+
+
+                    '
+                tool_result:
+                  summary: Tool Result Event
+                  value: 'data: {"type": "tool_result", "output": {...}, "call_id":
+                    "..."}
+
+
+                    '
+                warning:
+                  summary: Warning Event
+                  value: 'data: {"type": "warning", "message": "Parse error: unexpected
+                    token"}
+
+
+                    '
+                workflow_state:
+                  summary: Workflow State Event
+                  value: 'data: {"type": "workflow_state", "workflow_nodes": [...],
+                    "workflow_edges": [...]}
+
+
+                    '
+                stream_end:
+                  summary: Stream End Event
+                  value: 'data: {"type": "stream_end"}
+
+
+                    '
+                error:
+                  summary: Error Event
+                  value: 'data: {"type": "error", "message": "Error description"}
+
+
+                    '
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
 components:
   schemas:
     AdminPasswordResetResponse:
@@ -1681,25 +1900,6 @@ components:
       required:
       - data
       title: ApiResponse[FirstTimeSetupStatus]
-    ApiResponse_GeneratedWorkflow_:
-      properties:
-        success:
-          type: boolean
-          title: Success
-          description: Whether the request was successful
-          default: true
-        message:
-          type: string
-          title: Message
-          description: Human-readable message
-          default: Success
-        data:
-          $ref: '#/components/schemas/GeneratedWorkflow'
-          description: Response data
-      type: object
-      required:
-      - data
-      title: ApiResponse[GeneratedWorkflow]
     ApiResponse_List_TemplateSummary__:
       properties:
         success:
@@ -2335,59 +2535,11 @@ components:
         prompt:
           type: string
           title: Prompt
-        history:
-          items:
-            $ref: '#/components/schemas/SmithMessage'
-          type: array
-          title: History
-        workflow:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Workflow
-          description: Optional existing workflow JSON to give the agent full context.
-        include_trace:
-          type: boolean
-          title: Include Trace
-          description: Include Smith's reasoning/trajectory in the response.
-          default: false
-        max_iters:
-          anyOf:
-          - type: integer
-            maximum: 20.0
-            minimum: 1.0
-          - type: 'null'
-          title: Max Iters
-          description: Optional override for Smith's ReAct iteration limit.
       type: object
       required:
       - prompt
       title: GenerateWorkflowRequest
       description: Request body for creating a workflow from natural language.
-    GeneratedWorkflow:
-      properties:
-        response:
-          type: string
-          title: Response
-        workflow:
-          additionalProperties: true
-          type: object
-          title: Workflow
-        trace:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: 'null'
-          title: Trace
-          description: Optional reasoning steps from the agent trajectory.
-      type: object
-      required:
-      - response
-      - workflow
-      title: GeneratedWorkflow
-      description: Smith LLM response packaged for the API.
     HTTPValidationError:
       properties:
         detail:
@@ -2444,23 +2596,6 @@ components:
       required:
       - refresh_token
       title: RefreshRequest
-    SmithMessage:
-      properties:
-        role:
-          type: string
-          enum:
-          - user
-          - smith
-          title: Role
-          default: user
-        content:
-          type: string
-          title: Content
-      type: object
-      required:
-      - content
-      title: SmithMessage
-      description: Single chat turn used to seed Smith with prior context.
     TemplateCreate:
       properties:
         name:

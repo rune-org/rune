@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "@/components/ui/toast";
 import { useAuth } from "@/lib/auth";
 
@@ -100,9 +101,8 @@ export function AuthForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="password" className="text-zinc-400">Password</Label>
-        <Input
+        <PasswordInput
           id="password"
-          type="password"
           placeholder="Create a secure password"
           className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11"
           {...form.register("password")}
