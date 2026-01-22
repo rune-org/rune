@@ -36,7 +36,7 @@ import { useWorkflowExecution } from "./hooks/useWorkflowExecution";
 import { useExecutionEdgeSync } from "./hooks/useExecutionEdgeSync";
 import { ExecutionProvider } from "./context/ExecutionContext";
 import { ExecutionStatusBar } from "./components/ExecutionStatusBar";
-import { sanitizeGraph, stringifyGraph } from "./lib/graphIO";
+import { sanitizeGraph, stringifyGraph, stripExecutionStyling } from "./lib/graphIO";
 import { applyAutoLayout } from "./lib/autoLayout";
 import { workflowDataToCanvas } from "@/lib/workflow-dsl";
 import { toast } from "@/components/ui/toast";
@@ -247,10 +247,11 @@ function FlowCanvasInner({
       return;
     }
 
+    const cleaned = stripExecutionStyling({ nodes: selectedNodes, edges: selectedEdges });
     const payload = {
       __runeClipboardType: CLIPBOARD_SELECTION_TYPE,
-      nodes: selectedNodes,
-      edges: selectedEdges,
+      nodes: cleaned.nodes,
+      edges: cleaned.edges,
     };
 
     try {
