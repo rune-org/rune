@@ -40,9 +40,12 @@
   --node-trigger: hsl(217 91% 60%);
   --node-trigger-bg: hsl(217 91% 60% / 0.18);
   --node-trigger-border: hsl(217 91% 60% / 0.35);
-  --node-core: hsl(270 70% 65%);
-  --node-core-bg: hsl(270 70% 65% / 0.18);
-  --node-core-border: hsl(270 70% 65% / 0.35);
+  --node-flow: hsl(45 95% 55%);
+  --node-flow-bg: hsl(45 95% 55% / 0.18);
+  --node-flow-border: hsl(45 95% 55% / 0.35);
+  --node-transform: hsl(330 80% 60%);
+  --node-transform-bg: hsl(330 80% 60% / 0.18);
+  --node-transform-border: hsl(330 80% 60% / 0.35);
   --node-http: hsl(142 76% 56%);
   --node-http-bg: hsl(142 76% 56% / 0.18);
   --node-http-border: hsl(142 76% 56% / 0.35);
