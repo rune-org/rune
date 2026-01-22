@@ -44,10 +44,7 @@ export interface AutoLayoutResult {
   edges: Edge[];
 }
 
-/**
- * Calculate node height for switch nodes based on rule count.
- */
-function getNodeDimensions(node: CanvasNode): { width: number; height: number } {
+function getLayoutDimensions(node: CanvasNode): { width: number; height: number } {
   return getNodeDimensionsWithData(node.type, node.data);
 }
 
@@ -75,7 +72,7 @@ export function applyAutoLayout({
   dagreGraph.setGraph(LAYOUT_CONFIG);
 
   nodes.forEach((node) => {
-    const dimensions = getNodeDimensions(node);
+    const dimensions = getLayoutDimensions(node);
     dagreGraph.setNode(node.id, {
       width: dimensions.width,
       height: dimensions.height,
@@ -96,7 +93,7 @@ export function applyAutoLayout({
 
   // Calculate offset to anchor the new layout to the existing canvas position
   const anchorDagreNode = dagreGraph.node(anchorNode.id);
-  const anchorDimensions = getNodeDimensions(anchorNode);
+  const anchorDimensions = getLayoutDimensions(anchorNode);
   const offsetX = anchorNode.position.x - (anchorDagreNode.x - anchorDimensions.width / 2); // Center co-ords to top-left conversion
   const offsetY = anchorNode.position.y - (anchorDagreNode.y - anchorDimensions.height / 2);
 
@@ -108,7 +105,7 @@ export function applyAutoLayout({
     const dagreNode = dagreGraph.node(node.id);
     if (!dagreNode) return node;
 
-    const dimensions = getNodeDimensions(node);
+    const dimensions = getLayoutDimensions(node);
 
     return {
       ...node,
@@ -170,7 +167,7 @@ function resolveAllOverlaps(nodes: CanvasNode[]): CanvasNode[] {
       const prevNode = nodeMap.get(rank[i - 1].id)!;
       const currNode = nodeMap.get(rank[i].id)!;
 
-      const prevDimensions = getNodeDimensions(prevNode);
+      const prevDimensions = getLayoutDimensions(prevNode);
       const prevBottom = prevNode.position.y + prevDimensions.height + PADDING;
       const currTop = currNode.position.y;
 
@@ -266,11 +263,11 @@ function adjustForPinnedOverlaps(
     if (node.data.pinned) return node;
 
     let adjustedPosition = { ...node.position };
-    const dimensions = getNodeDimensions(node);
+    const dimensions = getLayoutDimensions(node);
     const padding = 20;
 
     for (const pinnedNode of pinnedNodes) {
-      const pinnedDimensions = getNodeDimensions(pinnedNode);
+      const pinnedDimensions = getLayoutDimensions(pinnedNode);
 
       const nodeLeft = adjustedPosition.x;
       const nodeRight = adjustedPosition.x + dimensions.width;

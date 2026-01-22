@@ -324,45 +324,38 @@ export function getNodeSchema(kind: NodeKind, data?: NodeDataMap[NodeKind]): Nod
 // Library/Grouping Helpers
 // ============================================================================
 
+type GroupMetadata = {
+  label: string;
+  icon: LucideIcon;
+  colorClass: string;
+};
+
+const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
+  triggers: { label: "Triggers", icon: Play, colorClass: "bg-node-trigger" },
+  core: { label: "Core", icon: GitBranch, colorClass: "bg-node-core" },
+  http: { label: "HTTP", icon: Globe, colorClass: "bg-node-http" },
+  email: { label: "Email", icon: Mail, colorClass: "bg-node-email" },
+  agents: { label: "Agents", icon: Bot, colorClass: "bg-node-agent" },
+};
+
 export function getNodesByGroup(group: NodeGroup): NodeMetadata[] {
   return Object.values(NODE_REGISTRY).filter((m) => m.group === group);
 }
 
 export function getAllGroups(): NodeGroup[] {
-  return ["triggers", "core", "http", "email", "agents"];
+  return Object.keys(GROUP_METADATA) as NodeGroup[];
 }
 
 export function getGroupLabel(group: NodeGroup): string {
-  const labels: Record<NodeGroup, string> = {
-    triggers: "Triggers",
-    core: "Core",
-    http: "HTTP",
-    email: "Email",
-    agents: "Agents",
-  };
-  return labels[group];
+  return GROUP_METADATA[group].label;
 }
 
 export function getGroupIcon(group: NodeGroup): LucideIcon {
-  const icons: Record<NodeGroup, LucideIcon> = {
-    triggers: Play,
-    core: GitBranch,
-    http: Globe,
-    email: Mail,
-    agents: Bot,
-  };
-  return icons[group];
+  return GROUP_METADATA[group].icon;
 }
 
 export function getGroupColorClass(group: NodeGroup): string {
-  const classes: Record<NodeGroup, string> = {
-    triggers: "bg-node-trigger",
-    core: "bg-node-core",
-    http: "bg-node-http",
-    email: "bg-node-email",
-    agents: "bg-node-agent",
-  };
-  return classes[group];
+  return GROUP_METADATA[group].colorClass;
 }
 
 /** Data Helper */
