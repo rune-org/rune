@@ -76,13 +76,6 @@ function renderInspectorForm(
   }
 }
 
-function getNodeInputsOutputs(node: CanvasNode): {
-  inputs: readonly string[];
-  outputs: readonly string[];
-} {
-  return getNodeSchema(node.type, node.data);
-}
-
 export function Inspector({
   selectedNode,
   updateSelectedNodeLabel,
@@ -101,9 +94,8 @@ export function Inspector({
   const isExpandedDialogOpen = isExpandedProp ?? isExpandedInternal;
   const setIsExpandedDialogOpen = setIsExpandedProp ?? setIsExpandedInternal;
 
-  // Memoize inputs/outputs computation
   const nodeIO = useMemo(
-    () => (selectedNode ? getNodeInputsOutputs(selectedNode) : null),
+    () => (selectedNode ? getNodeSchema(selectedNode.type, selectedNode.data) : null),
     [selectedNode],
   );
 
