@@ -18,8 +18,8 @@ export const MergeNode = memo(function MergeNode({
       nodeId={id}
       icon={<Combine className="h-4 w-4 text-muted-foreground" />}
       label={data.label ?? "Merge"}
-      bgClassName="bg-node-core-bg"
-      borderColor="--node-core-border"
+      bgClassName="bg-node-flow-bg"
+      borderColor="--node-flow-border"
       pinned={data.pinned}
     >
       <div className="text-xs text-muted-foreground">

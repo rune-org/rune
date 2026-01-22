@@ -25,9 +25,12 @@
   --color-node-trigger: var(--node-trigger);
   --color-node-trigger-bg: var(--node-trigger-bg);
   --color-node-trigger-border: var(--node-trigger-border);
-  --color-node-core: var(--node-core);
-  --color-node-core-bg: var(--node-core-bg);
-  --color-node-core-border: var(--node-core-border);
+  --color-node-flow: var(--node-flow);
+  --color-node-flow-bg: var(--node-flow-bg);
+  --color-node-flow-border: var(--node-flow-border);
+  --color-node-transform: var(--node-transform);
+  --color-node-transform-bg: var(--node-transform-bg);
+  --color-node-transform-border: var(--node-transform-border);
   --color-node-http: var(--node-http);
   --color-node-http-bg: var(--node-http-bg);
   --color-node-http-border: var(--node-http-border);

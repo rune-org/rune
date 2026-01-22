@@ -2,42 +2,11 @@
 
 import { memo } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { GitBranch, Pin, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
+import { GitBranch, Pin } from "lucide-react";
 import { useNodeExecution } from "../context/ExecutionContext";
-import type { NodeExecutionStatus } from "../types/execution";
+import { StatusIndicator } from "./StatusIndicator";
 import type { IfData } from "../types";
 import { cn } from "@/lib/cn";
-
-function StatusIndicator({ status }: { status: NodeExecutionStatus }) {
-  switch (status) {
-    case "running":
-      return (
-        <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-white shadow-md z-10" title="Running">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        </div>
-      );
-    case "success":
-      return (
-        <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white shadow-md z-10" title="Success">
-          <CheckCircle className="h-3.5 w-3.5" />
-        </div>
-      );
-    case "failed":
-      return (
-        <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md z-10" title="Failed">
-          <XCircle className="h-3.5 w-3.5" />
-        </div>
-      );
-    case "waiting":
-      return (
-        <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-white shadow-md z-10" title="Waiting">
-          <Clock className="h-3.5 w-3.5" />
-        </div>
-      );
-    default:
-      return null;
-  }
-}
 
 export const IfNode = memo(function IfNode({ id, data }: NodeProps<Node<IfData>>) {
   const nodeExecution = useNodeExecution(id);
@@ -46,11 +15,11 @@ export const IfNode = memo(function IfNode({ id, data }: NodeProps<Node<IfData>>
   return (
     <div
       className={cn(
-        "rune-node relative w-[200px] rounded-[var(--radius)] border-2 bg-node-core-bg p-3 text-sm text-foreground shadow-sm transition-all duration-300",
+        "rune-node relative w-[200px] rounded-[var(--radius)] border-2 bg-node-flow-bg p-3 text-sm text-foreground shadow-sm transition-all duration-300",
         executionStatus !== "idle" && executionStatus,
         executionStatus === "running" && "animate-pulse-subtle"
       )}
-      style={executionStatus === "idle" ? { borderColor: 'var(--node-core-border)' } : undefined}
+      style={executionStatus === "idle" ? { borderColor: 'var(--node-flow-border)' } : undefined}
     >
       {executionStatus !== "idle" ? (
         <StatusIndicator status={executionStatus} />

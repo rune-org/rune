@@ -15,8 +15,8 @@ export const SplitNode = memo(function SplitNode({
       nodeId={id}
       icon={<Split className="h-4 w-4 text-muted-foreground" />}
       label={data.label ?? "Split"}
-      bgClassName="bg-node-core-bg"
-      borderColor="--node-core-border"
+      bgClassName="bg-node-transform-bg"
+      borderColor="--node-transform-border"
       pinned={data.pinned}
     >
       <div className="text-xs text-muted-foreground">
