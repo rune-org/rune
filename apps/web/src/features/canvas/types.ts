@@ -106,11 +106,3 @@ export type SwitchOperator =
   | ">="
   | "<="
   | "contains";
-
-export type {
-  NodeGroup,
-  NodeColorTheme,
-  NodeSchema,
-  NodeMetadata,
-  NodeRegistry,
-} from "./lib/nodeRegistry";
