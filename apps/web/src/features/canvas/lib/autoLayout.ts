@@ -1,20 +1,7 @@
 import dagre from "dagre";
 import type { Edge } from "@xyflow/react";
-import type { CanvasNode, NodeKind } from "../types";
-
-const NODE_DIMENSIONS: Record<NodeKind, { width: number; height: number }> = {
-  trigger: { width: 160, height: 48 },
-  agent: { width: 220, height: 80 },
-  if: { width: 200, height: 72 },
-  switch: { width: 240, height: 180 },
-  http: { width: 220, height: 80 },
-  smtp: { width: 220, height: 80 },
-  wait: { width: 220, height: 72 },
-  edit: { width: 220, height: 72 },
-  split: { width: 220, height: 72 },
-  aggregator: { width: 220, height: 72 },
-  merge: { width: 220, height: 80 },
-};
+import type { CanvasNode } from "../types";
+import { getNodeDimensionsWithData } from "./nodeRegistry";
 
 /**
  * Get the vertical order priority for a source handle.
@@ -60,18 +47,8 @@ export interface AutoLayoutResult {
 /**
  * Calculate node height for switch nodes based on rule count.
  */
-function getSwitchNodeHeight(node: CanvasNode): number {
-  if (node.type !== "switch") return NODE_DIMENSIONS.switch.height;
-  const rules = Array.isArray(node.data.rules) ? node.data.rules : [];
-  return 64 + (rules.length + 1) * 64;
-}
-
 function getNodeDimensions(node: CanvasNode): { width: number; height: number } {
-  const base = NODE_DIMENSIONS[node.type] || { width: 200, height: 80 };
-  if (node.type === "switch") {
-    return { width: base.width, height: getSwitchNodeHeight(node) };
-  }
-  return base;
+  return getNodeDimensionsWithData(node.type, node.data);
 }
 
 /**

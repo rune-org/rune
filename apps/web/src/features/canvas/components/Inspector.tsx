@@ -11,7 +11,7 @@ import {
   PinOff,
 } from "lucide-react";
 import type { CanvasNode } from "../types";
-import { NODE_SCHEMA } from "../types";
+import { getNodeSchema } from "../lib/nodeRegistry";
 import { useUpdateNodeData } from "../hooks/useUpdateNodeData";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -80,12 +80,7 @@ function getNodeInputsOutputs(node: CanvasNode): {
   inputs: readonly string[];
   outputs: readonly string[];
 } {
-  if (node.type === "switch") {
-    const rules = Array.isArray(node.data.rules) ? node.data.rules : [];
-    const outputs = rules.map((_, idx) => `case ${idx + 1}`).concat("fallback");
-    return { inputs: ["input"], outputs };
-  }
-  return NODE_SCHEMA[node.type] || { inputs: [], outputs: [] };
+  return getNodeSchema(node.type, node.data);
 }
 
 export function Inspector({
