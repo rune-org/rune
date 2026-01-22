@@ -345,9 +345,10 @@ export function getNodesByGroup(group: NodeGroup): NodeMetadata[] {
   return Object.values(NODE_REGISTRY).filter((m) => m.group === group);
 }
 
-export function getAllGroups(): NodeGroup[] {
-  return Object.keys(GROUP_METADATA) as NodeGroup[];
-}
+const ALL_GROUPS: readonly NodeGroup[] = Object.keys(GROUP_METADATA) as NodeGroup[];
+export function getAllGroups(): readonly NodeGroup[] {
+  return ALL_GROUPS;
+}   
 
 export function getGroupLabel(group: NodeGroup): string {
   return GROUP_METADATA[group].label;

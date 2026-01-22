@@ -150,7 +150,7 @@ function Group({ group, containerRef, onAdd }: GroupProps) {
   const title = getGroupLabel(group);
 
   // Alphabetical order
-  const sortedNodes = nodes.sort((a, b) => a.label.localeCompare(b.label));
+  const sortedNodes = [...nodes].sort((a, b) => a.label.localeCompare(b.label));
 
   return (
     <details
