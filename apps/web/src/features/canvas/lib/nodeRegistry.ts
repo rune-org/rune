@@ -341,8 +341,8 @@ type GroupMetadata = {
 };
 
 const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
-	triggers: { label: "Triggers", icon: Play, colorClass: "bg-node-trigger" },
-	http: { label: "HTTP", icon: Globe, colorClass: "bg-node-http" },
+  triggers: { label: "Triggers", icon: Play, colorClass: "bg-node-trigger" },
+  http: { label: "HTTP", icon: Globe, colorClass: "bg-node-http" },
   flow: { label: "Control Flow", icon: Route, colorClass: "bg-node-flow" },
   transform: { label: "Data Transform", icon: Wand2, colorClass: "bg-node-transform" },
   email: { label: "Email", icon: Mail, colorClass: "bg-node-email" },
