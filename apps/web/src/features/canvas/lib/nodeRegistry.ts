@@ -13,7 +13,7 @@ import {
   Wand2,
   type LucideIcon,
 } from "lucide-react";
-import type { NodeKind, NodeDataMap } from "../types";
+import type { NodeDataMap, NodeKind, SwitchData } from "../types";
 
 export type NodeGroup = "triggers" | "flow" | "transform" | "http" | "email" | "agents";
 
@@ -252,7 +252,11 @@ export function isTriggerNode(kind: NodeKind): boolean {
 }
 
 export function isValidNodeKind(value: unknown): value is NodeKind {
-  return typeof value === "string" && value in NODE_REGISTRY;
+  return (
+    typeof value === "string" &&
+    // This avoids unintentionally accepting corrupted graph data.
+    Object.prototype.hasOwnProperty.call(NODE_REGISTRY, value)
+  );
 }
 
 // ============================================================================
@@ -273,17 +277,19 @@ export function getNodeDimensions(kind: NodeKind): { width: number; height: numb
   return NODE_REGISTRY[kind].dimensions;
 }
 
-// e.g.: Switch nodes have height based on rule count.
 export function getNodeDimensionsWithData(
   kind: NodeKind,
   data?: NodeDataMap[NodeKind],
 ): { width: number; height: number } {
   const base = NODE_REGISTRY[kind].dimensions;
 
-  if (kind === "switch" && data && "rules" in data) {
-    const rules = Array.isArray(data.rules) ? data.rules : [];
-    return { width: base.width, height: 64 + (rules.length + 1) * 64 };
+	// Switch node-specific dimensions (handles dynamic resizing)
+  if (kind === "switch") {
+  	const ruleCount = (data as SwitchData | undefined)?.rules?.length ?? 0;
+   	return { width: base.width, height: 64 + (ruleCount + 1) * 64 };
   }
+
+	// Other nodes that expect dynamic resizing should be added as needed.
 
   return base;
 }
@@ -312,6 +318,8 @@ export function getMiniMapNodeColor(kind: NodeKind): string {
 export function getNodeSchema(kind: NodeKind, data?: NodeDataMap[NodeKind]): NodeSchema {
   const metadata = NODE_REGISTRY[kind];
 
+  // Handles switch node's dynamic output schema,
+  // other nodes that expect dynamic output schema should be added as needed.
   if (metadata.hasDynamicOutputs && kind === "switch") {
     const rules =
       data && "rules" in data && Array.isArray(data.rules) ? data.rules : [];
@@ -348,7 +356,7 @@ export function getNodesByGroup(group: NodeGroup): NodeMetadata[] {
 const ALL_GROUPS: readonly NodeGroup[] = Object.keys(GROUP_METADATA) as NodeGroup[];
 export function getAllGroups(): readonly NodeGroup[] {
   return ALL_GROUPS;
-}   
+}
 
 export function getGroupLabel(group: NodeGroup): string {
   return GROUP_METADATA[group].label;
