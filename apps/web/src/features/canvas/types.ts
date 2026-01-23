@@ -74,54 +74,6 @@ export type NodeDataMap = {
 /** A union type of all possible node kinds. */
 export type NodeKind = keyof NodeDataMap;
 
-/** Node schema defining inputs and outputs for each node type. */
-export const NODE_SCHEMA = {
-  trigger: {
-    inputs: [],
-    outputs: ["trigger"],
-  },
-  agent: {
-    inputs: ["input"],
-    outputs: ["response"],
-  },
-  if: {
-    inputs: ["condition"],
-    outputs: ["true", "false"],
-  },
-  switch: {
-    inputs: ["input"],
-    outputs: [], // dynamic based on configured rules
-  },
-  http: {
-    inputs: ["request"],
-    outputs: ["response", "error"],
-  },
-  smtp: {
-    inputs: ["email"],
-    outputs: ["sent", "error"],
-  },
-  wait: {
-    inputs: ["input"],
-    outputs: ["resume"],
-  },
-  edit: {
-    inputs: ["input"],
-    outputs: ["output"],
-  },
-  split: {
-    inputs: ["input"],
-    outputs: ["item"],
-  },
-  aggregator: {
-    inputs: ["items"],
-    outputs: ["aggregated"],
-  },
-  merge: {
-    inputs: ["branches"],
-    outputs: ["merged"],
-  },
-} as const satisfies Record<NodeKind, { inputs: readonly string[]; outputs: readonly string[] }>;
-
 export type CanvasNode = {
   [K in NodeKind]: Node<NodeDataMap[K]> & { type: K };
 }[NodeKind];

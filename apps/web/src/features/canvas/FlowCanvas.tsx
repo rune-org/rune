@@ -20,6 +20,7 @@ import "./styles/reactflow.css";
 // Start with an empty canvas by default
 import { nodeTypes } from "./nodes";
 import type { CanvasNode } from "./types";
+import { getMiniMapNodeColor, isValidNodeKind } from "./lib/nodeRegistry";
 import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
@@ -689,23 +690,10 @@ function FlowCanvasInner({
   }, [pushHistory, setEdges, setNodes, setSelectedNodeId]);
 
   const getNodeColor = (type: string) => {
-    const colorVars: Record<string, string> = {
-      agent: "--node-agent",
-      trigger: "--node-trigger",
-      if: "--node-core",
-      switch: "--node-core",
-      http: "--node-http",
-      smtp: "--node-email",
-      wait: "--node-core",
-      edit: "--node-core",
-      split: "--node-core",
-      aggregator: "--node-core",
-      merge: "--node-core",
-    };
-    const varName = colorVars[type];
-    return varName
-      ? `color-mix(in srgb, var(${varName}) 30%, transparent)`
-      : "color-mix(in srgb, var(--muted) 50%, transparent)";
+    if (isValidNodeKind(type)) {
+      return getMiniMapNodeColor(type);
+    }
+    return "color-mix(in srgb, var(--muted) 50%, transparent)";
   };
 
   return (

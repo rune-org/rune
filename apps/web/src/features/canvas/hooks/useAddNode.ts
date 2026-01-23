@@ -1,89 +1,10 @@
 "use client";
 
 import { useCallback } from "react";
-import type { CanvasNode, NodeKind, NodeDataMap } from "../types";
+import type { CanvasNode, NodeKind } from "../types";
+import { getNodeDefaults } from "../lib/nodeRegistry";
 import { createId } from "../utils/id";
 import type { Edge, ReactFlowInstance } from "@xyflow/react";
-
-/** Defines the default data for each node type. */
-const NODE_DEFAULTS: Record<
-  NodeKind,
-  { type: NodeKind; data: NodeDataMap[NodeKind] }
-> = {
-  trigger: {
-    type: "trigger",
-    data: { label: "Trigger" },
-  },
-  agent: {
-    type: "agent",
-    data: { label: "Agent" },
-  },
-  if: {
-    type: "if",
-    data: { label: "If", expression: "{{ var > 10 }}" },
-  },
-  switch: {
-    type: "switch",
-    data: {
-      label: "Switch",
-      rules: [
-        { value: "$input.status", operator: "==", compare: "ok" },
-        { value: "$input.status", operator: "==", compare: "error" },
-      ],
-    },
-  },
-  http: {
-    type: "http",
-    data: { label: "HTTP", method: "GET", url: "https://api.example.com" },
-  },
-  smtp: {
-    type: "smtp",
-    data: {
-      label: "SMTP",
-      from: "sender@example.com",
-      to: "recipient@example.com",
-      subject: "Hello from Rune",
-      body: "This is a test email",
-    },
-  },
-  wait: {
-    type: "wait",
-    data: {
-      label: "Wait",
-      amount: 1,
-      unit: "seconds",
-    },
-  },
-  edit: {
-    type: "edit",
-    data: {
-      label: "Edit",
-      mode: "assignments",
-      assignments: [{ name: "newField", value: "{{ $json.existingField }}", type: "string" }],
-    },
-  },
-  split: {
-    type: "split",
-    data: {
-      label: "Split",
-      array_field: "$json.items",
-    },
-  },
-  aggregator: {
-    type: "aggregator",
-    data: {
-      label: "Aggregator",
-    },
-  },
-  merge: {
-    type: "merge",
-    data: {
-      label: "Merge",
-      wait_mode: "wait_for_all",
-      timeout: 300,
-    },
-  },
-};
 
 // Helper function to calculate the node's position.
 function calculateNodePosition(
@@ -124,7 +45,7 @@ export function useAddNode(
         clientY,
       );
 
-      const defaults = NODE_DEFAULTS[kind];
+      const defaults = getNodeDefaults(kind);
 
       setNodes((nodes) => {
         const baseLabel = defaults.data.label ?? "Node";

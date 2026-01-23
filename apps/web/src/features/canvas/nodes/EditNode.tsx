@@ -18,8 +18,8 @@ export const EditNode = memo(function EditNode({
       nodeId={id}
       icon={<Pencil className="h-4 w-4 text-muted-foreground" />}
       label={data.label ?? "Edit"}
-      bgClassName="bg-node-core-bg"
-      borderColor="--node-core-border"
+      bgClassName="bg-node-transform-bg"
+      borderColor="--node-transform-border"
       pinned={data.pinned}
     >
       <div className="text-xs text-muted-foreground">
