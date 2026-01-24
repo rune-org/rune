@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,12 @@ import { defaultWorkflowSummary } from "@/lib/workflows";
 import { useAppState } from "@/lib/state";
 
 export default function CreateWorkflowsPage() {
+  const { actions } = useAppState();
+
+  useEffect(() => {
+    void actions.init();
+  }, []);
+
   return (
     <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
       <PageHeader title="Your Workflows" actions={<CreateWorkflowButton />} />

@@ -135,9 +135,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const actions = useMemo(
+    () => ({ init, refreshWorkflows }),
+    [init, refreshWorkflows],
+  );
+
   const value = useMemo<AppContextType>(
-    () => ({ state, actions: { init, refreshWorkflows } }),
-    [state, init, refreshWorkflows],
+    () => ({ state, actions }),
+    [state, actions],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
