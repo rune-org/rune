@@ -28,6 +28,7 @@ export default function CreateWorkflowsPage() {
 
   useEffect(() => {
     void actions.init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps 
   }, []);
 
   return (
