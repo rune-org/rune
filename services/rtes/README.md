@@ -1,4 +1,4 @@
-# RTES - Rune Token Execution Service
+# RTES - Real Time Execution Service
 
 RTES is a microservice responsible for handling executions and real-time events within the Rune ecosystem. It consumes events from a message queue, stores them in MongoDB for history retention, and provides real-time capabilities via WebSocket.
 

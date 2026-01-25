@@ -1,6 +1,6 @@
 #![allow(clippy::cargo_common_metadata)]
 
-//! RTES - Rune Token Execution Service
+//! RTES - Real Time Execution Service
 //!
 //! This service handles execution tokens and real-time events.
 
