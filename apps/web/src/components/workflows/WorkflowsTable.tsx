@@ -348,10 +348,6 @@ export function WorkflowsTable() {
                 >
                   {w.name}
                 </a>
-                {/* DEBUG: Show current role */}
-                <span className="ml-2 text-xs text-muted-foreground">
-                  [{w.role}]
-                </span>
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {w.triggerType}
