@@ -115,8 +115,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         workflowItems.map(async (item) => {
           try {
             const permissions = await listWorkflowPermissions(String(item.id));
-            console.log(`Workflow ${item.id} permissions:`, permissions);
-            console.log(`Current user ID: ${userData.id}`);
             
             const currentUserPermission = permissions.find(
               (p) => {
