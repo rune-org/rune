@@ -118,7 +118,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             
             const currentUserPermission = permissions.find(
               (p) => {
-                console.log(`Comparing permission user_id ${p.user_id} (${typeof p.user_id}) with current user ${userData.id} (${typeof userData.id})`);
                 return p.user_id === userData.id || String(p.user_id) === String(userData.id);
               }
             );
