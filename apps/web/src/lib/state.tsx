@@ -168,7 +168,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             );
             
             if (currentUserPermission) {
-              console.log(`✓ Found role for workflow ${item.id}: ${currentUserPermission.role}`);
               return { ...listItemToWorkflowSummary(item), role: currentUserPermission.role };
             }
             
