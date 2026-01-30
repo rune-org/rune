@@ -1,20 +1,23 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
-
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+
 from src.core.config import get_settings
 from src.core.exception_handlers import (
     generic_exception_handler,
     http_exception_handler,
     validation_exception_handler,
 )
-from src.db.config import init_db
+from src.db.config import init_db, build_connection_string
 from src.db.redis import close_redis
 from src.queue.rabbitmq import close_rabbitmq
+from src.smith.agent import create_smith_agent
 from src.auth.router import router as auth_router
 from src.workflow.router import router as workflow_router
+from src.executions.router import router as executions_router
 from src.permissions.router import router as permissions_router
 from src.templates.router import router as templates_router
 from src.users.routers import admin_router, profile_router, sharing_router
@@ -31,8 +34,27 @@ async def lifespan(app: FastAPI):
     # Startup
     print(f"Starting {settings.app_name} in {settings.environment.value} mode...")
     await init_db()
-    yield
-    # Shutdown
+
+    # Initialize PostgreSQL checkpointer using context manager
+    conn_string = build_connection_string(
+        user=settings.postgres_user,
+        password=settings.postgres_password,
+        host=settings.postgres_host,
+        port=settings.postgres_port,
+        database=settings.postgres_db,
+        driver="postgresql",
+    )
+    async with AsyncPostgresSaver.from_conn_string(conn_string) as checkpointer:
+        await checkpointer.setup()
+
+        # Create the Smith agent with the checkpointer
+        app.state.smith_agent = create_smith_agent(checkpointer=checkpointer)
+        # Store checkpointer separately for thread management
+        app.state.smith_checkpointer = checkpointer
+
+        yield  # App runs here
+
+    # Shutdown (checkpointer automatically cleaned up by context manager)
     await close_redis()
     await close_rabbitmq()
     print("Shutting down...")
@@ -60,6 +82,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 # Include routers
 app.include_router(auth_router)
 app.include_router(workflow_router)
+app.include_router(executions_router)
 app.include_router(permissions_router)
 app.include_router(sharing_router)  # Register before admin_router for /users/sharing
 app.include_router(admin_router)

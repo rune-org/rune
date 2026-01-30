@@ -106,6 +106,21 @@ impl ExecutionStore {
         Ok(doc)
     }
 
+    /// Get all executions for a given workflow
+    pub(crate) async fn get_executions_for_workflow(
+        &self,
+        workflow_id: &str,
+    ) -> Result<Vec<ExecutionDocument>, mongodb::error::Error> {
+        use futures::TryStreamExt;
+
+        info!(workflow_id = %workflow_id, mongodb_db = %self.db_name, "Fetching executions for workflow");
+        let filter = doc! { "workflow_id": workflow_id };
+        let cursor = self.execution_collection().find(filter).await?;
+        let executions: Vec<ExecutionDocument> = cursor.try_collect().await?;
+        info!(workflow_id = %workflow_id, count = executions.len(), "Fetched executions for workflow");
+        Ok(executions)
+    }
+
     #[allow(clippy::too_many_lines)]
     pub(crate) async fn update_node_status(
         &self,

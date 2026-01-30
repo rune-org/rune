@@ -6,9 +6,10 @@ import { Bot } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { AgentData } from "../types";
 
-export const AgentNode = memo(function AgentNode({ data }: NodeProps<Node<AgentData>>) {
+export const AgentNode = memo(function AgentNode({ id, data }: NodeProps<Node<AgentData>>) {
   return (
     <BaseNode
+      nodeId={id}
       icon={<Bot className="h-4 w-4 text-muted-foreground" />}
       label={data.label ?? "Agent"}
       bgClassName="bg-node-agent-bg"

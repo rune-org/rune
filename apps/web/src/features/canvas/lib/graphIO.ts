@@ -88,6 +88,7 @@ export function sanitizeGraph(
         (e as RFEdge & EdgeMeta).labelBgBorderRadius ?? 4;
       return {
         ...e,
+        type: "default",
         label: edgeLabel,
         labelStyle,
         labelShowBg,
@@ -121,6 +122,7 @@ export function sanitizeGraph(
         (e as RFEdge & EdgeMeta).labelBgBorderRadius ?? 4;
       return {
         ...e,
+        type: "default",
         sourceHandle: switchHandle,
         label: edgeLabel,
         labelStyle,
@@ -130,14 +132,33 @@ export function sanitizeGraph(
         labelBgBorderRadius,
       } as RFEdge;
     }
-    return e;
+    return { ...e, type: "default" } as RFEdge;
   });
 
   return { nodes, edges };
 }
 
+/**
+ * Strips execution-related styling from edges (animated state, stroke color).
+ */
+export function stripExecutionStyling(graph: RFGraph): RFGraph {
+  const edges = graph.edges.map((edge) => {
+    const { animated: _, style, ...rest } = edge;
+    if (style && typeof style === "object") {
+      const { stroke: __, ...restStyle } = style as Record<string, unknown>;
+      const hasOtherStyles = Object.keys(restStyle).length > 0;
+      return {
+        ...rest,
+        ...(hasOtherStyles ? { style: restStyle } : {}),
+      } as RFEdge;
+    }
+    return rest as RFEdge;
+  });
+  return { nodes: graph.nodes, edges };
+}
+
 export function stringifyGraph(graph: RFGraph): string {
-  const sanitized = stripCredentials(graph);
+  const sanitized = stripExecutionStyling(stripCredentials(graph));
   return JSON.stringify(sanitized, null, 2);
 }
 

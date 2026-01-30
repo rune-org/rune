@@ -56,3 +56,72 @@
   box-shadow: 0 0 0 6px rgba(66, 153, 225, 0.25);
   z-index: 10;
 }
+
+/* =========================
+   Execution Status Animations
+   ========================= */
+
+/* Subtle pulse animation for running nodes */
+@keyframes pulse-subtle {
+  0%, 100% {
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2), 0 2px 4px -2px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3), 0 4px 6px -4px rgba(59, 130, 246, 0.2);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Running state */
+.rune-node.running {
+  border-color: rgb(59 130 246) !important; /* blue-500 */
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2);
+}
+
+/* Success state */
+.rune-node.success {
+  border-color: rgb(34 197 94) !important; /* green-500 */
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Waiting state */
+.rune-node.waiting {
+  border-color: rgb(234 179 8) !important; /* yellow-500 */
+}
+
+/* Failed state with shake animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+.rune-node.failed {
+  animation: shake 0.5s ease-in-out;
+  border-color: rgb(239 68 68) !important; /* red-500 */
+}
+
+/* Edge flow animation for active edges */
+@keyframes edge-flow {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.react-flow__edge-path.animated {
+  stroke-dasharray: 8 4;
+  animation: edge-flow 0.5s linear infinite;
+}
+
+/* Active edge highlight */
+.react-flow__edge-path.active {
+  stroke: var(--ring);
+  stroke-width: 3px;
+  transition: stroke 0.3s, stroke-width 0.3s;
+}

@@ -81,7 +81,8 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_USER:-rune}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rune_password}
-      RABBITMQ_QUEUE_NAME: workflow.execution
+      RABBITMQ_WORKFLOW_QUEUE: ${RABBITMQ_WORKFLOW_QUEUE:-workflow.execution}
+      RABBITMQ_TOKEN_QUEUE: ${RABBITMQ_TOKEN_QUEUE:-execution.token}
       # Redis Settings
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -98,6 +99,9 @@ services:
       # Encryption Key (use from .env or default for development)
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-your-google-api-key-here}
+      # Smith AI Agent Settings
+      SMITH_MODEL: ${SMITH_MODEL:-gemini-2.0-flash}
+      SMITH_TEMPERATURE: ${SMITH_TEMPERATURE:-0.3}
     ports:
       - "8000:8000"
     depends_on:
@@ -127,7 +131,7 @@ services:
       # Redis Settings
       REDIS_URL: redis://redis:6379/1
       # Workflow Queue Configuration
-      WORKFLOW_QUEUE_NAME: workflow.execution
+      WORKFLOW_QUEUE_NAME: ${RABBITMQ_WORKFLOW_QUEUE:-workflow.execution}
       WORKFLOW_PREFETCH: ${WORKFLOW_PREFETCH:-10}
       WORKFLOW_CONCURRENCY: ${WORKFLOW_CONCURRENCY:-1}
     depends_on:
@@ -147,17 +151,21 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api
+        NEXT_PUBLIC_RTES_WS_URL: ws://localhost:8080/rt
     container_name: rune-frontend
     environment:
       # API Configuration
       NEXT_PUBLIC_API_BASE_URL: /api
       API_PROXY_TARGET: http://api:8000
+      # RTES Configuration
+      NEXT_PUBLIC_RTES_WS_URL: ws://localhost:8080/rt
       # Next.js Configuration
       NODE_ENV: production
     ports:
       - "3000:3000"
     depends_on:
       - api
+      - rtes
     networks:
       - frontend_network
     restart: unless-stopped
@@ -174,14 +182,19 @@ services:
       AMQP_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/%2f
       MONGODB_URL: mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-password}@mongodb:27017/?authSource=admin
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      CORS_ORIGIN: http://localhost:3000
       PORT: 8080
     networks:
       - backend_network
     depends_on:
-      - otel-collector
-      - rabbitmq
-      - redis
-      - mongodb
+      otel-collector:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      mongodb:
+        condition: service_started
     ports:
       - "8080:8080"
 

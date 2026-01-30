@@ -46,7 +46,8 @@ class Settings(BaseSettings):
     redis_password: str | None = None
 
     # RabbitMQ Settings
-    rabbitmq_queue_name: str = "workflow_runs"
+    rabbitmq_workflow_queue: str = "workflow.execution"
+    rabbitmq_token_queue: str = "execution.token"
     rabbitmq_host: str = "localhost"
     rabbitmq_port: int = 5672
     rabbitmq_username: str = "guest"
@@ -55,6 +56,14 @@ class Settings(BaseSettings):
 
     # Encryption Settings
     encryption_key: str | None = None
+
+    # Smith AI Agent Settings
+    smith_model: str = "gemini-2.0-flash"
+    smith_temperature: float = 0.3
+    google_api_key: str | None = None
+
+    # Scryb Documentation Settings
+    scryb_model: str = "gemini/gemini-2.5-flash-lite"
 
     @computed_field
     @property

@@ -1,106 +1,53 @@
-"use client";  // TODO: make this a server component, but move charts/table to client components
+// TODO(fe): Executions page is WIP
+
+"use client";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
+import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { RefreshCw, Trash2 } from "lucide-react";
+import { useExecutionsList } from "@/features/executions/hooks/useExecutionsList";
+import { ExecutionsTable } from "@/features/executions/components/ExecutionsTable";
+import { MetricsCards } from "@/features/executions/components/MetricsCards";
+import type { WorkflowExecutionStatus } from "@/features/canvas/types/execution";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-const EXECUTIONS = [
-  { id: 321, workflow: "Daily Report", run: 95, runtime: "3m 20s", status: "success" },
-  { id: 320, workflow: "Data Sync", run: 121, runtime: "1m 2s", status: "success" },
-  { id: 318, workflow: "Notification", run: 42, runtime: "8s", status: "failed" },
-  { id: 318.1, workflow: "Data Sync", run: 120, runtime: "Pending", status: "pending" },
-  { id: 317, workflow: "ETL Pipeline", run: 8, runtime: "52s", status: "success" },
-];
+export default function ExecutionsPage() {
+  const {
+    executions,
+    metrics,
+    isLoading,
+    filters,
+    setFilters,
+    refresh,
+    deleteExecution,
+    clearHistory,
+  } = useExecutionsList();
 
-/* ------------------------ Helpers ------------------------ */
-function parseRuntime(runtime: string): number | null {
-  if (runtime.toLowerCase() === "pending") return null;
-  const match = runtime.match(/(?:(\d+)m)?\s*(\d+)s/);
-  if (!match) return null;
-  const minutes = match[1] ? parseInt(match[1]) : 0;
-  const seconds = parseInt(match[2]);
-  return minutes * 60 + seconds;
-}
+  const handleStatusFilterChange = (value: string) => {
+    setFilters({
+      ...filters,
+      status: value === "all" ? "all" : (value as WorkflowExecutionStatus),
+    });
+  };
 
-function formatSeconds(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}m ${s}s`;
-}
-
-function StatusPill({ status }: { status: string }) {
-  const base =
-    "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium";
-  if (status === "success")
-    return (
-      <span className={`${base} bg-green-900/60 text-green-300`}>Success</span>
-    );
-  if (status === "failed")
-    return (
-      <span className={`${base} bg-red-900/60 text-red-300`}>Failed</span>
-    );
-  return (
-    <span className={`${base} bg-slate-800/60 text-slate-300`}>Pending</span>
-  );
-}
-
-/* ------------------------ Page ------------------------ */
-export default function CreateExecutionsPage() {
-  /* === Metrics === */
-  const totalRuns = EXECUTIONS.reduce((sum, e) => sum + e.run, 0);
-
-  const successfulRuns = EXECUTIONS.filter((e) => e.status === "success").reduce(
-    (sum, e) => sum + e.run,
-    0
-  );
-
-  const successRate =
-    totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100) : 0;
-
-  const radius = 16;
-  const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference - (successRate / 100) * circumference;
-
-  /* === Avg Runtime === */
-  const runtimes = EXECUTIONS.map((e) => parseRuntime(e.runtime)).filter(
-    Boolean
-  ) as number[];
-  const avgRuntime = runtimes.length
-    ? runtimes.reduce((a, b) => a + b, 0) / runtimes.length
-    : 0;
-
-  /* === Executions Over Time ===
-     We'll generate a simple "trend" line based on runtime lengths:
-     each runtime length (seconds) mapped to y-points scaled to 12px height
-  */
-  const runtimePoints = runtimes.map((r, i) => {
-    const normalizedY = 12 - (r / Math.max(...runtimes)) * 8; // scale visually
-    const normalizedX = (i / (runtimes.length - 1)) * 40;
-    return `${normalizedX.toFixed(1)},${normalizedY.toFixed(1)}`;
-  });
-  const linePoints = runtimePoints.join(" ");
-
-  /* === Failures by Workflow === */
-  const failuresByWorkflow = EXECUTIONS.reduce<Record<string, number>>(
-    (acc, e) => {
-      if (e.status === "failed") {
-        acc[e.workflow] = (acc[e.workflow] || 0) + 1;
-      }
-      return acc;
-    },
-    {}
-  );
-
-  const maxFailures = Math.max(...Object.values(failuresByWorkflow), 1);
-
-  /* ------------------------ Render ------------------------ */
   return (
     <Container className="py-12" widthClassName="max-w-6xl">
       {/* Header */}
@@ -111,181 +58,82 @@ export default function CreateExecutionsPage() {
         />
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 border border-slate-700 bg-transparent text-slate-300 rounded-md px-3 py-2 text-sm">
-            Filter by workflow
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              className="opacity-70"
-              aria-hidden
-            >
-              <path d="M7 10l5 5 5-5z" fill="currentColor" />
-            </svg>
-          </button>
+          {/* Status Filter */}
+          <Select
+            value={filters.status || "all"}
+            onValueChange={handleStatusFilterChange}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Filter status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="running">Running</SelectItem>
+              <SelectItem value="halted">Halted</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Refresh Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refresh}
+            disabled={isLoading}
+          >
+            <RefreshCw className={isLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+          </Button>
+
+          {/* Clear History */}
+          {executions.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Clear History
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear all execution history?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete all {executions.length} execution
+                    records. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={clearHistory}>
+                    Clear All
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </div>
 
-      {/* Main Grid */}
-      <div className="mt-8 grid grid-cols-12 gap-6">
-        {/* Left: Executions Table */}
-        <div className="col-span-7">
-          <div className="rounded-lg border border-slate-800 bg-slate-900/60 overflow-hidden">
-            <div>
-              <Table className="min-w-full">
-                <TableHeader>
-                  <tr className="text-slate-400 text-sm">
-                    <TableHead className="px-6 py-3 text-left">#</TableHead>
-                    <TableHead className="px-6 py-3 text-left">Workflow</TableHead>
-                    <TableHead className="px-6 py-3 text-left">Run #</TableHead>
-                    <TableHead className="px-6 py-3 text-left">Runtime</TableHead>
-                    <TableHead className="px-6 py-3 text-left">Status</TableHead>
-                  </tr>
-                </TableHeader>
+      {/* Metrics Cards */}
+      <div className="mt-8">
+        <MetricsCards metrics={metrics} />
+      </div>
 
-                <TableBody>
-                  {EXECUTIONS.map((e) => (
-                    <TableRow
-                      key={String(e.id)}
-                      className="odd:bg-slate-900 even:bg-slate-900/70"
-                    >
-                      <TableCell className="px-6 py-4 text-slate-100 font-medium">
-                        {Math.floor(e.id)}
-                      </TableCell>
-
-                      <TableCell className="px-6 py-4 text-slate-100">
-                        {e.workflow}
-                      </TableCell>
-
-                      <TableCell className="px-6 py-4 text-slate-200">
-                        {e.run}
-                      </TableCell>
-
-                      <TableCell className="px-6 py-4 text-slate-300">
-                        {e.runtime}
-                      </TableCell>
-
-                      <TableCell className="px-6 py-4">
-                        <StatusPill status={e.status} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+      {/* Executions Table */}
+      <div className="mt-8">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">
+            Recent Executions
+          </h2>
+          <div className="text-sm text-muted-foreground">
+            {executions.length} {executions.length === 1 ? "execution" : "executions"}
           </div>
         </div>
-
-        {/* Right: Metrics Cards */}
-        <div className="col-span-5 grid grid-cols-2 gap-4">
-          {/* Total Runs */}
-          <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-            <div className="text-sm text-slate-300">Total Runs</div>
-            <div className="mt-4 text-3xl font-semibold text-slate-100">
-              {totalRuns}
-            </div>
-          </div>
-
-          {/* Success Rate */}
-          <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 flex flex-col items-center justify-center">
-            <div className="text-sm text-slate-300">Success Rate</div>
-            <div className="mt-3 flex items-center justify-center relative">
-              <svg
-                width="72"
-                height="72"
-                viewBox="0 0 36 36"
-                className="rotate-[-90deg]"
-              >
-                <circle
-                  cx="18"
-                  cy="18"
-                  r={radius}
-                  stroke="#0f766e1a"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r={radius}
-                  stroke="#10b981"
-                  strokeWidth="4"
-                  fill="none"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={dashOffset}
-                  strokeLinecap="round"
-                  style={{ transition: "stroke-dashoffset 0.6s ease" }}
-                />
-              </svg>
-              <div className="absolute text-slate-100 text-lg font-semibold">
-                {successRate}%
-              </div>
-            </div>
-          </div>
-
-          {/* Avg Runtime */}
-          <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-slate-300">Avg. Runtime</div>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                className="opacity-60"
-                aria-hidden
-              >
-                <path
-                  d="M12 2v20"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <div className="mt-4 text-2xl font-medium text-slate-100">
-              {formatSeconds(Math.round(avgRuntime))}
-            </div>
-          </div>
-
-          {/* Executions Over Time */}
-          <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-            <div className="text-sm text-slate-300">Executions Over Time</div>
-            <div className="mt-3">
-              <svg
-                viewBox="0 0 40 12"
-                className="w-full h-10 text-slate-500"
-                aria-hidden
-              >
-                <polyline
-                  fill="none"
-                  stroke="#60a5fa"
-                  strokeWidth="1.6"
-                  points={linePoints}
-                />
-              </svg>
-            </div>
-          </div>
-
-          {/* Failures by Workflow */}
-          <div className="col-span-2 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-            <div className="text-sm text-slate-300">Failures by Workflow</div>
-            <div className="mt-3 flex items-end gap-3">
-              {Object.entries(failuresByWorkflow).map(([workflow, count]) => (
-                <div key={workflow} className="flex flex-col items-center">
-                  <div
-                    className="w-6 bg-blue-700 rounded"
-                    style={{
-                      height: `${(count / maxFailures) * 24 + 4}px`,
-                    }}
-                  />
-                  <span className="text-xs text-slate-400 mt-1">
-                    {workflow}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <ExecutionsTable
+          executions={executions}
+          isLoading={isLoading}
+          onDelete={deleteExecution}
+        />
       </div>
     </Container>
   );

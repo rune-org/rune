@@ -191,53 +191,6 @@ function CanvasPageInner() {
     [isSaving, numericWorkflowId],
   );
 
-  const handleRun = useCallback(
-    async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }) => {
-      if (numericWorkflowId === null) {
-        toast.error("Save the workflow first to give it a name.");
-        return;
-      }
-
-      // Auto-save before running
-      try {
-        const payload = graphToWorkflowData(graph);
-        const saveResponse = await workflows.updateWorkflowData(
-          numericWorkflowId,
-          payload,
-        );
-        if (!saveResponse.data) {
-          throw new Error("Failed to save workflow");
-        }
-      } catch (err) {
-        if (err instanceof MissingNodeCredentialsError) {
-          const nodeList = err.nodes
-            .map((n) => `${n.type} (${n.id.slice(0, 6)})`)
-            .join(", ");
-          toast.error(`Missing credentials for: ${nodeList}`);
-        } else {
-          toast.error(
-            err instanceof Error ? err.message : "Failed to save workflow",
-          );
-        }
-        return;
-      }
-
-      // Run after successful save
-      try {
-        const response = await workflows.runWorkflow(numericWorkflowId);
-        if (!response.data) {
-          throw new Error("Failed to queue workflow");
-        }
-        toast.success("Workflow queued for execution");
-      } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to run workflow",
-        );
-      }
-    },
-    [numericWorkflowId],
-  );
-
   const handleCreateSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -306,7 +259,6 @@ function CanvasPageInner() {
           externalNodes={nodes}
           externalEdges={edges}
           onPersist={handlePersist}
-          onRun={handleRun}
           saveDisabled={isSaving}
           workflowId={numericWorkflowId}
         />
