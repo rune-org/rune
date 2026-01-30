@@ -128,7 +128,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             
             return { ...listItemToWorkflowSummary(item), role: "viewer" as WorkflowRole };
           } catch (error) {
-            console.error(`❌ Failed to fetch permissions for workflow ${item.id}:`, error);
             return { ...listItemToWorkflowSummary(item), role: "viewer" as WorkflowRole };
           }
         })
