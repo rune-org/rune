@@ -99,6 +99,9 @@ services:
       # Encryption Key (use from .env or default for development)
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-your-google-api-key-here}
+      # Smith AI Agent Settings
+      SMITH_MODEL: ${SMITH_MODEL:-gemini-2.0-flash}
+      SMITH_TEMPERATURE: ${SMITH_TEMPERATURE:-0.3}
     ports:
       - "8000:8000"
     depends_on:

@@ -115,6 +115,9 @@ services:
       # Encryption Key (use from .env or default for development)
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-your-google-api-key-here}
+      # Smith AI Agent Settings
+      SMITH_MODEL: ${SMITH_MODEL:-gemini-2.5-flash-lite}
+      SMITH_TEMPERATURE: ${SMITH_TEMPERATURE:-0.3}
     expose:
       - "8000"
     depends_on:
@@ -190,7 +193,7 @@ services:
       REDIS_URL: redis://redis:6379/
       AMQP_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/%2f
       MONGODB_URL: mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-password}@mongodb:27017/?authSource=admin
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      CORS_ORIGIN: http://frontend:3000
       PORT: 8080
     expose:
       - "8080"

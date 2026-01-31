@@ -1,4 +1,4 @@
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Literal
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -14,9 +14,19 @@ def build_connection_string(
     host: str,
     port: int,
     database: str,
+    driver: Literal["postgresql+asyncpg", "postgresql"] = "postgresql+asyncpg",
 ) -> str:
-    """Build an async database connection string from components."""
-    driver: str = "postgresql+asyncpg"
+    """Build a database connection string from components.
+
+    Args:
+        user: Database user
+        password: Database password
+        host: Database host
+        port: Database port
+        database: Database name
+        driver: Database driver (default: postgresql+asyncpg for SQLAlchemy,
+                use 'postgresql' for psycopg)
+    """
     return f"{driver}://{user}:{password}@{host}:{port}/{database}"
 
 
@@ -39,6 +49,7 @@ def create_database_engine(settings: Settings | None = None) -> AsyncEngine:
             host=settings.postgres_host,
             port=settings.postgres_port,
             database=settings.postgres_db,
+            driver="postgresql+asyncpg",
         )
 
     engine = create_async_engine(

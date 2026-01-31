@@ -14,6 +14,11 @@ dspy==3.0.4
 # CLI dependencies
 click==8.1.7
 
+langchain-core==1.2.5
+langchain-google-genai==3.2.0
+langgraph-checkpoint-postgres==3.0.2
+langchain==1.1.3
+psycopg[binary]==3.2.3
 # Test dependencies
 pytest==8.3.4
 pytest-asyncio==1.2.0
