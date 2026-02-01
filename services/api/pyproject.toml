@@ -3,16 +3,16 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "rune-cli"
+name = "rune-api"
 version = "0.1.0"
-description = "Rune CLI - Command Line Interface for Rune Workflow Automation Platform"
+description = "Rune API - Backend server for Rune Workflow Automation Platform"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Rune Team", email = "team@rune.io"}
 ]
-keywords = ["rune", "workflow", "automation", "cli"]
+keywords = ["rune", "workflow", "automation", "api"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -40,9 +40,6 @@ dependencies = [
 Homepage = "https://github.com/rune-org/rune"
 Documentation = "https://github.com/rune-org/rune/tree/main/docs"
 Repository = "https://github.com/rune-org/rune"
-
-[project.scripts]
-rune = "src.cli.main:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

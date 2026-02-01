@@ -3,32 +3,99 @@
 # Rune CLI - Workflow Automation Platform Management Tool
 #
 # Wrapper script to run the Rune CLI from anywhere in the project.
-# Automatically uses the API virtual environment.
+# Uses CLI's own virtual environment (standalone from API).
 #
 # Usage:
 #   ./rune.sh --help
-#   ./rune.sh admin inject-admin
-#   ./rune.sh db status
+#   ./rune.sh auth login
+#   ./rune.sh workflow list
+#
+# Architecture:
+#   CLI (this) --HTTP--> API Server (services/api) ---> Database
+#   The CLI is a standalone HTTP client that communicates with the API.
+#   The API server must be running for most commands to work.
 
 set -e
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-API_DIR="$SCRIPT_DIR/services/api"
-VENV_PYTHON="$API_DIR/.venv/bin/python"
+CLI_DIR="$SCRIPT_DIR/rune_cli"
 
-# Check if venv exists
-if [ ! -f "$VENV_PYTHON" ]; then
-    echo -e "\033[31mError: Virtual environment not found at $API_DIR/.venv\033[0m"
+# CLI has its own venv (standalone from API)
+CLI_VENV="$CLI_DIR/.venv"
+VENV_PYTHON="$CLI_VENV/bin/python"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+print_info() {
+    echo -e "${CYAN}ℹ${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}✗${NC} $1"
+}
+
+# Function to setup CLI virtual environment
+setup_cli_venv() {
+    print_info "Setting up Rune CLI virtual environment..."
+    
+    # Check Python version
+    if ! command -v python3 &> /dev/null; then
+        print_error "Python 3 is required but not found"
+        exit 1
+    fi
+    
+    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+    print_info "Found Python $PYTHON_VERSION"
+    
+    # Create venv
+    print_info "Creating virtual environment at $CLI_VENV..."
+    python3 -m venv "$CLI_VENV"
+    
+    # Upgrade pip
+    print_info "Upgrading pip..."
+    "$VENV_PYTHON" -m pip install --upgrade pip --quiet
+    
+    # Install CLI package
+    print_info "Installing Rune CLI package..."
+    "$VENV_PYTHON" -m pip install -e "$CLI_DIR" --quiet
+    
+    print_success "Rune CLI setup complete!"
     echo ""
-    echo -e "\033[33mPlease set up the API environment first:\033[0m"
-    echo "  cd services/api"
-    echo "  python -m venv .venv"
-    echo "  source .venv/bin/activate"
-    echo "  pip install -r requirements.txt"
-    exit 1
+}
+
+# Check if CLI venv exists, create if not
+if [ ! -f "$VENV_PYTHON" ]; then
+    print_warning "CLI virtual environment not found at $CLI_VENV"
+    echo ""
+    read -p "Would you like to set it up now? [Y/n] " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+        setup_cli_venv
+    else
+        print_error "Cannot run CLI without virtual environment"
+        echo ""
+        echo "To set up manually:"
+        echo "  cd $CLI_DIR"
+        echo "  python3 -m venv .venv"
+        echo "  source .venv/bin/activate"
+        echo "  pip install -e ."
+        exit 1
+    fi
 fi
 
-# Run the CLI using the venv Python from the API directory
-cd "$API_DIR"
-exec "$VENV_PYTHON" -m src.cli "$@"
+# Run the CLI
+exec "$VENV_PYTHON" -m rune_cli "$@"

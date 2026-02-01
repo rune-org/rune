@@ -1,0 +1,91 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rune-cli"
+version = "1.0.0"
+description = "Rune CLI - Command Line Interface for Rune Workflow Automation Platform"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Rune Team", email = "runeteam1011@gmail.com"}
+]
+keywords = ["rune", "workflow", "automation", "cli", "devops"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+
+# Core dependencies - CLI is standalone from API
+dependencies = [
+    "click>=8.1.0",
+    "requests>=2.31.0",
+    "rich>=13.7.0",
+    "pyjwt>=2.8.0",
+    "python-dateutil>=2.8.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+    "psycopg2-binary>=2.9.9",
+    "colorama>=0.4.6; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "types-requests>=2.31.0",
+    "types-python-dateutil>=2.8.0",
+]
+
+[project.scripts]
+rune = "rune_cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/rune-org/rune"
+Documentation = "https://github.com/rune-org/rune/tree/main/docs"
+Repository = "https://github.com/rune-org/rune"
+"Bug Tracker" = "https://github.com/rune-org/rune/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["rune_cli*"]
+
+[tool.setuptools.package-dir]
+rune_cli = "."
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
