@@ -628,7 +628,7 @@ rune wf list
 ## 🏗️ Architecture
 
 ```
-cli/
+rune_cli/
 ├── __init__.py          # Package version
 ├── __main__.py          # Module entry point
 ├── main.py              # Main CLI entry & command groups
