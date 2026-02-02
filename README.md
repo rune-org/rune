@@ -134,7 +134,7 @@ rune execution logs <execution-id>
 - 🎨 Beautiful terminal output
 - 🤖 JSON output for scripting
 
-See the **[CLI Documentation](cli/README.md)** for complete usage guide.
+See the **[CLI Documentation](rune_cli/README.md)** for complete usage guide.
 
 ### What Gets Started
 
