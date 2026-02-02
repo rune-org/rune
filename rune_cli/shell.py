@@ -11,7 +11,7 @@ import os
 from typing import Optional, List
 from datetime import datetime
 
-from cli import __version__
+from rune_cli import __version__
 from rune_cli.styles import (
     console, 
     print_logo, 
