@@ -46,7 +46,6 @@ LOGO_LARGE = """
 ║            ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝                        ║
 ║                                                                       ║
 ║              Workflow Automation Platform - CLI v1.0.0                ║
-║                        Professional Edition                           ║
 ║                                                                       ║
 ╚═══════════════════════════════════════════════════════════════════════╝[/blue bold]
 """
