@@ -191,7 +191,7 @@ rune/
 │   ├── api/                 # FastAPI backend
 │   ├── rune-worker/         # Go execution engine
 │   └── rtes/                # Rust real-time service
-├── cli/                     # Standalone CLI application
+├── rune_cli/                     # Standalone CLI application
 │   ├── commands/            # CLI commands
 │   ├── auth/                # Token-based authentication
 │   ├── client/              # API client
