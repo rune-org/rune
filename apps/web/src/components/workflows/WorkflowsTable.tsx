@@ -48,7 +48,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
-  canEditWorkflow,
   canExecuteWorkflow,
   canDeleteWorkflow,
   canShareWorkflow,
