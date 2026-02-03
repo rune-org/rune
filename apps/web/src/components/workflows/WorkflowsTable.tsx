@@ -49,7 +49,6 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import {
-  canEditWorkflow,
   canExecuteWorkflow,
   canDeleteWorkflow,
   canShareWorkflow,
