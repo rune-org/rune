@@ -53,7 +53,7 @@ opentelemetry-appender-tracing = "0.31"
 dotenvy = "0.15"
 tokio-stream = { version = "0.1.17", features = ["full"] }
 tokio-util = { version = "0.7.17", features = ["rt", "full"] }
-jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
+jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 
 
 [lints.rust]
