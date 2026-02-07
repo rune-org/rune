@@ -32,7 +32,7 @@
       "groupName": "all non-major dependencies"
     },
     {
-       "matchUpdateTypes": ["major"]
+      "matchUpdateTypes": ["major"]
     }
   ]
 }
