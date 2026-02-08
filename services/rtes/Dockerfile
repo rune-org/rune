@@ -1,4 +1,4 @@
-FROM rust:1.91-slim-bullseye as chef
+FROM rust:1.93-slim-bullseye as chef
 RUN cargo install cargo-chef
 WORKDIR /app
 
