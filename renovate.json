@@ -28,6 +28,22 @@
 
   "packageRules": [
     {
+      "matchManagers": ["gomod"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["pip_requirements", "pip-compile", "pipenv", "poetry", "pep621", "pip_setup", "setup-cfg"],
+      "enabled": false
+    },
+    {
+      "matchDepNames": ["python"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["cargo"],
+      "enabled": false
+    },
+    {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "groupName": "all non-major dependencies"
     },
