@@ -53,7 +53,7 @@ services:
   # RabbitMQ - Development Instance (management plugin enabled)
   # ==========================================================================
   rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:4-management-alpine
     container_name: rune-api-rabbitmq-dev
     environment:
       # Allow overriding via host env or .env when using docker-compose
