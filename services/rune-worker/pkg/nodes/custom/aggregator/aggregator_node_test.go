@@ -16,7 +16,7 @@ func TestAggregatorNode_BarrierOpen(t *testing.T) {
 	t.Parallel()
 
 	mockClient, mock := redismock.NewClientMock()
-	defer mockClient.Close()
+	defer func() { _ = mockClient.Close() }()
 
 	execCtx := plugin.ExecutionContext{
 		ExecutionID: "exec-open",
@@ -82,7 +82,7 @@ func TestAggregatorNode_BarrierWaiting(t *testing.T) {
 	t.Parallel()
 
 	mockClient, mock := redismock.NewClientMock()
-	defer mockClient.Close()
+	defer func() { _ = mockClient.Close() }()
 
 	execCtx := plugin.ExecutionContext{
 		ExecutionID: "exec-wait",
@@ -144,7 +144,7 @@ func TestAggregatorNode_MissingLineageStack(t *testing.T) {
 	t.Parallel()
 
 	mockClient, _ := redismock.NewClientMock()
-	defer mockClient.Close()
+	defer func() { _ = mockClient.Close() }()
 
 	execCtx := plugin.ExecutionContext{
 		ExecutionID: "exec-nolineage",
