@@ -6,6 +6,15 @@ const (
 	NodeTypeSMTP          = "smtp"
 	NodeTypeConditional   = "conditional"
 	NodeTypeManualTrigger = "ManualTrigger"
+	NodeTypeEdit          = "edit"
+	NodeTypeSwitch        = "switch"
+	NodeTypeWait          = "wait"
+	NodeTypeSplit         = "split"
+	NodeTypeMerge         = "merge"
+	NodeTypeAggregator    = "aggregator"
+	// Test helper node types
+	NodeTypeMock       = "mock"
+	NodeTypeConcurrent = "concurrent"
 )
 
 // Constants for conditional operators
