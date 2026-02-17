@@ -26,12 +26,12 @@ export function useConnectionValidation(opts: {
 
       // For "if" nodes: allow max 1 edge per output handle (true/false)
       if (sourceNode.type === "if") {
-        const hasEdgeFromHandle = existingSourceEdges.some(
+        return !existingSourceEdges.some(
           (edge) => edge.sourceHandle === sourceHandle
         );
-        return !hasEdgeFromHandle;
       }
 
+      // For "switch" nodes: validate handle exists, then max 1 edge per handle
       if (sourceNode.type === "switch") {
         const rules = Array.isArray(sourceNode.data.rules)
           ? sourceNode.data.rules
@@ -41,10 +41,9 @@ export function useConnectionValidation(opts: {
           switchFallbackHandleId(),
         ]);
         if (!sourceHandle || !allowedHandles.has(String(sourceHandle))) return false;
-        const hasEdgeFromHandle = existingSourceEdges.some(
+        return !existingSourceEdges.some(
           (edge) => edge.sourceHandle === sourceHandle,
         );
-        return !hasEdgeFromHandle;
       }
 
       // For all other nodes: allow max 1 outgoing edge

@@ -41,6 +41,14 @@ import { ExecutionProvider } from "./context/ExecutionContext";
 import { ExecutionStatusBar } from "./components/ExecutionStatusBar";
 import { SmithChatDrawer } from "@/features/smith/SmithChatDrawer";
 
+function getNodeColor(node: { type?: string }) {
+  const type = node.type as string;
+  if (isValidNodeKind(type)) {
+    return getMiniMapNodeColor(type);
+  }
+  return "color-mix(in srgb, var(--muted) 50%, transparent)";
+}
+
 type FlowCanvasProps = {
   externalNodes?: CanvasNode[];
   externalEdges?: Edge[];
@@ -68,10 +76,10 @@ function FlowCanvasInner({
   workflowId = null,
 }: FlowCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>(
-    externalNodes && externalNodes.length ? externalNodes : [],
+    externalNodes ?? [],
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(
-    externalEdges && externalEdges.length ? externalEdges : [],
+    externalEdges ?? [],
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
@@ -195,7 +203,7 @@ function FlowCanvasInner({
 
   const onNodeDoubleClick = useCallback(
     (_evt: React.MouseEvent, node: CanvasNode) => {
-      setSelectedNodeId(node.id as string);
+      setSelectedNodeId(node.id);
       setIsInspectorExpanded(true);
     },
     [],
@@ -209,16 +217,6 @@ function FlowCanvasInner({
   );
 
   const onPaneClick = useCallback(() => setSelectedNodeId(null), []);
-
-  const getNodeColor = useCallback((node: { type?: string }) => {
-    const type = node.type as string;
-    if (isValidNodeKind(type)) {
-      return getMiniMapNodeColor(type);
-    }
-    return "color-mix(in srgb, var(--muted) 50%, transparent)";
-  }, []);
-
-  const onFitView = useCallback(() => rfInstanceRef.current?.fitView(), []);
 
   const onLibraryAdd = useCallback(
     (t: NodeKind, x?: number, y?: number) => {
@@ -240,10 +238,6 @@ function FlowCanvasInner({
     }
     void startExecution();
   }, [resetExecution, onPersist, nodes, edges, startExecution]);
-
-  const onSave = useCallback(async () => {
-    await persistGraph();
-  }, [persistGraph]);
 
   useCanvasShortcuts({
     nodes,
@@ -302,7 +296,6 @@ function FlowCanvasInner({
           style={{ height: 107, marginLeft: "222px", opacity:0.85 }}
         />
 
-        {/* Toolbar */}
         <Panel position="top-left" className="pointer-events-auto z-60">
           <div ref={toolbarRef} className="flex items-center gap-2">
             <Toolbar
@@ -312,14 +305,14 @@ function FlowCanvasInner({
               onRedo={handleRedo}
               canUndo={canUndo}
               canRedo={canRedo}
-              onSave={onSave}
+              onSave={persistGraph}
               onExportToClipboard={exportToClipboard}
               onExportToFile={exportToFile}
               onExportToTemplate={exportToTemplate}
               onImportFromClipboard={importFromClipboard}
               onImportFromFile={importFromFile}
               onImportFromTemplate={importFromTemplate}
-              onFitView={onFitView}
+              onFitView={() => rfInstanceRef.current?.fitView()}
               onAutoLayout={autoLayout}
               saveDisabled={saveDisabled}
               executionStatus={executionState.status}
@@ -398,7 +391,7 @@ function FlowCanvasInner({
         onSend={handleSmithSend}
         isSending={smithSending}
         showTrace={smithShowTrace}
-        onToggleTrace={(next) => setSmithShowTrace(next)}
+        onToggleTrace={setSmithShowTrace}
       />
     </div>
   );

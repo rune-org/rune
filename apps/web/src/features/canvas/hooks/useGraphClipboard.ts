@@ -20,24 +20,11 @@ export type UseGraphClipboardOptions = {
   containerRef: React.RefObject<HTMLDivElement | null>;
 };
 
-export type UseGraphClipboardReturn = {
-  copySelection: () => Promise<void>;
-  exportToClipboard: () => Promise<void>;
-  exportToFile: () => void;
-  exportToTemplate: () => void;
-  importFromClipboard: () => void;
-  importFromFile: () => void;
-  handleFileImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  importFromTemplate: () => void;
-  handleTemplateSelect: (data: { nodes: CanvasNode[]; edges: Edge[] }) => void;
-  isSaveTemplateOpen: boolean;
-  setIsSaveTemplateOpen: (open: boolean) => void;
-  isImportTemplateOpen: boolean;
-  setIsImportTemplateOpen: (open: boolean) => void;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-};
+function notifyPasteShortcut() {
+  toast("Press Ctrl+V (or Cmd+V) to paste workflow from clipboard");
+}
 
-export function useGraphClipboard(opts: UseGraphClipboardOptions): UseGraphClipboardReturn {
+export function useGraphClipboard(opts: UseGraphClipboardOptions) {
   const {
     nodes,
     edges,
@@ -72,8 +59,8 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions): UseGraphClipb
     const selectedEdges = edges
       .filter(
         (e) =>
-          selectedNodeIds.has(e.source as string) &&
-          selectedNodeIds.has(e.target as string),
+          selectedNodeIds.has(e.source) &&
+          selectedNodeIds.has(e.target),
       )
       .map((e) => structuredClone(e));
 
@@ -123,10 +110,6 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions): UseGraphClipb
     }
     setIsSaveTemplateOpen(true);
   }, [nodes]);
-
-  const importFromClipboard = useCallback(() => {
-    toast("Press Ctrl+V (or Cmd+V) to paste workflow from clipboard");
-  }, []);
 
   const importFromFile = useCallback(() => {
     fileInputRef.current?.click();
@@ -264,8 +247,8 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions): UseGraphClipb
 
         const pastedEdges = (parsed.edges as Edge[])
           .map((edge) => {
-            const newSource = idMap.get(edge.source as string);
-            const newTarget = idMap.get(edge.target as string);
+            const newSource = idMap.get(edge.source);
+            const newTarget = idMap.get(edge.target);
             if (!newSource || !newTarget) return null;
             return {
               ...edge,
@@ -302,7 +285,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions): UseGraphClipb
     exportToClipboard,
     exportToFile,
     exportToTemplate,
-    importFromClipboard,
+    importFromClipboard: notifyPasteShortcut,
     importFromFile,
     handleFileImport,
     importFromTemplate,
