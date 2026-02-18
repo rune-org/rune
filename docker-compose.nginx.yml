@@ -16,7 +16,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: "postgres:17-alpine"
+    image: "postgres:18-alpine"
     container_name: rune-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-rune}
@@ -54,7 +54,7 @@ services:
       retries: 5
 
   redis:
-    image: "redis:7-alpine"
+    image: "redis:8-alpine"
     container_name: rune-redis
     ports:
       - "6379:6379"
