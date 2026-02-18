@@ -1,6 +1,3 @@
-"""Tests for core password hashing utilities."""
-
-import pytest
 from src.core.password import hash_password, verify_password
 
 

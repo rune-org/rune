@@ -1,6 +1,3 @@
-"""Tests for user utility functions."""
-
-import pytest
 import string
 from src.users.utils import generate_temporary_password, normalize_email
 
