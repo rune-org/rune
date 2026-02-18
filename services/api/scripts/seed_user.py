@@ -8,7 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.config import get_async_engine, init_db
 from src.db.models import User, UserRole
-from src.auth.security import hash_password
+from src.core.password import hash_password
 
 
 async def seed_test_user():

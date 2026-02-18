@@ -10,7 +10,7 @@ from src.users.schemas import (
     UserPasswordChange,
     UserPasswordChangeResponse,
 )
-from src.auth.security import create_access_token
+from src.core.token import create_access_token
 
 router = APIRouter(
     prefix="/profile",
