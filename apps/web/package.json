@@ -49,7 +49,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "baseline-browser-mapping": "^2.9.19",
-    "eslint": "^9",
+    "eslint": "^10.0.0",
     "eslint-config-next": "15.5.12",
     "shadcn": "^3.0.0",
     "tailwindcss": "^4",
