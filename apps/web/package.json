@@ -11,7 +11,7 @@
     "test": "echo \"No tests defined\""
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.9.0",
+    "@hookform/resolvers": "^5.0.0",
     "@neodrag/react": "^2.3.1",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.1",
