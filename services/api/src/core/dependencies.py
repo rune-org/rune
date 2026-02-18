@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from redis.asyncio import Redis
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.auth.security import decode_access_token
+from src.core.token import decode_access_token
 from src.core.exceptions import Forbidden, Unauthorized
 from src.db.config import get_db
 from src.db.models import User, UserRole

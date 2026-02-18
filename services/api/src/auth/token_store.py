@@ -1,6 +1,6 @@
 from redis.asyncio import Redis
 
-from src.auth.security import verify_password
+from src.core.password import verify_password
 from src.core.config import get_settings
 from src.core.exceptions import RedisConnectionError
 
