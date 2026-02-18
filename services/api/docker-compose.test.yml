@@ -3,7 +3,7 @@ services:
   # TEST POSTGRES
   # ============================================================================
   test-postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     container_name: rune-api-postgres-test
     environment:
       POSTGRES_USER: test_user
