@@ -75,7 +75,7 @@ jobs:
           --health-retries 5
 
       rabbitmq:
-        image: rabbitmq:3-management-alpine
+        image: rabbitmq:4-management-alpine
         env:
           RABBITMQ_DEFAULT_USER: test_user
           RABBITMQ_DEFAULT_PASS: test_password
