@@ -39,7 +39,7 @@ services:
   # In-memory data store for session management and caching
   # Used for storing JWT refresh tokens and temporary data
   redis:
-    image: "redis:7-alpine"
+    image: "redis:8-alpine"
     container_name: rune-api-redis-dev
     ports:
       - "${REDIS_PORT:-6379}:6379"
