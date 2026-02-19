@@ -1,4 +1,5 @@
 from aio_pika import RobustConnection
+
 from src.queue.base import BaseQueuePublisher
 from src.workflow.schemas import NodeExecutionMessage
 

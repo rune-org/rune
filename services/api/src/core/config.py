@@ -1,5 +1,6 @@
 from enum import Enum
 from functools import lru_cache
+
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

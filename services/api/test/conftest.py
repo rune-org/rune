@@ -1,12 +1,13 @@
+from typing import AsyncGenerator
+
 import pytest
 import pytest_asyncio
-from typing import AsyncGenerator
 from aio_pika import connect_robust
 from argon2 import PasswordHasher
 from httpx import ASGITransport, AsyncClient
+from redis.asyncio import Redis
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
-from redis.asyncio import Redis
 
 from src.app import app
 from src.core.config import Settings, get_settings

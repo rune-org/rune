@@ -1,15 +1,15 @@
 from typing import Annotated
+
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from redis.asyncio import Redis
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.core.token import decode_access_token
 from src.core.exceptions import Forbidden, Unauthorized
+from src.core.token import decode_access_token
 from src.db.config import get_db
 from src.db.models import User, UserRole
 from src.db.redis import get_redis
-
 
 # Type aliases for common dependencies using Annotated
 # These make it easier to use dependencies in route handlers

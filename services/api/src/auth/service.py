@@ -2,12 +2,12 @@ from fastapi import Response
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.auth.schemas import TokenResponse, FirstAdminSignupRequest
-from src.core.password import hash_password, verify_password
-from src.core.token import generate_refresh_token, create_access_token
+from src.auth.schemas import FirstAdminSignupRequest, TokenResponse
 from src.auth.token_store import TokenStore
 from src.core.config import get_settings
-from src.core.exceptions import InvalidTokenError, Forbidden
+from src.core.exceptions import Forbidden, InvalidTokenError
+from src.core.password import hash_password, verify_password
+from src.core.token import create_access_token, generate_refresh_token
 from src.db.models import User, UserRole
 from src.users.utils import normalize_email
 

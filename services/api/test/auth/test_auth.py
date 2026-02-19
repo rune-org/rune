@@ -1,13 +1,14 @@
 import asyncio
-import pytest
+from datetime import datetime, timedelta, timezone
+
 import jwt
-from datetime import datetime, timezone, timedelta
+import pytest
+from freezegun import freeze_time
 from httpx import AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
-from freezegun import freeze_time
-from src.db.models import User
-from src.core.config import get_settings
 
+from src.core.config import get_settings
+from src.db.models import User
 
 # LOGIN TESTS
 
@@ -603,6 +604,7 @@ async def test_special_characters_in_password(
 ):
     """Test login with special characters in password."""
     from argon2 import PasswordHasher
+
     from src.db.models import User, UserRole
 
     ph = PasswordHasher()
@@ -633,6 +635,7 @@ async def test_unicode_characters_in_credentials(
 ):
     """Test login with Unicode characters."""
     from argon2 import PasswordHasher
+
     from src.db.models import User, UserRole
 
     ph = PasswordHasher()

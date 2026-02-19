@@ -1,9 +1,11 @@
 import os
-import dspy
 from typing import Any, Literal
+
+import dspy
 from dotenv import load_dotenv
-from src.scryb.serializer import WorkflowSerializer
+
 from src.core.config import get_settings
+from src.scryb.serializer import WorkflowSerializer
 
 
 class WorkflowDocumentation(dspy.Signature):

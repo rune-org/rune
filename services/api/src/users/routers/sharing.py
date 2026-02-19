@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
+
 from src.core.dependencies import DatabaseDep, RequirePasswordChanged
 from src.core.responses import ApiResponse
 from src.users.schemas import UserBasicInfo
 from src.users.service import UserService
-
 
 router = APIRouter(
     prefix="/users",
