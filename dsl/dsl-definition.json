@@ -1,0 +1,434 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "description": "Rune Workflow DSL Definition - Type-Aware Source of Truth",
+  
+  "core_structures": {
+    "Workflow": {
+      "description": "Root workflow structure",
+      "fields": {
+        "workflow_id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique identifier for the workflow definition"
+        },
+        "execution_id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique identifier for this specific execution instance"
+        },
+        "nodes": {
+          "type": "array",
+          "items_type": "Node",
+          "required": true,
+          "description": "Array of node definitions"
+        },
+        "edges": {
+          "type": "array",
+          "items_type": "Edge",
+          "required": true,
+          "description": "Array of edge definitions"
+        }
+      }
+    },
+    
+    "Node": {
+      "description": "Single executable node within the workflow",
+      "fields": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique identifier for the node within the workflow"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Human-readable node name"
+        },
+        "trigger": {
+          "type": "boolean",
+          "required": true,
+          "description": "Whether this node initiates workflow execution"
+        },
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "Node type identifier",
+          "enum": ["ManualTrigger", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge"]
+        },
+        "parameters": {
+          "type": "object",
+          "required": true,
+          "description": "Type-specific configuration (may be empty)"
+        },
+        "output": {
+          "type": "object",
+          "required": true,
+          "description": "Placeholder for execution output (empty in definition)",
+          "default": {}
+        },
+        "credentials": {
+          "type": "Credential",
+          "required": false,
+          "description": "Complete credential object with values"
+        },
+        "error": {
+          "type": "ErrorHandling",
+          "required": false,
+          "description": "Error handling configuration"
+        }
+      }
+    },
+    
+    "Edge": {
+      "description": "Connection between two nodes",
+      "fields": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique identifier for the edge"
+        },
+        "src": {
+          "type": "string",
+          "required": true,
+          "description": "Source node ID"
+        },
+        "dst": {
+          "type": "string",
+          "required": true,
+          "description": "Destination node ID"
+        }
+      }
+    },
+    
+    "Credential": {
+      "description": "Credential object with sensitive values",
+      "fields": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique credential identifier"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Human-readable credential name"
+        },
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "Credential type identifier",
+          "enum": ["api_key", "oauth2", "basic_auth", "header", "token", "custom", "smtp"]
+        },
+        "values": {
+          "type": "object",
+          "required": true,
+          "description": "Type-specific credential values (actual secrets)"
+        }
+      }
+    },
+    
+    "ErrorHandling": {
+      "description": "Error handling configuration",
+      "fields": {
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "Error handling strategy",
+          "enum": ["halt", "ignore", "branch"]
+        },
+        "error_edge": {
+          "type": "string",
+          "required": false,
+          "description": "Edge ID to follow on error (required if type is 'branch')"
+        }
+      }
+    }
+  },
+  
+  "node_types": {
+    "ManualTrigger": {
+      "description": "Manual workflow trigger",
+      "credential_type": null,
+      "parameters": {}
+    },
+    
+    "http": {
+      "description": "HTTP request node",
+      "credential_type": ["api_key", "oauth2", "basic_auth", "header", "token"],
+      "parameters": {
+        "method": {
+          "type": "string",
+          "required": true,
+          "description": "HTTP method",
+          "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]
+        },
+        "url": {
+          "type": "string",
+          "required": true,
+          "description": "Target URL (supports template variables)"
+        },
+        "body": {
+          "type": "any",
+          "required": false,
+          "description": "Request body (JSON)"
+        },
+        "query": {
+          "type": "object",
+          "required": false,
+          "description": "URL query parameters as key-value pairs"
+        },
+        "headers": {
+          "type": "object",
+          "required": false,
+          "description": "HTTP headers as key-value pairs"
+        },
+        "retry": {
+          "type": "string",
+          "required": false,
+          "description": "Number of retry attempts",
+          "default": "0"
+        },
+        "retry_delay": {
+          "type": "string",
+          "required": false,
+          "description": "Delay between retries in seconds",
+          "default": "0"
+        },
+        "timeout": {
+          "type": "string",
+          "required": false,
+          "description": "Request timeout in seconds",
+          "default": "30"
+        },
+        "raise_on_status": {
+          "type": "string",
+          "required": false,
+          "description": "Comma-separated status code patterns to treat as errors"
+        },
+        "ignore_ssl": {
+          "type": "boolean",
+          "required": false,
+          "description": "Whether to ignore SSL certificate validation",
+          "default": false
+        }
+      }
+    },
+    
+    "smtp": {
+      "description": "Send email via SMTP",
+      "credential_type": ["smtp"],
+      "parameters": {
+        "subject": {
+          "type": "string",
+          "required": true,
+          "description": "Email subject line"
+        },
+        "body": {
+          "type": "string",
+          "required": true,
+          "description": "Email body content (plain text or HTML)"
+        },
+        "to": {
+          "type": "array",
+          "items_type": "string",
+          "required": true,
+          "description": "Primary recipient email addresses"
+        },
+        "from": {
+          "type": "string",
+          "required": true,
+          "description": "Sender email address"
+        },
+        "cc": {
+          "type": "array",
+          "items_type": "string",
+          "required": false,
+          "description": "Carbon copy recipients"
+        },
+        "bcc": {
+          "type": "array",
+          "items_type": "string",
+          "required": false,
+          "description": "Blind carbon copy recipients"
+        }
+      }
+    },
+    
+    "conditional": {
+      "description": "If/else branching based on boolean expression",
+      "credential_type": null,
+      "parameters": {
+        "expression": {
+          "type": "string",
+          "required": true,
+          "description": "Boolean expression to evaluate (supports template variables)"
+        }
+      }
+    },
+    
+    "switch": {
+      "description": "Multi-way branching based on multiple rules",
+      "credential_type": null,
+      "parameters": {
+        "rules": {
+          "type": "array",
+          "items_type": "SwitchRule",
+          "required": true,
+          "description": "Array of switch rules"
+        }
+      }
+    },
+    
+    "log": {
+      "description": "Log information during workflow execution",
+      "credential_type": null,
+      "parameters": {
+        "message": {
+          "type": "string",
+          "required": true,
+          "description": "Message to log (supports context variables)"
+        },
+        "level": {
+          "type": "string",
+          "required": false,
+          "description": "Log level",
+          "enum": ["debug", "info", "warn", "error"],
+          "default": "info"
+        }
+      }
+    },
+    
+    "agent": {
+      "description": "AI agent node",
+      "credential_type": null,
+      "parameters": {}
+    },
+    
+    "wait": {
+      "description": "Wait for a specified duration",
+      "credential_type": null,
+      "parameters": {
+        "amount": {
+          "type": "number",
+          "required": true,
+          "description": "Quantity of time"
+        },
+        "unit": {
+          "type": "string",
+          "required": true,
+          "description": "Unit of time",
+          "enum": ["seconds", "minutes", "hours", "days"]
+        }
+      }
+    },
+    
+    "edit": {
+      "description": "Data transformation node",
+      "credential_type": null,
+      "parameters": {
+        "mode": {
+          "type": "string",
+          "required": false,
+          "description": "Transformation mode",
+          "enum": ["assignments", "keep_only"],
+          "default": "assignments"
+        },
+        "assignments": {
+          "type": "array",
+          "items_type": "EditAssignment",
+          "required": false,
+          "description": "List of field operations",
+          "default": []
+        }
+      }
+    },
+    
+    "split": {
+      "description": "Split array into individual items (Fan-Out)",
+      "credential_type": null,
+      "parameters": {
+        "input_array": {
+          "type": "string",
+          "required": true,
+          "description": "Dynamic reference to the array (e.g., {{ $node.Http.body.users }})"
+        }
+      }
+    },
+    
+    "aggregator": {
+      "description": "Aggregate items back into array (Gather)",
+      "credential_type": null,
+      "parameters": {}
+    },
+    
+    "merge": {
+      "description": "Merge multiple execution branches",
+      "credential_type": null,
+      "parameters": {
+        "wait_mode": {
+          "type": "string",
+          "required": false,
+          "description": "Synchronization mode",
+          "enum": ["wait_for_all", "wait_for_any"],
+          "default": "wait_for_all"
+        },
+        "timeout": {
+          "type": "number",
+          "required": false,
+          "description": "Safety timeout in seconds",
+          "default": 300
+        }
+      }
+    }
+  },
+  
+  "nested_types": {
+    "SwitchRule": {
+      "description": "Switch rule definition",
+      "fields": {
+        "value": {
+          "type": "string",
+          "required": true,
+          "description": "Value to compare (supports template variables)"
+        },
+        "operator": {
+          "type": "string",
+          "required": true,
+          "description": "Comparison operator",
+          "enum": ["==", "!=", ">", "<", ">=", "<=", "contains"]
+        },
+        "compare": {
+          "type": "string",
+          "required": true,
+          "description": "Value to compare against"
+        }
+      }
+    },
+    
+    "EditAssignment": {
+      "description": "Edit node assignment",
+      "fields": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "The key to set (supports dot-notation for nested objects)"
+        },
+        "value": {
+          "type": "string",
+          "required": true,
+          "description": "The value to assign (supports dynamic expressions)"
+        },
+        "type": {
+          "type": "string",
+          "required": false,
+          "description": "Target type casting",
+          "enum": ["string", "number", "boolean", "json"],
+          "default": "string"
+        }
+      }
+    }
+  }
+}
+
+
