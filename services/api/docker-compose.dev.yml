@@ -28,7 +28,7 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
+      - postgres_dev_data:/var/lib/postgresql
     networks:
       - rune_dev_network
     restart: unless-stopped

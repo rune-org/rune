@@ -9,7 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listCredentialsDropdown } from "@/lib/api/credentials";
+import { listCredentialsDropdown, createCredential } from "@/lib/api/credentials";
+import { AddCredentialDialog } from "@/components/credentials/AddCredentialDialog";
+import { toast } from "@/components/ui/toast";
 import type {
   CredentialResponseDropDown,
   CredentialType,
@@ -40,6 +42,7 @@ export function CredentialSelector({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const fetchCredentials = async () => {
     setIsLoading(true);
@@ -75,6 +78,11 @@ export function CredentialSelector({
       return;
     }
 
+    if (selectedId === "create-new") {
+      setIsCreateDialogOpen(true);
+      return;
+    }
+
     const selected = credentials.find(
       (cred) => cred.id.toString() === selectedId
     );
@@ -84,6 +92,42 @@ export function CredentialSelector({
         type: selected.credential_type,
         name: selected.name,
       });
+    }
+  };
+
+  const handleCreateCredential = async (credential: {
+    name: string;
+    credential_type: CredentialType;
+    credential_data: Record<string, string>;
+  }) => {
+    try {
+      const response = await createCredential({
+        name: credential.name,
+        credential_type: credential.credential_type,
+        credential_data: credential.credential_data,
+      });
+
+      if (response.data?.data) {
+        const newCredential = response.data.data;
+        toast.success("Credential created successfully");
+
+        // Refresh credentials list
+        await fetchCredentials();
+
+        // Select the newly created credential
+        onChange({
+          id: newCredential.id.toString(),
+          type: newCredential.credential_type,
+          name: newCredential.name,
+        });
+
+        // Close dialog
+        setIsCreateDialogOpen(false);
+      }
+    } catch (err) {
+      console.error("Failed to create credential:", err);
+      toast.error("Failed to create credential. Please try again.");
+      throw err; // Re-throw so the dialog can handle it
     }
   };
 
@@ -129,8 +173,17 @@ export function CredentialSelector({
               {cred.name}
             </SelectItem>
           ))}
+          <SelectItem value="create-new">
+            <span className="text-primary">+ Create New Credential</span>
+          </SelectItem>
         </SelectContent>
       </Select>
+
+      <AddCredentialDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onAdd={handleCreateCredential}
+      />
 
       {error && (
         <div className="flex items-center gap-1.5 text-xs text-destructive">
