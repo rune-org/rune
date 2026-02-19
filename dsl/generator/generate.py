@@ -284,6 +284,16 @@ class DSLGenerator:
         
         return ''
     
+    def _get_credential_type_default_ts(self, credential_type) -> str:
+        """Get TypeScript default value string for credential_type."""
+        if credential_type is None:
+            return 'undefined'
+        elif isinstance(credential_type, list):
+            types_str = ' | '.join(f'"{ct}"' for ct in credential_type)
+            return f'[{types_str}]'
+        else:
+            return f'["{credential_type}"]'
+    
     def generate_typescript(self) -> str:
         """Generate TypeScript definitions."""
         lines = [
@@ -294,8 +304,10 @@ class DSLGenerator:
             ''
         ]
         
-        # Generate core structures
+        # Generate core structures (excluding Node - we'll generate BaseNode + specific nodes)
         for struct_name, struct_def in self.dsl_data['core_structures'].items():
+            if struct_name == 'Node':
+                continue  # Skip generic Node, we'll generate BaseNode + specific nodes
             fields = struct_def.get('fields', {})
             description = struct_def.get('description', '')
             lines.append(self._generate_class('typescript', struct_name, fields, description))
@@ -328,26 +340,90 @@ class DSLGenerator:
                 lines.append(self._generate_sanitization_method('typescript', class_name, params))
                 lines.append('')
         
-        # Generate node type with credential_type
-        lines.append('// Node Types with Credential Type')
+        # Generate BaseNode interface
+        lines.append('// Base Node Interface')
         lines.append('')
+        node_def = self.dsl_data['core_structures']['Node']
+        base_fields = {
+            'id': node_def['fields']['id'],
+            'name': node_def['fields']['name'],
+            'trigger': node_def['fields']['trigger'],
+            'output': node_def['fields']['output'],
+            'error': node_def['fields']['error'],
+            'credential_type': {
+                'type': 'array',
+                'items_type': 'string',
+                'required': False,
+                'description': 'List of allowed credential types for this node (for UI filtering)'
+            },
+            'credentials': node_def['fields']['credentials']
+        }
+        lines.append('export interface BaseNode {')
+        lines.append('  // Base node with common fields')
+        for field_name, field_def in base_fields.items():
+            lines.append(self._generate_field('typescript', field_name, field_def))
+        lines.append('}')
+        lines.append('')
+        lines.append(self._generate_sanitization_method('typescript', 'BaseNode', base_fields))
+        lines.append('')
+        
+        # Generate specific node interfaces
+        lines.append('// Specific Node Interfaces')
+        lines.append('')
+        node_types = []
         for node_type, node_def in self.dsl_data['node_types'].items():
+            # Convert node_type to interface name
+            if node_type == 'ManualTrigger':
+                interface_name = 'ManualTriggerNode'
+            else:
+                interface_name = f'{node_type.title().replace("_", "")}Node'
+            
+            node_types.append(interface_name)
+            
+            # Get parameters type
+            params = node_def.get('parameters', {})
+            if params:
+                params_type = f'{node_type.title().replace("_", "")}Parameters'
+            else:
+                params_type = 'Record<string, any>'
+            
+            # Get credential_type type
             credential_type = node_def.get('credential_type')
             if credential_type is None:
-                credential_type_str = 'null'
-                value_str = 'null'
+                credential_type_ts = 'string[] | undefined'
             elif isinstance(credential_type, list):
-                types_list = ', '.join(f'"{ct}"' for ct in credential_type)
-                credential_type_str = f'({types_list}) | null'
-                value_str = f'({types_list})'
+                types_str = ' | '.join(f'"{ct}"' for ct in credential_type)
+                credential_type_ts = f'({types_str})[]'
             else:
-                credential_type_str = f'"{credential_type}" | null'
-                value_str = f'"{credential_type}"'
+                credential_type_ts = f'["{credential_type}"]'
             
-            lines.append(f'export const {node_type.upper()}_CREDENTIAL_TYPE: {credential_type_str} = {value_str};')
+            # Generate interface
+            lines.append(f'export interface {interface_name} extends BaseNode {{')
+            lines.append(f'  // {node_def.get("description", "")}')
+            lines.append(f'  type: "{node_type}";')
+            lines.append(f'  parameters: {params_type};')
+            lines.append(f'  credential_type: {credential_type_ts};')
+            lines.append('}')
+            lines.append('')
+        
+        # Generate Union type
+        lines.append('// Union type for all nodes')
+        lines.append('')
+        union_types = ' | '.join(node_types)
+        lines.append(f'export type Node = {union_types};')
         lines.append('')
         
         return '\n'.join(lines)
+    
+    def _get_credential_type_default(self, credential_type) -> str:
+        """Get Python default value string for credential_type."""
+        if credential_type is None:
+            return 'None'
+        elif isinstance(credential_type, list):
+            types_str = ', '.join(f'"{ct}"' for ct in credential_type)
+            return f'[{types_str}]'
+        else:
+            return f'"{credential_type}"'
     
     def generate_python(self) -> str:
         """Generate Python definitions."""
@@ -357,15 +433,17 @@ class DSLGenerator:
             'DO NOT EDIT - Generated from dsl/dsl-definition.json',
             '"""',
             '',
-            'from typing import Any, Optional, Literal',
+            'from typing import Any, Optional, Literal, Union',
             'from pydantic import BaseModel, Field',
             '',
             '# Core Structures',
             ''
         ]
         
-        # Generate core structures
+        # Generate core structures (excluding Node - we'll generate BaseNode and specific nodes)
         for struct_name, struct_def in self.dsl_data['core_structures'].items():
+            if struct_name == 'Node':
+                continue  # Skip generic Node, we'll generate BaseNode + specific nodes
             fields = struct_def.get('fields', {})
             description = struct_def.get('description', '')
             lines.append(self._generate_class('python', struct_name, fields, description))
@@ -398,17 +476,97 @@ class DSLGenerator:
                 lines.append(self._generate_sanitization_method('python', class_name, params))
                 lines.append('')
         
-        # Generate credential type constants
-        lines.append('# Node Credential Types')
+        # Generate BaseNode class
+        lines.append('# Base Node Class')
         lines.append('')
+        node_def = self.dsl_data['core_structures']['Node']
+        base_fields = {
+            'id': node_def['fields']['id'],
+            'name': node_def['fields']['name'],
+            'trigger': node_def['fields']['trigger'],
+            'output': node_def['fields']['output'],
+            'error': node_def['fields']['error'],
+            'credential_type': {
+                'type': 'array',
+                'items_type': 'string',
+                'required': False,
+                'description': 'List of allowed credential types for this node (for UI filtering)'
+            },
+            'credentials': node_def['fields']['credentials']
+        }
+        lines.append('class BaseNode(BaseModel):')
+        lines.append('    """Base node class with common fields."""')
+        for field_name, field_def in base_fields.items():
+            lines.append(self._generate_field('python', field_name, field_def))
+        lines.append('')
+        lines.append(self._generate_sanitization_method('python', 'BaseNode', base_fields))
+        lines.append('')
+        
+        # Generate specific node classes
+        lines.append('# Specific Node Classes')
+        lines.append('')
+        node_classes = []
         for node_type, node_def in self.dsl_data['node_types'].items():
-            credential_type = node_def.get('credential_type')
-            if credential_type is None:
-                lines.append(f'{node_type.upper()}_CREDENTIAL_TYPE: Optional[list[str]] = None')
-            elif isinstance(credential_type, list):
-                lines.append(f'{node_type.upper()}_CREDENTIAL_TYPE: list[str] = {credential_type}')
+            # Convert node_type to class name (e.g., "http" -> "HttpNode", "ManualTrigger" -> "ManualTriggerNode")
+            if node_type == 'ManualTrigger':
+                class_name = 'ManualTriggerNode'
             else:
-                lines.append(f'{node_type.upper()}_CREDENTIAL_TYPE: Optional[str] = "{credential_type}"')
+                class_name = f'{node_type.title().replace("_", "")}Node'
+            
+            node_classes.append(class_name)
+            
+            # Get type literal value
+            type_literal = f'Literal["{node_type}"]'
+            
+            # Get parameters class name
+            params = node_def.get('parameters', {})
+            if params:
+                params_class = f'{node_type.title().replace("_", "")}Parameters'
+            else:
+                params_class = 'dict[str, Any]'
+            
+            # Get credential_type default
+            credential_type = node_def.get('credential_type')
+            credential_type_default = self._get_credential_type_default(credential_type)
+            
+            # Generate class
+            lines.append(f'class {class_name}(BaseNode):')
+            lines.append(f'    """{node_def.get("description", "")}"""')
+            lines.append(f'    type_: {type_literal} = Field(default="{node_type}", alias="type")')
+            lines.append(f'    parameters: {params_class}')
+            lines.append(f'    credential_type: Optional[list[str]] = {credential_type_default}')
+            lines.append('')
+            
+            # Generate sanitization method that chains base + parameters
+            lines.append('    def sanitize(self) -> tuple[bool, list[str]]:')
+            lines.append('        """Validate and sanitize the node including parameters."""')
+            lines.append('        errors: list[str] = []')
+            lines.append('')
+            lines.append('        # Validate base fields')
+            lines.append('        base_valid, base_errors = super().sanitize()')
+            lines.append('        if not base_valid:')
+            lines.append('            errors.extend(base_errors)')
+            lines.append('')
+            if params:
+                lines.append('        # Validate parameters')
+                lines.append(f'        if hasattr(self.parameters, "sanitize"):')
+                lines.append('            params_valid, params_errors = self.parameters.sanitize()')
+                lines.append('            if not params_valid:')
+                lines.append('                errors.extend(params_errors)')
+                lines.append('')
+            lines.append('        # Validate credential type matches')
+            lines.append('        if self.credentials and self.credential_type:')
+            lines.append('            if self.credentials.type_ not in self.credential_type:')
+            lines.append(f'                errors.append(f"{class_name}.credentials.type must be one of {{self.credential_type}}")')
+            lines.append('')
+            lines.append('        return len(errors) == 0, errors')
+            lines.append('')
+        
+        # Generate Union type
+        lines.append('# Union type for all nodes')
+        lines.append('')
+        union_types = ', '.join(node_classes)
+        lines.append(f'Node = Union[{union_types}]')
         lines.append('')
         
         return '\n'.join(lines)

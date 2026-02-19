@@ -39,58 +39,6 @@ export function sanitizeWorkflow(obj: Workflow): { valid: boolean; errors: strin
   };
 }
 
-export interface Node {
-  // Single executable node within the workflow
-  id: string;  // Unique identifier for the node within the workflow
-  name: string;  // Human-readable node name
-  trigger: boolean;  // Whether this node initiates workflow execution
-  type: "ManualTrigger" | "http" | "smtp" | "conditional" | "switch" | "log" | "agent" | "wait" | "edit" | "split" | "aggregator" | "merge";  // Node type identifier
-  parameters: Record<string, any>;  // Type-specific configuration (may be empty)
-  output: Record<string, any>;  // Placeholder for execution output (empty in definition)
-  credentials: Credential | undefined;  // Complete credential object with values
-  error: ErrorHandling | undefined;  // Error handling configuration
-}
-
-export function sanitizeNode(obj: Node): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  if (obj.id === undefined || obj.id === null) {
-    errors.push("Node.id is required");
-  }
-  if (obj.id !== undefined && typeof obj.id !== "string") {
-    errors.push("Node.id must be a string");
-  }
-  if (obj.name === undefined || obj.name === null) {
-    errors.push("Node.name is required");
-  }
-  if (obj.name !== undefined && typeof obj.name !== "string") {
-    errors.push("Node.name must be a string");
-  }
-  if (obj.trigger === undefined || obj.trigger === null) {
-    errors.push("Node.trigger is required");
-  }
-  if (obj.trigger !== undefined && typeof obj.trigger !== "boolean") {
-    errors.push("Node.trigger must be a boolean");
-  }
-  if (obj.type === undefined || obj.type === null) {
-    errors.push("Node.type is required");
-  }
-  if (obj.type !== undefined && typeof obj.type !== "string") {
-    errors.push("Node.type must be a string");
-  }
-  if (obj.parameters === undefined || obj.parameters === null) {
-    errors.push("Node.parameters is required");
-  }
-  if (obj.output === undefined || obj.output === null) {
-    errors.push("Node.output is required");
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors
-  };
-}
-
 export interface Edge {
   // Connection between two nodes
   id: string;  // Unique identifier for the edge
@@ -507,17 +455,136 @@ export function sanitizeMergeParameters(obj: MergeParameters): { valid: boolean;
   };
 }
 
-// Node Types with Credential Type
+// Base Node Interface
 
-export const MANUALTRIGGER_CREDENTIAL_TYPE: null = null;
-export const HTTP_CREDENTIAL_TYPE: ("api_key", "oauth2", "basic_auth", "header", "token") | null = ("api_key", "oauth2", "basic_auth", "header", "token");
-export const SMTP_CREDENTIAL_TYPE: ("smtp") | null = ("smtp");
-export const CONDITIONAL_CREDENTIAL_TYPE: null = null;
-export const SWITCH_CREDENTIAL_TYPE: null = null;
-export const LOG_CREDENTIAL_TYPE: null = null;
-export const AGENT_CREDENTIAL_TYPE: null = null;
-export const WAIT_CREDENTIAL_TYPE: null = null;
-export const EDIT_CREDENTIAL_TYPE: null = null;
-export const SPLIT_CREDENTIAL_TYPE: null = null;
-export const AGGREGATOR_CREDENTIAL_TYPE: null = null;
-export const MERGE_CREDENTIAL_TYPE: null = null;
+export interface BaseNode {
+  // Base node with common fields
+  id: string;  // Unique identifier for the node within the workflow
+  name: string;  // Human-readable node name
+  trigger: boolean;  // Whether this node initiates workflow execution
+  output: Record<string, any>;  // Placeholder for execution output (empty in definition)
+  error: ErrorHandling | undefined;  // Error handling configuration
+  credential_type: string[] | undefined;  // List of allowed credential types for this node (for UI filtering)
+  credentials: Credential | undefined;  // Complete credential object with values
+}
+
+export function sanitizeBaseNode(obj: BaseNode): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.id === undefined || obj.id === null) {
+    errors.push("BaseNode.id is required");
+  }
+  if (obj.id !== undefined && typeof obj.id !== "string") {
+    errors.push("BaseNode.id must be a string");
+  }
+  if (obj.name === undefined || obj.name === null) {
+    errors.push("BaseNode.name is required");
+  }
+  if (obj.name !== undefined && typeof obj.name !== "string") {
+    errors.push("BaseNode.name must be a string");
+  }
+  if (obj.trigger === undefined || obj.trigger === null) {
+    errors.push("BaseNode.trigger is required");
+  }
+  if (obj.trigger !== undefined && typeof obj.trigger !== "boolean") {
+    errors.push("BaseNode.trigger must be a boolean");
+  }
+  if (obj.output === undefined || obj.output === null) {
+    errors.push("BaseNode.output is required");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+// Specific Node Interfaces
+
+export interface ManualTriggerNode extends BaseNode {
+  // Manual workflow trigger
+  type: "ManualTrigger";
+  parameters: Record<string, any>;
+  credential_type: string[] | undefined;
+}
+
+export interface HttpNode extends BaseNode {
+  // HTTP request node
+  type: "http";
+  parameters: HttpParameters;
+  credential_type: ("api_key" | "oauth2" | "basic_auth" | "header" | "token")[];
+}
+
+export interface SmtpNode extends BaseNode {
+  // Send email via SMTP
+  type: "smtp";
+  parameters: SmtpParameters;
+  credential_type: ("smtp")[];
+}
+
+export interface ConditionalNode extends BaseNode {
+  // If/else branching based on boolean expression
+  type: "conditional";
+  parameters: ConditionalParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface SwitchNode extends BaseNode {
+  // Multi-way branching based on multiple rules
+  type: "switch";
+  parameters: SwitchParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface LogNode extends BaseNode {
+  // Log information during workflow execution
+  type: "log";
+  parameters: LogParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface AgentNode extends BaseNode {
+  // AI agent node
+  type: "agent";
+  parameters: Record<string, any>;
+  credential_type: string[] | undefined;
+}
+
+export interface WaitNode extends BaseNode {
+  // Wait for a specified duration
+  type: "wait";
+  parameters: WaitParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface EditNode extends BaseNode {
+  // Data transformation node
+  type: "edit";
+  parameters: EditParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface SplitNode extends BaseNode {
+  // Split array into individual items (Fan-Out)
+  type: "split";
+  parameters: SplitParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface AggregatorNode extends BaseNode {
+  // Aggregate items back into array (Gather)
+  type: "aggregator";
+  parameters: Record<string, any>;
+  credential_type: string[] | undefined;
+}
+
+export interface MergeNode extends BaseNode {
+  // Merge multiple execution branches
+  type: "merge";
+  parameters: MergeParameters;
+  credential_type: string[] | undefined;
+}
+
+// Union type for all nodes
+
+export type Node = ManualTriggerNode | HttpNode | SmtpNode | ConditionalNode | SwitchNode | LogNode | AgentNode | WaitNode | EditNode | SplitNode | AggregatorNode | MergeNode;

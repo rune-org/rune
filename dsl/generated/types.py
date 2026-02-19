@@ -3,7 +3,7 @@
 DO NOT EDIT - Generated from dsl/dsl-definition.json
 """
 
-from typing import Any, Optional, Literal
+from typing import Any, Optional, Literal, Union
 from pydantic import BaseModel, Field
 
 # Core Structures
@@ -31,44 +31,6 @@ class Workflow(BaseModel):
             errors.append("Workflow.nodes is required")
         if self.edges is None:
             errors.append("Workflow.edges is required")
-
-        return len(errors) == 0, errors
-
-class Node(BaseModel):
-    """Single executable node within the workflow"""
-    id: str  # Unique identifier for the node within the workflow
-    name: str  # Human-readable node name
-    trigger: bool  # Whether this node initiates workflow execution
-    type_: Literal["ManualTrigger", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge"] = Field(alias="type")  # Node type identifier
-    parameters: dict[str, Any]  # Type-specific configuration (may be empty)
-    output: dict[str, Any]  # Placeholder for execution output (empty in definition)
-    credentials: Optional[Credential]  # Complete credential object with values
-    error: Optional[ErrorHandling]  # Error handling configuration
-
-    def sanitize(self) -> tuple[bool, list[str]]:
-        """Validate and sanitize the object."""
-        errors: list[str] = []
-
-        if self.id is None:
-            errors.append("Node.id is required")
-        if self.id is not None and not isinstance(self.id, str):
-            errors.append("Node.id must be a string")
-        if self.name is None:
-            errors.append("Node.name is required")
-        if self.name is not None and not isinstance(self.name, str):
-            errors.append("Node.name must be a string")
-        if self.trigger is None:
-            errors.append("Node.trigger is required")
-        if self.trigger is not None and not isinstance(self.trigger, bool):
-            errors.append("Node.trigger must be a boolean")
-        if self.type_ is None:
-            errors.append("Node.type is required")
-        if self.type_ is not None and not isinstance(self.type_, str):
-            errors.append("Node.type must be a string")
-        if self.parameters is None:
-            errors.append("Node.parameters is required")
-        if self.output is None:
-            errors.append("Node.output is required")
 
         return len(errors) == 0, errors
 
@@ -374,17 +336,359 @@ class MergeParameters(BaseModel):
 
         return len(errors) == 0, errors
 
-# Node Credential Types
+# Base Node Class
 
-MANUALTRIGGER_CREDENTIAL_TYPE: Optional[list[str]] = None
-HTTP_CREDENTIAL_TYPE: list[str] = ['api_key', 'oauth2', 'basic_auth', 'header', 'token']
-SMTP_CREDENTIAL_TYPE: list[str] = ['smtp']
-CONDITIONAL_CREDENTIAL_TYPE: Optional[list[str]] = None
-SWITCH_CREDENTIAL_TYPE: Optional[list[str]] = None
-LOG_CREDENTIAL_TYPE: Optional[list[str]] = None
-AGENT_CREDENTIAL_TYPE: Optional[list[str]] = None
-WAIT_CREDENTIAL_TYPE: Optional[list[str]] = None
-EDIT_CREDENTIAL_TYPE: Optional[list[str]] = None
-SPLIT_CREDENTIAL_TYPE: Optional[list[str]] = None
-AGGREGATOR_CREDENTIAL_TYPE: Optional[list[str]] = None
-MERGE_CREDENTIAL_TYPE: Optional[list[str]] = None
+class BaseNode(BaseModel):
+    """Base node class with common fields."""
+    id: str  # Unique identifier for the node within the workflow
+    name: str  # Human-readable node name
+    trigger: bool  # Whether this node initiates workflow execution
+    output: dict[str, Any]  # Placeholder for execution output (empty in definition)
+    error: Optional[ErrorHandling]  # Error handling configuration
+    credential_type: Optional[list[str]]  # List of allowed credential types for this node (for UI filtering)
+    credentials: Optional[Credential]  # Complete credential object with values
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.id is None:
+            errors.append("BaseNode.id is required")
+        if self.id is not None and not isinstance(self.id, str):
+            errors.append("BaseNode.id must be a string")
+        if self.name is None:
+            errors.append("BaseNode.name is required")
+        if self.name is not None and not isinstance(self.name, str):
+            errors.append("BaseNode.name must be a string")
+        if self.trigger is None:
+            errors.append("BaseNode.trigger is required")
+        if self.trigger is not None and not isinstance(self.trigger, bool):
+            errors.append("BaseNode.trigger must be a boolean")
+        if self.output is None:
+            errors.append("BaseNode.output is required")
+
+        return len(errors) == 0, errors
+
+# Specific Node Classes
+
+class ManualTriggerNode(BaseNode):
+    """Manual workflow trigger"""
+    type_: Literal["ManualTrigger"] = Field(default="ManualTrigger", alias="type")
+    parameters: dict[str, Any]
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"ManualTriggerNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class HttpNode(BaseNode):
+    """HTTP request node"""
+    type_: Literal["http"] = Field(default="http", alias="type")
+    parameters: HttpParameters
+    credential_type: Optional[list[str]] = ["api_key", "oauth2", "basic_auth", "header", "token"]
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"HttpNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class SmtpNode(BaseNode):
+    """Send email via SMTP"""
+    type_: Literal["smtp"] = Field(default="smtp", alias="type")
+    parameters: SmtpParameters
+    credential_type: Optional[list[str]] = ["smtp"]
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"SmtpNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class ConditionalNode(BaseNode):
+    """If/else branching based on boolean expression"""
+    type_: Literal["conditional"] = Field(default="conditional", alias="type")
+    parameters: ConditionalParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"ConditionalNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class SwitchNode(BaseNode):
+    """Multi-way branching based on multiple rules"""
+    type_: Literal["switch"] = Field(default="switch", alias="type")
+    parameters: SwitchParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"SwitchNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class LogNode(BaseNode):
+    """Log information during workflow execution"""
+    type_: Literal["log"] = Field(default="log", alias="type")
+    parameters: LogParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"LogNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class AgentNode(BaseNode):
+    """AI agent node"""
+    type_: Literal["agent"] = Field(default="agent", alias="type")
+    parameters: dict[str, Any]
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"AgentNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class WaitNode(BaseNode):
+    """Wait for a specified duration"""
+    type_: Literal["wait"] = Field(default="wait", alias="type")
+    parameters: WaitParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"WaitNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class EditNode(BaseNode):
+    """Data transformation node"""
+    type_: Literal["edit"] = Field(default="edit", alias="type")
+    parameters: EditParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"EditNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class SplitNode(BaseNode):
+    """Split array into individual items (Fan-Out)"""
+    type_: Literal["split"] = Field(default="split", alias="type")
+    parameters: SplitParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"SplitNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class AggregatorNode(BaseNode):
+    """Aggregate items back into array (Gather)"""
+    type_: Literal["aggregator"] = Field(default="aggregator", alias="type")
+    parameters: dict[str, Any]
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"AggregatorNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class MergeNode(BaseNode):
+    """Merge multiple execution branches"""
+    type_: Literal["merge"] = Field(default="merge", alias="type")
+    parameters: MergeParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"MergeNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+# Union type for all nodes
+
+Node = Union[ManualTriggerNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, AgentNode, WaitNode, EditNode, SplitNode, AggregatorNode, MergeNode]
