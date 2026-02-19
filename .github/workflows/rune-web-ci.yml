@@ -25,7 +25,7 @@ jobs:
         with: { version: 10.29.1 }
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - run: pnpm -C apps/web install
@@ -40,7 +40,7 @@ jobs:
         with: { version: 10.29.1 }
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - run: pnpm -C apps/web install
@@ -55,7 +55,7 @@ jobs:
         with: { version: 10.29.1 }
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - run: pnpm -C apps/web install
@@ -70,7 +70,7 @@ jobs:
         with: { version: 10.29.1 }
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - run: pnpm -C apps/web install
