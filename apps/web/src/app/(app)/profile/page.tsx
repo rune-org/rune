@@ -89,7 +89,7 @@ export default function ProfilePage() {
     // Validate with zod
     const result = nameSchema.safeParse({ name: fullName });
     if (!result.success) {
-      setError(result.error.errors[0].message);
+      setError(result.error.issues[0].message);
       return;
     }
 
@@ -114,7 +114,7 @@ export default function ProfilePage() {
     // Validate with zod
     const result = emailSchema.safeParse({ email });
     if (!result.success) {
-      setError(result.error.errors[0].message);
+      setError(result.error.issues[0].message);
       return;
     }
 
