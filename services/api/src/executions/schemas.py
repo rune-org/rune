@@ -1,17 +1,5 @@
 import time
-from typing import Any
-
 from pydantic import BaseModel, Field
-
-
-class NodeExecutionMessage(BaseModel):
-    """Message to trigger workflow node execution."""
-
-    workflow_id: str
-    execution_id: str
-    current_node: str
-    workflow_definition: dict[str, Any]
-    accumulated_context: dict[str, Any] = Field(default_factory=dict)
 
 
 class ExecutionTokenMessage(BaseModel):

@@ -21,7 +21,9 @@ from src.workflow.permissions import require_workflow_permission
 from src.core.responses import ApiResponse
 from src.db.models import User, Workflow
 from src.queue.rabbitmq import get_rabbitmq
-from src.queue.service import WorkflowQueueService, ExecutionTokenService
+from src.workflow.queue import WorkflowQueueService
+from src.executions.service import ExecutionTokenService
+from src.core.config import get_settings
 
 
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
@@ -34,12 +36,16 @@ def get_workflow_service(db: DatabaseDep) -> WorkflowService:
 
 def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
     """Dependency to get workflow queue service instance."""
-    return WorkflowQueueService(connection=connection)
+    return WorkflowQueueService(
+        connection=connection, queue_name=get_settings().rabbitmq_workflow_queue
+    )
 
 
 def get_token_service(connection=Depends(get_rabbitmq)) -> ExecutionTokenService:
     """Dependency to get execution token service instance."""
-    return ExecutionTokenService(connection=connection)
+    return ExecutionTokenService(
+        connection=connection, queue_name=get_settings().rabbitmq_token_queue
+    )
 
 
 @router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
