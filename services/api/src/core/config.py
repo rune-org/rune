@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Application Settings
     environment: Environment = Environment.DEV
     app_name: str = "Rune API"
-    cors_origins: str = (
+    cors_origins_raw: str = (
         "http://localhost:3000,http://frontend:3000,http://127.0.0.1:3000"
     )
 
@@ -64,6 +64,20 @@ class Settings(BaseSettings):
 
     # Scryb Documentation Settings
     scryb_model: str = "gemini/gemini-2.5-flash-lite"
+
+    @computed_field
+    @property
+    def cors_origins(self) -> list[str]:
+        """Parse CORS origins from a comma-separated string or JSON-style list string."""
+        v = self.cors_origins_raw
+        if not isinstance(v, str):
+            raise ValueError(f"cors_origins_raw must be a string, got {type(v)}")
+        if v.startswith("["):
+            v = v.strip("[]")
+        origins = [i.strip() for i in v.split(",") if i.strip()]
+        if not origins:
+            raise ValueError("CORS_ORIGINS must contain at least one origin")
+        return origins
 
     @computed_field
     @property
