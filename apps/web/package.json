@@ -43,6 +43,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@eslint/compat": "^2.0.2",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
@@ -50,7 +51,7 @@
     "@types/react-dom": "^19",
     "baseline-browser-mapping": "^2.9.19",
     "eslint": "^10.0.0",
-    "eslint-config-next": "15.5.12",
+    "eslint-config-next": "16.1.6",
     "shadcn": "^3.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
