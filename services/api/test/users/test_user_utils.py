@@ -1,6 +1,6 @@
 import string
-from src.users.utils import generate_temporary_password, normalize_email
 
+from src.users.utils import generate_temporary_password, normalize_email
 
 # ============================================================================
 # GENERATE_TEMPORARY_PASSWORD TESTS

@@ -1,8 +1,9 @@
 import time
+
 from aio_pika import RobustConnection
 
-from src.queue.base import BaseQueuePublisher
 from src.executions.schemas import ExecutionTokenMessage
+from src.queue.base import BaseQueuePublisher
 
 
 class ExecutionTokenService(BaseQueuePublisher):

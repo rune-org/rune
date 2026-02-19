@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends, status
 
 from src.core.dependencies import DatabaseDep, require_password_changed
-from src.db.models import User
+from src.core.responses import ApiResponse
+from src.credentials.permissions import CredentialPermissionService
 from src.credentials.schemas import (
     CredentialCreate,
-    CredentialUpdate,
     CredentialResponse,
     CredentialResponseDropDown,
     CredentialShare,
     CredentialShareInfo,
+    CredentialUpdate,
 )
 from src.credentials.service import CredentialService
-from src.credentials.permissions import CredentialPermissionService
-from src.core.responses import ApiResponse
+from src.db.models import User
 
 router = APIRouter(prefix="/credentials", tags=["credentials"])
 

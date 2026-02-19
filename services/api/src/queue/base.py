@@ -1,4 +1,4 @@
-from aio_pika import RobustConnection, Message
+from aio_pika import Message, RobustConnection
 from pydantic import BaseModel
 
 

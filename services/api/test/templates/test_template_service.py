@@ -3,10 +3,9 @@
 import pytest
 from sqlmodel import select
 
-from src.templates.schemas import TemplateCreate
-from src.core.exceptions import NotFound, Forbidden
+from src.core.exceptions import Forbidden, NotFound
 from src.db.models import WorkflowTemplate
-
+from src.templates.schemas import TemplateCreate
 
 # ============================================================================
 # ACCESS CONTROL TESTS

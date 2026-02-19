@@ -1,8 +1,8 @@
 import pytest
 from argon2 import PasswordHasher
-from src.db.models import User
 from sqlmodel import select
 
+from src.db.models import User
 
 # ============================================================================
 # AUTHENTICATION & AUTHORIZATION TESTS

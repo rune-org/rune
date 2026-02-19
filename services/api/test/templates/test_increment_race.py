@@ -1,11 +1,12 @@
 import asyncio
 import os
+
 import pytest
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.templates.service import TemplateService
 from src.db.models import WorkflowTemplate
+from src.templates.service import TemplateService
 
 
 async def _create_template(engine) -> int:

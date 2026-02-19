@@ -1,6 +1,7 @@
-from langchain.agents import create_agent, AgentState
-from langchain_google_genai import ChatGoogleGenerativeAI
 from typing import NotRequired
+
+from langchain.agents import AgentState, create_agent
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from src.core.config import get_settings
 from src.smith.prompts import SYSTEM_PROMPT

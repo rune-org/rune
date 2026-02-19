@@ -1,9 +1,10 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.db.models import User
+
 from src.core.exceptions import AlreadyExists, NotFound, Unauthorized
-from src.users.schemas import UserCreate, AdminUserUpdate, ProfileUpdate
 from src.core.password import hash_password, verify_password
+from src.db.models import User
+from src.users.schemas import AdminUserUpdate, ProfileUpdate, UserCreate
 from src.users.utils import generate_temporary_password, normalize_email
 
 
