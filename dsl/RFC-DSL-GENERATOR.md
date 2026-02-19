@@ -2,7 +2,7 @@
 RFC: DSL Code Generator
 Author: dopebiscuit
 Status: IMPLEMENTED
-Created: 2025-01-XX
+Created: 2026-02-19
 ```
 
 # RFC: DSL Code Generator
