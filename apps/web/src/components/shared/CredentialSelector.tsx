@@ -100,12 +100,32 @@ export function CredentialSelector({
     credential_type: CredentialType;
     credential_data: Record<string, string>;
   }) => {
+    let response;
     try {
-      const response = await createCredential({
+      response = await createCredential({
         name: credential.name,
         credential_type: credential.credential_type,
         credential_data: credential.credential_data,
       });
+
+      // Check for errors first
+      if (response.error) {
+        const errorMessage =
+          (typeof response.error === "object" &&
+            "message" in response.error &&
+            typeof response.error.message === "string"
+            ? response.error.message
+            : null) ||
+          (typeof response.error === "object" &&
+            "detail" in response.error &&
+            typeof response.error.detail === "string"
+            ? String(response.error.detail)
+            : null) ||
+          "Failed to create credential. Please try again.";
+
+        toast.error(errorMessage);
+        throw response.error; // Re-throw so the dialog can handle it
+      }
 
       if (response.data?.data) {
         const newCredential = response.data.data;
@@ -125,8 +145,12 @@ export function CredentialSelector({
         setIsCreateDialogOpen(false);
       }
     } catch (err) {
-      console.error("Failed to create credential:", err);
-      toast.error("Failed to create credential. Please try again.");
+      // Only show generic error if it wasn't already handled above
+      // (response.error errors are already shown via toast)
+      if (!response?.error) {
+        console.error("Failed to create credential:", err);
+        toast.error("Failed to create credential. Please try again.");
+      }
       throw err; // Re-throw so the dialog can handle it
     }
   };

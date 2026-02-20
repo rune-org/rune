@@ -54,12 +54,32 @@ export default function CreateCredentialsPage() {
     credential_type: Credential["credential_type"];
     credential_data: Record<string, string>;
   }) => {
+    let response;
     try {
-      const response = await credentialsAPI.createCredential({
+      response = await credentialsAPI.createCredential({
         name: newCred.name,
         credential_type: newCred.credential_type,
         credential_data: newCred.credential_data,
       });
+
+      // Check for errors first
+      if (response.error) {
+        const errorMessage =
+          (typeof response.error === "object" &&
+            "message" in response.error &&
+            typeof response.error.message === "string"
+            ? response.error.message
+            : null) ||
+          (typeof response.error === "object" &&
+            "detail" in response.error &&
+            typeof response.error.detail === "string"
+            ? String(response.error.detail)
+            : null) ||
+          "Failed to create credential. Please try again.";
+
+        toast.error(errorMessage);
+        throw response.error; // Re-throw so the dialog can handle it
+      }
 
       // Extract the created credential from the ApiResponse wrapper
       if (response.data && response.data.data) {
@@ -67,8 +87,12 @@ export default function CreateCredentialsPage() {
         toast.success("Credential created successfully");
       }
     } catch (err) {
-      console.error("Failed to create credential:", err);
-      toast.error("Failed to create credential. Please try again.");
+      // Only show generic error if it wasn't already handled above
+      // (response.error errors are already shown via toast)
+      if (!response?.error) {
+        console.error("Failed to create credential:", err);
+        toast.error("Failed to create credential. Please try again.");
+      }
       throw err; // Re-throw so the dialog can handle it
     }
   };
