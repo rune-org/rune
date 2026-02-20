@@ -2593,7 +2593,7 @@ export type GetMyShareInfoCredentialsCredentialIdMyShareGetResponses = {
 
 export type GetMyShareInfoCredentialsCredentialIdMyShareGetResponse = GetMyShareInfoCredentialsCredentialIdMyShareGetResponses[keyof GetMyShareInfoCredentialsCredentialIdMyShareGetResponses];
 
-export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostData = {
+export type GenerateWorkflowDocsScrybWorkflowIdPostData = {
     body: GenerateWorkflowDocsRequest;
     path: {
         /**
@@ -2602,26 +2602,26 @@ export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostData = {
         workflow_id: number;
     };
     query?: never;
-    url: '/workflows/{workflow_id}/docs';
+    url: '/scryb/{workflow_id}';
 };
 
-export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors = {
+export type GenerateWorkflowDocsScrybWorkflowIdPostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostError = GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors[keyof GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors];
+export type GenerateWorkflowDocsScrybWorkflowIdPostError = GenerateWorkflowDocsScrybWorkflowIdPostErrors[keyof GenerateWorkflowDocsScrybWorkflowIdPostErrors];
 
-export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses = {
+export type GenerateWorkflowDocsScrybWorkflowIdPostResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseWorkflowDetailDocs;
 };
 
-export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponse = GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses[keyof GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses];
+export type GenerateWorkflowDocsScrybWorkflowIdPostResponse = GenerateWorkflowDocsScrybWorkflowIdPostResponses[keyof GenerateWorkflowDocsScrybWorkflowIdPostResponses];
 
 export type ClearThreadSmithWorkflowIdDeleteData = {
     body?: never;
