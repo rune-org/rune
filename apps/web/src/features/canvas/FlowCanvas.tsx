@@ -10,22 +10,21 @@ import {
   useNodesState,
   Panel,
   type Edge,
-  type Connection,
   OnSelectionChangeParams,
   type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./styles/reactflow.css";
 
-// Start with an empty canvas by default
 import { nodeTypes } from "./nodes";
-import type { CanvasNode } from "./types";
+import type { CanvasNode, NodeKind } from "./types";
 import { getMiniMapNodeColor, isValidNodeKind } from "./lib/nodeRegistry";
 import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
 import { SaveTemplateDialog } from "./components/SaveTemplateDialog";
 import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
+import { SmithButton } from "./components/SmithButton";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
 import { useAddNode } from "./hooks/useAddNode";
 import { useConditionalConnect } from "./hooks/useConditionalConnect";
@@ -35,23 +34,20 @@ import { useAutoLayout } from "./hooks/useAutoLayout";
 import { usePinNode } from "./hooks/usePinNode";
 import { useWorkflowExecution } from "./hooks/useWorkflowExecution";
 import { useExecutionEdgeSync } from "./hooks/useExecutionEdgeSync";
+import { useConnectionValidation } from "./hooks/useConnectionValidation";
+import { useGraphClipboard } from "./hooks/useGraphClipboard";
+import { useSmith } from "./hooks/useSmith";
 import { ExecutionProvider } from "./context/ExecutionContext";
 import { ExecutionStatusBar } from "./components/ExecutionStatusBar";
-import { sanitizeGraph, stringifyGraph, stripExecutionStyling } from "./lib/graphIO";
-import { applyAutoLayout } from "./lib/autoLayout";
-import { workflowDataToCanvas } from "@/lib/workflow-dsl";
-import { toast } from "@/components/ui/toast";
-import { createId } from "./utils/id";
-import {
-  switchFallbackHandleId,
-  switchRuleHandleId,
-} from "./utils/switchHandles";
-import { SmithChatDrawer, type SmithChatMessage } from "@/features/smith/SmithChatDrawer";
-import { smith } from "@/lib/api";
-import Image from "next/image";
+import { SmithChatDrawer } from "@/features/smith/SmithChatDrawer";
 
-const CLIPBOARD_SELECTION_TYPE = "rune.canvas.selection";
-const PASTE_OFFSET = 32;
+function getNodeColor(node: { type?: string }) {
+  const type = node.type as string;
+  if (isValidNodeKind(type)) {
+    return getMiniMapNodeColor(type);
+  }
+  return "color-mix(in srgb, var(--muted) 50%, transparent)";
+}
 
 type FlowCanvasProps = {
   externalNodes?: CanvasNode[];
@@ -80,35 +76,24 @@ function FlowCanvasInner({
   workflowId = null,
 }: FlowCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>(
-    externalNodes && externalNodes.length ? externalNodes : [],
+    externalNodes ?? [],
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(
-    externalEdges && externalEdges.length ? externalEdges : [],
+    externalEdges ?? [],
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
-  const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
-  const [isImportTemplateOpen, setIsImportTemplateOpen] = useState(false);
-  const [isSmithOpen, setIsSmithOpen] = useState(false);
-  const [smithMessages, setSmithMessages] = useState<SmithChatMessage[]>([]);
-  const [smithInput, setSmithInput] = useState("");
-  const [smithSending, setSmithSending] = useState(false);
-  const [smithShowTrace, setSmithShowTrace] = useState(true);
-  const [smithJustFinished, setSmithJustFinished] = useState(false);
-  const [pendingSmithPrompt, setPendingSmithPrompt] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(
-    null,
-  );
+  const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const onConnect = useConditionalConnect(setEdges);
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
   const updateNodeData = useUpdateNodeData(setNodes);
+  const { togglePin } = usePinNode(setNodes);
+  const { pushHistory, undo, redo, canUndo, canRedo } = useCanvasHistory(nodes, edges);
 
-  // Execution management
   const {
     executionState,
     isStarting: isStartingExecution,
@@ -119,149 +104,56 @@ function FlowCanvasInner({
 
   useExecutionEdgeSync(executionState, setEdges);
 
-  const { togglePin } = usePinNode(setNodes);
-  const { pushHistory, undo, redo, canUndo, canRedo } = useCanvasHistory(nodes, edges);
+  const { autoLayout } = useAutoLayout(nodes, edges, setNodes, setEdges, {
+    onBeforeLayout: pushHistory,
+  });
 
-  const isValidConnection = useCallback(
-    (connection: Edge | Connection) => {
-      const { source, target, sourceHandle } = connection;
+  const isValidConnection = useConnectionValidation({ nodes, edges });
 
-      if (source === target) return false;
+  const {
+    isSmithOpen,
+    setIsSmithOpen,
+    openSmith,
+    smithMessages,
+    smithInput,
+    setSmithInput,
+    smithSending,
+    smithShowTrace,
+    setSmithShowTrace,
+    smithJustFinished,
+    handleSmithSend,
+  } = useSmith({ workflowId, pushHistory, setNodes, setEdges, rfInstanceRef });
 
-      const sourceNode = nodes.find((node) => node.id === source);
-      const targetNode = nodes.find((node) => node.id === target);
-      if (!sourceNode || !targetNode) return false;
-
-      const existingSourceEdges = edges.filter((edge) => edge.source === source);
-
-      // For "if" nodes: allow max 1 edge per output handle (true/false)
-      if (sourceNode.type === "if") {
-        const hasEdgeFromHandle = existingSourceEdges.some(
-          (edge) => edge.sourceHandle === sourceHandle
-        );
-        return !hasEdgeFromHandle;
-      }
-
-      if (sourceNode.type === "switch") {
-        const rules = Array.isArray(sourceNode.data.rules)
-          ? sourceNode.data.rules
-          : [];
-        const allowedHandles = new Set<string>([
-          ...rules.map((_, idx) => switchRuleHandleId(idx)),
-          switchFallbackHandleId(),
-        ]);
-        if (!sourceHandle || !allowedHandles.has(String(sourceHandle))) return false;
-        const hasEdgeFromHandle = existingSourceEdges.some(
-          (edge) => edge.sourceHandle === sourceHandle,
-        );
-        return !hasEdgeFromHandle;
-      }
-
-      // For all other nodes: allow max 1 outgoing edge
-      return existingSourceEdges.length === 0;
-    },
-    [nodes, edges]
-  );
+  const {
+    copySelection,
+    exportToClipboard,
+    exportToFile,
+    exportToTemplate,
+    importFromClipboard,
+    importFromFile,
+    handleFileImport,
+    importFromTemplate,
+    handleTemplateSelect,
+    isSaveTemplateOpen,
+    setIsSaveTemplateOpen,
+    isImportTemplateOpen,
+    setIsImportTemplateOpen,
+    fileInputRef,
+  } = useGraphClipboard({
+    nodes,
+    edges,
+    selectedNodeId,
+    pushHistory,
+    setNodes,
+    setEdges,
+    setSelectedNodeId,
+    containerRef,
+  });
 
   const persistGraph = useCallback(() => {
     if (!onPersist) return;
     return onPersist({ nodes, edges });
   }, [onPersist, nodes, edges]);
-
-  const { autoLayout } = useAutoLayout(nodes, edges, setNodes, setEdges, {
-    onBeforeLayout: pushHistory,
-  });
-
-  const applySmithWorkflow = useCallback(
-    (workflow: Record<string, unknown>) => {
-      const candidateNodes = Array.isArray(
-        (workflow as { nodes?: unknown }).nodes,
-      )
-        ? ((workflow as { nodes: Parameters<typeof workflowDataToCanvas>[0]["nodes"] })
-            .nodes ?? [])
-        : [];
-      const candidateEdges = Array.isArray(
-        (workflow as { edges?: unknown }).edges,
-      )
-        ? ((workflow as { edges: Parameters<typeof workflowDataToCanvas>[0]["edges"] })
-            .edges ?? [])
-        : [];
-
-      if (candidateNodes.length === 0) {
-        return;
-      }
-
-      const { nodes: canvasNodes, edges: canvasEdges } = workflowDataToCanvas({
-        nodes: candidateNodes,
-        edges: candidateEdges,
-      });
-      const sanitized = sanitizeGraph({
-        nodes: canvasNodes,
-        edges: canvasEdges,
-      });
-      const layouted = applyAutoLayout({
-        nodes: sanitized.nodes as CanvasNode[],
-        edges: sanitized.edges as Edge[],
-        respectPinned: true,
-      });
-
-      pushHistory();
-      setNodes(() => layouted.nodes as CanvasNode[]);
-      setEdges(() => layouted.edges as Edge[]);
-      
-      // Fit view after nodes are rendered
-      setTimeout(() => {
-        rfInstanceRef.current?.fitView({ padding: 0.2, duration: 200 });
-      }, 50);
-      
-      toast.success("Smith updated the canvas");
-    },
-    [pushHistory, setEdges, setNodes],
-  );
-
-  const copySelection = useCallback(async () => {
-    const selectedNodeIds = new Set(
-      nodes.filter((n) => n.selected).map((n) => n.id),
-    );
-    if (selectedNodeIds.size === 0 && selectedNodeId) {
-      selectedNodeIds.add(selectedNodeId);
-    }
-
-    if (selectedNodeIds.size === 0) {
-      return;
-    }
-
-    const selectedNodes = nodes
-      .filter((n) => selectedNodeIds.has(n.id))
-      .map((n) => structuredClone(n));
-
-    const selectedEdges = edges
-      .filter(
-        (e) =>
-          selectedNodeIds.has(e.source as string) &&
-          selectedNodeIds.has(e.target as string),
-      )
-      .map((e) => structuredClone(e));
-
-    if (!navigator.clipboard?.writeText) {
-      toast.error("Clipboard permissions are required to copy");
-      return;
-    }
-
-    const cleaned = stripExecutionStyling({ nodes: selectedNodes, edges: selectedEdges });
-    const payload = {
-      __runeClipboardType: CLIPBOARD_SELECTION_TYPE,
-      nodes: cleaned.nodes,
-      edges: cleaned.edges,
-    };
-
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-      toast.success("Copied selection to clipboard");
-    } catch {
-      toast.error("Unable to copy selection");
-    }
-  }, [edges, nodes, selectedNodeId]);
 
   const handleUndo = useCallback(() => {
     const state = undo();
@@ -279,205 +171,6 @@ function FlowCanvasInner({
     }
   }, [redo, setNodes, setEdges]);
 
-  // Export handlers
-  const exportToClipboard = useCallback(async () => {
-    await navigator.clipboard.writeText(stringifyGraph({ nodes, edges }));
-    toast.success("Exported JSON to clipboard");
-  }, [nodes, edges]);
-
-  const exportToFile = useCallback(() => {
-    const json = stringifyGraph({ nodes, edges });
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `workflow-${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("Exported workflow to file");
-  }, [nodes, edges]);
-
-  const exportToTemplate = useCallback(() => {
-    if (nodes.length === 0) {
-      toast.error("Cannot save empty workflow as template");
-      return;
-    }
-    setIsSaveTemplateOpen(true);
-  }, [nodes]);
-
-  // Import handlers
-  const importFromClipboard = useCallback(() => {
-    toast("Press Ctrl+V (or Cmd+V) to paste workflow from clipboard");
-  }, []);
-
-  const importFromFile = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
-
-  const handleFileImport = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const text = event.target?.result as string;
-          const raw = JSON.parse(text);
-          if (!raw || typeof raw !== "object") {
-            toast.error("Invalid workflow data");
-            return;
-          }
-          const candidate = raw as { nodes?: unknown; edges?: unknown };
-          if (
-            !Array.isArray(candidate.nodes) ||
-            !Array.isArray(candidate.edges)
-          ) {
-            toast.error("Invalid workflow format");
-            return;
-          }
-          const parsed = sanitizeGraph({
-            nodes: candidate.nodes as CanvasNode[],
-            edges: candidate.edges as Edge[],
-          });
-          if (parsed.nodes.length === 0) {
-            toast.error("No valid nodes found in file");
-            return;
-          }
-          pushHistory();
-          setNodes(parsed.nodes as CanvasNode[]);
-          setEdges(parsed.edges as Edge[]);
-          toast.success(`Imported workflow from ${file.name}`);
-        } catch {
-          toast.error("Failed to parse workflow file");
-        }
-      };
-      reader.readAsText(file);
-      e.target.value = "";
-    },
-    [pushHistory, setNodes, setEdges],
-  );
-
-  const handleSmithSend = useCallback(
-    async (content: string) => {
-      const trimmed = content.trim();
-      if (!trimmed || smithSending) return;
-
-      const userMessage: SmithChatMessage = { role: "user", content: trimmed };
-      setSmithMessages((prev) => [...prev, userMessage]);
-      setSmithInput("");
-      setSmithSending(true);
-      
-      // If reasoning mode is on, close the drawer to let user watch the canvas
-      if (smithShowTrace) {
-        setIsSmithOpen(false);
-      }
-
-      try {
-        // Use SSE streaming for new workflow generation (no workflowId)
-        const { stream } = await smith.streamGenerateNewWorkflow(trimmed);
-
-        let accumulatedContent = "";
-        let hasWorkflowState = false;
-
-        for await (const event of stream) {
-          const sseEvent = event as smith.SmithSSEEvent;
-
-          switch (sseEvent.type) {
-            case "token":
-              accumulatedContent += sseEvent.content;
-              // Update the smith message in place with accumulated content
-              setSmithMessages((prev) => {
-                const lastMsg = prev[prev.length - 1];
-                if (lastMsg?.role === "smith") {
-                  return [
-                    ...prev.slice(0, -1),
-                    { ...lastMsg, content: accumulatedContent },
-                  ];
-                } else {
-                  // First token - add new smith message
-                  return [...prev, { role: "smith", content: accumulatedContent }];
-                }
-              });
-              break;
-
-            case "workflow_state":
-              hasWorkflowState = true;
-              try {
-                // Map SSE field names to what applySmithWorkflow expects
-                applySmithWorkflow({
-                  nodes: sseEvent.workflow_nodes,
-                  edges: sseEvent.workflow_edges,
-                });
-              } catch (err) {
-                console.error("Failed to apply workflow state:", err);
-              }
-              break;
-
-            case "error":
-              toast.error(sseEvent.message || "Smith encountered an error");
-              break;
-
-            case "warning":
-              console.warn("Smith warning:", sseEvent.message);
-              break;
-
-            case "tool_call":
-              // Add tool call message to show what Smith is doing
-              setSmithMessages((prev) => [
-                ...prev,
-                {
-                  role: "tool_call" as const,
-                  content: sseEvent.arguments || "{}",
-                  toolName: sseEvent.name,
-                },
-              ]);
-              break;
-          }
-        }
-
-        // Ensure there's a final message if no content was streamed
-        if (!accumulatedContent && !hasWorkflowState) {
-          setSmithMessages((prev) => [
-            ...prev,
-            { role: "smith", content: "I've processed your request." },
-          ]);
-        }
-      } catch (err) {
-        toast.error(
-          err instanceof Error
-            ? err.message
-            : "Smith could not generate the workflow",
-        );
-      } finally {
-        setSmithSending(false);
-        // If reasoning mode was on, indicate completion with glow
-        if (smithShowTrace) {
-          setSmithJustFinished(true);
-        }
-      }
-    },
-    [applySmithWorkflow, smithSending, smithShowTrace],
-  );
-
-  const importFromTemplate = useCallback(() => {
-    setIsImportTemplateOpen(true);
-  }, []);
-
-  const handleTemplateSelect = useCallback(
-    (workflowData: { nodes: CanvasNode[]; edges: Edge[] }) => {
-      const parsed = sanitizeGraph(workflowData);
-      pushHistory();
-      setNodes(parsed.nodes as CanvasNode[]);
-      setEdges(parsed.edges as Edge[]);
-      setIsImportTemplateOpen(false);
-      toast.success("Imported workflow from template");
-    },
-    [pushHistory, setNodes, setEdges],
-  );
-
   const deleteSelectedElements = useCallback(() => {
     pushHistory();
     const selectedNodeIds = new Set(
@@ -490,6 +183,61 @@ function FlowCanvasInner({
       ),
     );
   }, [nodes, pushHistory, setNodes, setEdges]);
+
+  const selectedNode = useMemo(
+    () => nodes.find((n) => n.id === selectedNodeId) || null,
+    [nodes, selectedNodeId],
+  );
+
+  const updateSelectedNodeLabel = useCallback(
+    (label: string) => {
+      if (!selectedNode) return;
+      updateNodeData(selectedNode.id, selectedNode.type, () => ({ label }));
+    },
+    [selectedNode, updateNodeData],
+  );
+
+  const onSelectionChange = useCallback((params: OnSelectionChangeParams) => {
+    setSelectedNodeId(params.nodes[0]?.id ?? null);
+  }, []);
+
+  const onNodeDoubleClick = useCallback(
+    (_evt: React.MouseEvent, node: CanvasNode) => {
+      setSelectedNodeId(node.id);
+      setIsInspectorExpanded(true);
+    },
+    [],
+  );
+
+  const onInit = useCallback(
+    (inst: ReactFlowInstance<CanvasNode, Edge>) => {
+      rfInstanceRef.current = inst;
+    },
+    [],
+  );
+
+  const onPaneClick = useCallback(() => setSelectedNodeId(null), []);
+
+  const onLibraryAdd = useCallback(
+    (t: NodeKind, x?: number, y?: number) => {
+      pushHistory();
+      addNode(t, x, y);
+    },
+    [pushHistory, addNode],
+  );
+
+  const onExecute = useCallback(async () => {
+    resetExecution();
+    if (onPersist) {
+      try {
+        await onPersist({ nodes, edges });
+      } catch (err) {
+        console.error("Failed to save before execution:", err);
+        return;
+      }
+    }
+    void startExecution();
+  }, [resetExecution, onPersist, nodes, edges, startExecution]);
 
   useCanvasShortcuts({
     nodes,
@@ -510,191 +258,11 @@ function FlowCanvasInner({
     onPushHistory: pushHistory,
   });
 
-  const selectedNode = useMemo(
-    () => nodes.find((n) => n.id === selectedNodeId) || null,
-    [nodes, selectedNodeId],
-  );
-
-  const updateSelectedNodeLabel = useCallback(
-    (label: string) => {
-      if (!selectedNode) return;
-      updateNodeData(selectedNode.id, selectedNode.type, () => ({ label }));
-    },
-    [selectedNode, updateNodeData],
-  );
-
-  const onSelectionChange = useCallback((params: OnSelectionChangeParams) => {
-    setSelectedNodeId(params.nodes[0]?.id ?? null);
-  }, []);
-
-  // If external graph changes, hydrate the canvas
   useEffect(() => {
     setNodes(externalNodes ?? []);
     setEdges(externalEdges ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalNodes, externalEdges]);
-
-
-
-  useEffect(() => {
-    if (isSmithOpen && smithMessages.length === 0) {
-      setSmithMessages([
-        {
-          role: "smith",
-          content:
-            "Hi, I'm Smith. Describe what to build or edit and I'll wire the workflow for you.",
-        },
-      ]);
-    }
-  }, [isSmithOpen, smithMessages.length]);
-
-  // Auto-run Smith prompt seeded from quickstart/local storage
-  useEffect(() => {
-    // Check for pending prompt from Smith page (new workflow flow)
-    const smithPendingPrompt = localStorage.getItem("smith_pending_prompt");
-    if (smithPendingPrompt) {
-      setPendingSmithPrompt(smithPendingPrompt);
-      localStorage.removeItem("smith_pending_prompt");
-      return;
-    }
-
-    // Check for workflow-specific prompt (existing workflow flow)
-    if (!workflowId) return;
-    try {
-      const savedPrompt = localStorage.getItem(`smith-prompt-${workflowId}`);
-      const savedTracePref = localStorage.getItem(
-        `smith-show-trace-${workflowId}`,
-      );
-      if (savedPrompt) {
-        setPendingSmithPrompt(savedPrompt);
-        setSmithShowTrace(savedTracePref === "true");
-        localStorage.removeItem(`smith-prompt-${workflowId}`);
-        localStorage.removeItem(`smith-show-trace-${workflowId}`);
-      }
-    } catch {
-      // ignore
-    }
-  }, [workflowId]);
-
-  useEffect(() => {
-    if (pendingSmithPrompt && !smithSending) {
-      setIsSmithOpen(true);
-      void handleSmithSend(pendingSmithPrompt);
-      setPendingSmithPrompt(null);
-    }
-  }, [pendingSmithPrompt, smithSending, handleSmithSend]);
-
-  // Paste to import graph DSL or clone selections
-  useEffect(() => {
-    const handler = (e: ClipboardEvent) => {
-      // Ignore paste events from dialogs (e.g., expanded inspector)
-      const target = e.target as HTMLElement | null;
-      if (target?.closest('[role="dialog"]')) return;
-
-      const text = e.clipboardData?.getData("text");
-      if (!text) return;
-      let raw: unknown;
-      try {
-        raw = JSON.parse(text);
-      } catch {
-        return;
-      }
-
-      if (!raw || typeof raw !== "object") return;
-
-      const candidate = raw as {
-        __runeClipboardType?: string;
-        nodes?: unknown[];
-        edges?: unknown[];
-      };
-
-      if (!Array.isArray(candidate.nodes) || !Array.isArray(candidate.edges)) {
-        return;
-      }
-
-      const clipboardType = candidate.__runeClipboardType ?? null;
-
-      // Detect worker DSL format
-      const isWorkerDSL = candidate.edges.some(
-        (e) => e && typeof e === "object" && "src" in e && "dst" in e
-      );
-
-      // Convert worker DSL to canvas
-      const graphData = isWorkerDSL
-        ? workflowDataToCanvas({
-            nodes: candidate.nodes as Parameters<typeof workflowDataToCanvas>[0]["nodes"],
-            edges: candidate.edges as Parameters<typeof workflowDataToCanvas>[0]["edges"],
-          })
-        : { nodes: candidate.nodes as CanvasNode[], edges: candidate.edges as Edge[] };
-
-      const parsed = sanitizeGraph(graphData);
-
-      // For DSL imports, ignore if parsed graph is empty to prevent
-      // accidentally clearing the canvas.
-      if (clipboardType !== CLIPBOARD_SELECTION_TYPE && parsed.nodes.length === 0) {
-        return;
-      }
-
-      if (clipboardType === CLIPBOARD_SELECTION_TYPE) {
-        e.preventDefault();
-        pushHistory();
-
-        const idMap = new Map<string, string>();
-        const pastedNodes = (parsed.nodes as CanvasNode[]).map((node) => {
-          const newId = createId();
-          idMap.set(node.id, newId);
-          return {
-            ...node,
-            id: newId,
-            selected: true,
-            position: {
-              x: (node.position?.x ?? 0) + PASTE_OFFSET,
-              y: (node.position?.y ?? 0) + PASTE_OFFSET,
-            },
-          } satisfies CanvasNode;
-        });
-
-        const pastedEdges = (parsed.edges as Edge[])
-          .map((edge) => {
-            const newSource = idMap.get(edge.source as string);
-            const newTarget = idMap.get(edge.target as string);
-            if (!newSource || !newTarget) return null;
-            return {
-              ...edge,
-              id: createId(),
-              source: newSource,
-              target: newTarget,
-            } satisfies Edge;
-          })
-          .filter((edge): edge is Edge => edge !== null);
-
-        setNodes((current) => [
-          ...current.map((n) => ({ ...n, selected: false })),
-          ...pastedNodes,
-        ]);
-        setEdges((current) => [...current, ...pastedEdges]);
-        setSelectedNodeId(pastedNodes[0]?.id ?? null);
-        toast.success("Pasted selection from clipboard");
-        return;
-      }
-
-      e.preventDefault();
-      pushHistory();
-      setNodes(parsed.nodes as CanvasNode[]);
-      setEdges(parsed.edges as Edge[]);
-      toast.success("Imported workflow from clipboard");
-    };
-    const el = containerRef.current ?? window;
-    el.addEventListener("paste", handler as EventListener);
-    return () => el.removeEventListener("paste", handler as EventListener);
-  }, [pushHistory, setEdges, setNodes, setSelectedNodeId]);
-
-  const getNodeColor = (type: string) => {
-    if (isValidNodeKind(type)) {
-      return getMiniMapNodeColor(type);
-    }
-    return "color-mix(in srgb, var(--muted) 50%, transparent)";
-  };
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden">
@@ -709,53 +277,35 @@ function FlowCanvasInner({
         onConnect={onConnect}
         isValidConnection={isValidConnection}
         onSelectionChange={onSelectionChange}
-        onNodeDoubleClick={(_evt, node) => {
-          setSelectedNodeId(node.id as string);
-          setIsInspectorExpanded(true);
-        }}
-        onInit={(inst) => (rfInstanceRef.current = inst)}
-        onPaneClick={() => setSelectedNodeId(null)}
+        onNodeDoubleClick={onNodeDoubleClick}
+        onInit={onInit}
+        onPaneClick={onPaneClick}
       >
         <Background />
 
         <MiniMap
           nodeBorderRadius={19}
           position="bottom-left"
-          nodeColor={(node) => getNodeColor(node.type as string)}
+          nodeColor={getNodeColor}
           nodeStrokeColor="#334155"
           maskColor="rgba(0,0,0,0.2)"
           style={{width: 200, height:117, opacity: 0.85}}
         />
 
-        <Controls 
+        <Controls
           style={{ height: 107, marginLeft: "222px", opacity:0.85 }}
         />
 
-        {/* Toolbar */}
-        <Panel position="top-left" className="pointer-events-auto z-[60]">
+        <Panel position="top-left" className="pointer-events-auto z-60">
           <div ref={toolbarRef} className="flex items-center gap-2">
             <Toolbar
-              onExecute={async () => {
-                resetExecution();
-                // Auto-save before execution
-                if (onPersist) {
-                  try {
-                    await onPersist({ nodes, edges });
-                  } catch (err) {
-                    console.error("Failed to save before execution:", err);
-                    return; // Don't execute if save fails
-                  }
-                }
-                void startExecution();
-              }}
+              onExecute={onExecute}
               onStop={stopExecution}
               onUndo={handleUndo}
               onRedo={handleRedo}
               canUndo={canUndo}
               canRedo={canRedo}
-              onSave={async () => {
-                await persistGraph();
-              }}
+              onSave={persistGraph}
               onExportToClipboard={exportToClipboard}
               onExportToFile={exportToFile}
               onExportToTemplate={exportToTemplate}
@@ -769,30 +319,11 @@ function FlowCanvasInner({
               isStartingExecution={isStartingExecution}
               workflowId={workflowId}
             />
-            <button
-              type="button"
-              onClick={() => {
-                setIsSmithOpen(true);
-                setSmithJustFinished(false);
-              }}
-              className={`group relative flex h-13 w-13 items-center justify-center overflow-hidden rounded-full p-[1px] shadow-lg transition-all hover:shadow-primary/25 hover:scale-105 active:scale-95 ${smithJustFinished ? 'animate-pulse' : ''}`}
-              title="Ask Smith"
-            >
-              <div className={`absolute inset-0 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 blur-[2px] transition-opacity duration-500 ${smithJustFinished ? 'opacity-100 animate-pulse' : 'opacity-0 group-hover:opacity-100'}`} />
-              {smithSending && (
-                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 opacity-60 blur-[2px] animate-spin-slow" style={{ animationDuration: '3s' }} />
-              )}
-              <div className={`relative flex h-full w-full items-center justify-center rounded-full border border-border/60 backdrop-blur-md transition-colors ${smithJustFinished ? 'bg-primary/20 border-primary/40' : 'bg-background/20 group-hover:bg-background/80'}`}>
-                <Image
-                  src="/icons/smith_logo_compact_white.svg"
-                  alt="Smith"
-                  width={30}
-                  height={30}
-                  
-                  priority
-                />
-              </div>
-            </button>
+            <SmithButton
+              onClick={openSmith}
+              isSending={smithSending}
+              justFinished={smithJustFinished}
+            />
           </div>
         </Panel>
 
@@ -814,7 +345,7 @@ function FlowCanvasInner({
         {/* Hints */}
         <Panel
           position="bottom-center"
-          className="pointer-events-none !bottom-4 !right-auto !left-1/2 !-translate-x-2"
+          className="pointer-events-none bottom-4! right-auto! left-1/2! -translate-x-2!"
         >
           <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
             Drag to move • Connect via handles • Paste JSON to import
@@ -825,10 +356,7 @@ function FlowCanvasInner({
       <Library
         containerRef={containerRef}
         toolbarRef={toolbarRef}
-        onAdd={(t, x, y) => {
-          pushHistory();
-          addNode(t, x, y);
-        }}
+        onAdd={onLibraryAdd}
       />
 
       {/* Hidden file input for importing JSON files */}
@@ -863,7 +391,7 @@ function FlowCanvasInner({
         onSend={handleSmithSend}
         isSending={smithSending}
         showTrace={smithShowTrace}
-        onToggleTrace={(next) => setSmithShowTrace(next)}
+        onToggleTrace={setSmithShowTrace}
       />
     </div>
   );
