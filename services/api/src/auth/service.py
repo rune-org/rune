@@ -1,4 +1,3 @@
-from fastapi import Response
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -103,23 +102,6 @@ class AuthService:
     async def logout_user_by_id(self, user_id: int) -> bool:
         """Logout user by revoking all refresh tokens associated with user ID."""
         return await self.token_store.revoke_user_tokens(user_id)
-
-    def set_auth_cookie(self, response: Response, access_token: str) -> None:
-        """Set authentication cookie in response."""
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            secure=self.settings.cookie_secure,
-            max_age=self.settings.access_token_expire_minutes * 60,
-        )
-
-    def clear_auth_cookie(self, response: Response) -> None:
-        """Clear authentication cookie from response."""
-        response.delete_cookie(
-            key="access_token",
-            httponly=True,
-        )
 
     async def is_first_time_setup(self) -> bool:
         """
