@@ -12,7 +12,6 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
-const AlertDialog = Dialog;
 
 const AlertDialogTrigger = React.forwardRef<
   HTMLButtonElement,
