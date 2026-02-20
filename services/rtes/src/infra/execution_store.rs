@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use chrono::Utc;
 use mongodb::{
     Client as MongoClient,
@@ -9,6 +10,7 @@ use serde_json::{Map, Value};
 use tracing::{info, warn};
 
 use crate::{
+    api::state::{ExecutionStorePort, StoreResult},
     domain::models::{
         CompletionMessage,
         ExecutionDocument,
@@ -21,13 +23,13 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub(crate) struct ExecutionStore {
+pub struct ExecutionStore {
     client:  MongoClient,
     db_name: String,
 }
 
 impl ExecutionStore {
-    pub(crate) async fn new(uri: &str, db_name: &str) -> Result<Self, mongodb::error::Error> {
+    pub async fn new(uri: &str, db_name: &str) -> Result<Self, mongodb::error::Error> {
         info!(mongodb_uri = %uri, mongodb_db = %db_name, "Connecting to MongoDB");
         let client_options = ClientOptions::parse(uri).await?;
         let client = MongoClient::with_options(client_options)?;
@@ -352,6 +354,45 @@ impl ExecutionStore {
     }
 }
 
+#[async_trait]
+impl ExecutionStorePort for ExecutionStore {
+    async fn upsert_execution_definition(&self, msg: &NodeExecutionMessage) -> StoreResult<()> {
+        ExecutionStore::upsert_execution_definition(self, msg)
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
+    }
+
+    async fn get_execution_document(
+        &self,
+        execution_id: &str,
+    ) -> StoreResult<Option<ExecutionDocument>> {
+        ExecutionStore::get_execution_document(self, execution_id)
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
+    }
+
+    async fn get_executions_for_workflow(
+        &self,
+        workflow_id: &str,
+    ) -> StoreResult<Vec<ExecutionDocument>> {
+        ExecutionStore::get_executions_for_workflow(self, workflow_id)
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
+    }
+
+    async fn update_node_status(&self, msg: &NodeStatusMessage) -> StoreResult<()> {
+        ExecutionStore::update_node_status(self, msg)
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
+    }
+
+    async fn complete_execution(&self, msg: &CompletionMessage) -> StoreResult<()> {
+        ExecutionStore::complete_execution(self, msg)
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
+    }
+}
+
 fn normalize_workflow_definition(raw: &Value) -> Value {
     let mut workflow = raw.as_object().cloned().unwrap_or_default();
 
@@ -504,4 +545,60 @@ fn normalize_node(node_val: Value) -> Value {
     }
 
     Value::Object(normalized)
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::{normalize_edges, normalize_node, normalize_nodes, normalize_workflow_definition};
+
+    #[test]
+    fn normalize_edges_supports_object_format() {
+        let raw = json!({
+            "edge-1": {"src": "a", "dst": "b"},
+            "edge-2": {"id": "custom-edge", "src": "b", "dst": "c"}
+        });
+
+        let normalized = normalize_edges(Some(&raw));
+        assert_eq!(normalized.len(), 2);
+        assert!(normalized.iter().any(|edge| edge["id"] == "edge-1"));
+        assert!(
+            normalized.iter().any(|edge| edge["id"] == "custom-edge"
+                && edge["src"] == "b"
+                && edge["dst"] == "c")
+        );
+    }
+
+    #[test]
+    fn normalize_nodes_supports_object_format() {
+        let raw = json!({
+            "node-1": {"name": "A", "type": "http"},
+            "node-2": {"trigger": true}
+        });
+
+        let normalized = normalize_nodes(raw);
+        assert_eq!(normalized.len(), 2);
+        assert!(normalized.iter().any(|node| node["id"] == "node-1"));
+        assert!(normalized.iter().all(|node| node["parameters"].is_object()));
+        assert!(normalized.iter().all(|node| node["output"].is_object()));
+    }
+
+    #[test]
+    fn normalize_node_applies_defaults() {
+        let normalized = normalize_node(json!({"id": "n1"}));
+        assert_eq!(normalized["id"], "n1");
+        assert_eq!(normalized["name"], "");
+        assert_eq!(normalized["trigger"], false);
+        assert!(normalized["parameters"].is_object());
+        assert!(normalized["output"].is_object());
+    }
+
+    #[test]
+    fn normalize_workflow_definition_handles_missing_fields() {
+        let normalized = normalize_workflow_definition(&json!({"name": "wf"}));
+        assert_eq!(normalized["name"], "wf");
+        assert_eq!(normalized["nodes"], json!([]));
+        assert_eq!(normalized["edges"], json!([]));
+    }
 }

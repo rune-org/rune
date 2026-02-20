@@ -27,7 +27,7 @@ fn otlp_endpoint(endpoint: &str, path: &str) -> String {
     format!("{}/{}", otlp_base_endpoint(endpoint), path.trim_start_matches('/'))
 }
 
-pub(crate) fn init_telemetry(
+pub fn init_telemetry(
     service_name: &'static str,
     endpoint: &str,
 ) -> Result<sdktrace::SdkTracerProvider, Box<dyn std::error::Error>> {
