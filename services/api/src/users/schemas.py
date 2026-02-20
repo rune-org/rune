@@ -71,13 +71,6 @@ class CreateUserResponse(BaseModel):
     )
 
 
-class UserPasswordChangeResponse(BaseModel):
-    user: UserResponse = Field(..., description="Updated user information")
-    access_token: str = Field(
-        ..., description="New access token with updated must_change_password flag"
-    )
-
-
 class UserBasicInfo(BaseModel):
     """Minimal user info for sharing purposes."""
 
