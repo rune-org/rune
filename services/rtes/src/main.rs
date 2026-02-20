@@ -4,14 +4,9 @@
 //!
 //! This service handles execution tokens and real-time events.
 
-mod api;
-mod config;
-mod domain;
-mod infra;
-mod util;
-
 use std::future::Future;
 
+use rtes::{api, config, infra};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 

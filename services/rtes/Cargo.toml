@@ -19,6 +19,7 @@ tower-http = { version = "0.6", features = ["cors", "trace"] }
 # Serialization 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+async-trait = "0.1"
 
 # Messaging & Database 
 lapin = "3.7"
@@ -97,3 +98,4 @@ redundant_pub_crate = "allow"
 
 [dev-dependencies]
 tokio-tungstenite = "0.28.0"
+tower = { version = "0.5", features = ["util"] }
