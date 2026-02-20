@@ -7,7 +7,6 @@ import {
   deleteWorkflowWorkflowsWorkflowIdDelete,
   runWorkflowWorkflowsWorkflowIdRunPost,
   updateWorkflowDataWorkflowsWorkflowIdDataPut,
-  generateWorkflowDocsWorkflowsWorkflowIdDocsPost,
   getWorkflowExecutionsWorkflowsWorkflowIdExecutionsGet,
   getExecutionWorkflowsWorkflowIdExecutionsExecutionIdGet,
 } from "@/client";
@@ -17,7 +16,6 @@ import type {
   WorkflowUpdateName,
   WorkflowUpdateStatus,
   WorkflowUpdateData,
-  GenerateWorkflowDocsRequest,
   ListWorkflowsWorkflowsGetResponse,
   GetWorkflowWorkflowsWorkflowIdGetResponse,
   CreateWorkflowWorkflowsPostResponse,
@@ -26,7 +24,6 @@ import type {
   DeleteWorkflowWorkflowsWorkflowIdDeleteResponse,
   RunWorkflowWorkflowsWorkflowIdRunPostResponse,
   UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse,
-  GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponse,
   GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponse,
   GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponse,
 } from "@/client/types.gen";
@@ -68,15 +65,6 @@ export const updateWorkflowData = (
     body: { workflow_data } as WorkflowUpdateData,
   });
 
-export const generateWorkflowDocs = (
-  workflow_id: number,
-  target_audience: GenerateWorkflowDocsRequest["target_audience"] = "Technical Developer",
-) =>
-  generateWorkflowDocsWorkflowsWorkflowIdDocsPost({
-    path: { workflow_id },
-    body: { target_audience },
-  });
-
 /** Request access to view all executions for a workflow (publishes wildcard token to RTES) */
 export const requestExecutionAccess = (workflow_id: number) =>
   getWorkflowExecutionsWorkflowsWorkflowIdExecutionsGet({ path: { workflow_id } });
@@ -100,8 +88,6 @@ export type DeleteWorkflowResponse =
 export type RunWorkflowResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponse;
 export type UpdateWorkflowDataResponse =
   UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse;
-export type GenerateWorkflowDocsResponse =
-  GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponse;
 export type RequestExecutionAccessResponse =
   GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponse;
 export type RequestSpecificExecutionAccessResponse =

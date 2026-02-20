@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ReportViewer } from "@/components/ui/report-viewer";
 import { cn } from "@/lib/cn";
-import { workflows } from "@/lib/api";
+import { scryb } from "@/lib/api";
 import { toast } from "@/components/ui/toast";
 import type { GenerateWorkflowDocsRequest } from "@/client/types.gen";
 
@@ -78,7 +78,7 @@ export function ScrybInterface({
 
       if (!workflowId) {
         toast.error(
-          "Please save your workflow first before generating documentation."
+          "Please save your workflow first before generating documentation.",
         );
         return;
       }
@@ -87,9 +87,9 @@ export function ScrybInterface({
       setErrorMessage(null);
 
       try {
-        const response = await workflows.generateWorkflowDocs(
+        const response = await scryb.generateWorkflowDocs(
           workflowId,
-          targetAudience
+          targetAudience,
         );
 
         if (response.error) {
@@ -106,17 +106,17 @@ export function ScrybInterface({
         setErrorMessage(
           err instanceof Error
             ? err.message
-            : "Failed to generate documentation"
+            : "Failed to generate documentation",
         );
         setViewState("error");
         toast.error(
           err instanceof Error
             ? err.message
-            : "Failed to generate documentation"
+            : "Failed to generate documentation",
         );
       }
     },
-    [workflowId, targetAudience]
+    [workflowId, targetAudience],
   );
 
   const resetView = () => {
@@ -160,7 +160,7 @@ export function ScrybInterface({
             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
             className={cn(
               "w-[360px] origin-bottom-right overflow-hidden rounded-3xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl",
-              playfair.variable
+              playfair.variable,
             )}
             style={{ fontFamily: "var(--font-playfair)" }}
           >
@@ -216,7 +216,7 @@ export function ScrybInterface({
                       "h-2 w-2 rounded-full transition-colors duration-500",
                       workflowId
                         ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                        : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
+                        : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]",
                     )}
                   />
                   <span
@@ -234,20 +234,20 @@ export function ScrybInterface({
                       viewState === "generating"
                         ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
                         : viewState === "success"
-                        ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                        : viewState === "error"
-                        ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
-                        : "bg-zinc-600"
+                          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                          : viewState === "error"
+                            ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+                            : "bg-zinc-600",
                     )}
                   />
                   <span className="text-[10px] uppercase tracking-wider text-zinc-500">
                     {viewState === "generating"
                       ? "Processing"
                       : viewState === "success"
-                      ? "Done"
-                      : viewState === "error"
-                      ? "Error"
-                      : "Ready"}
+                        ? "Done"
+                        : viewState === "error"
+                          ? "Error"
+                          : "Ready"}
                   </span>
                 </div>
               </div>
@@ -287,7 +287,7 @@ export function ScrybInterface({
                               "flex-1 rounded-xl border px-3 py-2 text-xs transition-all",
                               targetAudience === "Technical Developer"
                                 ? "border-white/20 bg-white/5 backdrop-blur-md text-zinc-100 shadow-sm"
-                                : "border-white/[0.05] bg-transparent text-zinc-500 hover:bg-white/[0.05]"
+                                : "border-white/[0.05] bg-transparent text-zinc-500 hover:bg-white/[0.05]",
                             )}
                             style={{
                               fontFamily:
@@ -309,7 +309,7 @@ export function ScrybInterface({
                               "flex-1 rounded-xl border px-3 py-2 text-xs transition-all",
                               targetAudience === "Executive Summary"
                                 ? "border-white/20 bg-white/5 backdrop-blur-md text-zinc-100 shadow-sm"
-                                : "border-white/[0.05] bg-transparent text-zinc-500 hover:bg-white/[0.05]"
+                                : "border-white/[0.05] bg-transparent text-zinc-500 hover:bg-white/[0.05]",
                             )}
                             style={{
                               fontFamily:
@@ -522,7 +522,7 @@ export function ScrybInterface({
           "group relative flex cursor-pointer items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
           isOpen
             ? "h-14 w-[360px] justify-between rounded-2xl border border-white/[0.08] bg-black/40 px-5 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-2xl"
-            : "h-20 w-20"
+            : "h-20 w-20",
         )}
       >
         <AnimatePresence mode="wait">
