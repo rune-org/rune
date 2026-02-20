@@ -1462,13 +1462,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/{workflow_id}/docs:
+  /scryb/{workflow_id}:
     post:
       tags:
-      - Workflows
+      - Scryb
       summary: Generate Workflow Docs
       description: Generate documentation for the specified workflow.
-      operationId: generate_workflow_docs_workflows__workflow_id__docs_post
+      operationId: generate_workflow_docs_scryb__workflow_id__post
       security:
       - OAuth2PasswordBearer: []
       parameters:
