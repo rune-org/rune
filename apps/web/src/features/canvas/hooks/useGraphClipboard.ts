@@ -85,8 +85,12 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
   }, [edges, nodes, selectedNodeId]);
 
   const exportToClipboard = useCallback(async () => {
-    await navigator.clipboard.writeText(stringifyGraph({ nodes, edges }));
-    toast.success("Exported JSON to clipboard");
+    try {
+      await navigator.clipboard.writeText(stringifyGraph({ nodes, edges }));
+      toast.success("Exported JSON to clipboard");
+    } catch {
+      toast.error("Failed to export JSON to clipboard");
+    }
   }, [nodes, edges]);
 
   const exportToFile = useCallback(() => {
