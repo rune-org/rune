@@ -89,7 +89,15 @@ func (n *EditNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 		var err error
 		sourceData, err = GetNested(n.input, n.targetPath)
 		if err != nil {
-			return nil, fmt.Errorf("get target path '%s': %w", n.targetPath, err)
+			// Accumulated context keys are commonly prefixed with '$' (for example "$json" or "$node").
+			// Allow target_path to omit the root '$' for compatibility with existing workflows.
+			altPath := withDollarRoot(n.targetPath)
+			if altPath != n.targetPath {
+				sourceData, err = GetNested(n.input, altPath)
+			}
+			if err != nil {
+				return nil, fmt.Errorf("get target path '%s': %w", n.targetPath, err)
+			}
 		}
 	} else {
 		sourceData = n.input["$json"]
@@ -239,6 +247,18 @@ func (n *EditNode) evaluateExpression(parentCtx context.Context, expr string, ov
 
 func init() {
 	nodes.RegisterNodeType(RegisterEdit)
+}
+
+func withDollarRoot(path string) string {
+	if path == "" || strings.HasPrefix(path, "$") {
+		return path
+	}
+
+	parts := strings.SplitN(path, ".", 2)
+	if len(parts) == 1 {
+		return "$" + parts[0]
+	}
+	return "$" + parts[0] + "." + parts[1]
 }
 
 // RegisterEdit registers the edit node type.

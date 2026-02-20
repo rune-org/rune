@@ -36,7 +36,7 @@ func TestNewSchedulerDefaults(t *testing.T) {
 	t.Parallel()
 
 	client, _ := redismock.NewClientMock()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	s := NewScheduler(client, &queueAwareMockPublisher{}, Options{})
 	if s.pollInterval != DefaultPollInterval {
@@ -51,7 +51,7 @@ func TestSchedulerProcessTimerSuccess(t *testing.T) {
 	t.Parallel()
 
 	client, mock := redismock.NewClientMock()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	timerID := "timer-1"
 	payload := []byte(`{"workflow_id":"wf-1"}`)
@@ -84,7 +84,7 @@ func TestSchedulerProcessTimerPublishFailure(t *testing.T) {
 	t.Parallel()
 
 	client, mock := redismock.NewClientMock()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	timerID := "timer-fail"
 	payload := []byte(`{"workflow_id":"wf-2"}`)

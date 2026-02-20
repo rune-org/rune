@@ -820,3 +820,42 @@ func TestEditNodeEvaluateExpression_InterruptsRunawayScript(t *testing.T) {
 		t.Fatalf("runaway script still executing after cancellation; tick delta=%d", delta)
 	}
 }
+
+func TestEditNodeExecute_TargetPathSupportsDollarRootFallback(t *testing.T) {
+	t.Parallel()
+
+	execCtx := plugin.ExecutionContext{
+		Input: map[string]any{
+			"$baby": map[string]any{
+				"first_name": "John",
+				"last_name":  "Doe",
+				"email":      "john@example.com",
+			},
+		},
+		Parameters: map[string]any{
+			"mode":        "assignments",
+			"target_path": "baby",
+			"assignments": []any{
+				map[string]any{"name": "full_name", "value": "{{ $json.first_name + ' ' + $json.last_name }}", "type": "string"},
+				map[string]any{"name": "is_active", "value": "true", "type": "boolean"},
+			},
+		},
+	}
+
+	node := NewEditNode(execCtx)
+	out, err := node.Execute(context.Background(), execCtx)
+	if err != nil {
+		t.Fatalf("Execute error: %v", err)
+	}
+
+	payload := out["$json"].(map[string]any)
+	if payload["full_name"] != "John Doe" {
+		t.Fatalf("expected full_name John Doe, got %v", payload["full_name"])
+	}
+	if payload["is_active"] != true {
+		t.Fatalf("expected is_active true, got %v", payload["is_active"])
+	}
+	if payload["email"] != "john@example.com" {
+		t.Fatalf("expected email preserved, got %v", payload["email"])
+	}
+}
