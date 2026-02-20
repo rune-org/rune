@@ -9,7 +9,7 @@ from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
 from src.workflow.service import WorkflowService
 
-router = APIRouter(prefix="/workflows", tags=["Workflows"])
+router = APIRouter(prefix="/scryb", tags=["Scryb"])
 
 
 def get_workflow_service(db: DatabaseDep) -> WorkflowService:
@@ -17,7 +17,7 @@ def get_workflow_service(db: DatabaseDep) -> WorkflowService:
     return WorkflowService(db=db)
 
 
-@router.post("/{workflow_id}/docs", response_model=ApiResponse[WorkflowDetailDocs])
+@router.post("/{workflow_id}", response_model=ApiResponse[WorkflowDetailDocs])
 @require_workflow_permission("view")
 async def generate_workflow_docs(
     style_request: GenerateWorkflowDocsRequest,
