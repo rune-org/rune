@@ -145,7 +145,6 @@ export function CredentialSelector({
       // Only show generic error if it wasn't already handled above
       // (response.error errors are already shown via toast)
       if (!hasHandledApiError) {
-        console.error("Failed to create credential:", err);
         toast.error("Failed to create credential. Please try again.");
       }
       throw err; // Re-throw so the dialog can handle it
