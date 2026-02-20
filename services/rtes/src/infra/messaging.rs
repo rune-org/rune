@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use futures::StreamExt;
 use lapin::{
     Channel,
@@ -19,18 +21,24 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
 
 use crate::{
-    api::state::AppState,
+    api::state::{AppState, TokenStorePort},
     domain::models::{
         CompletionMessage,
         ExecutionToken,
+        ExecutionTokenPayload,
         NodeExecutionMessage,
         NodeStatusMessage,
         WorkerMessage,
     },
-    infra::token_store::TokenStore,
 };
 
 const EXCHANGE_NAME: &str = "workflows";
+
+fn expand_tokens_from_payload(payload_bytes: &[u8]) -> Result<Vec<ExecutionToken>, String> {
+    let payload = serde_json::from_slice::<ExecutionTokenPayload>(payload_bytes)
+        .map_err(|e| format!("Failed to deserialize token payload: {e}"))?;
+    payload.expand().map_err(ToOwned::to_owned)
+}
 
 fn declare_options(durable: bool) -> QueueDeclareOptions {
     QueueDeclareOptions { durable, ..QueueDeclareOptions::default() }
@@ -72,9 +80,9 @@ async fn bind_queue(
     Ok(())
 }
 
-pub(crate) async fn start_token_consumer(
+pub async fn start_token_consumer(
     amqp_addr: &str,
-    token_store: TokenStore,
+    token_store: Arc<dyn TokenStorePort>,
     cancel_token: CancellationToken,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let conn = Connection::connect(amqp_addr, ConnectionProperties::default()).await?;
@@ -118,7 +126,7 @@ pub(crate) async fn start_token_consumer(
             let token_store = token_store.clone();
             async move {
                 if let Ok(delivery) = delivery {
-                    process_token_delivery(delivery, &token_store).await;
+                    process_token_delivery(delivery, token_store.as_ref()).await;
                 }
             }
         })
@@ -127,21 +135,31 @@ pub(crate) async fn start_token_consumer(
     Ok(())
 }
 
-async fn process_token_delivery(delivery: lapin::message::Delivery, token_store: &TokenStore) {
-    match serde_json::from_slice::<ExecutionToken>(&delivery.data) {
-        Ok(token) => {
-            info!("Received token for user: {}", token.user_id);
-            if let Err(e) = token_store.add_token(&token).await {
-                error!("Failed to store token: {}", e);
-                let _ = delivery
-                    .nack(BasicNackOptions { requeue: false, ..BasicNackOptions::default() })
-                    .await;
-            } else {
-                let _ = delivery.ack(BasicAckOptions::default()).await;
+async fn process_token_delivery(
+    delivery: lapin::message::Delivery,
+    token_store: &dyn TokenStorePort,
+) {
+    match expand_tokens_from_payload(&delivery.data) {
+        Ok(tokens) => {
+            for token in &tokens {
+                info!(
+                    "Received token for user: {} workflow: {} execution: {}",
+                    token.user_id,
+                    token.workflow_id,
+                    token.execution_id.as_deref().unwrap_or("*")
+                );
+                if let Err(e) = token_store.add_token(token).await {
+                    error!("Failed to store token: {}", e);
+                    let _ = delivery
+                        .nack(BasicNackOptions { requeue: false, ..BasicNackOptions::default() })
+                        .await;
+                    return;
+                }
             }
+            let _ = delivery.ack(BasicAckOptions::default()).await;
         },
         Err(e) => {
-            error!("Failed to deserialize token: {}", e);
+            error!("{}", e);
             let _ = delivery
                 .nack(BasicNackOptions { requeue: false, ..BasicNackOptions::default() })
                 .await;
@@ -149,7 +167,7 @@ async fn process_token_delivery(delivery: lapin::message::Delivery, token_store:
     }
 }
 
-pub(crate) async fn start_execution_consumer(
+pub async fn start_execution_consumer(
     amqp_addr: &str,
     state: AppState,
     cancel_token: CancellationToken,
@@ -220,7 +238,7 @@ pub(crate) async fn start_execution_consumer(
     Ok(())
 }
 
-pub(crate) async fn start_status_consumer(
+pub async fn start_status_consumer(
     amqp_addr: &str,
     state: AppState,
     cancel_token: CancellationToken,
@@ -287,7 +305,7 @@ pub(crate) async fn start_status_consumer(
     Ok(())
 }
 
-pub(crate) async fn start_completion_consumer(
+pub async fn start_completion_consumer(
     amqp_addr: &str,
     state: AppState,
     cancel_token: CancellationToken,
@@ -354,4 +372,41 @@ pub(crate) async fn start_completion_consumer(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::expand_tokens_from_payload;
+
+    #[test]
+    fn expands_single_id_payload() {
+        let payload = json!({
+            "execution_id": "exec-1",
+            "workflow_id": "wf-1",
+            "iat": 1,
+            "exp": 2,
+            "user_id": "user-1"
+        });
+        let tokens = expand_tokens_from_payload(payload.to_string().as_bytes())
+            .expect("single token payload should parse");
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].execution_id.as_deref(), Some("exec-1"));
+        assert_eq!(tokens[0].workflow_id, "wf-1");
+    }
+
+    #[test]
+    fn expands_multi_id_payload() {
+        let payload = json!({
+            "execution_ids": ["exec-1", "exec-2"],
+            "workflow_ids": ["wf-1", "wf-2"],
+            "iat": 1,
+            "exp": 2,
+            "user_id": "user-1"
+        });
+        let tokens = expand_tokens_from_payload(payload.to_string().as_bytes())
+            .expect("multi-id token payload should parse");
+        assert_eq!(tokens.len(), 4);
+    }
 }

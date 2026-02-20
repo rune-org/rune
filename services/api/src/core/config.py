@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 2
     refresh_token_expire_days: int = 30
 
+    # Cookie Settings
+    cookie_name: str = "access_token"
+
     # Redis Settings
     redis_host: str = "localhost"
     redis_port: int = 6379
