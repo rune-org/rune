@@ -36,7 +36,7 @@ func (p *WorkflowPublisher) PublishNodeExecution(ctx context.Context, msg *messa
 	if err != nil {
 		return err
 	}
-	if err := p.publisher.Publish(ctx, "workflow.execution", payload); err != nil {
+	if err := p.publisher.Publish(ctx, queue.QueueWorkflowExecution, payload); err != nil {
 		return err
 	}
 
@@ -44,8 +44,7 @@ func (p *WorkflowPublisher) PublishNodeExecution(ctx context.Context, msg *messa
 		"workflow_id", msg.WorkflowID,
 		"execution_id", msg.ExecutionID,
 		"current_node", msg.CurrentNode,
-		"accumulated_context", msg.AccumulatedContext,
-		"node_execution_message", msg,
+		"lineage_depth", len(msg.LineageStack),
 	)
 
 	return nil
@@ -57,7 +56,7 @@ func (p *WorkflowPublisher) PublishNodeStatus(ctx context.Context, msg *messages
 	if err != nil {
 		return err
 	}
-	return p.publisher.Publish(ctx, "workflow.node.status", payload)
+	return p.publisher.Publish(ctx, queue.QueueWorkflowNodeStatus, payload)
 }
 
 // PublishCompletion publishes a completion message to the workflow completion queue.
@@ -66,7 +65,7 @@ func (p *WorkflowPublisher) PublishCompletion(ctx context.Context, msg *messages
 	if err != nil {
 		return err
 	}
-	return p.publisher.Publish(ctx, "workflow.completion", payload)
+	return p.publisher.Publish(ctx, queue.QueueWorkflowCompletion, payload)
 }
 
 // Close releases the underlying publisher resources.

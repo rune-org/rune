@@ -48,7 +48,7 @@ func setupTestRedis(t *testing.T) (*redis.Client, func()) {
 	cleanup := func() {
 		redisClient.Del(ctx, TimersKey)
 		redisClient.Del(ctx, PayloadsKey)
-		redisClient.Close()
+		_ = redisClient.Close()
 	}
 
 	return redisClient, cleanup

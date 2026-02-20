@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -35,8 +36,8 @@ func main() {
 	}
 
 	slog.Info("configuration loaded",
-		"rabbitmq_url", cfg.RabbitURL,
-		"redis_url", cfg.RedisURL,
+		"rabbitmq_host", maskedHost(cfg.RabbitURL),
+		"redis_host", maskedHost(cfg.RedisURL),
 		"queue_name", cfg.QueueName,
 		"prefetch", cfg.Prefetch,
 		"concurrency", cfg.Concurrency)
@@ -136,4 +137,17 @@ func main() {
 	}
 
 	slog.Info("workflow worker shutdown complete")
+}
+
+func maskedHost(rawURL string) string {
+	if rawURL == "" {
+		return ""
+	}
+
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return "invalid_url"
+	}
+
+	return parsed.Host
 }
