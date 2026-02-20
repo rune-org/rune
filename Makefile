@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev dev-infra-up dev-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev dev-infra-up dev-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status dsl-generate
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
@@ -335,3 +335,12 @@ clean-all: clean
 	$(RM) apps/web/node_modules
 	$(RM) apps/web/.pnpm-store
 	@echo "✓ All dependencies cleaned"
+
+# ======================
+# DSL Generator targets
+# ======================
+
+dsl-generate:
+	@echo "Generating DSL type definitions..."
+	@python3 dsl/generator/generate.py
+	@echo "✓ DSL generation complete"
