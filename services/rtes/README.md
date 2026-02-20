@@ -20,13 +20,17 @@ Before accessing any endpoint, the API service must publish an `ExecutionToken` 
 {
   "user_id": "user-uuid",
   "workflow_id": "workflow-uuid",
+  "workflow_ids": ["workflow-uuid-1", "workflow-uuid-2"],
   "execution_id": "exec-uuid-or-null",
+  "execution_ids": ["exec-uuid-1", "exec-uuid-2"],
   "iat": 1702857600,
   "exp": 1702861200
 }
 ```
 
-Set `execution_id` to `null` for wildcard access to all executions within a workflow.
+`workflow_id` / `execution_id` (single) and `workflow_ids` / `execution_ids` (lists) are both accepted.
+
+Set `execution_id` to `null` (or omit `execution_ids`) for wildcard access to all executions within a workflow.
 
 ## Limitations
 

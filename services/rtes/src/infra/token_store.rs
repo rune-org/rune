@@ -1,17 +1,21 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use async_trait::async_trait;
 use redis::{AsyncCommands, Client as RedisClient, RedisResult};
 use tracing::info;
 
-use crate::domain::models::ExecutionToken;
+use crate::{
+    api::state::{StoreResult, TokenStorePort},
+    domain::models::ExecutionToken,
+};
 
 #[derive(Clone)]
-pub(crate) struct TokenStore {
+pub struct TokenStore {
     client: RedisClient,
 }
 
 impl TokenStore {
-    pub(crate) const fn new(client: RedisClient) -> Self {
+    pub const fn new(client: RedisClient) -> Self {
         Self { client }
     }
 
@@ -243,5 +247,98 @@ impl TokenStore {
 
         info!("Access denied for workflow {} - no matching grant found", target_workflow_id);
         Ok(false)
+    }
+}
+
+#[async_trait]
+impl TokenStorePort for TokenStore {
+    async fn add_token(&self, token: &ExecutionToken) -> StoreResult<()> {
+        TokenStore::add_token(self, token)
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
+    }
+
+    async fn validate_access(
+        &self,
+        user_id: &str,
+        target_execution_id: Option<&str>,
+        target_workflow_id: &str,
+    ) -> StoreResult<bool> {
+        TokenStore::validate_access(self, user_id, target_execution_id, target_workflow_id)
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
+    }
+
+    async fn validate_access_for_execution(
+        &self,
+        user_id: &str,
+        target_execution_id: &str,
+    ) -> StoreResult<bool> {
+        TokenStore::validate_access_for_execution(self, user_id, target_execution_id)
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
+    }
+
+    async fn validate_execution_access(
+        &self,
+        target_execution_id: &str,
+        target_workflow_id: &str,
+    ) -> StoreResult<bool> {
+        TokenStore::validate_execution_access(self, target_execution_id, target_workflow_id)
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
+    }
+
+    async fn validate_workflow_access(&self, target_workflow_id: &str) -> StoreResult<bool> {
+        TokenStore::validate_workflow_access(self, target_workflow_id)
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TokenStore;
+    use crate::domain::models::ExecutionToken;
+
+    fn make_store() -> TokenStore {
+        let client =
+            redis::Client::open("redis://127.0.0.1/").expect("redis URL should be valid in tests");
+        TokenStore::new(client)
+    }
+
+    fn token(workflow_id: &str, execution_id: Option<&str>) -> ExecutionToken {
+        ExecutionToken {
+            execution_id: execution_id.map(ToOwned::to_owned),
+            workflow_id:  workflow_id.to_string(),
+            iat:          1,
+            exp:          2,
+            user_id:      "user-1".to_string(),
+        }
+    }
+
+    #[test]
+    fn specific_execution_token_matches_exact_execution_and_workflow() {
+        let store = make_store();
+        let granted = token("wf-1", Some("exec-1"));
+        assert!(store.check_token_permissions(&granted, Some("exec-1"), "wf-1"));
+        assert!(!store.check_token_permissions(&granted, Some("exec-2"), "wf-1"));
+        assert!(!store.check_token_permissions(&granted, Some("exec-1"), "wf-2"));
+    }
+
+    #[test]
+    fn wildcard_execution_token_matches_any_execution_in_workflow() {
+        let store = make_store();
+        let granted = token("wf-1", None);
+        assert!(store.check_token_permissions(&granted, Some("exec-99"), "wf-1"));
+        assert!(store.check_token_permissions(&granted, None, "wf-1"));
+        assert!(!store.check_token_permissions(&granted, Some("exec-99"), "wf-2"));
+    }
+
+    #[test]
+    fn specific_execution_token_does_not_match_workflow_listing() {
+        let store = make_store();
+        let granted = token("wf-1", Some("exec-1"));
+        assert!(!store.check_token_permissions(&granted, None, "wf-1"));
     }
 }

@@ -46,3 +46,49 @@ macro_rules! retry_backoff {
         $crate::util::retry::with_backoff(|| async move $body, $label)
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+
+    use super::with_backoff;
+
+    #[tokio::test]
+    async fn retries_until_operation_succeeds() {
+        let attempts = Arc::new(AtomicUsize::new(0));
+        let attempts_for_closure = attempts.clone();
+
+        let result: Result<u32, &'static str> = with_backoff(
+            move || {
+                let attempt = attempts_for_closure.fetch_add(1, Ordering::SeqCst);
+                async move { if attempt < 2 { Err("transient") } else { Ok(7) } }
+            },
+            "retry_test",
+        )
+        .await;
+
+        assert_eq!(result.expect("third attempt should succeed"), 7);
+        assert_eq!(attempts.load(Ordering::SeqCst), 3);
+    }
+
+    #[tokio::test]
+    async fn returns_error_after_max_attempts() {
+        let attempts = Arc::new(AtomicUsize::new(0));
+        let attempts_for_closure = attempts.clone();
+
+        let result: Result<u32, &'static str> = with_backoff(
+            move || {
+                attempts_for_closure.fetch_add(1, Ordering::SeqCst);
+                async move { Err("still failing") }
+            },
+            "retry_test",
+        )
+        .await;
+
+        assert_eq!(result.expect_err("operation should fail"), "still failing");
+        assert_eq!(attempts.load(Ordering::SeqCst), 5);
+    }
+}
