@@ -118,7 +118,7 @@ async def update_user(
 
 
 @router.post(
-    "/{user_id}/reset-password",
+    "/{user_id}/password",
     response_model=ApiResponse[AdminPasswordResetResponse],
     summary="Admin resets user password",
     description="Admin generates a temporary password for a user. User must change it.",
