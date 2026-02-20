@@ -1,9 +1,9 @@
 use std::{env, sync::OnceLock};
 
-pub(crate) static CONFIG: OnceLock<Config> = OnceLock::new();
+pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Debug)]
-pub(crate) struct Config {
+pub struct Config {
     pub redis_url: String,
     pub amqp_url: String,
     pub otel_endpoint: String,
@@ -29,7 +29,7 @@ impl Config {
         })
     }
 
-    pub(crate) fn init() -> Result<(), Box<dyn std::error::Error>> {
+    pub fn init() -> Result<(), Box<dyn std::error::Error>> {
         let config = Self {
             redis_url: env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1/".to_string()),
             amqp_url: env::var("AMQP_URL")
@@ -73,7 +73,7 @@ impl Config {
     }
 
     #[allow(clippy::expect_used)]
-    pub(crate) fn get() -> &'static Self {
+    pub fn get() -> &'static Self {
         CONFIG.get().expect("Config not initialized")
     }
 }

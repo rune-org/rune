@@ -60,8 +60,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rune}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rune_password}
     ports:
-      - "5672:5672"    # AMQP
-      - "15672:15672"  # Management UI
+      - "5672:5672" # AMQP
+      - "15672:15672" # Management UI
     volumes:
       - rabbitmq_dev_data:/var/lib/rabbitmq
     networks:
