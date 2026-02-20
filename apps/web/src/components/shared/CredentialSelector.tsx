@@ -9,7 +9,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listCredentialsDropdown, createCredential } from "@/lib/api/credentials";
+import {
+  listCredentialsDropdown,
+  createCredential,
+} from "@/lib/api/credentials";
+import { extractApiErrorMessage } from "@/lib/api/error";
 import { AddCredentialDialog } from "@/components/credentials/AddCredentialDialog";
 import { toast } from "@/components/ui/toast";
 import type {
@@ -38,7 +42,7 @@ export function CredentialSelector({
   showHelp = false,
 }: CredentialSelectorProps) {
   const [credentials, setCredentials] = useState<CredentialResponseDropDown[]>(
-    []
+    [],
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +59,7 @@ export function CredentialSelector({
           ? credentialType
           : [credentialType];
         const filtered = response.data.data.filter((cred) =>
-          types.includes(cred.credential_type)
+          types.includes(cred.credential_type),
         );
         setCredentials(filtered);
       }
@@ -84,7 +88,7 @@ export function CredentialSelector({
     }
 
     const selected = credentials.find(
-      (cred) => cred.id.toString() === selectedId
+      (cred) => cred.id.toString() === selectedId,
     );
     if (selected) {
       onChange({
@@ -100,9 +104,9 @@ export function CredentialSelector({
     credential_type: CredentialType;
     credential_data: Record<string, string>;
   }) => {
-    let response;
+    let hasHandledApiError = false;
     try {
-      response = await createCredential({
+      const response = await createCredential({
         name: credential.name,
         credential_type: credential.credential_type,
         credential_data: credential.credential_data,
@@ -110,19 +114,12 @@ export function CredentialSelector({
 
       // Check for errors first
       if (response.error) {
-        const errorMessage =
-          (typeof response.error === "object" &&
-            "message" in response.error &&
-            typeof response.error.message === "string"
-            ? response.error.message
-            : null) ||
-          (typeof response.error === "object" &&
-            "detail" in response.error &&
-            typeof response.error.detail === "string"
-            ? String(response.error.detail)
-            : null) ||
-          "Failed to create credential. Please try again.";
+        const errorMessage = extractApiErrorMessage(
+          response.error,
+          "Failed to create credential. Please try again.",
+        );
 
+        hasHandledApiError = true;
         toast.error(errorMessage);
         throw response.error; // Re-throw so the dialog can handle it
       }
@@ -147,7 +144,7 @@ export function CredentialSelector({
     } catch (err) {
       // Only show generic error if it wasn't already handled above
       // (response.error errors are already shown via toast)
-      if (!response?.error) {
+      if (!hasHandledApiError) {
         console.error("Failed to create credential:", err);
         toast.error("Failed to create credential. Please try again.");
       }

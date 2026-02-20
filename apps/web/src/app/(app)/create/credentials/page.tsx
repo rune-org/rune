@@ -3,10 +3,14 @@
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
-import { CredentialsTable, type Credential } from "@/components/credentials/CredentialsTable";
+import {
+  CredentialsTable,
+  type Credential,
+} from "@/components/credentials/CredentialsTable";
 import { AddCredentialDialog } from "@/components/credentials/AddCredentialDialog";
 import { DeleteCredentialDialog } from "@/components/credentials/DeleteCredentialDialog";
 import { credentials as credentialsAPI } from "@/lib/api";
+import { extractApiErrorMessage } from "@/lib/api/error";
 import { toast } from "@/components/ui/toast";
 
 export default function CreateCredentialsPage() {
@@ -33,7 +37,7 @@ export default function CreateCredentialsPage() {
       setIsLoading(true);
       setError(null);
       const response = await credentialsAPI.listCredentials();
-      
+
       // Extract data from the ApiResponse wrapper
       if (response.data && response.data.data) {
         setCredentials(response.data.data);
@@ -46,17 +50,16 @@ export default function CreateCredentialsPage() {
     }
   };
 
-
-  // TODO(fe): revisit after RBAC 
+  // TODO(fe): revisit after RBAC
 
   const handleAddCredential = async (newCred: {
     name: string;
     credential_type: Credential["credential_type"];
     credential_data: Record<string, string>;
   }) => {
-    let response;
+    let hasHandledApiError = false;
     try {
-      response = await credentialsAPI.createCredential({
+      const response = await credentialsAPI.createCredential({
         name: newCred.name,
         credential_type: newCred.credential_type,
         credential_data: newCred.credential_data,
@@ -64,19 +67,12 @@ export default function CreateCredentialsPage() {
 
       // Check for errors first
       if (response.error) {
-        const errorMessage =
-          (typeof response.error === "object" &&
-            "message" in response.error &&
-            typeof response.error.message === "string"
-            ? response.error.message
-            : null) ||
-          (typeof response.error === "object" &&
-            "detail" in response.error &&
-            typeof response.error.detail === "string"
-            ? String(response.error.detail)
-            : null) ||
-          "Failed to create credential. Please try again.";
+        const errorMessage = extractApiErrorMessage(
+          response.error,
+          "Failed to create credential. Please try again.",
+        );
 
+        hasHandledApiError = true;
         toast.error(errorMessage);
         throw response.error; // Re-throw so the dialog can handle it
       }
@@ -89,7 +85,7 @@ export default function CreateCredentialsPage() {
     } catch (err) {
       // Only show generic error if it wasn't already handled above
       // (response.error errors are already shown via toast)
-      if (!response?.error) {
+      if (!hasHandledApiError) {
         console.error("Failed to create credential:", err);
         toast.error("Failed to create credential. Please try again.");
       }
@@ -112,8 +108,7 @@ export default function CreateCredentialsPage() {
     if (deleteDialog.credentialId === null) return;
 
     const id = deleteDialog.credentialId;
-    
-    
+
     try {
       await credentialsAPI.deleteCredential(id);
       setCredentials((prev) => prev.filter((c) => c.id !== id));
@@ -128,7 +123,10 @@ export default function CreateCredentialsPage() {
 
   if (error) {
     return (
-      <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
+      <Container
+        className="flex flex-col gap-8 py-12"
+        widthClassName="max-w-6xl"
+      >
         <div className="text-center text-destructive">
           <p>{error}</p>
           <button
@@ -157,9 +155,7 @@ export default function CreateCredentialsPage() {
       />
       <DeleteCredentialDialog
         open={deleteDialog.open}
-        onOpenChange={(open) =>
-          setDeleteDialog((prev) => ({ ...prev, open }))
-        }
+        onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}
         credentialName={deleteDialog.credentialName}
         onConfirm={confirmDelete}
       />
