@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, Response
 
 from src.auth.schemas import (
-    LoginRequest,
-    TokenResponse,
-    RefreshRequest,
     FirstAdminSignupRequest,
     FirstAdminSignupResponse,
     FirstTimeSetupStatus,
+    LoginRequest,
+    RefreshRequest,
+    TokenResponse,
 )
 from src.auth.service import AuthService
 from src.auth.token_store import TokenStore
@@ -14,7 +14,6 @@ from src.core.dependencies import DatabaseDep, RedisDep, get_current_user
 from src.core.exceptions import Unauthorized
 from src.core.responses import ApiResponse
 from src.db.models import User
-
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

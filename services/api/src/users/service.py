@@ -1,29 +1,18 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.db.models import User
+
 from src.core.exceptions import AlreadyExists, NotFound, Unauthorized
-from src.users.schemas import UserCreate, AdminUserUpdate, ProfileUpdate
-from src.auth.security import hash_password, verify_password
-import secrets
-import string
+from src.core.password import hash_password, verify_password
+from src.db.models import User
+from src.users.schemas import AdminUserUpdate, ProfileUpdate, UserCreate
+from src.users.utils import generate_temporary_password, normalize_email
 
 
 class UserService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    def _generate_temporary_password(self) -> str:
-        """
-        Generate a random temporary password.
-        Include uppercase, lowercase, digits, and special characters.
-
-        Returns:
-            8-character temporary password string
-        """
-        alphabet = string.ascii_letters + string.digits + string.punctuation
-        return "".join(secrets.choice(alphabet) for _ in range(8))
-
-    async def validate_email_uniqueness(
+    async def _validate_email_uniqueness(
         self, new_email: str, current_email: str
     ) -> str:
         """
@@ -35,10 +24,10 @@ class UserService:
         Raises:
             AlreadyExists: If email is already taken by another user
         """
-        normalized_email = new_email.lower()
+        normalized_email = normalize_email(new_email)
 
         # Only check if email is actually changing
-        if normalized_email != current_email.lower():
+        if normalized_email != normalize_email(current_email):
             existing_user = await self.get_user_by_email(normalized_email)
             if existing_user:
                 raise AlreadyExists(detail=f"Email {new_email} is already taken")
@@ -97,7 +86,7 @@ class UserService:
         Returns:
             User object if found, None otherwise
         """
-        statement = select(User).where(User.email == email.lower())
+        statement = select(User).where(User.email == normalize_email(email))
 
         # Execute and get first result
         result = await self.db.exec(statement)
@@ -117,7 +106,7 @@ class UserService:
             AlreadyExists: If email is already registered
         """
         # Normalize email to lowercase for case-insensitive checking
-        normalized_email = user_data.email.lower()
+        normalized_email = normalize_email(user_data.email)
 
         # Check if email already exists
         existing_user = await self.get_user_by_email(normalized_email)
@@ -126,7 +115,7 @@ class UserService:
                 detail=f"User with email {user_data.email} already exists"
             )
 
-        temp_password = self._generate_temporary_password()
+        temp_password = generate_temporary_password()
         hashed_password = hash_password(temp_password)
         must_change = True
 
@@ -174,7 +163,7 @@ class UserService:
 
         # Validate and normalize email if provided
         if "email" in update_data:
-            update_data["email"] = await self.validate_email_uniqueness(
+            update_data["email"] = await self._validate_email_uniqueness(
                 update_data["email"], user.email
             )
 
@@ -203,7 +192,7 @@ class UserService:
         user = await self.get_user_by_id(user_id)
 
         # Generate a random temporary password
-        temp_password = self._generate_temporary_password()
+        temp_password = generate_temporary_password()
 
         # Hash and update password
         user.hashed_password = hash_password(temp_password)
@@ -233,7 +222,7 @@ class UserService:
 
         # Validate and normalize email if provided
         if "email" in update_data:
-            update_data["email"] = await self.validate_email_uniqueness(
+            update_data["email"] = await self._validate_email_uniqueness(
                 update_data["email"], user.email
             )
 

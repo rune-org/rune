@@ -1,9 +1,10 @@
-import pytest
-import jwt
-from datetime import datetime, timezone, timedelta
-from httpx import AsyncClient
-from src.core.config import get_settings
+from datetime import datetime, timedelta, timezone
 
+import jwt
+import pytest
+from httpx import AsyncClient
+
+from src.core.config import get_settings
 
 # ============================================================================
 # BEARER TOKEN AUTHENTICATION TESTS

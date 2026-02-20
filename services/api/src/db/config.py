@@ -1,8 +1,10 @@
 from typing import AsyncGenerator, Literal
+
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.core.config import Settings, get_settings, Environment
+
+from src.core.config import Environment, Settings, get_settings
 
 SETTINGS = get_settings()
 _async_engine: AsyncEngine | None = None

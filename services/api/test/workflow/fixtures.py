@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 from argon2 import PasswordHasher
 
-from src.db.models import User, UserRole, Workflow, WorkflowUser, WorkflowRole
+from src.db.models import User, UserRole, Workflow, WorkflowRole, WorkflowUser
 from src.workflow.service import WorkflowService
 
 

@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, status
+
 from src.core.dependencies import DatabaseDep, require_admin_role
 from src.core.responses import ApiResponse
 from src.users.schemas import (
-    UserCreate,
-    AdminUserUpdate,
-    UserResponse,
     AdminPasswordResetResponse,
+    AdminUserUpdate,
     CreateUserResponse,
+    UserCreate,
+    UserResponse,
 )
 from src.users.service import UserService
-
 
 router = APIRouter(
     prefix="/users",

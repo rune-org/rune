@@ -1,16 +1,17 @@
 from fastapi import APIRouter, Depends, Response
-from src.core.dependencies import CurrentUser, DatabaseDep, RedisDep
-from src.users.service import UserService
+
 from src.auth.service import AuthService
 from src.auth.token_store import TokenStore
+from src.core.dependencies import CurrentUser, DatabaseDep, RedisDep
 from src.core.responses import ApiResponse
+from src.core.token import create_access_token
 from src.users.schemas import (
     ProfileUpdate,
-    UserResponse,
     UserPasswordChange,
     UserPasswordChangeResponse,
+    UserResponse,
 )
-from src.auth.security import create_access_token
+from src.users.service import UserService
 
 router = APIRouter(
     prefix="/profile",

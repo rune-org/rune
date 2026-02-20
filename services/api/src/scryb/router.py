@@ -1,14 +1,13 @@
 from fastapi import APIRouter, Depends
 
-from src.db.models import Workflow
-from src.workflow.service import WorkflowService
 from src.core.dependencies import DatabaseDep
+from src.core.responses import ApiResponse
+from src.db.models import Workflow
+from src.scryb.generator import DocumentationGenerator
+from src.scryb.schemas import GenerateWorkflowDocsRequest, WorkflowDetailDocs
 from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
-from src.core.responses import ApiResponse
-from src.scryb.generator import DocumentationGenerator
-from src.scryb.schemas import WorkflowDetailDocs, GenerateWorkflowDocsRequest
-
+from src.workflow.service import WorkflowService
 
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
 

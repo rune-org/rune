@@ -1,8 +1,10 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from datetime import datetime
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from src.core.validators import validate_password_strength
 from src.db.models import UserRole
-from src.auth.security import validate_password_strength
 
 
 class UserCreate(BaseModel):

@@ -1,10 +1,10 @@
 import asyncio
-import pytest
 from datetime import datetime
+
+import pytest
 from argon2 import PasswordHasher
 
 from src.db.models import User
-
 
 # ============================================================================
 # AUTHENTICATION TESTS
