@@ -17,6 +17,8 @@ import (
 type testPublisher struct {
 	published map[string][][]byte
 	failQueue map[string]error
+	closeErr  error
+	closed    bool
 }
 
 func newTestPublisher() *testPublisher {
@@ -35,7 +37,8 @@ func (p *testPublisher) Publish(ctx context.Context, queue string, payload []byt
 }
 
 func (p *testPublisher) Close() error {
-	return nil
+	p.closed = true
+	return p.closeErr
 }
 
 type testQueue struct {
@@ -219,8 +222,10 @@ func TestWorkflowConsumerClose_ClosesQueue(t *testing.T) {
 	t.Parallel()
 
 	q := &testQueue{}
+	pub := newTestPublisher()
 	consumer := &WorkflowConsumer{
-		queue: q,
+		queue:     q,
+		publisher: pub,
 	}
 
 	if err := consumer.Close(); err != nil {
@@ -228,5 +233,8 @@ func TestWorkflowConsumerClose_ClosesQueue(t *testing.T) {
 	}
 	if !q.closed {
 		t.Fatalf("expected queue to be closed")
+	}
+	if !pub.closed {
+		t.Fatalf("expected publisher to be closed")
 	}
 }

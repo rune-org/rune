@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"rune-worker/pkg/platform/queue"
 	"strconv"
 	"strings"
 )
@@ -18,7 +19,7 @@ const (
 	envConcurrency     = "WORKFLOW_CONCURRENCY"
 	defaultRabbitURL   = "amqp://guest:guest@localhost:5672/"
 	defaultRedisURL    = "redis://localhost:6379/0"
-	defaultQueueName   = "workflow.execute"
+	defaultQueueName   = queue.QueueWorkflowExecution
 	defaultPrefetch    = 10
 	defaultConcurrency = 1
 )

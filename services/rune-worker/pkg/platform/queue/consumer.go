@@ -65,7 +65,7 @@ func NewRabbitMQConsumer(opts Options) (*RabbitMQConsumer, error) {
 		rabbitmq.WithConsumerOptionsQueueDurable,
 		rabbitmq.WithConsumerOptionsQOSPrefetch(opts.Prefetch),
 		rabbitmq.WithConsumerOptionsConcurrency(opts.Concurrency),
-		rabbitmq.WithConsumerOptionsExchangeName("workflows"),
+		rabbitmq.WithConsumerOptionsExchangeName(ExchangeWorkflows),
 		rabbitmq.WithConsumerOptionsExchangeKind("topic"),
 		rabbitmq.WithConsumerOptionsExchangeDurable,
 		rabbitmq.WithConsumerOptionsExchangeDeclare,
@@ -105,8 +105,12 @@ func (r *RabbitMQConsumer) Consume(ctx context.Context, handler MessageHandler) 
 		}
 
 		if err := handler(ctx, d.Body); err != nil {
-			slog.Error("failed to process message", "queue", r.queue, "error", err)
-			return rabbitmq.NackRequeue
+			retryable := ShouldRetry(err)
+			slog.Error("failed to process message", "queue", r.queue, "error", err, "retryable", retryable)
+			if retryable {
+				return rabbitmq.NackRequeue
+			}
+			return rabbitmq.NackDiscard
 		}
 
 		return rabbitmq.Ack

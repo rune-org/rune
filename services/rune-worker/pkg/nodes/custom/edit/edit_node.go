@@ -2,6 +2,7 @@ package editnode
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -17,6 +18,7 @@ import (
 const (
 	modeAssignments = "assignments"
 	modeKeepOnly    = "keep_only"
+	evalTimeout     = 100 * time.Millisecond
 )
 
 // Assignment represents a single transformation operation.
@@ -207,31 +209,32 @@ func (n *EditNode) evaluateExpression(parentCtx context.Context, expr string, ov
 		}
 	}
 
-	// Timeout guard
-	ctx, cancel := context.WithTimeout(parentCtx, 100*time.Millisecond)
+	evalCtx, cancel := context.WithTimeout(parentCtx, evalTimeout)
 	defer cancel()
 
-	type result struct {
-		val any
-		err error
-	}
-
-	done := make(chan result, 1)
+	done := make(chan struct{})
 	go func() {
-		value, err := vm.RunString(expr)
-		if err != nil {
-			done <- result{nil, err}
-			return
+		select {
+		case <-evalCtx.Done():
+			vm.Interrupt(evalCtx.Err())
+		case <-done:
 		}
-		done <- result{value.Export(), nil}
 	}()
 
-	select {
-	case <-ctx.Done():
-		return nil, fmt.Errorf("expression timeout or cancelled")
-	case res := <-done:
-		return res.val, res.err
+	value, err := vm.RunString(expr)
+	close(done)
+
+	if err != nil {
+		var interruptedErr *goja.InterruptedError
+		if errors.As(err, &interruptedErr) {
+			if errors.Is(evalCtx.Err(), context.DeadlineExceeded) || errors.Is(evalCtx.Err(), context.Canceled) {
+				return nil, fmt.Errorf("expression timeout or cancelled")
+			}
+		}
+		return nil, err
 	}
+
+	return value.Export(), nil
 }
 
 func init() {

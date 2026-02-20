@@ -137,8 +137,10 @@ func TestResumeConsumerClose_ClosesQueue(t *testing.T) {
 	t.Parallel()
 
 	q := &testQueue{}
+	pub := newTestPublisher()
 	consumer := &ResumeConsumer{
-		queue: q,
+		queue:     q,
+		publisher: pub,
 	}
 
 	if err := consumer.Close(); err != nil {
@@ -146,5 +148,8 @@ func TestResumeConsumerClose_ClosesQueue(t *testing.T) {
 	}
 	if !q.closed {
 		t.Fatalf("expected queue to be closed")
+	}
+	if !pub.closed {
+		t.Fatalf("expected publisher to be closed")
 	}
 }
