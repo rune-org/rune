@@ -37,6 +37,8 @@ import {
   updateWorkflowName,
   updateWorkflowStatus,
 } from "@/lib/api/workflows";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -45,8 +47,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "N/A";
@@ -503,44 +504,26 @@ function DeleteWorkflowDialog({
   pending,
 }: DeleteWorkflowDialogProps) {
   return (
-    <Dialog
+    <ConfirmationDialog
       open={workflow !== null}
       onOpenChange={(open) => {
         if (!open && !pending) onCancel();
       }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete workflow</DialogTitle>
-          <DialogDescription>
-            This will permanently delete the workflow{" "}
-            <span className="font-semibold">
-              {workflow?.name ?? "Untitled"}
-            </span>{" "}
-            and its configuration. This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button
-            variant="secondary"
-            type="button"
-            onClick={onCancel}
-            disabled={pending}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            type="button"
-            onClick={() => {
-              if (!pending) void onConfirm();
-            }}
-            disabled={pending}
-          >
-            {pending ? "Deleting…" : "Delete"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      title="Delete workflow"
+      description={
+        <>
+          This will permanently delete the workflow{" "}
+          <span className="font-semibold">
+            {workflow?.name ?? "Untitled"}
+          </span>{" "}
+          and its configuration. This action cannot be undone.
+        </>
+      }
+      cancelText="Cancel"
+      confirmText={pending ? "Deleting…" : "Delete"}
+      onConfirm={onConfirm}
+      isDangerous
+      isLoading={pending}
+    />
   );
 }
