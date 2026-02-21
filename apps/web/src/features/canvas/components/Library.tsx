@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronsRight, GripHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronsRight, GripHorizontal, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { LibraryGroups } from "./LibraryGroups";
 import type { NodeKind } from "../types";
@@ -9,10 +9,16 @@ export function Library({
   containerRef,
   toolbarRef,
   onAdd,
+  shortcutsByKind,
+  onAssignShortcut,
+  onResetShortcuts,
 }: {
   containerRef: React.RefObject<HTMLDivElement | null>;
   toolbarRef: React.RefObject<HTMLDivElement | null>;
   onAdd: (type: NodeKind, x?: number, y?: number) => void;
+  shortcutsByKind?: Partial<Record<NodeKind, string>>;
+  onAssignShortcut?: (kind: NodeKind, key: string | null) => void;
+  onResetShortcuts?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [panelWidth, setPanelWidth] = useState(300);
@@ -151,8 +157,19 @@ export function Library({
         }}
       >
         <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-          <div className="text-xs font-medium text-muted-foreground">
-            Library
+          <div className="flex items-center gap-2">
+            <div className="text-xs font-medium text-muted-foreground">
+              Library
+            </div>
+            {onResetShortcuts && (
+              <button
+                className="inline-flex items-center gap-1 rounded-sm p-0.5 text-muted-foreground/40 transition-colors hover:bg-muted/40 hover:text-muted-foreground"
+                onClick={onResetShortcuts}
+                title="Reset keyboard shortcuts to defaults"
+              >
+                <RotateCcw className="h-3 w-3" />
+              </button>
+            )}
           </div>
           <button
             ref={closeBtnRef}
@@ -168,7 +185,9 @@ export function Library({
         <div className="h-full overflow-y-auto p-2">
           <LibraryGroups
             containerRef={containerRef}
-            onAdd={(type, x, y) => onAdd(type, x, y)}
+            onAdd={onAdd}
+            shortcutsByKind={shortcutsByKind}
+            onAssignShortcut={onAssignShortcut}
           />
         </div>
 

@@ -27,6 +27,7 @@ import { Library } from "./components/Library";
 import { SaveTemplateDialog } from "./components/SaveTemplateDialog";
 import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
+import { useNodeShortcuts } from "./hooks/useNodeShortcuts";
 import { useAddNode } from "./hooks/useAddNode";
 import { useConditionalConnect } from "./hooks/useConditionalConnect";
 import { useCanvasHistory } from "./hooks/useCanvasHistory";
@@ -103,6 +104,24 @@ function FlowCanvasInner({
   );
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const mousePosRef = useRef<{ x: number; y: number } | null>(null);
+
+  const {
+    shortcutsRef,
+    shortcutsByKind,
+    assignShortcut,
+    resetToDefaults: resetShortcuts,
+  } = useNodeShortcuts();
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handler = (e: MouseEvent) => {
+      mousePosRef.current = { x: e.clientX, y: e.clientY };
+    };
+    el.addEventListener("mousemove", handler);
+    return () => el.removeEventListener("mousemove", handler);
+  }, []);
 
   const onConnect = useConditionalConnect(setEdges);
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
@@ -508,6 +527,16 @@ function FlowCanvasInner({
     },
     onSelectAll: (firstId) => setSelectedNodeId(firstId),
     onPushHistory: pushHistory,
+    shortcutsRef,
+    onNodeShortcut: (kind) => {
+      pushHistory();
+      const pos = mousePosRef.current;
+      if (pos) {
+        addNode(kind, pos.x, pos.y);
+      } else {
+        addNode(kind);
+      }
+    },
   });
 
   const selectedNode = useMemo(
@@ -829,6 +858,9 @@ function FlowCanvasInner({
           pushHistory();
           addNode(t, x, y);
         }}
+        shortcutsByKind={shortcutsByKind}
+        onAssignShortcut={assignShortcut}
+        onResetShortcuts={resetShortcuts}
       />
 
       {/* Hidden file input for importing JSON files */}
