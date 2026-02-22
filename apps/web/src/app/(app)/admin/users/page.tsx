@@ -208,7 +208,7 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = async () => {
-    if (!deletingUser) return;
+    if (!deletingUser) return false;
 
     try {
       const { error } = await deleteUserUsersUserIdDelete({
@@ -218,16 +218,17 @@ export default function UsersPage() {
       if (error) {
         console.error("Failed to delete user:", error);
         toast.error("Failed to delete user");
-        return;
+        return false;
       }
 
       toast.success("User deleted");
-      setDeleteOpen(false);
       setDeletingUser(null);
       await fetchUsers();
+      return true;
     } catch (err) {
       console.error("Failed to delete user:", err);
       toast.error("Failed to delete user");
+      return false;
     }
   };
 

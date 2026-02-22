@@ -18,7 +18,7 @@ export interface ConfirmationDialogProps {
   description: ReactNode;
   cancelText?: string;
   confirmText?: string;
-  onConfirm: () => void | Promise<void>;
+  onConfirm: () => boolean | Promise<boolean>;
   isDangerous?: boolean;
   isLoading?: boolean;
 }
@@ -36,8 +36,10 @@ export function ConfirmationDialog({
 }: ConfirmationDialogProps) {
   const handleConfirm = async () => {
     if (!isLoading) {
-      await onConfirm();
-      onOpenChange(false);
+      const success = await onConfirm();
+      if (success) {
+        onOpenChange(false);
+      }
     }
   };
 
