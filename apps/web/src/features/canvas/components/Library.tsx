@@ -1,7 +1,14 @@
 "use client";
 
-import { ChevronLeft, ChevronsRight, GripHorizontal, RotateCcw } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronsRight,
+  GripHorizontal,
+  Info,
+  RotateCcw,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LibraryGroups } from "./LibraryGroups";
 import type { NodeKind } from "../types";
 
@@ -163,12 +170,30 @@ export function Library({
             </div>
             {onResetShortcuts && (
               <button
-                className="inline-flex items-center gap-1 rounded-sm p-0.5 text-muted-foreground/40 transition-colors hover:bg-muted/40 hover:text-muted-foreground"
+                className="inline-flex items-center gap-1 rounded-sm p-0.5 transition-colors hover:bg-muted/40"
                 onClick={onResetShortcuts}
                 title="Reset keyboard shortcuts to defaults"
+                aria-label="Reset keyboard shortcuts to defaults"
+                type="button"
               >
-                <RotateCcw className="h-3 w-3" />
+                <RotateCcw className="h-3 w-3 text-muted-foreground" />
               </button>
+            )}
+            {onAssignShortcut && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="inline-flex cursor-help items-center gap-1 rounded-sm p-0.5 transition-colors hover:bg-muted/40"
+                    aria-label="Shortcut editing help"
+                    type="button"
+                  >
+                    <Info className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Right-click any library node to set or change its shortcut key.
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
           <button
