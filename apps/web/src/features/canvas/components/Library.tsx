@@ -124,11 +124,11 @@ export function Library({
  
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-[40]">
+    <div className="pointer-events-none absolute inset-0 z-40">
       {/* Handle */}
       <button
         ref={handleBtnRef}
-        className="pointer-events-auto absolute left-1 top-1/2 z-[45] -translate-y-1/2 transform rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-background/80 text-muted-foreground hover:border-accent/60 hover:text-foreground"
+        className="pointer-events-auto absolute left-1 top-1/2 z-45 -translate-y-1/2 transform rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-background/80 text-muted-foreground hover:border-accent/60 hover:text-foreground"
         style={{
           width: 28,
           height: 96,
@@ -146,7 +146,7 @@ export function Library({
       {/* Sliding library panel */}
       <div
         ref={panelRef}
-        className="pointer-events-auto absolute flex flex-col overflow-visible rounded-[var(--radius)] border border-border/60 bg-card/90 shadow-xl"
+        className="pointer-events-auto absolute flex flex-col overflow-visible rounded-(--radius) border border-border/60 bg-card/90 shadow-xl"
         style={{
           top: top,
           height: `calc(100% - ${top}px - 12px)`,

@@ -149,7 +149,7 @@ function DraggableItem({
         ref={ref}
         onClick={() => onAdd(type)}
         onContextMenu={handleContextMenu}
-        className="flex cursor-grab items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-background/60 px-3 py-1 text-left text-xs active:cursor-grabbing hover:bg-muted/40"
+        className="flex cursor-grab items-center gap-2 rounded-sm border border-border/60 bg-background/60 px-3 py-1 text-left text-xs active:cursor-grabbing hover:bg-muted/40"
         aria-label={`Add ${label}`}
         style={dragging ? { opacity: 0 } : undefined}
       >
@@ -183,7 +183,7 @@ function DraggableItem({
               zIndex: 9999,
             }}
           >
-            <div className="flex items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-background/90 px-3 py-1.5 text-left text-[0.8rem] shadow-md">
+            <div className="flex items-center gap-2 rounded-sm border border-border/60 bg-background/90 px-3 py-1.5 text-left text-[0.8rem] shadow-md">
               <ItemIcon className="h-3.5 w-3.5 text-muted-foreground" />
               <span>{label}</span>
             </div>
@@ -214,7 +214,7 @@ function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }
   return (
     <details
       open
-      className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
+      className="rounded-sm border border-border/60 bg-muted/20 p-2"
     >
       <summary className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
         <div className={`h-2 w-2 rounded-full ${colorClass}`} />
