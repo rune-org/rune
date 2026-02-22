@@ -673,14 +673,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /users/sharing:
+  /users/directory:
     get:
       tags:
       - Users
-      summary: List users for sharing
-      description: Get a list of users available for sharing credentials/workflows.
-        Returns minimal user info and excludes the current user.
-      operationId: list_users_for_sharing_users_sharing_get
+      summary: List users in directory
+      description: Retrieve minimal information for all users. This endpoint backs
+        the sharing UI by providing a directory of users.
+      operationId: list_users_for_sharing_users_directory_get
       responses:
         '200':
           description: Successful Response

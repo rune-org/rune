@@ -6,7 +6,7 @@ import {
   deleteUserUsersUserIdDelete,
   getMyProfileProfileMeGet,
   updateMyProfileProfileMePut,
-  listUsersForSharingUsersSharingGet,
+  listUsersForSharingUsersDirectoryGet,
 } from "@/client";
 
 import type {
@@ -26,7 +26,7 @@ import type {
 
 export const listUsers = () => getAllUsersUsersGet();
 
-export const listUsersForSharing = () => listUsersForSharingUsersSharingGet();
+export const listUsersForSharing = () => listUsersForSharingUsersDirectoryGet();
 
 export const getUserById = (user_id: number) =>
   getUserByIdUsersUserIdGet({ path: { user_id } });

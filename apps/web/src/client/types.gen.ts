@@ -1948,21 +1948,21 @@ export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses = {
 
 export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponse = UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses[keyof UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses];
 
-export type ListUsersForSharingUsersSharingGetData = {
+export type ListUsersForSharingUsersDirectoryGetData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/users/sharing';
+    url: '/users/directory';
 };
 
-export type ListUsersForSharingUsersSharingGetResponses = {
+export type ListUsersForSharingUsersDirectoryGetResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseListUserBasicInfo;
 };
 
-export type ListUsersForSharingUsersSharingGetResponse = ListUsersForSharingUsersSharingGetResponses[keyof ListUsersForSharingUsersSharingGetResponses];
+export type ListUsersForSharingUsersDirectoryGetResponse = ListUsersForSharingUsersDirectoryGetResponses[keyof ListUsersForSharingUsersDirectoryGetResponses];
 
 export type GetAllUsersUsersGetData = {
     body?: never;
