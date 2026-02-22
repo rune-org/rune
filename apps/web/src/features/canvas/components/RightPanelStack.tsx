@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Panel } from "@xyflow/react";
+import { memo, useState } from "react";
 import { Inspector } from "./Inspector";
 import { ScrybInterface } from "./ScrybInterface";
 import { cn } from "@/lib/cn";
@@ -19,15 +18,38 @@ type RightPanelStackProps = {
   workflowId?: number | null;
 };
 
-export function RightPanelStack(props: RightPanelStackProps) {
+function isEquivalentSelectedNode(
+  prev: CanvasNode | null,
+  next: CanvasNode | null,
+) {
+  if (prev === next) return true;
+  if (!prev || !next) return false;
+
+  return (
+    prev.id === next.id &&
+    prev.type === next.type &&
+    prev.selected === next.selected &&
+    prev.data === next.data
+  );
+}
+
+function areEqual(prev: RightPanelStackProps, next: RightPanelStackProps) {
+  return (
+    prev.workflowId === next.workflowId &&
+    prev.isExpandedDialogOpen === next.isExpandedDialogOpen &&
+    Boolean(prev.onDelete) === Boolean(next.onDelete) &&
+    isEquivalentSelectedNode(prev.selectedNode, next.selectedNode)
+  );
+}
+
+export const RightPanelStack = memo(function RightPanelStack(
+  props: RightPanelStackProps,
+) {
   const [isScrybOpen, setIsScrybOpen] = useState(false);
   const { workflowId, ...inspectorProps } = props;
 
   return (
-    <Panel 
-      position="top-right" 
-      className="pointer-events-none !right-4 !top-4 !bottom-8 !h-auto flex flex-col justify-between items-end gap-4 z-[60]"
-    >
+    <div className="pointer-events-none absolute right-4 top-4 bottom-8 z-[60] flex h-auto flex-col items-end justify-between gap-4">
       {/* Top: Inspector */}
       <div className="pointer-events-auto min-h-0 flex flex-col items-end overflow-visible">
         <Inspector
@@ -50,6 +72,6 @@ export function RightPanelStack(props: RightPanelStackProps) {
           workflowId={workflowId}
         />
       </div>
-    </Panel>
+    </div>
   );
-}
+}, areEqual);

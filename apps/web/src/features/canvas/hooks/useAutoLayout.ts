@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { Edge } from "@xyflow/react";
 import type { CanvasNode } from "../types";
 import { applyAutoLayout } from "../lib/autoLayout";
@@ -23,19 +23,26 @@ export function useAutoLayout(
   options: UseAutoLayoutOptions = {},
 ) {
   const { onBeforeLayout } = options;
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+    edgesRef.current = edges;
+  }, [nodes, edges]);
 
   const autoLayout = useCallback(() => {
     onBeforeLayout?.();
 
     const result = applyAutoLayout({
-      nodes,
-      edges,
+      nodes: nodesRef.current,
+      edges: edgesRef.current,
       respectPinned: true,
     });
 
     setNodes(() => result.nodes);
     setEdges(() => result.edges);
-  }, [nodes, edges, setNodes, setEdges, onBeforeLayout]);
+  }, [setNodes, setEdges, onBeforeLayout]);
 
   return { autoLayout };
 }
