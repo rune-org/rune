@@ -29,7 +29,10 @@ export function DeleteCredentialDialog({
       }
       cancelText="Cancel"
       confirmText="Delete"
-      onConfirm={onConfirm}
+      onConfirm={async () => {
+        await onConfirm();
+        return true;
+      }}
       isDangerous
     />
   );

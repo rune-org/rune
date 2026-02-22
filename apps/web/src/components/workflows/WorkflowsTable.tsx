@@ -521,7 +521,10 @@ function DeleteWorkflowDialog({
       }
       cancelText="Cancel"
       confirmText={pending ? "Deleting…" : "Delete"}
-      onConfirm={onConfirm}
+      onConfirm={async () => {
+        await onConfirm();
+        return true;
+      }}
       isDangerous
       isLoading={pending}
     />
