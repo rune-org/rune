@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Users, Trash2, Edit2, Copy } from "lucide-react";
 import { toast } from "@/components/ui/toast";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import {
   getAllUsersUsersGet,
   createUserUsersPost,
@@ -207,7 +208,7 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = async () => {
-    if (!deletingUser) return;
+    if (!deletingUser) return false;
 
     try {
       const { error } = await deleteUserUsersUserIdDelete({
@@ -217,16 +218,17 @@ export default function UsersPage() {
       if (error) {
         console.error("Failed to delete user:", error);
         toast.error("Failed to delete user");
-        return;
+        return false;
       }
 
       toast.success("User deleted");
-      setDeleteOpen(false);
       setDeletingUser(null);
       await fetchUsers();
+      return true;
     } catch (err) {
       console.error("Failed to delete user:", err);
       toast.error("Failed to delete user");
+      return false;
     }
   };
 
@@ -440,21 +442,26 @@ export default function UsersPage() {
       )}
 
       {/* Delete confirm modal */}
-      {deleteOpen && deletingUser && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <Card className="p-6 w-full max-w-md bg-background border">
-            <h3 className="text-lg font-semibold mb-4">Delete user</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Are you sure you want to permanently delete <strong>{deletingUser.email}</strong>? This cannot be undone.
-            </p>
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-              <Button className="bg-red-600 text-white" onClick={handleDeleteUser}>Delete</Button>
-            </div>
-          </Card>
-        </div>
-      )}
+      <ConfirmationDialog
+        open={deleteOpen && deletingUser !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteOpen(false);
+            setDeletingUser(null);
+          }
+        }}
+        title="Delete user"
+        description={
+          <>
+            Are you sure you want to permanently delete{" "}
+            <strong>{deletingUser?.email}</strong>? This cannot be undone.
+          </>
+        }
+        cancelText="Cancel"
+        confirmText="Delete"
+        onConfirm={handleDeleteUser}
+        isDangerous
+      />
     </div>
   );
 }
