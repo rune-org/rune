@@ -47,7 +47,7 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
         onPushHistory,
       } = latestPropsRef.current;
 
-      const target = e.target as HTMLElement | null;
+      const target = e.target as Element | null;
       const isEditable =
         !!target &&
         (target.tagName === "INPUT" ||
@@ -138,6 +138,10 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
 
       if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
         if (e.repeat) return;
+        const inCanvasContext =
+          target === document.body || !!target?.closest(".react-flow");
+        if (!inCanvasContext) return;
+
         const key = e.key.toLowerCase();
         const { shortcutsRef, onNodeShortcut } = latestPropsRef.current;
         const kind = shortcutsRef?.current?.[key];

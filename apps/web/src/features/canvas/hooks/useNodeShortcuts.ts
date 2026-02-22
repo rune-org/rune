@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { NodeKind } from "../types";
-import { getDefaultShortcuts } from "../lib/nodeRegistry";
+import { getDefaultShortcuts, isValidNodeKind } from "../lib/nodeRegistry";
 
 const STORAGE_KEY = "rune-node-shortcuts";
 
@@ -10,14 +10,16 @@ function loadShortcuts(): Record<string, NodeKind> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as Record<string, string>;
-      const result: Record<string, NodeKind> = {};
-      for (const [key, value] of Object.entries(parsed)) {
-        if (typeof value === "string") {
-          result[key] = value as NodeKind;
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === "object") {
+        const result: Record<string, NodeKind> = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (/^[a-z0-9]$/i.test(key) && isValidNodeKind(value)) {
+            result[key.toLowerCase()] = value;
+          }
         }
+        return result;
       }
-      return result;
     }
   } catch {}
   return getDefaultShortcuts();
