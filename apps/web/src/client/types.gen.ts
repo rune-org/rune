@@ -1494,46 +1494,46 @@ export type LogoutAuthLogoutPostResponses = {
 
 export type LogoutAuthLogoutPostResponse = LogoutAuthLogoutPostResponses[keyof LogoutAuthLogoutPostResponses];
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetData = {
+export type CheckSetupStatusSetupStatusGetData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/auth/first-time-setup';
+    url: '/setup/status';
 };
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetResponses = {
+export type CheckSetupStatusSetupStatusGetResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseFirstTimeSetupStatus;
 };
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetResponse = CheckFirstTimeSetupAuthFirstTimeSetupGetResponses[keyof CheckFirstTimeSetupAuthFirstTimeSetupGetResponses];
+export type CheckSetupStatusSetupStatusGetResponse = CheckSetupStatusSetupStatusGetResponses[keyof CheckSetupStatusSetupStatusGetResponses];
 
-export type FirstAdminSignupAuthFirstAdminSignupPostData = {
+export type InitializeFirstAdminSetupInitializePostData = {
     body: FirstAdminSignupRequest;
     path?: never;
     query?: never;
-    url: '/auth/first-admin-signup';
+    url: '/setup/initialize';
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostErrors = {
+export type InitializeFirstAdminSetupInitializePostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostError = FirstAdminSignupAuthFirstAdminSignupPostErrors[keyof FirstAdminSignupAuthFirstAdminSignupPostErrors];
+export type InitializeFirstAdminSetupInitializePostError = InitializeFirstAdminSetupInitializePostErrors[keyof InitializeFirstAdminSetupInitializePostErrors];
 
-export type FirstAdminSignupAuthFirstAdminSignupPostResponses = {
+export type InitializeFirstAdminSetupInitializePostResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseFirstAdminSignupResponse;
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostResponse = FirstAdminSignupAuthFirstAdminSignupPostResponses[keyof FirstAdminSignupAuthFirstAdminSignupPostResponses];
+export type InitializeFirstAdminSetupInitializePostResponse = InitializeFirstAdminSetupInitializePostResponses[keyof InitializeFirstAdminSetupInitializePostResponses];
 
 export type ListWorkflowsWorkflowsGetData = {
     body?: never;
