@@ -68,18 +68,24 @@ class TokenStore:
         try:
             await self.redis.set(self._get_deactivated_key(user_id), 1)
         except Exception as e:
-            raise RedisConnectionError(detail=f"Failed to mark user as deactivated: {str(e)}")
+            raise RedisConnectionError(
+                detail=f"Failed to mark user as deactivated: {str(e)}"
+            )
 
     async def mark_user_activated(self, user_id: int) -> None:
         """Remove user from the deactivation blocklist."""
         try:
             await self.redis.delete(self._get_deactivated_key(user_id))
         except Exception as e:
-            raise RedisConnectionError(detail=f"Failed to mark user as activated: {str(e)}")
+            raise RedisConnectionError(
+                detail=f"Failed to mark user as activated: {str(e)}"
+            )
 
     async def is_user_deactivated(self, user_id: int) -> bool:
         """Check if user is in the deactivation blocklist."""
         try:
             return await self.redis.exists(self._get_deactivated_key(user_id)) > 0
         except Exception as e:
-            raise RedisConnectionError(detail=f"Failed to check user deactivation status: {str(e)}")
+            raise RedisConnectionError(
+                detail=f"Failed to check user deactivation status: {str(e)}"
+            )
