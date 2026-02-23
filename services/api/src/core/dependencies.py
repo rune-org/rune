@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from redis.asyncio import Redis
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from src.auth.token_store import TokenStore
 from src.core.exceptions import Forbidden, Unauthorized
 from src.core.token import decode_access_token
 from src.db.config import get_db
@@ -34,6 +35,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 async def get_current_user(
     request: Request,
     token: str | None = Depends(oauth2_scheme),
+    redis: Redis = Depends(get_redis),
 ) -> User:
     """
     Extract and validate the current user from the request.
@@ -58,14 +60,18 @@ async def get_current_user(
 
     try:
         user = decode_access_token(access_token)
-        if not user.is_active:
-            raise Forbidden(detail="Account is deactivated")
-        return user
     except Exception as e:
-        # Re-raise token-specific errors as is, wrap others in Unauthorized
-        if isinstance(e, (Unauthorized, Forbidden)):
+        if isinstance(e, Unauthorized):
             raise
         raise Unauthorized(detail="Invalid access token")
+
+    # Check Redis blocklist for instant enforcement of deactivation
+    # This catches cases where the JWT was issued before deactivation occurred
+    token_store = TokenStore(redis_client=redis)
+    if await token_store.is_user_deactivated(user.id):
+        raise Forbidden(detail="Account is deactivated")
+
+    return user
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
