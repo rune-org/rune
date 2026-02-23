@@ -79,9 +79,9 @@ export function SmithChatDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex h-full w-full max-w-md flex-col gap-0 border-l border-border/40 bg-background/95 p-0 shadow-2xl backdrop-blur-xl sm:max-w-[500px] focus-visible:outline-none select-text"
+        className="z-[80] flex h-full w-full max-w-md flex-col gap-0 border-l border-border/40 bg-background/95 p-0 shadow-2xl backdrop-blur-xl sm:max-w-[500px] focus-visible:outline-none select-text"
         onKeyDown={handleDrawerKeyDown}
-        overlayClassName="bg-transparent backdrop-blur-none"
+        overlayClassName="z-[70] bg-transparent backdrop-blur-none"
       >
         <div className="relative z-10 flex shrink-0 flex-col items-center justify-center border-b border-border/40 bg-background/80 py-8 backdrop-blur-md select-none">
           <div className="mb-3 flex h-12 w-auto items-center justify-center">
