@@ -34,7 +34,7 @@ func NewResumeConsumer(cfg *config.WorkerConfig, redisClient *redis.Client) (*Re
 
 	q, err := queue.NewRabbitMQConsumer(queue.Options{
 		URL:         cfg.RabbitURL,
-		QueueName:   "workflow.resume",
+		QueueName:   queue.QueueWorkflowResume,
 		Prefetch:    cfg.Prefetch,
 		Concurrency: cfg.Concurrency,
 	})
@@ -67,10 +67,21 @@ func (c *ResumeConsumer) Run(ctx context.Context) error {
 
 // Close releases underlying resources.
 func (c *ResumeConsumer) Close() error {
+	var errs []error
+
 	if c.queue != nil {
-		return c.queue.Close()
+		if err := c.queue.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close queue: %w", err))
+		}
 	}
-	return nil
+
+	if c.publisher != nil {
+		if err := c.publisher.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close publisher: %w", err))
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
 // handleResume processes a resumed wait node by determining next nodes and continuing execution.
@@ -80,7 +91,7 @@ func (c *ResumeConsumer) handleResume(ctx context.Context, payload []byte) error
 		slog.Error("failed to decode resume message",
 			"error", err,
 			"payload_size", len(payload))
-		return fmt.Errorf("decode resume message: %w", err)
+		return queue.NonRetryable(fmt.Errorf("decode resume message: %w", err))
 	}
 
 	slog.Info("processing resumed wait node",
@@ -91,7 +102,7 @@ func (c *ResumeConsumer) handleResume(ctx context.Context, payload []byte) error
 	// Get the wait node details
 	node, found := msg.WorkflowDefinition.GetNodeByID(msg.CurrentNode)
 	if !found {
-		return fmt.Errorf("wait node %s not found in workflow", msg.CurrentNode)
+		return queue.NonRetryable(fmt.Errorf("wait node %s not found in workflow", msg.CurrentNode))
 	}
 
 	// Determine next nodes after the wait node
@@ -114,6 +125,7 @@ func (c *ResumeConsumer) handleResume(ctx context.Context, payload []byte) error
 			WorkflowDefinition: msg.WorkflowDefinition,
 			AccumulatedContext: msg.AccumulatedContext,
 			LineageStack:       msg.LineageStack,
+			IsWorkerInitiated:  true,
 		}
 
 		msgBytes, err := nextMsg.Encode()
@@ -121,10 +133,10 @@ func (c *ResumeConsumer) handleResume(ctx context.Context, payload []byte) error
 			slog.Error("failed to encode next node message",
 				"error", err,
 				"next_node", nextNodeID)
-			return err
+			return queue.NonRetryable(fmt.Errorf("encode next node message: %w", err))
 		}
 
-		if err := c.publisher.Publish(ctx, "workflow.execution", msgBytes); err != nil {
+		if err := c.publisher.Publish(ctx, queue.QueueWorkflowExecution, msgBytes); err != nil {
 			slog.Error("failed to publish next node message",
 				"error", err,
 				"next_node", nextNodeID)
@@ -157,8 +169,8 @@ func (c *ResumeConsumer) publishCompletion(ctx context.Context, msg *messages.No
 
 	payload, err := completionMsg.Encode()
 	if err != nil {
-		return fmt.Errorf("encode completion message: %w", err)
+		return queue.NonRetryable(fmt.Errorf("encode completion message: %w", err))
 	}
 
-	return c.publisher.Publish(ctx, "workflow.completion", payload)
+	return c.publisher.Publish(ctx, queue.QueueWorkflowCompletion, payload)
 }

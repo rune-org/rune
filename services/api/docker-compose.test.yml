@@ -1,9 +1,6 @@
 services:
-  # ============================================================================
-  # TEST POSTGRES
-  # ============================================================================
   test-postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     container_name: rune-api-postgres-test
     environment:
       POSTGRES_USER: test_user
@@ -17,11 +14,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # ============================================================================
-  # TEST REDIS
-  # ============================================================================
   test-redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: rune-api-redis-test
     ports:
       - "6380:6379"
@@ -31,18 +25,15 @@ services:
       timeout: 5s
       retries: 5
 
-  # ============================================================================
-  # TEST RABBITMQ
-  # ============================================================================
   test-rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:4-management-alpine
     container_name: rune-api-rabbitmq-test
     environment:
       RABBITMQ_DEFAULT_USER: test_user
       RABBITMQ_DEFAULT_PASS: test_password
     ports:
-      - "5673:5672"      # AMQP port (shifted from default 5672)
-      - "15673:15672"    # Management UI (shifted from default 15672)
+      - "5673:5672"
+      - "15673:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s

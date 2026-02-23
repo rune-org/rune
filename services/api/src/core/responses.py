@@ -3,8 +3,8 @@ Response models and utilities for consistent API responses.
 """
 
 from typing import Generic, TypeVar
-from pydantic import BaseModel, Field
 
+from pydantic import BaseModel, Field
 
 DataT = TypeVar("DataT")
 

@@ -72,6 +72,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
+      security:
+      - OAuth2PasswordBearer: []
   /auth/first-time-setup:
     get:
       tags:
@@ -127,6 +129,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_WorkflowListItem__'
+      security:
+      - OAuth2PasswordBearer: []
     post:
       tags:
       - Workflows
@@ -151,6 +155,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
   /workflows/{workflow_id}:
     get:
       tags:
@@ -161,6 +167,8 @@ paths:
 
         **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)'
       operationId: get_workflow_workflows__workflow_id__get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -190,6 +198,8 @@ paths:
 
         **Requires:** DELETE permission (OWNER only)'
       operationId: delete_workflow_workflows__workflow_id__delete
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -216,6 +226,8 @@ paths:
 
         **Requires:** EDIT permission (OWNER or EDITOR)'
       operationId: update_status_workflows__workflow_id__status_put
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -252,6 +264,8 @@ paths:
 
         **Requires:** EDIT permission (OWNER or EDITOR)'
       operationId: update_name_workflows__workflow_id__name_put
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -288,6 +302,8 @@ paths:
 
         **Requires:** EDIT permission (OWNER or EDITOR)'
       operationId: update_workflow_data_workflows__workflow_id__data_put
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -329,12 +345,16 @@ paths:
         then publishes a run message to RabbitMQ containing workflow details with
         resolved credentials.
 
+        Also publishes an execution token for RTES real-time updates.
+
 
         Returns execution_id for tracking the execution.
 
 
         **Requires:** EXECUTE permission (OWNER or EDITOR, not VIEWER)'
       operationId: run_workflow_workflows__workflow_id__run_post
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -349,6 +369,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_str_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/executions:
+    get:
+      tags:
+      - Executions
+      summary: Get Workflow Executions
+      description: 'Get access token for viewing all executions of a workflow.
+
+
+        Publishes a wildcard execution token (execution_id=null) to RTES,
+
+        allowing the frontend to view all executions for this workflow.
+
+
+        **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)'
+      operationId: get_workflow_executions_workflows__workflow_id__executions_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/executions/{execution_id}:
+    get:
+      tags:
+      - Executions
+      summary: Get Execution
+      description: 'Get access token for viewing a specific execution.
+
+
+        Publishes a scoped execution token to RTES,
+
+        allowing the frontend to view this specific execution.
+
+
+        **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)'
+      operationId: get_execution_workflows__workflow_id__executions__execution_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: execution_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Execution Id
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
         '422':
           description: Validation Error
           content:
@@ -383,6 +483,8 @@ paths:
 
         - ADMIN: can share workflows (bypass)'
       operationId: share_workflow_workflows__workflow_id__share_post
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -435,6 +537,8 @@ paths:
 
         - ADMIN: can revoke access (bypass)'
       operationId: revoke_access_workflows__workflow_id__share__user_id__delete
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -487,6 +591,8 @@ paths:
 
         - ADMIN: can view permissions (bypass)'
       operationId: list_workflow_permissions_workflows__workflow_id__permissions_get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -533,6 +639,8 @@ paths:
 
         - ADMIN: can update roles (bypass)'
       operationId: update_user_role_workflows__workflow_id__permissions__user_id__patch
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -565,123 +673,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /templates/:
+  /users/directory:
     get:
       tags:
-      - Templates
-      summary: List Templates
-      description: Get all templates accessible to the current user (public + their
-        own).
-      operationId: list_templates_templates__get
+      - Users
+      summary: List users in directory
+      description: Retrieve minimal information for all users. This endpoint backs
+        the sharing UI by providing a directory of users.
+      operationId: list_users_for_sharing_users_directory_get
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_List_TemplateSummary__'
-    post:
-      tags:
-      - Templates
-      summary: Create Template
-      description: Create a new template.
-      operationId: create_template_templates__post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TemplateCreate'
-        required: true
-      responses:
-        '201':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /templates/{template_id}:
-    get:
-      tags:
-      - Templates
-      summary: Get Template
-      description: Get a specific template by ID.
-      operationId: get_template_templates__template_id__get
-      parameters:
-      - name: template_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          title: Template Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-    delete:
-      tags:
-      - Templates
-      summary: Delete Template
-      description: Delete a template.
-      operationId: delete_template_templates__template_id__delete
-      parameters:
-      - name: template_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          title: Template Id
-      responses:
-        '204':
-          description: Successful Response
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /templates/{template_id}/use:
-    post:
-      tags:
-      - Templates
-      summary: Use Template
-      description: Mark a template as used (increment usage count) and return its
-        workflow data.
-      operationId: use_template_templates__template_id__use_post
-      parameters:
-      - name: template_id
-        in: path
-        required: true
-        schema:
-          type: integer
-          title: Template Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_TemplateWorkflowData_'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ApiResponse_list_UserBasicInfo__'
+      security:
+      - OAuth2PasswordBearer: []
   /users/:
     get:
       tags:
@@ -696,6 +704,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_UserResponse__'
+      security:
+      - OAuth2PasswordBearer: []
     post:
       tags:
       - Users
@@ -721,6 +731,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
   /users/{user_id}:
     get:
       tags:
@@ -728,6 +740,8 @@ paths:
       summary: Admin gets user by ID
       description: Admin retrieves a single user by their id.
       operationId: get_user_by_id_users__user_id__get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -754,6 +768,8 @@ paths:
       summary: Admin updates user
       description: Admin can update an existing user's information excluding its password.
       operationId: update_user_users__user_id__put
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -786,6 +802,8 @@ paths:
       summary: Delete user
       description: Permanently delete a user from the system.
       operationId: delete_user_users__user_id__delete
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -802,14 +820,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /users/{user_id}/reset-password:
+  /users/{user_id}/password:
     post:
       tags:
       - Users
       summary: Admin resets user password
       description: Admin generates a temporary password for a user. User must change
         it.
-      operationId: reset_user_password_users__user_id__reset_password_post
+      operationId: reset_user_password_users__user_id__password_post
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: user_id
         in: path
@@ -844,6 +864,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_UserResponse_'
+      security:
+      - OAuth2PasswordBearer: []
     put:
       tags:
       - Profile
@@ -869,14 +891,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /profile/me/change-password:
+      security:
+      - OAuth2PasswordBearer: []
+  /profile/me/password:
     post:
       tags:
       - Profile
       summary: Change my password
-      description: Change your own password. Requires verification of old password.
-        Returns a new access token.
-      operationId: change_my_password_profile_me_change_password_post
+      description: "Change your own password. Requires verification of old password.\
+        \ Revokes the current session \u2014 re-login required."
+      operationId: change_my_password_profile_me_password_post
       requestBody:
         content:
           application/json:
@@ -889,7 +913,136 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_UserPasswordChangeResponse_'
+                $ref: '#/components/schemas/ApiResponse_UserResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /templates/:
+    get:
+      tags:
+      - Templates
+      summary: List Templates
+      description: Get all templates accessible to the current user (public + their
+        own).
+      operationId: list_templates_templates__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_List_TemplateSummary__'
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - Templates
+      summary: Create Template
+      description: Create a new template.
+      operationId: create_template_templates__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /templates/{template_id}:
+    get:
+      tags:
+      - Templates
+      summary: Get Template
+      description: Get a specific template by ID.
+      operationId: get_template_templates__template_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Templates
+      summary: Delete Template
+      description: Delete a template.
+      operationId: delete_template_templates__template_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /templates/{template_id}/use:
+    post:
+      tags:
+      - Templates
+      summary: Use Template
+      description: Mark a template as used (increment usage count) and return its
+        workflow data.
+      operationId: use_template_templates__template_id__use_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: template_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Template Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_TemplateWorkflowData_'
         '422':
           description: Validation Error
           content:
@@ -926,6 +1079,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_CredentialResponse__'
+      security:
+      - OAuth2PasswordBearer: []
     post:
       tags:
       - credentials
@@ -965,6 +1120,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
   /credentials/dropdown:
     get:
       tags:
@@ -993,6 +1150,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_CredentialResponseDropDown__'
+      security:
+      - OAuth2PasswordBearer: []
   /credentials/{credential_id}:
     get:
       tags:
@@ -1014,6 +1173,8 @@ paths:
 
         - SHARED USER: can view shared credential'
       operationId: get_credential_credentials__credential_id__get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1059,6 +1220,8 @@ paths:
 
         - SHARED USER: cannot update'
       operationId: update_credential_credentials__credential_id__patch
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1105,6 +1268,8 @@ paths:
 
         - SHARED USER: cannot delete'
       operationId: delete_credential_credentials__credential_id__delete
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1144,6 +1309,8 @@ paths:
 
         - SHARED USER: cannot share'
       operationId: share_credential_credentials__credential_id__share_post
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1193,6 +1360,8 @@ paths:
 
         - SHARED USER: can only revoke their own access (user_id must be their own)'
       operationId: revoke_credential_access_credentials__credential_id__share__user_id__delete
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1236,6 +1405,8 @@ paths:
 
         - SHARED USER: cannot view shares'
       operationId: list_credential_shares_credentials__credential_id__shares_get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: credential_id
         in: path
@@ -1256,13 +1427,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/{workflow_id}/docs:
+  /credentials/{credential_id}/my-share:
+    get:
+      tags:
+      - credentials
+      summary: Get your own share info for a credential
+      description: 'Get your own share info for a credential that has been shared
+        with you.
+
+
+        This endpoint allows shared users to see when the credential was shared
+
+        with them and who shared it.'
+      operationId: get_my_share_info_credentials__credential_id__my_share_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: credential_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Credential Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_CredentialShareInfo_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /scryb/{workflow_id}:
     post:
       tags:
-      - Workflows
+      - Scryb
       summary: Generate Workflow Docs
       description: Generate documentation for the specified workflow.
-      operationId: generate_workflow_docs_workflows__workflow_id__docs_post
+      operationId: generate_workflow_docs_scryb__workflow_id__post
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
       - name: workflow_id
         in: path
@@ -1289,14 +1497,208 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/smith/generate:
+  /smith/{workflow_id}:
     post:
       tags:
-      - Workflows
-      summary: Generate Workflow From Prompt
-      description: Use Smith to convert a natural-language request into a workflow
-        definition.
-      operationId: generate_workflow_from_prompt_workflows_smith_generate_post
+      - Smith
+      summary: Generate Workflow
+      description: 'Use Smith AI to generate/update a workflow from natural language.
+
+
+        Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
+
+        including AI tokens, tool calls, tool results, and completion status.
+
+
+        **Requires:** EDIT permission (OWNER or EDITOR)
+
+
+        **Headers:**
+
+        - `Accept: text/event-stream`
+
+
+        **Session Persistence:**
+
+        Conversations are persisted per user+workflow combination.
+
+        The same workflow_id will maintain conversation history for 60 minutes of
+        inactivity.
+
+
+        **Event Types:**
+
+        - `stream_start`: Stream has started
+
+        - `token`: AI-generated text token
+
+        - `tool_call`: Agent is calling a tool (e.g., create_node, create_edge)
+
+        - `tool_result`: Result from a tool call
+
+        - `workflow_state`: Final workflow structure with nodes and edges
+
+        - `stream_end`: Stream has completed successfully
+
+        - `error`: An error occurred during processing'
+      operationId: generate_workflow_smith__workflow_id__post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateWorkflowRequest'
+      responses:
+        '200':
+          description: Server-Sent Events (SSE) stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                format: binary
+                description: Server-Sent Events stream with JSON payloads
+              examples:
+                stream_start:
+                  summary: Stream Start Event
+                  value: 'data: {"type": "stream_start"}
+
+
+                    '
+                token:
+                  summary: AI Token Event
+                  value: 'data: {"type": "token", "content": "I will create a workflow..."}
+
+
+                    '
+                tool_call:
+                  summary: Tool Call Event
+                  value: 'data: {"type": "tool_call", "name": "create_node", "arguments":
+                    {...}, "call_id": "..."}
+
+
+                    '
+                tool_result:
+                  summary: Tool Result Event
+                  value: 'data: {"type": "tool_result", "output": {...}, "call_id":
+                    "..."}
+
+
+                    '
+                warning:
+                  summary: Warning Event
+                  value: 'data: {"type": "warning", "message": "Parse error: unexpected
+                    token"}
+
+
+                    '
+                workflow_state:
+                  summary: Workflow State Event
+                  value: 'data: {"type": "workflow_state", "workflow_nodes": [...],
+                    "workflow_edges": [...]}
+
+
+                    '
+                stream_end:
+                  summary: Stream End Event
+                  value: 'data: {"type": "stream_end"}
+
+
+                    '
+                error:
+                  summary: Error Event
+                  value: 'data: {"type": "error", "message": "Error description"}
+
+
+                    '
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Smith
+      summary: Clear Smith AI conversation history
+      description: "Clear the Smith AI conversation history for a workflow.\n\nThis\
+        \ resets the AI agent's memory for the specified workflow,\nallowing the user\
+        \ to start a fresh conversation.\n\n**Requires:** EDIT permission (OWNER or\
+        \ EDITOR)\n\nReturns:\n    - `success`: Whether the thread was cleared successfully\n\
+        \    - `message`: A confirmation message"
+      operationId: clear_thread_smith__workflow_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClearThreadResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /smith:
+    post:
+      tags:
+      - Smith
+      summary: Generate New Workflow
+      description: 'Use Smith AI to generate a new workflow from natural language
+        (without a workflow_id).
+
+
+        Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
+
+        including AI tokens, tool calls, tool results, and completion status.
+
+
+        **Headers:**
+
+        - `Accept: text/event-stream`
+
+
+        **Session Persistence:**
+
+        Creates a new temporary session. The returned workflow structure can be
+
+        saved to create a new workflow.
+
+
+        **Event Types:**
+
+        - `stream_start`: Stream has started
+
+        - `token`: AI-generated text token
+
+        - `tool_call`: Agent is calling a tool (e.g., create_node, create_edge)
+
+        - `tool_result`: Result from a tool call
+
+        - `workflow_state`: Final workflow structure with nodes and edges
+
+        - `stream_end`: Stream has completed successfully
+
+        - `error`: An error occurred during processing'
+      operationId: generate_new_workflow_smith_post
       requestBody:
         content:
           application/json:
@@ -1305,17 +1707,74 @@ paths:
         required: true
       responses:
         '200':
-          description: Successful Response
+          description: Server-Sent Events (SSE) stream
           content:
-            application/json:
+            text/event-stream:
               schema:
-                $ref: '#/components/schemas/ApiResponse_GeneratedWorkflow_'
+                type: string
+                format: binary
+                description: Server-Sent Events stream with JSON payloads
+              examples:
+                stream_start:
+                  summary: Stream Start Event
+                  value: 'data: {"type": "stream_start"}
+
+
+                    '
+                token:
+                  summary: AI Token Event
+                  value: 'data: {"type": "token", "content": "I will create a workflow..."}
+
+
+                    '
+                tool_call:
+                  summary: Tool Call Event
+                  value: 'data: {"type": "tool_call", "name": "create_node", "arguments":
+                    {...}, "call_id": "..."}
+
+
+                    '
+                tool_result:
+                  summary: Tool Result Event
+                  value: 'data: {"type": "tool_result", "output": {...}, "call_id":
+                    "..."}
+
+
+                    '
+                warning:
+                  summary: Warning Event
+                  value: 'data: {"type": "warning", "message": "Parse error: unexpected
+                    token"}
+
+
+                    '
+                workflow_state:
+                  summary: Workflow State Event
+                  value: 'data: {"type": "workflow_state", "workflow_nodes": [...],
+                    "workflow_edges": [...]}
+
+
+                    '
+                stream_end:
+                  summary: Stream End Event
+                  value: 'data: {"type": "stream_end"}
+
+
+                    '
+                error:
+                  summary: Error Event
+                  value: 'data: {"type": "error", "message": "Error description"}
+
+
+                    '
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
 components:
   schemas:
     AdminPasswordResetResponse:
@@ -1473,25 +1932,6 @@ components:
       required:
       - data
       title: ApiResponse[FirstTimeSetupStatus]
-    ApiResponse_GeneratedWorkflow_:
-      properties:
-        success:
-          type: boolean
-          title: Success
-          description: Whether the request was successful
-          default: true
-        message:
-          type: string
-          title: Message
-          description: Human-readable message
-          default: Success
-        data:
-          $ref: '#/components/schemas/GeneratedWorkflow'
-          description: Response data
-      type: object
-      required:
-      - data
-      title: ApiResponse[GeneratedWorkflow]
     ApiResponse_List_TemplateSummary__:
       properties:
         success:
@@ -1591,25 +2031,6 @@ components:
       required:
       - data
       title: ApiResponse[TokenResponse]
-    ApiResponse_UserPasswordChangeResponse_:
-      properties:
-        success:
-          type: boolean
-          title: Success
-          description: Whether the request was successful
-          default: true
-        message:
-          type: string
-          title: Message
-          description: Human-readable message
-          default: Success
-        data:
-          $ref: '#/components/schemas/UserPasswordChangeResponse'
-          description: Response data
-      type: object
-      required:
-      - data
-      title: ApiResponse[UserPasswordChangeResponse]
     ApiResponse_UserResponse_:
       properties:
         success:
@@ -1771,6 +2192,28 @@ components:
       required:
       - data
       title: ApiResponse[list[CredentialShareInfo]]
+    ApiResponse_list_UserBasicInfo__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/UserBasicInfo'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[list[UserBasicInfo]]
     ApiResponse_list_UserResponse__:
       properties:
         success:
@@ -1835,6 +2278,20 @@ components:
       required:
       - data
       title: ApiResponse[str]
+    ClearThreadResponse:
+      properties:
+        success:
+          type: boolean
+          title: Success
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - success
+      - message
+      title: ClearThreadResponse
+      description: Response body for clearing a thread.
     CreateUserResponse:
       properties:
         user:
@@ -1865,6 +2322,7 @@ components:
           type: object
           title: Credential Data
           description: Credential data (will be encrypted)
+      additionalProperties: false
       type: object
       required:
       - name
@@ -1972,6 +2430,12 @@ components:
           - type: integer
           - type: 'null'
           title: Shared By
+        shared_by_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Shared By Name
+          description: Name of the user who shared this credential
       type: object
       required:
       - user_id
@@ -1987,6 +2451,7 @@ components:
       - api_key
       - oauth2
       - basic_auth
+      - header
       - token
       - custom
       - smtp
@@ -2014,6 +2479,7 @@ components:
           - type: 'null'
           title: Credential Data
           description: Credential data (will be encrypted)
+      additionalProperties: false
       type: object
       title: CredentialUpdate
       description: Schema for updating a credential.
@@ -2096,59 +2562,11 @@ components:
         prompt:
           type: string
           title: Prompt
-        history:
-          items:
-            $ref: '#/components/schemas/SmithMessage'
-          type: array
-          title: History
-        workflow:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Workflow
-          description: Optional existing workflow JSON to give the agent full context.
-        include_trace:
-          type: boolean
-          title: Include Trace
-          description: Include Smith's reasoning/trajectory in the response.
-          default: false
-        max_iters:
-          anyOf:
-          - type: integer
-            maximum: 20.0
-            minimum: 1.0
-          - type: 'null'
-          title: Max Iters
-          description: Optional override for Smith's ReAct iteration limit.
       type: object
       required:
       - prompt
       title: GenerateWorkflowRequest
       description: Request body for creating a workflow from natural language.
-    GeneratedWorkflow:
-      properties:
-        response:
-          type: string
-          title: Response
-        workflow:
-          additionalProperties: true
-          type: object
-          title: Workflow
-        trace:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: 'null'
-          title: Trace
-          description: Optional reasoning steps from the agent trajectory.
-      type: object
-      required:
-      - response
-      - workflow
-      title: GeneratedWorkflow
-      description: Smith LLM response packaged for the API.
     HTTPValidationError:
       properties:
         detail:
@@ -2170,6 +2588,7 @@ components:
           minLength: 1
           title: Password
           description: User's password
+      additionalProperties: false
       type: object
       required:
       - email
@@ -2199,27 +2618,11 @@ components:
           minLength: 1
           title: Refresh Token
           description: Valid refresh token
+      additionalProperties: false
       type: object
       required:
       - refresh_token
       title: RefreshRequest
-    SmithMessage:
-      properties:
-        role:
-          type: string
-          enum:
-          - user
-          - smith
-          title: Role
-          default: user
-        content:
-          type: string
-          title: Content
-      type: object
-      required:
-      - content
-      title: SmithMessage
-      description: Single chat turn used to seed Smith with prior context.
     TemplateCreate:
       properties:
         name:
@@ -2365,6 +2768,25 @@ components:
       - refresh_token
       - expires_in
       title: TokenResponse
+    UserBasicInfo:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        email:
+          type: string
+          format: email
+          title: Email
+      type: object
+      required:
+      - id
+      - name
+      - email
+      title: UserBasicInfo
+      description: Minimal user info for sharing purposes.
     UserCreate:
       properties:
         name:
@@ -2401,20 +2823,6 @@ components:
       - old_password
       - new_password
       title: UserPasswordChange
-    UserPasswordChangeResponse:
-      properties:
-        user:
-          $ref: '#/components/schemas/UserResponse'
-          description: Updated user information
-        access_token:
-          type: string
-          title: Access Token
-          description: New access token with updated must_change_password flag
-      type: object
-      required:
-      - user
-      - access_token
-      title: UserPasswordChangeResponse
     UserResponse:
       properties:
         id:
@@ -2705,3 +3113,10 @@ components:
       required:
       - is_active
       title: WorkflowUpdateStatus
+  securitySchemes:
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          scopes: {}
+          tokenUrl: auth/login

@@ -3,9 +3,16 @@
 import { useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useDraggable } from "@neodrag/react";
-import { Bot, GitBranch, Globe, Mail, Play } from "lucide-react";
 import type { NodeKind } from "../types";
-import { iconFor } from "./NodeIcons";
+import {
+  getNodeIcon,
+  getNodesByGroup,
+  getAllGroups,
+  getGroupLabel,
+  getGroupIcon,
+  getGroupColorClass,
+  type NodeGroup,
+} from "../lib/nodeRegistry";
 
 type LibraryProps = {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -92,7 +99,7 @@ function DraggableItem({
     },
   });
 
-  const ItemIcon = iconFor(type);
+  const ItemIcon = getNodeIcon(type);
 
   return (
     <>
@@ -130,18 +137,22 @@ function DraggableItem({
   );
 }
 
-export function LibraryGroups({ containerRef, onAdd }: LibraryProps) {
-  const Group = ({
-    title,
-    icon: Icon,
-    items,
-    colorClass,
-  }: {
-    title: string;
-    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-    items: { label: string; type: NodeKind }[];
-    colorClass: string;
-  }) => (
+type GroupProps = {
+  group: NodeGroup;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  onAdd: (type: NodeKind, x?: number, y?: number) => void;
+};
+
+function Group({ group, containerRef, onAdd }: GroupProps) {
+  const Icon = getGroupIcon(group);
+  const nodes = getNodesByGroup(group);
+  const colorClass = getGroupColorClass(group);
+  const title = getGroupLabel(group);
+
+  // Alphabetical order
+  const sortedNodes = [...nodes].sort((a, b) => a.label.localeCompare(b.label));
+
+  return (
     <details
       open
       className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
@@ -152,11 +163,11 @@ export function LibraryGroups({ containerRef, onAdd }: LibraryProps) {
         {title}
       </summary>
       <div className="mt-2 grid gap-2">
-        {items.map((i) => (
+        {sortedNodes.map((node) => (
           <DraggableItem
-            key={i.type}
-            type={i.type}
-            label={i.label}
+            key={node.kind}
+            type={node.kind}
+            label={node.label}
             containerRef={containerRef}
             onAdd={onAdd}
           />
@@ -164,42 +175,19 @@ export function LibraryGroups({ containerRef, onAdd }: LibraryProps) {
       </div>
     </details>
   );
+}
 
+export function LibraryGroups({ containerRef, onAdd }: LibraryProps) {
   return (
     <div className="flex flex-col gap-3">
-      <Group
-        title="Triggers"
-        icon={Play}
-        items={[{ label: "Manual Trigger", type: "trigger" }]}
-        colorClass="bg-node-trigger"
-      />
-      <Group
-        title="Core"
-        icon={GitBranch}
-        items={[
-          { label: "If", type: "if" },
-          { label: "Switch", type: "switch" },
-        ]}
-        colorClass="bg-node-core"
-      />
-      <Group
-        title="HTTP"
-        icon={Globe}
-        items={[{ label: "HTTP Request", type: "http" }]}
-        colorClass="bg-node-http"
-      />
-      <Group
-        title="Email"
-        icon={Mail}
-        items={[{ label: "SMTP Email", type: "smtp" }]}
-        colorClass="bg-node-email"
-      />
-      <Group
-        title="Agents"
-        icon={Bot}
-        items={[{ label: "Agent", type: "agent" }]}
-        colorClass="bg-node-agent"
-      />
+      {getAllGroups().map((group) => (
+        <Group
+          key={group}
+          group={group}
+          containerRef={containerRef}
+          onAdd={onAdd}
+        />
+      ))}
     </div>
   );
 }

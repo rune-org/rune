@@ -1,15 +1,7 @@
 import dagre from "dagre";
 import type { Edge } from "@xyflow/react";
-import type { CanvasNode, NodeKind } from "../types";
-
-const NODE_DIMENSIONS: Record<NodeKind, { width: number; height: number }> = {
-  trigger: { width: 160, height: 48 },
-  agent: { width: 220, height: 80 },
-  if: { width: 200, height: 72 },
-  switch: { width: 240, height: 180 },
-  http: { width: 220, height: 80 },
-  smtp: { width: 220, height: 80 },
-};
+import type { CanvasNode } from "../types";
+import { getNodeDimensionsWithData } from "./nodeRegistry";
 
 /**
  * Get the vertical order priority for a source handle.
@@ -52,21 +44,8 @@ export interface AutoLayoutResult {
   edges: Edge[];
 }
 
-/**
- * Calculate node height for switch nodes based on rule count.
- */
-function getSwitchNodeHeight(node: CanvasNode): number {
-  if (node.type !== "switch") return NODE_DIMENSIONS.switch.height;
-  const rules = Array.isArray(node.data.rules) ? node.data.rules : [];
-  return 64 + (rules.length + 1) * 64;
-}
-
-function getNodeDimensions(node: CanvasNode): { width: number; height: number } {
-  const base = NODE_DIMENSIONS[node.type] || { width: 200, height: 80 };
-  if (node.type === "switch") {
-    return { width: base.width, height: getSwitchNodeHeight(node) };
-  }
-  return base;
+function getLayoutDimensions(node: CanvasNode): { width: number; height: number } {
+  return getNodeDimensionsWithData(node.type, node.data);
 }
 
 /**
@@ -93,7 +72,7 @@ export function applyAutoLayout({
   dagreGraph.setGraph(LAYOUT_CONFIG);
 
   nodes.forEach((node) => {
-    const dimensions = getNodeDimensions(node);
+    const dimensions = getLayoutDimensions(node);
     dagreGraph.setNode(node.id, {
       width: dimensions.width,
       height: dimensions.height,
@@ -114,7 +93,7 @@ export function applyAutoLayout({
 
   // Calculate offset to anchor the new layout to the existing canvas position
   const anchorDagreNode = dagreGraph.node(anchorNode.id);
-  const anchorDimensions = getNodeDimensions(anchorNode);
+  const anchorDimensions = getLayoutDimensions(anchorNode);
   const offsetX = anchorNode.position.x - (anchorDagreNode.x - anchorDimensions.width / 2); // Center co-ords to top-left conversion
   const offsetY = anchorNode.position.y - (anchorDagreNode.y - anchorDimensions.height / 2);
 
@@ -126,7 +105,7 @@ export function applyAutoLayout({
     const dagreNode = dagreGraph.node(node.id);
     if (!dagreNode) return node;
 
-    const dimensions = getNodeDimensions(node);
+    const dimensions = getLayoutDimensions(node);
 
     return {
       ...node,
@@ -188,7 +167,7 @@ function resolveAllOverlaps(nodes: CanvasNode[]): CanvasNode[] {
       const prevNode = nodeMap.get(rank[i - 1].id)!;
       const currNode = nodeMap.get(rank[i].id)!;
 
-      const prevDimensions = getNodeDimensions(prevNode);
+      const prevDimensions = getLayoutDimensions(prevNode);
       const prevBottom = prevNode.position.y + prevDimensions.height + PADDING;
       const currTop = currNode.position.y;
 
@@ -284,11 +263,11 @@ function adjustForPinnedOverlaps(
     if (node.data.pinned) return node;
 
     let adjustedPosition = { ...node.position };
-    const dimensions = getNodeDimensions(node);
+    const dimensions = getLayoutDimensions(node);
     const padding = 20;
 
     for (const pinnedNode of pinnedNodes) {
-      const pinnedDimensions = getNodeDimensions(pinnedNode);
+      const pinnedDimensions = getLayoutDimensions(pinnedNode);
 
       const nodeLeft = adjustedPosition.x;
       const nodeRight = adjustedPosition.x + dimensions.width;

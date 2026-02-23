@@ -1,8 +1,11 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
-from src.auth.security import validate_password_strength
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from src.core.validators import validate_password_strength
 
 
 class LoginRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     email: EmailStr = Field(..., description="User's email address")
     password: str = Field(..., min_length=1, description="User's password")
 
@@ -17,6 +20,8 @@ class TokenResponse(BaseModel):
 
 
 class RefreshRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     refresh_token: str = Field(..., min_length=1, description="Valid refresh token")
 
 

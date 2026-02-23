@@ -1,177 +1,177 @@
 import json
-import os
-import re
-from typing import Any, Iterable
+import traceback
+import uuid
+from typing import AsyncGenerator
 
-import dspy
-from dotenv import load_dotenv
-
-from src.smith.agent import SmithAgent
-from src.smith.schemas import GeneratedWorkflow, SmithMessage
-
-
-DEFAULT_MODEL = "gemini/gemini-2.5-flash-lite"
-DEFAULT_MAX_ITERS = 5
+from langchain_core.messages import AIMessageChunk, HumanMessage, ToolMessage
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from langgraph.graph.state import CompiledStateGraph
 
 
 class SmithAgentService:
     """
-    Thin service layer that keeps a warm Smith agent around for API calls.
+    Service layer for the Smith AI workflow builder.
 
-    ReAct with tools needs live reasoning on each request, so we favor a warm
-    cached agent over DSPy compile artifacts for user-dependent requests/chats.
+    Uses LangGraph with AsyncPostgresSaver for checkpointing.
+    Agent is passed in from app.state (initialized at startup).
     """
 
-    _configured = False
-    _agents: dict[int, SmithAgent] = {}
+    def __init__(self, agent, checkpointer=None):
+        """
+        Initialize the service with a Smith agent.
 
-    def __init__(self):
-        if not SmithAgentService._configured:
-            self._configure_lm()
-            SmithAgentService._configured = True
+        Args:
+            agent: The LangGraph agent from app.state.smith_agent
+            checkpointer: Optional PostgreSQL checkpointer for thread management
+        """
+        self._agent: CompiledStateGraph = agent
+        self._checkpointer: AsyncPostgresSaver = checkpointer
 
-    def _configure_lm(self) -> None:
-        """Configure DSPy once for the process."""
-        load_dotenv()
+    async def clear_thread(self, session_id: str) -> bool:
+        """
+        Clear all checkpoints for a given session/thread.
 
-        model_id = os.getenv("SMITH_MODEL", DEFAULT_MODEL)
-        temperature = float(os.getenv("SMITH_TEMPERATURE", "0.3"))
-        max_tokens = int(os.getenv("SMITH_MAX_TOKENS", "8192"))
+        Args:
+            session_id: The session ID (thread_id) to clear
 
-        dspy.configure(
-            lm=dspy.LM(model_id, temperature=temperature, max_tokens=max_tokens)
-        )
+        Returns:
+            True if successful, False if checkpointer is not available
+        """
+        if self._checkpointer is None:
+            return False
 
-    def _get_agent(self, max_iters: int | None) -> SmithAgent:
-        """Reuse Smith agent instances keyed by iteration limit."""
-        iters = max_iters or int(os.getenv("SMITH_MAX_ITERS", DEFAULT_MAX_ITERS))
+        await self._checkpointer.adelete_thread(session_id)
+        return True
 
-        if iters not in SmithAgentService._agents:
-            SmithAgentService._agents[iters] = SmithAgent(max_iters=iters)
-
-        return SmithAgentService._agents[iters]
-
-    def generate_workflow(
+    async def stream_workflow(
         self,
-        prompt: str,
-        history: Iterable[SmithMessage] | None = None,
-        workflow: dict[str, Any] | None = None,
-        include_trace: bool = False,
-        max_iters: int | None = None,
-    ) -> GeneratedWorkflow:
-        """Run Smith against a prompt, optional history, and optional workflow context."""
-        agent = self._get_agent(max_iters)
-        history_str = self._format_history(history)
-        prompt_with_context = self._attach_context(prompt, workflow)
+        message: str,
+        session_id: str | None = None,
+        existing_nodes: list | None = None,
+        existing_edges: list | None = None,
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream SSE events from the Smith agent.
 
-        result = agent(request=prompt_with_context, history=history_str)
+        Args:
+            message: The user's natural language request
+            session_id: Session ID for conversation persistence (user_id:workflow_id)
+            existing_nodes: Existing workflow nodes to populate state (from workflow_data)
+            existing_edges: Existing workflow edges to populate state (from workflow_data)
 
-        workflow = self._parse_workflow(result.workflow)
-        response = result.response.strip()
-        trace = self._format_trace(result) if include_trace else None
+        Yields:
+            SSE-formatted events (data: {...}\n\n)
+        """
 
-        return GeneratedWorkflow(response=response, workflow=workflow, trace=trace)
+        def _format_sse(payload: dict) -> str:
+            """Format payload as an SSE event."""
+            return f"data: {json.dumps(payload)}\n\n"
 
-    def _format_history(self, history: Iterable[SmithMessage] | None) -> str:
-        if not history:
-            return ""
+        session_id = session_id or str(uuid.uuid4())
 
-        return "\n".join(f"{msg.role.title()}: {msg.content}" for msg in history)
+        config = {
+            "configurable": {
+                "thread_id": session_id,
+            }
+        }
 
-    def _parse_workflow(
-        self, workflow_json: str | dict[str, Any] | None
-    ) -> dict[str, Any]:
-        if workflow_json is None:
-            raise ValueError("Smith did not return workflow JSON.")
+        yield _format_sse({"type": "stream_start"})
 
-        if isinstance(workflow_json, dict):
-            return workflow_json
-
-        if not isinstance(workflow_json, str):
-            raise ValueError("Workflow output must be JSON text or object.")
-
-        content = workflow_json.strip()
-        if not content:
-            raise ValueError("Smith returned empty workflow JSON.")
-
-        # Handle ```json fenced blocks
-        if content.startswith("```"):
-            fenced = re.search(r"```(?:json)?\\s*(.*?)```", content, re.DOTALL)
-            if fenced:
-                content = fenced.group(1).strip()
-
-        # Try direct parse
-        parsed = self._try_json_parse(content)
-        if parsed is not None:
-            return parsed
-
-        # Try to salvage first JSON object in the text
-        match = re.search(r"\{[\\s\\S]*\}", content)
-        if match:
-            parsed = self._try_json_parse(match.group(0))
-            if parsed is not None:
-                return parsed
-
-        raise ValueError(
-            "Unable to parse Smith workflow output: expected JSON with nodes/edges."
-        )
-
-    def _try_json_parse(self, text: str) -> dict[str, Any] | None:
-        try:
-            parsed = json.loads(text)
-        except json.JSONDecodeError:
-            return None
-
-        if isinstance(parsed, dict):
-            return parsed
-        return None
-
-    def _format_trace(self, result: dspy.Prediction) -> list[str]:
-        if not hasattr(result, "trajectory") or not result.trajectory:
-            return []
-
-        trace = result.trajectory
-        steps: list[str] = []
-        step = 0
-        while True:
-            thought_key = f"thought_{step}"
-            tool_key = f"tool_name_{step}"
-            args_key = f"tool_args_{step}"
-            obs_key = f"observation_{step}"
-
-            if thought_key not in trace:
-                break
-
-            if thought_key in trace and trace[thought_key]:
-                steps.append(f"Thought {step + 1}: {trace[thought_key]}")
-
-            if tool_key in trace and trace[tool_key]:
-                tool_name = trace[tool_key]
-                tool_args = trace.get(args_key, {})
-                steps.append(f"Action {step + 1}: {tool_name} {tool_args}")
-
-            if obs_key in trace and trace[obs_key]:
-                obs = trace[obs_key]
-                steps.append(f"Observation {step + 1}: {obs}")
-
-            step += 1
-
-        return steps
-
-    def _attach_context(self, prompt: str, workflow: dict[str, Any] | None) -> str:
-        """Include the current workflow JSON so the agent can edit in place."""
-        if not workflow:
-            return prompt
+        # Initialize workflow state with existing data or empty arrays
+        input_messages = {
+            "messages": [HumanMessage(content=message)],
+            "workflow_nodes": existing_nodes if existing_nodes is not None else [],
+            "workflow_edges": existing_edges if existing_edges is not None else [],
+        }
 
         try:
-            workflow_json = json.dumps(workflow)
-        except TypeError as exc:
-            raise ValueError(
-                f"Workflow context must be JSON serializable: {exc}"
-            ) from exc
+            async for event, _ in self._agent.astream(
+                input_messages,
+                config=config,
+                stream_mode="messages",
+            ):
+                try:
+                    if isinstance(event, AIMessageChunk):
+                        if event.content:
+                            yield _format_sse(
+                                {"type": "token", "content": event.content}
+                            )
 
-        return (
-            "You can edit the existing workflow below.\n"
-            "Return the full updated workflow JSON.\n\n"
-            f"Current workflow: {workflow_json}\n\nUser request: {prompt}"
-        )
+                        if (
+                            hasattr(event, "tool_call_chunks")
+                            and event.tool_call_chunks
+                        ):
+                            for call in event.tool_call_chunks:
+                                if "name" in call and "args" in call:
+                                    try:
+                                        yield _format_sse(
+                                            {
+                                                "type": "tool_call",
+                                                "name": call["name"],
+                                                "arguments": call["args"],
+                                                "call_id": call["id"],
+                                            }
+                                        )
+                                    except json.JSONDecodeError as err:
+                                        yield _format_sse(
+                                            {
+                                                "type": "error",
+                                                "message": f"Invalid tool args: {str(err)}",
+                                            }
+                                        )
+
+                    elif isinstance(event, ToolMessage):
+                        # Parse tool output to extract node/edge objects
+                        output = {}
+                        try:
+                            parsed = json.loads(event.content)
+                            if "node" in parsed:
+                                output["node"] = parsed["node"]
+                            if "edge" in parsed:
+                                output["edge"] = parsed["edge"]
+                        except (json.JSONDecodeError, TypeError):
+                            output = event.content
+
+                        yield _format_sse(
+                            {
+                                "type": "tool_result",
+                                "output": output,
+                                "call_id": event.tool_call_id,
+                            }
+                        )
+
+                    # Get current state to extract workflow structure
+                    current_state = await self._agent.aget_state(config)
+                    workflow_nodes = current_state.values.get("workflow_nodes", [])
+                    workflow_edges = current_state.values.get("workflow_edges", [])
+
+                    # Send workflow structure to update UI after each event
+                    yield _format_sse(
+                        {
+                            "type": "workflow_state",
+                            "workflow_nodes": workflow_nodes,
+                            "workflow_edges": workflow_edges,
+                        }
+                    )
+
+                except Exception as parse_err:
+                    yield _format_sse(
+                        {
+                            "type": "warning",
+                            "message": f"Parse error: {str(parse_err)}",
+                        }
+                    )
+                    continue
+
+            # End event after streaming is complete
+            yield _format_sse({"type": "stream_end"})
+
+        except Exception as err:
+            trace = traceback.format_exc()
+            print(f"Smith Agent Error:\n{trace}")
+            yield _format_sse(
+                {
+                    "type": "error",
+                    "message": f"Stream error: {str(err)}",
+                }
+            )

@@ -1,9 +1,11 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, Enum as SQLAlchemyEnum
+
+from sqlalchemy import Column
+from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class UserRole(str, Enum):

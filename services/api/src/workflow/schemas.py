@@ -1,5 +1,6 @@
-from typing import Optional, Any
 from datetime import datetime
+from typing import Any, Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -75,6 +76,8 @@ class WorkflowDetail(BaseModel):
 
 
 class NodeExecutionMessage(BaseModel):
+    """Message to trigger workflow node execution."""
+
     workflow_id: str
     execution_id: str
     current_node: str

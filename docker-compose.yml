@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: "postgres:17-alpine"
+    image: "postgres:18-alpine"
     container_name: rune-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-rune}
@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     networks:
       - backend_network
     healthcheck:
@@ -19,7 +19,7 @@ services:
       retries: 5
 
   rabbitmq:
-    image: "rabbitmq:3-management-alpine"
+    image: "rabbitmq:4-management-alpine"
     container_name: rune-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rune}
@@ -38,12 +38,25 @@ services:
       retries: 5
 
   redis:
-    image: "redis:7-alpine"
+    image: "redis:8-alpine"
     container_name: rune-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - backend_network
+
+  mongodb:
+    image: "mongodb/mongodb-community-server:latest"
+    container_name: rune-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-password}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
     networks:
       - backend_network
 
@@ -68,7 +81,8 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_USER:-rune}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rune_password}
-      RABBITMQ_QUEUE_NAME: workflow.execution
+      RABBITMQ_WORKFLOW_QUEUE: ${RABBITMQ_WORKFLOW_QUEUE:-workflow.execution}
+      RABBITMQ_TOKEN_QUEUE: ${RABBITMQ_TOKEN_QUEUE:-execution.token}
       # Redis Settings
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -85,6 +99,9 @@ services:
       # Encryption Key (use from .env or default for development)
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-your-google-api-key-here}
+      # Smith AI Agent Settings
+      SMITH_MODEL: ${SMITH_MODEL:-gemini-2.0-flash}
+      SMITH_TEMPERATURE: ${SMITH_TEMPERATURE:-0.3}
     ports:
       - "8000:8000"
     depends_on:
@@ -114,7 +131,7 @@ services:
       # Redis Settings
       REDIS_URL: redis://redis:6379/1
       # Workflow Queue Configuration
-      WORKFLOW_QUEUE_NAME: workflow.execution
+      WORKFLOW_QUEUE_NAME: ${RABBITMQ_WORKFLOW_QUEUE:-workflow.execution}
       WORKFLOW_PREFETCH: ${WORKFLOW_PREFETCH:-10}
       WORKFLOW_CONCURRENCY: ${WORKFLOW_CONCURRENCY:-1}
     depends_on:
@@ -134,20 +151,80 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api
+        NEXT_PUBLIC_RTES_WS_URL: ws://localhost:8080/rt
     container_name: rune-frontend
     environment:
       # API Configuration
       NEXT_PUBLIC_API_BASE_URL: /api
       API_PROXY_TARGET: http://api:8000
+      # RTES Configuration
+      NEXT_PUBLIC_RTES_WS_URL: ws://localhost:8080/rt
       # Next.js Configuration
       NODE_ENV: production
     ports:
       - "3000:3000"
     depends_on:
       - api
+      - rtes
     networks:
       - frontend_network
     restart: unless-stopped
+
+  rtes:
+    build:
+      context: ./services/rtes
+      dockerfile: Dockerfile
+    container_name: rune-rtes
+    environment:
+      RUST_LOG: info
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-key-change-in-production}
+      REDIS_URL: redis://redis:6379/
+      AMQP_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/%2f
+      MONGODB_URL: mongodb://${MONGODB_USER:-admin}:${MONGODB_PASSWORD:-password}@mongodb:27017/?authSource=admin
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      CORS_ORIGIN: http://localhost:3000
+      PORT: 8080
+    networks:
+      - backend_network
+    depends_on:
+      otel-collector:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      mongodb:
+        condition: service_started
+    ports:
+      - "8080:8080"
+
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    container_name: rune-openobserve
+    environment:
+      ZO_ROOT_USER_EMAIL: root@example.com
+      ZO_ROOT_USER_PASSWORD: Complexpass#123
+      ZO_DATA_DIR: /data
+    volumes:
+      - openobserve_data:/data
+    ports:
+      - "5080:5080"
+    networks:
+      - backend_network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: rune-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - backend_network
+    depends_on:
+      - openobserve
 
 networks:
   frontend_network:
@@ -168,4 +245,8 @@ volumes:
   rabbitmq_data:
     driver: local
   redis_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  openobserve_data:
     driver: local

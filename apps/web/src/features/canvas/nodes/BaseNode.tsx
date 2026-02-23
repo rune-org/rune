@@ -1,8 +1,13 @@
 import { Handle, Position } from "@xyflow/react";
-import { memo, type ReactNode } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 import { Pin } from "lucide-react";
+import { useNodeExecution } from "../context/ExecutionContext";
+import { StatusIndicator } from "./StatusIndicator";
+import { cn } from "@/lib/cn";
 
 type BaseNodeProps = {
+  /** Node ID for execution state lookup */
+  nodeId: string;
   icon: React.ReactNode;
   label: string;
   children?: ReactNode;
@@ -12,6 +17,7 @@ type BaseNodeProps = {
 };
 
 export const BaseNode = memo(function BaseNode({
+  nodeId,
   icon,
   label,
   children,
@@ -19,22 +25,37 @@ export const BaseNode = memo(function BaseNode({
   borderColor,
   pinned = false,
 }: BaseNodeProps) {
-  const borderStyle = borderColor
-    ? { borderColor: `var(${borderColor})`, borderWidth: '2px' }
-    : {};
+  const nodeExecution = useNodeExecution(nodeId);
+  const executionStatus = nodeExecution?.status ?? "idle";
+
+  const borderStyle = useMemo(() => {
+    if (borderColor && executionStatus === "idle") {
+      return { borderColor: `var(${borderColor})`, borderWidth: "2px" };
+    }
+    return {};
+  }, [borderColor, executionStatus]);
 
   return (
     <div
-      className={`rune-node relative w-[220px] rounded-[var(--radius)] border-2 ${bgClassName} p-3 text-sm text-foreground shadow-sm`}
+      className={cn(
+        "rune-node relative w-[220px] rounded-[var(--radius)] border-2 p-3 text-sm text-foreground shadow-sm transition-all duration-300",
+        bgClassName,
+        executionStatus !== "idle" && executionStatus,
+        executionStatus === "running" && "animate-pulse-subtle"
+      )}
       style={borderStyle}
     >
-      {pinned && (
-        <div
-          className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ring text-background shadow-sm"
-          title="Pinned - position locked during auto-layout"
-        >
-          <Pin className="h-3 w-3" />
-        </div>
+      {executionStatus !== "idle" ? (
+        <StatusIndicator status={executionStatus} />
+      ) : (
+        pinned && (
+          <div
+            className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ring text-background shadow-sm z-10"
+            title="Pinned - position locked during auto-layout"
+          >
+            <Pin className="h-3 w-3" />
+          </div>
+        )
       )}
 
       <div className="flex items-center gap-2 font-medium">

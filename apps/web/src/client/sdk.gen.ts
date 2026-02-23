@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ChangeMyPasswordProfileMeChangePasswordPostData, ChangeMyPasswordProfileMeChangePasswordPostErrors, ChangeMyPasswordProfileMeChangePasswordPostResponses, CheckFirstTimeSetupAuthFirstTimeSetupGetData, CheckFirstTimeSetupAuthFirstTimeSetupGetResponses, CreateCredentialCredentialsPostData, CreateCredentialCredentialsPostErrors, CreateCredentialCredentialsPostResponses, CreateTemplateTemplatesPostData, CreateTemplateTemplatesPostErrors, CreateTemplateTemplatesPostResponses, CreateUserUsersPostData, CreateUserUsersPostErrors, CreateUserUsersPostResponses, CreateWorkflowWorkflowsPostData, CreateWorkflowWorkflowsPostErrors, CreateWorkflowWorkflowsPostResponses, DeleteCredentialCredentialsCredentialIdDeleteData, DeleteCredentialCredentialsCredentialIdDeleteErrors, DeleteCredentialCredentialsCredentialIdDeleteResponses, DeleteTemplateTemplatesTemplateIdDeleteData, DeleteTemplateTemplatesTemplateIdDeleteErrors, DeleteTemplateTemplatesTemplateIdDeleteResponses, DeleteUserUsersUserIdDeleteData, DeleteUserUsersUserIdDeleteErrors, DeleteUserUsersUserIdDeleteResponses, DeleteWorkflowWorkflowsWorkflowIdDeleteData, DeleteWorkflowWorkflowsWorkflowIdDeleteErrors, DeleteWorkflowWorkflowsWorkflowIdDeleteResponses, FirstAdminSignupAuthFirstAdminSignupPostData, FirstAdminSignupAuthFirstAdminSignupPostErrors, FirstAdminSignupAuthFirstAdminSignupPostResponses, GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostData, GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors, GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses, GenerateWorkflowFromPromptWorkflowsSmithGeneratePostData, GenerateWorkflowFromPromptWorkflowsSmithGeneratePostErrors, GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponses, GetAllUsersUsersGetData, GetAllUsersUsersGetResponses, GetCredentialCredentialsCredentialIdGetData, GetCredentialCredentialsCredentialIdGetErrors, GetCredentialCredentialsCredentialIdGetResponses, GetMyProfileProfileMeGetData, GetMyProfileProfileMeGetResponses, GetTemplateTemplatesTemplateIdGetData, GetTemplateTemplatesTemplateIdGetErrors, GetTemplateTemplatesTemplateIdGetResponses, GetUserByIdUsersUserIdGetData, GetUserByIdUsersUserIdGetErrors, GetUserByIdUsersUserIdGetResponses, GetWorkflowWorkflowsWorkflowIdGetData, GetWorkflowWorkflowsWorkflowIdGetErrors, GetWorkflowWorkflowsWorkflowIdGetResponses, ListCredentialsCredentialsGetData, ListCredentialsCredentialsGetResponses, ListCredentialsDropdownCredentialsDropdownGetData, ListCredentialsDropdownCredentialsDropdownGetResponses, ListCredentialSharesCredentialsCredentialIdSharesGetData, ListCredentialSharesCredentialsCredentialIdSharesGetErrors, ListCredentialSharesCredentialsCredentialIdSharesGetResponses, ListTemplatesTemplatesGetData, ListTemplatesTemplatesGetResponses, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetData, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetErrors, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetResponses, ListWorkflowsWorkflowsGetData, ListWorkflowsWorkflowsGetResponses, LoginAuthLoginPostData, LoginAuthLoginPostErrors, LoginAuthLoginPostResponses, LogoutAuthLogoutPostData, LogoutAuthLogoutPostResponses, RefreshAuthRefreshPostData, RefreshAuthRefreshPostErrors, RefreshAuthRefreshPostResponses, ResetUserPasswordUsersUserIdResetPasswordPostData, ResetUserPasswordUsersUserIdResetPasswordPostErrors, ResetUserPasswordUsersUserIdResetPasswordPostResponses, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteData, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteErrors, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteResponses, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteData, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteErrors, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteResponses, RunWorkflowWorkflowsWorkflowIdRunPostData, RunWorkflowWorkflowsWorkflowIdRunPostErrors, RunWorkflowWorkflowsWorkflowIdRunPostResponses, ShareCredentialCredentialsCredentialIdSharePostData, ShareCredentialCredentialsCredentialIdSharePostErrors, ShareCredentialCredentialsCredentialIdSharePostResponses, ShareWorkflowWorkflowsWorkflowIdSharePostData, ShareWorkflowWorkflowsWorkflowIdSharePostErrors, ShareWorkflowWorkflowsWorkflowIdSharePostResponses, UpdateCredentialCredentialsCredentialIdPatchData, UpdateCredentialCredentialsCredentialIdPatchErrors, UpdateCredentialCredentialsCredentialIdPatchResponses, UpdateMyProfileProfileMePutData, UpdateMyProfileProfileMePutErrors, UpdateMyProfileProfileMePutResponses, UpdateNameWorkflowsWorkflowIdNamePutData, UpdateNameWorkflowsWorkflowIdNamePutErrors, UpdateNameWorkflowsWorkflowIdNamePutResponses, UpdateStatusWorkflowsWorkflowIdStatusPutData, UpdateStatusWorkflowsWorkflowIdStatusPutErrors, UpdateStatusWorkflowsWorkflowIdStatusPutResponses, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchData, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchErrors, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses, UpdateUserUsersUserIdPutData, UpdateUserUsersUserIdPutErrors, UpdateUserUsersUserIdPutResponses, UpdateWorkflowDataWorkflowsWorkflowIdDataPutData, UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors, UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses, UseTemplateTemplatesTemplateIdUsePostData, UseTemplateTemplatesTemplateIdUsePostErrors, UseTemplateTemplatesTemplateIdUsePostResponses } from './types.gen';
+import type { ChangeMyPasswordProfileMePasswordPostData, ChangeMyPasswordProfileMePasswordPostErrors, ChangeMyPasswordProfileMePasswordPostResponses, CheckFirstTimeSetupAuthFirstTimeSetupGetData, CheckFirstTimeSetupAuthFirstTimeSetupGetResponses, ClearThreadSmithWorkflowIdDeleteData, ClearThreadSmithWorkflowIdDeleteErrors, ClearThreadSmithWorkflowIdDeleteResponses, CreateCredentialCredentialsPostData, CreateCredentialCredentialsPostErrors, CreateCredentialCredentialsPostResponses, CreateTemplateTemplatesPostData, CreateTemplateTemplatesPostErrors, CreateTemplateTemplatesPostResponses, CreateUserUsersPostData, CreateUserUsersPostErrors, CreateUserUsersPostResponses, CreateWorkflowWorkflowsPostData, CreateWorkflowWorkflowsPostErrors, CreateWorkflowWorkflowsPostResponses, DeleteCredentialCredentialsCredentialIdDeleteData, DeleteCredentialCredentialsCredentialIdDeleteErrors, DeleteCredentialCredentialsCredentialIdDeleteResponses, DeleteTemplateTemplatesTemplateIdDeleteData, DeleteTemplateTemplatesTemplateIdDeleteErrors, DeleteTemplateTemplatesTemplateIdDeleteResponses, DeleteUserUsersUserIdDeleteData, DeleteUserUsersUserIdDeleteErrors, DeleteUserUsersUserIdDeleteResponses, DeleteWorkflowWorkflowsWorkflowIdDeleteData, DeleteWorkflowWorkflowsWorkflowIdDeleteErrors, DeleteWorkflowWorkflowsWorkflowIdDeleteResponses, FirstAdminSignupAuthFirstAdminSignupPostData, FirstAdminSignupAuthFirstAdminSignupPostErrors, FirstAdminSignupAuthFirstAdminSignupPostResponses, GenerateNewWorkflowSmithPostData, GenerateNewWorkflowSmithPostErrors, GenerateNewWorkflowSmithPostResponses, GenerateWorkflowDocsScrybWorkflowIdPostData, GenerateWorkflowDocsScrybWorkflowIdPostErrors, GenerateWorkflowDocsScrybWorkflowIdPostResponses, GenerateWorkflowSmithWorkflowIdPostData, GenerateWorkflowSmithWorkflowIdPostErrors, GenerateWorkflowSmithWorkflowIdPostResponses, GetAllUsersUsersGetData, GetAllUsersUsersGetResponses, GetCredentialCredentialsCredentialIdGetData, GetCredentialCredentialsCredentialIdGetErrors, GetCredentialCredentialsCredentialIdGetResponses, GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetData, GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetErrors, GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponses, GetMyProfileProfileMeGetData, GetMyProfileProfileMeGetResponses, GetMyShareInfoCredentialsCredentialIdMyShareGetData, GetMyShareInfoCredentialsCredentialIdMyShareGetErrors, GetMyShareInfoCredentialsCredentialIdMyShareGetResponses, GetTemplateTemplatesTemplateIdGetData, GetTemplateTemplatesTemplateIdGetErrors, GetTemplateTemplatesTemplateIdGetResponses, GetUserByIdUsersUserIdGetData, GetUserByIdUsersUserIdGetErrors, GetUserByIdUsersUserIdGetResponses, GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetData, GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetErrors, GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponses, GetWorkflowWorkflowsWorkflowIdGetData, GetWorkflowWorkflowsWorkflowIdGetErrors, GetWorkflowWorkflowsWorkflowIdGetResponses, ListCredentialsCredentialsGetData, ListCredentialsCredentialsGetResponses, ListCredentialsDropdownCredentialsDropdownGetData, ListCredentialsDropdownCredentialsDropdownGetResponses, ListCredentialSharesCredentialsCredentialIdSharesGetData, ListCredentialSharesCredentialsCredentialIdSharesGetErrors, ListCredentialSharesCredentialsCredentialIdSharesGetResponses, ListTemplatesTemplatesGetData, ListTemplatesTemplatesGetResponses, ListUsersForSharingUsersDirectoryGetData, ListUsersForSharingUsersDirectoryGetResponses, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetData, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetErrors, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetResponses, ListWorkflowsWorkflowsGetData, ListWorkflowsWorkflowsGetResponses, LoginAuthLoginPostData, LoginAuthLoginPostErrors, LoginAuthLoginPostResponses, LogoutAuthLogoutPostData, LogoutAuthLogoutPostResponses, RefreshAuthRefreshPostData, RefreshAuthRefreshPostErrors, RefreshAuthRefreshPostResponses, ResetUserPasswordUsersUserIdPasswordPostData, ResetUserPasswordUsersUserIdPasswordPostErrors, ResetUserPasswordUsersUserIdPasswordPostResponses, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteData, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteErrors, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteResponses, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteData, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteErrors, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteResponses, RunWorkflowWorkflowsWorkflowIdRunPostData, RunWorkflowWorkflowsWorkflowIdRunPostErrors, RunWorkflowWorkflowsWorkflowIdRunPostResponses, ShareCredentialCredentialsCredentialIdSharePostData, ShareCredentialCredentialsCredentialIdSharePostErrors, ShareCredentialCredentialsCredentialIdSharePostResponses, ShareWorkflowWorkflowsWorkflowIdSharePostData, ShareWorkflowWorkflowsWorkflowIdSharePostErrors, ShareWorkflowWorkflowsWorkflowIdSharePostResponses, UpdateCredentialCredentialsCredentialIdPatchData, UpdateCredentialCredentialsCredentialIdPatchErrors, UpdateCredentialCredentialsCredentialIdPatchResponses, UpdateMyProfileProfileMePutData, UpdateMyProfileProfileMePutErrors, UpdateMyProfileProfileMePutResponses, UpdateNameWorkflowsWorkflowIdNamePutData, UpdateNameWorkflowsWorkflowIdNamePutErrors, UpdateNameWorkflowsWorkflowIdNamePutResponses, UpdateStatusWorkflowsWorkflowIdStatusPutData, UpdateStatusWorkflowsWorkflowIdStatusPutErrors, UpdateStatusWorkflowsWorkflowIdStatusPutResponses, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchData, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchErrors, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses, UpdateUserUsersUserIdPutData, UpdateUserUsersUserIdPutErrors, UpdateUserUsersUserIdPutResponses, UpdateWorkflowDataWorkflowsWorkflowIdDataPutData, UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors, UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses, UseTemplateTemplatesTemplateIdUsePostData, UseTemplateTemplatesTemplateIdUsePostErrors, UseTemplateTemplatesTemplateIdUsePostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -51,7 +51,11 @@ export const refreshAuthRefreshPost = <ThrowOnError extends boolean = false>(opt
  *
  * Logout the current user by revoking their refresh token and clearing the authentication cookie.
  */
-export const logoutAuthLogoutPost = <ThrowOnError extends boolean = false>(options?: Options<LogoutAuthLogoutPostData, ThrowOnError>) => (options?.client ?? client).post<LogoutAuthLogoutPostResponses, unknown, ThrowOnError>({ url: '/auth/logout', ...options });
+export const logoutAuthLogoutPost = <ThrowOnError extends boolean = false>(options?: Options<LogoutAuthLogoutPostData, ThrowOnError>) => (options?.client ?? client).post<LogoutAuthLogoutPostResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/auth/logout',
+    ...options
+});
 
 /**
  * Check first-time setup status
@@ -77,12 +81,17 @@ export const firstAdminSignupAuthFirstAdminSignupPost = <ThrowOnError extends bo
 /**
  * List Workflows
  */
-export const listWorkflowsWorkflowsGet = <ThrowOnError extends boolean = false>(options?: Options<ListWorkflowsWorkflowsGetData, ThrowOnError>) => (options?.client ?? client).get<ListWorkflowsWorkflowsGetResponses, unknown, ThrowOnError>({ url: '/workflows/', ...options });
+export const listWorkflowsWorkflowsGet = <ThrowOnError extends boolean = false>(options?: Options<ListWorkflowsWorkflowsGetData, ThrowOnError>) => (options?.client ?? client).get<ListWorkflowsWorkflowsGetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/workflows/',
+    ...options
+});
 
 /**
  * Create Workflow
  */
 export const createWorkflowWorkflowsPost = <ThrowOnError extends boolean = false>(options: Options<CreateWorkflowWorkflowsPostData, ThrowOnError>) => (options.client ?? client).post<CreateWorkflowWorkflowsPostResponses, CreateWorkflowWorkflowsPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/workflows/',
     ...options,
     headers: {
@@ -98,7 +107,11 @@ export const createWorkflowWorkflowsPost = <ThrowOnError extends boolean = false
  *
  * **Requires:** DELETE permission (OWNER only)
  */
-export const deleteWorkflowWorkflowsWorkflowIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteWorkflowWorkflowsWorkflowIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<DeleteWorkflowWorkflowsWorkflowIdDeleteResponses, DeleteWorkflowWorkflowsWorkflowIdDeleteErrors, ThrowOnError>({ url: '/workflows/{workflow_id}', ...options });
+export const deleteWorkflowWorkflowsWorkflowIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteWorkflowWorkflowsWorkflowIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<DeleteWorkflowWorkflowsWorkflowIdDeleteResponses, DeleteWorkflowWorkflowsWorkflowIdDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/workflows/{workflow_id}',
+    ...options
+});
 
 /**
  * Get Workflow
@@ -107,7 +120,11 @@ export const deleteWorkflowWorkflowsWorkflowIdDelete = <ThrowOnError extends boo
  *
  * **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)
  */
-export const getWorkflowWorkflowsWorkflowIdGet = <ThrowOnError extends boolean = false>(options: Options<GetWorkflowWorkflowsWorkflowIdGetData, ThrowOnError>) => (options.client ?? client).get<GetWorkflowWorkflowsWorkflowIdGetResponses, GetWorkflowWorkflowsWorkflowIdGetErrors, ThrowOnError>({ url: '/workflows/{workflow_id}', ...options });
+export const getWorkflowWorkflowsWorkflowIdGet = <ThrowOnError extends boolean = false>(options: Options<GetWorkflowWorkflowsWorkflowIdGetData, ThrowOnError>) => (options.client ?? client).get<GetWorkflowWorkflowsWorkflowIdGetResponses, GetWorkflowWorkflowsWorkflowIdGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/workflows/{workflow_id}',
+    ...options
+});
 
 /**
  * Update Status
@@ -117,6 +134,7 @@ export const getWorkflowWorkflowsWorkflowIdGet = <ThrowOnError extends boolean =
  * **Requires:** EDIT permission (OWNER or EDITOR)
  */
 export const updateStatusWorkflowsWorkflowIdStatusPut = <ThrowOnError extends boolean = false>(options: Options<UpdateStatusWorkflowsWorkflowIdStatusPutData, ThrowOnError>) => (options.client ?? client).put<UpdateStatusWorkflowsWorkflowIdStatusPutResponses, UpdateStatusWorkflowsWorkflowIdStatusPutErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/workflows/{workflow_id}/status',
     ...options,
     headers: {
@@ -133,6 +151,7 @@ export const updateStatusWorkflowsWorkflowIdStatusPut = <ThrowOnError extends bo
  * **Requires:** EDIT permission (OWNER or EDITOR)
  */
 export const updateNameWorkflowsWorkflowIdNamePut = <ThrowOnError extends boolean = false>(options: Options<UpdateNameWorkflowsWorkflowIdNamePutData, ThrowOnError>) => (options.client ?? client).put<UpdateNameWorkflowsWorkflowIdNamePutResponses, UpdateNameWorkflowsWorkflowIdNamePutErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/workflows/{workflow_id}/name',
     ...options,
     headers: {
@@ -149,6 +168,7 @@ export const updateNameWorkflowsWorkflowIdNamePut = <ThrowOnError extends boolea
  * **Requires:** EDIT permission (OWNER or EDITOR)
  */
 export const updateWorkflowDataWorkflowsWorkflowIdDataPut = <ThrowOnError extends boolean = false>(options: Options<UpdateWorkflowDataWorkflowsWorkflowIdDataPutData, ThrowOnError>) => (options.client ?? client).put<UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses, UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/workflows/{workflow_id}/data',
     ...options,
     headers: {
@@ -165,12 +185,49 @@ export const updateWorkflowDataWorkflowsWorkflowIdDataPut = <ThrowOnError extend
  * Verifies the workflow exists and user has execute permission (OWNER or EDITOR),
  * resolves all credential references in workflow nodes,
  * then publishes a run message to RabbitMQ containing workflow details with resolved credentials.
+ * Also publishes an execution token for RTES real-time updates.
  *
  * Returns execution_id for tracking the execution.
  *
  * **Requires:** EXECUTE permission (OWNER or EDITOR, not VIEWER)
  */
-export const runWorkflowWorkflowsWorkflowIdRunPost = <ThrowOnError extends boolean = false>(options: Options<RunWorkflowWorkflowsWorkflowIdRunPostData, ThrowOnError>) => (options.client ?? client).post<RunWorkflowWorkflowsWorkflowIdRunPostResponses, RunWorkflowWorkflowsWorkflowIdRunPostErrors, ThrowOnError>({ url: '/workflows/{workflow_id}/run', ...options });
+export const runWorkflowWorkflowsWorkflowIdRunPost = <ThrowOnError extends boolean = false>(options: Options<RunWorkflowWorkflowsWorkflowIdRunPostData, ThrowOnError>) => (options.client ?? client).post<RunWorkflowWorkflowsWorkflowIdRunPostResponses, RunWorkflowWorkflowsWorkflowIdRunPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/workflows/{workflow_id}/run',
+    ...options
+});
+
+/**
+ * Get Workflow Executions
+ *
+ * Get access token for viewing all executions of a workflow.
+ *
+ * Publishes a wildcard execution token (execution_id=null) to RTES,
+ * allowing the frontend to view all executions for this workflow.
+ *
+ * **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)
+ */
+export const getWorkflowExecutionsWorkflowsWorkflowIdExecutionsGet = <ThrowOnError extends boolean = false>(options: Options<GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetData, ThrowOnError>) => (options.client ?? client).get<GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponses, GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/workflows/{workflow_id}/executions',
+    ...options
+});
+
+/**
+ * Get Execution
+ *
+ * Get access token for viewing a specific execution.
+ *
+ * Publishes a scoped execution token to RTES,
+ * allowing the frontend to view this specific execution.
+ *
+ * **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)
+ */
+export const getExecutionWorkflowsWorkflowIdExecutionsExecutionIdGet = <ThrowOnError extends boolean = false>(options: Options<GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetData, ThrowOnError>) => (options.client ?? client).get<GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponses, GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/workflows/{workflow_id}/executions/{execution_id}',
+    ...options
+});
 
 /**
  * Share workflow with another user
@@ -190,6 +247,7 @@ export const runWorkflowWorkflowsWorkflowIdRunPost = <ThrowOnError extends boole
  * - ADMIN: can share workflows (bypass)
  */
 export const shareWorkflowWorkflowsWorkflowIdSharePost = <ThrowOnError extends boolean = false>(options: Options<ShareWorkflowWorkflowsWorkflowIdSharePostData, ThrowOnError>) => (options.client ?? client).post<ShareWorkflowWorkflowsWorkflowIdSharePostResponses, ShareWorkflowWorkflowsWorkflowIdSharePostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/workflows/{workflow_id}/share',
     ...options,
     headers: {
@@ -214,7 +272,11 @@ export const shareWorkflowWorkflowsWorkflowIdSharePost = <ThrowOnError extends b
  * - VIEWER: cannot revoke access
  * - ADMIN: can revoke access (bypass)
  */
-export const revokeAccessWorkflowsWorkflowIdShareUserIdDelete = <ThrowOnError extends boolean = false>(options: Options<RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteResponses, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteErrors, ThrowOnError>({ url: '/workflows/{workflow_id}/share/{user_id}', ...options });
+export const revokeAccessWorkflowsWorkflowIdShareUserIdDelete = <ThrowOnError extends boolean = false>(options: Options<RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteResponses, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/workflows/{workflow_id}/share/{user_id}',
+    ...options
+});
 
 /**
  * List all users with access to workflow
@@ -232,7 +294,11 @@ export const revokeAccessWorkflowsWorkflowIdShareUserIdDelete = <ThrowOnError ex
  * - VIEWER: can view permissions
  * - ADMIN: can view permissions (bypass)
  */
-export const listWorkflowPermissionsWorkflowsWorkflowIdPermissionsGet = <ThrowOnError extends boolean = false>(options: Options<ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetData, ThrowOnError>) => (options.client ?? client).get<ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetResponses, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetErrors, ThrowOnError>({ url: '/workflows/{workflow_id}/permissions', ...options });
+export const listWorkflowPermissionsWorkflowsWorkflowIdPermissionsGet = <ThrowOnError extends boolean = false>(options: Options<ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetData, ThrowOnError>) => (options.client ?? client).get<ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetResponses, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/workflows/{workflow_id}/permissions',
+    ...options
+});
 
 /**
  * Update user's role for workflow
@@ -251,6 +317,7 @@ export const listWorkflowPermissionsWorkflowsWorkflowIdPermissionsGet = <ThrowOn
  * - ADMIN: can update roles (bypass)
  */
 export const updateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatch = <ThrowOnError extends boolean = false>(options: Options<UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchData, ThrowOnError>) => (options.client ?? client).patch<UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/workflows/{workflow_id}/permissions/{user_id}',
     ...options,
     headers: {
@@ -260,53 +327,26 @@ export const updateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatch = <ThrowOnE
 });
 
 /**
- * List Templates
+ * List users in directory
  *
- * Get all templates accessible to the current user (public + their own).
+ * Retrieve minimal information for all users. This endpoint backs the sharing UI by providing a directory of users.
  */
-export const listTemplatesTemplatesGet = <ThrowOnError extends boolean = false>(options?: Options<ListTemplatesTemplatesGetData, ThrowOnError>) => (options?.client ?? client).get<ListTemplatesTemplatesGetResponses, unknown, ThrowOnError>({ url: '/templates/', ...options });
-
-/**
- * Create Template
- *
- * Create a new template.
- */
-export const createTemplateTemplatesPost = <ThrowOnError extends boolean = false>(options: Options<CreateTemplateTemplatesPostData, ThrowOnError>) => (options.client ?? client).post<CreateTemplateTemplatesPostResponses, CreateTemplateTemplatesPostErrors, ThrowOnError>({
-    url: '/templates/',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
+export const listUsersForSharingUsersDirectoryGet = <ThrowOnError extends boolean = false>(options?: Options<ListUsersForSharingUsersDirectoryGetData, ThrowOnError>) => (options?.client ?? client).get<ListUsersForSharingUsersDirectoryGetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/users/directory',
+    ...options
 });
-
-/**
- * Delete Template
- *
- * Delete a template.
- */
-export const deleteTemplateTemplatesTemplateIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteTemplateTemplatesTemplateIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<DeleteTemplateTemplatesTemplateIdDeleteResponses, DeleteTemplateTemplatesTemplateIdDeleteErrors, ThrowOnError>({ url: '/templates/{template_id}', ...options });
-
-/**
- * Get Template
- *
- * Get a specific template by ID.
- */
-export const getTemplateTemplatesTemplateIdGet = <ThrowOnError extends boolean = false>(options: Options<GetTemplateTemplatesTemplateIdGetData, ThrowOnError>) => (options.client ?? client).get<GetTemplateTemplatesTemplateIdGetResponses, GetTemplateTemplatesTemplateIdGetErrors, ThrowOnError>({ url: '/templates/{template_id}', ...options });
-
-/**
- * Use Template
- *
- * Mark a template as used (increment usage count) and return its workflow data.
- */
-export const useTemplateTemplatesTemplateIdUsePost = <ThrowOnError extends boolean = false>(options: Options<UseTemplateTemplatesTemplateIdUsePostData, ThrowOnError>) => (options.client ?? client).post<UseTemplateTemplatesTemplateIdUsePostResponses, UseTemplateTemplatesTemplateIdUsePostErrors, ThrowOnError>({ url: '/templates/{template_id}/use', ...options });
 
 /**
  * Get all users
  *
  * Retrieve a list of all users in the system
  */
-export const getAllUsersUsersGet = <ThrowOnError extends boolean = false>(options?: Options<GetAllUsersUsersGetData, ThrowOnError>) => (options?.client ?? client).get<GetAllUsersUsersGetResponses, unknown, ThrowOnError>({ url: '/users/', ...options });
+export const getAllUsersUsersGet = <ThrowOnError extends boolean = false>(options?: Options<GetAllUsersUsersGetData, ThrowOnError>) => (options?.client ?? client).get<GetAllUsersUsersGetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/users/',
+    ...options
+});
 
 /**
  * Create a new user
@@ -314,6 +354,7 @@ export const getAllUsersUsersGet = <ThrowOnError extends boolean = false>(option
  * Create a new user account. Email must be unique.
  */
 export const createUserUsersPost = <ThrowOnError extends boolean = false>(options: Options<CreateUserUsersPostData, ThrowOnError>) => (options.client ?? client).post<CreateUserUsersPostResponses, CreateUserUsersPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/users/',
     ...options,
     headers: {
@@ -327,14 +368,22 @@ export const createUserUsersPost = <ThrowOnError extends boolean = false>(option
  *
  * Permanently delete a user from the system.
  */
-export const deleteUserUsersUserIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteUserUsersUserIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<DeleteUserUsersUserIdDeleteResponses, DeleteUserUsersUserIdDeleteErrors, ThrowOnError>({ url: '/users/{user_id}', ...options });
+export const deleteUserUsersUserIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteUserUsersUserIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<DeleteUserUsersUserIdDeleteResponses, DeleteUserUsersUserIdDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/users/{user_id}',
+    ...options
+});
 
 /**
  * Admin gets user by ID
  *
  * Admin retrieves a single user by their id.
  */
-export const getUserByIdUsersUserIdGet = <ThrowOnError extends boolean = false>(options: Options<GetUserByIdUsersUserIdGetData, ThrowOnError>) => (options.client ?? client).get<GetUserByIdUsersUserIdGetResponses, GetUserByIdUsersUserIdGetErrors, ThrowOnError>({ url: '/users/{user_id}', ...options });
+export const getUserByIdUsersUserIdGet = <ThrowOnError extends boolean = false>(options: Options<GetUserByIdUsersUserIdGetData, ThrowOnError>) => (options.client ?? client).get<GetUserByIdUsersUserIdGetResponses, GetUserByIdUsersUserIdGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/users/{user_id}',
+    ...options
+});
 
 /**
  * Admin updates user
@@ -342,6 +391,7 @@ export const getUserByIdUsersUserIdGet = <ThrowOnError extends boolean = false>(
  * Admin can update an existing user's information excluding its password.
  */
 export const updateUserUsersUserIdPut = <ThrowOnError extends boolean = false>(options: Options<UpdateUserUsersUserIdPutData, ThrowOnError>) => (options.client ?? client).put<UpdateUserUsersUserIdPutResponses, UpdateUserUsersUserIdPutErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/users/{user_id}',
     ...options,
     headers: {
@@ -355,14 +405,22 @@ export const updateUserUsersUserIdPut = <ThrowOnError extends boolean = false>(o
  *
  * Admin generates a temporary password for a user. User must change it.
  */
-export const resetUserPasswordUsersUserIdResetPasswordPost = <ThrowOnError extends boolean = false>(options: Options<ResetUserPasswordUsersUserIdResetPasswordPostData, ThrowOnError>) => (options.client ?? client).post<ResetUserPasswordUsersUserIdResetPasswordPostResponses, ResetUserPasswordUsersUserIdResetPasswordPostErrors, ThrowOnError>({ url: '/users/{user_id}/reset-password', ...options });
+export const resetUserPasswordUsersUserIdPasswordPost = <ThrowOnError extends boolean = false>(options: Options<ResetUserPasswordUsersUserIdPasswordPostData, ThrowOnError>) => (options.client ?? client).post<ResetUserPasswordUsersUserIdPasswordPostResponses, ResetUserPasswordUsersUserIdPasswordPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/users/{user_id}/password',
+    ...options
+});
 
 /**
  * Get my profile
  *
  * Retrieve the user's own profile info.
  */
-export const getMyProfileProfileMeGet = <ThrowOnError extends boolean = false>(options?: Options<GetMyProfileProfileMeGetData, ThrowOnError>) => (options?.client ?? client).get<GetMyProfileProfileMeGetResponses, unknown, ThrowOnError>({ url: '/profile/me', ...options });
+export const getMyProfileProfileMeGet = <ThrowOnError extends boolean = false>(options?: Options<GetMyProfileProfileMeGetData, ThrowOnError>) => (options?.client ?? client).get<GetMyProfileProfileMeGetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/profile/me',
+    ...options
+});
 
 /**
  * Update my profile
@@ -370,6 +428,7 @@ export const getMyProfileProfileMeGet = <ThrowOnError extends boolean = false>(o
  * Update your own profile info.
  */
 export const updateMyProfileProfileMePut = <ThrowOnError extends boolean = false>(options: Options<UpdateMyProfileProfileMePutData, ThrowOnError>) => (options.client ?? client).put<UpdateMyProfileProfileMePutResponses, UpdateMyProfileProfileMePutErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/profile/me',
     ...options,
     headers: {
@@ -381,15 +440,75 @@ export const updateMyProfileProfileMePut = <ThrowOnError extends boolean = false
 /**
  * Change my password
  *
- * Change your own password. Requires verification of old password. Returns a new access token.
+ * Change your own password. Requires verification of old password. Revokes the current session — re-login required.
  */
-export const changeMyPasswordProfileMeChangePasswordPost = <ThrowOnError extends boolean = false>(options: Options<ChangeMyPasswordProfileMeChangePasswordPostData, ThrowOnError>) => (options.client ?? client).post<ChangeMyPasswordProfileMeChangePasswordPostResponses, ChangeMyPasswordProfileMeChangePasswordPostErrors, ThrowOnError>({
-    url: '/profile/me/change-password',
+export const changeMyPasswordProfileMePasswordPost = <ThrowOnError extends boolean = false>(options: Options<ChangeMyPasswordProfileMePasswordPostData, ThrowOnError>) => (options.client ?? client).post<ChangeMyPasswordProfileMePasswordPostResponses, ChangeMyPasswordProfileMePasswordPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/profile/me/password',
     ...options,
     headers: {
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * List Templates
+ *
+ * Get all templates accessible to the current user (public + their own).
+ */
+export const listTemplatesTemplatesGet = <ThrowOnError extends boolean = false>(options?: Options<ListTemplatesTemplatesGetData, ThrowOnError>) => (options?.client ?? client).get<ListTemplatesTemplatesGetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/templates/',
+    ...options
+});
+
+/**
+ * Create Template
+ *
+ * Create a new template.
+ */
+export const createTemplateTemplatesPost = <ThrowOnError extends boolean = false>(options: Options<CreateTemplateTemplatesPostData, ThrowOnError>) => (options.client ?? client).post<CreateTemplateTemplatesPostResponses, CreateTemplateTemplatesPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/templates/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete Template
+ *
+ * Delete a template.
+ */
+export const deleteTemplateTemplatesTemplateIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteTemplateTemplatesTemplateIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<DeleteTemplateTemplatesTemplateIdDeleteResponses, DeleteTemplateTemplatesTemplateIdDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/templates/{template_id}',
+    ...options
+});
+
+/**
+ * Get Template
+ *
+ * Get a specific template by ID.
+ */
+export const getTemplateTemplatesTemplateIdGet = <ThrowOnError extends boolean = false>(options: Options<GetTemplateTemplatesTemplateIdGetData, ThrowOnError>) => (options.client ?? client).get<GetTemplateTemplatesTemplateIdGetResponses, GetTemplateTemplatesTemplateIdGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/templates/{template_id}',
+    ...options
+});
+
+/**
+ * Use Template
+ *
+ * Mark a template as used (increment usage count) and return its workflow data.
+ */
+export const useTemplateTemplatesTemplateIdUsePost = <ThrowOnError extends boolean = false>(options: Options<UseTemplateTemplatesTemplateIdUsePostData, ThrowOnError>) => (options.client ?? client).post<UseTemplateTemplatesTemplateIdUsePostResponses, UseTemplateTemplatesTemplateIdUsePostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/templates/{template_id}/use',
+    ...options
 });
 
 /**
@@ -406,7 +525,11 @@ export const changeMyPasswordProfileMeChangePasswordPost = <ThrowOnError extends
  * - ADMIN: can view all credentials
  * - SHARED USER: can view shared credentials
  */
-export const listCredentialsCredentialsGet = <ThrowOnError extends boolean = false>(options?: Options<ListCredentialsCredentialsGetData, ThrowOnError>) => (options?.client ?? client).get<ListCredentialsCredentialsGetResponses, unknown, ThrowOnError>({ url: '/credentials/', ...options });
+export const listCredentialsCredentialsGet = <ThrowOnError extends boolean = false>(options?: Options<ListCredentialsCredentialsGetData, ThrowOnError>) => (options?.client ?? client).get<ListCredentialsCredentialsGetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/credentials/',
+    ...options
+});
 
 /**
  * Create a new credential
@@ -422,6 +545,7 @@ export const listCredentialsCredentialsGet = <ThrowOnError extends boolean = fal
  * - USER: can create credentials
  */
 export const createCredentialCredentialsPost = <ThrowOnError extends boolean = false>(options: Options<CreateCredentialCredentialsPostData, ThrowOnError>) => (options.client ?? client).post<CreateCredentialCredentialsPostResponses, CreateCredentialCredentialsPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/credentials/',
     ...options,
     headers: {
@@ -443,7 +567,11 @@ export const createCredentialCredentialsPost = <ThrowOnError extends boolean = f
  * - ADMIN: can view all credentials
  * - SHARED USER: can view shared credentials
  */
-export const listCredentialsDropdownCredentialsDropdownGet = <ThrowOnError extends boolean = false>(options?: Options<ListCredentialsDropdownCredentialsDropdownGetData, ThrowOnError>) => (options?.client ?? client).get<ListCredentialsDropdownCredentialsDropdownGetResponses, unknown, ThrowOnError>({ url: '/credentials/dropdown', ...options });
+export const listCredentialsDropdownCredentialsDropdownGet = <ThrowOnError extends boolean = false>(options?: Options<ListCredentialsDropdownCredentialsDropdownGetData, ThrowOnError>) => (options?.client ?? client).get<ListCredentialsDropdownCredentialsDropdownGetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/credentials/dropdown',
+    ...options
+});
 
 /**
  * Delete a credential
@@ -458,7 +586,11 @@ export const listCredentialsDropdownCredentialsDropdownGet = <ThrowOnError exten
  * - ADMIN: can delete any credential
  * - SHARED USER: cannot delete
  */
-export const deleteCredentialCredentialsCredentialIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteCredentialCredentialsCredentialIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<DeleteCredentialCredentialsCredentialIdDeleteResponses, DeleteCredentialCredentialsCredentialIdDeleteErrors, ThrowOnError>({ url: '/credentials/{credential_id}', ...options });
+export const deleteCredentialCredentialsCredentialIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteCredentialCredentialsCredentialIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<DeleteCredentialCredentialsCredentialIdDeleteResponses, DeleteCredentialCredentialsCredentialIdDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/credentials/{credential_id}',
+    ...options
+});
 
 /**
  * Get a specific credential
@@ -473,7 +605,11 @@ export const deleteCredentialCredentialsCredentialIdDelete = <ThrowOnError exten
  * - ADMIN: can view any credential
  * - SHARED USER: can view shared credential
  */
-export const getCredentialCredentialsCredentialIdGet = <ThrowOnError extends boolean = false>(options: Options<GetCredentialCredentialsCredentialIdGetData, ThrowOnError>) => (options.client ?? client).get<GetCredentialCredentialsCredentialIdGetResponses, GetCredentialCredentialsCredentialIdGetErrors, ThrowOnError>({ url: '/credentials/{credential_id}', ...options });
+export const getCredentialCredentialsCredentialIdGet = <ThrowOnError extends boolean = false>(options: Options<GetCredentialCredentialsCredentialIdGetData, ThrowOnError>) => (options.client ?? client).get<GetCredentialCredentialsCredentialIdGetResponses, GetCredentialCredentialsCredentialIdGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/credentials/{credential_id}',
+    ...options
+});
 
 /**
  * Update a credential
@@ -492,6 +628,7 @@ export const getCredentialCredentialsCredentialIdGet = <ThrowOnError extends boo
  * - SHARED USER: cannot update
  */
 export const updateCredentialCredentialsCredentialIdPatch = <ThrowOnError extends boolean = false>(options: Options<UpdateCredentialCredentialsCredentialIdPatchData, ThrowOnError>) => (options.client ?? client).patch<UpdateCredentialCredentialsCredentialIdPatchResponses, UpdateCredentialCredentialsCredentialIdPatchErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/credentials/{credential_id}',
     ...options,
     headers: {
@@ -515,6 +652,7 @@ export const updateCredentialCredentialsCredentialIdPatch = <ThrowOnError extend
  * - SHARED USER: cannot share
  */
 export const shareCredentialCredentialsCredentialIdSharePost = <ThrowOnError extends boolean = false>(options: Options<ShareCredentialCredentialsCredentialIdSharePostData, ThrowOnError>) => (options.client ?? client).post<ShareCredentialCredentialsCredentialIdSharePostResponses, ShareCredentialCredentialsCredentialIdSharePostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/credentials/{credential_id}/share',
     ...options,
     headers: {
@@ -537,7 +675,11 @@ export const shareCredentialCredentialsCredentialIdSharePost = <ThrowOnError ext
  * - ADMIN: can revoke access from any user (oversight)
  * - SHARED USER: can only revoke their own access (user_id must be their own)
  */
-export const revokeCredentialAccessCredentialsCredentialIdShareUserIdDelete = <ThrowOnError extends boolean = false>(options: Options<RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteResponses, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteErrors, ThrowOnError>({ url: '/credentials/{credential_id}/share/{user_id}', ...options });
+export const revokeCredentialAccessCredentialsCredentialIdShareUserIdDelete = <ThrowOnError extends boolean = false>(options: Options<RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteResponses, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/credentials/{credential_id}/share/{user_id}',
+    ...options
+});
 
 /**
  * List users who have access to a credential
@@ -552,15 +694,34 @@ export const revokeCredentialAccessCredentialsCredentialIdShareUserIdDelete = <T
  * - ADMIN: can view shares (oversight)
  * - SHARED USER: cannot view shares
  */
-export const listCredentialSharesCredentialsCredentialIdSharesGet = <ThrowOnError extends boolean = false>(options: Options<ListCredentialSharesCredentialsCredentialIdSharesGetData, ThrowOnError>) => (options.client ?? client).get<ListCredentialSharesCredentialsCredentialIdSharesGetResponses, ListCredentialSharesCredentialsCredentialIdSharesGetErrors, ThrowOnError>({ url: '/credentials/{credential_id}/shares', ...options });
+export const listCredentialSharesCredentialsCredentialIdSharesGet = <ThrowOnError extends boolean = false>(options: Options<ListCredentialSharesCredentialsCredentialIdSharesGetData, ThrowOnError>) => (options.client ?? client).get<ListCredentialSharesCredentialsCredentialIdSharesGetResponses, ListCredentialSharesCredentialsCredentialIdSharesGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/credentials/{credential_id}/shares',
+    ...options
+});
+
+/**
+ * Get your own share info for a credential
+ *
+ * Get your own share info for a credential that has been shared with you.
+ *
+ * This endpoint allows shared users to see when the credential was shared
+ * with them and who shared it.
+ */
+export const getMyShareInfoCredentialsCredentialIdMyShareGet = <ThrowOnError extends boolean = false>(options: Options<GetMyShareInfoCredentialsCredentialIdMyShareGetData, ThrowOnError>) => (options.client ?? client).get<GetMyShareInfoCredentialsCredentialIdMyShareGetResponses, GetMyShareInfoCredentialsCredentialIdMyShareGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/credentials/{credential_id}/my-share',
+    ...options
+});
 
 /**
  * Generate Workflow Docs
  *
  * Generate documentation for the specified workflow.
  */
-export const generateWorkflowDocsWorkflowsWorkflowIdDocsPost = <ThrowOnError extends boolean = false>(options: Options<GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostData, ThrowOnError>) => (options.client ?? client).post<GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses, GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors, ThrowOnError>({
-    url: '/workflows/{workflow_id}/docs',
+export const generateWorkflowDocsScrybWorkflowIdPost = <ThrowOnError extends boolean = false>(options: Options<GenerateWorkflowDocsScrybWorkflowIdPostData, ThrowOnError>) => (options.client ?? client).post<GenerateWorkflowDocsScrybWorkflowIdPostResponses, GenerateWorkflowDocsScrybWorkflowIdPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/scryb/{workflow_id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -569,12 +730,88 @@ export const generateWorkflowDocsWorkflowsWorkflowIdDocsPost = <ThrowOnError ext
 });
 
 /**
- * Generate Workflow From Prompt
+ * Clear Smith AI conversation history
  *
- * Use Smith to convert a natural-language request into a workflow definition.
+ * Clear the Smith AI conversation history for a workflow.
+ *
+ * This resets the AI agent's memory for the specified workflow,
+ * allowing the user to start a fresh conversation.
+ *
+ * **Requires:** EDIT permission (OWNER or EDITOR)
+ *
+ * Returns:
+ * - `success`: Whether the thread was cleared successfully
+ * - `message`: A confirmation message
  */
-export const generateWorkflowFromPromptWorkflowsSmithGeneratePost = <ThrowOnError extends boolean = false>(options: Options<GenerateWorkflowFromPromptWorkflowsSmithGeneratePostData, ThrowOnError>) => (options.client ?? client).post<GenerateWorkflowFromPromptWorkflowsSmithGeneratePostResponses, GenerateWorkflowFromPromptWorkflowsSmithGeneratePostErrors, ThrowOnError>({
-    url: '/workflows/smith/generate',
+export const clearThreadSmithWorkflowIdDelete = <ThrowOnError extends boolean = false>(options: Options<ClearThreadSmithWorkflowIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<ClearThreadSmithWorkflowIdDeleteResponses, ClearThreadSmithWorkflowIdDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/smith/{workflow_id}',
+    ...options
+});
+
+/**
+ * Generate Workflow
+ *
+ * Use Smith AI to generate/update a workflow from natural language.
+ *
+ * Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
+ * including AI tokens, tool calls, tool results, and completion status.
+ *
+ * **Requires:** EDIT permission (OWNER or EDITOR)
+ *
+ * **Headers:**
+ * - `Accept: text/event-stream`
+ *
+ * **Session Persistence:**
+ * Conversations are persisted per user+workflow combination.
+ * The same workflow_id will maintain conversation history for 60 minutes of inactivity.
+ *
+ * **Event Types:**
+ * - `stream_start`: Stream has started
+ * - `token`: AI-generated text token
+ * - `tool_call`: Agent is calling a tool (e.g., create_node, create_edge)
+ * - `tool_result`: Result from a tool call
+ * - `workflow_state`: Final workflow structure with nodes and edges
+ * - `stream_end`: Stream has completed successfully
+ * - `error`: An error occurred during processing
+ */
+export const generateWorkflowSmithWorkflowIdPost = <ThrowOnError extends boolean = false>(options: Options<GenerateWorkflowSmithWorkflowIdPostData, ThrowOnError>) => (options.client ?? client).sse.post<GenerateWorkflowSmithWorkflowIdPostResponses, GenerateWorkflowSmithWorkflowIdPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/smith/{workflow_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Generate New Workflow
+ *
+ * Use Smith AI to generate a new workflow from natural language (without a workflow_id).
+ *
+ * Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
+ * including AI tokens, tool calls, tool results, and completion status.
+ *
+ * **Headers:**
+ * - `Accept: text/event-stream`
+ *
+ * **Session Persistence:**
+ * Creates a new temporary session. The returned workflow structure can be
+ * saved to create a new workflow.
+ *
+ * **Event Types:**
+ * - `stream_start`: Stream has started
+ * - `token`: AI-generated text token
+ * - `tool_call`: Agent is calling a tool (e.g., create_node, create_edge)
+ * - `tool_result`: Result from a tool call
+ * - `workflow_state`: Final workflow structure with nodes and edges
+ * - `stream_end`: Stream has completed successfully
+ * - `error`: An error occurred during processing
+ */
+export const generateNewWorkflowSmithPost = <ThrowOnError extends boolean = false>(options: Options<GenerateNewWorkflowSmithPostData, ThrowOnError>) => (options.client ?? client).sse.post<GenerateNewWorkflowSmithPostResponses, GenerateNewWorkflowSmithPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/smith',
     ...options,
     headers: {
         'Content-Type': 'application/json',

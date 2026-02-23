@@ -6,6 +6,7 @@ import {
   deleteUserUsersUserIdDelete,
   getMyProfileProfileMeGet,
   updateMyProfileProfileMePut,
+  listUsersForSharingUsersDirectoryGet,
 } from "@/client";
 
 import type {
@@ -24,6 +25,8 @@ import type {
 // Readable wrappers for user-related SDK functions
 
 export const listUsers = () => getAllUsersUsersGet();
+
+export const listUsersForSharing = () => listUsersForSharingUsersDirectoryGet();
 
 export const getUserById = (user_id: number) =>
   getUserByIdUsersUserIdGet({ path: { user_id } });

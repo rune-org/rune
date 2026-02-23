@@ -9,9 +9,9 @@ This module handles access control for credentials with the following rules:
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.db.models import User, UserRole, WorkflowCredential, CredentialShare
-from src.core.exceptions import NotFound, Forbidden, BadRequest
+from src.core.exceptions import BadRequest, Forbidden, NotFound
 from src.credentials.schemas import CredentialShareInfo
+from src.db.models import CredentialShare, User, UserRole, WorkflowCredential
 
 
 class CredentialPermissionService:
@@ -245,6 +245,13 @@ class CredentialPermissionService:
 
         shares = []
         for share, user in rows:
+            # Get sharer's name if available
+            shared_by_name = None
+            if share.shared_by:
+                sharer = await self.db.get(User, share.shared_by)
+                if sharer:
+                    shared_by_name = sharer.name
+
             shares.append(
                 CredentialShareInfo(
                     user_id=user.id,
@@ -252,10 +259,56 @@ class CredentialPermissionService:
                     user_name=user.name,
                     shared_at=share.created_at,
                     shared_by=share.shared_by,
+                    shared_by_name=shared_by_name,
                 )
             )
-
         return shares
+
+    async def get_user_share_info_full(
+        self, credential_id: int, user_id: int
+    ) -> CredentialShareInfo | None:
+        """
+        Get full share info for a specific user's access to a credential.
+
+        Args:
+            credential_id: ID of the credential
+            user_id: ID of the user to get share info for
+
+        Returns:
+            CredentialShareInfo object, or None if not shared
+        """
+        # Get the share record with user info
+        stmt = (
+            select(CredentialShare, User)
+            .join(User, CredentialShare.user_id == User.id)
+            .where(
+                CredentialShare.credential_id == credential_id,
+                CredentialShare.user_id == user_id,
+            )
+        )
+        result = await self.db.exec(stmt)
+        row = result.first()
+
+        if not row:
+            return None
+
+        share, user = row
+
+        # Get sharer's name if available
+        shared_by_name = None
+        if share.shared_by:
+            sharer = await self.db.get(User, share.shared_by)
+            if sharer:
+                shared_by_name = sharer.name
+
+        return CredentialShareInfo(
+            user_id=user.id,
+            user_email=user.email,
+            user_name=user.name,
+            shared_at=share.created_at,
+            shared_by=share.shared_by,
+            shared_by_name=shared_by_name,
+        )
 
     async def get_accessible_credentials(self, user: User) -> list[WorkflowCredential]:
         """

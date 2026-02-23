@@ -1,86 +1,50 @@
-import dspy
+from typing import NotRequired
 
-from .tools import SMITH_TOOLS
+from langchain.agents import AgentState, create_agent
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+from src.core.config import get_settings
+from src.smith.prompts import SYSTEM_PROMPT
+from src.smith.tools import SMITH_TOOLS
 
 
-class WorkflowSignature(dspy.Signature):
-    """Convert natural language to a Rune workflow.
+class SmithAgentState(AgentState):
+    """Extended agent state with workflow tracking."""
 
-    Build workflows by:
-    1. Creating nodes (trigger first, then http/smtp/if/etc)
-    2. Connecting them with edges (src -> dst)
-    3. Calling build_workflow to assemble
+    workflow_nodes: NotRequired[list[dict]]
+    workflow_edges: NotRequired[list[dict]]
+    current_workflow_id: NotRequired[str]
 
-    Node schemas (fields/outputs):
-    trigger: {}
-    http: fields: method (GET|POST|PUT|DELETE, required), url (required), headers, body. outputs: status, body, headers
-    smtp: fields: to (required), subject, body. outputs: sent
-    if: fields: expression (required). outputs: true, false. Use label "true"/"false" on edges
-    switch: fields: rules (array of {value, operator, compare}, all string). outputs: case 1, case 2, ..., fallback. Use labels "case 1"/"case 2"/... or "fallback" on edges.
 
-    Reference previous node outputs with $NodeName.field (e.g., $Fetch.status).
-    For conditional (if) nodes, use label="true" or "false" on edges.
-    For switch nodes, use label="case 1", "case 2", etc. or "fallback" on edges.
-    """
+def create_smith_model() -> ChatGoogleGenerativeAI:
+    """Create the LLM model with settings from environment."""
+    settings = get_settings()
 
-    request: str = dspy.InputField(desc="User's workflow request")
-    history: str = dspy.InputField(desc="Conversation history", default="")
-
-    response: str = dspy.OutputField(desc="Response to user")
-    workflow: str = dspy.OutputField(
-        desc="Workflow JSON or empty if clarification needed"
+    return ChatGoogleGenerativeAI(
+        model=settings.smith_model,
+        temperature=settings.smith_temperature,
+        google_api_key=settings.google_api_key,
     )
 
 
-class SmithAgent(dspy.Module):
-    """ReAct agent that builds workflows from natural language."""
+def create_smith_agent(checkpointer=None):
+    """
+    Create a Smith agent with workflow state tracking.
 
-    def __init__(self, max_iters: int = 5):
-        super().__init__()
-        self.react = dspy.ReAct(
-            WorkflowSignature, tools=SMITH_TOOLS, max_iters=max_iters
-        )
+    Args:
+        checkpointer: Optional LangGraph checkpointer for persistence
 
-    def forward(self, request: str, history: str = "") -> dspy.Prediction:
-        return self.react(request=request, history=history)
+    Returns:
+        A LangGraph agent executor with workflow state tracking
+    """
+    model = create_smith_model()
 
+    agent_executor = create_agent(
+        model=model,
+        tools=SMITH_TOOLS,
+        system_prompt=SYSTEM_PROMPT,
+        checkpointer=checkpointer,
+        state_schema=SmithAgentState,
+    )
 
-class SmithAgentWithMemory:
-    """SmithAgent wrapper with conversation memory."""
-
-    def __init__(self, max_iters: int = 5):
-        self.agent = SmithAgent(max_iters=max_iters)
-        self.history: list[tuple[str, str]] = []
-        self.last_workflow: str | None = None
-        self.last_result: dspy.Prediction | None = None
-
-    def chat(self, message: str) -> dict:
-        """Send message, get response."""
-        history_str = "\n".join(f"{r}: {m}" for r, m in self.history)
-
-        result = self.agent(request=message, history=history_str)
-        self.last_result = result
-
-        response = result.response
-        workflow = result.workflow
-
-        self.history.append(("User", message))
-        self.history.append(("Smith", response))
-
-        # Keep last 20 turns
-        if len(self.history) > 40:
-            self.history = self.history[-40:]
-
-        if workflow and workflow.strip():
-            self.last_workflow = workflow
-
-        return {
-            "response": response,
-            "workflow": workflow if workflow and workflow.strip() else None,
-        }
-
-    def clear(self):
-        """Clear history."""
-        self.history = []
-        self.last_workflow = None
-        self.last_result = None
+    return agent_executor

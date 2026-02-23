@@ -1,312 +1,191 @@
-# Rune
+<picture>
+    <source srcset="assets/logo-white.svg"  media="(prefers-color-scheme: dark)">
+    <!-- markdown-link-check-disable-next-line -->
+    <img src="assets/Logo.svg">
+</picture>
 
-Rune is a low‑code workflow automation platform that enables users to create, manage, and execute complex workflows through a visual interface.
+<h3 align="center">Describe your workflow. <strong><em>Automate your world.</em></strong></h3>
 
-## Repository Structure
+---
+
+Rune is an open-source workflow automation platform that lets you design, execute, and monitor complex automations through a visual interface. 
+
+Whether you're orchestrating API calls, processing data pipelines, or building multi-step integrations, Rune makes it simple to go from idea to execution.
+
+We built Rune because automation shouldn't require a degree in distributed systems. Connect your services, define your logic, and let Rune handle the rest.
+
+<p align="center">
+  <img src="assets/cloudflare.gif" alt="Check if Cloudflare is broken via Rune"/>
+</p>
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Development](#development)
+- [Why Rune?](#why-rune)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Features
+
+**Visual Workflow Designer:**
+Build automations by dragging and dropping nodes onto a canvas. Connect them visually, configure their behavior, and watch your workflow come to life.
+
+<p align="center">
+  <img src="assets/workflows.png" alt="Visual Workflow Designer"/>
+</p>
+
+**Extensible Node System:**
+A growing library of nodes for API calls, conditional logic, parallel execution, data transformation, and more. Each node is a composable building block that handles one job well.
+
+<p align="center">
+  <img src="assets/nodes.png" alt="Extensible Node System"/>
+</p>
+
+**Real-Time Execution Monitoring:**
+Watch your workflows execute node-by-node with live WebSocket updates. Debug issues as they happen, not after the fact.
+
+<p align="center">
+  <img src="assets/executions.png" alt="Real-Time Execution Monitoring"/>
+</p>
+
+**AI Assistants**
+
+<table>
+<tr>
+<td width="80" align="center">
+<picture>
+<source srcset="assets/smith_white.svg" media="(prefers-color-scheme: dark)">
+<img src="assets/smith_black.svg" width="48" alt="Smith"/>
+</picture>
+</td>
+<td><strong>Smith</strong> - Describe what you want in plain English. Smith translates your intent into a working workflow definition. Iterate through conversation until it's exactly right.</td>
+</tr>
+<tr>
+<td width="80" align="center">
+<picture>
+<source srcset="assets/scryb_white.svg" media="(prefers-color-scheme: dark)">
+<img src="assets/scryb_black.svg" width="28" alt="Scryb"/>
+</picture>
+</td>
+<td><strong>Scryb</strong> - Automatically generate documentation for your workflows. Scryb analyzes your automation and produces clear, readable explanations tailored to your audience.</td>
+</tr>
+</table>
+
+**Secure Credential Management:**
+Store API keys, OAuth tokens, and secrets with encryption at rest. Share credentials with team members without exposing sensitive values.
+
+**Collaboration Built In:**
+Share workflows with granular permissions. Owners, editors, and viewers each see what they need. Full audit trail for compliance.
+
+---
+
+## Quick Start
+
+The fastest way to get Rune running is with Docker:
+
+```bash
+# Clone the repository
+git clone https://github.com/rune-org/rune.git
+cd rune
+
+# Copy the environment template and set your variables
+cp .env.example .env
+
+# Start all services
+make up
+```
+
+Once the containers are running, open `http://localhost:3000` in your browser.
+
+### What Gets Started
+
+| Service | Port | Description |
+|---------|------|-------------|
+| Frontend | 3000 | Web application |
+| API | 8000 | REST API |
+| RTES | 8080 | Real-time execution streaming |
+| PostgreSQL | 5432 | Primary database |
+| MongoDB | 27017 | Execution history |
+| Redis | 6379 | State and caching |
+| RabbitMQ | 5672 / 15672 | Message broker |
+
+### Stopping Services
+
+```bash
+make down
+```
+
+---
+
+## Architecture
+
+Rune follows a polyglot microservices architecture, using the right tool for each job:
+
+- **API (Python/FastAPI)** - Handles authentication, workflow CRUD, credential management, and orchestration
+- **Worker (Go)** - Executes workflows recursively, node by node, with fault tolerance
+- **RTES (Rust)** - Streams execution state in real-time over WebSockets
+- **Frontend (Next.js/React)** - Visual canvas built on React Flow
+
+---
+
+## Development
+
+For local development with hot reloading:
+
+```bash
+# Start infrastructure (Postgres, Redis, RabbitMQ, MongoDB)
+make dev-infra-up
+
+# In separate terminals, start each service:
+make web-dev      # Frontend on :3000
+make api-dev      # API on :8000
+make worker-dev   # Background worker
+```
+
+### Project Structure
 
 ```
 rune/
 ├── apps/
-│   └── web/              # Next.js frontend application
+│   └── web/                 # Next.js frontend
 ├── services/
-│   ├── api/              # FastAPI backend service (Python)
-│   └── rune-worker/      # Workflow worker service (Go)
-├── docker-compose.yml    # Main Docker Compose configuration
-└── Makefile
+│   ├── api/                 # FastAPI backend
+│   ├── rune-worker/         # Go execution engine
+│   └── rtes/                # Rust real-time service
+└── docker-compose.yml
 ```
 
-## Services at a Glance
+---
 
-| Component | Responsibilities | Location |
-| --- | --- | --- |
-| Frontend | Visual workflow builder, run history UI, auth flows | `apps/web` |
-| API | Workflow definitions, scheduling, user/org management, REST/GraphQL APIs | `services/api` |
-| Worker | Executes workflow steps, manages retries, interacts with external services | `services/rune-worker` |
-| Infrastructure | Shared dependencies: PostgreSQL, Redis, RabbitMQ, MinIO (optional) | `docker-compose.yml` |
+## Why Rune?
 
-## Tech Stack
+In ancient times, runes were symbols of power, symbols of magic, each one encoding knowledge that could be combined to express complex ideas. Rune, the platform, follows the same philosophy: simple, composable building blocks that combine into something greater.
 
-- **Frontend**: Next.js 15, React, TypeScript
-- **API**: FastAPI, Python 3.13, PostgreSQL
-- **Worker**: Go 1.25, RabbitMQ
-- **Infrastructure**: Docker, PostgreSQL, Redis, RabbitMQ
+But beyond the name, we built Rune because:
 
-## Key Capabilities
+**Automation should be accessible.** You shouldn't need to understand message queues, distributed locking, or retry patterns to automate a business process. Rune handles the infrastructure so you can focus on the logic.
 
-- **Visual workflow designer** for composing multi-step automations with branching logic, retry policies, and scheduling.
-- **Reusable integration blocks** for common SaaS tools (HTTP, queues, databases) that can be combined into new workflows quickly.
-- **Observability first**: central run history, live logs, and per-step metrics to debug production runs without diving into logs manually.
-- **Environment aware deployments** so you can promote workflows from staging to production with consistent secrets and infra settings.
+**Visibility matters.** When something goes wrong at 2 AM, you need to know exactly which step failed and why. Real-time monitoring and full execution history make debugging straightforward.
 
-## Quick Start (Docker - Recommended)
+**Security isn't optional.** Credentials encrypted at rest, role-based access control, and audit logging come standard. Not as an enterprise add-on.
 
-The fastest way to get started is using Docker, which runs all services in containers.
+**Open source wins.** Your automation platform shouldn't be a black box you can't inspect, extend, or self-host.
 
-### Prerequisites
-
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + Docker Compose)
-- Git
-
-### Setup
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/rune-org/rune.git
-cd rune
-
-# 2. Copy environment file
-cp .env.example .env
-
-# 3. Start all services
-make up
-
-# 4. Access the application
-- Frontend: http://localhost:3000
-- API: http://localhost:8000
-- RabbitMQ Management: http://localhost:15672
-```
-
-### Common Docker Commands
-
-```bash
-make up          # Start all services
-make down        # Stop all services
-make restart     # Rebuild and restart all services
-make status      # Show container status
-make logs        # View logs from all services
-
-# Service-specific logs
-make logs-api
-make logs-worker
-make logs-frontend
-
-# Database access
-make db-shell    # Connect to PostgreSQL
-
-# Cleanup
-make docker-clean   # Remove all containers, volumes, and images
-docker image prune  # Remove dangling images
-```
-
-## Development Modes
-
-### 1. Full Docker (Recommended for Testing)
-
-Run everything in Docker containers. Great for testing the complete system.
-
-```bash
-make up
-```
-
-### 2. Hybrid Mode (Recommended for Development)
-
-Run infrastructure in Docker, but run services locally for faster development.
-
-```bash
-# 1. Install all dependencies (first time only)
-make install
-
-# 2. Start shared Docker infrastructure (required before running services)
-make dev-infra-up
-
-# In separate terminals, run services locally:
-
-# 3. Run frontend locally
-make web-dev
-
-# 4. Run API locally
-make api-dev
-
-# 5. (Optional) Run worker locally
-make worker-dev
-```
-
-**Note**: The shared infrastructure (PostgreSQL, Redis, RabbitMQ) must be started with `make dev-infra-up` before running any services. Stop it with `make dev-infra-down` when done.
-
-## Environment Configuration
-
-### Main Environment Variables (`.env`)
-
-```bash
-# Database
-POSTGRES_USER=rune
-POSTGRES_PASSWORD=rune_password
-POSTGRES_DB=rune_db
-
-# RabbitMQ
-RABBITMQ_USER=rune
-RABBITMQ_PASSWORD=rune_password
-
-# API Settings
-JWT_SECRET_KEY=your-secret-key-here
-ENCRYPTION_KEY=your-encryption-key-here
-
-# Worker Settings
-WORKFLOW_PREFETCH=10
-WORKFLOW_CONCURRENCY=1
-```
-
-### Service-Specific Configuration
-
-Each service has its own `.env` file for local development:
-- `services/api/.env` - API configuration
-- `services/rune-worker/.env` - Worker configuration
-- `apps/web/.env.local` - Frontend configuration
-
-## Local Development Setup
-
-If you prefer to run services locally without Docker:
-
-**Prerequisite**: Start the shared infrastructure first with `make dev-infra-up` (PostgreSQL, Redis, RabbitMQ).
-
-### Frontend (Next.js)
-
-```bash
-# Install dependencies (first time only)
-make web-install
-
-# Start development server
-make web-dev
-```
-
-**Requirements**: Node.js 22, pnpm 9
-
-### API (FastAPI)
-
-```bash
-# Install dependencies (creates venv automatically)
-make api-install
-
-# Run migrations and seed data (if needed)
-cd services/api
-source venv/bin/activate  # or .venv/bin/activate
-python -m scripts.seed_user
-
-# Start server
-make api-dev
-```
-
-**Requirements**: Python 3.13+
-
-**Note**: If you prefer to install to system Python instead of a virtual environment, use `make api-install-no-env` (not recommended).
-
-### Worker (Go)
-
-```bash
-# Install dependencies (first time only)
-make worker-install
-
-# Start worker
-make worker-dev
-```
-
-**Requirements**: Go 1.25+
-
-## Available Make Commands
-
-### Development
-
-| Command | Description |
-|---|---|
-| `make install` | Install all dependencies (frontend, API, worker) |
-| `make dev` | Start all services in development mode |
-| `make build` | Build all services |
-
-### Frontend
-
-| Command | Description |
-|---|---|
-| `make web-install` | Install frontend dependencies |
-| `make web-dev` | Start frontend in development mode |
-| `make web-build` | Build frontend |
-| `make web-lint` | Lint frontend code |
-| `make web-format` | Format frontend code with prettier |
-| `make web-typecheck` | Type check frontend code |
-
-### API
-
-| Command | Description |
-|---|---|
-| `make api-install` | Install API dependencies (creates/uses venv) |
-| `make api-install-no-env` | Install API dependencies to system Python |
-| `make api-dev` | Start FastAPI server in dev mode (hot-reload) |
-| `make api-lint` | Lint API code with ruff |
-| `make api-format` | Format API code with ruff |
-
-### Development Infrastructure
-
-| Command | Description |
-|---|---|
-| `make dev-infra-up` | Start shared infrastructure (postgres, redis, rabbitmq) |
-| `make dev-infra-down` | Stop shared infrastructure |
-
-### Worker
-
-| Command | Description |
-|---|---|
-| `make worker-install` | Install worker dependencies |
-| `make worker-dev` | Start worker in development mode |
-| `make worker-build` | Build worker |
-| `make worker-lint` | Lint worker code |
-| `make worker-format` | Format worker code |
-| `make worker-test` | Run worker tests |
-
-### Docker
-
-| Command | Description |
-|---|---|
-| `make up` | Start all services with Docker |
-| `make down` | Stop all services |
-| `make restart` | Rebuild and restart all services |
-| `make status` | Show container status |
-| `make logs` | View all logs |
-| `make logs-api` | View API logs |
-| `make logs-worker` | View worker logs |
-| `make logs-frontend` | View frontend logs |
-| `make db-shell` | Connect to PostgreSQL |
-| `make docker-clean` | Remove all Docker resources |
-
-### Testing & Quality
-
-| Command | Description |
-|---|---|
-| `make test` | Run all tests |
-| `make lint` | Run linters for all services |
-| `make format` | Format code for all services |
-| `make typecheck` | Run type checking |
-
-### Cleanup
-
-| Command | Description |
-|---|---|
-| `make clean` | Clean build artifacts |
-| `make clean-all` | Clean everything including dependencies |
-
-## Troubleshooting
-
-### Port Conflicts
-
-If you get port binding errors, check if ports are already in use:
-```bash
-# Check what's using a port
-lsof -i :3000  # Frontend
-lsof -i :8000  # API
-lsof -i :5432  # PostgreSQL
-```
-
-### Database Connection Issues
-
-```bash
-# Reset the database
-make down
-docker volume rm rune_postgres_data
-make up
-```
+---
 
 ## Contributing
 
-New issues, feature proposals, and pull requests are very welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the full development workflow, coding standards, and commit message conventions.
+We welcome contributions of all kinds. Whether it's fixing a bug, improving documentation, or proposing a new feature, read the **[Contributing Guide](CONTRIBUTING.md)** to get started.
+
+---
 
 ## License
 
-See [LICENSE](LICENSE) file for details.
+Rune is open source software. See [LICENSE](LICENSE) for more details.

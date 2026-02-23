@@ -19,7 +19,7 @@ services:
   # ============================================================================
 
   postgres:
-    image: "postgres:17-alpine"
+    image: "postgres:18-alpine"
     container_name: rune-api-postgres-dev
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-rune}
@@ -28,7 +28,7 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
+      - postgres_dev_data:/var/lib/postgresql
     networks:
       - rune_dev_network
     restart: unless-stopped
@@ -39,7 +39,7 @@ services:
   # In-memory data store for session management and caching
   # Used for storing JWT refresh tokens and temporary data
   redis:
-    image: "redis:7-alpine"
+    image: "redis:8-alpine"
     container_name: rune-api-redis-dev
     ports:
       - "${REDIS_PORT:-6379}:6379"
@@ -53,17 +53,34 @@ services:
   # RabbitMQ - Development Instance (management plugin enabled)
   # ==========================================================================
   rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:4-management-alpine
     container_name: rune-api-rabbitmq-dev
     environment:
       # Allow overriding via host env or .env when using docker-compose
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rune}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rune_password}
     ports:
-      - "5672:5672"    # AMQP
-      - "15672:15672"  # Management UI
+      - "5672:5672" # AMQP
+      - "15672:15672" # Management UI
     volumes:
       - rabbitmq_dev_data:/var/lib/rabbitmq
+    networks:
+      - rune_dev_network
+    restart: unless-stopped
+
+  # ==========================================================================
+  # MongoDB - Development Instance (for RTES execution storage)
+  # ==========================================================================
+  mongodb:
+    image: mongodb/mongodb-community-server:latest
+    container_name: rune-mongodb-dev
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password}
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongodb_dev_data:/data/db
     networks:
       - rune_dev_network
     restart: unless-stopped
@@ -92,3 +109,6 @@ volumes:
   rabbitmq_dev_data:
     driver: local
     name: rune_api_rabbitmq_dev_data
+  mongodb_dev_data:
+    driver: local
+    name: rune_mongodb_dev_data

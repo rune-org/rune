@@ -1,18 +1,14 @@
-from fastapi import Response
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.auth.schemas import TokenResponse, FirstAdminSignupRequest
-from src.auth.security import (
-    create_access_token,
-    generate_refresh_token,
-    hash_password,
-    verify_password,
-)
+from src.auth.schemas import FirstAdminSignupRequest, TokenResponse
 from src.auth.token_store import TokenStore
 from src.core.config import get_settings
-from src.core.exceptions import InvalidTokenError, Forbidden
+from src.core.exceptions import Forbidden, InvalidTokenError
+from src.core.password import hash_password, verify_password
+from src.core.token import create_access_token, generate_refresh_token
 from src.db.models import User, UserRole
+from src.users.utils import normalize_email
 
 
 class AuthService:
@@ -25,7 +21,7 @@ class AuthService:
         return await self.db.get(User, user_id)
 
     async def get_user_by_email(self, email: str) -> User | None:
-        statement = select(User).where(User.email == email.lower())
+        statement = select(User).where(User.email == normalize_email(email))
         result = await self.db.exec(statement)
         return result.first()
 
@@ -107,23 +103,6 @@ class AuthService:
         """Logout user by revoking all refresh tokens associated with user ID."""
         return await self.token_store.revoke_user_tokens(user_id)
 
-    def set_auth_cookie(self, response: Response, access_token: str) -> None:
-        """Set authentication cookie in response."""
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            secure=self.settings.cookie_secure,
-            max_age=self.settings.access_token_expire_minutes * 60,
-        )
-
-    def clear_auth_cookie(self, response: Response) -> None:
-        """Clear authentication cookie from response."""
-        response.delete_cookie(
-            key="access_token",
-            httponly=True,
-        )
-
     async def is_first_time_setup(self) -> bool:
         """
         Check if the system requires first-time setup.
@@ -160,7 +139,7 @@ class AuthService:
             )
 
         # Normalize email
-        normalized_email = signup_data.email.lower()
+        normalized_email = normalize_email(signup_data.email)
 
         # Create the first admin user with the provided password
         # No temporary password - user sets their own password directly

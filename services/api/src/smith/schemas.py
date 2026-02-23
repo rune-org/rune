@@ -1,5 +1,6 @@
+from typing import Any, Optional
+
 from pydantic import BaseModel, Field
-from typing import Any, Literal, Optional
 
 
 class WorkflowNode(BaseModel):
@@ -11,7 +12,7 @@ class WorkflowNode(BaseModel):
     trigger: bool = False
     parameters: dict[str, Any] = Field(default_factory=dict)
     output: dict[str, Any] = Field(default_factory=dict)
-    position: Optional[tuple[int, int]] = None
+    position: tuple[int, int] = (0, 0)
 
 
 class WorkflowEdge(BaseModel):
@@ -23,47 +24,14 @@ class WorkflowEdge(BaseModel):
     label: Optional[str] = None
 
 
-class Workflow(BaseModel):
-    """Complete workflow in worker DSL format."""
-
-    nodes: list[WorkflowNode] = Field(default_factory=list)
-    edges: list[WorkflowEdge] = Field(default_factory=list)
-
-
-class SmithMessage(BaseModel):
-    """Single chat turn used to seed Smith with prior context."""
-
-    role: Literal["user", "smith"] = "user"
-    content: str
-
-
 class GenerateWorkflowRequest(BaseModel):
     """Request body for creating a workflow from natural language."""
 
     prompt: str
-    history: list[SmithMessage] = Field(default_factory=list)
-    workflow: Optional[dict[str, Any]] = Field(
-        default=None,
-        description="Optional existing workflow JSON to give the agent full context.",
-    )
-    include_trace: bool = Field(
-        default=False,
-        description="Include Smith's reasoning/trajectory in the response.",
-    )
-    max_iters: Optional[int] = Field(
-        default=None,
-        ge=1,
-        le=20,
-        description="Optional override for Smith's ReAct iteration limit.",
-    )
 
 
-class GeneratedWorkflow(BaseModel):
-    """Smith LLM response packaged for the API."""
+class ClearThreadResponse(BaseModel):
+    """Response body for clearing a thread."""
 
-    response: str
-    workflow: dict[str, Any]
-    trace: list[str] | None = Field(
-        default=None,
-        description="Optional reasoning steps from the agent trajectory.",
-    )
+    success: bool
+    message: str

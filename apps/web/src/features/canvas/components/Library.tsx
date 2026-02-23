@@ -18,6 +18,7 @@ export function Library({
   const [panelWidth, setPanelWidth] = useState(300);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const handleBtnRef = useRef<HTMLButtonElement | null>(null);
 
   // Dynamically position the panel below the toolbar
   const [top, setTop] = useState(66); // Fallback
@@ -68,6 +69,23 @@ export function Library({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const isInsidePanel = panelRef.current?.contains(target);
+      const isInsideHandle = handleBtnRef.current?.contains(target);
+
+      if (!isInsidePanel && !isInsideHandle) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside, true);
+    return () => document.removeEventListener("mousedown", handleClickOutside, true);
+  }, [open]);
+
   const GUTTER = 16; // Breathing room from left edge of screen
   // Drag to resize
   const resizerRef = useRef<HTMLDivElement | null>(null);
@@ -103,6 +121,7 @@ export function Library({
     <div className="pointer-events-none absolute inset-0 z-[40]">
       {/* Handle */}
       <button
+        ref={handleBtnRef}
         className="pointer-events-auto absolute left-1 top-1/2 z-[45] -translate-y-1/2 transform rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-background/80 text-muted-foreground hover:border-accent/60 hover:text-foreground"
         style={{
           width: 28,

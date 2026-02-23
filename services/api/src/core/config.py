@@ -1,5 +1,6 @@
 from enum import Enum
 from functools import lru_cache
+
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,7 +22,7 @@ class Settings(BaseSettings):
     # Application Settings
     environment: Environment = Environment.DEV
     app_name: str = "Rune API"
-    cors_origins: str = (
+    cors_origins_raw: str = (
         "http://localhost:3000,http://frontend:3000,http://127.0.0.1:3000"
     )
 
@@ -39,6 +40,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 2
     refresh_token_expire_days: int = 30
 
+    # Cookie Settings
+    cookie_name: str = "access_token"
+
     # Redis Settings
     redis_host: str = "localhost"
     redis_port: int = 6379
@@ -46,7 +50,8 @@ class Settings(BaseSettings):
     redis_password: str | None = None
 
     # RabbitMQ Settings
-    rabbitmq_queue_name: str = "workflow_runs"
+    rabbitmq_workflow_queue: str = "workflow.execution"
+    rabbitmq_token_queue: str = "execution.token"
     rabbitmq_host: str = "localhost"
     rabbitmq_port: int = 5672
     rabbitmq_username: str = "guest"
@@ -55,6 +60,28 @@ class Settings(BaseSettings):
 
     # Encryption Settings
     encryption_key: str | None = None
+
+    # Smith AI Agent Settings
+    smith_model: str = "gemini-2.0-flash"
+    smith_temperature: float = 0.3
+    google_api_key: str | None = None
+
+    # Scryb Documentation Settings
+    scryb_model: str = "gemini/gemini-2.5-flash-lite"
+
+    @computed_field
+    @property
+    def cors_origins(self) -> list[str]:
+        """Parse CORS origins from a comma-separated string or JSON-style list string."""
+        v = self.cors_origins_raw
+        if not isinstance(v, str):
+            raise ValueError(f"cors_origins_raw must be a string, got {type(v)}")
+        if v.startswith("["):
+            v = v.strip("[]")
+        origins = [i.strip() for i in v.split(",") if i.strip()]
+        if not origins:
+            raise ValueError("CORS_ORIGINS must contain at least one origin")
+        return origins
 
     @computed_field
     @property

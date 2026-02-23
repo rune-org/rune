@@ -1,8 +1,10 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from datetime import datetime
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from src.core.validators import validate_password_strength
 from src.db.models import UserRole
-from src.auth.security import validate_password_strength
 
 
 class UserCreate(BaseModel):
@@ -69,8 +71,11 @@ class CreateUserResponse(BaseModel):
     )
 
 
-class UserPasswordChangeResponse(BaseModel):
-    user: UserResponse = Field(..., description="Updated user information")
-    access_token: str = Field(
-        ..., description="New access token with updated must_change_password flag"
-    )
+class UserBasicInfo(BaseModel):
+    """Minimal user info for sharing purposes."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    email: EmailStr

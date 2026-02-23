@@ -1,5 +1,6 @@
 from typing import Any
-from src.scryb.sir import SIRWorkflow, SIRStep, SIROutcome
+
+from src.scryb.sir import SIROutcome, SIRStep, SIRWorkflow
 
 
 class WorkflowSerializer:

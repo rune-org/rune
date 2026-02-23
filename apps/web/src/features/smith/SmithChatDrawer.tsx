@@ -2,17 +2,19 @@
 
 import { FormEvent, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Loader2, SendHorizontal, Sparkles, Bot, ChevronRight } from "lucide-react";
+import { Loader2, SendHorizontal, Sparkles, Bot, ChevronRight, Wrench } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/cn";
+import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 
 export type SmithChatMessage = {
-  role: "user" | "smith";
+  role: "user" | "smith" | "tool_call";
   content: string;
   trace?: string[];
+  toolName?: string; // For tool_call messages
 };
 
 type Props = {
@@ -79,6 +81,7 @@ export function SmithChatDrawer({
         side="right"
         className="flex h-full w-full max-w-md flex-col gap-0 border-l border-border/40 bg-background/95 p-0 shadow-2xl backdrop-blur-xl sm:max-w-[500px] focus-visible:outline-none select-text"
         onKeyDown={handleDrawerKeyDown}
+        overlayClassName="bg-transparent backdrop-blur-none"
       >
         <div className="relative z-10 flex shrink-0 flex-col items-center justify-center border-b border-border/40 bg-background/80 py-8 backdrop-blur-md select-none">
           <div className="mb-3 flex h-12 w-auto items-center justify-center">
@@ -129,15 +132,31 @@ export function SmithChatDrawer({
                         </div>
                     )}
 
-                    <div className="flex flex-col gap-2 max-w-[85%]">
-                        <div className={cn(
-                            "relative rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm select-text",
-                            msg.role === "user"
-                                ? "bg-gradient-to-tr from-primary to-primary/90 text-primary-foreground rounded-br-sm selection:bg-white selection:text-primary"
-                                : "bg-muted/50 text-foreground border border-border/50 rounded-bl-sm backdrop-blur-sm selection:bg-primary/20 selection:text-foreground"
-                        )}>
-                            {msg.content}
+                    {msg.role === "tool_call" && (
+                        <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 ring-1 ring-amber-500/20 select-none">
+                            <Wrench className="h-4 w-4 text-amber-500/80" />
                         </div>
+                    )}
+
+                    <div className="flex flex-col gap-2 max-w-[85%]">
+                        {msg.role === "tool_call" ? (
+                            <div className="relative rounded-xl px-3 py-2 text-xs leading-relaxed bg-amber-500/5 text-amber-200/80 border border-amber-500/20 rounded-bl-sm backdrop-blur-sm font-mono">
+                                <span className="text-amber-500/60">→</span> {msg.toolName || "tool"}: {msg.content}
+                            </div>
+                        ) : (
+                            <div className={cn(
+                                "relative rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm select-text",
+                                msg.role === "user"
+                                    ? "bg-gradient-to-tr from-primary to-primary/90 text-primary-foreground rounded-br-sm selection:bg-white selection:text-primary"
+                                    : "bg-muted/50 text-foreground border border-border/50 rounded-bl-sm backdrop-blur-sm selection:bg-primary/20 selection:text-foreground"
+                            )}>
+                                {msg.role === "smith" ? (
+                                    <MarkdownRenderer content={msg.content} className="prose-sm prose-invert [&>*:first-child]:mt-0 [&>*:last-child]:mb-0" />
+                                ) : (
+                                    msg.content
+                                )}
+                            </div>
+                        )}
 
                         {msg.role === "smith" && msg.trace && msg.trace.length > 0 && (
                             <details className="group rounded-lg border border-border/40 bg-muted/20 [&_summary::-webkit-details-marker]:hidden">

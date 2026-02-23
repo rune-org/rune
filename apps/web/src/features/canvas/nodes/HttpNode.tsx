@@ -6,9 +6,10 @@ import { Globe } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { HttpData } from "../types";
 
-export const HttpNode = memo(function HttpNode({ data }: NodeProps<Node<HttpData>>) {
+export const HttpNode = memo(function HttpNode({ id, data }: NodeProps<Node<HttpData>>) {
   return (
     <BaseNode
+      nodeId={id}
       icon={<Globe className="h-4 w-4 text-muted-foreground" />}
       label={data.label ?? "HTTP"}
       bgClassName="bg-node-http-bg"

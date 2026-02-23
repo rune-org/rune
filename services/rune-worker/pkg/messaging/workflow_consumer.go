@@ -18,8 +18,9 @@ import (
 // WorkflowConsumer orchestrates workflow execution by consuming messages,
 // invoking the executor, and handling acknowledgments for fault tolerance.
 type WorkflowConsumer struct {
-	queue    queue.Consumer
-	executor *executor.Executor
+	queue     queue.Consumer
+	executor  *executor.Executor
+	publisher queue.Publisher
 }
 
 // NewWorkflowConsumer wires the queue consumer with a default executor.
@@ -48,8 +49,9 @@ func NewWorkflowConsumer(cfg *config.WorkerConfig, redisClient *redis.Client) (*
 	}
 
 	return &WorkflowConsumer{
-		queue:    q,
-		executor: executor.NewExecutor(reg, pub, redisClient),
+		queue:     q,
+		executor:  executor.NewExecutor(reg, pub, redisClient),
+		publisher: pub,
 	}, nil
 }
 
@@ -65,16 +67,21 @@ func (c *WorkflowConsumer) Run(ctx context.Context) error {
 
 // Close releases underlying queue and publisher resources.
 func (c *WorkflowConsumer) Close() error {
-	var queueErr, pubErr error
+	var errs []error
 
 	if c.queue != nil {
-		queueErr = c.queue.Close()
+		if err := c.queue.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close queue: %w", err))
+		}
 	}
 
-	if queueErr != nil {
-		return queueErr
+	if c.publisher != nil {
+		if err := c.publisher.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close publisher: %w", err))
+		}
 	}
-	return pubErr
+
+	return errors.Join(errs...)
 }
 
 // handleMessage decodes incoming messages, executes nodes, and returns errors
@@ -85,7 +92,23 @@ func (c *WorkflowConsumer) handleMessage(ctx context.Context, payload []byte) er
 		slog.Error("failed to decode node execution message",
 			"error", err,
 			"payload_size", len(payload))
-		return fmt.Errorf("decode message: %w", err)
+		return queue.NonRetryable(fmt.Errorf("decode message: %w", err))
+	}
+
+	if !msg.IsWorkerInitiated {
+		var msgBytes, err = msg.Encode()
+		if err != nil {
+			slog.Error("failed to encode message from master")
+			return queue.NonRetryable(fmt.Errorf("encode worker initiated message: %w", err))
+		}
+		if err := c.publisher.Publish(ctx, queue.QueueWorkflowWorkerInitiated, msgBytes); err != nil {
+			slog.Error("failed to publish worker initiated message",
+				"error", err,
+				"workflow_id", msg.WorkflowID,
+				"execution_id", msg.ExecutionID,
+				"node_id", msg.CurrentNode)
+			return fmt.Errorf("publish worker initiated message: %w", err)
+		}
 	}
 
 	slog.Info("received node execution message",

@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends, Response
-from src.core.dependencies import CurrentUser, DatabaseDep, RedisDep
-from src.users.service import UserService
-from src.auth.service import AuthService
+
 from src.auth.token_store import TokenStore
+from src.core.config import get_settings
+from src.core.dependencies import CurrentUser, RedisDep
 from src.core.responses import ApiResponse
+from src.users.dependencies import get_user_service
 from src.users.schemas import (
     ProfileUpdate,
-    UserResponse,
     UserPasswordChange,
-    UserPasswordChangeResponse,
+    UserResponse,
 )
-from src.auth.security import create_access_token
+from src.users.service import UserService
 
 router = APIRouter(
     prefix="/profile",
@@ -18,19 +18,8 @@ router = APIRouter(
 )
 
 
-def get_user_service(db: DatabaseDep) -> UserService:
-    return UserService(db=db)
-
-
 async def get_token_store(redis: RedisDep) -> TokenStore:
     return TokenStore(redis_client=redis)
-
-
-async def get_auth_service(
-    db: DatabaseDep,
-    token_store: TokenStore = Depends(get_token_store),
-) -> AuthService:
-    return AuthService(db=db, token_store=token_store)
 
 
 @router.get(
@@ -75,23 +64,22 @@ async def update_my_profile(
 
 
 @router.post(
-    "/me/change-password",
-    response_model=ApiResponse[UserPasswordChangeResponse],
+    "/me/password",
+    response_model=ApiResponse[UserResponse],
     summary="Change my password",
-    description="Change your own password. Requires verification of old password. Returns a new access token.",
+    description="Change your own password. Requires verification of old password. Revokes the current session — re-login required.",
 )
 async def change_my_password(
     password_data: UserPasswordChange,
     response: Response,
     current_user: CurrentUser,
-    db: DatabaseDep,
     service: UserService = Depends(get_user_service),
-    auth_service: AuthService = Depends(get_auth_service),
-) -> ApiResponse[UserPasswordChangeResponse]:
+    token_store: TokenStore = Depends(get_token_store),
+) -> ApiResponse[UserResponse]:
     """
-    POST /profile/me/change-password
+    POST /profile/me/password
     User changes their own password.
-    Issues a new access token with updated must_change_password flag.
+    Revokes all refresh tokens and clears the auth cookie, forcing re-login.
     """
     updated_user = await service.user_change_password(
         current_user.id,
@@ -99,17 +87,19 @@ async def change_my_password(
         password_data.new_password,
     )
 
-    # Generate new access token with updated must_change_password flag
-    new_token = await create_access_token(updated_user, db)
+    # Revoke all refresh tokens so any active session is invalidated
+    await token_store.revoke_user_tokens(current_user.id)
 
-    # Update the access_token cookie using auth service
-    auth_service.set_auth_cookie(response, new_token)
+    # Clear the access token cookie
+    settings = get_settings()
+    response.delete_cookie(
+        key=settings.cookie_name,
+        httponly=True,
+        secure=settings.cookie_secure,
+    )
 
     return ApiResponse(
         success=True,
-        message="Password changed successfully",
-        data=UserPasswordChangeResponse(
-            user=updated_user,
-            access_token=new_token,
-        ),
+        message="Password changed successfully. Please sign in again.",
+        data=updated_user,
     )
