@@ -122,7 +122,7 @@ export function useSmith(opts: UseSmithOptions) {
                   edges: sseEvent.workflow_edges,
                 });
               } catch (err) {
-                console.error("Failed to apply workflow state:", err);
+                toast.error("Failed to apply Smith's workflow changes");
               }
               break;
 

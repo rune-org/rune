@@ -43,7 +43,12 @@ export default function CreateCredentialsPage() {
         setCredentials(response.data.data);
       }
     } catch (err) {
-      console.error("Failed to load credentials:", err);
+      toast.error("Failed to load credentials", {
+        action: {
+          label: "Retry",
+          onClick: () => loadCredentials(),
+        },
+      });
       setError("Failed to load credentials. Please try again.");
     } finally {
       setIsLoading(false);
@@ -113,7 +118,6 @@ export default function CreateCredentialsPage() {
       setCredentials((prev) => prev.filter((c) => c.id !== id));
       toast.success("Credential deleted successfully");
     } catch (err) {
-      console.error("Failed to delete credential:", err);
       // Reload credentials to restore UI state on error
       loadCredentials();
       toast.error("Failed to delete credential. Please try again.");

@@ -16,6 +16,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./styles/reactflow.css";
 
+import { toast } from "@/components/ui/toast";
 import { nodeTypes } from "./nodes";
 import type { CanvasNode, NodeKind } from "./types";
 import { getMiniMapNodeColor, isValidNodeKind } from "./lib/nodeRegistry";
@@ -232,7 +233,7 @@ function FlowCanvasInner({
       try {
         await onPersist({ nodes, edges });
       } catch (err) {
-        console.error("Failed to save before execution:", err);
+        toast.error("Failed to save workflow before execution");
         return;
       }
     }
