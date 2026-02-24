@@ -2,7 +2,6 @@
 
 import { useEffect, useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { toast } from "@/components/ui/toast";
 import { AuthContext } from "@/lib/auth";
 import type { UserResponse } from "@/client/types.gen";
 
@@ -14,12 +13,11 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // If provider is missing, send a clear message rather than crash
     if (!ctx) {
-      toast.error("Authentication system not initialized");
       router.replace("/sign-in");
       return;
     }
-    ctx.initialize().catch((err) => {
-      toast.error("Authentication failed");
+    ctx.initialize().catch(() => {
+      // Auth failure — user will be redirected to sign-in
     });
   }, [ctx, router]);
 

@@ -167,7 +167,6 @@ export function useRtesWebSocket(
         if (!mountedRef.current) return;
         const error = new Error("WebSocket connection error");
         setLastError(error);
-        toast.error("Connection error - attempting to reconnect");
         onError?.(event);
       };
 

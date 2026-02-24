@@ -11,8 +11,6 @@ import {
   getWorkflowExecutionsWorkflowsWorkflowIdExecutionsGet,
   getExecutionWorkflowsWorkflowIdExecutionsExecutionIdGet,
 } from "@/client";
-import { toast } from "@/components/ui/toast";
-
 // Derive HTTP URL from WebSocket URL or use default
 const RTES_WS_URL = process.env.NEXT_PUBLIC_RTES_WS_URL || "ws://localhost:3001/rt";
 const RTES_BASE_URL = RTES_WS_URL
@@ -90,8 +88,7 @@ export async function fetchWorkflowExecutions(
     }
 
     return await response.json();
-  } catch (error) {
-    toast.error("Failed to fetch execution history");
+  } catch {
     return [];
   }
 }
@@ -138,8 +135,7 @@ export async function fetchExecution(
     }
 
     return await response.json();
-  } catch (error) {
-    toast.error("Failed to fetch execution details");
+  } catch {
     return null;
   }
 }
