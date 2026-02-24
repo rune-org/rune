@@ -223,7 +223,10 @@ export default function UsersPage() {
       {/* Edit Modal */}
       <EditUserDialog
         open={editOpen}
-        onClose={() => setEditOpen(false)}
+        onClose={() => {
+          setEditOpen(false);
+          setEditingUser(null);
+        }}
         user={editingUser}
         onUpdate={handleUpdateUser}
       />
