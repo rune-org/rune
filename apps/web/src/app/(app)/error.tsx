@@ -22,10 +22,7 @@ export default function AppError({
     error: Error & { digest?: string };
     reset: () => void;
 }) {
-    useEffect(() => {
-        console.error(error);
-    }, [error]);
-
+    // Error boundaries in Next.js - error is already displayed to user
     return (
         <div className="relative flex min-h-[60vh] w-full animate-fade-in flex-col items-center justify-center overflow-hidden p-4">
             <AmbientBackground />

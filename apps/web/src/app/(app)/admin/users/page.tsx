@@ -65,7 +65,7 @@ export default function UsersPage() {
     if (created) {
       // Success - close invite modal
       setInviteOpen(false);
-      
+
       if (created.temporary_password && created.user) {
         // Show persistent modal so admin can copy
         setTempModalEmail(created.user.email ?? email);
@@ -89,7 +89,7 @@ export default function UsersPage() {
     if (!editingUser) return false;
 
     const success = await updateUser(Number(editingUser.id), name, email, role);
-    
+
     if (success) {
       // Only close and reset on success
       setEditOpen(false);
@@ -110,7 +110,7 @@ export default function UsersPage() {
     if (!deletingUser) return false;
 
     const success = await deleteUser(Number(deletingUser.id));
-    
+
     if (success) {
       setDeletingUser(null);
     }

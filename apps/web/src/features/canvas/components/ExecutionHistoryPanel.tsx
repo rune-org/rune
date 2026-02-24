@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "@/components/ui/toast";
 import {
   History,
   Radio,
@@ -182,7 +183,12 @@ export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps
       setRtesDocuments(docMap);
       setHistory(items);
     } catch (error) {
-      console.error("[ExecutionHistory] Failed to load:", error);
+      toast.error("Failed to load execution history", {
+        action: {
+          label: "Retry",
+          onClick: () => loadHistory(),
+        },
+      });
       setHistory([]);
     } finally {
       setIsLoading(false);

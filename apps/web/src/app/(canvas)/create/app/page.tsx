@@ -88,9 +88,7 @@ function CanvasPageInner() {
             }
           }
         } catch (error) {
-          if (!abortController.signal.aborted) {
-            console.error("Failed to load template data:", error);
-          }
+          // Silently fail if aborted (user navigated away)
         }
         return;
       }

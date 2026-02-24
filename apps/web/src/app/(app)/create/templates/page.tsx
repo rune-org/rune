@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState, Suspense } from "react";
+import { toast } from "@/components/ui/toast";
 import {
   Card,
   CardContent,
@@ -41,7 +42,12 @@ function TemplatesPageInner() {
           setTemplates(response.data.data);
         }
       } catch (error) {
-        console.error("Failed to fetch templates:", error);
+        toast.error("Failed to load templates", {
+          action: {
+            label: "Retry",
+            onClick: () => fetchTemplates(),
+          },
+        });
       } finally {
         setLoading(false);
       }
