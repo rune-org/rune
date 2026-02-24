@@ -236,7 +236,7 @@ export function AddCredentialDialog({
       setCredentialData({});
       setOpen(false);
     } catch (error) {
-      toast.error(\"Failed to create credential\");
+      toast.error("Failed to create credential");
     } finally {
       setIsSubmitting(false);
     }
