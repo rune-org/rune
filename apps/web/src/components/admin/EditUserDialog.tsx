@@ -40,8 +40,18 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-      <Card className="p-6 w-full max-w-md bg-background border">
+    <div
+      className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50"
+      onClick={() => {
+        if (!isSubmitting) {
+          onClose();
+        }
+      }}
+    >
+      <Card
+        className="p-6 w-full max-w-md bg-background border"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-lg font-semibold mb-4">Edit User</h3>
 
         <Label className="text-xs text-muted-foreground">Name</Label>
