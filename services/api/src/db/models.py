@@ -35,6 +35,13 @@ class CredentialType(str, Enum):
     SMTP = "smtp"
 
 
+class AuthProvider(str, Enum):
+    """Authentication provider for a user account."""
+
+    LOCAL = "local"  # Standard email + password login
+    SAML = "saml"  # SAML 2.0 SSO — no password
+
+
 class TimestampModel(SQLModel):
     """Base model with created_at and updated_at timestamps."""
 
@@ -43,6 +50,52 @@ class TimestampModel(SQLModel):
         default_factory=datetime.now,
         sa_column_kwargs={"onupdate": datetime.now},
     )
+
+
+class SAMLConfiguration(TimestampModel, table=True):
+    """One record per SAML IdP integration.
+
+    Each organisation that brings their own IdP gets one row.
+    The SP private key is stored encrypted using the application's
+    ENCRYPTION_KEY (Fernet) so it is never exposed in plaintext.
+    """
+
+    __tablename__ = "samlconfiguration"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    # Display name shown in admin UI
+    name: str = Field(description="Human-readable label, e.g. 'Okta' or 'Azure AD'")
+
+    # IdP metadata values (copy from IdP metadata XML)
+    idp_entity_id: str = Field(description="IdP Entity ID (Issuer)")
+    idp_sso_url: str = Field(description="IdP SSO redirect-binding URL")
+    idp_slo_url: Optional[str] = Field(
+        default=None, description="IdP Single Logout URL (optional)"
+    )
+    idp_certificate: str = Field(
+        description="IdP X.509 signing certificate, full PEM with headers"
+    )
+
+    # SP keypair — auto-generated on config creation
+    sp_private_key_encrypted: str = Field(
+        description="SP RSA private key, Fernet-encrypted",
+        exclude=True,  # Never serialise to Pydantic outputs
+    )
+    sp_certificate: str = Field(
+        description="SP X.509 certificate, full PEM with headers"
+    )
+
+    # Optional email-domain hint for auto-discovery (e.g. 'acme.com')
+    domain_hint: Optional[str] = Field(
+        default=None,
+        description="Email domain that maps to this IdP, used for SSO discovery",
+    )
+
+    is_active: bool = Field(default=True)
+
+    # Back-reference to users provisioned through this config
+    users: list["User"] = Relationship(back_populates="saml_config")
 
 
 class WorkflowCredentialLink(TimestampModel, table=True):
@@ -68,10 +121,24 @@ class User(TimestampModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field()
     email: str = Field(unique=True)
-    hashed_password: str = Field(exclude=True)
+    # Nullable: SAML-only users have no password.
+    hashed_password: Optional[str] = Field(default=None, exclude=True)
     role: UserRole = Field(
         default=UserRole.USER,
         sa_column=Column(SQLAlchemyEnum(UserRole, name="user_role", native_enum=True)),
+    )
+    # Authentication provider — determines which login path is allowed.
+    auth_provider: AuthProvider = Field(
+        default=AuthProvider.LOCAL,
+        sa_column=Column(
+            SQLAlchemyEnum(AuthProvider, name="auth_provider", native_enum=True)
+        ),
+    )
+    # SAML NameID (unique subject from the IdP) — only set for SAML users.
+    saml_subject: Optional[str] = Field(default=None, index=True)
+    # FK to the SAMLConfiguration that created/owns this user.
+    saml_config_id: Optional[int] = Field(
+        default=None, foreign_key="samlconfiguration.id"
     )
     is_active: bool = Field(default=True)
     last_login_at: Optional[datetime] = None
@@ -80,6 +147,8 @@ class User(TimestampModel, table=True):
         description="Flag indicating user must change their password",
     )
 
+    # Relationships
+    saml_config: Optional["SAMLConfiguration"] = Relationship(back_populates="users")
     workflow_permissions: list["WorkflowUser"] = Relationship(
         back_populates="user",
         cascade_delete=True,

@@ -69,6 +69,18 @@ class Settings(BaseSettings):
     # Scryb Documentation Settings
     scryb_model: str = "gemini/gemini-2.5-flash-lite"
 
+    # SAML SSO Settings
+    # The public-facing base URL of the API (used to build ACS / metadata URLs).
+    # Must NOT end with a trailing slash.
+    # Default matches the nginx-proxied local dev URL (https://localhost/api).
+    # Override via SAML_SP_BASE_URL in .env for staging/production.
+    saml_sp_base_url: str = "https://localhost/api"
+    # The public-facing base URL of the frontend (used to build post-SSO redirect URLs).
+    # Override via SAML_FRONTEND_URL in .env for staging/production.
+    saml_frontend_url: str = "https://localhost"
+    # How long (seconds) to remember a processed SAML assertion ID (replay protection).
+    saml_assertion_id_ttl: int = 300
+
     @computed_field
     @property
     def cors_origins(self) -> list[str]:
