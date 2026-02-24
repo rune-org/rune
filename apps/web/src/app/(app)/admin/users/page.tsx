@@ -62,8 +62,12 @@ export default function UsersPage() {
         setUsers([]);
       }
     } catch (err) {
-      console.error("Failed to fetch users", err);
-      toast.error("Failed to fetch users");
+      toast.error("Failed to fetch users", {
+        action: {
+          label: "Retry",
+          onClick: () => fetchUsers(),
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -118,7 +122,6 @@ export default function UsersPage() {
       const { data, error } = await createUserUsersPost({ body: payload });
 
       if (error) {
-        console.error("Failed to create user:", error);
         // If backend returns validation messages, they may be on error; show generic message
         toast.error("Failed to create user");
         return;
@@ -144,7 +147,6 @@ export default function UsersPage() {
       setInviteRole("user");
       await fetchUsers();
     } catch (err) {
-      console.error("Failed to send invite:", err);
       toast.error("Failed to send invite");
     }
   };
@@ -155,7 +157,6 @@ export default function UsersPage() {
       await navigator.clipboard.writeText(tempModalPassword);
       toast.success("Password copied to clipboard");
     } catch (err) {
-      console.error("Clipboard copy failed", err);
       toast.error("Failed to copy password");
     }
   };
@@ -186,7 +187,6 @@ export default function UsersPage() {
       });
 
       if (error) {
-        console.error("Failed to update user:", error);
         toast.error("Failed to update user");
         return;
       }
@@ -196,7 +196,6 @@ export default function UsersPage() {
       setEditingUser(null);
       await fetchUsers();
     } catch (err) {
-      console.error("Failed to update user:", err);
       toast.error("Failed to update user");
     }
   };
@@ -216,7 +215,6 @@ export default function UsersPage() {
       });
 
       if (error) {
-        console.error("Failed to delete user:", error);
         toast.error("Failed to delete user");
         return false;
       }
@@ -226,7 +224,6 @@ export default function UsersPage() {
       await fetchUsers();
       return true;
     } catch (err) {
-      console.error("Failed to delete user:", err);
       toast.error("Failed to delete user");
       return false;
     }

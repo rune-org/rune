@@ -2,6 +2,7 @@
 
 import { useEffect, useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { toast } from "@/components/ui/toast";
 import { AuthContext } from "@/lib/auth";
 import type { UserResponse } from "@/client/types.gen";
 
@@ -13,14 +14,12 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // If provider is missing, send a clear message rather than crash
     if (!ctx) {
-      console.error(
-        "RequireAuth: AuthProvider is not mounted. Wrap the app in <ClientProviders>.",
-      );
+      toast.error("Authentication system not initialized");
       router.replace("/sign-in");
       return;
     }
     ctx.initialize().catch((err) => {
-      console.error("Auth initialize failed", err);
+      toast.error("Authentication failed");
     });
   }, [ctx, router]);
 
