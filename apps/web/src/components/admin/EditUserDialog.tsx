@@ -11,7 +11,7 @@ interface EditUserDialogProps {
   open: boolean;
   onClose: () => void;
   user: UserResponse | null;
-  onUpdate: (name: string, email: string, role: "user" | "admin") => Promise<void>;
+  onUpdate: (name: string, email: string, role: "user" | "admin") => Promise<boolean>;
 }
 
 export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialogProps) {
@@ -30,18 +30,49 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
 
   if (!open || !user) return null;
 
+  // Validate form fields
+  const isNameValid = editName.trim().length > 0;
+  const isEmailValid = editEmail.trim().length > 0 && editEmail.includes("@");
+  const isFormValid = isNameValid && isEmailValid;
+
   const handleUpdate = async () => {
+    if (!isFormValid) return;
+    
     setIsSubmitting(true);
     try {
-      await onUpdate(editName, editEmail, editRole);
+      const success = await onUpdate(editName, editEmail, editRole);
+      // Parent component handles closing the dialog on success
+      // Form state is preserved on failure for retry
+      return success;
+    } catch (error) {
+      // Keep form data on error so user can retry
+      console.error("Failed to update user:", error);
+      return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Prevent closing during submission
+    if (isSubmitting) return;
+    onClose();
+  };
+
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Prevent backdrop click from closing when clicking inside card
+    e.stopPropagation();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-      <Card className="p-6 w-full max-w-md bg-background border">
+    <div 
+      className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50"
+      onClick={handleBackdropClick}
+    >
+      <Card 
+        className="p-6 w-full max-w-md bg-background border"
+        onClick={handleCardClick}
+      >
         <h3 className="text-lg font-semibold mb-4">Edit User</h3>
 
         <Label className="text-xs text-muted-foreground">Name</Label>
@@ -77,7 +108,7 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
           <Button 
             className="bg-primary text-white" 
             onClick={handleUpdate}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isFormValid}
           >
             {isSubmitting ? "Saving..." : "Save"}
           </Button>

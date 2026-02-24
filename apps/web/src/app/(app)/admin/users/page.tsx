@@ -59,17 +59,23 @@ export default function UsersPage() {
   }
 
   // Invite flow
-  const handleSendInvite = async (name: string, email: string, role: "user" | "admin") => {
+  const handleSendInvite = async (name: string, email: string, role: "user" | "admin"): Promise<boolean> => {
     const created = await createUser(name, email, role);
 
-    if (created && created.temporary_password && created.user) {
-      // Show persistent modal so admin can copy
-      setTempModalEmail(created.user.email ?? email);
-      setTempModalPassword(created.temporary_password);
-      setTempModalOpen(true);
+    if (created) {
+      // Success - close invite modal
+      setInviteOpen(false);
+      
+      if (created.temporary_password && created.user) {
+        // Show persistent modal so admin can copy
+        setTempModalEmail(created.user.email ?? email);
+        setTempModalPassword(created.temporary_password);
+        setTempModalOpen(true);
+      }
+      return true;
     }
-
-    setInviteOpen(false);
+    // If created is null, keep modal open so user can retry
+    return false;
   };
 
   // Open edit modal
@@ -79,15 +85,19 @@ export default function UsersPage() {
   };
 
   // Update user (admin)
-  const handleUpdateUser = async (name: string, email: string, role: "user" | "admin") => {
-    if (!editingUser) return;
+  const handleUpdateUser = async (name: string, email: string, role: "user" | "admin"): Promise<boolean> => {
+    if (!editingUser) return false;
 
     const success = await updateUser(Number(editingUser.id), name, email, role);
     
     if (success) {
+      // Only close and reset on success
       setEditOpen(false);
       setEditingUser(null);
+      return true;
     }
+    // If failed, keep modal open so user can retry
+    return false;
   };
 
   // Delete flow

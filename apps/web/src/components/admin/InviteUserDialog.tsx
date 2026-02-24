@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 interface InviteUserDialogProps {
   open: boolean;
   onClose: () => void;
-  onInvite: (name: string, email: string, role: "user" | "admin") => Promise<void>;
+  onInvite: (name: string, email: string, role: "user" | "admin") => Promise<boolean>;
 }
 
 export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogProps) {
@@ -20,22 +20,61 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
 
   if (!open) return null;
 
+  // Validate form fields
+  const isNameValid = inviteName.trim().length > 0;
+  const isEmailValid = inviteEmail.trim().length > 0 && inviteEmail.includes("@");
+  const isFormValid = isNameValid && isEmailValid;
+
   const handleInvite = async () => {
+    if (!isFormValid) return;
+    
     setIsSubmitting(true);
     try {
-      await onInvite(inviteName, inviteEmail, inviteRole);
-      // Reset form
-      setInviteName("");
-      setInviteEmail("");
-      setInviteRole("user");
+      const success = await onInvite(inviteName, inviteEmail, inviteRole);
+      if (success) {
+        // Reset form only on successful submission
+        // Parent component handles closing the dialog
+        setInviteName("");
+        setInviteEmail("");
+        setInviteRole("user");
+      }
+      // If not successful, keep form data so user can retry
+    } catch (error) {
+      // Keep form data on error so user can retry
+      console.error("Failed to invite user:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleClose = () => {
+    // Reset form when explicitly closing (Cancel/backdrop)
+    setInviteName("");
+    setInviteEmail("");
+    setInviteRole("user");
+    onClose();
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Prevent closing during submission
+    if (isSubmitting) return;
+    handleClose();
+  };
+
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Prevent backdrop click from closing when clicking inside card
+    e.stopPropagation();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-40">
-      <Card className="p-6 w-full max-w-md bg-background border">
+    <div 
+      className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-40"
+      onClick={handleBackdropClick}
+    >
+      <Card 
+        className="p-6 w-full max-w-md bg-background border"
+        onClick={handleCardClick}
+      >
         <h3 className="text-lg font-semibold mb-4">Invite User</h3>
 
         <Input
@@ -67,13 +106,13 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button 
             className="bg-primary text-white" 
             onClick={handleInvite}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isFormValid}
           >
             {isSubmitting ? "Sending..." : "Send Invite"}
           </Button>
