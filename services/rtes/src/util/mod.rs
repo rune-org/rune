@@ -1,1 +1,1 @@
-pub(crate) mod retry;
+pub mod retry;

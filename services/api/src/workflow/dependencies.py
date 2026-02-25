@@ -6,15 +6,16 @@ permission checking and resource fetching.
 """
 
 from typing import Optional
+
 from fastapi import Request
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.core.dependencies import RequirePasswordChanged, DatabaseDep
+from src.core.dependencies import DatabaseDep, RequirePasswordChanged
 from src.core.exceptions import Forbidden, NotFound
-from src.db.models import Workflow, WorkflowUser, WorkflowRole
-from src.workflow.policy import WorkflowPolicy
+from src.db.models import Workflow, WorkflowRole, WorkflowUser
 from src.workflow.permissions import VALID_WORKFLOW_ACTIONS
+from src.workflow.policy import WorkflowPolicy
 
 
 async def get_user_workflow_role(

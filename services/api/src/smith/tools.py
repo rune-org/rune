@@ -1,18 +1,18 @@
 import json
 import uuid
 
-from langchain.tools import tool, ToolRuntime
+from langchain.tools import ToolRuntime, tool
 from langchain_core.messages import ToolMessage
 from langgraph.types import Command
 
-from .schemas import WorkflowNode, WorkflowEdge
 from .nodes import (
-    TriggerArgs,
+    ConditionalArgs,
     HTTPArgs,
     SMTPArgs,
-    ConditionalArgs,
     SwitchArgs,
+    TriggerArgs,
 )
+from .schemas import WorkflowEdge, WorkflowNode
 
 
 def _create_node_from_args(args, runtime: ToolRuntime) -> Command:

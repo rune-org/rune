@@ -1,6 +1,7 @@
-from typing import Optional, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from typing import Any, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class TemplateSummary(BaseModel):

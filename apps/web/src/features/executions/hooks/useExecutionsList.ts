@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import type { ExecutionListItem, ExecutionMetrics, ExecutionFilters, ExecutionDetail } from "../types";
 
 /**

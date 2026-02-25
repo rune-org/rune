@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: "postgres:17-alpine"
+    image: "postgres:18-alpine"
     container_name: rune-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-rune}
@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     networks:
       - backend_network
     healthcheck:
@@ -19,7 +19,7 @@ services:
       retries: 5
 
   rabbitmq:
-    image: "rabbitmq:3-management-alpine"
+    image: "rabbitmq:4-management-alpine"
     container_name: rune-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-rune}
@@ -38,7 +38,7 @@ services:
       retries: 5
 
   redis:
-    image: "redis:7-alpine"
+    image: "redis:8-alpine"
     container_name: rune-redis
     ports:
       - "6379:6379"

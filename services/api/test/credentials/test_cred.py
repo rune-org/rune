@@ -4,7 +4,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.models import User, WorkflowCredential
 
-
 # ============================================================================
 # CREATE CREDENTIAL TESTS
 # ============================================================================

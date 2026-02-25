@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Depends, status
-from src.core.dependencies import DatabaseDep, require_admin_role
+
+from src.core.dependencies import require_admin_role
 from src.core.responses import ApiResponse
+from src.users.dependencies import get_user_service
 from src.users.schemas import (
-    UserCreate,
-    AdminUserUpdate,
-    UserResponse,
     AdminPasswordResetResponse,
+    AdminUserUpdate,
     CreateUserResponse,
+    UserCreate,
+    UserResponse,
 )
 from src.users.service import UserService
-
 
 router = APIRouter(
     prefix="/users",
@@ -18,10 +19,6 @@ router = APIRouter(
         Depends(require_admin_role)
     ],  # All routes require admin role and password change
 )
-
-
-def get_user_service(db: DatabaseDep) -> UserService:
-    return UserService(db=db)
 
 
 @router.get(
@@ -118,7 +115,7 @@ async def update_user(
 
 
 @router.post(
-    "/{user_id}/reset-password",
+    "/{user_id}/password",
     response_model=ApiResponse[AdminPasswordResetResponse],
     summary="Admin resets user password",
     description="Admin generates a temporary password for a user. User must change it.",

@@ -2,6 +2,7 @@ package editnode
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -17,6 +18,7 @@ import (
 const (
 	modeAssignments = "assignments"
 	modeKeepOnly    = "keep_only"
+	evalTimeout     = 100 * time.Millisecond
 )
 
 // Assignment represents a single transformation operation.
@@ -87,7 +89,15 @@ func (n *EditNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 		var err error
 		sourceData, err = GetNested(n.input, n.targetPath)
 		if err != nil {
-			return nil, fmt.Errorf("get target path '%s': %w", n.targetPath, err)
+			// Accumulated context keys are commonly prefixed with '$' (for example "$json" or "$node").
+			// Allow target_path to omit the root '$' for compatibility with existing workflows.
+			altPath := withDollarRoot(n.targetPath)
+			if altPath != n.targetPath {
+				sourceData, err = GetNested(n.input, altPath)
+			}
+			if err != nil {
+				return nil, fmt.Errorf("get target path '%s': %w", n.targetPath, err)
+			}
 		}
 	} else {
 		sourceData = n.input["$json"]
@@ -207,35 +217,48 @@ func (n *EditNode) evaluateExpression(parentCtx context.Context, expr string, ov
 		}
 	}
 
-	// Timeout guard
-	ctx, cancel := context.WithTimeout(parentCtx, 100*time.Millisecond)
+	evalCtx, cancel := context.WithTimeout(parentCtx, evalTimeout)
 	defer cancel()
 
-	type result struct {
-		val any
-		err error
-	}
-
-	done := make(chan result, 1)
+	done := make(chan struct{})
 	go func() {
-		value, err := vm.RunString(expr)
-		if err != nil {
-			done <- result{nil, err}
-			return
+		select {
+		case <-evalCtx.Done():
+			vm.Interrupt(evalCtx.Err())
+		case <-done:
 		}
-		done <- result{value.Export(), nil}
 	}()
 
-	select {
-	case <-ctx.Done():
-		return nil, fmt.Errorf("expression timeout or cancelled")
-	case res := <-done:
-		return res.val, res.err
+	value, err := vm.RunString(expr)
+	close(done)
+
+	if err != nil {
+		var interruptedErr *goja.InterruptedError
+		if errors.As(err, &interruptedErr) {
+			if errors.Is(evalCtx.Err(), context.DeadlineExceeded) || errors.Is(evalCtx.Err(), context.Canceled) {
+				return nil, fmt.Errorf("expression timeout or cancelled")
+			}
+		}
+		return nil, err
 	}
+
+	return value.Export(), nil
 }
 
 func init() {
 	nodes.RegisterNodeType(RegisterEdit)
+}
+
+func withDollarRoot(path string) string {
+	if path == "" || strings.HasPrefix(path, "$") {
+		return path
+	}
+
+	parts := strings.SplitN(path, ".", 2)
+	if len(parts) == 1 {
+		return "$" + parts[0]
+	}
+	return "$" + parts[0] + "." + parts[1]
 }
 
 // RegisterEdit registers the edit node type.

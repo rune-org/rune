@@ -1,10 +1,10 @@
 """Template test fixtures."""
 
 import pytest_asyncio
+from argon2 import PasswordHasher
 
 from src.db.models import User, UserRole, WorkflowTemplate
 from src.templates.service import TemplateService
-from argon2 import PasswordHasher
 
 
 @pytest_asyncio.fixture(scope="function")

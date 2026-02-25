@@ -5,29 +5,50 @@
     ":dependencyDashboard"
   ],
   "enabled": true,
+
+  "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
     "enabled": true,
-    "labels": [
-      "security"
-    ],
-    "assignees": [
-      "ashmod"
-    ],
-    "schedule": [
-      "at any time"
-    ]
+    "labels": ["security"],
+    "assignees": ["ashmod"],
+    "schedule": ["at any time"],
+    "transitiveRemediation": true
   },
-  "osvVulnerabilityAlerts": true,
+
+  "lockFileMaintenance": {
+    "enabled": false,
+    "schedule": ["before 6am on monday"],
+    "groupName": "lockfile maintenance"
+  },
+
+  "timezone": "Africa/Cairo",
+  "schedule": ["before 6am on wednesday"],
+  "prConcurrentLimit": 20,
+  "prHourlyLimit": 5,
+
   "packageRules": [
     {
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "major",
-        "pin",
-        "digest"
-      ],
+      "matchManagers": ["gomod"],
       "enabled": false
+    },
+    {
+      "matchManagers": ["pip_requirements", "pip-compile", "pipenv", "poetry", "pep621", "pip_setup", "setup-cfg"],
+      "enabled": false
+    },
+    {
+      "matchDepNames": ["python"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["cargo"],
+      "enabled": false
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "all non-major dependencies"
+    },
+    {
+      "matchUpdateTypes": ["major"]
     }
   ]
 }
