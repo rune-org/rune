@@ -1,15 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { applyNodeChanges, type NodeChange } from "@xyflow/react";
 import type { CanvasNode } from "../types";
 
 type SetNodes = React.Dispatch<React.SetStateAction<CanvasNode[]>>;
+type UseRafNodeDragOptions = {
+  onDragStateChange?: (isDragging: boolean) => void;
+};
 
 // requestAnimationFrame based dragging. We coalesce high-frequency drag position
 // changes and flush them once per paint frame to keep motion visually smoother.
-export function useRafNodeDrag(setNodes: SetNodes) {
-  const [isDragging, setIsDragging] = useState(false);
+export function useRafNodeDrag(
+  setNodes: SetNodes,
+  options: UseRafNodeDragOptions = {},
+) {
+  const { onDragStateChange } = options;
   const pendingPositionChangesRef = useRef<NodeChange<CanvasNode>[] | null>(null);
   const positionFlushFrameRef = useRef<number | null>(null);
 
@@ -77,17 +83,17 @@ export function useRafNodeDrag(setNodes: SetNodes) {
   );
 
   const onNodeDragStart = useCallback(() => {
-    setIsDragging(true);
-  }, []);
+    onDragStateChange?.(true);
+  }, [onDragStateChange]);
 
   const onNodeDragStop = useCallback(() => {
-    setIsDragging(false);
+    onDragStateChange?.(false);
     if (positionFlushFrameRef.current !== null) {
       cancelAnimationFrame(positionFlushFrameRef.current);
       positionFlushFrameRef.current = null;
     }
     flushPositionChanges();
-  }, [flushPositionChanges]);
+  }, [flushPositionChanges, onDragStateChange]);
 
   useEffect(() => {
     return () => {
@@ -98,7 +104,6 @@ export function useRafNodeDrag(setNodes: SetNodes) {
   }, []);
 
   return {
-    isDragging,
     onNodesChange,
     onNodeDragStart,
     onNodeDragStop,

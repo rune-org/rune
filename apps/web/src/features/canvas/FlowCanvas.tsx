@@ -80,8 +80,17 @@ function FlowCanvasInner({
     edgesRef.current = edges;
   }, [nodes, edges]);
 
-  const { isDragging, onNodesChange, onNodeDragStart, onNodeDragStop } =
-    useRafNodeDrag(setNodes);
+  const handleDragStateChange = useCallback((dragging: boolean) => {
+    containerRef.current?.setAttribute(
+      "data-canvas-dragging",
+      dragging ? "true" : "false",
+    );
+  }, []);
+
+  const { onNodesChange, onNodeDragStart, onNodeDragStop } = useRafNodeDrag(
+    setNodes,
+    { onDragStateChange: handleDragStateChange },
+  );
 
   const onConnect = useConditionalConnect(setEdges);
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
@@ -271,7 +280,7 @@ function FlowCanvasInner({
   return (
     <div
       ref={containerRef}
-      data-canvas-dragging={isDragging ? "true" : "false"}
+      data-canvas-dragging="false"
       className="relative h-full w-full overflow-hidden"
     >
       <FlowViewport
