@@ -19,14 +19,14 @@ class WorkflowService:
         self.db = db
         self.encryptor = get_encryptor()
 
-    async def list_for_user(self, user_id: int) -> list[Workflow]:
-        """Return workflows owned by `user_id`, newest first.
+    async def list_for_user(self, user_id: int) -> list[tuple[Workflow, WorkflowRole]]:
+        """Return workflows accessible to `user_id` with their role, newest first.
 
         Used for the `GET /workflows` endpoint.
         """
-        # Join the workflows to the junction table and filter by the user_id
+        # Select both the workflow and the user's role from the junction table
         statement = (
-            select(Workflow)
+            select(Workflow, WorkflowUser.role)
             .join(WorkflowUser)
             .where(WorkflowUser.user_id == user_id)
             .order_by(Workflow.created_at.desc())
