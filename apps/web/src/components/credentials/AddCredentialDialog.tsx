@@ -236,8 +236,7 @@ export function AddCredentialDialog({
       setCredentialData({});
       setOpen(false);
     } catch (error) {
-      console.error("Error creating credential:", error);
-      // Error handling is done in parent component
+      toast.error("Failed to create credential");
     } finally {
       setIsSubmitting(false);
     }
