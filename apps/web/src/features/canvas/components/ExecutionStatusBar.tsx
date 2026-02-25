@@ -122,7 +122,7 @@ export function ExecutionStatusBar() {
   return (
     <div
       className={cn(
-        "absolute bottom-17 left-1/2 z-50 -translate-x-1/2 transform transition-all duration-300",
+        "absolute bottom-17 left-1/2 z-[30] -translate-x-1/2 transform transition-all duration-300",
         isExiting && "opacity-0 translate-y-2"
       )}
     >

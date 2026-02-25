@@ -37,6 +37,24 @@
   box-shadow: 0 0 0 2px var(--ring);
 }
 
+[data-canvas-dragging="true"] .rune-node {
+  transition: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+[data-canvas-dragging="true"] .react-flow__node.selected .rune-node {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+[data-canvas-dragging="true"] .react-flow__edge-path.animated {
+  animation: none !important;
+}
+
+[data-canvas-dragging="true"] .react-flow__handle {
+  transition: none !important;
+}
+
 .react-flow__handle {
   transition: all 0.2s ease;
 }

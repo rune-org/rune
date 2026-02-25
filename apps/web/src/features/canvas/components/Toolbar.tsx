@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
 import {
@@ -51,7 +52,7 @@ type ToolbarProps = {
   workflowId?: number | null;
 };
 
-export function Toolbar({
+export const Toolbar = memo(function Toolbar({
   onExecute,
   onStop,
   onUndo,
@@ -89,7 +90,7 @@ export function Toolbar({
       aria-label={title}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
-      className="inline-flex h-8 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/40 px-2.5 text-xs hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex h-8 items-center gap-2 rounded-sm border border-border/60 bg-muted/40 px-2.5 text-xs hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {children}
     </button>
@@ -99,7 +100,7 @@ export function Toolbar({
     "inline-flex h-8 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/40 px-2.5 text-xs hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
-    <div className="flex items-center gap-2 rounded-[var(--radius)] border border-border/60 bg-card/80 p-2 shadow-lg">
+    <div className="flex items-center gap-2 rounded-(--radius) border border-border/60 bg-card/80 p-2 shadow-lg">
       <Link
         href="/create"
         className="mr-2 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 p-0 text-xs text-muted-foreground hover:border-accent/60 hover:bg-background/80 hover:text-foreground"
@@ -115,7 +116,7 @@ export function Toolbar({
             title="Running..."
             disabled
             className={cn(
-              "inline-flex h-8 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border px-2.5 text-xs",
+              "inline-flex h-8 items-center gap-2 rounded-sm border px-2.5 text-xs",
               "border-blue-500/60 bg-blue-500/10 text-blue-600 dark:text-blue-400"
             )}
           >
@@ -192,4 +193,4 @@ export function Toolbar({
       )}
     </div>
   );
-}
+});
