@@ -107,6 +107,16 @@ body {
   color: var(--foreground);
 }
 
+.smith-user-bubble::selection {
+  background-color: hsl(222 47% 11% / 0.62);
+  color: hsl(0 0% 100%);
+}
+
+.smith-user-bubble::-moz-selection {
+  background-color: hsl(222 47% 11% / 0.62);
+  color: hsl(0 0% 100%);
+}
+
 @utility animate-fade-in {
   animation: fadeIn 1s ease-out forwards;
 }
