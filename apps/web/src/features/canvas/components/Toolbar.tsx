@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
 import {
@@ -51,7 +52,7 @@ type ToolbarProps = {
   workflowId?: number | null;
 };
 
-export function Toolbar({
+export const Toolbar = memo(function Toolbar({
   onExecute,
   onStop,
   onUndo,
@@ -192,4 +193,4 @@ export function Toolbar({
       )}
     </div>
   );
-}
+});

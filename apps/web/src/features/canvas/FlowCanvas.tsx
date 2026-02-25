@@ -2,30 +2,24 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Background,
-  Controls,
-  MiniMap,
-  ReactFlow,
   useEdgesState,
   useNodesState,
-  Panel,
   type Edge,
-  OnSelectionChangeParams,
+  type OnSelectionChangeParams,
   type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./styles/reactflow.css";
 
 import { toast } from "@/components/ui/toast";
-import { nodeTypes } from "./nodes";
 import type { CanvasNode, NodeKind } from "./types";
-import { getMiniMapNodeColor, isValidNodeKind } from "./lib/nodeRegistry";
 import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
 import { SaveTemplateDialog } from "./components/SaveTemplateDialog";
 import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
 import { SmithButton } from "./components/SmithButton";
+import { FlowViewport } from "./components/FlowViewport";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
 import { useAddNode } from "./hooks/useAddNode";
 import { useConditionalConnect } from "./hooks/useConditionalConnect";
@@ -37,18 +31,10 @@ import { useWorkflowExecution } from "./hooks/useWorkflowExecution";
 import { useExecutionEdgeSync } from "./hooks/useExecutionEdgeSync";
 import { useConnectionValidation } from "./hooks/useConnectionValidation";
 import { useGraphClipboard } from "./hooks/useGraphClipboard";
+import { useRafNodeDrag } from "./hooks/useRafNodeDrag";
 import { useSmith } from "./hooks/useSmith";
 import { ExecutionProvider } from "./context/ExecutionContext";
-import { ExecutionStatusBar } from "./components/ExecutionStatusBar";
 import { SmithChatDrawer } from "@/features/smith/SmithChatDrawer";
-
-function getNodeColor(node: { type?: string }) {
-  const type = node.type as string;
-  if (isValidNodeKind(type)) {
-    return getMiniMapNodeColor(type);
-  }
-  return "color-mix(in srgb, var(--muted) 50%, transparent)";
-}
 
 type FlowCanvasProps = {
   externalNodes?: CanvasNode[];
@@ -76,9 +62,7 @@ function FlowCanvasInner({
   saveDisabled = false,
   workflowId = null,
 }: FlowCanvasProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>(
-    externalNodes ?? [],
-  );
+  const [nodes, setNodes] = useNodesState<CanvasNode>(externalNodes ?? []);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(
     externalEdges ?? [],
   );
@@ -88,6 +72,25 @@ function FlowCanvasInner({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+    edgesRef.current = edges;
+  }, [nodes, edges]);
+
+  const handleDragStateChange = useCallback((dragging: boolean) => {
+    containerRef.current?.setAttribute(
+      "data-canvas-dragging",
+      dragging ? "true" : "false",
+    );
+  }, []);
+
+  const { onNodesChange, onNodeDragStart, onNodeDragStop } = useRafNodeDrag(
+    setNodes,
+    { onDragStateChange: handleDragStateChange },
+  );
 
   const onConnect = useConditionalConnect(setEdges);
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
@@ -153,8 +156,11 @@ function FlowCanvasInner({
 
   const persistGraph = useCallback(() => {
     if (!onPersist) return;
-    return onPersist({ nodes, edges });
-  }, [onPersist, nodes, edges]);
+    return onPersist({
+      nodes: nodesRef.current,
+      edges: edgesRef.current,
+    });
+  }, [onPersist]);
 
   const handleUndo = useCallback(() => {
     const state = undo();
@@ -175,7 +181,7 @@ function FlowCanvasInner({
   const deleteSelectedElements = useCallback(() => {
     pushHistory();
     const selectedNodeIds = new Set(
-      nodes.filter((n) => n.selected).map((n) => n.id),
+      nodesRef.current.filter((n) => n.selected).map((n) => n.id),
     );
     setNodes((ns) => ns.filter((n) => !selectedNodeIds.has(n.id)));
     setEdges((es) =>
@@ -183,7 +189,7 @@ function FlowCanvasInner({
         (e) => !selectedNodeIds.has(e.source) && !selectedNodeIds.has(e.target),
       ),
     );
-  }, [nodes, pushHistory, setNodes, setEdges]);
+  }, [pushHistory, setNodes, setEdges]);
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) || null,
@@ -217,6 +223,10 @@ function FlowCanvasInner({
     [],
   );
 
+  const handleFitView = useCallback(() => {
+    rfInstanceRef.current?.fitView();
+  }, []);
+
   const onPaneClick = useCallback(() => setSelectedNodeId(null), []);
 
   const onLibraryAdd = useCallback(
@@ -231,14 +241,16 @@ function FlowCanvasInner({
     resetExecution();
     if (onPersist) {
       try {
+        const nodes = nodesRef.current;
+        const edges = edgesRef.current;
         await onPersist({ nodes, edges });
-      } catch (err) {
+      } catch {
         toast.error("Failed to save workflow before execution");
         return;
       }
     }
     void startExecution();
-  }, [resetExecution, onPersist, nodes, edges, startExecution]);
+  }, [resetExecution, onPersist, startExecution]);
 
   useCanvasShortcuts({
     nodes,
@@ -266,93 +278,74 @@ function FlowCanvasInner({
   }, [externalNodes, externalEdges]);
 
   return (
-    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
-      <ReactFlow
-        fitView
+    <div
+      ref={containerRef}
+      data-canvas-dragging="false"
+      className="relative h-full w-full overflow-hidden"
+    >
+      <FlowViewport
         nodes={nodes}
         edges={edges}
-        nodeTypes={nodeTypes}
-        defaultEdgeOptions={{ type: "default" }}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         isValidConnection={isValidConnection}
         onSelectionChange={onSelectionChange}
         onNodeDoubleClick={onNodeDoubleClick}
+        onNodeDragStart={onNodeDragStart}
+        onNodeDragStop={onNodeDragStop}
         onInit={onInit}
         onPaneClick={onPaneClick}
-      >
-        <Background />
+      />
 
-        <MiniMap
-          nodeBorderRadius={19}
-          position="bottom-left"
-          nodeColor={getNodeColor}
-          nodeStrokeColor="#334155"
-          maskColor="rgba(0,0,0,0.2)"
-          style={{width: 200, height:117, opacity: 0.85}}
-        />
+      <div className="pointer-events-none absolute left-4 top-4 z-35">
+        <div ref={toolbarRef} className="pointer-events-auto flex items-center gap-2">
+          <Toolbar
+            onExecute={onExecute}
+            onStop={stopExecution}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onSave={persistGraph}
+            onExportToClipboard={exportToClipboard}
+            onExportToFile={exportToFile}
+            onExportToTemplate={exportToTemplate}
+            onImportFromClipboard={importFromClipboard}
+            onImportFromFile={importFromFile}
+            onImportFromTemplate={importFromTemplate}
+            onFitView={handleFitView}
+            onAutoLayout={autoLayout}
+            saveDisabled={saveDisabled}
+            executionStatus={executionState.status}
+            isStartingExecution={isStartingExecution}
+            workflowId={workflowId}
+          />
+          <SmithButton
+            onClick={openSmith}
+            isSending={smithSending}
+            justFinished={smithJustFinished}
+          />
+        </div>
+      </div>
 
-        <Controls
-          style={{ height: 107, marginLeft: "222px", opacity:0.85 }}
-        />
+      {/* Right Sidebar (Inspector + Scryb) */}
+      <RightPanelStack
+        selectedNode={selectedNode}
+        updateSelectedNodeLabel={updateSelectedNodeLabel}
+        updateData={updateNodeData}
+        onDelete={selectedNode ? deleteSelectedElements : undefined}
+        isExpandedDialogOpen={isInspectorExpanded}
+        setIsExpandedDialogOpen={setIsInspectorExpanded}
+        onTogglePin={togglePin}
+        workflowId={workflowId}
+      />
 
-        <Panel position="top-left" className="pointer-events-auto z-60">
-          <div ref={toolbarRef} className="flex items-center gap-2">
-            <Toolbar
-              onExecute={onExecute}
-              onStop={stopExecution}
-              onUndo={handleUndo}
-              onRedo={handleRedo}
-              canUndo={canUndo}
-              canRedo={canRedo}
-              onSave={persistGraph}
-              onExportToClipboard={exportToClipboard}
-              onExportToFile={exportToFile}
-              onExportToTemplate={exportToTemplate}
-              onImportFromClipboard={importFromClipboard}
-              onImportFromFile={importFromFile}
-              onImportFromTemplate={importFromTemplate}
-              onFitView={() => rfInstanceRef.current?.fitView()}
-              onAutoLayout={autoLayout}
-              saveDisabled={saveDisabled}
-              executionStatus={executionState.status}
-              isStartingExecution={isStartingExecution}
-              workflowId={workflowId}
-            />
-            <SmithButton
-              onClick={openSmith}
-              isSending={smithSending}
-              justFinished={smithJustFinished}
-            />
-          </div>
-        </Panel>
-
-        {/* Right Sidebar (Inspector + Scryb) */}
-        <RightPanelStack
-          selectedNode={selectedNode}
-          updateSelectedNodeLabel={updateSelectedNodeLabel}
-          updateData={updateNodeData}
-          onDelete={selectedNode ? deleteSelectedElements : undefined}
-          isExpandedDialogOpen={isInspectorExpanded}
-          setIsExpandedDialogOpen={setIsInspectorExpanded}
-          onTogglePin={togglePin}
-          workflowId={workflowId}
-        />
-
-        {/* Execution Status Bar */}
-        <ExecutionStatusBar />
-
-        {/* Hints */}
-        <Panel
-          position="bottom-center"
-          className="pointer-events-none bottom-4! right-auto! left-1/2! -translate-x-2!"
-        >
-          <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
-            Drag to move • Connect via handles • Paste JSON to import
-          </div>
-        </Panel>
-      </ReactFlow>
+      <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
+        <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
+          Drag to move • Connect via handles • Paste JSON to import
+        </div>
+      </div>
 
       <Library
         containerRef={containerRef}
