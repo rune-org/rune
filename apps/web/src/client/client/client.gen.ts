@@ -3,12 +3,7 @@
 import { createSseClient } from '../core/serverSentEvents.gen';
 import type { HttpMethod } from '../core/types.gen';
 import { getValidRequestBody } from '../core/utils.gen';
-import type {
-  Client,
-  Config,
-  RequestOptions,
-  ResolvedRequestOptions,
-} from './types.gen';
+import type { Client, Config, RequestOptions, ResolvedRequestOptions } from './types.gen';
 import {
   buildUrl,
   createConfig,
@@ -34,12 +29,7 @@ export const createClient = (config: Config = {}): Client => {
     return getConfig();
   };
 
-  const interceptors = createInterceptors<
-    Request,
-    Response,
-    unknown,
-    ResolvedRequestOptions
-  >();
+  const interceptors = createInterceptors<Response, unknown, ResolvedRequestOptions>();
 
   const beforeRequest = async (options: RequestOptions) => {
     const opts = {
@@ -75,69 +65,34 @@ export const createClient = (config: Config = {}): Client => {
     return { opts, url };
   };
 
+  // @ts-expect-error
   const request: Client['request'] = async (options) => {
     // @ts-expect-error
     const { opts, url } = await beforeRequest(options);
-    const requestInit: ReqInit = {
-      redirect: 'follow',
-      ...opts,
-      body: getValidRequestBody(opts),
-    };
-
-    let request = new Request(url, requestInit);
 
     for (const fn of interceptors.request.fns) {
       if (fn) {
-        request = await fn(request, opts);
+        await fn(opts);
       }
     }
 
     // fetch must be assigned here, otherwise it would throw the error:
     // TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation
     const _fetch = opts.fetch!;
-    let response: Response;
+    const requestInit: ReqInit = {
+      ...opts,
+      body: getValidRequestBody(opts),
+    };
 
-    try {
-      response = await _fetch(request);
-    } catch (error) {
-      // Handle fetch exceptions (AbortError, network errors, etc.)
-      let finalError = error;
-
-      for (const fn of interceptors.error.fns) {
-        if (fn) {
-          finalError = (await fn(
-            error,
-            undefined as any,
-            request,
-            opts,
-          )) as unknown;
-        }
-      }
-
-      finalError = finalError || ({} as unknown);
-
-      if (opts.throwOnError) {
-        throw finalError;
-      }
-
-      // Return error response
-      return opts.responseStyle === 'data'
-        ? undefined
-        : {
-            error: finalError,
-            request,
-            response: undefined as any,
-          };
-    }
+    let response = await _fetch(url, requestInit);
 
     for (const fn of interceptors.response.fns) {
       if (fn) {
-        response = await fn(response, request, opts);
+        response = await fn(response, opts);
       }
     }
 
     const result = {
-      request,
       response,
     };
 
@@ -147,10 +102,7 @@ export const createClient = (config: Config = {}): Client => {
           ? getParseAs(response.headers.get('Content-Type'))
           : opts.parseAs) ?? 'json';
 
-      if (
-        response.status === 204 ||
-        response.headers.get('Content-Length') === '0'
-      ) {
+      if (response.status === 204 || response.headers.get('Content-Length') === '0') {
         let emptyData: any;
         switch (parseAs) {
           case 'arrayBuffer':
@@ -169,12 +121,10 @@ export const createClient = (config: Config = {}): Client => {
             emptyData = {};
             break;
         }
-        return opts.responseStyle === 'data'
-          ? emptyData
-          : {
-              data: emptyData,
-              ...result,
-            };
+        return {
+          data: emptyData,
+          ...result,
+        };
       }
 
       let data: any;
@@ -182,17 +132,21 @@ export const createClient = (config: Config = {}): Client => {
         case 'arrayBuffer':
         case 'blob':
         case 'formData':
-        case 'json':
         case 'text':
           data = await response[parseAs]();
           break;
+        case 'json': {
+          // Some servers return 200 with no Content-Length and empty body.
+          // response.json() would throw; read as text and parse if non-empty.
+          const text = await response.text();
+          data = text ? JSON.parse(text) : {};
+          break;
+        }
         case 'stream':
-          return opts.responseStyle === 'data'
-            ? response.body
-            : {
-                data: response.body,
-                ...result,
-              };
+          return {
+            data: response.body,
+            ...result,
+          };
       }
 
       if (parseAs === 'json') {
@@ -205,12 +159,10 @@ export const createClient = (config: Config = {}): Client => {
         }
       }
 
-      return opts.responseStyle === 'data'
-        ? data
-        : {
-            data,
-            ...result,
-          };
+      return {
+        data,
+        ...result,
+      };
     }
 
     const textError = await response.text();
@@ -227,7 +179,7 @@ export const createClient = (config: Config = {}): Client => {
 
     for (const fn of interceptors.error.fns) {
       if (fn) {
-        finalError = (await fn(error, response, request, opts)) as string;
+        finalError = (await fn(error, response, opts)) as string;
       }
     }
 
@@ -237,39 +189,41 @@ export const createClient = (config: Config = {}): Client => {
       throw finalError;
     }
 
-    // TODO: we probably want to return error and improve types
-    return opts.responseStyle === 'data'
-      ? undefined
-      : {
-          error: finalError,
-          ...result,
-        };
+    return {
+      error: finalError,
+      ...result,
+    };
   };
 
-  const makeMethodFn =
-    (method: Uppercase<HttpMethod>) => (options: RequestOptions) =>
-      request({ ...options, method });
+  const makeMethodFn = (method: Uppercase<HttpMethod>) => (options: RequestOptions) =>
+    request({ ...options, method });
 
-  const makeSseFn =
-    (method: Uppercase<HttpMethod>) => async (options: RequestOptions) => {
-      const { opts, url } = await beforeRequest(options);
-      return createSseClient({
-        ...opts,
-        body: opts.body as BodyInit | null | undefined,
-        headers: opts.headers as unknown as Record<string, string>,
-        method,
-        onRequest: async (url, init) => {
-          let request = new Request(url, init);
-          for (const fn of interceptors.request.fns) {
-            if (fn) {
-              request = await fn(request, opts);
-            }
+  const makeSseFn = (method: Uppercase<HttpMethod>) => async (options: RequestOptions) => {
+    const { opts, url } = await beforeRequest(options);
+    return createSseClient({
+      ...opts,
+      body: opts.body as BodyInit | null | undefined,
+      headers: opts.headers as unknown as Record<string, string>,
+      method,
+      onRequest: async (url, init) => {
+        let request = new Request(url, init);
+        const requestInit = {
+          ...init,
+          method: init.method as Config['method'],
+          url,
+        };
+        for (const fn of interceptors.request.fns) {
+          if (fn) {
+            await fn(requestInit);
+            request = new Request(requestInit.url, requestInit);
           }
-          return request;
-        },
-        url,
-      });
-    };
+        }
+        return request;
+      },
+      serializedBody: getValidRequestBody(opts) as BodyInit | null | undefined,
+      url,
+    });
+  };
 
   return {
     buildUrl,
