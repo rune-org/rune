@@ -1,12 +1,14 @@
 from typing import Optional, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
+from src.db.models import WorkflowRole
 
 
 class WorkflowListItem(BaseModel):
     id: int
     name: str
     is_active: bool
+    role: WorkflowRole
 
 
 def normalize_and_validate_name(value: str, *, field_name: str = "name") -> str:
