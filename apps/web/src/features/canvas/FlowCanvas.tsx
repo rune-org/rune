@@ -11,6 +11,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./styles/reactflow.css";
 
+import { toast } from "@/components/ui/toast";
 import type { CanvasNode, NodeKind } from "./types";
 import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
@@ -231,12 +232,11 @@ function FlowCanvasInner({
     resetExecution();
     if (onPersist) {
       try {
-        await onPersist({
-          nodes: nodesRef.current,
-          edges: edgesRef.current,
-        });
-      } catch (err) {
-        console.error("Failed to save before execution:", err);
+        const nodes = nodesRef.current;
+        const edges = edgesRef.current;
+        await onPersist({ nodes, edges });
+      } catch {
+        toast.error("Failed to save workflow before execution");
         return;
       }
     }
