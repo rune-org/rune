@@ -119,9 +119,6 @@ def _config_response(
 # Open-redirect protection
 # ---------------------------------------------------------------------------
 
-_ALLOWED_REDIRECT_PREFIXES = ("/",)  # only same-origin relative paths
-
-
 def _safe_redirect_path(path: Optional[str], default: str = "/") -> str:
     """Return *path* only when it is a safe relative URL.
 
