@@ -36,6 +36,8 @@ class SAMLProvisioningService:
 
         In all cases ``last_login_at`` is refreshed.
         """
+        now = datetime.now()
+
         # ------------------------------------------------------------------
         # 1. Primary lookup: NameID + config
         # ------------------------------------------------------------------
@@ -47,7 +49,7 @@ class SAMLProvisioningService:
         )
         user = result.first()
         if user:
-            user.last_login_at = datetime.now()
+            user.last_login_at = now
             self.db.add(user)
             await self.db.commit()
             await self.db.refresh(user)
@@ -63,7 +65,7 @@ class SAMLProvisioningService:
             existing.saml_subject = attrs.name_id
             existing.saml_config_id = config.id
             existing.hashed_password = None  # SSO-only: revoke password login
-            existing.last_login_at = datetime.now()
+            existing.last_login_at = now
             self.db.add(existing)
             await self.db.commit()
             await self.db.refresh(existing)
@@ -82,7 +84,7 @@ class SAMLProvisioningService:
             role=UserRole.USER,
             is_active=True,
             must_change_password=False,
-            last_login_at=datetime.now(),
+            last_login_at=now,
         )
         self.db.add(new_user)
         await self.db.commit()
