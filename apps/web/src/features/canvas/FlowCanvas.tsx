@@ -289,7 +289,7 @@ function FlowCanvasInner({
         onPaneClick={onPaneClick}
       />
 
-      <div className="pointer-events-none absolute left-4 top-4 z-[60]">
+      <div className="pointer-events-none absolute left-4 top-4 z-35">
         <div ref={toolbarRef} className="pointer-events-auto flex items-center gap-2">
           <Toolbar
             onExecute={onExecute}
@@ -332,7 +332,7 @@ function FlowCanvasInner({
         workflowId={workflowId}
       />
 
-      <div className="pointer-events-none absolute bottom-4 left-1/2 z-50 -translate-x-1/2">
+      <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
         <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
           Drag to move • Connect via handles • Paste JSON to import
         </div>

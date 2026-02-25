@@ -49,7 +49,7 @@ export const RightPanelStack = memo(function RightPanelStack(
   const { workflowId, ...inspectorProps } = props;
 
   return (
-    <div className="pointer-events-none absolute right-4 top-4 bottom-8 z-[60] flex h-auto flex-col items-end justify-between gap-4">
+    <div className="pointer-events-none absolute right-4 top-4 bottom-8 z-35 flex h-auto flex-col items-end justify-between gap-4">
       {/* Top: Inspector */}
       <div className="pointer-events-auto min-h-0 flex flex-col items-end overflow-visible">
         <Inspector
