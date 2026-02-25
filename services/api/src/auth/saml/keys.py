@@ -5,6 +5,12 @@ the SP (RUNE API) uses to sign AuthnRequests and optionally to decrypt
 assertions.  The private key is never stored in plaintext: it is Fernet-
 encrypted using the application's ENCRYPTION_KEY before being written to the
 database.
+
+Production hardening applied:
+- RSA-4096 key (NIST SP 800-131A Rev 2 compliant through 2030+).
+- 3-year certificate validity (reduces blast radius of key compromise vs 10 yr).
+- KeyUsage + ExtendedKeyUsage extensions set for strict IdP validation.
+- SubjectKeyIdentifier added for chain-building compatibility.
 """
 
 from datetime import datetime, timedelta, timezone
@@ -13,7 +19,7 @@ from cryptography import x509
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.x509.oid import NameOID
+from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 from src.core.config import get_settings
 
@@ -58,7 +64,7 @@ class SAMLKeyManager:
         """
         private_key = rsa.generate_private_key(
             public_exponent=65537,
-            key_size=2048,
+            key_size=4096,  # NIST SP 800-131A Rev 2 recommended minimum for 2030+
         )
 
         subject = issuer = x509.Name(
@@ -69,17 +75,44 @@ class SAMLKeyManager:
         )
 
         now = datetime.now(timezone.utc)
+        pub_key = private_key.public_key()
         cert = (
             x509.CertificateBuilder()
             .subject_name(subject)
             .issuer_name(issuer)
-            .public_key(private_key.public_key())
+            .public_key(pub_key)
             .serial_number(x509.random_serial_number())
             .not_valid_before(now)
-            .not_valid_after(now + timedelta(days=3650))  # 10 years
+            .not_valid_after(now + timedelta(days=1095))  # 3 years (not 10)
+            # CA:FALSE — this cert signs SAML messages, not other certs.
             .add_extension(
                 x509.BasicConstraints(ca=False, path_length=None),
                 critical=True,
+            )
+            # Restrict key usage to digital signatures only.
+            .add_extension(
+                x509.KeyUsage(
+                    digital_signature=True,
+                    content_commitment=True,  # non-repudiation
+                    key_encipherment=False,
+                    data_encipherment=False,
+                    key_agreement=False,
+                    key_cert_sign=False,
+                    crl_sign=False,
+                    encipher_only=False,
+                    decipher_only=False,
+                ),
+                critical=True,
+            )
+            # Extended key usage: client auth covers SAML signing purposes.
+            .add_extension(
+                x509.ExtendedKeyUsage([ExtendedKeyUsageOID.CLIENT_AUTH]),
+                critical=False,
+            )
+            # Subject key identifier — required by many IdP implementations.
+            .add_extension(
+                x509.SubjectKeyIdentifier.from_public_key(pub_key),
+                critical=False,
             )
             .sign(private_key, hashes.SHA256())
         )
@@ -102,8 +135,14 @@ class SAMLKeyManager:
         python3-saml's ``privateKey`` setting must contain just the raw base64
         bytes, so this method strips the ``-----BEGIN …-----`` lines after
         decrypting.
+
+        Raises:
+            ValueError: If decryption fails (wrong key or corrupt ciphertext).
         """
-        decrypted_pem: str = self._fernet.decrypt(encrypted_key.encode()).decode()
+        try:
+            decrypted_pem: str = self._fernet.decrypt(encrypted_key.encode()).decode()
+        except Exception as exc:
+            raise ValueError("SP private key decryption failed") from exc
         return _strip_pem_headers(decrypted_pem)
 
     @staticmethod

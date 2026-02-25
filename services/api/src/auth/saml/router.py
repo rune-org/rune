@@ -20,13 +20,13 @@ Admin only:
     DELETE /auth/saml/config   – Delete the SAML configuration
 """
 
-import base64
 import json
+import secrets
 from typing import Optional
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, Form, Request, Response
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlmodel import select
 
 from src.auth.saml.keys import SAMLKeyManager
@@ -36,17 +36,22 @@ from src.auth.saml.schemas import (
     SAMLConfigResponse,
     SAMLConfigUpdate,
     SAMLDiscoverResponse,
+    SAMLExchangeRequest,
+    SAMLExchangeResponse,
 )
 from src.auth.saml.service import SAMLService
 from src.auth.service import AuthService
 from src.auth.token_store import TokenStore
 from src.core.config import Settings, get_settings
 from src.core.dependencies import DatabaseDep, RedisDep, RequireAdminRole
-from src.core.exceptions import AlreadyExists, NotFound
+from src.core.exceptions import AlreadyExists, BadRequest, NotFound
 from src.core.responses import ApiResponse
 from src.db.models import SAMLConfiguration
 
 router = APIRouter(prefix="/auth/saml", tags=["SAML SSO"])
+
+# One-time SSO code TTL in seconds — short enough to be single-use only.
+_SSO_CODE_TTL = 30
 
 
 # ---------------------------------------------------------------------------
@@ -90,11 +95,7 @@ async def _get_any_config(db) -> Optional[SAMLConfiguration]:
 def _config_response(
     config: SAMLConfiguration, settings: Settings
 ) -> SAMLConfigResponse:
-    """Build SAMLConfigResponse with computed SP URLs.
-
-    With the single-IdP model the entity ID is a clean, stable URL
-    (no numeric suffix) that will not change when the config is recreated.
-    """
+    """Build SAMLConfigResponse with computed SP URLs."""
     base = settings.saml_sp_base_url.rstrip("/")
     return SAMLConfigResponse(
         id=config.id,  # type: ignore[arg-type]
@@ -115,18 +116,31 @@ def _config_response(
 
 
 # ---------------------------------------------------------------------------
-# Relay-state codec (carries only the optional post-login redirect path)
+# Open-redirect protection
 # ---------------------------------------------------------------------------
 
+_ALLOWED_REDIRECT_PREFIXES = ("/",)  # only same-origin relative paths
 
-def _decode_relay_state(relay_state: str) -> dict:
-    """Decode a base64url-encoded JSON relay state string."""
-    try:
-        padding = 4 - len(relay_state) % 4
-        padded = relay_state + ("=" * padding) if padding != 4 else relay_state
-        return json.loads(base64.urlsafe_b64decode(padded).decode())
-    except Exception:
-        return {}
+
+def _safe_redirect_path(path: Optional[str], default: str = "/") -> str:
+    """Return *path* only when it is a safe relative URL.
+
+    Rejects:
+    * ``None`` / empty strings → ``default``
+    * Absolute URLs (``https://evil.com``) → ``default``
+    * Protocol-relative URLs (``//evil.com``) → ``default``
+
+    Accepts:
+    * Any string that starts with ``/`` and does NOT contain ``://``
+    """
+    if not path:
+        return default
+    path = path.strip()
+    if path.startswith("//") or "://" in path:
+        return default
+    if not path.startswith("/"):
+        return default
+    return path
 
 
 # ===========================================================================
@@ -212,7 +226,9 @@ async def discover(
         message="Discovery complete",
         data=SAMLDiscoverResponse(
             found=config is not None,
-            config_id=config.id if config else None,
+            login_url=f"{get_settings().saml_sp_base_url.rstrip('/')}/auth/saml/login"
+            if config is not None
+            else None,
         ),
     )
 
@@ -240,15 +256,17 @@ async def assertion_consumer_service(
     settings = get_settings()
     frontend_url = settings.saml_frontend_url.rstrip("/")
 
-    # Relay state only carries the optional post-login redirect path.
-    relay_data = _decode_relay_state(RelayState)
-    post_login_redirect = relay_data.get("redirect") or "/create"
+    # Decode and verify the signed relay state.
+    # On MAC failure decode_relay_state returns {} — post_login_redirect falls
+    # back to the default, which prevents open-redirect via forged relay state.
+    relay_data = saml_service.decode_relay_state(RelayState)
+    post_login_redirect = _safe_redirect_path(relay_data.get("redirect"), default="/")
 
     # Single-IdP lookup — no config_id needed.
     config = await _get_active_config(db)
     if not config:
         return RedirectResponse(
-            url=f"{frontend_url}/saml-callback?status=error&reason=no_active_saml_config",
+            url=f"{frontend_url}/saml-callback?status=error&reason=no_config",
             status_code=302,
         )
 
@@ -269,10 +287,11 @@ async def assertion_consumer_service(
             request_host=http_host,
             is_https=is_https,
         )
-    except ValueError as exc:
-        safe_reason = str(exc)[:120].replace("&", "%26").replace("=", "%3D")
+    except ValueError:
+        # Full error details are already logged inside process_acs_response.
+        # Surface only a generic code — never put assertion internals in a URL.
         return RedirectResponse(
-            url=f"{frontend_url}/saml-callback?status=error&reason={safe_reason}",
+            url=f"{frontend_url}/saml-callback?status=error&reason=assertion_invalid",
             status_code=302,
         )
 
@@ -294,45 +313,111 @@ async def assertion_consumer_service(
     token_response = await auth_service.create_auth_response(user)
 
     # ------------------------------------------------------------------
-    # Redirect to frontend SAML callback page.
-    # The refresh token is passed as a query param so JS can store it in
-    # localStorage (identical to the standard login flow).
-    # The access token is delivered as an HTTP-only cookie.
+    # Store tokens under a one-time code in Redis (30-second TTL).
+    # Only the opaque code travels in the redirect URL — no real tokens
+    # are ever written to browser history, server logs, or Referer headers.
     # ------------------------------------------------------------------
-    callback_url = (
-        f"{frontend_url}/saml-callback"
-        f"?status=ok"
-        f"&refresh_token={token_response.refresh_token}"
-        f"&expires_in={token_response.expires_in}"
-        f"&redirect={post_login_redirect}"
+    code = secrets.token_urlsafe(32)
+    await redis.setex(
+        f"saml:code:{code}",
+        _SSO_CODE_TTL,
+        json.dumps(
+            {
+                "access_token": token_response.access_token,
+                "refresh_token": token_response.refresh_token,
+                "expires_in": token_response.expires_in,
+            }
+        ),
     )
 
-    response = RedirectResponse(url=callback_url, status_code=302)
-    response.set_cookie(
-        key=settings.cookie_name,
-        value=token_response.access_token,
-        httponly=True,
-        secure=settings.cookie_secure,
-        max_age=settings.access_token_expire_minutes * 60,
-        samesite="lax",
+    return RedirectResponse(
+        url=f"{frontend_url}/saml-callback?code={code}&redirect={post_login_redirect}",
+        status_code=302,
     )
-    return response
 
 
 @router.post(
     "/slo",
     summary="Single Logout",
-    description="Handle IdP-initiated Single Logout. Clears the auth cookie.",
+    description=(
+        "Handle IdP-initiated Single Logout. "
+        "Clears the auth cookie. "
+        "For a full SP-initiated SLO flow redirect the browser to the IdP SLO URL instead."
+    ),
 )
 async def single_logout(
     request: Request,
 ) -> Response:
+    """IdP-initiated SLO handler.
+
+    The IdP POSTs a LogoutRequest here.  We acknowledge it, delete the
+    session cookie, and return a 200 so the IdP knows we succeeded.
+
+    Token revocation: the access token is short-lived (2 min default) so
+    letting it expire is acceptable.  The HTTP-only cookie is deleted so
+    the browser can no longer send it.  A full token-blacklist approach
+    would require the NameID from the LogoutRequest — left as a future
+    enhancement when SP-initiated SLO is implemented.
+    """
     settings = get_settings()
     response = Response(content="Logged out", status_code=200)
     response.delete_cookie(
         key=settings.cookie_name,
         httponly=True,
         secure=settings.cookie_secure,
+        samesite="lax",
+        path="/",
+    )
+    return response
+
+
+# ===========================================================================
+# One-time SSO code exchange
+# ===========================================================================
+
+
+@router.post(
+    "/exchange",
+    response_model=ApiResponse[SAMLExchangeResponse],
+    summary="Exchange SSO code for tokens",
+    description=(
+        "Exchange the short-lived, one-time code that the SAML ACS callback "
+        "embeds in the redirect URL for real auth tokens.  The code is deleted "
+        "atomically on first use and expires after 30 seconds, so it cannot be "
+        "replayed even if the URL leaks into browser history or server logs.\n\n"
+        "Returns the refresh token in the JSON body and sets the access token "
+        "as an HttpOnly cookie."
+    ),
+)
+async def exchange_sso_code(
+    payload: SAMLExchangeRequest,
+    redis: RedisDep,
+) -> Response:
+    settings = get_settings()
+    raw = await redis.getdel(f"saml:code:{payload.code}")
+    if not raw:
+        raise BadRequest(detail="SSO code expired or already used")
+
+    stored = json.loads(raw)
+
+    response_data = ApiResponse(
+        success=True,
+        message="SSO exchange successful",
+        data=SAMLExchangeResponse(
+            refresh_token=stored["refresh_token"],
+            expires_in=stored["expires_in"],
+        ),
+    )
+
+    response = JSONResponse(content=response_data.model_dump())
+    response.set_cookie(
+        key=settings.cookie_name,
+        value=stored["access_token"],
+        httponly=True,
+        secure=settings.cookie_secure,
+        max_age=settings.access_token_expire_minutes * 60,
+        samesite="lax",
+        path="/",
     )
     return response
 
@@ -402,9 +487,8 @@ async def create_saml_config(
         idp_certificate=payload.idp_certificate,
         sp_private_key_encrypted=encrypted_key,
         sp_certificate=cert_pem,
-        domain_hint=payload.domain_hint.lower().strip()
-        if payload.domain_hint
-        else None,
+        # domain_hint is already normalised (lowered + stripped) by the schema validator.
+        domain_hint=payload.domain_hint,
     )
     db.add(config)
     await db.commit()

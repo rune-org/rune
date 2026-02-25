@@ -5,9 +5,17 @@ Wraps ``python3-saml`` (OneLogin) to:
 * Initiate SSO (build AuthnRequest → redirect URL).
 * Validate IdP assertions (ACS).
 * Provide replay-attack protection via Redis.
+
+Production hardening:
+* Relay state is HMAC-signed (SHA-256) so a malicious actor cannot forge it at
+  the ACS endpoint and inject an arbitrary post-login redirect path.
+* Relay state size is bounded (guards against header-too-large attacks).
+* Assertion IDs are consumed in Redis with the configured TTL to prevent replay.
 """
 
 import base64
+import hashlib
+import hmac
 import json
 from dataclasses import dataclass, field
 from typing import Optional
@@ -59,6 +67,9 @@ _NAME_ATTR_NAMES = [
     "urn:oid:2.5.4.3",  # LDAP cn
 ]
 
+# Maximum relay state payload size (bytes). Prevents header-too-large DoS.
+_MAX_RELAY_STATE_BYTES = 512
+
 
 def _first(attrs: dict, keys: list[str]) -> Optional[str]:
     """Return the first non-empty value found for any of the given attribute keys."""
@@ -83,6 +94,62 @@ class SAMLService:
         self._redis = redis_client
         self._settings = get_settings()
         self._key_manager = SAMLKeyManager()
+
+    # ------------------------------------------------------------------
+    # Relay state — signed with HMAC-SHA256 using the JWT secret
+    # ------------------------------------------------------------------
+
+    def _relay_state_secret(self) -> bytes:
+        """Derive a signing secret for relay states from the JWT secret.
+
+        Using a dedicated sub-key avoids mixing contexts, but keeps the
+        secret count down to one master secret in .env.
+        """
+        secret = (self._settings.jwt_secret_key or "").encode()
+        return hashlib.sha256(b"saml-relay-state:" + secret).digest()
+
+    def _sign_relay_state(self, payload: dict) -> str:
+        """Encode *payload* as base64url JSON and append an HMAC-SHA256 MAC.
+
+        Wire format:  ``<base64url(json)>.<base64url(hmac)>``
+        """
+        raw = (
+            base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+        )
+        mac = hmac.new(
+            self._relay_state_secret(), raw.encode(), hashlib.sha256
+        ).digest()
+        mac_b64 = base64.urlsafe_b64encode(mac).decode().rstrip("=")
+        signed = f"{raw}.{mac_b64}"
+        if len(signed.encode()) > _MAX_RELAY_STATE_BYTES:
+            # Fall back to an empty payload rather than truncating (could corrupt JSON).
+            return self._sign_relay_state({})
+        return signed
+
+    def _verify_relay_state(self, token: str) -> dict:
+        """Verify the MAC and return the decoded payload, or ``{}`` on any failure.
+
+        Returning an empty dict (not raising) means the worst outcome of a bad
+        relay state is that the user lands on the default post-login page --
+        never an error screen or a security exception.
+        """
+        if not token:
+            return {}
+        try:
+            parts = token.split(".", 1)
+            if len(parts) != 2:
+                return {}
+            raw, mac_b64 = parts
+            expected_mac = hmac.new(
+                self._relay_state_secret(), raw.encode(), hashlib.sha256
+            ).digest()
+            received_mac = base64.urlsafe_b64decode(mac_b64 + "==")
+            if not hmac.compare_digest(expected_mac, received_mac):
+                return {}
+            payload_bytes = base64.urlsafe_b64decode(raw + "==")
+            return json.loads(payload_bytes.decode())
+        except Exception:
+            return {}
 
     # ------------------------------------------------------------------
     # Settings construction
@@ -189,6 +256,7 @@ class SAMLService:
 
         Stores the generated request ID in Redis so we can validate
         ``InResponseTo`` when the assertion arrives at the ACS endpoint.
+        The relay state is HMAC-signed to prevent forgery.
         """
         parsed = urlparse(self._settings.saml_sp_base_url)
         is_https = parsed.scheme == "https"
@@ -201,10 +269,7 @@ class SAMLService:
         settings_dict = self._build_settings_dict(config)
         auth = OneLogin_Saml2_Auth(request_data, settings_dict)
 
-        relay_state = base64.urlsafe_b64encode(
-            json.dumps({"redirect": redirect_url}).encode()
-        ).decode()
-
+        relay_state = self._sign_relay_state({"redirect": redirect_url})
         sso_url: str = auth.login(return_to=relay_state)
 
         request_id = auth.get_last_request_id()
@@ -212,7 +277,7 @@ class SAMLService:
             await self._redis.setex(
                 f"saml:request:{request_id}",
                 self._RELAY_STATE_TTL,
-                "1",  # single IdP – value is kept for replay-protection TTL only
+                "1",
             )
 
         return sso_url
@@ -250,13 +315,10 @@ class SAMLService:
 
         errors = auth.get_errors()
         if errors:
-            reason = auth.get_last_error_reason() or ""
-            raise ValueError(
-                f"SAML response validation failed: {', '.join(errors)}. {reason}"
-            )
+            raise ValueError("SAML assertion validation failed")
 
         if not auth.is_authenticated():
-            raise ValueError("SAML authentication failed: assertion not authenticated")
+            raise ValueError("SAML authentication failed")
 
         # ---- Replay-attack protection ----
         assertion_id = auth.get_last_assertion_id()
@@ -265,7 +327,7 @@ class SAMLService:
             already_used = await self._redis.exists(redis_key)
             if already_used:
                 raise ValueError(
-                    "SAML replay attack detected: assertion ID already consumed"
+                    "SAML replay attack detected: assertion already consumed"
                 )
             await self._redis.setex(
                 redis_key,
@@ -287,3 +349,15 @@ class SAMLService:
             name=name.strip(),
             session_index=session_index,
         )
+
+    # ------------------------------------------------------------------
+    # Relay state — public decode (used by router after verification)
+    # ------------------------------------------------------------------
+
+    def decode_relay_state(self, token: str) -> dict:
+        """Verify the MAC and return decoded relay state payload.
+
+        Always returns a dict (empty on failure) so callers can safely call
+        ``.get("redirect")`` without error-handling.
+        """
+        return self._verify_relay_state(token)
