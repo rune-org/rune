@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import type { SwitchData, SwitchOperator, SwitchRule } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
+import { VariableInput } from "../variable-picker/VariableInput";
 import {
   switchHandleLabelFromId,
   switchRuleHandleId,
@@ -64,7 +65,7 @@ export function SwitchInspector({
   const addRule = () => {
     updateRules((rs) => [
       ...rs,
-      { value: "$input.field", operator: "==", compare: "value" },
+      { value: "", operator: "==", compare: "" },
     ]);
   };
 
@@ -167,13 +168,13 @@ export function SwitchInspector({
                 <label className="block text-[11px] text-muted-foreground">
                   Value
                 </label>
-                <input
-                  className="w-full rounded-[calc(var(--radius)-0.3rem)] border border-input bg-muted/30 px-2 py-1 text-xs"
+                <VariableInput
                   value={rule.value ?? ""}
-                  onChange={(e) =>
-                    updateRuleField(idx, "value", e.target.value)
+                  onChange={(v) =>
+                    updateRuleField(idx, "value", v)
                   }
                   placeholder="$input.status"
+                  nodeId={node.id}
                 />
               </div>
               <div className="space-y-1">

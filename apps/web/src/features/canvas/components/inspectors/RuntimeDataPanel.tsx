@@ -20,9 +20,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useState } from "react";
+import { JsonTreeViewer } from "../json-tree/JsonTreeViewer";
 
 interface RuntimeDataPanelProps {
   nodeId: string;
+  nodeLabel?: string;
 }
 
 function StatusBadge({ status, durationMs }: { status: NodeExecutionStatus; durationMs?: number }) {
@@ -75,10 +77,15 @@ function StatusBadge({ status, durationMs }: { status: NodeExecutionStatus; dura
   );
 }
 
-/**
- * TODO(ash): Replace raw JSON display with a prettified display
- */
-function JsonViewer({ label, data }: { label: string; data: unknown }) {
+function JsonSection({
+  label,
+  data,
+  nodeLabel,
+}: {
+  label: string;
+  data: unknown;
+  nodeLabel?: string;
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   const jsonString = useMemo(() => {
@@ -105,6 +112,8 @@ function JsonViewer({ label, data }: { label: string; data: unknown }) {
     await navigator.clipboard.writeText(jsonString);
     toast.success("Copied to clipboard");
   };
+
+  const rootPath = nodeLabel ? `$${nodeLabel}` : "";
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-1">
@@ -133,9 +142,13 @@ function JsonViewer({ label, data }: { label: string; data: unknown }) {
         )}
       </div>
       <CollapsibleContent>
-        <pre className="max-h-48 overflow-auto rounded-md bg-muted/30 p-3 text-xs font-mono">
-          {jsonString}
-        </pre>
+        <div className="max-h-64 overflow-auto rounded-md bg-muted/30 p-2">
+          <JsonTreeViewer
+            data={data}
+            rootPath={rootPath}
+            defaultExpandDepth={2}
+          />
+        </div>
       </CollapsibleContent>
     </Collapsible>
   );
@@ -166,7 +179,7 @@ function ErrorDisplay({ error }: { error: NodeExecutionData["error"] }) {
   );
 }
 
-export function RuntimeDataPanel({ nodeId }: RuntimeDataPanelProps) {
+export function RuntimeDataPanel({ nodeId, nodeLabel }: RuntimeDataPanelProps) {
   const nodeExecution = useNodeExecution(nodeId);
 
   if (!nodeExecution || nodeExecution.status === "idle") {
@@ -186,9 +199,9 @@ export function RuntimeDataPanel({ nodeId }: RuntimeDataPanelProps) {
     <div className="space-y-4">
       <StatusBadge status={nodeExecution.status} durationMs={nodeExecution.durationMs} />
 
-      <JsonViewer label="Input" data={nodeExecution.input} />
-      <JsonViewer label="Parameters" data={nodeExecution.parameters} />
-      <JsonViewer label="Output" data={nodeExecution.output} />
+      <JsonSection label="Input" data={nodeExecution.input} nodeLabel={nodeLabel} />
+      <JsonSection label="Parameters" data={nodeExecution.parameters} nodeLabel={nodeLabel} />
+      <JsonSection label="Output" data={nodeExecution.output} nodeLabel={nodeLabel} />
 
       <ErrorDisplay error={nodeExecution.error} />
 

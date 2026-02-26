@@ -106,7 +106,8 @@ export function Inspector({
   };
 
   const Content = (
-    <div 
+    <div
+      data-inspector
       className={cn(
         "flex w-65 max-w-[90vw] flex-col rounded-(--radius) border border-border/60 bg-card/90 shadow-lg transition-all",
         className
@@ -353,7 +354,7 @@ export function Inspector({
                     <div className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Execution Data
                     </div>
-                    <RuntimeDataPanel nodeId={selectedNode.id} />
+                    <RuntimeDataPanel nodeId={selectedNode.id} nodeLabel={selectedNode.data.label} />
                   </div>
                 </TabsContent>
               </Tabs>
