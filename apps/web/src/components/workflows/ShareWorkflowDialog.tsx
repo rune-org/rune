@@ -257,7 +257,7 @@ export function ShareWorkflowDialog({
                           <Badge variant="secondary">Owner</Badge>
                         ) : (
                           <>
-                            {isAdmin || isSharedUserAdmin ? (
+                            {isSharedUserAdmin ? (
                               <Badge variant="outline" className="capitalize">
                                 {perm.role}
                               </Badge>
