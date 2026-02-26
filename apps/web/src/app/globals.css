@@ -110,7 +110,8 @@ body {
 /* Hide the # anchor links on Nextra doc headings (keep IDs for TOC sidebar) */
 .subheading-anchor {
   display: none !important;
-  
+}
+
 .smith-user-bubble::selection {
   background-color: hsl(222 47% 11% / 0.62);
   color: hsl(0 0% 100%);
