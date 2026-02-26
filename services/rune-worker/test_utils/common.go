@@ -2,11 +2,13 @@ package testutils
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"testing"
 	"time"
 
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 
 	"rune-worker/pkg/platform/queue"
@@ -44,6 +46,11 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 		t.Fatalf("Failed to create RabbitMQ publisher: %v", err)
 	}
 
+	if err := resetRabbitMQQueues(rabbitmqURL); err != nil {
+		_ = publisher.Close()
+		t.Fatalf("Failed to reset RabbitMQ queues: %v", err)
+	}
+
 	// Connect to Redis
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
@@ -75,6 +82,71 @@ func (env *TestEnv) Cleanup(t *testing.T) {
 		_ = env.RedisClient.FlushDB(ctx).Err()
 		_ = env.RedisClient.Close()
 	}
+	if env.Publisher != nil {
+		_ = env.Publisher.Close()
+	}
+}
+
+func resetRabbitMQQueues(rabbitURL string) error {
+	conn, err := amqp.Dial(rabbitURL)
+	if err != nil {
+		return fmt.Errorf("dial rabbitmq: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		return fmt.Errorf("open channel: %w", err)
+	}
+	defer func() { _ = ch.Close() }()
+
+	if err := ch.ExchangeDeclare(
+		queue.ExchangeWorkflows,
+		"topic",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	); err != nil {
+		return fmt.Errorf("declare exchange: %w", err)
+	}
+
+	queues := []string{
+		queue.QueueWorkflowExecution,
+		queue.QueueWorkflowResume,
+		queue.QueueWorkflowNodeStatus,
+		queue.QueueWorkflowCompletion,
+		queue.QueueWorkflowWorkerInitiated,
+		queue.QueueWorkflowExecution + ".test",
+	}
+
+	for _, q := range queues {
+		if _, err := ch.QueueDeclare(
+			q,
+			true,
+			false,
+			false,
+			false,
+			nil,
+		); err != nil {
+			return fmt.Errorf("declare queue %s: %w", q, err)
+		}
+		if err := ch.QueueBind(
+			q,
+			q,
+			queue.ExchangeWorkflows,
+			false,
+			nil,
+		); err != nil {
+			return fmt.Errorf("bind queue %s: %w", q, err)
+		}
+		if _, err := ch.QueuePurge(q, false); err != nil {
+			return fmt.Errorf("purge queue %s: %w", q, err)
+		}
+	}
+
+	return nil
 }
 
 // GetEnvOrDefault returns environment variable value or default if not set

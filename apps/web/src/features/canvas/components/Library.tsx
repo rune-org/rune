@@ -1,7 +1,14 @@
 "use client";
 
-import { ChevronLeft, ChevronsRight, GripHorizontal } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronsRight,
+  GripHorizontal,
+  Info,
+  RotateCcw,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LibraryGroups } from "./LibraryGroups";
 import type { NodeKind } from "../types";
 
@@ -9,10 +16,16 @@ export function Library({
   containerRef,
   toolbarRef,
   onAdd,
+  shortcutsByKind,
+  onAssignShortcut,
+  onResetShortcuts,
 }: {
   containerRef: React.RefObject<HTMLDivElement | null>;
   toolbarRef: React.RefObject<HTMLDivElement | null>;
   onAdd: (type: NodeKind, x?: number, y?: number) => void;
+  shortcutsByKind?: Partial<Record<NodeKind, string>>;
+  onAssignShortcut?: (kind: NodeKind, key: string | null) => void;
+  onResetShortcuts?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [panelWidth, setPanelWidth] = useState(300);
@@ -118,11 +131,11 @@ export function Library({
  
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-[40]">
+    <div className="pointer-events-none absolute inset-0 z-40">
       {/* Handle */}
       <button
         ref={handleBtnRef}
-        className="pointer-events-auto absolute left-1 top-1/2 z-[45] -translate-y-1/2 transform rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-background/80 text-muted-foreground hover:border-accent/60 hover:text-foreground"
+        className="pointer-events-auto absolute left-1 top-1/2 z-45 -translate-y-1/2 transform rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-background/80 text-muted-foreground hover:border-accent/60 hover:text-foreground"
         style={{
           width: 28,
           height: 96,
@@ -140,7 +153,7 @@ export function Library({
       {/* Sliding library panel */}
       <div
         ref={panelRef}
-        className="pointer-events-auto absolute flex flex-col overflow-visible rounded-[var(--radius)] border border-border/60 bg-card/90 shadow-xl"
+        className="pointer-events-auto absolute flex flex-col overflow-visible rounded-(--radius) border border-border/60 bg-card/90 shadow-xl"
         style={{
           top: top,
           height: `calc(100% - ${top}px - 12px)`,
@@ -151,8 +164,37 @@ export function Library({
         }}
       >
         <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-          <div className="text-xs font-medium text-muted-foreground">
-            Library
+          <div className="flex items-center gap-2">
+            <div className="text-xs font-medium text-muted-foreground">
+              Library
+            </div>
+            {onResetShortcuts && (
+              <button
+                className="inline-flex items-center gap-1 rounded-sm p-0.5 transition-colors hover:bg-muted/40"
+                onClick={onResetShortcuts}
+                title="Reset keyboard shortcuts to defaults"
+                aria-label="Reset keyboard shortcuts to defaults"
+                type="button"
+              >
+                <RotateCcw className="h-3 w-3 text-muted-foreground" />
+              </button>
+            )}
+            {onAssignShortcut && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="inline-flex cursor-help items-center gap-1 rounded-sm p-0.5 transition-colors hover:bg-muted/40"
+                    aria-label="Shortcut editing help"
+                    type="button"
+                  >
+                    <Info className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Right-click any library node to set or change its shortcut key.
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
           <button
             ref={closeBtnRef}
@@ -168,7 +210,9 @@ export function Library({
         <div className="h-full overflow-y-auto p-2">
           <LibraryGroups
             containerRef={containerRef}
-            onAdd={(type, x, y) => onAdd(type, x, y)}
+            onAdd={onAdd}
+            shortcutsByKind={shortcutsByKind}
+            onAssignShortcut={onAssignShortcut}
           />
         </div>
 

@@ -186,27 +186,27 @@ func (n *SMTPNode) buildMessage() ([]byte, error) {
 	var sb strings.Builder
 
 	// From header
-	sb.WriteString(fmt.Sprintf("From: %s\r\n", n.from))
+	_, _ = fmt.Fprintf(&sb, "From: %s\r\n", n.from)
 
 	// To header
 	if len(n.to) > 0 {
-		sb.WriteString(fmt.Sprintf("To: %s\r\n", strings.Join(n.to, ", ")))
+		_, _ = fmt.Fprintf(&sb, "To: %s\r\n", strings.Join(n.to, ", "))
 	}
 
 	// CC header
 	if len(n.cc) > 0 {
-		sb.WriteString(fmt.Sprintf("Cc: %s\r\n", strings.Join(n.cc, ", ")))
+		_, _ = fmt.Fprintf(&sb, "Cc: %s\r\n", strings.Join(n.cc, ", "))
 	}
 
 	// Subject header
-	sb.WriteString(fmt.Sprintf("Subject: %s\r\n", n.subject))
+	_, _ = fmt.Fprintf(&sb, "Subject: %s\r\n", n.subject)
 
 	// MIME headers
 	sb.WriteString("MIME-Version: 1.0\r\n")
 	sb.WriteString("Content-Type: text/plain; charset=UTF-8\r\n")
 
 	// Date header
-	sb.WriteString(fmt.Sprintf("Date: %s\r\n", time.Now().Format(time.RFC1123Z)))
+	_, _ = fmt.Fprintf(&sb, "Date: %s\r\n", time.Now().Format(time.RFC1123Z))
 
 	// Empty line separating headers from body
 	sb.WriteString("\r\n")

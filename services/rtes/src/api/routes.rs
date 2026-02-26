@@ -1,7 +1,7 @@
 use axum::{
     Router,
     http::{HeaderValue, Method},
-    routing::{any, get},
+    routing::get,
 };
 use tower_http::cors::CorsLayer;
 
@@ -10,7 +10,7 @@ use crate::{
     config::Config,
 };
 
-pub(crate) fn app(state: AppState) -> Router {
+pub fn app(state: AppState) -> Router {
     let cfg = Config::get();
     let cors = CorsLayer::new()
         .allow_origin(
@@ -33,7 +33,7 @@ pub(crate) fn app(state: AppState) -> Router {
         .route("/health", get(handlers::health_check))
         // WebSocket: Real-time updates for specific execution
         // Uses query params: ?execution_id=...&workflow_id=...
-        .route("/rt", any(ws::ws_handler))
+        .route("/rt", get(ws::ws_handler))
         // HTTP: Get specific past execution
         .route("/executions/{execution_id}", get(handlers::get_execution))
         // HTTP: Get all past executions for a workflow

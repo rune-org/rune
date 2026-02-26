@@ -67,6 +67,86 @@ pub struct ExecutionToken {
     pub user_id:      String,
 }
 
+/// Token payload consumed from RabbitMQ.
+///
+/// Supports legacy single-id fields (`execution_id`, `workflow_id`) and
+/// multi-id fields (`execution_ids`, `workflow_ids`) for batch grants.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct ExecutionTokenPayload {
+    #[serde(default, alias = "executionId")]
+    pub execution_id:  Option<String>,
+    #[serde(default, alias = "executionIds")]
+    pub execution_ids: Option<Vec<String>>,
+    #[serde(default, alias = "workflowId")]
+    pub workflow_id:   Option<String>,
+    #[serde(default, alias = "workflowIds")]
+    pub workflow_ids:  Option<Vec<String>>,
+    pub iat:           i64,
+    pub exp:           i64,
+    pub user_id:       String,
+}
+
+impl ExecutionTokenPayload {
+    fn normalize_ids(single: Option<String>, many: Option<Vec<String>>) -> Vec<String> {
+        let mut ids = Vec::new();
+
+        if let Some(value) = single {
+            let trimmed = value.trim();
+            if !trimmed.is_empty() {
+                ids.push(trimmed.to_string());
+            }
+        }
+
+        if let Some(values) = many {
+            for value in values {
+                let trimmed = value.trim();
+                if !trimmed.is_empty() && !ids.iter().any(|existing| existing == trimmed) {
+                    ids.push(trimmed.to_string());
+                }
+            }
+        }
+
+        ids
+    }
+
+    pub fn expand(self) -> Result<Vec<ExecutionToken>, &'static str> {
+        let workflow_ids = Self::normalize_ids(self.workflow_id, self.workflow_ids);
+        if workflow_ids.is_empty() {
+            return Err("token payload must include workflow_id or workflow_ids");
+        }
+
+        let execution_ids = Self::normalize_ids(self.execution_id, self.execution_ids);
+
+        let mut tokens = Vec::new();
+        if execution_ids.is_empty() {
+            for workflow_id in workflow_ids {
+                tokens.push(ExecutionToken {
+                    execution_id: None,
+                    workflow_id,
+                    iat: self.iat,
+                    exp: self.exp,
+                    user_id: self.user_id.clone(),
+                });
+            }
+            return Ok(tokens);
+        }
+
+        for workflow_id in workflow_ids {
+            for execution_id in &execution_ids {
+                tokens.push(ExecutionToken {
+                    execution_id: Some(execution_id.clone()),
+                    workflow_id:  workflow_id.clone(),
+                    iat:          self.iat,
+                    exp:          self.exp,
+                    user_id:      self.user_id.clone(),
+                });
+            }
+        }
+
+        Ok(tokens)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 pub struct NodeError {
@@ -258,4 +338,125 @@ where
     }
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::{ExecutionTokenPayload, StackFrame, compute_lineage_hash};
+
+    #[test]
+    fn expands_legacy_single_token_payload() {
+        let payload = ExecutionTokenPayload {
+            execution_id:  Some("exec-1".to_string()),
+            execution_ids: None,
+            workflow_id:   Some("wf-1".to_string()),
+            workflow_ids:  None,
+            iat:           100,
+            exp:           200,
+            user_id:       "user-1".to_string(),
+        };
+
+        let expanded = payload.expand().expect("payload should be valid");
+        assert_eq!(expanded.len(), 1);
+        assert_eq!(expanded[0].execution_id.as_deref(), Some("exec-1"));
+        assert_eq!(expanded[0].workflow_id, "wf-1");
+    }
+
+    #[test]
+    fn expands_multi_id_payload_as_cross_product() {
+        let payload = ExecutionTokenPayload {
+            execution_id:  None,
+            execution_ids: Some(vec!["exec-1".to_string(), "exec-2".to_string()]),
+            workflow_id:   None,
+            workflow_ids:  Some(vec!["wf-1".to_string(), "wf-2".to_string()]),
+            iat:           100,
+            exp:           200,
+            user_id:       "user-1".to_string(),
+        };
+
+        let expanded = payload.expand().expect("payload should be valid");
+        assert_eq!(expanded.len(), 4);
+        assert!(
+            expanded.iter().any(|token| token.workflow_id == "wf-1"
+                && token.execution_id.as_deref() == Some("exec-1"))
+        );
+        assert!(
+            expanded.iter().any(|token| token.workflow_id == "wf-2"
+                && token.execution_id.as_deref() == Some("exec-2"))
+        );
+    }
+
+    #[test]
+    fn expands_wildcard_tokens_for_multiple_workflows() {
+        let payload = ExecutionTokenPayload {
+            execution_id:  None,
+            execution_ids: None,
+            workflow_id:   None,
+            workflow_ids:  Some(vec!["wf-1".to_string(), "wf-2".to_string()]),
+            iat:           100,
+            exp:           200,
+            user_id:       "user-1".to_string(),
+        };
+
+        let expanded = payload.expand().expect("payload should be valid");
+        assert_eq!(expanded.len(), 2);
+        assert!(expanded.iter().all(|token| token.execution_id.is_none()));
+    }
+
+    #[test]
+    fn rejects_payload_without_any_workflow_id() {
+        let payload = ExecutionTokenPayload {
+            execution_id:  Some("exec-1".to_string()),
+            execution_ids: None,
+            workflow_id:   None,
+            workflow_ids:  None,
+            iat:           100,
+            exp:           200,
+            user_id:       "user-1".to_string(),
+        };
+
+        assert!(payload.expand().is_err());
+    }
+
+    #[test]
+    fn deserializes_camel_case_payload_fields() {
+        let payload: ExecutionTokenPayload = serde_json::from_value(json!({
+            "executionIds": ["exec-1"],
+            "workflowIds": ["wf-1"],
+            "iat": 100,
+            "exp": 200,
+            "user_id": "user-1"
+        }))
+        .expect("camelCase token payload should deserialize");
+
+        let expanded = payload.expand().expect("payload should expand");
+        assert_eq!(expanded.len(), 1);
+        assert_eq!(expanded[0].execution_id.as_deref(), Some("exec-1"));
+        assert_eq!(expanded[0].workflow_id, "wf-1");
+    }
+
+    #[test]
+    fn lineage_hash_is_deterministic() {
+        let stack = vec![
+            StackFrame {
+                split_node_id: "split-1".to_string(),
+                branch_id:     "branch-a".to_string(),
+                item_index:    0,
+                total_items:   2,
+            },
+            StackFrame {
+                split_node_id: "split-2".to_string(),
+                branch_id:     "branch-b".to_string(),
+                item_index:    1,
+                total_items:   3,
+            },
+        ];
+
+        let first = compute_lineage_hash(&stack);
+        let second = compute_lineage_hash(&stack);
+        assert_eq!(first, second);
+        assert!(first.is_some());
+    }
 }

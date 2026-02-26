@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"rune-worker/pkg/resolver"
 )
 
 // Evaluator evaluates simple boolean expressions.
@@ -181,84 +183,11 @@ func (e *Evaluator) resolveValue(value string) (interface{}, error) {
 
 // resolveReference resolves a reference like $node.field from context
 func (e *Evaluator) resolveReference(ref string) (interface{}, error) {
-	if !strings.HasPrefix(ref, "$") {
-		return ref, nil
+	resolved, _, err := resolver.ResolveReferenceValue(e.context, ref, false)
+	if err != nil {
+		return nil, err
 	}
-
-	// Remove the $ prefix
-	path := ref[1:]
-
-	// Split into node name and field path
-	parts := strings.SplitN(path, ".", 2)
-	nodeName := parts[0]
-
-	// Get the node data from context
-	nodeData, ok := e.context["$"+nodeName]
-	if !ok {
-		return nil, fmt.Errorf("node '%s' not found in context", nodeName)
-	}
-
-	// If there's no field path, return the entire node data
-	if len(parts) == 1 {
-		return nodeData, nil
-	}
-
-	// Navigate the field path
-	fieldPath := parts[1]
-	return navigatePath(nodeData, fieldPath)
-}
-
-// navigatePath navigates a nested path like "body.user.name"
-func navigatePath(data interface{}, path string) (interface{}, error) {
-	current := data
-	parts := strings.Split(path, ".")
-
-	for _, part := range parts {
-		// Handle array indexing
-		if idx := strings.Index(part, "["); idx != -1 {
-			fieldName := part[:idx]
-			indexStr := part[idx+1 : len(part)-1]
-			index, err := strconv.Atoi(indexStr)
-			if err != nil {
-				return nil, fmt.Errorf("invalid array index: %s", indexStr)
-			}
-
-			// Get the field first
-			if fieldName != "" {
-				currentMap, ok := current.(map[string]interface{})
-				if !ok {
-					return nil, fmt.Errorf("cannot access field '%s' on non-object type", fieldName)
-				}
-				current = currentMap[fieldName]
-			}
-
-			// Access array element
-			arr, ok := current.([]interface{})
-			if !ok {
-				return nil, fmt.Errorf("cannot index non-array type")
-			}
-			if index < 0 || index >= len(arr) {
-				return nil, fmt.Errorf("array index out of bounds: %d", index)
-			}
-			current = arr[index]
-			continue
-		}
-
-		// Handle regular field access
-		currentMap, ok := current.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("cannot access field '%s' on non-object type", part)
-		}
-
-		value, ok := currentMap[part]
-		if !ok {
-			return nil, fmt.Errorf("field '%s' not found", part)
-		}
-
-		current = value
-	}
-
-	return current, nil
+	return resolved, nil
 }
 
 // compare compares two values using the given operator

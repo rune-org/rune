@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,6 +31,8 @@ interface AddCredentialDialogProps {
     credential_type: CredentialType;
     credential_data: Record<string, string>;
   }) => Promise<void>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const CREDENTIAL_TYPES = getCredentialTypeOptions();
@@ -164,8 +166,19 @@ const CREDENTIAL_FIELDS: Record<
   ],
 };
 
-export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
-  const [open, setOpen] = useState(false);
+export function AddCredentialDialog({
+  onAdd,
+  open: controlledOpen,
+  onOpenChange,
+}: AddCredentialDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = (newOpen: boolean) => {
+    if (controlledOpen === undefined) {
+      setInternalOpen(newOpen);
+    }
+    onOpenChange?.(newOpen);
+  };
   const [name, setName] = useState("");
   const [credentialType, setCredentialType] =
     useState<CredentialType>("api_key");
@@ -173,6 +186,15 @@ export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
     {}
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Reset form when dialog opens in controlled mode
+  useEffect(() => {
+    if (open && controlledOpen !== undefined) {
+      setName("");
+      setCredentialType("api_key");
+      setCredentialData({});
+    }
+  }, [open, controlledOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,8 +236,7 @@ export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
       setCredentialData({});
       setOpen(false);
     } catch (error) {
-      console.error("Error creating credential:", error);
-      // Error handling is done in parent component
+      toast.error("Failed to create credential");
     } finally {
       setIsSubmitting(false);
     }
@@ -235,9 +256,11 @@ export function AddCredentialDialog({ onAdd }: AddCredentialDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>Add credential</Button>
-      </DialogTrigger>
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button>Add credential</Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>

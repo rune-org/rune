@@ -198,3 +198,61 @@ pub(crate) async fn get_workflow_executions(
         },
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use axum::http::HeaderMap;
+    use jsonwebtoken::{EncodingKey, Header, encode};
+
+    use super::{Claims, try_extract_user_id};
+    use crate::config::Config;
+
+    fn ensure_config_initialized() {
+        let _ = Config::init();
+    }
+
+    #[test]
+    fn missing_auth_header_returns_none() {
+        ensure_config_initialized();
+        let headers = HeaderMap::new();
+        assert!(try_extract_user_id(&headers).is_none());
+    }
+
+    #[test]
+    fn invalid_jwt_returns_unauthorized_error() {
+        ensure_config_initialized();
+        let mut headers = HeaderMap::new();
+        headers.insert("Authorization", "Bearer invalid.token.value".parse().expect("header"));
+
+        let result = try_extract_user_id(&headers);
+        assert!(result.is_some());
+        let err = result
+            .expect("result exists")
+            .expect_err("jwt should be invalid");
+        assert_eq!(err.0, axum::http::StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn valid_jwt_extracts_sub_claim() {
+        ensure_config_initialized();
+        let token = encode(
+            &Header::default(),
+            &Claims { sub: "user-42".to_string(), exp: usize::MAX / 2, extra: HashMap::new() },
+            &EncodingKey::from_secret(Config::get().jwt_secret.as_bytes()),
+        )
+        .expect("token encoding should succeed");
+
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "Authorization",
+            format!("Bearer {token}")
+                .parse()
+                .expect("authorization header should parse"),
+        );
+
+        let result = try_extract_user_id(&headers).expect("auth header exists");
+        assert_eq!(result.expect("jwt should be valid"), "user-42");
+    }
+}

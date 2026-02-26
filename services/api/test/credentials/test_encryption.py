@@ -1,9 +1,10 @@
 import base64
+
 import pytest
 from cryptography.fernet import Fernet, InvalidToken
 
-from src.credentials.encryption import CredentialEncryption, get_encryptor
 from src.core.config import get_settings
+from src.credentials.encryption import CredentialEncryption, get_encryptor
 
 
 class TestCredentialEncryption:

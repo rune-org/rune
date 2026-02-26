@@ -42,6 +42,7 @@ export type NodeMetadata<K extends NodeKind = NodeKind> = {
   group: NodeGroup;
   isTrigger: boolean;
   hasDynamicOutputs: boolean;
+  shortcutKey?: string;
 };
 
 export type NodeRegistry = {
@@ -64,6 +65,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "triggers",
     isTrigger: true,
     hasDynamicOutputs: false,
+    shortcutKey: "t",
   },
   agent: {
     kind: "agent",
@@ -96,6 +98,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "flow",
     isTrigger: false,
     hasDynamicOutputs: false,
+    shortcutKey: "i",
   },
   switch: {
     kind: "switch",
@@ -118,6 +121,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "flow",
     isTrigger: false,
     hasDynamicOutputs: true,
+    shortcutKey: "c",
   },
   http: {
     kind: "http",
@@ -134,6 +138,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "http",
     isTrigger: false,
     hasDynamicOutputs: false,
+    shortcutKey: "h",
   },
   smtp: {
     kind: "smtp",
@@ -156,6 +161,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "email",
     isTrigger: false,
     hasDynamicOutputs: false,
+    shortcutKey: "m",
   },
   wait: {
     kind: "wait",
@@ -172,6 +178,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "flow",
     isTrigger: false,
     hasDynamicOutputs: false,
+    shortcutKey: "w",
   },
   edit: {
     kind: "edit",
@@ -192,6 +199,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "transform",
     isTrigger: false,
     hasDynamicOutputs: false,
+    shortcutKey: "e",
   },
   split: {
     kind: "split",
@@ -208,6 +216,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "transform",
     isTrigger: false,
     hasDynamicOutputs: false,
+    shortcutKey: "s",
   },
   aggregator: {
     kind: "aggregator",
@@ -224,6 +233,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "transform",
     isTrigger: false,
     hasDynamicOutputs: false,
+    shortcutKey: "g",
   },
   merge: {
     kind: "merge",
@@ -381,3 +391,14 @@ export function getNodeDefaults<K extends NodeKind>(kind: K): { type: K; data: N
 
 /** Array of all node kinds for iteration */
 export const ALL_NODE_KINDS: readonly NodeKind[] = Object.keys(NODE_REGISTRY) as NodeKind[];
+
+/** Build the default key→kind shortcut map from registry metadata. */
+export function getDefaultShortcuts(): Record<string, NodeKind> {
+  const map: Record<string, NodeKind> = {};
+  for (const meta of Object.values(NODE_REGISTRY)) {
+    if (meta.shortcutKey) {
+      map[meta.shortcutKey] = meta.kind;
+    }
+  }
+  return map;
+}

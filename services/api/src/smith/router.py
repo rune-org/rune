@@ -5,11 +5,11 @@ from fastapi.responses import StreamingResponse
 
 from src.core.dependencies import require_password_changed
 from src.db.models import User, Workflow
+from src.smith.response import SSE_RESPONSES
 from src.smith.schemas import ClearThreadResponse, GenerateWorkflowRequest
 from src.smith.service import SmithAgentService
 from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
-from src.smith.response import SSE_RESPONSES
 
 router = APIRouter(prefix="/smith", tags=["Smith"])
 

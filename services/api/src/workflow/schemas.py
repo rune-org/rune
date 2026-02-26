@@ -1,5 +1,6 @@
-from typing import Optional, Any
 from datetime import datetime
+from typing import Any, Optional
+
 from pydantic import BaseModel, Field, field_validator
 from src.db.models import WorkflowRole
 
@@ -74,3 +75,13 @@ class WorkflowDetail(BaseModel):
     # instances) when using Pydantic v2. This lets callers do
     # `WorkflowDetail.model_validate(wf)` instead of manual field mapping.
     model_config = {"from_attributes": True}
+
+
+class NodeExecutionMessage(BaseModel):
+    """Message to trigger workflow node execution."""
+
+    workflow_id: str
+    execution_id: str
+    current_node: str
+    workflow_definition: dict[str, Any]
+    accumulated_context: dict[str, Any] = Field(default_factory=dict)
