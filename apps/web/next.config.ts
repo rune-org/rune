@@ -1,4 +1,12 @@
 import type { NextConfig } from "next";
+import nextra from 'nextra';
+
+// Nextra v4 configuration
+const withNextra = nextra({
+  mdxOptions: {
+    rehypePlugins: [],
+  },
+});
 
 const nextConfig: NextConfig = {
   output: 'standalone',
@@ -16,4 +24,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextra(nextConfig);

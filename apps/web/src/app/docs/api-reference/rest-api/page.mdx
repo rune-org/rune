@@ -1,0 +1,717 @@
+# REST API Reference
+
+Complete reference for the Rune API. All endpoints are served by the FastAPI backend.
+
+## Base URL
+
+```
+http://localhost:8000
+```
+
+## Response Format
+
+All responses use a standard envelope:
+
+```json
+{
+  "success": true,
+  "message": "Operation completed",
+  "data": { ... }
+}
+```
+
+Error responses:
+
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "data": null
+}
+```
+
+## Authentication
+
+Most endpoints require authentication via **HTTP-only cookie** (set by login) or **Bearer token** in the `Authorization` header.
+
+See [Authentication](/docs/api-reference/authentication) for details.
+
+---
+
+## Setup
+
+### Check Setup Status
+
+Check whether the system has been initialized with an admin account.
+
+```http
+GET /setup/status
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Setup status retrieved",
+  "data": {
+    "is_setup_complete": false
+  }
+}
+```
+
+### Initialize System
+
+Create the first admin account. Only works when no users exist.
+
+```http
+POST /setup/initialize
+Content-Type: application/json
+
+{
+  "first_name": "Admin",
+  "last_name": "User",
+  "email": "admin@example.com",
+  "password": "SecurePass1!"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Admin account created",
+  "data": {
+    "id": 1,
+    "email": "admin@example.com",
+    "first_name": "Admin",
+    "last_name": "User",
+    "role": "admin"
+  }
+}
+```
+
+---
+
+## Auth
+
+### Register
+
+Create a new user account (requires admin).
+
+```http
+POST /auth/register
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "first_name": "Jane",
+  "last_name": "Doe",
+  "email": "jane@example.com",
+  "password": "SecurePass1!"
+}
+```
+
+### Login
+
+Authenticate and receive tokens.
+
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "SecurePass1!"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIs...",
+    "token_type": "bearer"
+  }
+}
+```
+
+The response also sets an `access_token` HTTP-only cookie for browser-based auth.
+
+### Refresh Token
+
+Get a new access token using the refresh token cookie.
+
+```http
+POST /auth/refresh
+Cookie: refresh_token=<token>
+```
+
+### Logout
+
+Clear auth cookies and invalidate the refresh token.
+
+```http
+POST /auth/logout
+Authorization: Bearer <token>
+```
+
+---
+
+## Profile
+
+### Get Current User Profile
+
+```http
+GET /profile/
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "email": "admin@example.com",
+    "first_name": "Admin",
+    "last_name": "User",
+    "role": "admin"
+  }
+}
+```
+
+### Update Profile
+
+```http
+PATCH /profile/
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "first_name": "Updated Name"
+}
+```
+
+### Change Password
+
+```http
+PATCH /profile/password
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "current_password": "OldPass1!",
+  "new_password": "NewPass2@"
+}
+```
+
+---
+
+## Users (Admin Only)
+
+### List Users
+
+```http
+GET /users/
+Authorization: Bearer <token>
+```
+
+Returns all registered users. Admin-only endpoint.
+
+### Get User
+
+```http
+GET /users/{user_id}
+Authorization: Bearer <token>
+```
+
+### Update User
+
+```http
+PATCH /users/{user_id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "first_name": "Jane",
+  "last_name": "Smith"
+}
+```
+
+### Change User Role
+
+```http
+PATCH /users/{user_id}/role
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "role": "admin"
+}
+```
+
+Accepted values: `admin`, `user`.
+
+### Delete User
+
+```http
+DELETE /users/{user_id}
+Authorization: Bearer <token>
+```
+
+---
+
+## Workflows
+
+### List Workflows
+
+```http
+GET /workflows/
+Authorization: Bearer <token>
+```
+
+Returns all workflows owned by the authenticated user.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "My Workflow",
+      "description": "Sends notifications",
+      "is_active": true,
+      "created_at": "2024-06-01T12:00:00Z",
+      "updated_at": "2024-06-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+### Get Workflow
+
+```http
+GET /workflows/{workflow_id}
+Authorization: Bearer <token>
+```
+
+Returns the full workflow including nodes, edges, and viewport.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "My Workflow",
+    "definition": {
+      "nodes": [
+        {
+          "id": "node-1",
+          "type": "http",
+          "position": { "x": 100, "y": 200 },
+          "data": {
+            "label": "Fetch Users",
+            "method": "GET",
+            "url": "https://api.example.com/users"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge-1",
+          "source": "node-1",
+          "target": "node-2"
+        }
+      ],
+      "viewport": { "x": 0, "y": 0, "zoom": 1 }
+    }
+  }
+}
+```
+
+### Create Workflow
+
+```http
+POST /workflows/
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "New Workflow",
+  "description": "Optional description",
+  "definition": {
+    "nodes": [],
+    "edges": [],
+    "viewport": { "x": 0, "y": 0, "zoom": 1 }
+  }
+}
+```
+
+### Update Workflow
+
+```http
+PUT /workflows/{workflow_id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Updated name",
+  "definition": {
+    "nodes": [...],
+    "edges": [...],
+    "viewport": { "x": 0, "y": 0, "zoom": 1 }
+  }
+}
+```
+
+### Delete Workflow
+
+```http
+DELETE /workflows/{workflow_id}
+Authorization: Bearer <token>
+```
+
+### Run Workflow
+
+Execute a workflow. Sends the workflow definition (with resolved credentials) to the Worker via RabbitMQ.
+
+```http
+POST /workflows/{workflow_id}/run
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Workflow execution started",
+  "data": {
+    "execution_id": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+The returned `execution_id` can be used to connect to the RTES WebSocket for real-time status updates.
+
+---
+
+## Executions
+
+### List Executions
+
+```http
+GET /executions/
+Authorization: Bearer <token>
+```
+
+Returns execution history for the authenticated user.
+
+### Get Execution
+
+```http
+GET /executions/{execution_id}
+Authorization: Bearer <token>
+```
+
+Returns detailed execution data including per-node results and status.
+
+---
+
+## Credentials
+
+### List Credentials
+
+```http
+GET /credentials/
+Authorization: Bearer <token>
+```
+
+Returns owned credentials plus credentials shared with you. Each credential includes permission flags.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "GitHub API",
+      "credential_type": "api_key",
+      "is_owner": true,
+      "can_edit": true,
+      "can_delete": true,
+      "can_share": true,
+      "created_at": "2024-06-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+### Dropdown List
+
+Simplified list for the workflow editor UI.
+
+```http
+GET /credentials/dropdown
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    { "id": 1, "name": "GitHub API", "credential_type": "api_key" },
+    { "id": 2, "name": "SendGrid SMTP", "credential_type": "smtp" }
+  ]
+}
+```
+
+### Get Credential
+
+```http
+GET /credentials/{credential_id}
+Authorization: Bearer <token>
+```
+
+Returns metadata only. Credential data (secrets) is **never** returned via the API.
+
+### Create Credential
+
+```http
+POST /credentials/
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "GitHub API",
+  "credential_type": "api_key",
+  "credential_data": {
+    "apiKey": "ghp_xxxxxxxxxxxx"
+  }
+}
+```
+
+### Update Credential
+
+```http
+PATCH /credentials/{credential_id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "GitHub API v2",
+  "credential_data": {
+    "apiKey": "ghp_new_key"
+  }
+}
+```
+
+### Delete Credential
+
+```http
+DELETE /credentials/{credential_id}
+Authorization: Bearer <token>
+```
+
+### Share Credential
+
+```http
+POST /credentials/{credential_id}/share
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "user_id": 5
+}
+```
+
+### List Shared Users
+
+```http
+GET /credentials/{credential_id}/shared-users
+Authorization: Bearer <token>
+```
+
+### Revoke Shared Access
+
+```http
+DELETE /credentials/{credential_id}/revoke/{user_id}
+Authorization: Bearer <token>
+```
+
+---
+
+## Templates
+
+### List Templates
+
+```http
+GET /templates/
+Authorization: Bearer <token>
+```
+
+Returns all templates (public templates from all users + your private templates).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "HTTP API Monitor",
+      "description": "Periodically check an API endpoint",
+      "is_public": true,
+      "use_count": 42,
+      "created_by": 1,
+      "created_at": "2024-06-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+### Get Template
+
+```http
+GET /templates/{template_id}
+Authorization: Bearer <token>
+```
+
+### Create Template
+
+```http
+POST /templates/
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "My Template",
+  "description": "Reusable workflow pattern",
+  "is_public": true,
+  "definition": {
+    "nodes": [...],
+    "edges": [...]
+  }
+}
+```
+
+### Update Template
+
+```http
+PATCH /templates/{template_id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Updated Template",
+  "is_public": false
+}
+```
+
+### Delete Template
+
+```http
+DELETE /templates/{template_id}
+Authorization: Bearer <token>
+```
+
+### Use Template
+
+Create a new workflow from a template. Increments the template's `use_count`.
+
+```http
+POST /templates/{template_id}/use
+Authorization: Bearer <token>
+```
+
+---
+
+## Smith (AI Workflow Builder)
+
+### Chat
+
+Send a message to the Smith AI agent. Returns a Server-Sent Events (SSE) stream.
+
+```http
+POST /smith/chat
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "message": "Create a workflow that fetches data from an API and sends an email",
+  "conversation_id": "optional-existing-conversation-id"
+}
+```
+
+**SSE Response Stream:**
+```
+data: {"type": "token", "content": "I'll create"}
+data: {"type": "token", "content": " a workflow"}
+data: {"type": "tool_call", "tool": "create_workflow", "args": {...}}
+data: {"type": "tool_result", "result": {...}}
+data: {"type": "done", "conversation_id": "abc-123"}
+```
+
+### List Conversations
+
+```http
+GET /smith/conversations
+Authorization: Bearer <token>
+```
+
+### Get Conversation Messages
+
+```http
+GET /smith/conversations/{conversation_id}/messages
+Authorization: Bearer <token>
+```
+
+### Delete Conversation
+
+```http
+DELETE /smith/conversations/{conversation_id}
+Authorization: Bearer <token>
+```
+
+---
+
+## Scryb (Documentation Generator)
+
+### Generate Documentation
+
+Generate documentation for a workflow using AI.
+
+```http
+POST /scryb/generate
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "workflow_id": 1
+}
+```
+
+---
+
+## Error Codes
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Bad Request — Invalid input or validation error |
+| `401` | Unauthorized — Missing or invalid authentication |
+| `403` | Forbidden — Insufficient permissions |
+| `404` | Not Found — Resource doesn't exist |
+| `409` | Conflict — Resource already exists (e.g., duplicate email) |
+| `422` | Unprocessable Entity — Request body validation failed |
+| `500` | Internal Server Error — Unexpected server error |
+
+## Next Steps
+
+- [Authentication](/docs/api-reference/authentication) — Auth flow details
+- [Managing Credentials](/docs/guides/credentials) — Credential CRUD and sharing
+- [Architecture](/docs/architecture) — How the services communicate

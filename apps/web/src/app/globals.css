@@ -107,6 +107,11 @@ body {
   color: var(--foreground);
 }
 
+/* Hide the # anchor links on Nextra doc headings (keep IDs for TOC sidebar) */
+.subheading-anchor {
+  display: none !important;
+}
+
 @utility animate-fade-in {
   animation: fadeIn 1s ease-out forwards;
 }

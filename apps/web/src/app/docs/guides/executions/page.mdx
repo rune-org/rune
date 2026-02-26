@@ -1,0 +1,232 @@
+# Execution Monitoring
+
+Track workflow runs in real time with live status updates for every node.
+
+## How Executions Work
+
+When you click **Run** on a workflow:
+
+1. The **API** resolves all credentials and sends the workflow definition to **RabbitMQ**
+2. The **Worker** (Go) picks up the message, executes nodes in topological order, and publishes status events back to RabbitMQ
+3. The **RTES** (Rust) service consumes these events, persists them to **MongoDB**, and broadcasts them to connected WebSocket clients
+4. The **Frontend** receives events in real time and updates the canvas
+
+```
+API → RabbitMQ → Worker → RabbitMQ → RTES → WebSocket → Frontend
+                                        ↓
+                                     MongoDB
+```
+
+## Execution States
+
+Each execution goes through these states:
+
+| State | Meaning |
+|-------|---------|
+| `running` | Execution is actively processing nodes |
+| `success` | All nodes completed without errors |
+| `error` | One or more nodes failed |
+
+## Node States
+
+Individual nodes within an execution have their own lifecycle:
+
+| State | Meaning |
+|-------|---------|
+| `pending` | Node hasn't been reached yet |
+| `running` | Node is currently executing |
+| `success` | Node completed successfully |
+| `error` | Node failed — see error message for details |
+
+## Real-Time Updates via WebSocket
+
+### Connecting
+
+Connect to the RTES WebSocket to receive live execution events:
+
+```
+ws://localhost:8080/ws?token=<access_token>
+```
+
+The `token` query parameter must be a valid JWT access token (the same one used for API calls).
+
+### Event Types
+
+Once connected, you'll receive JSON messages for each event:
+
+#### Execution Started
+
+```json
+{
+  "type": "execution_started",
+  "execution_id": "550e8400-e29b-41d4-a716-446655440000",
+  "workflow_id": 1,
+  "timestamp": "2024-06-01T12:00:00Z"
+}
+```
+
+#### Node Started
+
+```json
+{
+  "type": "node_started",
+  "execution_id": "550e8400-e29b-41d4-a716-446655440000",
+  "node_id": "node-1",
+  "node_type": "http",
+  "timestamp": "2024-06-01T12:00:01Z"
+}
+```
+
+#### Node Completed
+
+```json
+{
+  "type": "node_completed",
+  "execution_id": "550e8400-e29b-41d4-a716-446655440000",
+  "node_id": "node-1",
+  "node_type": "http",
+  "output": {
+    "status_code": 200,
+    "headers": { "content-type": "application/json" },
+    "body": { "users": [...] }
+  },
+  "timestamp": "2024-06-01T12:00:02Z"
+}
+```
+
+#### Node Error
+
+```json
+{
+  "type": "node_error",
+  "execution_id": "550e8400-e29b-41d4-a716-446655440000",
+  "node_id": "node-2",
+  "node_type": "http",
+  "error": "connection timeout after 30s",
+  "timestamp": "2024-06-01T12:00:03Z"
+}
+```
+
+#### Execution Completed
+
+```json
+{
+  "type": "execution_completed",
+  "execution_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "success",
+  "timestamp": "2024-06-01T12:00:05Z"
+}
+```
+
+## Viewing Past Executions
+
+### Via the UI
+
+1. Open a workflow in the editor
+2. The execution history panel shows all past runs
+3. Click on any execution to replay the node-by-node status on the canvas
+4. Click individual nodes to inspect their output data
+
+### Via the API
+
+```bash
+# List all executions
+GET /executions/
+Authorization: Bearer <token>
+
+# Get a specific execution
+GET /executions/{execution_id}
+Authorization: Bearer <token>
+```
+
+## Execution Persistence
+
+All execution events are persisted in **MongoDB** by the RTES service. This means:
+
+- Execution history survives server restarts
+- You can query past executions even after the WebSocket connection is closed
+- Node outputs are stored and can be inspected after the fact
+
+### MongoDB Collections
+
+| Collection | Contents |
+|-----------|----------|
+| `executions` | Execution metadata (ID, workflow ID, user ID, status, timestamps) |
+| `node_events` | Per-node events (status changes, outputs, errors) |
+
+## Understanding Node Output
+
+Each node type produces different output. This output is available in the execution details and is also passed to downstream nodes via the accumulated context.
+
+### HTTP Node Output
+```json
+{
+  "status_code": 200,
+  "headers": { "content-type": "application/json" },
+  "body": { ... }
+}
+```
+
+### SMTP Node Output
+```json
+{
+  "message": "Email sent successfully"
+}
+```
+
+### Conditional / Switch Node Output
+```json
+{
+  "matched_branch": "true_branch"
+}
+```
+
+### Split Node Output
+```json
+{
+  "chunks": [
+    [{ "id": 1 }, { "id": 2 }],
+    [{ "id": 3 }, { "id": 4 }]
+  ]
+}
+```
+
+## Error Handling
+
+When a node fails:
+
+1. The node is marked as `error` with an error message
+2. **Execution stops** — downstream nodes are not executed
+3. The execution is marked as `error`
+4. The error details are visible in the UI and API
+
+Common causes of node failure:
+
+| Error | Cause |
+|-------|-------|
+| Connection timeout | Target server didn't respond within the timeout period |
+| DNS resolution failed | Invalid URL or hostname |
+| 4xx/5xx response | The HTTP request succeeded but the server returned an error (this is still a "success" for the HTTP node — the status code is in the output) |
+| Invalid credential | The credential referenced by the node doesn't exist or was deleted |
+| Expression evaluation error | A `$NodeName.field` reference points to a node that hasn't executed or a field that doesn't exist |
+
+## Tips
+
+### Debugging Failed Executions
+
+1. Open the execution in the UI
+2. Look for the first node marked red (error)
+3. Click it to see the error message
+4. Check its input data — was the upstream node's output what you expected?
+
+### Reducing Execution Time
+
+- Use **Split** + **Aggregator** to parallelize independent API calls
+- Set appropriate timeouts on HTTP nodes to fail fast
+- Use **Conditional** nodes to skip unnecessary branches
+
+## Next Steps
+
+- [Understanding Nodes](/docs/guides/nodes) — Node types and their outputs
+- [Creating Workflows](/docs/guides/creating-workflows) — Build workflows to execute
+- [Architecture](/docs/architecture) — How the execution pipeline works end-to-end

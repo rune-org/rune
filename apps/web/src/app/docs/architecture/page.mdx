@@ -1,0 +1,308 @@
+# Architecture
+
+How Rune's microservices work together to execute workflows.
+
+## System Overview
+
+Rune is composed of four services, each responsible for a distinct part of the platform:
+
+| Service | Language | Role |
+|---------|----------|------|
+| **API** | Python (FastAPI) | REST API, auth, workflow CRUD, credential encryption |
+| **Worker** | Go | Workflow execution engine, node processing |
+| **RTES** | Rust (Axum) | Real-time event streaming via WebSocket |
+| **Web** | TypeScript (Next.js) | Frontend application and documentation |
+
+Supporting infrastructure:
+
+| Component | Role |
+|-----------|------|
+| **PostgreSQL** | Primary database for users, workflows, credentials, templates |
+| **Redis** | Refresh token storage, session management |
+| **RabbitMQ** | Message broker between API, Worker, and RTES |
+| **MongoDB** | Execution event persistence |
+
+## Service Communication
+
+```
+┌─────────┐     HTTP      ┌─────────┐
+│   Web   │──────────────→│   API   │
+│ (Next)  │←──────────────│(FastAPI)│
+└────┬────┘               └────┬────┘
+     │                         │
+     │ WebSocket          RabbitMQ
+     │                         │
+     ▼                         ▼
+┌─────────┐  RabbitMQ   ┌──────────┐
+│  RTES   │←────────────│  Worker  │
+│ (Rust)  │             │   (Go)   │
+└────┬────┘             └──────────┘
+     │
+     ▼
+  MongoDB
+```
+
+### Communication Patterns
+
+1. **Web → API**: HTTP REST calls for all CRUD operations
+2. **API → Worker**: RabbitMQ message to start workflow execution
+3. **Worker → RTES**: RabbitMQ messages for execution events (node started, completed, error)
+4. **RTES → Web**: WebSocket for real-time event streaming to the browser
+
+## API Service
+
+**Stack:** Python 3.12, FastAPI, SQLAlchemy, Alembic, Pydantic
+
+The API is the central orchestrator. It handles:
+
+- **Authentication** — JWT tokens with HTTP-only cookies, refresh tokens in Redis
+- **User management** — Registration, roles (admin/user), profile management
+- **Workflow CRUD** — Create, read, update, delete workflow definitions
+- **Credential management** — Encrypted storage with Fernet, sharing between users
+- **Template management** — Public/private templates with use counting
+- **Execution triggers** — Resolves credentials and publishes to RabbitMQ
+- **Smith AI** — LangChain/LangGraph agent with SSE streaming
+- **Scryb** — DSPy-powered workflow documentation generation
+
+### Database Schema (PostgreSQL)
+
+Key tables:
+
+| Table | Description |
+|-------|-------------|
+| `users` | User accounts (email, hashed password, role, name) |
+| `workflows` | Workflow definitions (name, description, JSON definition, owner) |
+| `credentials` | Encrypted credentials (name, type, encrypted data, owner) |
+| `credential_shares` | Credential sharing relationships |
+| `templates` | Workflow templates (definition, visibility, use count) |
+
+### Key Dependencies
+
+- `bcrypt` — Password hashing
+- `cryptography` (Fernet) — Credential encryption
+- `pyjwt` — JWT token generation/validation
+- `langchain` / `langgraph` — Smith AI agent
+- `dspy` — Scryb documentation generation
+- `google-generativeai` — Gemini LLM for both AI features
+
+## Worker Service
+
+**Stack:** Go 1.24
+
+The Worker is the execution engine. When it receives a workflow message from RabbitMQ:
+
+1. **Parses** the workflow definition (nodes, edges, credentials)
+2. **Builds** a directed acyclic graph (DAG) from the edges
+3. **Sorts** nodes in topological order
+4. **Executes** each node sequentially (or in parallel for split branches)
+5. **Publishes** status events to RabbitMQ after each node
+
+### Plugin Architecture
+
+Each node type is implemented as a plugin:
+
+| Plugin | File | Description |
+|--------|------|-------------|
+| `http` | `plugin/http/` | Makes HTTP requests with credential injection |
+| `smtp` | `plugin/smtp/` | Sends emails via SMTP |
+| `conditional` | `plugin/conditional/` | Boolean condition evaluation |
+| `switch` | `plugin/switch/` | Multi-case routing |
+| `split` | `plugin/split/` | Array chunking for parallel processing |
+| `aggregator` | `plugin/aggregator/` | Collects parallel branch results |
+| `merge` | `plugin/merge/` | Combines multiple branch outputs |
+| `wait` | `plugin/wait/` | Time delay |
+| `edit` | `plugin/edit/` | JSON output construction |
+
+### Accumulated Context
+
+The Worker maintains an **accumulated context** map during execution. Each node's output is stored under its label:
+
+```go
+context["Fetch Users"] = { status_code: 200, body: [...] }
+context["Filter Active"] = { result: [...] }
+```
+
+Downstream nodes can reference upstream outputs using `$NodeLabel.field` expressions, which the Worker resolves before executing each node.
+
+### Message Format
+
+Messages published to RabbitMQ:
+
+```json
+{
+  "execution_id": "uuid",
+  "workflow_id": 1,
+  "user_id": 1,
+  "event_type": "node_completed",
+  "node_id": "node-1",
+  "node_type": "http",
+  "output": { ... },
+  "timestamp": "2024-06-01T12:00:00Z"
+}
+```
+
+## RTES Service
+
+**Stack:** Rust, Axum, Tokio, MongoDB driver
+
+RTES (Real-Time Event Service) bridges the Worker and the Frontend:
+
+1. **Consumes** execution events from RabbitMQ
+2. **Persists** events to MongoDB for history
+3. **Broadcasts** events to connected WebSocket clients
+
+### WebSocket Protocol
+
+Clients connect with a JWT token:
+
+```
+ws://localhost:8080/ws?token=<jwt>
+```
+
+The RTES validates the token, extracts the user ID, and only sends events for that user's executions.
+
+### Consumer Architecture
+
+The RTES runs a background task that continuously consumes from the RabbitMQ execution events queue. For each event:
+
+1. Deserialize the JSON event
+2. Store in MongoDB
+3. Look up connected WebSocket clients for the event's user
+4. Send the event to matching clients
+
+### Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017` |
+| `MONGODB_DB` | Database name | `rune` |
+| `RABBITMQ_URL` | RabbitMQ connection string | `amqp://localhost:5672` |
+| `JWT_SECRET` | Must match the API's `SECRET_KEY` | Required |
+| `PORT` | WebSocket server port | `8080` |
+
+## Execution Flow (End to End)
+
+Here's what happens when a user clicks **Run** on a workflow:
+
+### 1. API: Prepare and Publish
+
+```python
+# Resolve credentials for all nodes
+for node in workflow.nodes:
+    if node.credential_id:
+        cred = decrypt(get_credential(node.credential_id))
+        node.credential_data = cred
+
+# Generate execution ID
+execution_id = uuid4()
+
+# Publish to RabbitMQ
+rabbitmq.publish("workflow_execution", {
+    "execution_id": execution_id,
+    "workflow_id": workflow.id,
+    "user_id": current_user.id,
+    "definition": workflow.definition,  # includes resolved credentials
+})
+```
+
+### 2. Worker: Execute Nodes
+
+```go
+// Consume from RabbitMQ
+msg := rabbitmq.Consume("workflow_execution")
+
+// Build DAG and sort topologically
+graph := BuildDAG(msg.Definition.Nodes, msg.Definition.Edges)
+sorted := TopologicalSort(graph)
+
+// Execute each node
+for _, node := range sorted {
+    // Resolve $NodeLabel.field expressions
+    resolvedParams := ResolveExpressions(node.Params, accumulatedContext)
+    
+    // Execute via plugin
+    output, err := plugins[node.Type].Execute(resolvedParams)
+    
+    // Store in accumulated context
+    accumulatedContext[node.Label] = output
+    
+    // Publish event
+    rabbitmq.Publish("execution_events", NodeCompletedEvent{...})
+}
+```
+
+### 3. RTES: Stream to Client
+
+```rust
+// Consume from RabbitMQ
+let event = rabbitmq.consume("execution_events").await;
+
+// Persist to MongoDB
+mongodb.collection("events").insert_one(event).await;
+
+// Find connected WebSocket for this user
+if let Some(ws) = connections.get(event.user_id) {
+    ws.send(json!(event)).await;
+}
+```
+
+### 4. Frontend: Update Canvas
+
+```typescript
+// Connect to WebSocket
+const ws = new WebSocket(`ws://localhost:8080/ws?token=${accessToken}`);
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  switch (data.type) {
+    case 'node_started':
+      highlightNode(data.node_id, 'running');
+      break;
+    case 'node_completed':
+      highlightNode(data.node_id, 'success');
+      break;
+    case 'node_error':
+      highlightNode(data.node_id, 'error');
+      break;
+  }
+};
+```
+
+## Docker Compose
+
+All services are orchestrated via Docker Compose:
+
+```yaml
+services:
+  api:        # FastAPI on port 8000
+  worker:     # Go worker (no exposed port)
+  rtes:       # Rust WebSocket on port 8080
+  web:        # Next.js on port 3000
+  postgres:   # PostgreSQL on port 5432
+  redis:      # Redis on port 6379
+  rabbitmq:   # RabbitMQ on port 5672 (management on 15672)
+  mongodb:    # MongoDB on port 27017
+```
+
+### Service Dependencies
+
+```
+web → api → postgres, redis, rabbitmq
+worker → rabbitmq
+rtes → rabbitmq, mongodb
+```
+
+## Observability
+
+Rune includes **OpenTelemetry** configuration for distributed tracing:
+
+- The RTES service has an OpenTelemetry collector config (`otel-collector-config.yaml`)
+- Traces can be exported to Jaeger, Zipkin, or other OTLP-compatible backends
+- Useful for debugging execution latency across the API → Worker → RTES pipeline
+
+## Next Steps
+
+- [Getting Started](/docs/getting-started) — Set up the full stack locally
+- [Execution Monitoring](/docs/guides/executions) — Real-time execution tracking
+- [REST API Reference](/docs/api-reference/rest-api) — API endpoints

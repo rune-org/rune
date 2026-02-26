@@ -1,0 +1,243 @@
+# Scryb AI Documentation Generator
+
+Generate comprehensive documentation for any workflow with a single click.
+
+## What is Scryb?
+
+Scryb is Rune's AI-powered documentation generator. It analyzes your workflow definition — nodes, edges, parameters, and connections — and produces a human-readable Markdown report that explains what the workflow does.
+
+Scryb is powered by **DSPy** (a framework for programming language models) with **Google Gemini 2.5 Flash Lite** as the underlying model.
+
+## How It Works
+
+Scryb doesn't just pass raw JSON to a language model. It uses a multi-stage pipeline:
+
+```
+Workflow DSL → Serializer → SIR → DSPy ChainOfThought → Markdown Report
+```
+
+### 1. Workflow Serialization
+
+The raw workflow definition (nodes, edges, parameters) is passed through the **WorkflowSerializer**, which:
+
+- Builds adjacency maps (outgoing/incoming edges per node)
+- Resolves edge IDs to human-readable target step names
+- Maps conditional branches to their conditions (e.g., "Condition met: status_code == 200")
+- Maps switch routes to their case rules (e.g., "Case: region == us-east")
+- Cleans noisy internal fields (positions, credential IDs, internal edge IDs)
+
+### 2. Semantic Intermediate Representation (SIR)
+
+The serializer produces a **SIR** — a structured, meaning-rich representation of the workflow:
+
+```python
+SIRWorkflow(
+    id="wf-1",
+    name="API Health Monitor",
+    description="Checks API health and alerts on failure",
+    steps=[
+        SIRStep(
+            id="node-1",
+            name="Check API",
+            node_type="http",
+            credentials="api_key",
+            node_config={
+                "method": "GET",
+                "url": "https://api.example.com/health"
+            },
+            parent_step_name=None,
+            edges=[
+                SIROutcome(target_step_name="Is Healthy?", label="Next")
+            ]
+        ),
+        SIRStep(
+            id="node-2",
+            name="Is Healthy?",
+            node_type="conditional",
+            node_config={
+                "condition": "$Check API.status_code == 200"
+            },
+            parent_step_name="Check API",
+            edges=[
+                SIROutcome(
+                    target_step_name="Send Alert",
+                    label="Condition not met"
+                )
+            ]
+        ),
+        ...
+    ]
+)
+```
+
+The SIR removes all implementation noise (pixel positions, internal IDs) and retains only the semantic meaning of each step and its connections.
+
+### 3. DSPy Chain-of-Thought Generation
+
+The SIR is passed to a DSPy `ChainOfThought` module configured with a `WorkflowDocumentation` signature:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `workflow_json` | Input | The SIR as a dictionary |
+| `target_audience` | Input | "Technical Developer" or "Executive Summary" |
+| `report` | Output | The generated Markdown documentation |
+
+DSPy handles prompt optimization, chain-of-thought reasoning, and structured output parsing. The optimized prompts are loaded from `gemini-flash-lite.json`.
+
+## Target Audiences
+
+Scryb supports two documentation styles:
+
+### Technical Developer
+
+Generates detailed technical documentation including:
+
+- Step-by-step node execution order
+- HTTP methods, URLs, and headers
+- Conditional logic and branch routing
+- Data flow between nodes (`$NodeName.field` references)
+- Credential usage per node
+- Error handling paths
+
+### Executive Summary
+
+Generates a high-level overview including:
+
+- What the workflow does in plain language
+- Key business outcomes and triggers
+- External services involved
+- Overall flow description without technical details
+
+## Using Scryb
+
+### From the Workflow Editor
+
+1. Open any saved workflow in the canvas editor
+2. Click the **Scryb** icon (floating button, bottom-right corner)
+3. The Scryb panel opens with a doc generation interface
+4. Select the **Target Audience** (Technical or Executive)
+5. Click **Generate Docs**
+6. Wait for the AI to process (you'll see a "Synthesizing..." indicator)
+7. Once complete, you can:
+   - **View** — Opens a full-screen report viewer with rendered Markdown
+   - **Download** — Saves as `workflow-docs.md`
+   - **Copy** — Copies raw Markdown to clipboard
+
+> **Note:** The workflow must be saved before generating documentation. Unsaved changes won't be included.
+
+### From the API
+
+```http
+POST /scryb/{workflow_id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "target_audience": "Technical Developer"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "docs": "# API Health Monitor\n\n## Overview\n\nThis workflow monitors..."
+  }
+}
+```
+
+The `target_audience` field accepts:
+- `"Technical Developer"` (default)
+- `"Executive Summary"`
+
+## The Scryb Panel UI
+
+The Scryb panel is a floating overlay in the workflow editor with three states:
+
+### Idle State
+Shows the audience selector (Technical / Executive) and a random workflow tip. The generate button shows "Generate Docs" when the workflow is saved, or "Save Workflow First" when unsaved.
+
+### Generating State
+Shows a loading spinner with "Synthesizing..." text. A status indicator dot turns amber during processing.
+
+### Success State
+Shows a file card (`workflow-docs.md` with file size), along with **Back**, **View**, and **Download** buttons. The status indicator turns green.
+
+### Error State
+Shows the error message with a "Try Again" button to return to idle state.
+
+## Report Viewer
+
+The View button opens a full-screen modal that renders the generated Markdown as formatted HTML. From this viewer you can:
+
+- **Copy** the raw Markdown to clipboard
+- **Download** as a `.md` file
+- **Scroll** through the full report
+- **Close** and return to the editor
+
+## Configuration
+
+### Model Selection
+
+The Gemini model used by Scryb is configured via the `SCRYB_MODEL` setting:
+
+```python
+# In config.py
+scryb_model: str = "gemini/gemini-2.5-flash-lite"
+```
+
+This can be overridden via the `SCRYB_MODEL` environment variable.
+
+### API Key
+
+Scryb requires a Google AI Studio API key:
+
+```env
+GOOGLE_API_KEY=your_google_api_key
+```
+
+### Prompt Optimization
+
+Scryb uses pre-optimized prompts stored in JSON files alongside the generator:
+
+- `gemini-flash-lite.json` — Optimized for Gemini 2.5 Flash Lite
+- `llama3-3.json` — Alternative optimized for LLaMA 3.3
+
+These files contain DSPy-optimized few-shot examples and instructions. The generator loads them at startup.
+
+## Permissions
+
+Scryb respects workflow permissions. You need **view** permission on a workflow to generate its documentation:
+
+| Role | Can Generate? |
+|------|---------------|
+| Workflow owner | ✅ |
+| Admin | ✅ |
+| Shared user (view) | ✅ |
+| No access | ❌ |
+
+## Tips for Better Documentation
+
+### Use Descriptive Node Labels
+
+Scryb uses node names in the documentation. Meaningful labels produce better docs:
+
+```
+❌ "Node 1" → "Node 1 makes an HTTP GET request..."
+✅ "Fetch Active Users" → "The Fetch Active Users step retrieves..."
+```
+
+### Add Workflow Descriptions
+
+The workflow's description field is included in the SIR and helps Scryb understand the overall purpose.
+
+### Keep Workflows Focused
+
+Single-purpose workflows generate more coherent documentation than workflows that try to do many unrelated things.
+
+## Next Steps
+
+- [Smith AI Builder](/docs/guides/smith-ai) — Build workflows with natural language
+- [Creating Workflows](/docs/guides/creating-workflows) — Build workflows manually
+- [REST API Reference](/docs/api-reference/rest-api) — Scryb API endpoint

@@ -1,0 +1,129 @@
+# Quick Start
+
+Build and run your first workflow in minutes.
+
+## Prerequisites
+
+Make sure Rune is installed and running. If not, follow the [Installation Guide](/docs/getting-started).
+
+## Step 1: Sign In
+
+1. Open [http://localhost:3000](http://localhost:3000)
+2. Sign in with your admin credentials (or the account created during first-time setup)
+
+## Step 2: Create a New Workflow
+
+1. Click **"Workflows"** in the sidebar
+2. Click the **"Create Workflow"** button
+3. Give it a name like **"My First Workflow"**
+4. You'll be taken to the visual workflow canvas
+
+## Step 3: Add a Manual Trigger
+
+Every workflow needs a **trigger node** — the entry point that starts execution.
+
+1. The canvas opens with the node panel on the left
+2. Drag a **Manual Trigger** node onto the canvas
+3. This trigger starts the workflow when you click "Run"
+
+## Step 4: Add an HTTP Request Node
+
+Let's fetch data from a public API:
+
+1. Drag an **HTTP** node onto the canvas
+2. **Connect** the trigger to the HTTP node by dragging from the trigger's output handle to the HTTP node's input handle
+3. Click the HTTP node to configure it:
+   - **Method**: `GET`
+   - **URL**: `https://jsonplaceholder.typicode.com/users/1`
+4. Save the node configuration
+
+## Step 5: Add a Conditional Node
+
+Let's add a decision based on the HTTP response:
+
+1. Drag a **Conditional** node onto the canvas
+2. Connect the HTTP node's output to the Conditional node
+3. Configure the expression:
+   ```
+   $Fetch User.status == 200
+   ```
+   This checks if the HTTP request returned a 200 status code.
+
+The conditional node creates two output paths: **true** (success) and **false** (failure).
+
+## Step 6: Add an SMTP Node (Optional)
+
+If you have SMTP credentials configured, you can send an email on success:
+
+1. Drag an **SMTP** node onto the canvas
+2. Connect it to the **true** output of the conditional node
+3. Configure:
+   - **To**: `your-email@example.com`
+   - **Subject**: `Workflow Result`
+   - **Body**: `User data fetched successfully`
+4. Assign your SMTP credential to the node
+
+## Step 7: Run the Workflow
+
+1. Click the **"Run"** button in the toolbar
+2. Watch the nodes execute in real time — each node highlights as it runs:
+   - 🔵 **Running** — currently executing
+   - 🟢 **Success** — completed successfully
+   - 🔴 **Failed** — encountered an error
+   - ⏳ **Waiting** — paused (wait nodes)
+3. Click any executed node to inspect its **input** and **output** data
+
+## Step 8: Monitor the Execution
+
+Navigate to the **Executions** page to see:
+- Execution status (completed, failed, halted)
+- Per-node status and timing
+- Full input/output data for each node
+- Real-time updates via WebSocket
+
+## Understanding Data Flow
+
+Data flows between nodes through an **accumulated context**. Each node's output is stored with a key based on the node name:
+
+```javascript
+// After the HTTP node "Fetch User" runs, its output is accessible as:
+$Fetch User.status        // 200
+$Fetch User.body.name     // "Leanne Graham"
+$Fetch User.body.email    // "Sincere@april.biz"
+$Fetch User.duration_ms   // 142
+```
+
+Downstream nodes can reference any previous node's output using the `$NodeName.field` syntax.
+
+## Example: Complete API-to-Email Workflow
+
+Here's the full flow of what we built:
+
+```
+Manual Trigger
+    ↓
+HTTP Request (GET https://jsonplaceholder.typicode.com/users/1)
+    ↓
+Conditional ($Fetch User.status == 200)
+    ├── true → SMTP (Send success email)
+    └── false → (workflow ends)
+```
+
+## Error Handling
+
+Each node supports three error handling strategies:
+
+| Strategy | Behavior |
+|----------|----------|
+| **Halt** (default) | Stop the entire workflow on error |
+| **Ignore** | Skip the error and continue to the next node |
+| **Branch** | Follow a dedicated error edge to an error-handling node |
+
+You can configure error handling in each node's settings panel.
+
+## Next Steps
+
+- [Understanding Nodes](/docs/guides/nodes) — Deep dive into all 9 node types
+- [Creating Workflows](/docs/guides/creating-workflows) — Advanced patterns: split/aggregate, merge, wait
+- [Managing Credentials](/docs/guides/credentials) — Store API keys and SMTP passwords securely
+- [Smith AI Builder](/docs/guides/smith-ai) — Let AI build workflows from natural language
