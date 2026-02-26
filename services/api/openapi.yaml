@@ -2983,11 +2983,14 @@ components:
         is_active:
           type: boolean
           title: Is Active
+        role:
+          $ref: '#/components/schemas/WorkflowRole'
       type: object
       required:
       - id
       - name
       - is_active
+      - role
       title: WorkflowListItem
     WorkflowPermissionInfo:
       properties:

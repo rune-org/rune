@@ -1294,6 +1294,7 @@ export type WorkflowListItem = {
      * Is Active
      */
     is_active: boolean;
+    role: WorkflowRole;
 };
 
 /**
