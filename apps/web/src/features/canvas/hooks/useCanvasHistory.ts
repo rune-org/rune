@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Edge } from "@xyflow/react";
 import type { CanvasNode } from "../types";
 
@@ -36,6 +36,13 @@ export function useCanvasHistory(
   const { maxSize = MAX_HISTORY_SIZE } = options;
 
   const historyRef = useRef<HistoryState>({ undoStack: [], redoStack: [] });
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+    edgesRef.current = edges;
+  }, [nodes, edges]);
 
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -49,7 +56,12 @@ export function useCanvasHistory(
   const pushHistory = useCallback(() => {
     const { undoStack } = historyRef.current;
 
-    undoStack.push(structuredClone({ nodes, edges }));
+    undoStack.push(
+      structuredClone({
+        nodes: nodesRef.current,
+        edges: edgesRef.current,
+      })
+    );
 
     while (undoStack.length > maxSize) {
       undoStack.shift();
@@ -62,7 +74,7 @@ export function useCanvasHistory(
     };
 
     syncState();
-  }, [nodes, edges, maxSize, syncState]);
+  }, [maxSize, syncState]);
 
   const undo = useCallback((): HistoryEntry | null => {
     const { undoStack, redoStack } = historyRef.current;
@@ -72,7 +84,12 @@ export function useCanvasHistory(
     }
 
     // Save current state to redo stack
-    redoStack.push(structuredClone({ nodes, edges }));
+    redoStack.push(
+      structuredClone({
+        nodes: nodesRef.current,
+        edges: edgesRef.current,
+      })
+    );
 
     while (redoStack.length > maxSize) {
       redoStack.shift();
@@ -85,7 +102,7 @@ export function useCanvasHistory(
     syncState();
 
     return stateToRestore;
-  }, [nodes, edges, maxSize, syncState]);
+  }, [maxSize, syncState]);
 
   const redo = useCallback((): HistoryEntry | null => {
     const { undoStack, redoStack } = historyRef.current;
@@ -95,7 +112,12 @@ export function useCanvasHistory(
     }
 
     // Save current state to undo stack
-    undoStack.push(structuredClone({ nodes, edges }));
+    undoStack.push(
+      structuredClone({
+        nodes: nodesRef.current,
+        edges: edgesRef.current,
+      })
+    );
 
     while (undoStack.length > maxSize) {
       undoStack.shift();
@@ -108,7 +130,7 @@ export function useCanvasHistory(
     syncState();
 
     return stateToRestore;
-  }, [nodes, edges, maxSize, syncState]);
+  }, [maxSize, syncState]);
 
   return {
     pushHistory,

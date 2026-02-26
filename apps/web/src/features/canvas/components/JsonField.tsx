@@ -35,7 +35,7 @@ export function JsonField({ value, onChange }: JsonFieldProps) {
   return (
     <div className="space-y-1">
       <textarea
-        className="h-24 w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 p-2 text-xs font-mono"
+        className="h-24 w-full rounded-sm border border-input bg-muted/30 p-2 text-xs font-mono"
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={handleBlur}

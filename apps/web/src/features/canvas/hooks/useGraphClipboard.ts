@@ -39,24 +39,37 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
   const [isImportTemplateOpen, setIsImportTemplateOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+  const selectedNodeIdRef = useRef(selectedNodeId);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+    edgesRef.current = edges;
+    selectedNodeIdRef.current = selectedNodeId;
+  }, [nodes, edges, selectedNodeId]);
 
   const copySelection = useCallback(async () => {
+    const currentNodes = nodesRef.current;
+    const currentEdges = edgesRef.current;
+    const currentSelectedNodeId = selectedNodeIdRef.current;
+
     const selectedNodeIds = new Set(
-      nodes.filter((n) => n.selected).map((n) => n.id),
+      currentNodes.filter((n) => n.selected).map((n) => n.id),
     );
-    if (selectedNodeIds.size === 0 && selectedNodeId) {
-      selectedNodeIds.add(selectedNodeId);
+    if (selectedNodeIds.size === 0 && currentSelectedNodeId) {
+      selectedNodeIds.add(currentSelectedNodeId);
     }
 
     if (selectedNodeIds.size === 0) {
       return;
     }
 
-    const selectedNodes = nodes
+    const selectedNodes = currentNodes
       .filter((n) => selectedNodeIds.has(n.id))
       .map((n) => structuredClone(n));
 
-    const selectedEdges = edges
+    const selectedEdges = currentEdges
       .filter(
         (e) =>
           selectedNodeIds.has(e.source) &&
@@ -82,19 +95,24 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
     } catch {
       toast.error("Unable to copy selection");
     }
-  }, [edges, nodes, selectedNodeId]);
+  }, []);
 
   const exportToClipboard = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(stringifyGraph({ nodes, edges }));
+      await navigator.clipboard.writeText(
+        stringifyGraph({ nodes: nodesRef.current, edges: edgesRef.current })
+      );
       toast.success("Exported JSON to clipboard");
     } catch {
       toast.error("Failed to export JSON to clipboard");
     }
-  }, [nodes, edges]);
+  }, []);
 
   const exportToFile = useCallback(() => {
-    const json = stringifyGraph({ nodes, edges });
+    const json = stringifyGraph({
+      nodes: nodesRef.current,
+      edges: edgesRef.current,
+    });
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -105,15 +123,15 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success("Exported workflow to file");
-  }, [nodes, edges]);
+  }, []);
 
   const exportToTemplate = useCallback(() => {
-    if (nodes.length === 0) {
+    if (nodesRef.current.length === 0) {
       toast.error("Cannot save empty workflow as template");
       return;
     }
     setIsSaveTemplateOpen(true);
-  }, [nodes]);
+  }, []);
 
   const importFromFile = useCallback(() => {
     fileInputRef.current?.click();
