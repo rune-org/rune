@@ -31,7 +31,6 @@ import {
 import type { WorkflowRole } from "@/lib/permissions";
 import { listUsersForSharingUsersDirectoryGet } from "@/client/sdk.gen";
 import type { UserBasicInfo } from "@/client/types.gen";
-import { useAuth } from "@/lib/auth";
 
 interface ShareWorkflowDialogProps {
   workflowId: string;
