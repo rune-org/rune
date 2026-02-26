@@ -304,7 +304,7 @@ export function ShareWorkflowDialog({
         title="Remove Access"
         description={
           <>
-            Are you sure you want to remove <strong>{userToRevoke?.name}</strong>'s access to this workflow?
+            Are you sure you want to remove <strong>{userToRevoke?.name}</strong>&apos;s access to this workflow?
             They will no longer be able to view or edit it.
           </>
         }
