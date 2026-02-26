@@ -108,7 +108,7 @@ export function Inspector({
   const Content = (
     <div 
       className={cn(
-        "flex w-[260px] max-w-[90vw] flex-col rounded-[var(--radius)] border border-border/60 bg-card/90 shadow-lg transition-all",
+        "flex w-65 max-w-[90vw] flex-col rounded-(--radius) border border-border/60 bg-card/90 shadow-lg transition-all",
         className
       )}
     >
@@ -123,7 +123,7 @@ export function Inspector({
               <button
                 onClick={() => onTogglePin(selectedNode.id)}
                 title={selectedNode.data.pinned ? "Unpin node" : "Pin node"}
-                className={`flex h-6 w-6 items-center justify-center rounded-[calc(var(--radius)-0.25rem)] transition-colors ${
+                className={`flex h-6 w-6 items-center justify-center rounded-sm transition-colors ${
                   selectedNode.data.pinned
                     ? "bg-ring/20 text-ring hover:bg-ring/30"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
@@ -139,7 +139,7 @@ export function Inspector({
             <button
               onClick={() => setIsExpandedDialogOpen(true)}
               title="Expand inspector"
-              className="flex h-6 w-6 items-center justify-center rounded-[calc(var(--radius)-0.25rem)] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              className="flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <Maximize2 className="h-3.5 w-3.5" />
             </button>
@@ -147,7 +147,7 @@ export function Inspector({
               <button
                 onClick={onDelete}
                 title="Delete node"
-                className="flex h-6 w-6 items-center justify-center rounded-[calc(var(--radius)-0.25rem)] text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
+                className="flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -177,7 +177,7 @@ export function Inspector({
                   Label
                 </label>
                 <input
-                  className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
+                  className="w-full rounded-sm border border-input bg-muted/30 px-2 py-1 text-sm"
                   value={selectedNode.data.label ?? ""}
                   onChange={(e) => updateSelectedNodeLabel(e.target.value.replace(/ /g, "_"))}
                 />
@@ -209,7 +209,7 @@ export function Inspector({
       {renderInPanel ? (
         <Panel
           position="top-right"
-          className="pointer-events-auto !right-4 !top-4"
+          className="pointer-events-auto right-4! top-4!"
         >
           {Content}
         </Panel>
@@ -266,7 +266,7 @@ export function Inspector({
                           Node Label
                         </label>
                         <input
-                          className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
+                          className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
                           value={selectedNode.data.label ?? ""}
                           onChange={(e) => updateSelectedNodeLabel(e.target.value.replace(/ /g, "_"))}
                           placeholder="Enter a descriptive label"
@@ -306,7 +306,7 @@ export function Inspector({
                               nodeIO.inputs.map((input) => (
                                 <div
                                   key={input}
-                                  className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground"
+                                  className="rounded-sm border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground"
                                 >
                                   {input}
                                 </div>
@@ -330,7 +330,7 @@ export function Inspector({
                               nodeIO.outputs.map((output) => (
                                 <div
                                   key={output}
-                                  className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground"
+                                  className="rounded-sm border border-border/60 bg-muted/30 px-3 py-2 text-sm text-foreground"
                                 >
                                   {output}
                                 </div>
@@ -372,7 +372,7 @@ export function Inspector({
                   {onTogglePin && (
                     <button
                       onClick={() => onTogglePin(selectedNode.id)}
-                      className={`inline-flex h-9 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border px-4 text-sm transition-colors ${
+                      className={`inline-flex h-9 items-center gap-2 rounded-sm border px-4 text-sm transition-colors ${
                         selectedNode.data.pinned
                           ? "border-ring/40 bg-ring/10 text-ring hover:bg-ring/20"
                           : "border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted/60"
@@ -394,7 +394,7 @@ export function Inspector({
                   {onDelete && (
                     <button
                       onClick={() => setIsDeleteConfirmOpen(true)}
-                      className="inline-flex h-9 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] border border-destructive/40 bg-destructive/10 px-4 text-sm text-destructive transition-colors hover:bg-destructive/20"
+                      className="inline-flex h-9 items-center gap-2 rounded-sm border border-destructive/40 bg-destructive/10 px-4 text-sm text-destructive transition-colors hover:bg-destructive/20"
                     >
                       <Trash2 className="h-4 w-4" />
                       Delete Node
@@ -422,7 +422,7 @@ export function Inspector({
               undone.
             </p>
             {selectedNode && (
-              <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/30 p-3">
+              <div className="rounded-sm border border-border/60 bg-muted/30 p-3">
                 <div className="text-sm font-medium text-foreground">
                   {selectedNode.type} • {selectedNode.data.label || selectedNode.id.slice(0, 6)}
                 </div>
@@ -432,13 +432,13 @@ export function Inspector({
           <div className="flex justify-end gap-2">
             <button
               onClick={() => setIsDeleteConfirmOpen(false)}
-              className="inline-flex h-9 items-center rounded-[calc(var(--radius)-0.25rem)] border border-input bg-background px-4 text-sm transition-colors hover:bg-muted/60"
+              className="inline-flex h-9 items-center rounded-sm border border-input bg-background px-4 text-sm transition-colors hover:bg-muted/60"
             >
               Cancel
             </button>
             <button
               onClick={handleDelete}
-              className="inline-flex h-9 items-center gap-2 rounded-[calc(var(--radius)-0.25rem)] bg-destructive px-4 text-sm text-destructive-foreground transition-colors hover:bg-destructive/90"
+              className="inline-flex h-9 items-center gap-2 rounded-sm bg-destructive px-4 text-sm text-destructive-foreground transition-colors hover:bg-destructive/90"
             >
               <Trash2 className="h-4 w-4" />
               Delete

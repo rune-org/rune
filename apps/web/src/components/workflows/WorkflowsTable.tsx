@@ -47,6 +47,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  canExecuteWorkflow,
+  canDeleteWorkflow,
+  canShareWorkflow,
+  canRenameWorkflow,
+  canChangeWorkflowStatus,
+} from "@/lib/permissions";
+import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import {
   canExecuteWorkflow,
