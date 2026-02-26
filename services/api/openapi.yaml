@@ -673,14 +673,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /users/directory:
+  /users/sharing:
     get:
       tags:
       - Users
-      summary: List users in directory
-      description: Retrieve minimal information for all users. This endpoint backs
-        the sharing UI by providing a directory of users.
-      operationId: list_users_for_sharing_users_directory_get
+      summary: List users for sharing
+      description: Get a list of users available for sharing credentials/workflows.
+        Returns minimal user info and excludes the current user.
+      operationId: list_users_for_sharing_users_sharing_get
       responses:
         '200':
           description: Successful Response
@@ -688,8 +688,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_UserBasicInfo__'
-      security:
-      - OAuth2PasswordBearer: []
   /users/:
     get:
       tags:
@@ -920,8 +918,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - OAuth2PasswordBearer: []
   /templates/:
     get:
       tags:
@@ -937,8 +933,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_List_TemplateSummary__'
-      security:
-      - OAuth2PasswordBearer: []
     post:
       tags:
       - Templates
@@ -964,8 +958,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - OAuth2PasswordBearer: []
   /templates/{template_id}:
     get:
       tags:
@@ -973,8 +965,6 @@ paths:
       summary: Get Template
       description: Get a specific template by ID.
       operationId: get_template_templates__template_id__get
-      security:
-      - OAuth2PasswordBearer: []
       parameters:
       - name: template_id
         in: path
@@ -1001,8 +991,6 @@ paths:
       summary: Delete Template
       description: Delete a template.
       operationId: delete_template_templates__template_id__delete
-      security:
-      - OAuth2PasswordBearer: []
       parameters:
       - name: template_id
         in: path
@@ -1027,8 +1015,6 @@ paths:
       description: Mark a template as used (increment usage count) and return its
         workflow data.
       operationId: use_template_templates__template_id__use_post
-      security:
-      - OAuth2PasswordBearer: []
       parameters:
       - name: template_id
         in: path

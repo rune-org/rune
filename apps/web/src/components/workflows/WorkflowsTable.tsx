@@ -31,6 +31,7 @@ import {
 import { useAppState } from "@/lib/state";
 import type { WorkflowSummary } from "@/lib/workflows";
 import { toast } from "@/components/ui/toast";
+import { useAuth } from "@/lib/auth";
 import {
   deleteWorkflow,
   runWorkflow,
@@ -89,6 +90,9 @@ export function WorkflowsTable() {
     state: { workflows, loading },
     actions,
   } = useAppState();
+  
+  const { state: authState } = useAuth();
+  const isAdmin = authState.user?.role === "admin";
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<StatFilter>("all");
@@ -342,12 +346,17 @@ export function WorkflowsTable() {
               }
             >
               <TableCell className="font-medium text-foreground">
-                <a
-                  href={`/create/app?workflow=${w.id}`}
-                  className="text-foreground underline-offset-4 hover:underline"
-                >
-                  {w.name}
-                </a>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`/create/app?workflow=${w.id}`}
+                    className="text-foreground underline-offset-4 hover:underline"
+                  >
+                    {w.name}
+                  </a>
+                  <Badge variant={w.role === "owner" ? "secondary" : "outline"} className="text-xs">
+                    {w.role === "owner" ? "Owner" : "Shared"}
+                  </Badge>
+                </div>
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {w.triggerType}
@@ -376,7 +385,7 @@ export function WorkflowsTable() {
                         Open in Canvas
                       </a>
                     </DropdownMenuItem>
-                    {canRenameWorkflow(w.role) && (
+                    {canRenameWorkflow(w.role, isAdmin) && (
                       <DropdownMenuItem
                         onSelect={() => setRenameTarget(w)}
                         disabled={isRowPending(w.id)}
@@ -384,7 +393,7 @@ export function WorkflowsTable() {
                         Rename
                       </DropdownMenuItem>
                     )}
-                    {canChangeWorkflowStatus(w.role) && (
+                    {canChangeWorkflowStatus(w.role, isAdmin) && (
                       <DropdownMenuItem
                         onSelect={() => handleToggleActive(w)}
                         disabled={isRowPending(w.id)}
@@ -392,7 +401,7 @@ export function WorkflowsTable() {
                         {w.status === "active" ? "Deactivate" : "Activate"}
                       </DropdownMenuItem>
                     )}
-                    {canExecuteWorkflow(w.role) && (
+                    {canExecuteWorkflow(w.role, isAdmin) && (
                       <DropdownMenuItem
                         onSelect={() => handleRun(w)}
                         disabled={isRowPending(w.id)}
@@ -400,7 +409,7 @@ export function WorkflowsTable() {
                         Run
                       </DropdownMenuItem>
                     )}
-                    {canShareWorkflow(w.role) && (
+                    {canShareWorkflow(w.role, isAdmin) && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -411,7 +420,7 @@ export function WorkflowsTable() {
                         </DropdownMenuItem>
                       </>
                     )}
-                    {canDeleteWorkflow(w.role) && (
+                    {canDeleteWorkflow(w.role, isAdmin) && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
