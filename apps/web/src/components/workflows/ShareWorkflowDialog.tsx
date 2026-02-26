@@ -45,9 +45,6 @@ export function ShareWorkflowDialog({
   open,
   onOpenChange,
 }: ShareWorkflowDialogProps) {
-  const { state: authState } = useAuth();
-  const isAdmin = authState.user?.role === "admin";
-  
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<WorkflowRole>("viewer");
   const [permissions, setPermissions] = useState<WorkflowPermission[]>([]);
