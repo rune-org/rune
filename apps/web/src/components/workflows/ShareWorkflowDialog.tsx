@@ -239,7 +239,7 @@ export function ShareWorkflowDialog({
                 {permissions.map((perm) => {
                   // Check if this shared user is an admin
                   const sharedUser = availableUsers.find(u => u.id === perm.user_id);
-                  const isSharedUserAdmin = (sharedUser as any)?.role === "admin";
+                  const isSharedUserAdmin = sharedUser?.role === "admin";
                   
                   return (
                     <div
