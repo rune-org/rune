@@ -55,7 +55,8 @@ async def list_workflows(
 ) -> ApiResponse[list[WorkflowListItem]]:
     wfs = await service.list_for_user(current_user.id)
     items = [
-        WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active, role=role) for wf, role in wfs
+        WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active, role=role)
+        for wf, role in wfs
     ]
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
 

@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator
-from src.db.models import WorkflowRole  
+from src.db.models import WorkflowRole
+
 
 class WorkflowListItem(BaseModel):
     id: int
