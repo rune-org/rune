@@ -156,7 +156,7 @@ export function ShareWorkflowDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-150">
         <DialogHeader>
-          <DialogTitle>Share "{workflowName}"</DialogTitle>
+          <DialogTitle>Share &quot;{workflowName}&quot;</DialogTitle>
           <DialogDescription>
             Manage who has access to this workflow and their permissions.
           </DialogDescription>
