@@ -37,8 +37,6 @@ import {
   updateWorkflowName,
   updateWorkflowStatus,
 } from "@/lib/api/workflows";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -419,7 +417,7 @@ export function WorkflowsTable() {
                         <DropdownMenuItem
                           onSelect={() => beginDelete(w)}
                           disabled={isRowPending(w.id)}
-                          className="text-red-400 focus:text-red-300 data-[highlighted]:bg-red-500/10 data-[highlighted]:text-red-200"
+                          className="text-red-400 focus:text-red-300 data-highlighted:bg-red-500/10 data-highlighted:text-red-200"
                         >
                           Delete
                         </DropdownMenuItem>

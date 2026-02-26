@@ -28,7 +28,7 @@ import {
   type WorkflowPermission,
 } from "@/lib/api/permissions";
 import type { WorkflowRole } from "@/lib/permissions";
-import { listUsersForSharingUsersSharingGet } from "@/client/sdk.gen";
+import { listUsersForSharingUsersDirectoryGet } from "@/client/sdk.gen";
 import type { UserBasicInfo } from "@/client/types.gen";
 
 interface ShareWorkflowDialogProps {
@@ -74,7 +74,7 @@ export function ShareWorkflowDialog({
 
   const loadAvailableUsers = async () => {
     try {
-      const { data, error } = await listUsersForSharingUsersSharingGet();
+      const { data, error } = await listUsersForSharingUsersDirectoryGet();
       if (error) {
         throw new Error("Failed to load users");
       }
@@ -140,7 +140,7 @@ export function ShareWorkflowDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-150">
         <DialogHeader>
           <DialogTitle>Share "{workflowName}"</DialogTitle>
           <DialogDescription>
@@ -181,7 +181,7 @@ export function ShareWorkflowDialog({
                 onValueChange={(value) => setSelectedRole(value as WorkflowRole)}
                 disabled={loading}
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-35">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -235,7 +235,7 @@ export function ShareWorkflowDialog({
                             }
                             disabled={loading}
                           >
-                            <SelectTrigger className="w-[120px] h-8">
+                            <SelectTrigger className="w-30 h-8">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
