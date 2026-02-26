@@ -55,6 +55,32 @@
   --node-agent: hsl(189 85% 62%);
   --node-agent-bg: hsl(189 85% 62% / 0.18);
   --node-agent-border: hsl(189 85% 62% / 0.35);
+
+  /* Toast notification colors - Dark Mode */
+  --toast-success-bg: hsl(145 92% 41% / 0.3);
+  --toast-success-border: hsl(145 92% 41%);
+  --toast-success-text: hsl(143 85% 96%);
+  --toast-success-icon: hsl(145 92% 41%);
+
+  --toast-error-bg: hsl(0 84% 60% / 0.3);
+  --toast-error-border: hsl(0 84% 60%);
+  --toast-error-text: hsl(0 93% 94%);
+  --toast-error-icon: hsl(0 84% 60%);
+
+  --toast-warning-bg: hsl(38 92% 50% / 0.3);
+  --toast-warning-border: hsl(38 92% 50%);
+  --toast-warning-text: hsl(48 100% 96%);
+  --toast-warning-icon: hsl(38 92% 50%);
+
+  --toast-info-bg: hsl(217 91% 60% / 0.3);
+  --toast-info-border: hsl(217 91% 60%);
+  --toast-info-text: hsl(214 100% 97%);
+  --toast-info-icon: hsl(217 91% 60%);
+
+  --toast-neutral-bg: hsl(220 25% 45% / 0.3);
+  --toast-neutral-border: hsl(220 25% 45%);
+  --toast-neutral-text: hsl(210 20% 96%);
+  --toast-neutral-icon: hsl(215 16% 47%);
 }
 
 * {
