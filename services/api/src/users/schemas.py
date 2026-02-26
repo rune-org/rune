@@ -79,3 +79,4 @@ class UserBasicInfo(BaseModel):
     id: int
     name: str
     email: EmailStr
+    role: UserRole

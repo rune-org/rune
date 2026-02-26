@@ -1096,6 +1096,7 @@ export type UserBasicInfo = {
      * Email
      */
     email: string;
+    role: UserRole;
 };
 
 /**
@@ -1316,6 +1317,7 @@ export type WorkflowPermissionInfo = {
      */
     user_name: string;
     role: WorkflowRole;
+    user_role: UserRole;
     /**
      * Granted At
      */

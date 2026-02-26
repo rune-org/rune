@@ -2780,11 +2780,14 @@ components:
           type: string
           format: email
           title: Email
+        role:
+          $ref: '#/components/schemas/UserRole'
       type: object
       required:
       - id
       - name
       - email
+      - role
       title: UserBasicInfo
       description: Minimal user info for sharing purposes.
     UserCreate:
@@ -3005,6 +3008,8 @@ components:
           title: User Name
         role:
           $ref: '#/components/schemas/WorkflowRole'
+        user_role:
+          $ref: '#/components/schemas/UserRole'
         granted_at:
           type: string
           format: date-time
@@ -3020,6 +3025,7 @@ components:
       - user_email
       - user_name
       - role
+      - user_role
       - granted_at
       title: WorkflowPermissionInfo
       description: Information about a user's permission on a workflow.

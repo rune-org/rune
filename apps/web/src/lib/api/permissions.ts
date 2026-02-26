@@ -21,6 +21,8 @@ export interface WorkflowPermission {
   user_name: string;
   user_email: string;
   role: WorkflowRole;
+  /** System-level role: 'user' or 'admin' */
+  user_role: "user" | "admin";
 }
 
 /**
