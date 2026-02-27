@@ -165,14 +165,9 @@ class UserService:
         await self.db.commit()
         await self.db.refresh(user)
 
-        if self.token_store is not None:
-            if not is_active:
-                # Revoke refresh token and add to blocklist for instant access token enforcement
-                await self.token_store.revoke_user_tokens(user_id)
-                await self.token_store.mark_user_deactivated(user_id)
-            else:
-                # Remove from blocklist when reactivating
-                await self.token_store.mark_user_activated(user_id)
+        # Revoke refresh token immediately on deactivation
+        if not is_active and self.token_store is not None:
+            await self.token_store.revoke_user_tokens(user_id)
 
         return user
 

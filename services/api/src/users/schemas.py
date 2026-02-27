@@ -22,9 +22,7 @@ class AdminUserUpdate(BaseModel):
 
 
 class UserStatusUpdate(BaseModel):
-    is_active: bool = Field(
-        ..., description="Set to true to activate, false to deactivate"
-    )
+    is_active: bool = Field(..., description="Set to true to activate, false to deactivate")
 
 
 class ProfileUpdate(BaseModel):

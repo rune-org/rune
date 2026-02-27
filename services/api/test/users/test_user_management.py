@@ -408,10 +408,7 @@ async def test_admin_update_user_role(admin_client, test_user, test_db):
 @pytest.mark.asyncio
 async def test_admin_update_user_is_active(admin_client, test_user, test_db):
     """Admin can deactivate user"""
-    # Use dedicated status endpoint for activation/deactivation
-    resp = await admin_client.patch(
-        f"/users/{test_user.id}/status", json={"is_active": False}
-    )
+    resp = await admin_client.put(f"/users/{test_user.id}", json={"is_active": False})
     assert resp.status_code == 200
     body = resp.json()
     assert body["data"]["is_active"] is False
@@ -424,13 +421,13 @@ async def test_admin_update_user_is_active(admin_client, test_user, test_db):
 @pytest.mark.asyncio
 async def test_admin_update_user_multiple_fields(admin_client, test_user, test_db):
     """Admin can update multiple fields at once"""
-    # Update non-status fields via the generic update endpoint
     resp = await admin_client.put(
         f"/users/{test_user.id}",
         json={
             "name": "New Name",
             "email": "new@example.com",
             "role": "admin",
+            "is_active": False,
         },
     )
     assert resp.status_code == 200
@@ -438,14 +435,7 @@ async def test_admin_update_user_multiple_fields(admin_client, test_user, test_d
     assert body["data"]["name"] == "New Name"
     assert body["data"]["email"] == "new@example.com"
     assert body["data"]["role"] == "admin"
-
-    # Apply status change using the dedicated endpoint
-    resp2 = await admin_client.patch(
-        f"/users/{test_user.id}/status", json={"is_active": False}
-    )
-    assert resp2.status_code == 200
-    body2 = resp2.json()
-    assert body2["data"]["is_active"] is False
+    assert body["data"]["is_active"] is False
 
 
 @pytest.mark.asyncio
