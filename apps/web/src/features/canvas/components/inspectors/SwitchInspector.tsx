@@ -163,7 +163,7 @@ export function SwitchInspector({
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
+            <div className={`mt-3 grid gap-2 ${isExpanded ? "grid-cols-3" : "grid-cols-1"}`}>
               <div className="space-y-1">
                 <label className="block text-[11px] text-muted-foreground">
                   Value
