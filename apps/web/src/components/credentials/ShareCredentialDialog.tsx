@@ -66,7 +66,6 @@ export function ShareCredentialDialog({
         setUsers(usersRes.data.data);
       }
     } catch (error) {
-      console.error("Failed to load sharing data:", error);
       toast.error("Failed to load sharing information");
     } finally {
       setIsLoading(false);
@@ -121,7 +120,6 @@ export function ShareCredentialDialog({
       onSharesChanged?.();
       onOpenChange(false);
     } catch (error: unknown) {
-      console.error("Failed to share credential:", error);
       const message =
         error instanceof Error ? error.message : "Failed to share credential";
       toast.error(message);
@@ -138,7 +136,6 @@ export function ShareCredentialDialog({
       toast.success("Access revoked successfully");
       onSharesChanged?.();
     } catch (error: unknown) {
-      console.error("Failed to revoke access:", error);
       const message =
         error instanceof Error ? error.message : "Failed to revoke access";
       toast.error(message);

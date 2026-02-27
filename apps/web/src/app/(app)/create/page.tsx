@@ -65,7 +65,7 @@ const popularWorkflows = [
     title: "RSS → Discord",
     description: "Post new blog articles into a channel.",
     fromIcon: "/icons/social/rss.svg",
-    toIcon: "/icons/social/discord2.svg",
+    toIcon: "/icons/social/discord_purple.svg",
     fromColor: "text-orange-400",
     toColor: "text-indigo-400"
   }
