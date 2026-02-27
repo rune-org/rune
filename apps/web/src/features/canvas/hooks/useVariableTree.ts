@@ -109,8 +109,8 @@ export function useVariableTree(nodeId: string): VariableSource[] {
         }
       }
 
-      // For pass-through nodes, show execution data directly when available
-      // (the "context" schema placeholder is just a stand-in until real data exists)
+      // For control-flow (pass-through) nodes, prefer execution data when available
+      // (the static schema is a hint until the node actually runs)
       let children: VariableTreeNode[];
       if (PASS_THROUGH_KINDS.has(kind)) {
         children = executionTree.length > 0 ? executionTree : prefixedSchema;

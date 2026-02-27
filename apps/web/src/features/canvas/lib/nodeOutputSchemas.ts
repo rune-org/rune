@@ -13,7 +13,7 @@ export function getStaticOutputSchema(
     case "http":
       return [
         { key: "status", path: "status", type: "number", source: "schema" },
-        { key: "statusText", path: "statusText", type: "string", source: "schema" },
+        { key: "status_text", path: "status_text", type: "string", source: "schema" },
         {
           key: "headers",
           path: "headers",
@@ -28,6 +28,7 @@ export function getStaticOutputSchema(
           source: "schema",
           children: [],
         },
+        { key: "duration_ms", path: "duration_ms", type: "number", source: "schema" },
       ];
 
     case "smtp":
@@ -63,28 +64,33 @@ export function getStaticOutputSchema(
     case "trigger":
       return [];
 
-    // Pass-through nodes: route/filter/delay without transforming data
     case "if":
+      return [
+        { key: "result", path: "result", type: "boolean", source: "schema" },
+        { key: "expression", path: "expression", type: "string", source: "schema" },
+      ];
+
     case "switch":
+      return [
+        { key: "output_index", path: "output_index", type: "number", source: "schema" },
+        { key: "matched_rule", path: "matched_rule", type: "object", source: "schema", children: [] },
+        { key: "fallback", path: "fallback", type: "boolean", source: "schema" },
+      ];
+
     case "wait":
       return [
-        { key: "context", path: "context", type: "object", source: "schema", children: [] },
+        { key: "resume_at", path: "resume_at", type: "number", source: "schema" },
+        { key: "timer_id", path: "timer_id", type: "string", source: "schema" },
       ];
 
     case "merge":
       return [
-        { key: "merged", path: "merged", type: "object", source: "schema", children: [] },
+        { key: "merged_context", path: "merged_context", type: "object", source: "schema", children: [] },
       ];
 
     case "aggregator":
       return [
-        { key: "items", path: "items", type: "array", source: "schema", children: [] },
-      ];
-
-    case "agent":
-      return [
-        { key: "response", path: "response", type: "string", source: "schema" },
-        { key: "usage", path: "usage", type: "object", source: "schema", children: [] },
+        { key: "aggregated", path: "aggregated", type: "array", source: "schema", children: [] },
       ];
 
     default:
