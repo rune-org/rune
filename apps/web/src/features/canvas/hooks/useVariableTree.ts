@@ -109,20 +109,13 @@ export function useVariableTree(nodeId: string): VariableSource[] {
         }
       }
 
-      let children = mergeTreeNodes(prefixedSchema, executionTree);
-
-      // For pass-through nodes, supplement the "context" placeholder with
-      // actual upstream execution data so the picker shows what flows through.
-      if (PASS_THROUGH_KINDS.has(kind) && executionTree.length > 0) {
-        const contextIdx = children.findIndex((c) => c.key === "context");
-        if (contextIdx !== -1) {
-          // Replace the empty context placeholder with the execution data
-          children = [
-            ...children.slice(0, contextIdx),
-            ...executionTree,
-            ...children.slice(contextIdx + 1),
-          ];
-        }
+      // For pass-through nodes, show execution data directly when available
+      // (the "context" schema placeholder is just a stand-in until real data exists)
+      let children: VariableTreeNode[];
+      if (PASS_THROUGH_KINDS.has(kind)) {
+        children = executionTree.length > 0 ? executionTree : prefixedSchema;
+      } else {
+        children = mergeTreeNodes(prefixedSchema, executionTree);
       }
 
       return {
