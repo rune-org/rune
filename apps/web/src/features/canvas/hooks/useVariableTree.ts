@@ -54,8 +54,6 @@ function mergeTreeNodes(
 /**
  * Hook to build a variable tree for a given node.
  * Returns VariableSource[] representing all upstream nodes' outputs.
- *
- * Memoization extracts only stable primitives to avoid recomputing on drag.
  */
 export function useVariableTree(nodeId: string): VariableSource[] {
   const { nodes, edges } = useGraph();
