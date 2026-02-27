@@ -19,7 +19,7 @@ func TestWaitNode_SchedulesTimer(t *testing.T) {
 		Addr: "localhost:6379",
 		DB:   15, // Use DB 15 for testing
 	})
-	defer redisClient.Close()
+	defer func() { _ = redisClient.Close() }()
 
 	ctx := context.Background()
 	if err := redisClient.Ping(ctx).Err(); err != nil {
@@ -265,7 +265,7 @@ func TestWaitNode_FrozenStateIncludesContext(t *testing.T) {
 		Addr: "localhost:6379",
 		DB:   15, // Use DB 15 for testing
 	})
-	defer redisClient.Close()
+	defer func() { _ = redisClient.Close() }()
 
 	ctx := context.Background()
 	if err := redisClient.Ping(ctx).Err(); err != nil {

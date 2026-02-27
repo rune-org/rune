@@ -1,17 +1,17 @@
-from fastapi import APIRouter, Depends, status, HTTPException
 from typing import List
 
-from src.templates.schemas import (
-    TemplateSummary,
-    TemplateDetail,
-    TemplateCreate,
-    TemplateWorkflowData,
-)
-from src.templates.service import TemplateService
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from src.core.dependencies import DatabaseDep, require_password_changed
 from src.core.responses import ApiResponse
 from src.db.models import User
-
+from src.templates.schemas import (
+    TemplateCreate,
+    TemplateDetail,
+    TemplateSummary,
+    TemplateWorkflowData,
+)
+from src.templates.service import TemplateService
 
 router = APIRouter(prefix="/templates", tags=["Templates"])
 

@@ -17,7 +17,7 @@ func TestMergeWaitForAllBarrierOpens(t *testing.T) {
 	t.Parallel()
 
 	client, mock := redismock.NewClientMock()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	wf := core.Workflow{
 		Nodes: []core.Node{{ID: "merge1"}},
@@ -63,7 +63,7 @@ func TestMergeWaitForAllWaiting(t *testing.T) {
 	t.Parallel()
 
 	client, mock := redismock.NewClientMock()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	wf := core.Workflow{
 		Nodes: []core.Node{{ID: "merge1"}},
@@ -110,7 +110,7 @@ func TestMergeWaitForAnyWinner(t *testing.T) {
 	t.Parallel()
 
 	client, mock := redismock.NewClientMock()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	execCtx := plugin.ExecutionContext{
 		ExecutionID: "exec1",
@@ -144,7 +144,7 @@ func TestMergeWaitForAnyIgnored(t *testing.T) {
 	t.Parallel()
 
 	client, mock := redismock.NewClientMock()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	execCtx := plugin.ExecutionContext{
 		ExecutionID: "exec1",
@@ -178,7 +178,7 @@ func TestMergeMissingFromNode(t *testing.T) {
 	t.Parallel()
 
 	client, _ := redismock.NewClientMock()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	execCtx := plugin.ExecutionContext{
 		ExecutionID: "exec1",

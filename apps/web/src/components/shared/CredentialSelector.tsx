@@ -9,7 +9,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listCredentialsDropdown } from "@/lib/api/credentials";
+import {
+  listCredentialsDropdown,
+  createCredential,
+} from "@/lib/api/credentials";
+import { extractApiErrorMessage } from "@/lib/api/error";
+import { AddCredentialDialog } from "@/components/credentials/AddCredentialDialog";
+import { toast } from "@/components/ui/toast";
 import type {
   CredentialResponseDropDown,
   CredentialType,
@@ -36,10 +42,11 @@ export function CredentialSelector({
   showHelp = false,
 }: CredentialSelectorProps) {
   const [credentials, setCredentials] = useState<CredentialResponseDropDown[]>(
-    []
+    [],
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const fetchCredentials = async () => {
     setIsLoading(true);
@@ -52,13 +59,12 @@ export function CredentialSelector({
           ? credentialType
           : [credentialType];
         const filtered = response.data.data.filter((cred) =>
-          types.includes(cred.credential_type)
+          types.includes(cred.credential_type),
         );
         setCredentials(filtered);
       }
     } catch (err) {
       setError("Failed to load credentials");
-      console.error("Error fetching credentials:", err);
     } finally {
       setIsLoading(false);
     }
@@ -75,8 +81,13 @@ export function CredentialSelector({
       return;
     }
 
+    if (selectedId === "create-new") {
+      setIsCreateDialogOpen(true);
+      return;
+    }
+
     const selected = credentials.find(
-      (cred) => cred.id.toString() === selectedId
+      (cred) => cred.id.toString() === selectedId,
     );
     if (selected) {
       onChange({
@@ -84,6 +95,58 @@ export function CredentialSelector({
         type: selected.credential_type,
         name: selected.name,
       });
+    }
+  };
+
+  const handleCreateCredential = async (credential: {
+    name: string;
+    credential_type: CredentialType;
+    credential_data: Record<string, string>;
+  }) => {
+    let hasHandledApiError = false;
+    try {
+      const response = await createCredential({
+        name: credential.name,
+        credential_type: credential.credential_type,
+        credential_data: credential.credential_data,
+      });
+
+      // Check for errors first
+      if (response.error) {
+        const errorMessage = extractApiErrorMessage(
+          response.error,
+          "Failed to create credential. Please try again.",
+        );
+
+        hasHandledApiError = true;
+        toast.error(errorMessage);
+        throw response.error; // Re-throw so the dialog can handle it
+      }
+
+      if (response.data?.data) {
+        const newCredential = response.data.data;
+        toast.success("Credential created successfully");
+
+        // Refresh credentials list
+        await fetchCredentials();
+
+        // Select the newly created credential
+        onChange({
+          id: newCredential.id.toString(),
+          type: newCredential.credential_type,
+          name: newCredential.name,
+        });
+
+        // Close dialog
+        setIsCreateDialogOpen(false);
+      }
+    } catch (err) {
+      // Only show generic error if it wasn't already handled above
+      // (response.error errors are already shown via toast)
+      if (!hasHandledApiError) {
+        toast.error("Failed to create credential. Please try again.");
+      }
+      throw err; // Re-throw so the dialog can handle it
     }
   };
 
@@ -129,8 +192,17 @@ export function CredentialSelector({
               {cred.name}
             </SelectItem>
           ))}
+          <SelectItem value="create-new">
+            <span className="text-primary">+ Create New Credential</span>
+          </SelectItem>
         </SelectContent>
       </Select>
+
+      <AddCredentialDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onAdd={handleCreateCredential}
+      />
 
       {error && (
         <div className="flex items-center gap-1.5 text-xs text-destructive">

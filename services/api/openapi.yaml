@@ -673,14 +673,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /users/sharing:
+  /users/directory:
     get:
       tags:
       - Users
-      summary: List users for sharing
-      description: Get a list of users available for sharing credentials/workflows.
-        Returns minimal user info and excludes the current user.
-      operationId: list_users_for_sharing_users_sharing_get
+      summary: List users in directory
+      description: Retrieve minimal information for all users. This endpoint backs
+        the sharing UI by providing a directory of users.
+      operationId: list_users_for_sharing_users_directory_get
       responses:
         '200':
           description: Successful Response
@@ -820,14 +820,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /users/{user_id}/reset-password:
+  /users/{user_id}/password:
     post:
       tags:
       - Users
       summary: Admin resets user password
       description: Admin generates a temporary password for a user. User must change
         it.
-      operationId: reset_user_password_users__user_id__reset_password_post
+      operationId: reset_user_password_users__user_id__password_post
       security:
       - OAuth2PasswordBearer: []
       parameters:
@@ -893,14 +893,14 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - OAuth2PasswordBearer: []
-  /profile/me/change-password:
+  /profile/me/password:
     post:
       tags:
       - Profile
       summary: Change my password
-      description: Change your own password. Requires verification of old password.
-        Returns a new access token.
-      operationId: change_my_password_profile_me_change_password_post
+      description: "Change your own password. Requires verification of old password.\
+        \ Revokes the current session \u2014 re-login required."
+      operationId: change_my_password_profile_me_password_post
       requestBody:
         content:
           application/json:
@@ -913,7 +913,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_UserPasswordChangeResponse_'
+                $ref: '#/components/schemas/ApiResponse_UserResponse_'
         '422':
           description: Validation Error
           content:
@@ -1462,13 +1462,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/{workflow_id}/docs:
+  /scryb/{workflow_id}:
     post:
       tags:
-      - Workflows
+      - Scryb
       summary: Generate Workflow Docs
       description: Generate documentation for the specified workflow.
-      operationId: generate_workflow_docs_workflows__workflow_id__docs_post
+      operationId: generate_workflow_docs_scryb__workflow_id__post
       security:
       - OAuth2PasswordBearer: []
       parameters:
@@ -1619,6 +1619,38 @@ paths:
 
 
                     '
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Smith
+      summary: Clear Smith AI conversation history
+      description: "Clear the Smith AI conversation history for a workflow.\n\nThis\
+        \ resets the AI agent's memory for the specified workflow,\nallowing the user\
+        \ to start a fresh conversation.\n\n**Requires:** EDIT permission (OWNER or\
+        \ EDITOR)\n\nReturns:\n    - `success`: Whether the thread was cleared successfully\n\
+        \    - `message`: A confirmation message"
+      operationId: clear_thread_smith__workflow_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClearThreadResponse'
         '422':
           description: Validation Error
           content:
@@ -1999,25 +2031,6 @@ components:
       required:
       - data
       title: ApiResponse[TokenResponse]
-    ApiResponse_UserPasswordChangeResponse_:
-      properties:
-        success:
-          type: boolean
-          title: Success
-          description: Whether the request was successful
-          default: true
-        message:
-          type: string
-          title: Message
-          description: Human-readable message
-          default: Success
-        data:
-          $ref: '#/components/schemas/UserPasswordChangeResponse'
-          description: Response data
-      type: object
-      required:
-      - data
-      title: ApiResponse[UserPasswordChangeResponse]
     ApiResponse_UserResponse_:
       properties:
         success:
@@ -2265,6 +2278,20 @@ components:
       required:
       - data
       title: ApiResponse[str]
+    ClearThreadResponse:
+      properties:
+        success:
+          type: boolean
+          title: Success
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - success
+      - message
+      title: ClearThreadResponse
+      description: Response body for clearing a thread.
     CreateUserResponse:
       properties:
         user:
@@ -2796,20 +2823,6 @@ components:
       - old_password
       - new_password
       title: UserPasswordChange
-    UserPasswordChangeResponse:
-      properties:
-        user:
-          $ref: '#/components/schemas/UserResponse'
-          description: Updated user information
-        access_token:
-          type: string
-          title: Access Token
-          description: New access token with updated must_change_password flag
-      type: object
-      required:
-      - user
-      - access_token
-      title: UserPasswordChangeResponse
     UserResponse:
       properties:
         id:

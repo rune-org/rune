@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -20,6 +21,8 @@ const (
 	DefaultPollInterval = 500 * time.Millisecond
 	// DefaultBatchSize is the number of due timers to process per poll
 	DefaultBatchSize = 100
+	// PublishRetryDelay is the delay before retrying a timer after publish failure
+	PublishRetryDelay = 1 * time.Second
 )
 
 // Scheduler polls Redis for due wait timers and publishes resume messages.
@@ -112,19 +115,23 @@ func (s *Scheduler) poll(ctx context.Context) error {
 
 // processTimer handles a single due timer atomically.
 func (s *Scheduler) processTimer(ctx context.Context, timerID string) error {
-	// Use a transaction to atomically remove timer and get payload
+	// Claim timer (remove from due set) and fetch payload in one transaction.
+	// Payload is deleted only after successful publish.
 	pipe := s.redis.TxPipeline()
-
-	// Remove from sorted set
-	pipe.ZRem(ctx, TimersKey, timerID)
-
-	// Get and delete payload
+	zremCmd := pipe.ZRem(ctx, TimersKey, timerID)
 	getCmd := pipe.HGet(ctx, PayloadsKey, timerID)
-	pipe.HDel(ctx, PayloadsKey, timerID)
-
 	_, err := pipe.Exec(ctx)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return err
+	}
+
+	claimed, err := zremCmd.Result()
 	if err != nil {
 		return err
+	}
+	if claimed == 0 {
+		slog.Debug("timer already claimed by another scheduler", "timer_id", timerID)
+		return nil
 	}
 
 	payload, err := getCmd.Bytes()
@@ -137,13 +144,28 @@ func (s *Scheduler) processTimer(ctx context.Context, timerID string) error {
 	}
 
 	// Publish to workflow.resume queue
-	if err := s.publisher.Publish(ctx, "workflow.resume", payload); err != nil {
-		// If publish fails, we've already removed from Redis
-		// Log error but don't re-add to avoid duplicates on retry
+	if err := s.publisher.Publish(ctx, queue.QueueWorkflowResume, payload); err != nil {
+		// Requeue timer for retry. Payload remains stored in Redis.
+		retryAt := time.Now().Add(PublishRetryDelay).UnixMilli()
+		if requeueErr := s.redis.ZAdd(ctx, TimersKey, redis.Z{
+			Score:  float64(retryAt),
+			Member: timerID,
+		}).Err(); requeueErr != nil {
+			slog.Error("failed to requeue timer after publish failure",
+				"timer_id", timerID,
+				"error", requeueErr,
+			)
+		}
+
 		slog.Error("failed to publish resume message",
 			"timer_id", timerID,
 			"error", err,
 		)
+		return err
+	}
+
+	// Publish succeeded; remove payload.
+	if err := s.redis.HDel(ctx, PayloadsKey, timerID).Err(); err != nil {
 		return err
 	}
 

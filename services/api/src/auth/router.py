@@ -1,20 +1,20 @@
 from fastapi import APIRouter, Depends, Response
 
 from src.auth.schemas import (
-    LoginRequest,
-    TokenResponse,
-    RefreshRequest,
     FirstAdminSignupRequest,
     FirstAdminSignupResponse,
     FirstTimeSetupStatus,
+    LoginRequest,
+    RefreshRequest,
+    TokenResponse,
 )
 from src.auth.service import AuthService
 from src.auth.token_store import TokenStore
+from src.core.config import get_settings
 from src.core.dependencies import DatabaseDep, RedisDep, get_current_user
 from src.core.exceptions import Unauthorized
 from src.core.responses import ApiResponse
 from src.db.models import User
-
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -49,7 +49,14 @@ async def login(
         raise Unauthorized(detail="Invalid credentials")
 
     token_response = await auth_service.create_auth_response(user)
-    auth_service.set_auth_cookie(response, token_response.access_token)
+    settings = get_settings()
+    response.set_cookie(
+        key=settings.cookie_name,
+        value=token_response.access_token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        max_age=settings.access_token_expire_minutes * 60,
+    )
 
     return ApiResponse(success=True, message="Authenticated", data=token_response)
 
@@ -69,7 +76,14 @@ async def refresh(
         refresh_token=refresh_request.refresh_token,
     )
 
-    auth_service.set_auth_cookie(response, token_response.access_token)
+    settings = get_settings()
+    response.set_cookie(
+        key=settings.cookie_name,
+        value=token_response.access_token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        max_age=settings.access_token_expire_minutes * 60,
+    )
 
     return ApiResponse(success=True, message="Token refreshed", data=token_response)
 
@@ -86,7 +100,12 @@ async def logout(
     auth_service: AuthService = Depends(get_auth_service),
 ) -> ApiResponse[None]:
     await auth_service.logout_user_by_id(user_id=current_user.id)
-    auth_service.clear_auth_cookie(response)
+    settings = get_settings()
+    response.delete_cookie(
+        key=settings.cookie_name,
+        httponly=True,
+        secure=settings.cookie_secure,
+    )
 
     return ApiResponse(success=True, message="Logged out", data=None)
 

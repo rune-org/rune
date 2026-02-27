@@ -36,7 +36,7 @@ func NewRabbitMQPublisher(url string) (*RabbitMQPublisher, error) {
 	publisher, err := rabbitmq.NewPublisher(
 		conn,
 		rabbitmq.WithPublisherOptionsLogging,
-		rabbitmq.WithPublisherOptionsExchangeName("workflows"),
+		rabbitmq.WithPublisherOptionsExchangeName(ExchangeWorkflows),
 		rabbitmq.WithPublisherOptionsExchangeKind("topic"),
 		rabbitmq.WithPublisherOptionsExchangeDurable,
 		rabbitmq.WithPublisherOptionsExchangeDeclare,
@@ -60,7 +60,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, queue string, payload [
 		rabbitmq.WithPublishOptionsContentType("application/json"),
 		rabbitmq.WithPublishOptionsMandatory,
 		rabbitmq.WithPublishOptionsPersistentDelivery,
-		rabbitmq.WithPublishOptionsExchange("workflows"),
+		rabbitmq.WithPublishOptionsExchange(ExchangeWorkflows),
 	)
 }
 

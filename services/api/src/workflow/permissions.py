@@ -9,7 +9,6 @@ with actual validation happening in the dependency layer.
 from functools import wraps
 from typing import Callable
 
-
 # Valid workflow actions - used for validation
 VALID_WORKFLOW_ACTIONS = {"view", "edit", "execute", "delete", "share"}
 
