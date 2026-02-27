@@ -1,7 +1,6 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.auth.token_store import TokenStore
 from src.core.exceptions import AlreadyExists, Forbidden, NotFound, Unauthorized
 from src.core.password import hash_password, verify_password
 from src.db.models import User, UserRole
@@ -10,9 +9,8 @@ from src.users.utils import generate_temporary_password, normalize_email
 
 
 class UserService:
-    def __init__(self, db: AsyncSession, token_store: TokenStore | None = None):
+    def __init__(self, db: AsyncSession):
         self.db = db
-        self.token_store = token_store
 
     async def _validate_email_uniqueness(
         self, new_email: str, current_email: str
@@ -164,10 +162,6 @@ class UserService:
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
-
-        # Revoke refresh token immediately on deactivation
-        if not is_active and self.token_store is not None:
-            await self.token_store.revoke_user_tokens(user_id)
 
         return user
 

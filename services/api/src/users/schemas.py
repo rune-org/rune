@@ -19,6 +19,7 @@ class AdminUserUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=40)
     email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
+    is_active: Optional[bool] = None
 
 
 class UserStatusUpdate(BaseModel):
