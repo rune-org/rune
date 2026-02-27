@@ -81,19 +81,18 @@ type UseVariableInputOptions = {
  * Pill spans have a data-value attribute holding the raw $expression.
  * Everything else is plain text.
  */
-export function extractValueFromElement(el: HTMLElement): string {
+export function extractValueFromElement(el: HTMLElement, isRoot = true): string {
   let result = "";
   const children = Array.from(el.childNodes);
   for (let i = 0; i < children.length; i++) {
     const node = children[i];
     if (node.nodeType === Node.TEXT_NODE) {
-      // Strip zero-width spaces used as cursor landing pads after pills
-      result += (node.textContent ?? "").replace(/\u200B/g, "");
+      result += node.textContent ?? "";
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const element = node as HTMLElement;
       const dataValue = element.getAttribute("data-value");
       if (dataValue) {
-        // This is a pill - use its raw $expression
+        // This is a pill, use its raw $expression
         result += dataValue;
       } else if (element.tagName === "BR") {
         result += "\n";
@@ -101,12 +100,17 @@ export function extractValueFromElement(el: HTMLElement): string {
         // Chrome wraps new lines in <div> elements; Firefox/Safari may use <p>.
         // Each block element after the first represents a new line.
         if (i > 0) result += "\n";
-        result += extractValueFromElement(element);
+        result += extractValueFromElement(element, false);
       } else {
-        result += extractValueFromElement(element);
+        result += extractValueFromElement(element, false);
       }
     }
   }
+
+  if (isRoot) {
+    result = result.replace(/[\u200B\uFEFF]/g, "").replace(/\u00A0/g, " ");
+  }
+
   return result;
 }
 
