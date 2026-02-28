@@ -43,9 +43,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { cn } from "@/lib/cn";
 
-// ---------------------------------------------------------------------------
 // Mock data — swap for real API response when backend is ready
-// ---------------------------------------------------------------------------
 
 const MOCK_CONFIG = {
   name: "Authentik",
@@ -64,7 +62,7 @@ ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
   // SP fields (read-only, computed by backend)
   sp_entity_id: "https://api.rune.acme.com/auth/saml/metadata",
   sp_acs_url: "https://api.rune.acme.com/auth/saml/acs",
-  sp_metadata_url: "https://api.rune.acme.com/auth/saml/metadata",
+  sp_metadata_url: "/api/auth/saml/metadata",
   sp_slo_url: "https://api.rune.acme.com/auth/saml/slo",
   sp_certificate: `-----BEGIN CERTIFICATE-----
 MIIDpTCCAo2gAwIBAgIUKmEobkKW6+uQ5wCvpRnKSGKz+r4wDQYJKoZIhvcNAQEL
@@ -73,9 +71,7 @@ dGxhbmQxDzANBgNVBAoMBlJ1bmVBSTEfMB0GA1UEAwwWUnVuZUFJIFNhbWwgU1Ag
 -----END CERTIFICATE-----`,
 };
 
-// ---------------------------------------------------------------------------
 // Shared helpers
-// ---------------------------------------------------------------------------
 
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
@@ -163,9 +159,7 @@ function ReadOnlyField({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Sub-navigation
-// ---------------------------------------------------------------------------
 
 type SubTab = "guide" | "sp" | "idp";
 
@@ -175,9 +169,7 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: "idp",   label: "Identity Provider", icon: Building2 },
 ];
 
-// ---------------------------------------------------------------------------
 // Panel: Setup Guide
-// ---------------------------------------------------------------------------
 
 const SETUP_STEPS = [
   {
@@ -249,9 +241,7 @@ function SetupGuidePanel({ onNav }: { onNav: (t: SubTab) => void }) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Panel: Service Provider (read-only)
-// ---------------------------------------------------------------------------
 
 function ServiceProviderPanel() {
   const handleExport = () => {
@@ -383,9 +373,7 @@ function ServiceProviderPanel() {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Panel: Identity Provider (editable form)
-// ---------------------------------------------------------------------------
 
 function IdentityProviderPanel({
   onDelete,
@@ -405,7 +393,7 @@ function IdentityProviderPanel({
 
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // ── Import ──────────────────────────────────────────────────────────────
+  // Import IdP metadata XML or JSON config file
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -481,7 +469,7 @@ function IdentityProviderPanel({
   return (
     <div className="grid gap-8">
 
-      {/* ── Import action bar ── */}
+      {/* Import action bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-muted/10 px-4 py-3">
         <div>
           <p className="text-xs font-semibold">Import from file</p>
@@ -517,7 +505,7 @@ function IdentityProviderPanel({
         </div>
       )}
 
-      {/* ── Form fields ── */}
+      {/* Form fields */}
       <div className="grid gap-5">
         {/* Name */}
         <div className="grid gap-1.5">
@@ -585,7 +573,7 @@ function IdentityProviderPanel({
             placeholder="https://idp.example.com/slo/saml"
           />
           <p className="text-[11px] text-muted-foreground">
-            Leave blank if your IdP doesn't support SLO.
+            Leave blank if your IdP doesn&apos;t support SLO.
           </p>
         </div>
 
@@ -644,7 +632,7 @@ function IdentityProviderPanel({
         </div>
       </div>
 
-      {/* ── Save row ── */}
+      {/* Save row */}
       <div className="flex items-center justify-end gap-3 border-t border-border/40 pt-5">
         {saved && (
           <span className="flex items-center gap-1.5 text-sm text-emerald-500 animate-in fade-in">
@@ -658,7 +646,7 @@ function IdentityProviderPanel({
         </Button>
       </div>
 
-      {/* ── Danger zone ── */}
+      {/* Danger zone */}
       <div className="rounded-xl border border-destructive/25 bg-destructive/5 overflow-hidden">
         <div className="px-5 py-4">
           <p className="text-sm font-semibold text-destructive">Danger Zone</p>
@@ -691,9 +679,7 @@ function IdentityProviderPanel({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Root export
-// ---------------------------------------------------------------------------
+// Root Component
 
 export function SAMLConfigTab() {
   const [enabled,      setEnabled]      = useState(MOCK_CONFIG.is_active);
@@ -704,7 +690,7 @@ export function SAMLConfigTab() {
   return (
     <div className="grid gap-6">
 
-      {/* ── Status card + toggle ─────────────────────────────────── */}
+      {/* Status card with toggle */}
       <Card className="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <div
@@ -770,7 +756,7 @@ export function SAMLConfigTab() {
         </div>
       </Card>
 
-      {/* ── Sub-navigation pill bar ───────────────────────────────── */}
+      {/* Sub-navigation tabs */}
       <div className="flex items-center gap-1 self-start rounded-xl border border-border/50 bg-muted/20 p-1">
         {SUB_TABS.map(({ id, label, icon: Icon }) => {
           const isActive = activeSubTab === id;
@@ -793,7 +779,7 @@ export function SAMLConfigTab() {
         })}
       </div>
 
-      {/* ── Panel content ─────────────────────────────────────────── */}
+      {/* Panel content */}
       {activeSubTab === "guide" && (
         <SetupGuidePanel onNav={setActiveSubTab} />
       )}

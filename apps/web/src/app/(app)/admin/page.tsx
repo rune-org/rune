@@ -22,9 +22,7 @@ import { SAMLConfigTab } from "@/components/admin/SAMLConfigTab";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/cn";
 
-// ---------------------------------------------------------------------------
 // Navigation definition — extend this array to add more settings sections
-// ---------------------------------------------------------------------------
 
 type SectionId = "general" | "sso" | "notifications" | "about";
 
@@ -156,7 +154,7 @@ export default function AdminSettingsPage() {
 
   return (
     <Container className="py-10" widthClassName="max-w-6xl">
-      {/* ── Page title ─────────────────────────────────────────────── */}
+      {/* Page title */}
       <div className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -164,12 +162,12 @@ export default function AdminSettingsPage() {
         </p>
       </div>
 
-      {/* ── Two-column layout ──────────────────────────────────────── */}
+      {/* Two-column layout */}
       <div className="flex gap-8 items-start">
 
         {/* Left: vertical nav */}
         <nav className="hidden w-52 shrink-0 flex-col gap-1 lg:flex">
-          {SETTINGS_NAV.map(({ id, label, description, icon: Icon, badge }) => {
+          {SETTINGS_NAV.map(({ id, label, description, icon: Icon }) => {
             const isActive = id === activeSection;
             return (
               <button
