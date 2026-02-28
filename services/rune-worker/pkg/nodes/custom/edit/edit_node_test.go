@@ -3,7 +3,10 @@ package editnode
 import (
 	"context"
 	"reflect"
+	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"rune-worker/plugin"
 )
@@ -779,5 +782,80 @@ func TestNewEditNode_ParsesParameters(t *testing.T) {
 				t.Errorf("Expected %d assignments, got %d", tt.expectCount, len(node.assignments))
 			}
 		})
+	}
+}
+
+func TestEditNodeEvaluateExpression_InterruptsRunawayScript(t *testing.T) {
+	t.Parallel()
+
+	var ticks int64
+	node := &EditNode{
+		input: map[string]any{
+			"tick": func() {
+				atomic.AddInt64(&ticks, 1)
+			},
+		},
+	}
+
+	start := time.Now()
+	_, err := node.evaluateExpression(
+		context.Background(),
+		"(function () { for (;;) { tick(); } })()",
+		nil,
+	)
+	if err == nil {
+		t.Fatalf("expected timeout/cancel error for runaway script")
+	}
+	if !strings.Contains(err.Error(), "expression timeout or cancelled") {
+		t.Fatalf("expected timeout/cancel error, got: %v", err)
+	}
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Fatalf("expression evaluation took too long: %v", elapsed)
+	}
+
+	before := atomic.LoadInt64(&ticks)
+	time.Sleep(30 * time.Millisecond)
+	after := atomic.LoadInt64(&ticks)
+	if delta := after - before; delta > 50 {
+		t.Fatalf("runaway script still executing after cancellation; tick delta=%d", delta)
+	}
+}
+
+func TestEditNodeExecute_TargetPathSupportsDollarRootFallback(t *testing.T) {
+	t.Parallel()
+
+	execCtx := plugin.ExecutionContext{
+		Input: map[string]any{
+			"$baby": map[string]any{
+				"first_name": "John",
+				"last_name":  "Doe",
+				"email":      "john@example.com",
+			},
+		},
+		Parameters: map[string]any{
+			"mode":        "assignments",
+			"target_path": "baby",
+			"assignments": []any{
+				map[string]any{"name": "full_name", "value": "{{ $json.first_name + ' ' + $json.last_name }}", "type": "string"},
+				map[string]any{"name": "is_active", "value": "true", "type": "boolean"},
+			},
+		},
+	}
+
+	node := NewEditNode(execCtx)
+	out, err := node.Execute(context.Background(), execCtx)
+	if err != nil {
+		t.Fatalf("Execute error: %v", err)
+	}
+
+	payload := out["$json"].(map[string]any)
+	if payload["full_name"] != "John Doe" {
+		t.Fatalf("expected full_name John Doe, got %v", payload["full_name"])
+	}
+	if payload["is_active"] != true {
+		t.Fatalf("expected is_active true, got %v", payload["is_active"])
+	}
+	if payload["email"] != "john@example.com" {
+		t.Fatalf("expected email preserved, got %v", payload["email"])
 	}
 }

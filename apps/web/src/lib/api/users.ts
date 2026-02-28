@@ -4,20 +4,23 @@ import {
   createUserUsersPost,
   updateUserUsersUserIdPut,
   deleteUserUsersUserIdDelete,
+  setUserStatusUsersUserIdStatusPatch,
   getMyProfileProfileMeGet,
   updateMyProfileProfileMePut,
-  listUsersForSharingUsersSharingGet,
+  listUsersForSharingUsersDirectoryGet,
 } from "@/client";
 
 import type {
   UserCreate,
   AdminUserUpdate,
+  UserStatusUpdate,
   ProfileUpdate,
   GetAllUsersUsersGetResponse,
   GetUserByIdUsersUserIdGetResponse,
   CreateUserUsersPostResponse,
   UpdateUserUsersUserIdPutResponse,
   DeleteUserUsersUserIdDeleteResponse,
+  SetUserStatusUsersUserIdStatusPatchResponse,
   GetMyProfileProfileMeGetResponse,
   UpdateMyProfileProfileMePutResponse,
 } from "@/client/types.gen";
@@ -26,7 +29,7 @@ import type {
 
 export const listUsers = () => getAllUsersUsersGet();
 
-export const listUsersForSharing = () => listUsersForSharingUsersSharingGet();
+export const listUsersForSharing = () => listUsersForSharingUsersDirectoryGet();
 
 export const getUserById = (user_id: number) =>
   getUserByIdUsersUserIdGet({ path: { user_id } });
@@ -40,6 +43,9 @@ export const updateUser = (user_id: number, payload: AdminUserUpdate) =>
 export const deleteUser = (user_id: number) =>
   deleteUserUsersUserIdDelete({ path: { user_id } });
 
+export const setUserStatus = (user_id: number, payload: UserStatusUpdate) =>
+  setUserStatusUsersUserIdStatusPatch({ path: { user_id }, body: payload });
+
 export const getMyProfile = () => getMyProfileProfileMeGet({});
 
 export const updateMyProfile = (payload: ProfileUpdate) =>
@@ -51,5 +57,6 @@ export type GetUserByIdResponse = GetUserByIdUsersUserIdGetResponse;
 export type CreateUserResponse = CreateUserUsersPostResponse;
 export type UpdateUserResponse = UpdateUserUsersUserIdPutResponse;
 export type DeleteUserResponse = DeleteUserUsersUserIdDeleteResponse;
+export type SetUserStatusResponse = SetUserStatusUsersUserIdStatusPatchResponse;
 export type MyProfileResponse = GetMyProfileProfileMeGetResponse;
 export type UpdateMyProfileResponse = UpdateMyProfileProfileMePutResponse;

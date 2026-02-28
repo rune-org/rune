@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"rune-worker/pkg/messages"
 	"rune-worker/pkg/nodes"
 	"rune-worker/plugin"
 
@@ -19,11 +18,10 @@ var aggregateScript string
 
 // AggregatorNode implements the fan-in pattern.
 type AggregatorNode struct {
-	redisClient  *redis.Client
-	nodeID       string
-	executionID  string
-	lineageStack []messages.StackFrame
-	input        map[string]any
+	redisClient *redis.Client
+	nodeID      string
+	executionID string
+	input       map[string]any
 }
 
 // NewAggregatorNode creates a new AggregatorNode instance.
@@ -35,22 +33,11 @@ func NewAggregatorNode(execCtx plugin.ExecutionContext) *AggregatorNode {
 		}
 	}
 
-	// We need to access LineageStack, but it's not in ExecutionContext directly.
-	// However, it is passed in the NodeExecutionMessage.
-	// Wait, ExecutionContext does NOT have LineageStack.
-	// I need to add LineageStack to ExecutionContext in plugin/node.go and executor.go.
-
-	// For now, I will assume it's added. I will fix this in the next steps.
-	// Or I can pass it via Input? No, it's metadata.
-
-	// Let's assume I add it to ExecutionContext.
-
 	return &AggregatorNode{
 		redisClient: rc,
 		nodeID:      execCtx.NodeID,
 		executionID: execCtx.ExecutionID,
 		input:       execCtx.Input,
-		// lineageStack: execCtx.LineageStack, // TODO: Add this
 	}
 }
 
@@ -60,8 +47,6 @@ func (n *AggregatorNode) Execute(ctx context.Context, execCtx plugin.ExecutionCo
 		return nil, fmt.Errorf("aggregator node requires redis client")
 	}
 
-	// Get LineageStack from context (I need to add it to ExecutionContext first)
-	// For now, let's assume I can get it.
 	stack := execCtx.LineageStack
 	if len(stack) == 0 {
 		return nil, fmt.Errorf("aggregator node must be executed within a split context")

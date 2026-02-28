@@ -1,8 +1,8 @@
 from typing import AsyncGenerator
-from aio_pika import connect_robust, RobustConnection
+
+from aio_pika import RobustConnection, connect_robust
 
 from src.core.config import get_settings
-
 
 # Global RabbitMQ connection pool (singleton pattern)
 _rabbitmq_connection: RobustConnection | None = None

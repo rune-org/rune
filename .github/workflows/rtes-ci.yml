@@ -24,7 +24,7 @@ jobs:
       run:
         working-directory: ${{ env.WORKING_DIRECTORY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Rust Toolchain (stable)
         uses: dtolnay/rust-toolchain@stable
@@ -64,14 +64,14 @@ jobs:
       run:
         working-directory: ${{ env.WORKING_DIRECTORY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       # This step leverages the Cargo Chef setup in the Dockerfile for optimal caching
       - name: Build Docker Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ${{ env.WORKING_DIRECTORY }}
           file: ${{ env.WORKING_DIRECTORY }}/Dockerfile

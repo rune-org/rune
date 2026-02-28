@@ -15,7 +15,7 @@ export const IfNode = memo(function IfNode({ id, data }: NodeProps<Node<IfData>>
   return (
     <div
       className={cn(
-        "rune-node relative w-[200px] rounded-[var(--radius)] border-2 bg-node-flow-bg p-3 text-sm text-foreground shadow-sm transition-all duration-300",
+        "rune-node relative w-[200px] rounded-[var(--radius)] border-2 bg-node-flow-bg p-3 text-sm text-foreground shadow-sm transition-[border-color,box-shadow,background-color] duration-200",
         executionStatus !== "idle" && executionStatus,
         executionStatus === "running" && "animate-pulse-subtle"
       )}

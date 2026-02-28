@@ -22,12 +22,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version: "1.26"
 
       - name: Tidy modules
         run: go mod tidy
@@ -40,17 +40,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version: "1.26"
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.5
+          version: v2.10.1
           working-directory: ./services/rune-worker
           args: --timeout=5m
 
@@ -61,12 +61,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version: "1.26"
 
       - name: Build
         run: go build -v ./...
@@ -79,12 +79,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version: "1.26"
 
       - name: Run Unit Tests
         run: go test -v ./...
@@ -97,7 +97,7 @@ jobs:
 
     services:
       redis:
-        image: redis:7-alpine
+        image: redis:8-alpine
         ports:
           - 6379:6379
         options: >-
@@ -107,7 +107,7 @@ jobs:
           --health-retries 5
 
       rabbitmq:
-        image: rabbitmq:3-management-alpine
+        image: rabbitmq:4-management-alpine
         ports:
           - 5672:5672
           - 15672:15672
@@ -122,12 +122,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version: "1.26"
 
       - name: Wait for services
         run: |
@@ -151,7 +151,7 @@ jobs:
 
     services:
       redis:
-        image: redis:7-alpine
+        image: redis:8-alpine
         ports:
           - 6379:6379
         options: >-
@@ -161,7 +161,7 @@ jobs:
           --health-retries 5
 
       rabbitmq:
-        image: rabbitmq:3-management-alpine
+        image: rabbitmq:4-management-alpine
         ports:
           - 5672:5672
           - 15672:15672
@@ -176,12 +176,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version: "1.26"
 
       - name: Wait for services
         run: |

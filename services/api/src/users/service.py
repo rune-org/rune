@@ -1,29 +1,18 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.db.models import User
-from src.core.exceptions import AlreadyExists, NotFound, Unauthorized
-from src.users.schemas import UserCreate, AdminUserUpdate, ProfileUpdate
-from src.auth.security import hash_password, verify_password
-import secrets
-import string
+
+from src.core.exceptions import AlreadyExists, Forbidden, NotFound, Unauthorized
+from src.core.password import hash_password, verify_password
+from src.db.models import User, UserRole
+from src.users.schemas import AdminUserUpdate, ProfileUpdate, UserCreate
+from src.users.utils import generate_temporary_password, normalize_email
 
 
 class UserService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    def _generate_temporary_password(self) -> str:
-        """
-        Generate a random temporary password.
-        Include uppercase, lowercase, digits, and special characters.
-
-        Returns:
-            8-character temporary password string
-        """
-        alphabet = string.ascii_letters + string.digits + string.punctuation
-        return "".join(secrets.choice(alphabet) for _ in range(8))
-
-    async def validate_email_uniqueness(
+    async def _validate_email_uniqueness(
         self, new_email: str, current_email: str
     ) -> str:
         """
@@ -35,10 +24,10 @@ class UserService:
         Raises:
             AlreadyExists: If email is already taken by another user
         """
-        normalized_email = new_email.lower()
+        normalized_email = normalize_email(new_email)
 
         # Only check if email is actually changing
-        if normalized_email != current_email.lower():
+        if normalized_email != normalize_email(current_email):
             existing_user = await self.get_user_by_email(normalized_email)
             if existing_user:
                 raise AlreadyExists(detail=f"Email {new_email} is already taken")
@@ -58,23 +47,6 @@ class UserService:
         users = result.all()
 
         return users
-
-    async def get_users_for_sharing(self, exclude_user_id: int) -> list[User]:
-        """
-        Retrieve all active users for sharing purposes.
-
-        Args:
-            exclude_user_id: The ID of the current user to exclude from the list
-
-        Returns:
-            List of active User objects (excluding the current user)
-        """
-        statement = select(User).where(
-            User.id != exclude_user_id,
-            User.is_active == True,  # noqa: E712
-        )
-        result = await self.db.exec(statement)
-        return result.all()
 
     async def get_user_by_id(self, user_id: int) -> User:
         """
@@ -97,7 +69,7 @@ class UserService:
         Returns:
             User object if found, None otherwise
         """
-        statement = select(User).where(User.email == email.lower())
+        statement = select(User).where(User.email == normalize_email(email))
 
         # Execute and get first result
         result = await self.db.exec(statement)
@@ -117,7 +89,7 @@ class UserService:
             AlreadyExists: If email is already registered
         """
         # Normalize email to lowercase for case-insensitive checking
-        normalized_email = user_data.email.lower()
+        normalized_email = normalize_email(user_data.email)
 
         # Check if email already exists
         existing_user = await self.get_user_by_email(normalized_email)
@@ -126,7 +98,7 @@ class UserService:
                 detail=f"User with email {user_data.email} already exists"
             )
 
-        temp_password = self._generate_temporary_password()
+        temp_password = generate_temporary_password()
         hashed_password = hash_password(temp_password)
         must_change = True
 
@@ -156,6 +128,44 @@ class UserService:
         await self.db.commit()
 
     # Admin-Specific Operation
+    async def set_user_active_status(
+        self, user_id: int, is_active: bool, admin_id: int
+    ) -> User:
+        """
+        Activate or deactivate a user account.
+
+        Raises:
+            NotFound: If user doesn't exist.
+            Forbidden: If admin tries to deactivate themselves.
+            Forbidden: If deactivating the last active admin.
+        """
+        user = await self.get_user_by_id(user_id)
+
+        if not is_active and user_id == admin_id:
+            raise Forbidden(detail="You cannot deactivate your own account")
+
+        # Guard: ensure at least one other active admin remains
+        if not is_active and user.role == UserRole.ADMIN and user.is_active:
+            statement = select(User).where(
+                User.role == UserRole.ADMIN,
+                User.is_active == True,  # noqa: E712
+                User.id != user_id,
+            )
+            result = await self.db.exec(statement)
+            other_active_admins = result.all()
+            if not other_active_admins:
+                raise Forbidden(
+                    detail="Cannot deactivate the last active administrator"
+                )
+
+        user.is_active = is_active
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user
+
+    # Admin-Specific Operation
     async def admin_update_user(self, user_id: int, user_data: AdminUserUpdate) -> User:
         """
         Update an existing user's information by admin.
@@ -174,7 +184,7 @@ class UserService:
 
         # Validate and normalize email if provided
         if "email" in update_data:
-            update_data["email"] = await self.validate_email_uniqueness(
+            update_data["email"] = await self._validate_email_uniqueness(
                 update_data["email"], user.email
             )
 
@@ -203,7 +213,7 @@ class UserService:
         user = await self.get_user_by_id(user_id)
 
         # Generate a random temporary password
-        temp_password = self._generate_temporary_password()
+        temp_password = generate_temporary_password()
 
         # Hash and update password
         user.hashed_password = hash_password(temp_password)
@@ -233,7 +243,7 @@ class UserService:
 
         # Validate and normalize email if provided
         if "email" in update_data:
-            update_data["email"] = await self.validate_email_uniqueness(
+            update_data["email"] = await self._validate_email_uniqueness(
                 update_data["email"], user.email
             )
 

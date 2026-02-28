@@ -152,28 +152,6 @@ export type ApiResponseFirstAdminSignupResponse = {
 };
 
 /**
- * ApiResponse[FirstTimeSetupStatus]
- */
-export type ApiResponseFirstTimeSetupStatus = {
-    /**
-     * Success
-     *
-     * Whether the request was successful
-     */
-    success?: boolean;
-    /**
-     * Message
-     *
-     * Human-readable message
-     */
-    message?: string;
-    /**
-     * Response data
-     */
-    data: FirstTimeSetupStatus;
-};
-
-/**
  * ApiResponse[List[TemplateSummary]]
  */
 export type ApiResponseListTemplateSummary = {
@@ -288,28 +266,6 @@ export type ApiResponseTokenResponse = {
 };
 
 /**
- * ApiResponse[UserPasswordChangeResponse]
- */
-export type ApiResponseUserPasswordChangeResponse = {
-    /**
-     * Success
-     *
-     * Whether the request was successful
-     */
-    success?: boolean;
-    /**
-     * Message
-     *
-     * Human-readable message
-     */
-    message?: string;
-    /**
-     * Response data
-     */
-    data: UserPasswordChangeResponse;
-};
-
-/**
  * ApiResponse[UserResponse]
  */
 export type ApiResponseUserResponse = {
@@ -417,6 +373,30 @@ export type ApiResponseWorkflowShareResponse = {
      * Response data
      */
     data: WorkflowShareResponse;
+};
+
+/**
+ * ApiResponse[bool]
+ */
+export type ApiResponseBool = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: boolean;
 };
 
 /**
@@ -585,6 +565,22 @@ export type ApiResponseStr = {
      * Response data
      */
     data: string;
+};
+
+/**
+ * ClearThreadResponse
+ *
+ * Response body for clearing a thread.
+ */
+export type ClearThreadResponse = {
+    /**
+     * Success
+     */
+    success: boolean;
+    /**
+     * Message
+     */
+    message: string;
 };
 
 /**
@@ -830,26 +826,6 @@ export type FirstAdminSignupResponse = {
      * Admin's email
      */
     email: string;
-};
-
-/**
- * FirstTimeSetupStatus
- *
- * Response schema for first-time setup status check.
- */
-export type FirstTimeSetupStatus = {
-    /**
-     * Requires Setup
-     *
-     * Whether the system requires first-time admin setup
-     */
-    requires_setup: boolean;
-    /**
-     * Message
-     *
-     * Status message
-     */
-    message: string;
 };
 
 /**
@@ -1141,22 +1117,6 @@ export type UserPasswordChange = {
 };
 
 /**
- * UserPasswordChangeResponse
- */
-export type UserPasswordChangeResponse = {
-    /**
-     * Updated user information
-     */
-    user: UserResponse;
-    /**
-     * Access Token
-     *
-     * New access token with updated must_change_password flag
-     */
-    access_token: string;
-};
-
-/**
  * UserResponse
  */
 export type UserResponse = {
@@ -1211,6 +1171,18 @@ export type UserResponse = {
  * User role enumeration.
  */
 export type UserRole = 'user' | 'admin';
+
+/**
+ * UserStatusUpdate
+ */
+export type UserStatusUpdate = {
+    /**
+     * Is Active
+     *
+     * Set to true to activate, false to deactivate
+     */
+    is_active: boolean;
+};
 
 /**
  * ValidationError
@@ -1316,6 +1288,7 @@ export type WorkflowListItem = {
      * Is Active
      */
     is_active: boolean;
+    role: WorkflowRole;
 };
 
 /**
@@ -1516,46 +1489,46 @@ export type LogoutAuthLogoutPostResponses = {
 
 export type LogoutAuthLogoutPostResponse = LogoutAuthLogoutPostResponses[keyof LogoutAuthLogoutPostResponses];
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetData = {
+export type CheckSetupStatusSetupStatusGetData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/auth/first-time-setup';
+    url: '/setup/status';
 };
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetResponses = {
+export type CheckSetupStatusSetupStatusGetResponses = {
     /**
      * Successful Response
      */
-    200: ApiResponseFirstTimeSetupStatus;
+    200: ApiResponseBool;
 };
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetResponse = CheckFirstTimeSetupAuthFirstTimeSetupGetResponses[keyof CheckFirstTimeSetupAuthFirstTimeSetupGetResponses];
+export type CheckSetupStatusSetupStatusGetResponse = CheckSetupStatusSetupStatusGetResponses[keyof CheckSetupStatusSetupStatusGetResponses];
 
-export type FirstAdminSignupAuthFirstAdminSignupPostData = {
+export type InitializeFirstAdminSetupInitializePostData = {
     body: FirstAdminSignupRequest;
     path?: never;
     query?: never;
-    url: '/auth/first-admin-signup';
+    url: '/setup/initialize';
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostErrors = {
+export type InitializeFirstAdminSetupInitializePostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostError = FirstAdminSignupAuthFirstAdminSignupPostErrors[keyof FirstAdminSignupAuthFirstAdminSignupPostErrors];
+export type InitializeFirstAdminSetupInitializePostError = InitializeFirstAdminSetupInitializePostErrors[keyof InitializeFirstAdminSetupInitializePostErrors];
 
-export type FirstAdminSignupAuthFirstAdminSignupPostResponses = {
+export type InitializeFirstAdminSetupInitializePostResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseFirstAdminSignupResponse;
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostResponse = FirstAdminSignupAuthFirstAdminSignupPostResponses[keyof FirstAdminSignupAuthFirstAdminSignupPostResponses];
+export type InitializeFirstAdminSetupInitializePostResponse = InitializeFirstAdminSetupInitializePostResponses[keyof InitializeFirstAdminSetupInitializePostResponses];
 
 export type ListWorkflowsWorkflowsGetData = {
     body?: never;
@@ -1970,21 +1943,21 @@ export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses = {
 
 export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponse = UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses[keyof UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses];
 
-export type ListUsersForSharingUsersSharingGetData = {
+export type ListUsersForSharingUsersDirectoryGetData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/users/sharing';
+    url: '/users/directory';
 };
 
-export type ListUsersForSharingUsersSharingGetResponses = {
+export type ListUsersForSharingUsersDirectoryGetResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseListUserBasicInfo;
 };
 
-export type ListUsersForSharingUsersSharingGetResponse = ListUsersForSharingUsersSharingGetResponses[keyof ListUsersForSharingUsersSharingGetResponses];
+export type ListUsersForSharingUsersDirectoryGetResponse = ListUsersForSharingUsersDirectoryGetResponses[keyof ListUsersForSharingUsersDirectoryGetResponses];
 
 export type GetAllUsersUsersGetData = {
     body?: never;
@@ -2117,7 +2090,7 @@ export type UpdateUserUsersUserIdPutResponses = {
 
 export type UpdateUserUsersUserIdPutResponse = UpdateUserUsersUserIdPutResponses[keyof UpdateUserUsersUserIdPutResponses];
 
-export type ResetUserPasswordUsersUserIdResetPasswordPostData = {
+export type ResetUserPasswordUsersUserIdPasswordPostData = {
     body?: never;
     path: {
         /**
@@ -2126,26 +2099,56 @@ export type ResetUserPasswordUsersUserIdResetPasswordPostData = {
         user_id: number;
     };
     query?: never;
-    url: '/users/{user_id}/reset-password';
+    url: '/users/{user_id}/password';
 };
 
-export type ResetUserPasswordUsersUserIdResetPasswordPostErrors = {
+export type ResetUserPasswordUsersUserIdPasswordPostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type ResetUserPasswordUsersUserIdResetPasswordPostError = ResetUserPasswordUsersUserIdResetPasswordPostErrors[keyof ResetUserPasswordUsersUserIdResetPasswordPostErrors];
+export type ResetUserPasswordUsersUserIdPasswordPostError = ResetUserPasswordUsersUserIdPasswordPostErrors[keyof ResetUserPasswordUsersUserIdPasswordPostErrors];
 
-export type ResetUserPasswordUsersUserIdResetPasswordPostResponses = {
+export type ResetUserPasswordUsersUserIdPasswordPostResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseAdminPasswordResetResponse;
 };
 
-export type ResetUserPasswordUsersUserIdResetPasswordPostResponse = ResetUserPasswordUsersUserIdResetPasswordPostResponses[keyof ResetUserPasswordUsersUserIdResetPasswordPostResponses];
+export type ResetUserPasswordUsersUserIdPasswordPostResponse = ResetUserPasswordUsersUserIdPasswordPostResponses[keyof ResetUserPasswordUsersUserIdPasswordPostResponses];
+
+export type SetUserStatusUsersUserIdStatusPatchData = {
+    body: UserStatusUpdate;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: number;
+    };
+    query?: never;
+    url: '/users/{user_id}/status';
+};
+
+export type SetUserStatusUsersUserIdStatusPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetUserStatusUsersUserIdStatusPatchError = SetUserStatusUsersUserIdStatusPatchErrors[keyof SetUserStatusUsersUserIdStatusPatchErrors];
+
+export type SetUserStatusUsersUserIdStatusPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseUserResponse;
+};
+
+export type SetUserStatusUsersUserIdStatusPatchResponse = SetUserStatusUsersUserIdStatusPatchResponses[keyof SetUserStatusUsersUserIdStatusPatchResponses];
 
 export type GetMyProfileProfileMeGetData = {
     body?: never;
@@ -2188,30 +2191,30 @@ export type UpdateMyProfileProfileMePutResponses = {
 
 export type UpdateMyProfileProfileMePutResponse = UpdateMyProfileProfileMePutResponses[keyof UpdateMyProfileProfileMePutResponses];
 
-export type ChangeMyPasswordProfileMeChangePasswordPostData = {
+export type ChangeMyPasswordProfileMePasswordPostData = {
     body: UserPasswordChange;
     path?: never;
     query?: never;
-    url: '/profile/me/change-password';
+    url: '/profile/me/password';
 };
 
-export type ChangeMyPasswordProfileMeChangePasswordPostErrors = {
+export type ChangeMyPasswordProfileMePasswordPostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type ChangeMyPasswordProfileMeChangePasswordPostError = ChangeMyPasswordProfileMeChangePasswordPostErrors[keyof ChangeMyPasswordProfileMeChangePasswordPostErrors];
+export type ChangeMyPasswordProfileMePasswordPostError = ChangeMyPasswordProfileMePasswordPostErrors[keyof ChangeMyPasswordProfileMePasswordPostErrors];
 
-export type ChangeMyPasswordProfileMeChangePasswordPostResponses = {
+export type ChangeMyPasswordProfileMePasswordPostResponses = {
     /**
      * Successful Response
      */
-    200: ApiResponseUserPasswordChangeResponse;
+    200: ApiResponseUserResponse;
 };
 
-export type ChangeMyPasswordProfileMeChangePasswordPostResponse = ChangeMyPasswordProfileMeChangePasswordPostResponses[keyof ChangeMyPasswordProfileMeChangePasswordPostResponses];
+export type ChangeMyPasswordProfileMePasswordPostResponse = ChangeMyPasswordProfileMePasswordPostResponses[keyof ChangeMyPasswordProfileMePasswordPostResponses];
 
 export type ListTemplatesTemplatesGetData = {
     body?: never;
@@ -2615,7 +2618,7 @@ export type GetMyShareInfoCredentialsCredentialIdMyShareGetResponses = {
 
 export type GetMyShareInfoCredentialsCredentialIdMyShareGetResponse = GetMyShareInfoCredentialsCredentialIdMyShareGetResponses[keyof GetMyShareInfoCredentialsCredentialIdMyShareGetResponses];
 
-export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostData = {
+export type GenerateWorkflowDocsScrybWorkflowIdPostData = {
     body: GenerateWorkflowDocsRequest;
     path: {
         /**
@@ -2624,26 +2627,56 @@ export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostData = {
         workflow_id: number;
     };
     query?: never;
-    url: '/workflows/{workflow_id}/docs';
+    url: '/scryb/{workflow_id}';
 };
 
-export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors = {
+export type GenerateWorkflowDocsScrybWorkflowIdPostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostError = GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors[keyof GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors];
+export type GenerateWorkflowDocsScrybWorkflowIdPostError = GenerateWorkflowDocsScrybWorkflowIdPostErrors[keyof GenerateWorkflowDocsScrybWorkflowIdPostErrors];
 
-export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses = {
+export type GenerateWorkflowDocsScrybWorkflowIdPostResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseWorkflowDetailDocs;
 };
 
-export type GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponse = GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses[keyof GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses];
+export type GenerateWorkflowDocsScrybWorkflowIdPostResponse = GenerateWorkflowDocsScrybWorkflowIdPostResponses[keyof GenerateWorkflowDocsScrybWorkflowIdPostResponses];
+
+export type ClearThreadSmithWorkflowIdDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/smith/{workflow_id}';
+};
+
+export type ClearThreadSmithWorkflowIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ClearThreadSmithWorkflowIdDeleteError = ClearThreadSmithWorkflowIdDeleteErrors[keyof ClearThreadSmithWorkflowIdDeleteErrors];
+
+export type ClearThreadSmithWorkflowIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: ClearThreadResponse;
+};
+
+export type ClearThreadSmithWorkflowIdDeleteResponse = ClearThreadSmithWorkflowIdDeleteResponses[keyof ClearThreadSmithWorkflowIdDeleteResponses];
 
 export type GenerateWorkflowSmithWorkflowIdPostData = {
     body: GenerateWorkflowRequest;

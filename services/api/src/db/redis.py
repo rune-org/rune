@@ -1,8 +1,8 @@
 from typing import AsyncGenerator
+
 from redis.asyncio import Redis
 
 from src.core.config import get_settings
-
 
 # Global Redis connection pool
 _redis_client: Redis | None = None

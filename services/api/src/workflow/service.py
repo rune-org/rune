@@ -1,10 +1,11 @@
 import copy
-from sqlmodel import select, delete
+
+from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.db.models import Workflow, WorkflowUser, WorkflowRole, WorkflowCredential
-from src.core.exceptions import NotFound, Forbidden
+from src.core.exceptions import Forbidden, NotFound
 from src.credentials.encryption import get_encryptor
+from src.db.models import Workflow, WorkflowCredential, WorkflowRole, WorkflowUser
 
 
 class WorkflowService:
@@ -18,14 +19,14 @@ class WorkflowService:
         self.db = db
         self.encryptor = get_encryptor()
 
-    async def list_for_user(self, user_id: int) -> list[Workflow]:
+    async def list_for_user(self, user_id: int) -> list[tuple[Workflow, WorkflowRole]]:
         """Return workflows owned by `user_id`, newest first.
 
         Used for the `GET /workflows` endpoint.
         """
         # Join the workflows to the junction table and filter by the user_id
         statement = (
-            select(Workflow)
+            select(Workflow, WorkflowUser.role)
             .join(WorkflowUser)
             .where(WorkflowUser.user_id == user_id)
             .order_by(Workflow.created_at.desc())

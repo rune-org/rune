@@ -6,6 +6,7 @@ Uses a cleaner, more maintainable dict-based architecture to reduce code duplica
 """
 
 from typing import Optional
+
 from src.db.models import User, UserRole, WorkflowRole
 
 

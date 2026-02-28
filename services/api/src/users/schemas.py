@@ -1,8 +1,10 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from datetime import datetime
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from src.core.validators import validate_password_strength
 from src.db.models import UserRole
-from src.auth.security import validate_password_strength
 
 
 class UserCreate(BaseModel):
@@ -18,6 +20,12 @@ class AdminUserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
+
+
+class UserStatusUpdate(BaseModel):
+    is_active: bool = Field(
+        ..., description="Set to true to activate, false to deactivate"
+    )
 
 
 class ProfileUpdate(BaseModel):
@@ -66,13 +74,6 @@ class CreateUserResponse(BaseModel):
     user: UserResponse = Field(..., description="Newly created user")
     temporary_password: str = Field(
         ..., description="Temporary password for the user to use on first login"
-    )
-
-
-class UserPasswordChangeResponse(BaseModel):
-    user: UserResponse = Field(..., description="Updated user information")
-    access_token: str = Field(
-        ..., description="New access token with updated must_change_password flag"
     )
 
 

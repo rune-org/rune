@@ -10,11 +10,12 @@ use axum::{
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tokio::sync::broadcast::error::RecvError;
 use tracing::{error, info, warn};
 
 use crate::{
     api::state::AppState,
-    domain::models::{StackFrame, WorkerMessage},
+    domain::models::{NodeExecutionInstance, StackFrame, WorkerMessage},
 };
 
 #[derive(Debug, Serialize, Clone, PartialEq)]
@@ -90,6 +91,44 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
     }
 }
 
+fn dto_from_execution_instance(node_id: String, exec: NodeExecutionInstance) -> WsNodeUpdateDto {
+    WsNodeUpdateDto {
+        node_id:          Some(node_id),
+        input:            exec.input,
+        params:           exec.parameters,
+        output:           exec.output,
+        status:           exec.status,
+        lineage_hash:     exec.lineage_hash,
+        lineage_stack:    exec.lineage_stack,
+        split_node_id:    exec.split_node_id,
+        branch_id:        exec.branch_id,
+        item_index:       exec.item_index,
+        total_items:      exec.total_items,
+        processed_count:  exec.processed_count,
+        aggregator_state: exec.aggregator_state,
+        used_inputs:      exec.used_inputs,
+    }
+}
+
+fn dto_with_status(status: String) -> WsNodeUpdateDto {
+    WsNodeUpdateDto {
+        node_id:          None,
+        input:            None,
+        params:           None,
+        output:           None,
+        status:           Some(status),
+        lineage_hash:     None,
+        lineage_stack:    None,
+        split_node_id:    None,
+        branch_id:        None,
+        item_index:       None,
+        total_items:      None,
+        processed_count:  None,
+        aggregator_state: None,
+        used_inputs:      None,
+    }
+}
+
 /// Query params for WebSocket connection
 #[derive(Debug, Deserialize)]
 pub(crate) struct WsQueryParams {
@@ -155,22 +194,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
         for (node_id, node) in doc.nodes {
             if !node.lineages.is_empty() {
                 for (_, exec) in node.lineages {
-                    let dto = WsNodeUpdateDto {
-                        node_id:          Some(node_id.clone()),
-                        input:            exec.input,
-                        params:           exec.parameters,
-                        output:           exec.output,
-                        status:           exec.status,
-                        lineage_hash:     exec.lineage_hash,
-                        lineage_stack:    exec.lineage_stack,
-                        split_node_id:    exec.split_node_id,
-                        branch_id:        exec.branch_id,
-                        item_index:       exec.item_index,
-                        total_items:      exec.total_items,
-                        processed_count:  exec.processed_count,
-                        aggregator_state: exec.aggregator_state,
-                        used_inputs:      exec.used_inputs,
-                    };
+                    let dto = dto_from_execution_instance(node_id.clone(), exec);
                     if let Ok(json) = serde_json::to_string(&dto)
                         && sender.send(Message::Text(json.into())).await.is_err()
                     {
@@ -178,22 +202,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
                     }
                 }
             } else if let Some(exec) = node.latest {
-                let dto = WsNodeUpdateDto {
-                    node_id:          Some(node_id.clone()),
-                    input:            exec.input,
-                    params:           exec.parameters,
-                    output:           exec.output,
-                    status:           exec.status,
-                    lineage_hash:     exec.lineage_hash,
-                    lineage_stack:    exec.lineage_stack,
-                    split_node_id:    exec.split_node_id,
-                    branch_id:        exec.branch_id,
-                    item_index:       exec.item_index,
-                    total_items:      exec.total_items,
-                    processed_count:  exec.processed_count,
-                    aggregator_state: exec.aggregator_state,
-                    used_inputs:      exec.used_inputs,
-                };
+                let dto = dto_from_execution_instance(node_id.clone(), exec);
                 if let Ok(json) = serde_json::to_string(&dto)
                     && sender.send(Message::Text(json.into())).await.is_err()
                 {
@@ -202,22 +211,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
             }
         }
         if let Some(status) = doc.status {
-            let dto = WsNodeUpdateDto {
-                node_id:          None,
-                input:            None,
-                params:           None,
-                output:           None,
-                status:           Some(status),
-                lineage_hash:     None,
-                lineage_stack:    None,
-                split_node_id:    None,
-                branch_id:        None,
-                item_index:       None,
-                total_items:      None,
-                processed_count:  None,
-                aggregator_state: None,
-                used_inputs:      None,
-            };
+            let dto = dto_with_status(status);
             if let Ok(json) = serde_json::to_string(&dto)
                 && sender.send(Message::Text(json.into())).await.is_err()
             {
@@ -228,7 +222,20 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
 
     let mut send_task = tokio::spawn(async move {
         let execution_id = params.execution_id.clone();
-        while let Ok(msg) = rx.recv().await {
+        loop {
+            let msg = match rx.recv().await {
+                Ok(msg) => msg,
+                Err(RecvError::Lagged(skipped)) => {
+                    warn!(
+                        execution_id = %execution_id,
+                        skipped,
+                        "WebSocket receiver lagged; skipping stale messages"
+                    );
+                    continue;
+                },
+                Err(RecvError::Closed) => break,
+            };
+
             let should_send = match &msg {
                 WorkerMessage::NodeStatus(s) => s.execution_id == execution_id,
                 WorkerMessage::WorkflowCompletion(c) => c.execution_id == execution_id,
@@ -262,4 +269,82 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
     };
 
     info!("WebSocket disconnected for execution: {}", exec_id);
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::{WsNodeUpdateDto, dto_from_execution_instance, dto_with_status};
+    use crate::domain::models::{
+        CompletionMessage,
+        NodeExecutionInstance,
+        NodeStatusMessage,
+        WorkerMessage,
+    };
+
+    #[test]
+    fn dto_from_worker_node_status_preserves_core_fields() {
+        let message = WorkerMessage::NodeStatus(Box::new(NodeStatusMessage {
+            workflow_id:      "wf-1".to_string(),
+            execution_id:     "exec-1".to_string(),
+            node_id:          "node-1".to_string(),
+            node_name:        "Node".to_string(),
+            status:           "running".to_string(),
+            input:            Some(json!({"a": 1})),
+            parameters:       Some(json!({"b": 2})),
+            output:           None,
+            error:            None,
+            executed_at:      "2026-01-01T00:00:00Z".to_string(),
+            duration_ms:      5,
+            branch_id:        None,
+            split_node_id:    None,
+            item_index:       None,
+            total_items:      None,
+            processed_count:  None,
+            aggregator_state: None,
+            lineage_stack:    None,
+            lineage_hash:     None,
+            used_inputs:      None,
+        }));
+
+        let dto = WsNodeUpdateDto::from(&message);
+        assert_eq!(dto.node_id.as_deref(), Some("node-1"));
+        assert_eq!(dto.status.as_deref(), Some("running"));
+        assert_eq!(dto.input, Some(json!({"a": 1})));
+    }
+
+    #[test]
+    fn dto_from_worker_completion_sets_completed_status() {
+        let message = WorkerMessage::WorkflowCompletion(Box::new(CompletionMessage {
+            workflow_id:       "wf-1".to_string(),
+            execution_id:      "exec-1".to_string(),
+            status:            "completed".to_string(),
+            final_context:     json!({}),
+            completed_at:      "2026-01-01T00:00:00Z".to_string(),
+            total_duration_ms: 10,
+            failure_reason:    None,
+        }));
+
+        let dto = WsNodeUpdateDto::from(&message);
+        assert_eq!(dto.node_id, None);
+        assert_eq!(dto.status.as_deref(), Some("completed"));
+    }
+
+    #[test]
+    fn history_helpers_build_expected_dtos() {
+        let exec = NodeExecutionInstance {
+            input: Some(json!({"input": true})),
+            status: Some("success".to_string()),
+            ..NodeExecutionInstance::default()
+        };
+
+        let node_dto = dto_from_execution_instance("node-123".to_string(), exec);
+        assert_eq!(node_dto.node_id.as_deref(), Some("node-123"));
+        assert_eq!(node_dto.status.as_deref(), Some("success"));
+
+        let status_dto = dto_with_status("completed".to_string());
+        assert_eq!(status_dto.node_id, None);
+        assert_eq!(status_dto.status.as_deref(), Some("completed"));
+    }
 }

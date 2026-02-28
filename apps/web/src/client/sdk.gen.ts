@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ChangeMyPasswordProfileMeChangePasswordPostData, ChangeMyPasswordProfileMeChangePasswordPostErrors, ChangeMyPasswordProfileMeChangePasswordPostResponses, CheckFirstTimeSetupAuthFirstTimeSetupGetData, CheckFirstTimeSetupAuthFirstTimeSetupGetResponses, CreateCredentialCredentialsPostData, CreateCredentialCredentialsPostErrors, CreateCredentialCredentialsPostResponses, CreateTemplateTemplatesPostData, CreateTemplateTemplatesPostErrors, CreateTemplateTemplatesPostResponses, CreateUserUsersPostData, CreateUserUsersPostErrors, CreateUserUsersPostResponses, CreateWorkflowWorkflowsPostData, CreateWorkflowWorkflowsPostErrors, CreateWorkflowWorkflowsPostResponses, DeleteCredentialCredentialsCredentialIdDeleteData, DeleteCredentialCredentialsCredentialIdDeleteErrors, DeleteCredentialCredentialsCredentialIdDeleteResponses, DeleteTemplateTemplatesTemplateIdDeleteData, DeleteTemplateTemplatesTemplateIdDeleteErrors, DeleteTemplateTemplatesTemplateIdDeleteResponses, DeleteUserUsersUserIdDeleteData, DeleteUserUsersUserIdDeleteErrors, DeleteUserUsersUserIdDeleteResponses, DeleteWorkflowWorkflowsWorkflowIdDeleteData, DeleteWorkflowWorkflowsWorkflowIdDeleteErrors, DeleteWorkflowWorkflowsWorkflowIdDeleteResponses, FirstAdminSignupAuthFirstAdminSignupPostData, FirstAdminSignupAuthFirstAdminSignupPostErrors, FirstAdminSignupAuthFirstAdminSignupPostResponses, GenerateNewWorkflowSmithPostData, GenerateNewWorkflowSmithPostErrors, GenerateNewWorkflowSmithPostResponses, GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostData, GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors, GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses, GenerateWorkflowSmithWorkflowIdPostData, GenerateWorkflowSmithWorkflowIdPostErrors, GenerateWorkflowSmithWorkflowIdPostResponses, GetAllUsersUsersGetData, GetAllUsersUsersGetResponses, GetCredentialCredentialsCredentialIdGetData, GetCredentialCredentialsCredentialIdGetErrors, GetCredentialCredentialsCredentialIdGetResponses, GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetData, GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetErrors, GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponses, GetMyProfileProfileMeGetData, GetMyProfileProfileMeGetResponses, GetMyShareInfoCredentialsCredentialIdMyShareGetData, GetMyShareInfoCredentialsCredentialIdMyShareGetErrors, GetMyShareInfoCredentialsCredentialIdMyShareGetResponses, GetTemplateTemplatesTemplateIdGetData, GetTemplateTemplatesTemplateIdGetErrors, GetTemplateTemplatesTemplateIdGetResponses, GetUserByIdUsersUserIdGetData, GetUserByIdUsersUserIdGetErrors, GetUserByIdUsersUserIdGetResponses, GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetData, GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetErrors, GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponses, GetWorkflowWorkflowsWorkflowIdGetData, GetWorkflowWorkflowsWorkflowIdGetErrors, GetWorkflowWorkflowsWorkflowIdGetResponses, ListCredentialsCredentialsGetData, ListCredentialsCredentialsGetResponses, ListCredentialsDropdownCredentialsDropdownGetData, ListCredentialsDropdownCredentialsDropdownGetResponses, ListCredentialSharesCredentialsCredentialIdSharesGetData, ListCredentialSharesCredentialsCredentialIdSharesGetErrors, ListCredentialSharesCredentialsCredentialIdSharesGetResponses, ListTemplatesTemplatesGetData, ListTemplatesTemplatesGetResponses, ListUsersForSharingUsersSharingGetData, ListUsersForSharingUsersSharingGetResponses, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetData, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetErrors, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetResponses, ListWorkflowsWorkflowsGetData, ListWorkflowsWorkflowsGetResponses, LoginAuthLoginPostData, LoginAuthLoginPostErrors, LoginAuthLoginPostResponses, LogoutAuthLogoutPostData, LogoutAuthLogoutPostResponses, RefreshAuthRefreshPostData, RefreshAuthRefreshPostErrors, RefreshAuthRefreshPostResponses, ResetUserPasswordUsersUserIdResetPasswordPostData, ResetUserPasswordUsersUserIdResetPasswordPostErrors, ResetUserPasswordUsersUserIdResetPasswordPostResponses, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteData, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteErrors, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteResponses, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteData, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteErrors, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteResponses, RunWorkflowWorkflowsWorkflowIdRunPostData, RunWorkflowWorkflowsWorkflowIdRunPostErrors, RunWorkflowWorkflowsWorkflowIdRunPostResponses, ShareCredentialCredentialsCredentialIdSharePostData, ShareCredentialCredentialsCredentialIdSharePostErrors, ShareCredentialCredentialsCredentialIdSharePostResponses, ShareWorkflowWorkflowsWorkflowIdSharePostData, ShareWorkflowWorkflowsWorkflowIdSharePostErrors, ShareWorkflowWorkflowsWorkflowIdSharePostResponses, UpdateCredentialCredentialsCredentialIdPatchData, UpdateCredentialCredentialsCredentialIdPatchErrors, UpdateCredentialCredentialsCredentialIdPatchResponses, UpdateMyProfileProfileMePutData, UpdateMyProfileProfileMePutErrors, UpdateMyProfileProfileMePutResponses, UpdateNameWorkflowsWorkflowIdNamePutData, UpdateNameWorkflowsWorkflowIdNamePutErrors, UpdateNameWorkflowsWorkflowIdNamePutResponses, UpdateStatusWorkflowsWorkflowIdStatusPutData, UpdateStatusWorkflowsWorkflowIdStatusPutErrors, UpdateStatusWorkflowsWorkflowIdStatusPutResponses, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchData, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchErrors, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses, UpdateUserUsersUserIdPutData, UpdateUserUsersUserIdPutErrors, UpdateUserUsersUserIdPutResponses, UpdateWorkflowDataWorkflowsWorkflowIdDataPutData, UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors, UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses, UseTemplateTemplatesTemplateIdUsePostData, UseTemplateTemplatesTemplateIdUsePostErrors, UseTemplateTemplatesTemplateIdUsePostResponses } from './types.gen';
+import type { ChangeMyPasswordProfileMePasswordPostData, ChangeMyPasswordProfileMePasswordPostErrors, ChangeMyPasswordProfileMePasswordPostResponses, CheckSetupStatusSetupStatusGetData, CheckSetupStatusSetupStatusGetResponses, ClearThreadSmithWorkflowIdDeleteData, ClearThreadSmithWorkflowIdDeleteErrors, ClearThreadSmithWorkflowIdDeleteResponses, CreateCredentialCredentialsPostData, CreateCredentialCredentialsPostErrors, CreateCredentialCredentialsPostResponses, CreateTemplateTemplatesPostData, CreateTemplateTemplatesPostErrors, CreateTemplateTemplatesPostResponses, CreateUserUsersPostData, CreateUserUsersPostErrors, CreateUserUsersPostResponses, CreateWorkflowWorkflowsPostData, CreateWorkflowWorkflowsPostErrors, CreateWorkflowWorkflowsPostResponses, DeleteCredentialCredentialsCredentialIdDeleteData, DeleteCredentialCredentialsCredentialIdDeleteErrors, DeleteCredentialCredentialsCredentialIdDeleteResponses, DeleteTemplateTemplatesTemplateIdDeleteData, DeleteTemplateTemplatesTemplateIdDeleteErrors, DeleteTemplateTemplatesTemplateIdDeleteResponses, DeleteUserUsersUserIdDeleteData, DeleteUserUsersUserIdDeleteErrors, DeleteUserUsersUserIdDeleteResponses, DeleteWorkflowWorkflowsWorkflowIdDeleteData, DeleteWorkflowWorkflowsWorkflowIdDeleteErrors, DeleteWorkflowWorkflowsWorkflowIdDeleteResponses, GenerateNewWorkflowSmithPostData, GenerateNewWorkflowSmithPostErrors, GenerateNewWorkflowSmithPostResponses, GenerateWorkflowDocsScrybWorkflowIdPostData, GenerateWorkflowDocsScrybWorkflowIdPostErrors, GenerateWorkflowDocsScrybWorkflowIdPostResponses, GenerateWorkflowSmithWorkflowIdPostData, GenerateWorkflowSmithWorkflowIdPostErrors, GenerateWorkflowSmithWorkflowIdPostResponses, GetAllUsersUsersGetData, GetAllUsersUsersGetResponses, GetCredentialCredentialsCredentialIdGetData, GetCredentialCredentialsCredentialIdGetErrors, GetCredentialCredentialsCredentialIdGetResponses, GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetData, GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetErrors, GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponses, GetMyProfileProfileMeGetData, GetMyProfileProfileMeGetResponses, GetMyShareInfoCredentialsCredentialIdMyShareGetData, GetMyShareInfoCredentialsCredentialIdMyShareGetErrors, GetMyShareInfoCredentialsCredentialIdMyShareGetResponses, GetTemplateTemplatesTemplateIdGetData, GetTemplateTemplatesTemplateIdGetErrors, GetTemplateTemplatesTemplateIdGetResponses, GetUserByIdUsersUserIdGetData, GetUserByIdUsersUserIdGetErrors, GetUserByIdUsersUserIdGetResponses, GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetData, GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetErrors, GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponses, GetWorkflowWorkflowsWorkflowIdGetData, GetWorkflowWorkflowsWorkflowIdGetErrors, GetWorkflowWorkflowsWorkflowIdGetResponses, InitializeFirstAdminSetupInitializePostData, InitializeFirstAdminSetupInitializePostErrors, InitializeFirstAdminSetupInitializePostResponses, ListCredentialsCredentialsGetData, ListCredentialsCredentialsGetResponses, ListCredentialsDropdownCredentialsDropdownGetData, ListCredentialsDropdownCredentialsDropdownGetResponses, ListCredentialSharesCredentialsCredentialIdSharesGetData, ListCredentialSharesCredentialsCredentialIdSharesGetErrors, ListCredentialSharesCredentialsCredentialIdSharesGetResponses, ListTemplatesTemplatesGetData, ListTemplatesTemplatesGetResponses, ListUsersForSharingUsersDirectoryGetData, ListUsersForSharingUsersDirectoryGetResponses, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetData, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetErrors, ListWorkflowPermissionsWorkflowsWorkflowIdPermissionsGetResponses, ListWorkflowsWorkflowsGetData, ListWorkflowsWorkflowsGetResponses, LoginAuthLoginPostData, LoginAuthLoginPostErrors, LoginAuthLoginPostResponses, LogoutAuthLogoutPostData, LogoutAuthLogoutPostResponses, RefreshAuthRefreshPostData, RefreshAuthRefreshPostErrors, RefreshAuthRefreshPostResponses, ResetUserPasswordUsersUserIdPasswordPostData, ResetUserPasswordUsersUserIdPasswordPostErrors, ResetUserPasswordUsersUserIdPasswordPostResponses, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteData, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteErrors, RevokeAccessWorkflowsWorkflowIdShareUserIdDeleteResponses, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteData, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteErrors, RevokeCredentialAccessCredentialsCredentialIdShareUserIdDeleteResponses, RunWorkflowWorkflowsWorkflowIdRunPostData, RunWorkflowWorkflowsWorkflowIdRunPostErrors, RunWorkflowWorkflowsWorkflowIdRunPostResponses, SetUserStatusUsersUserIdStatusPatchData, SetUserStatusUsersUserIdStatusPatchErrors, SetUserStatusUsersUserIdStatusPatchResponses, ShareCredentialCredentialsCredentialIdSharePostData, ShareCredentialCredentialsCredentialIdSharePostErrors, ShareCredentialCredentialsCredentialIdSharePostResponses, ShareWorkflowWorkflowsWorkflowIdSharePostData, ShareWorkflowWorkflowsWorkflowIdSharePostErrors, ShareWorkflowWorkflowsWorkflowIdSharePostResponses, UpdateCredentialCredentialsCredentialIdPatchData, UpdateCredentialCredentialsCredentialIdPatchErrors, UpdateCredentialCredentialsCredentialIdPatchResponses, UpdateMyProfileProfileMePutData, UpdateMyProfileProfileMePutErrors, UpdateMyProfileProfileMePutResponses, UpdateNameWorkflowsWorkflowIdNamePutData, UpdateNameWorkflowsWorkflowIdNamePutErrors, UpdateNameWorkflowsWorkflowIdNamePutResponses, UpdateStatusWorkflowsWorkflowIdStatusPutData, UpdateStatusWorkflowsWorkflowIdStatusPutErrors, UpdateStatusWorkflowsWorkflowIdStatusPutResponses, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchData, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchErrors, UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponses, UpdateUserUsersUserIdPutData, UpdateUserUsersUserIdPutErrors, UpdateUserUsersUserIdPutResponses, UpdateWorkflowDataWorkflowsWorkflowIdDataPutData, UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors, UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses, UseTemplateTemplatesTemplateIdUsePostData, UseTemplateTemplatesTemplateIdUsePostErrors, UseTemplateTemplatesTemplateIdUsePostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -62,15 +62,15 @@ export const logoutAuthLogoutPost = <ThrowOnError extends boolean = false>(optio
  *
  * Check if the system requires first-time admin setup. Returns true if no users exist.
  */
-export const checkFirstTimeSetupAuthFirstTimeSetupGet = <ThrowOnError extends boolean = false>(options?: Options<CheckFirstTimeSetupAuthFirstTimeSetupGetData, ThrowOnError>) => (options?.client ?? client).get<CheckFirstTimeSetupAuthFirstTimeSetupGetResponses, unknown, ThrowOnError>({ url: '/auth/first-time-setup', ...options });
+export const checkSetupStatusSetupStatusGet = <ThrowOnError extends boolean = false>(options?: Options<CheckSetupStatusSetupStatusGetData, ThrowOnError>) => (options?.client ?? client).get<CheckSetupStatusSetupStatusGetResponses, unknown, ThrowOnError>({ url: '/setup/status', ...options });
 
 /**
- * First-time admin signup
+ * Initialize system with first admin
  *
- * Create the first admin account. Only available when no users exist in the system. Includes race condition protection.
+ * Create the first admin account. Only available when no users exist in the system.
  */
-export const firstAdminSignupAuthFirstAdminSignupPost = <ThrowOnError extends boolean = false>(options: Options<FirstAdminSignupAuthFirstAdminSignupPostData, ThrowOnError>) => (options.client ?? client).post<FirstAdminSignupAuthFirstAdminSignupPostResponses, FirstAdminSignupAuthFirstAdminSignupPostErrors, ThrowOnError>({
-    url: '/auth/first-admin-signup',
+export const initializeFirstAdminSetupInitializePost = <ThrowOnError extends boolean = false>(options: Options<InitializeFirstAdminSetupInitializePostData, ThrowOnError>) => (options.client ?? client).post<InitializeFirstAdminSetupInitializePostResponses, InitializeFirstAdminSetupInitializePostErrors, ThrowOnError>({
+    url: '/setup/initialize',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -327,13 +327,13 @@ export const updateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatch = <ThrowOnE
 });
 
 /**
- * List users for sharing
+ * List users in directory
  *
- * Get a list of users available for sharing credentials/workflows. Returns minimal user info and excludes the current user.
+ * Retrieve minimal information for all users. This endpoint backs the sharing UI by providing a directory of users.
  */
-export const listUsersForSharingUsersSharingGet = <ThrowOnError extends boolean = false>(options?: Options<ListUsersForSharingUsersSharingGetData, ThrowOnError>) => (options?.client ?? client).get<ListUsersForSharingUsersSharingGetResponses, unknown, ThrowOnError>({
+export const listUsersForSharingUsersDirectoryGet = <ThrowOnError extends boolean = false>(options?: Options<ListUsersForSharingUsersDirectoryGetData, ThrowOnError>) => (options?.client ?? client).get<ListUsersForSharingUsersDirectoryGetResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/users/sharing',
+    url: '/users/directory',
     ...options
 });
 
@@ -405,10 +405,25 @@ export const updateUserUsersUserIdPut = <ThrowOnError extends boolean = false>(o
  *
  * Admin generates a temporary password for a user. User must change it.
  */
-export const resetUserPasswordUsersUserIdResetPasswordPost = <ThrowOnError extends boolean = false>(options: Options<ResetUserPasswordUsersUserIdResetPasswordPostData, ThrowOnError>) => (options.client ?? client).post<ResetUserPasswordUsersUserIdResetPasswordPostResponses, ResetUserPasswordUsersUserIdResetPasswordPostErrors, ThrowOnError>({
+export const resetUserPasswordUsersUserIdPasswordPost = <ThrowOnError extends boolean = false>(options: Options<ResetUserPasswordUsersUserIdPasswordPostData, ThrowOnError>) => (options.client ?? client).post<ResetUserPasswordUsersUserIdPasswordPostResponses, ResetUserPasswordUsersUserIdPasswordPostErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/users/{user_id}/reset-password',
+    url: '/users/{user_id}/password',
     ...options
+});
+
+/**
+ * Activate or deactivate a user
+ *
+ * Set a user's active status. Deactivation immediately revokes refresh tokens.
+ */
+export const setUserStatusUsersUserIdStatusPatch = <ThrowOnError extends boolean = false>(options: Options<SetUserStatusUsersUserIdStatusPatchData, ThrowOnError>) => (options.client ?? client).patch<SetUserStatusUsersUserIdStatusPatchResponses, SetUserStatusUsersUserIdStatusPatchErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/users/{user_id}/status',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -440,11 +455,11 @@ export const updateMyProfileProfileMePut = <ThrowOnError extends boolean = false
 /**
  * Change my password
  *
- * Change your own password. Requires verification of old password. Returns a new access token.
+ * Change your own password. Requires verification of old password. Revokes the current session — re-login required.
  */
-export const changeMyPasswordProfileMeChangePasswordPost = <ThrowOnError extends boolean = false>(options: Options<ChangeMyPasswordProfileMeChangePasswordPostData, ThrowOnError>) => (options.client ?? client).post<ChangeMyPasswordProfileMeChangePasswordPostResponses, ChangeMyPasswordProfileMeChangePasswordPostErrors, ThrowOnError>({
+export const changeMyPasswordProfileMePasswordPost = <ThrowOnError extends boolean = false>(options: Options<ChangeMyPasswordProfileMePasswordPostData, ThrowOnError>) => (options.client ?? client).post<ChangeMyPasswordProfileMePasswordPostResponses, ChangeMyPasswordProfileMePasswordPostErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/profile/me/change-password',
+    url: '/profile/me/password',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -719,14 +734,34 @@ export const getMyShareInfoCredentialsCredentialIdMyShareGet = <ThrowOnError ext
  *
  * Generate documentation for the specified workflow.
  */
-export const generateWorkflowDocsWorkflowsWorkflowIdDocsPost = <ThrowOnError extends boolean = false>(options: Options<GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostData, ThrowOnError>) => (options.client ?? client).post<GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostResponses, GenerateWorkflowDocsWorkflowsWorkflowIdDocsPostErrors, ThrowOnError>({
+export const generateWorkflowDocsScrybWorkflowIdPost = <ThrowOnError extends boolean = false>(options: Options<GenerateWorkflowDocsScrybWorkflowIdPostData, ThrowOnError>) => (options.client ?? client).post<GenerateWorkflowDocsScrybWorkflowIdPostResponses, GenerateWorkflowDocsScrybWorkflowIdPostErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/workflows/{workflow_id}/docs',
+    url: '/scryb/{workflow_id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Clear Smith AI conversation history
+ *
+ * Clear the Smith AI conversation history for a workflow.
+ *
+ * This resets the AI agent's memory for the specified workflow,
+ * allowing the user to start a fresh conversation.
+ *
+ * **Requires:** EDIT permission (OWNER or EDITOR)
+ *
+ * Returns:
+ * - `success`: Whether the thread was cleared successfully
+ * - `message`: A confirmation message
+ */
+export const clearThreadSmithWorkflowIdDelete = <ThrowOnError extends boolean = false>(options: Options<ClearThreadSmithWorkflowIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<ClearThreadSmithWorkflowIdDeleteResponses, ClearThreadSmithWorkflowIdDeleteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/smith/{workflow_id}',
+    ...options
 });
 
 /**

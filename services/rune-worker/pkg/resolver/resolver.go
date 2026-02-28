@@ -2,9 +2,7 @@ package resolver
 
 import (
 	"fmt"
-	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -139,126 +137,26 @@ func (r *Resolver) resolveString(s string) (interface{}, error) {
 
 // resolveReference resolves a single reference like $node_name.path.to.field
 func (r *Resolver) resolveReference(ref string) (interface{}, error) {
-	if !strings.HasPrefix(ref, "$") {
-		return ref, nil
+	value, key, err := ResolveReferenceValue(r.context, ref, false)
+	if r.usedKeys != nil && key != "" {
+		r.usedKeys[key] = true
 	}
-
-	// Remove the $ prefix
-	path := ref[1:]
-
-	// Split into node name and field path
-	parts := strings.SplitN(path, ".", 2)
-	nodeName := parts[0]
-
-	// Track usage for the resolved node key (context keys are stored with the $ prefix)
-	if r.usedKeys != nil {
-		r.usedKeys["$"+nodeName] = true
+	if err != nil {
+		return nil, err
 	}
-
-	// Get the node data from context
-	nodeData, ok := r.context["$"+nodeName]
-	if !ok {
-		return nil, fmt.Errorf("node '%s' not found in context", nodeName)
-	}
-
-	// If there's no field path, return the entire node data
-	if len(parts) == 1 {
-		return nodeData, nil
-	}
-
-	// Navigate the field path
-	fieldPath := parts[1]
-	return r.navigatePath(nodeData, fieldPath)
+	return value, nil
 }
 
 // navigatePath navigates a nested path like "body.values[0].val"
 func (r *Resolver) navigatePath(data interface{}, path string) (interface{}, error) {
-	current := data
-	segments := r.parsePathSegments(path)
-
-	for i, segment := range segments {
-		// Handle array index access
-		if segment.isArray {
-			current = r.getArrayElement(current, segment.arrayIndex)
-			if current == nil {
-				return nil, fmt.Errorf("array index %d out of bounds at segment %d", segment.arrayIndex, i)
-			}
-			continue
-		}
-
-		// Handle field access
-		currentMap, ok := current.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("cannot access field '%s' on non-object type %T", segment.field, current)
-		}
-
-		value, ok := currentMap[segment.field]
-		if !ok {
-			return nil, fmt.Errorf("field '%s' not found", segment.field)
-		}
-
-		current = value
-	}
-
-	return current, nil
-}
-
-// pathSegment represents a single segment in a path
-type pathSegment struct {
-	field      string
-	isArray    bool
-	arrayIndex int
+	return NavigateValuePath(data, path)
 }
 
 // parsePathSegments parses a path like "body.values[0].val" into segments
 func (r *Resolver) parsePathSegments(path string) []pathSegment {
-	var segments []pathSegment
-	parts := strings.Split(path, ".")
-
-	for _, part := range parts {
-		// Check if this part has array indexing
-		if idx := strings.Index(part, "["); idx != -1 {
-			// Extract field name and array index
-			field := part[:idx]
-			indexStr := part[idx+1 : len(part)-1] // Remove [ and ]
-			arrayIndex, _ := strconv.Atoi(indexStr)
-
-			// Add field segment
-			if field != "" {
-				segments = append(segments, pathSegment{
-					field:   field,
-					isArray: false,
-				})
-			}
-
-			// Add array index segment
-			segments = append(segments, pathSegment{
-				isArray:    true,
-				arrayIndex: arrayIndex,
-			})
-		} else {
-			// Simple field access
-			segments = append(segments, pathSegment{
-				field:   part,
-				isArray: false,
-			})
-		}
+	segments, err := parsePathSegmentsStrict(path)
+	if err != nil {
+		return nil
 	}
-
 	return segments
-}
-
-// getArrayElement safely gets an element from an array/slice
-func (r *Resolver) getArrayElement(data interface{}, index int) interface{} {
-	val := reflect.ValueOf(data)
-
-	if val.Kind() != reflect.Slice && val.Kind() != reflect.Array {
-		return nil
-	}
-
-	if index < 0 || index >= val.Len() {
-		return nil
-	}
-
-	return val.Index(index).Interface()
 }

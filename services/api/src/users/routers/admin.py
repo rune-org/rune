@@ -1,15 +1,17 @@
 from fastapi import APIRouter, Depends, status
-from src.core.dependencies import DatabaseDep, require_admin_role
+
+from src.core.dependencies import RequireAdminRole, require_admin_role
 from src.core.responses import ApiResponse
+from src.users.dependencies import get_user_service
 from src.users.schemas import (
-    UserCreate,
-    AdminUserUpdate,
-    UserResponse,
     AdminPasswordResetResponse,
+    AdminUserUpdate,
     CreateUserResponse,
+    UserCreate,
+    UserResponse,
+    UserStatusUpdate,
 )
 from src.users.service import UserService
-
 
 router = APIRouter(
     prefix="/users",
@@ -18,10 +20,6 @@ router = APIRouter(
         Depends(require_admin_role)
     ],  # All routes require admin role and password change
 )
-
-
-def get_user_service(db: DatabaseDep) -> UserService:
-    return UserService(db=db)
 
 
 @router.get(
@@ -118,7 +116,7 @@ async def update_user(
 
 
 @router.post(
-    "/{user_id}/reset-password",
+    "/{user_id}/password",
     response_model=ApiResponse[AdminPasswordResetResponse],
     summary="Admin resets user password",
     description="Admin generates a temporary password for a user. User must change it.",
@@ -139,6 +137,35 @@ async def reset_user_password(
             temporary_password=temp_password,
             user_id=user_id,
         ),
+    )
+
+
+@router.patch(
+    "/{user_id}/status",
+    response_model=ApiResponse[UserResponse],
+    summary="Activate or deactivate a user",
+    description="Set a user's active status. Deactivation immediately revokes refresh tokens.",
+)
+async def set_user_status(
+    user_id: int,
+    status_data: UserStatusUpdate,
+    current_admin: RequireAdminRole,
+    service: UserService = Depends(get_user_service),
+) -> ApiResponse[UserResponse]:
+    """
+    PATCH /users/{user_id}/status
+    Admin-only endpoint. Revokes refresh tokens immediately on deactivation.
+    """
+    updated_user = await service.set_user_active_status(
+        user_id=user_id,
+        is_active=status_data.is_active,
+        admin_id=current_admin.id,
+    )
+    action = "activated" if status_data.is_active else "deactivated"
+    return ApiResponse(
+        success=True,
+        message=f"User {action} successfully",
+        data=updated_user,
     )
 
 

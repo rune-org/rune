@@ -1,74 +1,12 @@
-import re
 import secrets
-import jwt
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING
 
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError, InvalidHashError
+import jwt
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.config import get_settings
-from src.core.exceptions import TokenExpiredError, InvalidTokenError
+from src.core.exceptions import InvalidTokenError, TokenExpiredError
 from src.db.models import User
-
-if TYPE_CHECKING:
-    from sqlmodel.ext.asyncio.session import AsyncSession
-
-
-ph = PasswordHasher(
-    time_cost=3,
-    memory_cost=65536,
-    parallelism=4,
-    hash_len=32,
-    salt_len=16,
-)
-
-
-def hash_password(password: str) -> str:
-    return ph.hash(password)
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    try:
-        ph.verify(hashed_password, plain_password)
-        return True
-    except (VerifyMismatchError, InvalidHashError):
-        return False
-
-
-def validate_password_strength(password: str) -> tuple[bool, str]:
-    """
-    Validate password strength according to security requirements.
-
-    Requirements:
-    - Minimum length: 8 characters
-    - At least one uppercase letter (A–Z)
-    - At least one lowercase letter (a–z)
-    - At least one number (0–9)
-    - At least one special character (@, #, $, %, !, ?, etc.)
-
-    Returns:
-        tuple[bool, str]: (is_valid, error_message)
-    """
-    if len(password) < 8:
-        return False, "Password must be at least 8 characters long"
-
-    if not re.search(r"[A-Z]", password):
-        return False, "Password must contain at least one uppercase letter (A–Z)"
-
-    if not re.search(r"[a-z]", password):
-        return False, "Password must contain at least one lowercase letter (a–z)"
-
-    if not re.search(r"[0-9]", password):
-        return False, "Password must contain at least one number (0–9)"
-
-    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-        return (
-            False,
-            'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)',
-        )
-
-    return True, ""
 
 
 async def create_access_token(user: User, db: "AsyncSession" = None) -> str:
@@ -98,6 +36,7 @@ async def create_access_token(user: User, db: "AsyncSession" = None) -> str:
         "email": user.email,
         "name": user.name,
         "role": user.role,
+        "is_active": user.is_active,
         "must_change_password": user.must_change_password,
         "iat": now,
         "exp": expire,
@@ -132,6 +71,7 @@ def decode_access_token(token: str) -> User:
             email=payload["email"],
             name=payload["name"],
             role=payload.get("role", "user"),
+            is_active=payload.get("is_active", True),
             must_change_password=payload.get("must_change_password", False),
             created_at=datetime.fromisoformat(payload["created_at"]),
             updated_at=datetime.fromisoformat(payload["updated_at"]),

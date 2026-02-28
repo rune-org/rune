@@ -2,19 +2,16 @@ from fastapi import APIRouter, Depends, Response
 
 from src.auth.schemas import (
     LoginRequest,
-    TokenResponse,
     RefreshRequest,
-    FirstAdminSignupRequest,
-    FirstAdminSignupResponse,
-    FirstTimeSetupStatus,
+    TokenResponse,
 )
 from src.auth.service import AuthService
 from src.auth.token_store import TokenStore
+from src.core.config import get_settings
 from src.core.dependencies import DatabaseDep, RedisDep, get_current_user
 from src.core.exceptions import Unauthorized
 from src.core.responses import ApiResponse
 from src.db.models import User
-
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -49,7 +46,14 @@ async def login(
         raise Unauthorized(detail="Invalid credentials")
 
     token_response = await auth_service.create_auth_response(user)
-    auth_service.set_auth_cookie(response, token_response.access_token)
+    settings = get_settings()
+    response.set_cookie(
+        key=settings.cookie_name,
+        value=token_response.access_token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        max_age=settings.access_token_expire_minutes * 60,
+    )
 
     return ApiResponse(success=True, message="Authenticated", data=token_response)
 
@@ -69,7 +73,14 @@ async def refresh(
         refresh_token=refresh_request.refresh_token,
     )
 
-    auth_service.set_auth_cookie(response, token_response.access_token)
+    settings = get_settings()
+    response.set_cookie(
+        key=settings.cookie_name,
+        value=token_response.access_token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        max_age=settings.access_token_expire_minutes * 60,
+    )
 
     return ApiResponse(success=True, message="Token refreshed", data=token_response)
 
@@ -86,60 +97,11 @@ async def logout(
     auth_service: AuthService = Depends(get_auth_service),
 ) -> ApiResponse[None]:
     await auth_service.logout_user_by_id(user_id=current_user.id)
-    auth_service.clear_auth_cookie(response)
+    settings = get_settings()
+    response.delete_cookie(
+        key=settings.cookie_name,
+        httponly=True,
+        secure=settings.cookie_secure,
+    )
 
     return ApiResponse(success=True, message="Logged out", data=None)
-
-
-@router.get(
-    "/first-time-setup",
-    response_model=ApiResponse[FirstTimeSetupStatus],
-    summary="Check first-time setup status",
-    description="Check if the system requires first-time admin setup. Returns true if no users exist.",
-)
-async def check_first_time_setup(
-    auth_service: AuthService = Depends(get_auth_service),
-) -> ApiResponse[FirstTimeSetupStatus]:
-    requires_setup = await auth_service.is_first_time_setup()
-
-    if requires_setup:
-        message = "First-time setup required. Please create the initial admin account."
-    else:
-        message = "System already configured. Please use the login page."
-
-    status = FirstTimeSetupStatus(
-        requires_setup=requires_setup,
-        message=message,
-    )
-
-    return ApiResponse(
-        success=True,
-        message="First-time setup status retrieved",
-        data=status,
-    )
-
-
-@router.post(
-    "/first-admin-signup",
-    response_model=ApiResponse[FirstAdminSignupResponse],
-    summary="First-time admin signup",
-    description="Create the first admin account. Only available when no users exist in the system. Includes race condition protection.",
-)
-async def first_admin_signup(
-    signup_data: FirstAdminSignupRequest,
-    auth_service: AuthService = Depends(get_auth_service),
-) -> ApiResponse[FirstAdminSignupResponse]:
-    # Create the first admin user (includes race condition protection)
-    admin_user = await auth_service.create_first_admin(signup_data)
-
-    response_data = FirstAdminSignupResponse(
-        user_id=admin_user.id,
-        name=admin_user.name,
-        email=admin_user.email,
-    )
-
-    return ApiResponse(
-        success=True,
-        message="First admin account created",
-        data=response_data,
-    )

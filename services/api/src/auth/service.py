@@ -1,18 +1,14 @@
-from fastapi import Response
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.auth.schemas import TokenResponse, FirstAdminSignupRequest
-from src.auth.security import (
-    create_access_token,
-    generate_refresh_token,
-    hash_password,
-    verify_password,
-)
+from src.auth.schemas import TokenResponse
 from src.auth.token_store import TokenStore
 from src.core.config import get_settings
 from src.core.exceptions import InvalidTokenError, Forbidden
-from src.db.models import User, UserRole
+from src.core.password import hash_password, verify_password
+from src.core.token import create_access_token, generate_refresh_token
+from src.db.models import User
+from src.users.utils import normalize_email
 
 
 class AuthService:
@@ -25,7 +21,7 @@ class AuthService:
         return await self.db.get(User, user_id)
 
     async def get_user_by_email(self, email: str) -> User | None:
-        statement = select(User).where(User.email == email.lower())
+        statement = select(User).where(User.email == normalize_email(email))
         result = await self.db.exec(statement)
         return result.first()
 
@@ -35,6 +31,9 @@ class AuthService:
 
         if not user or not verify_password(password, user.hashed_password):
             return None
+
+        if not user.is_active:
+            raise Forbidden(detail="Account is deactivated")
 
         return user
 
@@ -94,6 +93,9 @@ class AuthService:
         if not user:
             raise InvalidTokenError(detail="User not found")
 
+        if not user.is_active:
+            raise Forbidden(detail="Account is deactivated")
+
         new_access_token = await create_access_token(user, db=self.db)
 
         return TokenResponse(
@@ -106,76 +108,3 @@ class AuthService:
     async def logout_user_by_id(self, user_id: int) -> bool:
         """Logout user by revoking all refresh tokens associated with user ID."""
         return await self.token_store.revoke_user_tokens(user_id)
-
-    def set_auth_cookie(self, response: Response, access_token: str) -> None:
-        """Set authentication cookie in response."""
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            secure=self.settings.cookie_secure,
-            max_age=self.settings.access_token_expire_minutes * 60,
-        )
-
-    def clear_auth_cookie(self, response: Response) -> None:
-        """Clear authentication cookie from response."""
-        response.delete_cookie(
-            key="access_token",
-            httponly=True,
-        )
-
-    async def is_first_time_setup(self) -> bool:
-        """
-        Check if the system requires first-time setup.
-
-        Returns:
-            True if no users exist in the system, False otherwise.
-        """
-        statement = select(User.id).limit(1)
-        result = await self.db.exec(statement)
-        return result.first() is None
-
-    async def create_first_admin(self, signup_data: FirstAdminSignupRequest) -> User:
-        """
-        Create the first admin user in the system.
-
-        This method includes race condition protection by checking the user count
-        within a transaction. If users already exist when this executes, it will
-        raise an AlreadyExists exception.
-
-        Args:
-            signup_data: First admin signup information
-
-        Returns:
-            Created admin user object
-
-        Raises:
-            AlreadyExists: If users already exist or email is taken
-            Forbidden: If system already has users (not first-time setup)
-        """
-        # Double-check that no users exist (race condition protection)
-        if not await self.is_first_time_setup():
-            raise Forbidden(
-                detail="First-time setup is not available. Users already exist in the system."
-            )
-
-        # Normalize email
-        normalized_email = signup_data.email.lower()
-
-        # Create the first admin user with the provided password
-        # No temporary password - user sets their own password directly
-        hashed_password = hash_password(signup_data.password)
-
-        user = User(
-            name=signup_data.name,
-            email=normalized_email,
-            hashed_password=hashed_password,
-            role=UserRole.ADMIN,
-            must_change_password=False,  # User set their own password
-        )
-
-        self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
-
-        return user

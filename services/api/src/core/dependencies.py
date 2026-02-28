@@ -1,15 +1,15 @@
 from typing import Annotated
+
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from redis.asyncio import Redis
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.auth.security import decode_access_token
 from src.core.exceptions import Forbidden, Unauthorized
+from src.core.token import decode_access_token
 from src.db.config import get_db
 from src.db.models import User, UserRole
 from src.db.redis import get_redis
-
 
 # Type aliases for common dependencies using Annotated
 # These make it easier to use dependencies in route handlers
@@ -58,10 +58,12 @@ async def get_current_user(
 
     try:
         user = decode_access_token(access_token)
+        if not user.is_active:
+            raise Forbidden(detail="Account is deactivated")
         return user
     except Exception as e:
         # Re-raise token-specific errors as is, wrap others in Unauthorized
-        if isinstance(e, (Unauthorized,)):
+        if isinstance(e, (Unauthorized, Forbidden)):
             raise
         raise Unauthorized(detail="Invalid access token")
 

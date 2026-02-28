@@ -1,23 +1,22 @@
 import pytest
 from httpx import AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
+
 from src.db.models import User, UserRole
 
 
 @pytest.mark.asyncio
 async def test_first_time_setup_status_when_no_users(client: AsyncClient):
     """
-    Test GET /auth/first-time-setup returns requires_setup=True when no users exist.
+    Test GET /setup/status returns requires_setup=True when no users exist.
     """
-    response = await client.get("/auth/first-time-setup")
+    response = await client.get("/setup/status")
 
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
-    assert data["message"] == "First-time setup status retrieved"
-    assert "data" in data
-    assert data["data"]["requires_setup"] is True
-    assert "first-time setup required" in data["data"]["message"].lower()
+    assert "first-time setup required" in data["message"].lower()
+    assert data["data"] is True
 
 
 @pytest.mark.asyncio
@@ -25,15 +24,15 @@ async def test_first_time_setup_status_when_users_exist(
     client: AsyncClient, test_user: User
 ):
     """
-    Test GET /auth/first-time-setup returns requires_setup=False when users exist.
+    Test GET /setup/status returns requires_setup=False when users exist.
     """
-    response = await client.get("/auth/first-time-setup")
+    response = await client.get("/setup/status")
 
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
-    assert data["data"]["requires_setup"] is False
-    assert "already configured" in data["data"]["message"].lower()
+    assert data["data"] is False
+    assert "already configured" in data["message"].lower()
 
 
 # ============================================================================
@@ -44,10 +43,10 @@ async def test_first_time_setup_status_when_users_exist(
 @pytest.mark.asyncio
 async def test_first_admin_signup_success(client: AsyncClient):
     """
-    Test POST /auth/first-admin-signup creates admin successfully when no users exist.
+    Test POST /setup/initialize creates admin successfully when no users exist.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "First Admin",
             "email": "admin@example.com",
@@ -74,7 +73,7 @@ async def test_first_admin_signup_creates_admin_role(
     Test that first admin signup creates user with ADMIN role.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "newadmin@example.com",
@@ -99,7 +98,7 @@ async def test_first_admin_signup_does_not_require_password_change(
     Test that first admin signup sets must_change_password=False.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "newadmin@example.com",
@@ -123,7 +122,7 @@ async def test_first_admin_can_login_after_signup(client: AsyncClient):
     """
     # Create first admin
     signup_response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "admin@example.com",
@@ -155,7 +154,7 @@ async def test_first_admin_signup_normalizes_email(
     Test that first admin signup normalizes email to lowercase.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "ADMIN@EXAMPLE.COM",
@@ -181,10 +180,10 @@ async def test_first_admin_signup_blocked_when_user_exists(
     client: AsyncClient, test_user: User
 ):
     """
-    Test POST /auth/first-admin-signup returns 403 when users already exist.
+    Test POST /setup/initialize returns 403 when users already exist.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Another Admin",
             "email": "another@example.com",
@@ -209,7 +208,7 @@ async def test_first_admin_signup_missing_name(client: AsyncClient):
     Test first admin signup fails when name is missing.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "email": "admin@example.com",
             "password": "SecurePass123!",
@@ -228,7 +227,7 @@ async def test_first_admin_signup_missing_email(client: AsyncClient):
     Test first admin signup fails when email is missing.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "password": "SecurePass123!",
@@ -247,7 +246,7 @@ async def test_first_admin_signup_missing_password(client: AsyncClient):
     Test first admin signup fails when password is missing.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "admin@example.com",
@@ -266,7 +265,7 @@ async def test_first_admin_signup_invalid_email_format(client: AsyncClient):
     Test first admin signup fails with invalid email format.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "not-an-email",
@@ -285,7 +284,7 @@ async def test_first_admin_signup_name_too_short(client: AsyncClient):
     Test first admin signup fails when name is too short (< 3 characters).
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "AB",
             "email": "admin@example.com",
@@ -304,7 +303,7 @@ async def test_first_admin_signup_name_too_long(client: AsyncClient):
     Test first admin signup fails when name is too long (> 40 characters).
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "A" * 41,
             "email": "admin@example.com",
@@ -323,7 +322,7 @@ async def test_first_admin_signup_password_too_short(client: AsyncClient):
     Test first admin signup fails when password is too short (< 8 characters).
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "admin@example.com",
@@ -342,7 +341,7 @@ async def test_first_admin_signup_weak_password_no_uppercase(client: AsyncClient
     Test first admin signup fails with password missing uppercase letter.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "admin@example.com",
@@ -361,7 +360,7 @@ async def test_first_admin_signup_weak_password_no_lowercase(client: AsyncClient
     Test first admin signup fails with password missing lowercase letter.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "admin@example.com",
@@ -380,7 +379,7 @@ async def test_first_admin_signup_weak_password_no_digit(client: AsyncClient):
     Test first admin signup fails with password missing digit.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "admin@example.com",
@@ -399,7 +398,7 @@ async def test_first_admin_signup_weak_password_no_special_char(client: AsyncCli
     Test first admin signup fails with password missing special character.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "admin@example.com",
@@ -420,15 +419,15 @@ async def test_first_admin_signup_weak_password_no_special_char(client: AsyncCli
 @pytest.mark.asyncio
 async def test_first_time_setup_status_changes_after_signup(client: AsyncClient):
     """
-    Test that first-time-setup status changes from true to false after signup.
+    Test that setup status changes from true to false after signup.
     """
     # Check initial status
-    status_before = await client.get("/auth/first-time-setup")
-    assert status_before.json()["data"]["requires_setup"] is True
+    status_before = await client.get("/setup/status")
+    assert status_before.json()["data"] is True
 
     # Create first admin
     await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "admin@example.com",
@@ -437,8 +436,8 @@ async def test_first_time_setup_status_changes_after_signup(client: AsyncClient)
     )
 
     # Check status after signup
-    status_after = await client.get("/auth/first-time-setup")
-    assert status_after.json()["data"]["requires_setup"] is False
+    status_after = await client.get("/setup/status")
+    assert status_after.json()["data"] is False
 
 
 # ============================================================================
@@ -454,7 +453,7 @@ async def test_first_admin_signup_with_unicode_name(
     Test first admin signup with Unicode characters in name.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "管理者 Admin 日本語",
             "email": "admin@example.com",
@@ -473,7 +472,7 @@ async def test_first_admin_signup_with_special_chars_in_password(client: AsyncCl
     Test first admin signup with special characters in password.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "admin@example.com",
@@ -501,7 +500,7 @@ async def test_first_admin_signup_email_case_insensitive_login(client: AsyncClie
     """
     # Signup with lowercase email
     await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "admin@example.com",
@@ -524,20 +523,20 @@ async def test_first_admin_signup_email_case_insensitive_login(client: AsyncClie
 @pytest.mark.asyncio
 async def test_first_admin_signup_with_extra_fields(client: AsyncClient):
     """
-    Test first admin signup ignores extra fields in request.
+    Test first admin signup rejects extra fields in request.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "Admin User",
             "email": "admin@example.com",
             "password": "SecurePass123!",
-            "extra_field": "should be ignored",
-            "role": "user",  # Should be ignored, always creates admin
+            "extra_field": "should be rejected",
+            "role": "user",
         },
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -546,7 +545,7 @@ async def test_first_admin_signup_with_null_values(client: AsyncClient):
     Test first admin signup fails with null values.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": None,
             "email": None,
@@ -563,7 +562,7 @@ async def test_first_admin_signup_with_empty_strings(client: AsyncClient):
     Test first admin signup fails with empty strings.
     """
     response = await client.post(
-        "/auth/first-admin-signup",
+        "/setup/initialize",
         json={
             "name": "",
             "email": "",

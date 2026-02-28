@@ -4,9 +4,9 @@ import {
   logoutAuthLogoutPost,
   getMyProfileProfileMeGet,
   createUserUsersPost,
-  firstAdminSignupAuthFirstAdminSignupPost,
-  checkFirstTimeSetupAuthFirstTimeSetupGet,
-  changeMyPasswordProfileMeChangePasswordPost,
+  initializeFirstAdminSetupInitializePost,
+  checkSetupStatusSetupStatusGet,
+  changeMyPasswordProfileMePasswordPost,
 } from "@/client";
 
 import type {
@@ -14,7 +14,7 @@ import type {
   LoginAuthLoginPostResponse,
   RefreshAuthRefreshPostResponse,
   LogoutAuthLogoutPostResponse,
-  ChangeMyPasswordProfileMeChangePasswordPostResponse,
+  ChangeMyPasswordProfileMePasswordPostResponse,
 } from "@/client/types.gen";
 
 // Readable wrappers for auth-related SDK functions
@@ -36,12 +36,12 @@ export const adminCreateUser = (
 ) => createUserUsersPost({ body: { name, email, role } });
 
 export const firstAdminSignup = (name: string, email: string, password: string) =>
-  firstAdminSignupAuthFirstAdminSignupPost({ body: { name, email, password } });
+  initializeFirstAdminSetupInitializePost({ body: { name, email, password } });
 
-export const checkFirstTimeSetup = () => checkFirstTimeSetupAuthFirstTimeSetupGet();
+export const checkFirstTimeSetup = () => checkSetupStatusSetupStatusGet();
 
 export const changeMyPassword = (oldPassword: string, newPassword: string) =>
-  changeMyPasswordProfileMeChangePasswordPost({
+  changeMyPasswordProfileMePasswordPost({
     body: { old_password: oldPassword, new_password: newPassword },
   });
 
@@ -50,4 +50,4 @@ export type MyProfileResponse = GetMyProfileProfileMeGetResponse;
 export type LoginResponse = LoginAuthLoginPostResponse;
 export type RefreshResponse = RefreshAuthRefreshPostResponse;
 export type LogoutResponse = LogoutAuthLogoutPostResponse;
-export type ChangeMyPasswordResponse = ChangeMyPasswordProfileMeChangePasswordPostResponse;
+export type ChangeMyPasswordResponse = ChangeMyPasswordProfileMePasswordPostResponse;
