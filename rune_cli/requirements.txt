@@ -22,9 +22,5 @@ python-dateutil>=2.8.0
 pyyaml>=6.0
 python-dotenv>=1.0.0
 
-# Database access (optional, for direct DB operations via Docker)
-# Only needed if using 'rune db' commands that connect directly
-psycopg2-binary>=2.9.9
-
 # Windows color support
 colorama>=0.4.6; sys_platform == "win32"
