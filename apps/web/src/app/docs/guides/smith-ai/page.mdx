@@ -1,0 +1,178 @@
+# Smith AI Builder
+
+Build workflows with natural language using the Smith AI agent.
+
+## What is Smith?
+
+Smith is Rune's AI-powered workflow builder. Instead of manually dragging nodes and configuring parameters, you describe what you want in plain English and Smith builds the workflow for you.
+
+Smith is powered by **LangChain/LangGraph** with **Google Gemini** as the underlying language model.
+
+## How It Works
+
+1. Open the **Smith** panel in the workflow editor
+2. Type a natural language request (e.g., "Create a workflow that checks a website and sends me an email if it's down")
+3. Smith interprets your request and uses its tools to build the workflow
+4. Nodes appear on the canvas in real time as Smith works
+5. Review and customize the result
+
+## Chat Interface
+
+Smith uses a conversational interface. You can:
+
+- **Start a new conversation** to build a workflow from scratch
+- **Continue a conversation** to refine or modify a workflow
+- **Reference previous messages** — Smith remembers the full conversation context
+
+### SSE Streaming
+
+Smith responses are streamed via **Server-Sent Events (SSE)**, so you see tokens appear in real time as Smith thinks and acts.
+
+```http
+POST /smith/chat
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "message": "Build a workflow that fetches user data from an API and sends a summary email",
+  "conversation_id": null
+}
+```
+
+**SSE Stream:**
+```
+data: {"type": "token", "content": "I'll create a workflow"}
+data: {"type": "token", "content": " with an HTTP node"}
+data: {"type": "tool_call", "tool": "create_workflow", "args": {"name": "User Data Summary"}}
+data: {"type": "tool_result", "result": {"workflow_id": 5}}
+data: {"type": "tool_call", "tool": "add_node", "args": {"type": "http", ...}}
+data: {"type": "tool_result", "result": {"node_id": "node-1"}}
+data: {"type": "done", "conversation_id": "abc-123"}
+```
+
+## Smith's Tools
+
+Smith has access to 10 tools for building and modifying workflows:
+
+| Tool | Description |
+|------|-------------|
+| `create_workflow` | Create a new empty workflow |
+| `add_node` | Add a node to the workflow |
+| `remove_node` | Remove a node from the workflow |
+| `update_node` | Modify an existing node's parameters |
+| `add_edge` | Connect two nodes |
+| `remove_edge` | Disconnect two nodes |
+| `list_nodes` | List all nodes in the current workflow |
+| `list_edges` | List all edges in the current workflow |
+| `get_node` | Get details of a specific node |
+| `get_credentials` | List available credentials for the user |
+
+### What Smith Can Build
+
+Smith understands all 9 node types and can:
+
+- Create HTTP request nodes with proper methods, URLs, headers, and bodies
+- Set up SMTP email nodes with recipient, subject, and body
+- Add conditional branching based on expressions
+- Build Switch-case routing patterns
+- Configure Split/Aggregator patterns for parallel processing
+- Add Wait nodes with specific durations
+- Insert Edit nodes for data transformation
+- Wire up the edges between all nodes correctly
+
+## Example Conversations
+
+### Simple API + Email
+
+**You:** "Create a workflow that checks if api.example.com/health returns a 200 and sends me an email at ops@example.com if it doesn't"
+
+**Smith:**
+> I'll create a workflow with 3 nodes:
+> 1. An HTTP node to check the health endpoint
+> 2. A Conditional node to check if the status code is 200
+> 3. An SMTP node on the false branch to send the alert email
+
+### Modify Existing Workflow
+
+**You:** "Add a 5-second wait before the email node"
+
+**Smith:**
+> I'll insert a Wait node between the Conditional and SMTP nodes with a 5000ms delay.
+
+### Complex Pattern
+
+**You:** "Fetch a list of users from the API, split them into batches of 10, send a welcome email to each batch, then aggregate the results"
+
+**Smith:**
+> I'll set up a fan-out pattern:
+> 1. HTTP node to fetch users
+> 2. Split node with chunk_size 10
+> 3. SMTP node for welcome emails (runs for each chunk)
+> 4. Aggregator node to collect results
+
+## Conversation Management
+
+### List Conversations
+
+```http
+GET /smith/conversations
+Authorization: Bearer <token>
+```
+
+Returns all your past Smith conversations with metadata.
+
+### Get Conversation Messages
+
+```http
+GET /smith/conversations/{conversation_id}/messages
+Authorization: Bearer <token>
+```
+
+Returns the full message history for a conversation.
+
+### Delete Conversation
+
+```http
+DELETE /smith/conversations/{conversation_id}
+Authorization: Bearer <token>
+```
+
+## Tips for Better Results
+
+### Be Specific
+
+```
+❌ "Make a workflow"
+✅ "Create a workflow that fetches data from https://api.example.com/users 
+    every hour and sends a summary to admin@example.com"
+```
+
+### Reference Node Types Explicitly
+
+```
+❌ "Add something to check the result"
+✅ "Add a Conditional node that checks if the HTTP status code is 200"
+```
+
+### Iterate
+
+Smith works best conversationally. Start with the basic structure and refine:
+
+1. "Create a workflow with an HTTP node that calls the GitHub API"
+2. "Add a Conditional to check if the response has more than 10 items"
+3. "On the true branch, add an SMTP node to notify me"
+
+### Use Credentials
+
+Smith can look up your stored credentials:
+
+"Use my GitHub API credential for the HTTP node"
+
+Smith will call `get_credentials` to find a matching credential and attach it to the node.
+
+## Next Steps
+
+- [Scryb AI Docs Generator](/docs/guides/scryb-ai) — Generate documentation for workflows with AI
+- [Creating Workflows](/docs/guides/creating-workflows) — Manual workflow building
+- [Understanding Nodes](/docs/guides/nodes) — Node types Smith can use
+- [REST API Reference](/docs/api-reference/rest-api) — Smith API endpoints

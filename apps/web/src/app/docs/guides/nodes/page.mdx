@@ -1,0 +1,404 @@
+# Understanding Nodes
+
+Nodes are the building blocks of Rune workflows. Each node receives data from the accumulated context, executes its logic, and produces output that becomes available to all downstream nodes.
+
+Rune ships with **9 built-in node types** covering API integration, email, control flow, parallel processing, data transformation, and timing.
+
+## Node Anatomy
+
+Every node has:
+
+- **Parameters** — Configuration for the node (URL, expression, recipients, etc.)
+- **Credentials** — Optional encrypted credentials (for HTTP auth, SMTP, etc.)
+- **Error Handling** — Strategy for failures: `halt`, `ignore`, or `branch`
+- **Output** — Result data stored in the accumulated context as `$NodeName`
+
+## Node Overview
+
+| Node | Type | Description |
+|------|------|-------------|
+| Manual Trigger | Trigger | Entry point — starts the workflow |
+| HTTP | Action | Make HTTP/HTTPS API requests |
+| SMTP | Action | Send emails via SMTP |
+| Conditional | Logic | Boolean if/else branching |
+| Switch | Logic | Multi-path routing with ordered rules |
+| Split | Logic | Fan-out — parallel processing of arrays |
+| Aggregator | Logic | Fan-in — collect split branch results |
+| Merge | Logic | Synchronize converging branches |
+| Wait | Timing | Pause execution for a duration |
+| Edit | Transform | Data transformation with assignments |
+
+---
+
+## Manual Trigger
+
+The entry point for every workflow. This node does not execute any logic — it marks where execution begins when you click "Run".
+
+> Every workflow must have exactly one trigger node.
+
+---
+
+## HTTP Node
+
+Makes HTTP/HTTPS requests to external APIs and services.
+
+### Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `method` | Yes | HTTP method: `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `OPTIONS` |
+| `url` | Yes | Full URL to request |
+| `headers` | No | Key-value map of request headers |
+| `query` | No | Key-value map of query string parameters |
+| `body` | No | Request body (for POST/PUT/PATCH) |
+| `timeout` | No | Request timeout in seconds (default: 30) |
+| `retry` | No | Number of retry attempts on failure |
+| `retry_delay` | No | Delay between retries in seconds |
+| `ignore_ssl` | No | Skip SSL certificate verification |
+| `raise_on_status` | No | Status codes that trigger an error (e.g., `"4xx,5xx"`) |
+
+### Credential Support
+
+The HTTP node supports two credential types:
+
+- **`basic_auth`** — Automatically sets the `Authorization: Basic <base64>` header from `username` and `password` fields
+- **`header`** — Injects a custom header with the credential's `field` and `value`
+
+### Output
+
+```json
+{
+  "status": 200,
+  "status_text": "OK",
+  "body": { "id": 1, "name": "John" },
+  "headers": { "content-type": "application/json" },
+  "duration_ms": 142
+}
+```
+
+The `body` is automatically parsed as JSON if the response content type is JSON.
+
+---
+
+## SMTP Node
+
+Sends emails through an authenticated SMTP server.
+
+### Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `from` | Yes | Sender email address |
+| `to` | Yes | Recipient(s) — string or array of strings |
+| `cc` | No | CC recipient(s) |
+| `bcc` | No | BCC recipient(s) |
+| `subject` | Yes | Email subject line |
+| `body` | Yes | Email body content |
+
+### Credentials (required)
+
+The SMTP node requires a credential of type `smtp` with these fields:
+
+| Field | Description |
+|-------|-------------|
+| `host` | SMTP server hostname |
+| `port` | SMTP server port (usually 587 or 465) |
+| `username` | SMTP authentication username |
+| `password` | SMTP authentication password |
+
+### Output
+
+```json
+{
+  "success": true,
+  "message": "Email sent successfully",
+  "from": "noreply@example.com",
+  "to": ["user@example.com"],
+  "subject": "Alert: Workflow Complete",
+  "recipients": 1,
+  "duration_ms": 856
+}
+```
+
+---
+
+## Conditional Node
+
+Evaluates a boolean expression and branches into **true** or **false** paths.
+
+### Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `expression` | Yes | Boolean expression to evaluate |
+| `true_edge_id` | Auto | Edge to follow when expression is true |
+| `false_edge_id` | Auto | Edge to follow when expression is false |
+
+### Expression Syntax
+
+The expression evaluator supports context references and operators:
+
+```
+$Fetch Users.status == 200
+$Get Order.body.total > 100
+$Check Email.body.verified == true
+$API Call.body.items contains "premium"
+$Step1.result == true and $Step2.result == true
+not $Check.body.blocked
+```
+
+**Supported operators:** `==`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `and`, `or`, `not`
+
+### Output
+
+```json
+{
+  "result": true,
+  "expression": "$Fetch Users.status == 200"
+}
+```
+
+---
+
+## Switch Node
+
+Routes execution to one of multiple paths based on ordered comparison rules. The first matching rule wins. If no rules match, execution follows the **fallback** route.
+
+### Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `rules` | Yes | Array of rules, each with `value`, `operator`, `compare` |
+| `routes` | Yes | Array of edge IDs corresponding to each rule + fallback |
+
+### Rule Operators
+
+`==`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `is equal to`, `is greater than`, etc.
+
+### Example Configuration
+
+```json
+{
+  "rules": [
+    { "value": "$Get Order.body.status", "operator": "==", "compare": "pending" },
+    { "value": "$Get Order.body.status", "operator": "==", "compare": "shipped" },
+    { "value": "$Get Order.body.status", "operator": "==", "compare": "delivered" }
+  ],
+  "routes": ["edge_pending", "edge_shipped", "edge_delivered", "edge_fallback"]
+}
+```
+
+### Output
+
+```json
+{
+  "output_index": 1,
+  "matched_rule": { "value": "shipped", "operator": "==", "compare": "shipped" }
+}
+```
+
+Or if no rules match:
+```json
+{
+  "output_index": 3,
+  "fallback": true
+}
+```
+
+---
+
+## Split Node
+
+**Fan-out pattern** — takes an array and spawns a separate execution branch for each item. Each branch runs independently and in parallel.
+
+### Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `input_array` | Yes | Reference to the array to iterate over |
+
+### How It Works
+
+1. The split node reads the input array
+2. For each item, a separate execution message is published
+3. Each branch receives the item as `$item` in its context
+4. Branches also get a `lineage_stack` tracking their position (item_index, total_items)
+
+### Output
+
+```json
+{
+  "_split_items": [/* the original array */]
+}
+```
+
+> **Important:** Always pair a Split node with an Aggregator node to collect the results.
+
+---
+
+## Aggregator Node
+
+**Fan-in pattern** — waits for all branches from a Split node to complete, then collects their results into a single array.
+
+### How It Works
+
+1. Each split branch sends its result to the aggregator
+2. The aggregator uses a Redis-based atomic barrier (Lua script)
+3. When all branches have reported, it releases with the aggregated results
+4. Intermediate branches that arrive before the barrier is full are silently halted
+
+### Output (when barrier releases)
+
+```json
+{
+  "aggregated": [
+    { /* result from branch 0 */ },
+    { /* result from branch 1 */ },
+    { /* result from branch N */ }
+  ]
+}
+```
+
+### Output (when waiting for more branches)
+
+```json
+{
+  "_barrier_closed": true
+}
+```
+
+The branch silently stops — this is normal behavior, not an error.
+
+---
+
+## Merge Node
+
+Synchronizes **converging branches** (not split items — that's the aggregator). Use Merge when multiple independent paths need to converge before continuing.
+
+### Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `wait_mode` | No | `wait_for_all` (default) or `wait_for_any` |
+| `mode` | No | How to combine context (default: `append`) |
+| `timeout` | No | Barrier timeout in seconds (default: 300) |
+
+### Wait Modes
+
+**`wait_for_all`** — Waits for every incoming branch to arrive. Uses Redis barrier (Lua script). Returns merged context from all branches.
+
+**`wait_for_any`** — First branch to arrive wins (Redis `SETNX` lock). Continues immediately with that branch's context.
+
+### Output
+
+```json
+{
+  "merged_context": { /* combined contexts from all branches */ },
+  "_merge_payloads": [ /* individual branch payloads */ ],
+  "_merge_expected": 3
+}
+```
+
+---
+
+## Wait Node
+
+Suspends workflow execution for a configurable duration. The state is frozen in Redis, and a scheduler automatically resumes execution when the timer expires.
+
+### Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `amount` | Yes | Number of time units to wait |
+| `unit` | Yes | `seconds`, `minutes`, `hours`, or `days` |
+
+### How It Works
+
+1. The entire execution message is serialized and stored in Redis
+2. A timer is added to a Redis sorted set (scored by resume timestamp)
+3. The scheduler polls every 500ms for due timers
+4. When the timer fires, execution resumes from the wait node's successors
+
+### Output
+
+```json
+{
+  "resume_at": 1735689600000,
+  "timer_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+The node status is reported as `waiting` (not `success`) until resumed.
+
+---
+
+## Edit Node
+
+Transforms data using field assignments with optional JavaScript expressions.
+
+### Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `mode` | No | `assignments` (default: add/modify fields) or `keep_only` (start fresh) |
+| `target_path` | No | Target context path (default: `$json`) |
+| `assignments` | Yes | Array of `{ name, value, type }` assignments |
+
+### Assignment Types
+
+| Type | Description |
+|------|-------------|
+| `string` | Text value |
+| `number` | Numeric value |
+| `boolean` | True/false |
+| `json` | JSON object or array |
+
+### JavaScript Expressions
+
+Values can contain `{{ expression }}` syntax, evaluated in a sandboxed JavaScript environment (Goja, 100ms timeout):
+
+```json
+{
+  "assignments": [
+    { "name": "full_name", "value": "{{ $json.first_name + ' ' + $json.last_name }}", "type": "string" },
+    { "name": "total", "value": "{{ $json.price * $json.quantity }}", "type": "number" },
+    { "name": "is_premium", "value": "{{ $json.total > 1000 }}", "type": "boolean" }
+  ]
+}
+```
+
+### Operating on Arrays
+
+If `$json` is an array, assignments are applied to **each element** individually.
+
+### Output
+
+```json
+{
+  "$json": {
+    "full_name": "John Doe",
+    "total": 2500,
+    "is_premium": true
+  }
+}
+```
+
+---
+
+## Error Handling
+
+Every node supports three error handling strategies, configured per-node:
+
+| Strategy | Behavior |
+|----------|----------|
+| **`halt`** | Default. Stop the entire workflow and report `halted` status |
+| **`ignore`** | Log the error but continue execution to the next node |
+| **`branch`** | Follow a dedicated error edge to an error-handling node |
+
+For the `branch` strategy, configure an `error_edge` parameter pointing to the edge ID that leads to your error-handling node.
+
+## Next Steps
+
+- [Creating Workflows](/docs/guides/creating-workflows) — Build complete workflows with these nodes
+- [Managing Credentials](/docs/guides/credentials) — Configure credentials for HTTP and SMTP nodes
+- [Execution Monitoring](/docs/guides/executions) — Debug node execution in real time

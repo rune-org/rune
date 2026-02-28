@@ -1,0 +1,227 @@
+# Creating Workflows
+
+Learn how to design and build powerful automation workflows in Rune.
+
+## What is a Workflow?
+
+A workflow is a directed graph of **nodes** connected by **edges**. Each node performs a specific action — making an HTTP request, evaluating a condition, transforming data, or sending an email. Data flows from one node to the next through an **accumulated context**, where each node's output becomes available to all downstream nodes.
+
+## Workflow Components
+
+### Trigger Node
+
+Every workflow starts with a **Manual Trigger** node. This is the entry point — when you click "Run", execution begins from the trigger and flows to the first connected node.
+
+### Action Nodes
+
+Action nodes perform operations on external systems:
+
+| Node | Purpose |
+|------|---------|
+| **HTTP** | Make REST API calls (GET, POST, PUT, DELETE, PATCH) |
+| **SMTP** | Send emails with full recipient configuration |
+
+### Logic Nodes
+
+Control the flow of execution:
+
+| Node | Purpose |
+|------|---------|
+| **Conditional** | Boolean if/else branching based on expressions |
+| **Switch** | Multi-path routing based on ordered comparison rules |
+| **Split** | Fan-out: iterate over an array, spawning parallel branches |
+| **Aggregator** | Fan-in: collect results from split branches back together |
+| **Merge** | Synchronize converging branches (wait-for-all or wait-for-any) |
+
+### Data & Timing Nodes
+
+| Node | Purpose |
+|------|---------|
+| **Edit** | Data transformation with field assignments and JavaScript expressions |
+| **Wait** | Pause execution for a configurable duration (seconds to days) |
+
+## Building a Workflow
+
+### Step 1: Create the Workflow
+
+1. Navigate to **Workflows** in the sidebar
+2. Click **Create Workflow**
+3. Enter a name and optional description
+4. You'll be taken to the visual canvas editor
+
+### Step 2: Add and Connect Nodes
+
+1. Drag nodes from the panel onto the canvas
+2. Connect nodes by dragging from one node's **output handle** to another node's **input handle**
+3. Each connection creates an **edge** — the path data flows through
+
+### Step 3: Configure Node Parameters
+
+Click any node to open its configuration panel:
+- Set parameters (URL, method, expression, etc.)
+- Assign credentials (for HTTP and SMTP nodes)
+- Configure error handling strategy
+- Reference outputs from prior nodes using `$NodeName.field` syntax
+
+### Step 4: Run and Monitor
+
+Click **Run** to execute the workflow. Watch nodes light up in real time:
+- 🔵 **Running** — currently executing
+- 🟢 **Success** — completed
+- 🔴 **Failed** — error encountered
+- ⏳ **Waiting** — paused (wait node)
+
+## Data Flow and the Accumulated Context
+
+The key concept in Rune is the **accumulated context**. As each node executes, its output is stored with a key based on the node's name:
+
+```javascript
+// After "Fetch Users" (HTTP node) executes:
+$Fetch Users.status       // 200
+$Fetch Users.body         // { users: [...] }
+$Fetch Users.headers      // { content-type: "application/json" }
+$Fetch Users.duration_ms  // 245
+
+// After "Transform Data" (Edit node) executes:
+$Transform Data.$json     // The transformed output
+```
+
+Any downstream node can reference any previous node's output. The context grows as the workflow progresses.
+
+### Reference Syntax
+
+Use `$NodeName.path.to.field` to reference data from prior nodes:
+
+```
+$Fetch Users.body.users[0].name     → "John Doe"
+$Fetch Users.status                  → 200
+$Check Status.result                 → true
+```
+
+If the entire parameter value is a single reference, Rune preserves the original type (object, array, number). If embedded in a string, it's interpolated as text.
+
+## Advanced Patterns
+
+### Conditional Branching
+
+Use the **Conditional** node to create if/else logic:
+
+```
+HTTP Request → Conditional ($HTTP Request.status == 200)
+                 ├── true  → Process Data
+                 └── false → Send Error Alert
+```
+
+The expression evaluator supports: `==`, `!=`, `>`, `<`, `>=`, `<=`, `contains`, `and`, `or`, `not`.
+
+### Multi-Path Switch
+
+Use the **Switch** node for multiple conditions:
+
+```
+Get Order → Switch (check order.status)
+              ├── Rule 0: status == "pending"    → Process Payment
+              ├── Rule 1: status == "shipped"    → Track Package
+              ├── Rule 2: status == "delivered"  → Send Review Request
+              └── Fallback                       → Log Unknown Status
+```
+
+### Parallel Processing (Split/Aggregate)
+
+Process arrays in parallel with the **Split** → **Aggregator** pattern:
+
+```
+Fetch Users → Split (iterate over users array)
+                ├── Branch 0: Process User 0 → Aggregator
+                ├── Branch 1: Process User 1 → Aggregator
+                └── Branch N: Process User N → Aggregator
+                                                    ↓
+                                              Continue with aggregated results
+```
+
+The Split node fans out — creating a separate execution branch for each array item. Each branch gets `$item` in its context. The Aggregator node waits until all branches complete, then collects all results into a single array.
+
+### Branch Synchronization (Merge)
+
+When multiple independent paths converge, use the **Merge** node:
+
+```
+Trigger → Fetch API 1 ─┐
+        → Fetch API 2 ─┤→ Merge (wait_for_all) → Process Combined Data
+        → Fetch API 3 ─┘
+```
+
+**Merge modes:**
+- `wait_for_all` — Wait until every incoming branch arrives, then continue with merged context
+- `wait_for_any` — Continue as soon as the first branch arrives
+
+### Delayed Execution (Wait)
+
+Pause a workflow for a specific duration:
+
+```
+Send Request → Wait (5 minutes) → Check Response Status
+```
+
+Wait supports `seconds`, `minutes`, `hours`, and `days`. The state is frozen in Redis, and a scheduler automatically resumes execution when the timer expires.
+
+## Error Handling
+
+Each node supports three error handling strategies:
+
+| Strategy | Behavior |
+|----------|----------|
+| **Halt** (default) | Stop the entire workflow immediately |
+| **Ignore** | Skip the error and continue to the next node |
+| **Branch** | Follow a dedicated error edge to an error-handling node |
+
+### Error Branch Example
+
+```
+HTTP Request ──(success)──→ Process Data
+     │
+     └──(error edge)──→ Log Error → Send Alert Email
+```
+
+## Workflow Permissions
+
+Workflows support role-based access control:
+
+| Role | View | Edit | Execute | Delete | Share |
+|------|------|------|---------|--------|-------|
+| **Owner** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Editor** | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Viewer** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Admin** | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+Share workflows with team members from the workflow settings panel.
+
+## Best Practices
+
+### Use Descriptive Node Names
+
+```
+❌ "HTTP Request 1"
+✅ "Fetch GitHub User Profile"
+```
+
+Node names become context keys (`$Fetch GitHub User Profile.body`), so clear names make expressions easier to write and read.
+
+### Handle Errors on Critical Nodes
+
+Add error handling to HTTP requests and other nodes that depend on external services. Use the **branch** strategy to create fallback paths.
+
+### Test Incrementally
+
+Test each node as you add it. Click a node after execution to inspect its exact input, parameters, and output data.
+
+### Keep Workflows Focused
+
+Each workflow should handle one logical task. For complex automations, break them into smaller workflows.
+
+## Next Steps
+
+- [Understanding Nodes](/docs/guides/nodes) — Deep dive into all 9 node types and their parameters
+- [Managing Credentials](/docs/guides/credentials) — Store API keys and SMTP passwords securely
+- [Execution Monitoring](/docs/guides/executions) — Watch and debug workflow runs in real time
+- [Smith AI Builder](/docs/guides/smith-ai) — Generate workflows from natural language

@@ -1,9 +1,22 @@
 import type { NextConfig } from "next";
+import nextra from 'nextra';
+
+// Nextra v4 configuration
+const withNextra = nextra({
+  mdxOptions: {
+    rehypePlugins: [],
+  },
+});
 
 const nextConfig: NextConfig = {
   output: 'standalone',
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
+  turbopack: {
+    resolveAlias: {
+      'next-mdx-import-source-file': './mdx-components.tsx',
+    },
   },
   async rewrites() {
     const target = process.env.API_PROXY_TARGET || "http://localhost:8000";
@@ -16,4 +29,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextra(nextConfig);

@@ -1,0 +1,185 @@
+# Templates
+
+Save and share reusable workflow patterns with templates.
+
+## What are Templates?
+
+Templates are saved workflow definitions that can be used as starting points for new workflows. Instead of building common patterns from scratch, you can create a template once and reuse it.
+
+Templates contain:
+- **Nodes** — The full node configuration (types, parameters, positions)
+- **Edges** — The connections between nodes
+- **Metadata** — Name, description, and visibility setting
+
+## Public vs Private Templates
+
+| Visibility | Who can see it | Who can use it |
+|-----------|----------------|----------------|
+| **Public** | All users | All users |
+| **Private** | Only the creator | Only the creator |
+
+Admins can see all templates regardless of visibility.
+
+## Creating a Template
+
+### From the UI
+
+1. Build your workflow in the editor
+2. Click the **Save as Template** button
+3. Enter a name and description
+4. Choose **Public** or **Private** visibility
+5. Click **Save**
+
+The template captures the current state of all nodes and edges.
+
+### From the API
+
+```bash
+POST /templates/
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "API Health Monitor",
+  "description": "Check an API endpoint and send alert email on failure",
+  "is_public": true,
+  "definition": {
+    "nodes": [
+      {
+        "id": "node-1",
+        "type": "http",
+        "position": { "x": 100, "y": 200 },
+        "data": {
+          "label": "Check API",
+          "method": "GET",
+          "url": "https://api.example.com/health"
+        }
+      },
+      {
+        "id": "node-2",
+        "type": "conditional",
+        "position": { "x": 400, "y": 200 },
+        "data": {
+          "label": "Is Healthy?",
+          "condition": "$Check API.status_code == 200",
+          "operator": "equals"
+        }
+      },
+      {
+        "id": "node-3",
+        "type": "smtp",
+        "position": { "x": 700, "y": 300 },
+        "data": {
+          "label": "Send Alert",
+          "to": "ops@example.com",
+          "subject": "API Health Check Failed",
+          "body": "The health endpoint returned a non-200 status."
+        }
+      }
+    ],
+    "edges": [
+      { "id": "e1", "source": "node-1", "target": "node-2" },
+      { "id": "e2", "source": "node-2", "target": "node-3", "sourceHandle": "false" }
+    ]
+  }
+}
+```
+
+## Using a Template
+
+### From the UI
+
+1. Navigate to **Templates** in the sidebar
+2. Browse available templates (your private ones + all public ones)
+3. Click **Use Template**
+4. A new workflow is created with the template's nodes and edges
+5. Customize the workflow for your specific use case
+
+### From the API
+
+```bash
+POST /templates/{template_id}/use
+Authorization: Bearer <token>
+```
+
+This creates a new workflow from the template and increments the template's `use_count`.
+
+## Use Count
+
+Every template tracks how many workflows have been created from it via the `use_count` field. This helps surface popular templates.
+
+```json
+{
+  "id": 1,
+  "name": "API Health Monitor",
+  "use_count": 42
+}
+```
+
+## Managing Templates
+
+### Update a Template
+
+Only the creator (or an admin) can update a template:
+
+```bash
+PATCH /templates/{template_id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Updated Name",
+  "description": "Updated description",
+  "is_public": false
+}
+```
+
+### Delete a Template
+
+```bash
+DELETE /templates/{template_id}
+Authorization: Bearer <token>
+```
+
+> **Note:** Deleting a template does **not** delete workflows that were created from it. Those workflows are independent copies.
+
+## Template Ideas
+
+Here are some workflow patterns that work well as templates:
+
+| Template | Description | Nodes Used |
+|----------|-------------|------------|
+| **API Monitor** | Health-check an endpoint, alert on failure | HTTP → Conditional → SMTP |
+| **Data Pipeline** | Fetch data, transform, forward to another API | HTTP → Edit → HTTP |
+| **Fan-Out Notification** | Send notifications to multiple channels | HTTP → Split → SMTP (parallel) → Aggregator |
+| **Conditional Router** | Route data to different APIs based on content | HTTP → Switch → HTTP (multiple branches) → Merge |
+| **Batch Processor** | Process large datasets in chunks | HTTP → Split → HTTP (parallel) → Aggregator → HTTP |
+
+## Best Practices
+
+### Write Descriptive Metadata
+
+Include a clear name and description so other users understand the template's purpose without opening it.
+
+### Use Generic Placeholder Values
+
+When creating a template, use placeholder values that users will clearly need to replace:
+
+```
+URL: https://api.example.com/your-endpoint
+Email: recipient@example.com
+```
+
+### Keep Templates Focused
+
+Each template should solve one specific pattern. Don't try to build a template that handles every possible scenario.
+
+### Make Reusable Templates Public
+
+If a template could be useful to your team, set it to public. Private templates are best for work-in-progress or personal patterns.
+
+## Next Steps
+
+- [Creating Workflows](/docs/guides/creating-workflows) — Learn workflow building fundamentals
+- [Understanding Nodes](/docs/guides/nodes) — Available node types for templates
+- [REST API Reference](/docs/api-reference/rest-api) — Template API endpoints
