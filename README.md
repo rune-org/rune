@@ -195,6 +195,9 @@ rune/
 │   ├── commands/            # CLI commands
 │   ├── auth/                # Token-based authentication
 │   ├── client/              # API client
+│   ├── core/                # Configuration and core utilities
+│   ├── styles/              # Terminal theming and output formatting
+│   ├── tests/               # Test suite
 │   └── utils/               # Utilities and formatting
 └── docker-compose.yml
 ```

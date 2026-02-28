@@ -686,14 +686,6 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 
 ---
 
-## Support
-
-- **Email**: runeteam1011@gmail.com
-- **Documentation**: https://docs.rune.io
-- **Issues**: https://github.com/rune-org/rune/issues
-
----
-
 <p align="center">
   <strong>Made by the Rune Team</strong>
 </p>
