@@ -205,11 +205,15 @@ class DatabaseManager:
         password_hash: str = "",
     ) -> Tuple[bool, str]:
         """Create initial admin user."""
+        # TODO(api): password hashing should be delegated to the API rather than
+        # being performed here. Ideally this command should call the API's user
+        # creation endpoint instead of writing to the DB directly.
         # Note: In production, password should be properly hashed
         # This is a placeholder - actual hashing should be done by the API
         
         if not password_hash:
-            # Create a bcrypt hash for 'admin123' - for development only
+            # For development only: bcrypt hash of 'admin123'.
+            # Consider removing this fallback once the API handles seeding.
             password_hash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.VTtYb.rIGOuKK2"
         
         sql = f"""

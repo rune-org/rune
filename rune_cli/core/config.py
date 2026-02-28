@@ -10,11 +10,20 @@ import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 from dataclasses import dataclass, field, asdict
+from dotenv import load_dotenv
 
 
 @dataclass
 class RuneConfig:
-    """Configuration data class with all settings."""
+    """
+    Configuration data class with default settings.
+
+    These values are the lowest-priority defaults.  They are overridden in
+    order by:
+      1. ``~/.rune/config.json``  (persisted config file)
+      2. A ``.env`` file in the working directory (loaded via python-dotenv)
+      3. Shell environment variables (``RUNE_*``)
+    """
     
     # API Settings
     api_url: str = "http://localhost:8000"
@@ -83,7 +92,10 @@ def load_config_file() -> Dict[str, Any]:
 
 
 def load_env_config() -> Dict[str, Any]:
-    """Load configuration from environment variables."""
+    """Load configuration from a .env file and shell environment variables."""
+    # Load a .env file from the current working directory (or any parent) so
+    # that RUNE_* variables defined there are picked up by os.getenv() below.
+    load_dotenv(override=False)
     env_mapping = {
         "RUNE_API_URL": ("api_url", str),
         "RUNE_TIMEOUT": ("timeout", int),

@@ -15,6 +15,8 @@ from rich import print as rprint
 from typing import Optional, List, Any, Dict
 import click
 
+from rune_cli import __version__
+
 # Custom theme for Rune CLI
 RUNE_THEME = Theme({
     "primary": "blue",
@@ -30,12 +32,23 @@ RUNE_THEME = Theme({
     "key": "cyan bold",
 })
 
-# Global console instance
-console = Console(theme=RUNE_THEME)
+def _create_console() -> Console:
+    """Create a Console instance, honouring the color_enabled config/env flag."""
+    try:
+        from rune_cli.core.config import get_config
+        cfg = get_config()
+        return Console(theme=RUNE_THEME, no_color=not cfg.color_enabled)
+    except Exception:
+        return Console(theme=RUNE_THEME)
 
 
-# ASCII Art Logo
-LOGO_LARGE = """
+# Global console instance — constructed after reading config so color_enabled
+# (from config file or RUNE_COLOR env var) is respected from the start.
+console = _create_console()
+
+
+# ASCII Art Logo — version injected dynamically from rune_cli.__version__
+LOGO_LARGE = f"""
 [blue bold]╔═══════════════════════════════════════════════════════════════════════╗
 ║                                                                       ║
 ║            ██████╗ ██╗   ██╗███╗   ██╗███████╗                        ║
@@ -45,13 +58,13 @@ LOGO_LARGE = """
 ║            ██║  ██║╚██████╔╝██║ ╚████║███████╗                        ║
 ║            ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝                        ║
 ║                                                                       ║
-║              Workflow Automation Platform - CLI v1.0.0                ║
+║              Workflow Automation Platform - CLI v{__version__}                ║
 ║                                                                       ║
 ╚═══════════════════════════════════════════════════════════════════════╝[/blue bold]
 """
 
-LOGO_SMALL = """[blue bold]╔════════════════════════════╗
-║      RUNE CLI v1.0.0       ║
+LOGO_SMALL = f"""[blue bold]╔════════════════════════════╗
+║      RUNE CLI v{__version__:<7}     ║
 ╚════════════════════════════╝[/blue bold]"""
 
 

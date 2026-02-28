@@ -13,14 +13,8 @@ from datetime import datetime
 
 from rune_cli import __version__
 from rune_cli.styles import (
-    console, 
-    print_logo, 
-    print_success, 
-    print_error, 
-    print_warning,
-    print_info,
-    print_divider,
-    print_key_value,
+    console,
+    print_error,
 )
 from rune_cli.core.config import get_config
 from rune_cli.auth import get_token_manager

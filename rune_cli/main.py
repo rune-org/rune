@@ -9,6 +9,7 @@ import sys
 from typing import Optional, Tuple
 
 from rune_cli import __version__
+from rune_cli.core.config import get_config
 from rune_cli.styles import print_logo, console
 from rune_cli.commands import (
     auth,
@@ -78,10 +79,16 @@ class RuneGroup(click.Group):
 @click.option(
     "--output", "-o",
     type=click.Choice(["text", "json"], case_sensitive=False),
-    default="text",
-    help="Output format (text or json)",
+    default=lambda: get_config().default_output_format,
+    show_default="text",
+    help="Output format (text or json); default taken from config/RUNE_OUTPUT_FORMAT.",
 )
-@click.option("--no-color", is_flag=True, help="Disable colored output")
+@click.option(
+    "--no-color",
+    is_flag=True,
+    default=lambda: not get_config().color_enabled,
+    help="Disable colored output; default taken from config/RUNE_COLOR.",
+)
 @click.pass_context
 def cli(ctx: click.Context, verbose: bool, output: str, no_color: bool) -> None:
     """

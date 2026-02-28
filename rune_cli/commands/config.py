@@ -109,8 +109,12 @@ def set_config(ctx, key: str, value: str):
         db_port          - Database port
         db_name          - Database name
         db_user          - Database user
-        db_password      - Database password
         docker_container - Docker container name
+
+    \b
+    Note: db_password cannot be set here because it is never persisted to disk
+    for security reasons.  Use the RUNE_DB_PASSWORD environment variable
+    (or a .env file) to supply the password instead.
 
     \b
     Examples:
@@ -119,6 +123,15 @@ def set_config(ctx, key: str, value: str):
         rune config set docker_container rune-db-1
     """
     output_format = ctx.obj.get("output", "text")
+
+    # db_password is intentionally excluded from persistence (save_config drops it).
+    # Reject it early so the user gets a clear error instead of a silent no-op.
+    if key == "db_password":
+        print_error(
+            "db_password cannot be saved to the config file for security reasons. "
+            "Set the RUNE_DB_PASSWORD environment variable (or add it to a .env file) instead."
+        )
+        raise click.Abort()
     
     # Validate specific keys
     if key == "api_url":
