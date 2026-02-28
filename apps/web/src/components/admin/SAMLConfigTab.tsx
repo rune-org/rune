@@ -12,7 +12,7 @@
  *  - Danger zone: delete with confirmation dialog
  */
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   ShieldCheck,
   ShieldOff,
@@ -29,6 +29,8 @@ import {
   AlertCircle,
   Sparkles,
   CheckCircle2,
+  Upload,
+  Download,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -252,17 +254,83 @@ function SetupGuidePanel({ onNav }: { onNav: (t: SubTab) => void }) {
 // ---------------------------------------------------------------------------
 
 function ServiceProviderPanel() {
+  const handleExport = () => {
+    // Strip PEM headers/whitespace to get raw base64 cert content
+    const certContent = MOCK_CONFIG.sp_certificate
+      .replace(/-----BEGIN CERTIFICATE-----/g, "")
+      .replace(/-----END CERTIFICATE-----/g, "")
+      .replace(/\s+/g, "")
+      .trim();
+
+    const xml = [
+      `<?xml version="1.0" encoding="UTF-8"?>`,
+      `<md:EntityDescriptor`,
+      `  xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"`,
+      `  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"`,
+      `  entityID="${MOCK_CONFIG.sp_entity_id}">`,
+      `  <md:SPSSODescriptor`,
+      `    AuthnRequestsSigned="false"`,
+      `    WantAssertionsSigned="true"`,
+      `    protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">`,
+      `    <md:KeyDescriptor use="signing">`,
+      `      <ds:KeyInfo>`,
+      `        <ds:X509Data>`,
+      `          <ds:X509Certificate>${certContent}</ds:X509Certificate>`,
+      `        </ds:X509Data>`,
+      `      </ds:KeyInfo>`,
+      `    </md:KeyDescriptor>`,
+      `    <md:SingleLogoutService`,
+      `      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"`,
+      `      Location="${MOCK_CONFIG.sp_slo_url}"/>`,
+      `    <md:AssertionConsumerService`,
+      `      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"`,
+      `      Location="${MOCK_CONFIG.sp_acs_url}"`,
+      `      index="1"/>`,
+      `  </md:SPSSODescriptor>`,
+      `</md:EntityDescriptor>`,
+    ].join("\n");
+
+    const blob = new Blob([xml], { type: "application/xml" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = "rune-sp-metadata.xml";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="grid gap-6">
+      {/* Export bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-muted/10 px-4 py-3">
+        <div>
+          <p className="text-xs font-semibold">Share with your IdP</p>
+          <p className="text-[11px] text-muted-foreground">
+            Download standard SAML SP metadata XML to import directly into your identity provider.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5 shrink-0"
+          onClick={handleExport}
+        >
+          <Download className="h-3.5 w-3.5" />
+          Export SP metadata XML
+        </Button>
+      </div>
+
       <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3.5">
         <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
         <p className="text-sm leading-relaxed text-amber-400/90">
           Copy these values into your IdP. If your IdP supports metadata import, just paste
           the{" "}
           <a
-            href="#"
+            href={MOCK_CONFIG.sp_metadata_url}
+            target="_blank"
+            rel="noopener noreferrer"
             className="underline underline-offset-2"
-            onClick={(e) => e.preventDefault()}
           >
             Metadata URL
           </a>{" "}
@@ -303,8 +371,9 @@ function ServiceProviderPanel() {
       />
 
       <a
-        href="#"
-        onClick={(e) => e.preventDefault()}
+        href={MOCK_CONFIG.sp_metadata_url}
+        target="_blank"
+        rel="noopener noreferrer"
         className="inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:underline"
       >
         <ExternalLink className="h-3 w-3" />
@@ -332,6 +401,68 @@ function IdentityProviderPanel({
   const [cert,     setCert]     = useState(MOCK_CONFIG.idp_certificate);
   const [domain,   setDomain]   = useState(MOCK_CONFIG.domain_hint);
   const [saved,    setSaved]    = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // ── Import ──────────────────────────────────────────────────────────────
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportError(null);
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      try {
+        if (file.name.endsWith(".xml")) {
+          // Parse IdP metadata XML via DOMParser
+          const parser = new DOMParser();
+          const doc    = parser.parseFromString(text, "application/xml");
+
+          const root = doc.querySelector("EntityDescriptor");
+          if (!root) throw new Error("No EntityDescriptor found in XML.");
+
+          const parsedEntityId = root.getAttribute("entityID") ?? "";
+          const ssoEl = doc.querySelector(
+            "IDPSSODescriptor SingleSignOnService[Binding*='HTTP-Redirect'], " +
+            "IDPSSODescriptor SingleSignOnService"
+          );
+          const sloEl = doc.querySelector(
+            "IDPSSODescriptor SingleLogoutService[Binding*='HTTP-Redirect'], " +
+            "IDPSSODescriptor SingleLogoutService"
+          );
+          const certEl = doc.querySelector("IDPSSODescriptor KeyDescriptor X509Certificate") ??
+                         doc.querySelector("X509Certificate");
+
+          if (parsedEntityId) setEntityId(parsedEntityId);
+          if (ssoEl?.getAttribute("Location")) setSsoUrl(ssoEl.getAttribute("Location")!);
+          if (sloEl?.getAttribute("Location")) setSloUrl(sloEl.getAttribute("Location")!);
+          if (certEl?.textContent) {
+            const raw = certEl.textContent.trim().replace(/\s+/g, "");
+            setCert(
+              `-----BEGIN CERTIFICATE-----\n${raw.match(/.{1,64}/g)?.join("\n") ?? raw}\n-----END CERTIFICATE-----`
+            );
+          }
+        } else {
+          // JSON format
+          const json = JSON.parse(text);
+          if (json.name)            setName(json.name);
+          if (json.idp_entity_id)   setEntityId(json.idp_entity_id);
+          if (json.idp_sso_url)     setSsoUrl(json.idp_sso_url);
+          if (json.idp_slo_url !== undefined) setSloUrl(json.idp_slo_url ?? "");
+          if (json.idp_certificate) setCert(json.idp_certificate);
+          if (json.domain_hint !== undefined) setDomain(json.domain_hint ?? "");
+        }
+      } catch (err: unknown) {
+        setImportError(err instanceof Error ? err.message : "Failed to parse file.");
+      } finally {
+        // Reset so the same file can be re-imported
+        e.target.value = "";
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const certOk =
     cert.trim().length > 0 && cert.trim().startsWith("-----BEGIN CERTIFICATE-----");
@@ -349,6 +480,43 @@ function IdentityProviderPanel({
 
   return (
     <div className="grid gap-8">
+
+      {/* ── Import action bar ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-muted/10 px-4 py-3">
+        <div>
+          <p className="text-xs font-semibold">Import from file</p>
+          <p className="text-[11px] text-muted-foreground">
+            Upload your IdP metadata XML or a previously saved JSON config to auto-fill the form.
+          </p>
+        </div>
+        {/* Hidden file input */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".json,.xml"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5 shrink-0"
+          onClick={() => fileRef.current?.click()}
+        >
+          <Upload className="h-3.5 w-3.5" />
+          Import IdP metadata
+        </Button>
+      </div>
+
+      {/* Import error feedback */}
+      {importError && (
+        <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>{importError}</span>
+        </div>
+      )}
+
       {/* ── Form fields ── */}
       <div className="grid gap-5">
         {/* Name */}
