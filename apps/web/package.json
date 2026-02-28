@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build  --webpack",
-    "start": "next start --webpack",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "echo \"No tests defined\""

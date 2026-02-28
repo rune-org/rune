@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
+  turbopack: {
+    resolveAlias: {
+      'next-mdx-import-source-file': './mdx-components.tsx',
+    },
+  },
   async rewrites() {
     const target = process.env.API_PROXY_TARGET || "http://localhost:8000";
     return [
