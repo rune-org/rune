@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "@/components/ui/toast";
 import type { RtesNodeUpdate } from "../types/execution";
 
 // WebSocket connection status
@@ -158,14 +159,13 @@ export function useRtesWebSocket(
           const data = JSON.parse(event.data) as RtesNodeUpdate;
           onMessage?.(data);
         } catch (parseError) {
-          console.error("[RTES WS] Failed to parse message:", parseError);
+          // Silent failure - invalid message format
         }
       };
 
       ws.onerror = (event) => {
         if (!mountedRef.current) return;
-        console.error("[RTES WS] Error:", event);
-        const error = new Error("WebSocket error");
+        const error = new Error("WebSocket connection error");
         setLastError(error);
         onError?.(event);
       };
@@ -188,7 +188,15 @@ export function useRtesWebSocket(
             }
           }, delay);
         } else if (reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
-          console.error("[RTES WS] Max reconnect attempts reached");
+          toast.error("Unable to connect to execution service", {
+            action: {
+              label: "Retry",
+              onClick: () => {
+                reconnectAttemptRef.current = 0;
+                connect();
+              },
+            },
+          });
           updateStatus("error");
           setLastError(new Error("Max reconnect attempts reached"));
         } else {
@@ -198,7 +206,12 @@ export function useRtesWebSocket(
 
       wsRef.current = ws;
     } catch (error) {
-      console.error("[RTES WS] Failed to create WebSocket:", error);
+      toast.error("Failed to connect to execution service", {
+        action: {
+          label: "Retry",
+          onClick: () => connect(),
+        },
+      });
       updateStatus("error");
       setLastError(error instanceof Error ? error : new Error(String(error)));
       onError?.(error instanceof Error ? error : new Error(String(error)));

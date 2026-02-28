@@ -65,7 +65,6 @@ export function CredentialSelector({
       }
     } catch (err) {
       setError("Failed to load credentials");
-      console.error("Error fetching credentials:", err);
     } finally {
       setIsLoading(false);
     }
