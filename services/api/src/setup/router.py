@@ -5,7 +5,6 @@ from src.core.responses import ApiResponse
 from src.setup.schemas import (
     FirstAdminSignupRequest,
     FirstAdminSignupResponse,
-    FirstTimeSetupStatus,
 )
 from src.setup.service import SetupService
 
@@ -18,13 +17,13 @@ async def get_setup_service(db: DatabaseDep) -> SetupService:
 
 @router.get(
     "/status",
-    response_model=ApiResponse[FirstTimeSetupStatus],
+    response_model=ApiResponse[bool],
     summary="Check first-time setup status",
     description="Check if the system requires first-time admin setup. Returns true if no users exist.",
 )
 async def check_setup_status(
     setup_service: SetupService = Depends(get_setup_service),
-) -> ApiResponse[FirstTimeSetupStatus]:
+) -> ApiResponse[bool]:
     requires_setup = await setup_service.is_first_time_setup()
 
     if requires_setup:
@@ -32,15 +31,10 @@ async def check_setup_status(
     else:
         message = "System already configured. Please use the login page."
 
-    status = FirstTimeSetupStatus(
-        requires_setup=requires_setup,
-        message=message,
-    )
-
     return ApiResponse(
         success=True,
-        message="First-time setup status retrieved",
-        data=status,
+        message=message,
+        data=requires_setup,
     )
 
 
@@ -48,7 +42,7 @@ async def check_setup_status(
     "/initialize",
     response_model=ApiResponse[FirstAdminSignupResponse],
     summary="Initialize system with first admin",
-    description="Create the first admin account. Only available when no users exist in the system. Includes race condition protection.",
+    description="Create the first admin account. Only available when no users exist in the system.",
 )
 async def initialize_first_admin(
     signup_data: FirstAdminSignupRequest,

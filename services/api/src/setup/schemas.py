@@ -28,12 +28,3 @@ class FirstAdminSignupResponse(BaseModel):
     user_id: int = Field(..., description="ID of the newly created admin user")
     name: str = Field(..., description="Admin's name")
     email: EmailStr = Field(..., description="Admin's email")
-
-
-class FirstTimeSetupStatus(BaseModel):
-    """Response schema for first-time setup status check."""
-
-    requires_setup: bool = Field(
-        ..., description="Whether the system requires first-time admin setup"
-    )
-    message: str = Field(..., description="Status message")
