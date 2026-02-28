@@ -74,29 +74,29 @@ paths:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
       security:
       - OAuth2PasswordBearer: []
-  /auth/first-time-setup:
+  /setup/status:
     get:
       tags:
-      - Authentication
+      - Setup
       summary: Check first-time setup status
       description: Check if the system requires first-time admin setup. Returns true
         if no users exist.
-      operationId: check_first_time_setup_auth_first_time_setup_get
+      operationId: check_setup_status_setup_status_get
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_FirstTimeSetupStatus_'
-  /auth/first-admin-signup:
+                $ref: '#/components/schemas/ApiResponse_bool_'
+  /setup/initialize:
     post:
       tags:
-      - Authentication
-      summary: First-time admin signup
+      - Setup
+      summary: Initialize system with first admin
       description: Create the first admin account. Only available when no users exist
-        in the system. Includes race condition protection.
-      operationId: first_admin_signup_auth_first_admin_signup_post
+        in the system.
+      operationId: initialize_first_admin_setup_initialize_post
       requestBody:
         content:
           application/json:
@@ -1949,25 +1949,6 @@ components:
       required:
       - data
       title: ApiResponse[FirstAdminSignupResponse]
-    ApiResponse_FirstTimeSetupStatus_:
-      properties:
-        success:
-          type: boolean
-          title: Success
-          description: Whether the request was successful
-          default: true
-        message:
-          type: string
-          title: Message
-          description: Human-readable message
-          default: Success
-        data:
-          $ref: '#/components/schemas/FirstTimeSetupStatus'
-          description: Response data
-      type: object
-      required:
-      - data
-      title: ApiResponse[FirstTimeSetupStatus]
     ApiResponse_List_TemplateSummary__:
       properties:
         success:
@@ -2162,6 +2143,26 @@ components:
       required:
       - data
       title: ApiResponse[WorkflowShareResponse]
+    ApiResponse_bool_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          type: boolean
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[bool]
     ApiResponse_list_CredentialResponseDropDown__:
       properties:
         success:
@@ -2537,6 +2538,7 @@ components:
           minLength: 8
           title: Password
           description: Admin's password
+      additionalProperties: false
       type: object
       required:
       - name
@@ -2566,22 +2568,6 @@ components:
       - email
       title: FirstAdminSignupResponse
       description: Response schema for successful first-time admin signup.
-    FirstTimeSetupStatus:
-      properties:
-        requires_setup:
-          type: boolean
-          title: Requires Setup
-          description: Whether the system requires first-time admin setup
-        message:
-          type: string
-          title: Message
-          description: Status message
-      type: object
-      required:
-      - requires_setup
-      - message
-      title: FirstTimeSetupStatus
-      description: Response schema for first-time setup status check.
     GenerateWorkflowDocsRequest:
       properties:
         target_audience:
