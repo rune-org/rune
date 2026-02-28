@@ -32,6 +32,9 @@ class AuthService:
         if not user or not verify_password(password, user.hashed_password):
             return None
 
+        if not user.is_active:
+            raise Forbidden(detail="Account is deactivated")
+
         return user
 
     async def create_tokens(self, user: User) -> tuple[str, str]:
@@ -89,6 +92,9 @@ class AuthService:
         user = await self.get_user_by_id(user_id)
         if not user:
             raise InvalidTokenError(detail="User not found")
+
+        if not user.is_active:
+            raise Forbidden(detail="Account is deactivated")
 
         new_access_token = await create_access_token(user, db=self.db)
 

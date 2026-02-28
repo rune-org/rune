@@ -1,9 +1,9 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.core.exceptions import AlreadyExists, NotFound, Unauthorized
+from src.core.exceptions import AlreadyExists, Forbidden, NotFound, Unauthorized
 from src.core.password import hash_password, verify_password
-from src.db.models import User
+from src.db.models import User, UserRole
 from src.users.schemas import AdminUserUpdate, ProfileUpdate, UserCreate
 from src.users.utils import generate_temporary_password, normalize_email
 
@@ -126,6 +126,44 @@ class UserService:
         user = await self.get_user_by_id(user_id)
         await self.db.delete(user)
         await self.db.commit()
+
+    # Admin-Specific Operation
+    async def set_user_active_status(
+        self, user_id: int, is_active: bool, admin_id: int
+    ) -> User:
+        """
+        Activate or deactivate a user account.
+
+        Raises:
+            NotFound: If user doesn't exist.
+            Forbidden: If admin tries to deactivate themselves.
+            Forbidden: If deactivating the last active admin.
+        """
+        user = await self.get_user_by_id(user_id)
+
+        if not is_active and user_id == admin_id:
+            raise Forbidden(detail="You cannot deactivate your own account")
+
+        # Guard: ensure at least one other active admin remains
+        if not is_active and user.role == UserRole.ADMIN and user.is_active:
+            statement = select(User).where(
+                User.role == UserRole.ADMIN,
+                User.is_active == True,  # noqa: E712
+                User.id != user_id,
+            )
+            result = await self.db.exec(statement)
+            other_active_admins = result.all()
+            if not other_active_admins:
+                raise Forbidden(
+                    detail="Cannot deactivate the last active administrator"
+                )
+
+        user.is_active = is_active
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user
 
     # Admin-Specific Operation
     async def admin_update_user(self, user_id: int, user_data: AdminUserUpdate) -> User:

@@ -1191,6 +1191,18 @@ export type UserResponse = {
 export type UserRole = 'user' | 'admin';
 
 /**
+ * UserStatusUpdate
+ */
+export type UserStatusUpdate = {
+    /**
+     * Is Active
+     *
+     * Set to true to activate, false to deactivate
+     */
+    is_active: boolean;
+};
+
+/**
  * ValidationError
  */
 export type ValidationError = {
@@ -1294,6 +1306,7 @@ export type WorkflowListItem = {
      * Is Active
      */
     is_active: boolean;
+    role: WorkflowRole;
 };
 
 /**
@@ -2124,6 +2137,36 @@ export type ResetUserPasswordUsersUserIdPasswordPostResponses = {
 };
 
 export type ResetUserPasswordUsersUserIdPasswordPostResponse = ResetUserPasswordUsersUserIdPasswordPostResponses[keyof ResetUserPasswordUsersUserIdPasswordPostResponses];
+
+export type SetUserStatusUsersUserIdStatusPatchData = {
+    body: UserStatusUpdate;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: number;
+    };
+    query?: never;
+    url: '/users/{user_id}/status';
+};
+
+export type SetUserStatusUsersUserIdStatusPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetUserStatusUsersUserIdStatusPatchError = SetUserStatusUsersUserIdStatusPatchErrors[keyof SetUserStatusUsersUserIdStatusPatchErrors];
+
+export type SetUserStatusUsersUserIdStatusPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseUserResponse;
+};
+
+export type SetUserStatusUsersUserIdStatusPatchResponse = SetUserStatusUsersUserIdStatusPatchResponses[keyof SetUserStatusUsersUserIdStatusPatchResponses];
 
 export type GetMyProfileProfileMeGetData = {
     body?: never;
