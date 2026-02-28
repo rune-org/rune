@@ -152,28 +152,6 @@ export type ApiResponseFirstAdminSignupResponse = {
 };
 
 /**
- * ApiResponse[FirstTimeSetupStatus]
- */
-export type ApiResponseFirstTimeSetupStatus = {
-    /**
-     * Success
-     *
-     * Whether the request was successful
-     */
-    success?: boolean;
-    /**
-     * Message
-     *
-     * Human-readable message
-     */
-    message?: string;
-    /**
-     * Response data
-     */
-    data: FirstTimeSetupStatus;
-};
-
-/**
  * ApiResponse[List[TemplateSummary]]
  */
 export type ApiResponseListTemplateSummary = {
@@ -395,6 +373,30 @@ export type ApiResponseWorkflowShareResponse = {
      * Response data
      */
     data: WorkflowShareResponse;
+};
+
+/**
+ * ApiResponse[bool]
+ */
+export type ApiResponseBool = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: boolean;
 };
 
 /**
@@ -824,26 +826,6 @@ export type FirstAdminSignupResponse = {
      * Admin's email
      */
     email: string;
-};
-
-/**
- * FirstTimeSetupStatus
- *
- * Response schema for first-time setup status check.
- */
-export type FirstTimeSetupStatus = {
-    /**
-     * Requires Setup
-     *
-     * Whether the system requires first-time admin setup
-     */
-    requires_setup: boolean;
-    /**
-     * Message
-     *
-     * Status message
-     */
-    message: string;
 };
 
 /**
@@ -1518,7 +1500,7 @@ export type CheckSetupStatusSetupStatusGetResponses = {
     /**
      * Successful Response
      */
-    200: ApiResponseFirstTimeSetupStatus;
+    200: ApiResponseBool;
 };
 
 export type CheckSetupStatusSetupStatusGetResponse = CheckSetupStatusSetupStatusGetResponses[keyof CheckSetupStatusSetupStatusGetResponses];

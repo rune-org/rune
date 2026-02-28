@@ -23,7 +23,7 @@ export default function SignUpPage() {
     if (!mounted) return;
 
     checkFirstTimeSetup().then(({ data }) => {
-      if (!data?.data.requires_setup) {
+      if (!data?.data) {
         router.replace("/sign-in");
       } else {
         setCheckingSetup(false);
@@ -54,7 +54,7 @@ export default function SignUpPage() {
   return (
     <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center pt-24 pb-12 px-4">
       <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(120,119,198,0.1)_0%,transparent_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(120,119,198,0.1)_0%,transparent_100%)]" />
       </div>
 
       <AuthCard
@@ -63,7 +63,10 @@ export default function SignUpPage() {
         footer={
           <span>
             Already have an account?{" "}
-            <Link href="/sign-in" className="text-white hover:underline underline-offset-4 transition-all">
+            <Link
+              href="/sign-in"
+              className="text-white hover:underline underline-offset-4 transition-all"
+            >
               Log in
             </Link>
           </span>
