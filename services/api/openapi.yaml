@@ -850,6 +850,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /users/{user_id}/status:
+    patch:
+      tags:
+      - Users
+      summary: Activate or deactivate a user
+      description: Set a user's active status. Deactivation immediately revokes refresh
+        tokens.
+      operationId: set_user_status_users__user_id__status_patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserStatusUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_UserResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /profile/me:
     get:
       tags:
@@ -2880,6 +2916,16 @@ components:
       - admin
       title: UserRole
       description: User role enumeration.
+    UserStatusUpdate:
+      properties:
+        is_active:
+          type: boolean
+          title: Is Active
+          description: Set to true to activate, false to deactivate
+      type: object
+      required:
+      - is_active
+      title: UserStatusUpdate
     ValidationError:
       properties:
         loc:
@@ -2983,11 +3029,14 @@ components:
         is_active:
           type: boolean
           title: Is Active
+        role:
+          $ref: '#/components/schemas/WorkflowRole'
       type: object
       required:
       - id
       - name
       - is_active
+      - role
       title: WorkflowListItem
     WorkflowPermissionInfo:
       properties:
