@@ -17,8 +17,13 @@ import {
   fetchWorkflowExecutions,
   type RtesExecutionDocument,
 } from "@/lib/api/rtes";
-import type { ExecutionState, WorkflowExecutionStatus, NodeExecutionData } from "../types/execution";
+import type { ExecutionState, WorkflowExecutionStatus, NodeExecutionData, WorkflowGraphSnapshot } from "../types/execution";
 import { parseNodeStatus } from "../types/execution";
+import { workflowDataToCanvas, type WorkflowNode, type WorkflowEdge } from "@/lib/workflow-dsl";
+import { sanitizeGraph } from "../lib/graphIO";
+import { applyAutoLayout } from "../lib/autoLayout";
+import type { CanvasNode } from "../types";
+import type { Edge } from "@xyflow/react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,6 +74,71 @@ function formatRelativeTime(date: string): string {
 }
 
 /**
+ * Extract a graph snapshot from an RTES execution document.
+ * Converts the stored node definitions and edges back into React Flow format.
+ */
+function extractGraphSnapshot(doc: RtesExecutionDocument): WorkflowGraphSnapshot | undefined {
+  if (!doc.nodes || Object.keys(doc.nodes).length === 0) return undefined;
+
+  const workflowNodes: WorkflowNode[] = [];
+  for (const [nodeId, hydratedNode] of Object.entries(doc.nodes)) {
+    // Fall back to latest execution instance fields when top-level fields are empty
+    const extra = hydratedNode as Record<string, unknown>;
+    const latest = hydratedNode.latest;
+
+    const name = (extra.name as string) || latest?.name || nodeId;
+    const type = (extra.type as string) || latest?.node_type || "agent";
+    const trigger = (extra.trigger as boolean) ?? false;
+
+    workflowNodes.push({
+      id: nodeId,
+      name,
+      type,
+      trigger,
+      parameters: (extra.parameters as Record<string, unknown>) ?? {},
+      output: (extra.output as Record<string, unknown>) ?? {},
+      position: extra.position as [number, number] | undefined,
+    });
+  }
+
+  const workflowEdges: WorkflowEdge[] = (doc.edges ?? []).map((e) => ({
+    id: e.id,
+    src: e.src,
+    dst: e.dst,
+    label: e.label,
+  }));
+
+  const { nodes: canvasNodes, edges: canvasEdges } = workflowDataToCanvas({
+    nodes: workflowNodes,
+    edges: workflowEdges,
+  });
+
+  const sanitized = sanitizeGraph({ nodes: canvasNodes, edges: canvasEdges });
+
+  // Use stored positions when available; fall back to auto-layout when
+  // positions are missing (old executions or default [100,100]).
+  const allDefault = (sanitized.nodes as CanvasNode[]).every(
+    (n) => n.position.x === 100 && n.position.y === 100,
+  );
+  if (allDefault && sanitized.nodes.length > 1) {
+    const layouted = applyAutoLayout({
+      nodes: sanitized.nodes as CanvasNode[],
+      edges: sanitized.edges as Edge[],
+      respectPinned: false,
+    });
+    return {
+      nodes: layouted.nodes as CanvasNode[],
+      edges: layouted.edges as Edge[],
+    };
+  }
+
+  return {
+    nodes: sanitized.nodes as CanvasNode[],
+    edges: sanitized.edges as Edge[],
+  };
+}
+
+/**
  * Convert RTES ExecutionDocument to frontend ExecutionState
  */
 function rtesDocToExecutionState(doc: RtesExecutionDocument): ExecutionState {
@@ -89,6 +159,8 @@ function rtesDocToExecutionState(doc: RtesExecutionDocument): ExecutionState {
     }
   }
 
+  const graphSnapshot = extractGraphSnapshot(doc);
+
   return {
     executionId: doc.execution_id,
     workflowId: parseInt(doc.workflow_id, 10),
@@ -96,6 +168,7 @@ function rtesDocToExecutionState(doc: RtesExecutionDocument): ExecutionState {
     nodes: nodesMap,
     startedAt: doc.created_at,
     isHistorical: true,
+    graphSnapshot,
   };
 }
 

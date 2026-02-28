@@ -262,6 +262,8 @@ pub struct ExecutionDocument {
     pub accumulated_context: Value,
     #[serde(default, deserialize_with = "deserialize_nodes")]
     pub nodes:               HashMap<String, HydratedNode>,
+    #[serde(default)]
+    pub edges:               Vec<Value>,
     pub status:              Option<String>,
     pub name:                Option<String>,
     pub node_type:           Option<String>,
@@ -306,19 +308,24 @@ where
 
                     HydratedNode { latest, lineages, extra }
                 } else {
-                    serde_json::from_value::<NodeExecutionInstance>(Value::Object(obj.clone()))
-                        .map_or_else(
-                            |_| HydratedNode {
-                                latest:   None,
-                                lineages: HashMap::new(),
-                                extra:    obj.into_iter().collect::<HashMap<_, _>>(),
-                            },
-                            |instance| HydratedNode {
-                                latest:   Some(instance),
-                                lineages: HashMap::new(),
-                                extra:    HashMap::new(),
-                            },
-                        )
+                    let extra_map = obj.into_iter().collect::<HashMap<_, _>>();
+                    serde_json::from_value::<NodeExecutionInstance>(
+                        Value::Object(extra_map.iter().map(|(k, v)| (k.clone(), v.clone())).collect())
+                    )
+                    .ok()
+                    .filter(|inst| inst.status.is_some())
+                    .map_or_else(
+                        || HydratedNode {
+                            latest:   None,
+                            lineages: HashMap::new(),
+                            extra:    extra_map,
+                        },
+                        |instance| HydratedNode {
+                            latest:   Some(instance),
+                            lineages: HashMap::new(),
+                            extra:    HashMap::new(),
+                        },
+                    )
                 }
             },
             other => serde_json::from_value::<NodeExecutionInstance>(other.clone()).map_or_else(
