@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Users, Trash2, Edit2 } from "lucide-react";
+import { Users, Trash2, Edit2, UserCheck, UserX } from "lucide-react";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import type { UserResponse } from "@/client/types.gen";
 import { useAuth } from "@/lib/auth";
@@ -19,7 +19,15 @@ export default function UsersPage() {
   const { state } = useAuth();
   const currentUser = state.user;
 
-  const { users, loading, fetchUsers, createUser, updateUser, deleteUser } = useUserManagement();
+  const {
+    users,
+    loading,
+    fetchUsers,
+    createUser,
+    updateUser,
+    deleteUser,
+    toggleUserStatus,
+  } = useUserManagement();
 
   // Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,14 +60,20 @@ export default function UsersPage() {
   }, [currentUser, router]);
 
   if (!currentUser) {
-    return <div className="p-8 text-sm text-muted-foreground">Loading user...</div>;
+    return (
+      <div className="p-8 text-sm text-muted-foreground">Loading user...</div>
+    );
   }
   if (currentUser.role !== "admin") {
     return null;
   }
 
   // Invite flow
-  const handleSendInvite = async (name: string, email: string, role: "user" | "admin"): Promise<boolean> => {
+  const handleSendInvite = async (
+    name: string,
+    email: string,
+    role: "user" | "admin",
+  ): Promise<boolean> => {
     const created = await createUser(name, email, role);
 
     if (created) {
@@ -85,7 +99,11 @@ export default function UsersPage() {
   };
 
   // Update user (admin)
-  const handleUpdateUser = async (name: string, email: string, role: "user" | "admin"): Promise<boolean> => {
+  const handleUpdateUser = async (
+    name: string,
+    email: string,
+    role: "user" | "admin",
+  ): Promise<boolean> => {
     if (!editingUser) return false;
 
     const success = await updateUser(Number(editingUser.id), name, email, role);
@@ -114,13 +132,15 @@ export default function UsersPage() {
     if (success) {
       setDeletingUser(null);
     }
-    
+
     return success;
   };
 
   // Filtered users for table
   const filteredUsers = users.filter((u) =>
-    `${u.name ?? ""} ${u.email ?? ""}`.toLowerCase().includes(searchQuery.toLowerCase())
+    `${u.name ?? ""} ${u.email ?? ""}`
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -131,7 +151,10 @@ export default function UsersPage() {
           <Users className="h-5 w-5" /> Users
         </h2>
 
-        <Button className="bg-primary hover:bg-primary/80 text-white" onClick={() => setInviteOpen(true)}>
+        <Button
+          className="bg-primary hover:bg-primary/80 text-white"
+          onClick={() => setInviteOpen(true)}
+        >
           Invite
         </Button>
       </div>
@@ -153,6 +176,7 @@ export default function UsersPage() {
               <th className="text-left py-3 px-4 font-medium">User</th>
               <th className="text-left py-3 px-4 font-medium">Role</th>
               <th className="text-left py-3 px-4 font-medium">Email</th>
+              <th className="text-left py-3 px-4 font-medium">Status</th>
               <th className="text-left py-3 px-4 font-medium">Actions</th>
             </tr>
           </thead>
@@ -160,7 +184,10 @@ export default function UsersPage() {
           <tbody>
             {filteredUsers.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+                <td
+                  colSpan={5}
+                  className="py-6 text-center text-sm text-muted-foreground"
+                >
                   {loading ? "Loading users..." : "No users found."}
                 </td>
               </tr>
@@ -187,15 +214,54 @@ export default function UsersPage() {
                 <td className="py-4 px-4">{u.email}</td>
 
                 <td className="py-4 px-4">
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                      u.is_active
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                    }`}
+                  >
+                    {u.is_active ? "Active" : "Inactive"}
+                  </span>
+                </td>
+
+                <td className="py-4 px-4">
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" className="p-2" onClick={() => openEditModal(u)} title="Edit">
+                    <Button
+                      variant="outline"
+                      className="p-2"
+                      onClick={() => openEditModal(u)}
+                      title="Edit"
+                    >
                       <Edit2 className="w-4 h-4" />
                     </Button>
 
                     {u.id !== currentUser.id && (
-                      <Button variant="destructive" className="p-2" onClick={() => openDeleteConfirm(u)} title="Delete">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          className="p-2"
+                          onClick={() =>
+                            toggleUserStatus(Number(u.id), !u.is_active)
+                          }
+                          title={u.is_active ? "Deactivate" : "Activate"}
+                        >
+                          {u.is_active ? (
+                            <UserX className="w-4 h-4 text-red-500" />
+                          ) : (
+                            <UserCheck className="w-4 h-4 text-green-500" />
+                          )}
+                        </Button>
+
+                        <Button
+                          variant="destructive"
+                          className="p-2"
+                          onClick={() => openDeleteConfirm(u)}
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
                     )}
                   </div>
                 </td>
@@ -206,7 +272,7 @@ export default function UsersPage() {
       </Card>
 
       {/* Invite Modal */}
-      <InviteUserDialog 
+      <InviteUserDialog
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
         onInvite={handleSendInvite}
