@@ -12,9 +12,9 @@ from src.auth.service import AuthService
 from src.auth.token_store import TokenStore
 from src.core.config import get_settings
 from src.core.dependencies import DatabaseDep, RedisDep, get_current_user
-from src.core.exceptions import Unauthorized
+from src.core.exceptions import Forbidden, Unauthorized
 from src.core.responses import ApiResponse
-from src.db.models import User
+from src.db.models import AuthProvider, User
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -41,6 +41,13 @@ async def login(
     response: Response,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> ApiResponse[TokenResponse]:
+    # Fetch user by email first so we can give a clear error for SSO-only accounts.
+    candidate = await auth_service.get_user_by_email(login_request.email)
+    if candidate and candidate.auth_provider == AuthProvider.SAML:
+        raise Forbidden(
+            detail="This account uses SSO. Please sign in via your organisation's identity provider."
+        )
+
     user = await auth_service.authenticate_user(
         email=login_request.email, password=login_request.password
     )

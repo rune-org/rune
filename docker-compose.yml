@@ -102,6 +102,9 @@ services:
       # Smith AI Agent Settings
       SMITH_MODEL: ${SMITH_MODEL:-gemini-2.0-flash}
       SMITH_TEMPERATURE: ${SMITH_TEMPERATURE:-0.3}
+      # SAML SSO Settings
+      SAML_SP_BASE_URL: ${SAML_SP_BASE_URL:-https://localhost/api}
+      SAML_FRONTEND_URL: ${SAML_FRONTEND_URL:-https://localhost}
     ports:
       - "8000:8000"
     depends_on:
