@@ -15,10 +15,8 @@ async def test_first_time_setup_status_when_no_users(client: AsyncClient):
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
-    assert data["message"] == "First-time setup status retrieved"
-    assert "data" in data
-    assert data["data"]["requires_setup"] is True
-    assert "first-time setup required" in data["data"]["message"].lower()
+    assert "first-time setup required" in data["message"].lower()
+    assert data["data"] is True
 
 
 @pytest.mark.asyncio
@@ -33,8 +31,8 @@ async def test_first_time_setup_status_when_users_exist(
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
-    assert data["data"]["requires_setup"] is False
-    assert "already configured" in data["data"]["message"].lower()
+    assert data["data"] is False
+    assert "already configured" in data["message"].lower()
 
 
 # ============================================================================
@@ -425,7 +423,7 @@ async def test_first_time_setup_status_changes_after_signup(client: AsyncClient)
     """
     # Check initial status
     status_before = await client.get("/setup/status")
-    assert status_before.json()["data"]["requires_setup"] is True
+    assert status_before.json()["data"] is True
 
     # Create first admin
     await client.post(
@@ -439,7 +437,7 @@ async def test_first_time_setup_status_changes_after_signup(client: AsyncClient)
 
     # Check status after signup
     status_after = await client.get("/setup/status")
-    assert status_after.json()["data"]["requires_setup"] is False
+    assert status_after.json()["data"] is False
 
 
 # ============================================================================
