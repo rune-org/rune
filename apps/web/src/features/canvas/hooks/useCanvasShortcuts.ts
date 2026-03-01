@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { CanvasNode } from "../types";
+import type { CanvasNode, NodeKind } from "../types";
 import type { Edge } from "@xyflow/react";
 
 type CanvasShortcutsProps = {
@@ -19,6 +19,8 @@ type CanvasShortcutsProps = {
   onSelectAll?: (firstId: string | null) => void;
   onPushHistory: () => void;
   onDelete: () => void;
+  shortcutsRef?: React.RefObject<Record<string, NodeKind>>;
+  onNodeShortcut?: (kind: NodeKind) => void;
 };
 
 export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
@@ -45,7 +47,7 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
         onPushHistory,
       } = latestPropsRef.current;
 
-      const target = e.target as HTMLElement | null;
+      const target = e.target as Element | null;
       const isEditable =
         !!target &&
         (target.tagName === "INPUT" ||
@@ -132,6 +134,21 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
           onCopy();
         }
         return;
+      }
+
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        if (e.repeat) return;
+        const inCanvasContext =
+          target === document.body || !!target?.closest(".react-flow");
+        if (!inCanvasContext) return;
+
+        const key = e.key.toLowerCase();
+        const { shortcutsRef, onNodeShortcut } = latestPropsRef.current;
+        const kind = shortcutsRef?.current?.[key];
+        if (kind && onNodeShortcut) {
+          e.preventDefault();
+          onNodeShortcut(kind);
+        }
       }
     };
 

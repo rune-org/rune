@@ -193,14 +193,28 @@ api-dev:
 ifeq ($(DETECTED_OS),Windows)
 	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && echo Installing/updating dependencies... && cd services\api && call venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && pip install -r requirements.txt && fastapi dev src\app.py) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && echo Installing/updating dependencies... && cd services\api && call .venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && pip install -r requirements.txt && fastapi dev src\app.py) else (echo ⚠️  No virtual environment found. Using system Python. && echo For best results, install dependencies with: make api-install && cd services\api && fastapi dev src\app.py || (echo ❌ FastAPI not found. Please install dependencies: make api-install && exit /b 1))
 else
-	@if [ -d "services/api/venv" ] || [ -d "services/api/.venv" ]; then \
+	@if [ -n "$(VENV)" ]; then \
+		if [ ! -d "$(VENV)" ]; then \
+			echo "❌ Specified venv not found: $(VENV)"; \
+			exit 1; \
+		fi; \
+		echo "Using virtual environment: $(VENV)"; \
+		echo "Installing/updating dependencies..."; \
+		. $(VENV)/bin/activate && cd services/api && pip install -r requirements.txt && fastapi dev src/app.py --reload-dir src; \
+	elif [ -d "services/api/.venv" ]; then \
+		echo "Using virtual environment: services/api/.venv"; \
+		echo "Installing/updating dependencies..."; \
+		cd services/api && . .venv/bin/activate && pip install -r requirements.txt && fastapi dev src/app.py --reload-dir src; \
+	elif [ -d "services/api/venv" ]; then \
 		echo "Using virtual environment: services/api/venv"; \
 		echo "Installing/updating dependencies..."; \
-		cd services/api && . venv/bin/activate && pip install -r requirements.txt && fastapi dev src/app.py; \
+		cd services/api && . venv/bin/activate && pip install -r requirements.txt && fastapi dev src/app.py --reload-dir src; \
 	else \
-		echo "⚠️  No virtual environment found. Using system Python."; \
-		echo "   For best results, install dependencies with: make api-install"; \
-		cd services/api && fastapi dev src/app.py || (echo "❌ FastAPI not found. Please install dependencies: make api-install" && exit 1); \
+		echo "❌ No virtual environment found in services/api/ (.venv or venv)."; \
+		echo "   Create one with: cd services/api && python3 -m venv .venv"; \
+		echo "   Then install dependencies with: make api-install"; \
+		echo "   Or specify a custom path: make api-dev VENV=/path/to/venv"; \
+		exit 1; \
 	fi
 endif
 

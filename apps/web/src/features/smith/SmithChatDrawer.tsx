@@ -75,13 +75,19 @@ export function SmithChatDrawer({
     }
   };
 
+  const handleMessagePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Keep pointer interactions inside the drawer so canvas handlers
+    // never interfere with text selection.
+    e.stopPropagation();
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex h-full w-full max-w-md flex-col gap-0 border-l border-border/40 bg-background/95 p-0 shadow-2xl backdrop-blur-xl sm:max-w-[500px] focus-visible:outline-none select-text"
+        className="z-[80] flex h-full w-full max-w-md flex-col gap-0 border-l border-border/40 bg-background/95 p-0 shadow-2xl backdrop-blur-xl sm:max-w-[500px] focus-visible:outline-none select-text"
         onKeyDown={handleDrawerKeyDown}
-        overlayClassName="bg-transparent backdrop-blur-none"
+        overlayClassName="z-[70] bg-transparent backdrop-blur-none"
       >
         <div className="relative z-10 flex shrink-0 flex-col items-center justify-center border-b border-border/40 bg-background/80 py-8 backdrop-blur-md select-none">
           <div className="mb-3 flex h-12 w-auto items-center justify-center">
@@ -138,16 +144,19 @@ export function SmithChatDrawer({
                         </div>
                     )}
 
-                    <div className="flex flex-col gap-2 max-w-[85%]">
+                    <div
+                        className="max-w-[85%] select-text"
+                        onPointerDown={handleMessagePointerDown}
+                    >
                         {msg.role === "tool_call" ? (
-                            <div className="relative rounded-xl px-3 py-2 text-xs leading-relaxed bg-amber-500/5 text-amber-200/80 border border-amber-500/20 rounded-bl-sm backdrop-blur-sm font-mono">
+                            <div className="relative rounded-xl rounded-bl-sm border border-amber-500/20 bg-amber-500/5 px-3 py-2 font-mono text-xs leading-relaxed text-amber-200/80 select-text">
                                 <span className="text-amber-500/60">→</span> {msg.toolName || "tool"}: {msg.content}
                             </div>
                         ) : (
                             <div className={cn(
-                                "relative rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm select-text",
+                                "relative rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm select-text cursor-text whitespace-pre-wrap wrap-break-word",
                                 msg.role === "user"
-                                    ? "bg-gradient-to-tr from-primary to-primary/90 text-primary-foreground rounded-br-sm selection:bg-white selection:text-primary"
+                                    ? "smith-user-bubble bg-linear-to-tr from-primary to-primary/90 text-primary-foreground rounded-br-sm"
                                     : "bg-muted/50 text-foreground border border-border/50 rounded-bl-sm backdrop-blur-sm selection:bg-primary/20 selection:text-foreground"
                             )}>
                                 {msg.role === "smith" ? (

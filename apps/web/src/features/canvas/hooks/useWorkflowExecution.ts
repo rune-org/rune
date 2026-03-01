@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { toast } from "@/components/ui/toast";
 import { useExecution } from "../context/ExecutionContext";
 import { useRtesWebSocket, type WsConnectionStatus } from "./useRtesWebSocket";
 import type { ExecutionState, RtesNodeUpdate } from "../types/execution";
@@ -70,8 +71,9 @@ export function useWorkflowExecution(
       [dispatch]
     ),
     onError: useCallback((err: Event | Error) => {
-      console.error("[Execution] WebSocket error:", err);
-      setError(err instanceof Error ? err.message : "WebSocket error");
+      const errorMsg = err instanceof Error ? err.message : "WebSocket error";
+      setError(errorMsg);
+      toast.error("Execution connection error");
     }, []),
   });
 
@@ -133,9 +135,9 @@ export function useWorkflowExecution(
     } catch (err) {
       if (!isMountedRef.current) return;
 
-      console.error("[Execution] Failed to start:", err);
       const errorMsg = err instanceof Error ? err.message : "Failed to start execution";
       setError(errorMsg);
+      toast.error(errorMsg);
       dispatch({ type: "SET_ERROR", error: errorMsg });
     } finally {
       if (isMountedRef.current) {
