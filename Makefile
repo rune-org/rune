@@ -1,25 +1,23 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down test-infra-up test-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
 ifeq ($(UNAME),)
 	DETECTED_OS := Windows
-	VENV_ACTIVATE := venv\Scripts\activate
 	PYTHON := python
 	RM := rmdir /s /q
 	# Windows-specific commands
 	EXIT_CMD := exit /b 1
 	CHECK_TEST_INFRA := docker ps --filter "name=rune-api-postgres-test" --format "{{.Names}}" | findstr "rune-api-postgres-test" >nul && docker ps --filter "name=rune-api-redis-test" --format "{{.Names}}" | findstr "rune-api-redis-test" >nul && docker ps --filter "name=rune-api-rabbitmq-test" --format "{{.Names}}" | findstr "rune-api-rabbitmq-test" >nul || (echo ❌ Test infrastructure not running. && echo Please start test services with: make test-infra-up && exit /b 1)
-	ACTIVATE_VENV_IF_EXISTS := if exist "services\api\venv" (echo Using virtual environment: services\api\venv && cd services\api && call venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1)) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && cd services\api && call .venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1)) else (echo ⚠️  No virtual environment found. Using system Python. && echo For best results, install dependencies with: make api-install && cd services\api)
+	CHECK_UV := where uv >nul 2>nul || (echo ❌ uv not found. Please install uv: https://github.com/astral-sh/uv && exit /b 1)
 else
 	DETECTED_OS := Unix
-	VENV_ACTIVATE := . venv/bin/activate
 	PYTHON := python3
 	RM := rm -rf
 	# Unix-specific commands
 	EXIT_CMD := exit 1
 	CHECK_TEST_INFRA := docker ps --filter "name=rune-api-postgres-test" --format "{{.Names}}" | grep -q "rune-api-postgres-test" && docker ps --filter "name=rune-api-redis-test" --format "{{.Names}}" | grep -q "rune-api-redis-test" && docker ps --filter "name=rune-api-rabbitmq-test" --format "{{.Names}}" | grep -q "rune-api-rabbitmq-test" || (echo "❌ Test infrastructure not running." && echo "   Please start test services with: make test-infra-up" && exit 1)
-	ACTIVATE_VENV_IF_EXISTS := if [ -d "services/api/venv" ] || [ -d "services/api/.venv" ]; then echo "Using virtual environment: services/api/venv"; cd services/api && . venv/bin/activate; else echo "⚠️  No virtual environment found. Using system Python."; echo "   For best results, install dependencies with: make api-install"; cd services/api; fi
+	CHECK_UV := command -v uv >/dev/null 2>&1 || (echo "❌ uv not found. Please install uv: https://github.com/astral-sh/uv" && exit 1)
 endif
 
 # Default target
@@ -183,7 +181,9 @@ api-test:
 	@echo "Running API tests..."
 	@echo "Checking test infrastructure..."
 	@$(CHECK_TEST_INFRA)
-	@$(ACTIVATE_VENV_IF_EXISTS) && pytest || (echo "❌ pytest not found. Please install dependencies: make api-install" && $(EXIT_CMD))
+	@echo "Checking uv installation..."
+	@$(CHECK_UV)
+	@cd services/api && uv run pytest || (echo "❌ pytest failed. Make sure dependencies are installed: make api-install" && $(EXIT_CMD))
 
 lint: web-lint api-lint worker-lint
 	@echo "✓ Linting complete"
