@@ -2,7 +2,7 @@
 name = "api"
 version = "0.1.0"
 description = "A comprehensive FastAPI-based REST API service for the Rune workflow automation platform"
-requires-python = ">=3.12"
+requires-python = ">=3.13,<3.14"
 dependencies = [
     "aio-pika==9.5.7",
     "alembic==1.17.2",
