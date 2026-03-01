@@ -234,7 +234,7 @@ class RuneShell:
                 parts = shortcuts[cmd] + args
             
             # Execute through Click
-            with self.cli.make_context('rune', parts, standalone_mode=False) as ctx:
+            with self.cli.make_context('rune', parts) as ctx:
                 self.cli.invoke(ctx)
                 
         except click.ClickException as e:
