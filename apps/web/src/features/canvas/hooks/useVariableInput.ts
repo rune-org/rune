@@ -35,6 +35,14 @@ function isPlaceholderBlock(element: HTMLElement): boolean {
   );
 }
 
+function isDecorativeTrailingBreak(element: HTMLElement): boolean {
+  if (element.tagName !== "BR") return false;
+  const parent = element.parentElement;
+  if (!parent || !isBlockElement(parent)) return false;
+  if (parent.childNodes.length <= 1) return false;
+  return parent.lastChild === element;
+}
+
 function blockPrefixLength(child: Node, childIndex: number): number {
   return childIndex > 0 && isBlockElement(child) ? 1 : 0;
 }
@@ -80,7 +88,9 @@ function getRawLength(node: Node): number {
   const dataValue = element.getAttribute("data-value");
   if (dataValue) return dataValue.length;
 
-  if (element.tagName === "BR") return 1;
+  if (element.tagName === "BR") {
+    return isDecorativeTrailingBreak(element) ? 0 : 1;
+  }
   if (isPlaceholderBlock(element)) return 0;
 
   let length = 0;
@@ -136,6 +146,7 @@ function countRawOffsetWithinNode(
         return targetOffset > 0 ? dataValue.length : 0;
       }
       if (element.tagName === "BR") {
+        if (isDecorativeTrailingBreak(element)) return 0;
         return targetOffset > 0 ? 1 : 0;
       }
       if (isPlaceholderBlock(element)) {
@@ -278,13 +289,40 @@ function resolveCursorPosition(
     }
 
     if (remaining === childLength) {
-      return { container: element, offset: i + 1 };
+      return resolveCursorAtChildEnd(element, child, i, childLength);
     }
 
     remaining -= childLength;
   }
 
   return { container: element, offset: children.length };
+}
+
+function resolveCursorAtChildEnd(
+  parent: HTMLElement,
+  child: Node,
+  childIndex: number,
+  childRawLength: number,
+): CursorDomPosition {
+  if (child.nodeType === Node.TEXT_NODE) {
+    return {
+      container: child,
+      offset: domOffsetFromRawTextOffset(child.textContent ?? "", childRawLength),
+    };
+  }
+
+  if (child.nodeType === Node.ELEMENT_NODE) {
+    const childElement = child as HTMLElement;
+    if (
+      !childElement.getAttribute("data-value") &&
+      childElement.tagName !== "BR" &&
+      !isPlaceholderBlock(childElement)
+    ) {
+      return resolveCursorPosition(childElement, childRawLength);
+    }
+  }
+
+  return { container: parent, offset: childIndex + 1 };
 }
 
 function extractFromNode(node: Node, childIndex: number): string {
@@ -303,6 +341,9 @@ function extractFromNode(node: Node, childIndex: number): string {
   }
 
   if (element.tagName === "BR") {
+    if (isDecorativeTrailingBreak(element)) {
+      return "";
+    }
     return "\n";
   }
 

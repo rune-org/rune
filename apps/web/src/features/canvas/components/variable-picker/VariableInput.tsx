@@ -81,6 +81,7 @@ function pillHtml(
 function segmentsToHtml(
   segments: Segment[],
   colorMap: Map<string, string>,
+  multiline: boolean,
 ): string {
   // First, build a flat list of inline HTML chunks, splitting text segments
   // on newlines so we know where line breaks are.
@@ -99,9 +100,11 @@ function segmentsToHtml(
     }
   }
 
-  // Single line: render flat (no wrapping divs) so the contentEditable
-  // behaves naturally for single-line inputs.
-  if (lines.length === 1) {
+  if (lines.length === 1 && lines[0].length === 0) {
+    return "";
+  }
+
+  if (!multiline && lines.length === 1) {
     return lines[0].join("");
   }
 
@@ -313,7 +316,7 @@ export function VariableInput({
     const el = editableRef.current;
     if (!el) return;
 
-    const newHtml = segmentsToHtml(segments, colorMap);
+    const newHtml = segmentsToHtml(segments, colorMap, multiline);
     const isFocused = document.activeElement === el;
     el.innerHTML = newHtml;
     if (isFocused) {
@@ -327,7 +330,7 @@ export function VariableInput({
         sel.addRange(range);
       }
     }
-  }, [segments, editableRef, colorMap, isInternalChangeRef]);
+  }, [segments, editableRef, colorMap, isInternalChangeRef, multiline]);
 
   const onInput = useCallback(() => {
     handleInput();
