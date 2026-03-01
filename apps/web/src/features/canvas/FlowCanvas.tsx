@@ -34,7 +34,7 @@ import { useConnectionValidation } from "./hooks/useConnectionValidation";
 import { useGraphClipboard } from "./hooks/useGraphClipboard";
 import { useRafNodeDrag } from "./hooks/useRafNodeDrag";
 import { useSmith } from "./hooks/useSmith";
-import { ExecutionProvider } from "./context/ExecutionContext";
+import { ExecutionProvider, useExecution } from "./context/ExecutionContext";
 import { SmithChatDrawer } from "@/features/smith/SmithChatDrawer";
 
 type FlowCanvasProps = {
@@ -126,6 +126,33 @@ function FlowCanvasInner({
   } = useWorkflowExecution({ workflowId });
 
   useExecutionEdgeSync(executionState, setEdges);
+
+  // Historical snapshot detection
+  const { state: ctxExecutionState } = useExecution();
+  const isViewingSnapshot =
+    ctxExecutionState.isHistorical === true && !!ctxExecutionState.graphSnapshot;
+
+  const liveNodesRef = useRef<CanvasNode[]>(externalNodes ?? []);
+  const liveEdgesRef = useRef<Edge[]>(externalEdges ?? []);
+
+  useEffect(() => {
+    if (!isViewingSnapshot) {
+      liveNodesRef.current = externalNodes ?? [];
+      liveEdgesRef.current = externalEdges ?? [];
+    }
+  }, [externalNodes, externalEdges, isViewingSnapshot]);
+
+  // Swap canvas between snapshot and live graph
+  useEffect(() => {
+    if (isViewingSnapshot && ctxExecutionState.graphSnapshot) {
+      setNodes(ctxExecutionState.graphSnapshot.nodes);
+      setEdges(ctxExecutionState.graphSnapshot.edges);
+    } else {
+      setNodes(liveNodesRef.current);
+      setEdges(liveEdgesRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isViewingSnapshot, ctxExecutionState.graphSnapshot]);
 
   const { autoLayout } = useAutoLayout(nodes, edges, setNodes, setEdges, {
     onBeforeLayout: pushHistory,
@@ -301,10 +328,11 @@ function FlowCanvasInner({
   });
 
   useEffect(() => {
+    if (isViewingSnapshot) return;
     setNodes(externalNodes ?? []);
     setEdges(externalEdges ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalNodes, externalEdges]);
+  }, [externalNodes, externalEdges, isViewingSnapshot]);
 
   return (
     <div
@@ -325,6 +353,7 @@ function FlowCanvasInner({
         onNodeDragStop={onNodeDragStop}
         onInit={onInit}
         onPaneClick={onPaneClick}
+        readOnly={isViewingSnapshot}
       />
 
       <div className="pointer-events-none absolute left-4 top-4 z-35">
@@ -334,8 +363,8 @@ function FlowCanvasInner({
             onStop={stopExecution}
             onUndo={handleUndo}
             onRedo={handleRedo}
-            canUndo={canUndo}
-            canRedo={canRedo}
+            canUndo={!isViewingSnapshot && canUndo}
+            canRedo={!isViewingSnapshot && canRedo}
             onSave={persistGraph}
             onExportToClipboard={exportToClipboard}
             onExportToFile={exportToFile}
@@ -345,7 +374,7 @@ function FlowCanvasInner({
             onImportFromTemplate={importFromTemplate}
             onFitView={handleFitView}
             onAutoLayout={autoLayout}
-            saveDisabled={saveDisabled}
+            saveDisabled={saveDisabled || isViewingSnapshot}
             executionStatus={executionState.status}
             isStartingExecution={isStartingExecution}
             workflowId={workflowId}
@@ -363,27 +392,32 @@ function FlowCanvasInner({
         selectedNode={selectedNode}
         updateSelectedNodeLabel={updateSelectedNodeLabel}
         updateData={updateNodeData}
-        onDelete={selectedNode ? deleteSelectedElements : undefined}
+        onDelete={selectedNode && !isViewingSnapshot ? deleteSelectedElements : undefined}
         isExpandedDialogOpen={isInspectorExpanded}
         setIsExpandedDialogOpen={setIsInspectorExpanded}
-        onTogglePin={togglePin}
+        onTogglePin={isViewingSnapshot ? undefined : togglePin}
         workflowId={workflowId}
+        readOnly={isViewingSnapshot}
       />
 
       <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
         <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
-          Drag to move • Connect via handles • Paste JSON to import
+          {isViewingSnapshot
+            ? "Viewing historical execution snapshot (read-only)"
+            : "Drag to move \u2022 Connect via handles \u2022 Paste JSON to import"}
         </div>
       </div>
 
-      <Library
-        containerRef={containerRef}
-        toolbarRef={toolbarRef}
-        onAdd={onLibraryAdd}
-        shortcutsByKind={shortcutsByKind}
-        onAssignShortcut={assignShortcut}
-        onResetShortcuts={resetShortcuts}
-      />
+      {!isViewingSnapshot && (
+        <Library
+          containerRef={containerRef}
+          toolbarRef={toolbarRef}
+          onAdd={onLibraryAdd}
+          shortcutsByKind={shortcutsByKind}
+          onAssignShortcut={assignShortcut}
+          onResetShortcuts={resetShortcuts}
+        />
+      )}
 
       {/* Hidden file input for importing JSON files */}
       <input

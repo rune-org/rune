@@ -26,6 +26,7 @@ export interface RtesExecutionDocument {
   workflow_id: string;
   status?: string;
   nodes: Record<string, RtesHydratedNode>;
+  edges?: Array<{ id: string; src: string; dst: string; label?: string }>;
   created_at?: string;
   updated_at?: string;
 }

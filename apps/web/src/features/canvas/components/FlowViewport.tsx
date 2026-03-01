@@ -47,6 +47,7 @@ type FlowViewportProps = {
   >;
   onInit: (instance: ReactFlowInstance<CanvasNode, Edge>) => void;
   onPaneClick: () => void;
+  readOnly?: boolean;
 };
 
 export const FlowViewport = memo(function FlowViewport({
@@ -62,6 +63,7 @@ export const FlowViewport = memo(function FlowViewport({
   onNodeDragStop,
   onInit,
   onPaneClick,
+  readOnly,
 }: FlowViewportProps) {
   return (
     <ReactFlow
@@ -81,6 +83,8 @@ export const FlowViewport = memo(function FlowViewport({
       onNodeDragStop={onNodeDragStop}
       onInit={onInit}
       onPaneClick={onPaneClick}
+      nodesDraggable={!readOnly}
+      nodesConnectable={!readOnly}
     >
       <Background />
 
