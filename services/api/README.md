@@ -8,7 +8,7 @@ A comprehensive FastAPI-based REST API service for the Rune workflow automation 
 
 Before setting up the Rune API, ensure you have the following installed:
 
-- **Python 3.12+** - Required for FastAPI and modern Python features
+- **Python 3.13+** - Required for FastAPI and modern Python features
 - **uv** - Fast Python package manager (replaces pip/venv)
 - **Git** - For version control and repository management
 - **Docker** (optional) - For containerized deployment
