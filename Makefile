@@ -7,11 +7,19 @@ ifeq ($(UNAME),)
 	VENV_ACTIVATE := venv\Scripts\activate
 	PYTHON := python
 	RM := rmdir /s /q
+	# Windows-specific commands
+	EXIT_CMD := exit /b 1
+	CHECK_TEST_INFRA := docker ps --filter "name=rune-api-postgres-test" --format "{{.Names}}" | findstr "rune-api-postgres-test" >nul && docker ps --filter "name=rune-api-redis-test" --format "{{.Names}}" | findstr "rune-api-redis-test" >nul && docker ps --filter "name=rune-api-rabbitmq-test" --format "{{.Names}}" | findstr "rune-api-rabbitmq-test" >nul || (echo ❌ Test infrastructure not running. && echo Please start test services with: make test-infra-up && exit /b 1)
+	ACTIVATE_VENV_IF_EXISTS := if exist "services\api\venv" (echo Using virtual environment: services\api\venv && cd services\api && call venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1)) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && cd services\api && call .venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1)) else (echo ⚠️  No virtual environment found. Using system Python. && echo For best results, install dependencies with: make api-install && cd services\api)
 else
 	DETECTED_OS := Unix
 	VENV_ACTIVATE := . venv/bin/activate
 	PYTHON := python3
 	RM := rm -rf
+	# Unix-specific commands
+	EXIT_CMD := exit 1
+	CHECK_TEST_INFRA := docker ps --filter "name=rune-api-postgres-test" --format "{{.Names}}" | grep -q "rune-api-postgres-test" && docker ps --filter "name=rune-api-redis-test" --format "{{.Names}}" | grep -q "rune-api-redis-test" && docker ps --filter "name=rune-api-rabbitmq-test" --format "{{.Names}}" | grep -q "rune-api-rabbitmq-test" || (echo "❌ Test infrastructure not running." && echo "   Please start test services with: make test-infra-up" && exit 1)
+	ACTIVATE_VENV_IF_EXISTS := if [ -d "services/api/venv" ] || [ -d "services/api/.venv" ]; then echo "Using virtual environment: services/api/venv"; cd services/api && . venv/bin/activate; else echo "⚠️  No virtual environment found. Using system Python."; echo "   For best results, install dependencies with: make api-install"; cd services/api; fi
 endif
 
 # Default target
@@ -97,7 +105,21 @@ api-install:
 	@echo "Setting up API dependencies..."
 ifeq ($(DETECTED_OS),Windows)
 	@if not exist "services\api\venv" if not exist "services\api\.venv" (echo Creating virtual environment... && cd services\api && $(PYTHON) -m venv venv)
-	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && cd services\api && call venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && pip install -r requirements.txt && echo ✓ API dependencies installed) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && cd services\api && call .venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && pip install -r requirements.txt && echo ✓ API dependencies installed) else (echo ❌ Error: No virtual environment found && echo For best results: cd services\api ^&^& python -m venv venv && exit /b 1)
+	@if exist "services\api\venv" ( \
+		echo Using virtual environment: services\api\venv && \
+		echo services\api\venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && \
+		pip install -r requirements.txt && \
+		echo ✓ API dependencies installed \
+	) else if exist "services\api\.venv" ( \
+		echo Using virtual environment: services\api\.venv && \
+		call services\api\.venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && \
+		pip install -r requirements.txt && \
+		echo ✓ API dependencies installed \
+	) else ( \
+		echo ❌ Error: No virtual environment found && \
+		echo For best results: cd services\api ^&^& python -m venv venv && \
+		exit /b 1 \
+	)
 else
 	@if [ ! -d "services/api/venv" ] && [ ! -d "services/api/.venv" ]; then \
 		echo "Creating virtual environment..."; \
@@ -227,20 +249,8 @@ worker-test:
 api-test:
 	@echo "Running API tests..."
 	@echo "Checking test infrastructure..."
-ifeq ($(DETECTED_OS),Windows)
-	@docker ps --filter "name=rune-api-postgres-test" --format "{{.Names}}" | findstr "rune-api-postgres-test" >nul && docker ps --filter "name=rune-api-redis-test" --format "{{.Names}}" | findstr "rune-api-redis-test" >nul && docker ps --filter "name=rune-api-rabbitmq-test" --format "{{.Names}}" | findstr "rune-api-rabbitmq-test" >nul || (echo ❌ Test infrastructure not running. && echo Please start test services with: make test-infra-up && exit /b 1)
-	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && cd services\api && call venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && pytest) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && cd services\api && call .venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && pytest) else (echo ⚠️  No virtual environment found. Using system Python. && echo For best results, install dependencies with: make api-install && cd services\api && pytest || (echo ❌ pytest not found. Please install dependencies: make api-install && exit /b 1))
-else
-	@docker ps --filter "name=rune-api-postgres-test" --format "{{.Names}}" | grep -q "rune-api-postgres-test" && docker ps --filter "name=rune-api-redis-test" --format "{{.Names}}" | grep -q "rune-api-redis-test" && docker ps --filter "name=rune-api-rabbitmq-test" --format "{{.Names}}" | grep -q "rune-api-rabbitmq-test" || (echo "❌ Test infrastructure not running." && echo "   Please start test services with: make test-infra-up" && exit 1)
-	@if [ -d "services/api/venv" ] || [ -d "services/api/.venv" ]; then \
-		echo "Using virtual environment: services/api/venv"; \
-		cd services/api && . venv/bin/activate && pytest; \
-	else \
-		echo "⚠️  No virtual environment found. Using system Python."; \
-		echo "   For best results, install dependencies with: make api-install"; \
-		cd services/api && pytest || (echo "❌ pytest not found. Please install dependencies: make api-install" && exit 1); \
-	fi
-endif
+	@$(CHECK_TEST_INFRA)
+	@$(ACTIVATE_VENV_IF_EXISTS) && pytest || (echo "❌ pytest not found. Please install dependencies: make api-install" && $(EXIT_CMD))
 
 lint: web-lint api-lint worker-lint
 	@echo "✓ Linting complete"
