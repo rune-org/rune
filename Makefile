@@ -36,8 +36,7 @@ help:
 	@echo "  make web-typecheck - Type check frontend code"
 	@echo ""
 	@echo "API targets:"
-	@echo "  make api-install        - Install API dependencies (creates/uses venv)"
-	@echo "  make api-install-no-env - Install API dependencies to system Python"
+	@echo "  make api-install        - Install API dependencies using uv"
 	@echo "  make api-dev            - Start FastAPI server in dev mode (hot-reload)"
 	@echo "  make api-lint           - Lint API code with ruff"
 	@echo "  make api-format         - Format API code with ruff"
@@ -88,53 +87,9 @@ web-install:
 	cd apps/web && pnpm install
 
 api-install:
-	@echo "Setting up API dependencies..."
-ifeq ($(DETECTED_OS),Windows)
-	@if not exist "services\api\venv" if not exist "services\api\.venv" (echo Creating virtual environment... && cd services\api && $(PYTHON) -m venv venv)
-	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && cd services\api && call venv\Scripts\activate.bat && pip install -r requirements.txt && echo ✓ API dependencies installed) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && cd services\api && call .venv\Scripts\activate.bat && pip install -r requirements.txt && echo ✓ API dependencies installed) else (echo ❌ Error: No virtual environment found && echo For best results: cd services\api ^&^& python -m venv venv && exit /b 1)
-else
-	@if [ ! -d "services/api/venv" ] && [ ! -d "services/api/.venv" ]; then \
-		echo "Creating virtual environment..."; \
-		cd services/api && $(PYTHON) -m venv venv; \
-	fi
-	@if [ -d "services/api/venv" ]; then \
-		echo "Using virtual environment: services/api/venv"; \
-		cd services/api && . venv/bin/activate && pip install -r requirements.txt; \
-		echo "✓ API dependencies installed"; \
-	elif [ -d "services/api/.venv" ]; then \
-		echo "Using virtual environment: services/api/.venv"; \
-		cd services/api && . .venv/bin/activate && pip install -r requirements.txt; \
-		echo "✓ API dependencies installed"; \
-	else \
-		echo "❌ Error: No virtual environment found and could not create one"; \
-		echo ""; \
-		echo "   For best results, create a virtual environment:"; \
-		echo "   cd services/api && $(PYTHON) -m venv venv"; \
-		echo ""; \
-		echo "   If you need to install to system Python (not recommended), use:"; \
-		echo "   make api-install-no-env"; \
-		exit 1; \
-	fi
-endif
-
-api-install-no-env:
-	@echo "⚠️  Warning: This will install packages to your system Python"
-	@echo "   For isolated dependencies, use 'make api-install' instead"
-	@echo ""
-ifeq ($(DETECTED_OS),Windows)
-	@echo Installing API dependencies to system Python...
-	cd services/api && pip install -r requirements.txt && echo ✓ API dependencies installed to system Python
-else
-	@read -p "Continue with system Python installation? [y/N]: " confirm && \
-		if [ "$$confirm" != "y" ] && [ "$$confirm" != "Y" ]; then \
-			echo "Installation cancelled."; \
-			exit 0; \
-		else \
-			echo "Installing API dependencies to system Python..."; \
-			cd services/api && pip install -r requirements.txt && \
-			echo "✓ API dependencies installed to system Python"; \
-		fi
-endif
+	@echo "Installing API dependencies with uv..."
+	cd services/api && uv sync
+	@echo "✓ API dependencies installed"
 
 worker-install:
 	@echo "Installing worker dependencies..."
@@ -163,31 +118,9 @@ dev-infra-down:
 api-dev:
 	@echo "Starting FastAPI server in development mode..."
 ifeq ($(DETECTED_OS),Windows)
-	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && echo Installing/updating dependencies... && cd services\api && call venv\Scripts\activate.bat && pip install -r requirements.txt && fastapi dev src\app.py) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && echo Installing/updating dependencies... && cd services\api && call .venv\Scripts\activate.bat && pip install -r requirements.txt && fastapi dev src\app.py) else (echo ⚠️  No virtual environment found. Using system Python. && echo For best results, install dependencies with: make api-install && cd services\api && fastapi dev src\app.py || (echo ❌ FastAPI not found. Please install dependencies: make api-install && exit /b 1))
+	cd services/api && uv run fastapi dev src\app.py
 else
-	@if [ -n "$(VENV)" ]; then \
-		if [ ! -d "$(VENV)" ]; then \
-			echo "❌ Specified venv not found: $(VENV)"; \
-			exit 1; \
-		fi; \
-		echo "Using virtual environment: $(VENV)"; \
-		echo "Installing/updating dependencies..."; \
-		. $(VENV)/bin/activate && cd services/api && pip install -r requirements.txt && fastapi dev src/app.py --reload-dir src; \
-	elif [ -d "services/api/.venv" ]; then \
-		echo "Using virtual environment: services/api/.venv"; \
-		echo "Installing/updating dependencies..."; \
-		cd services/api && . .venv/bin/activate && pip install -r requirements.txt && fastapi dev src/app.py --reload-dir src; \
-	elif [ -d "services/api/venv" ]; then \
-		echo "Using virtual environment: services/api/venv"; \
-		echo "Installing/updating dependencies..."; \
-		cd services/api && . venv/bin/activate && pip install -r requirements.txt && fastapi dev src/app.py --reload-dir src; \
-	else \
-		echo "❌ No virtual environment found in services/api/ (.venv or venv)."; \
-		echo "   Create one with: cd services/api && python3 -m venv .venv"; \
-		echo "   Then install dependencies with: make api-install"; \
-		echo "   Or specify a custom path: make api-dev VENV=/path/to/venv"; \
-		exit 1; \
-	fi
+	cd services/api && uv run fastapi dev src/app.py --reload-dir src
 endif
 
 worker-dev:
@@ -237,11 +170,11 @@ web-format:
 
 api-lint:
 	@echo "Linting API with ruff..."
-	cd services/api && ruff check src/
+	cd services/api && uv run ruff check src/
 
 api-format:
 	@echo "Formatting API code with ruff..."
-	cd services/api && ruff format src/
+	cd services/api && uv run ruff format src/
 
 worker-lint:
 	@echo "Linting worker..."

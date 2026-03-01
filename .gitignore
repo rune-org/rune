@@ -64,5 +64,6 @@ nginx/ssl/
 **/*.rmeta
 **/*.d
 **/*.lock
+!**/uv.lock
 **/Cargo.lock
 **/Cargo.toml.bk
