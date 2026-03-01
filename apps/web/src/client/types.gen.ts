@@ -152,28 +152,6 @@ export type ApiResponseFirstAdminSignupResponse = {
 };
 
 /**
- * ApiResponse[FirstTimeSetupStatus]
- */
-export type ApiResponseFirstTimeSetupStatus = {
-    /**
-     * Success
-     *
-     * Whether the request was successful
-     */
-    success?: boolean;
-    /**
-     * Message
-     *
-     * Human-readable message
-     */
-    message?: string;
-    /**
-     * Response data
-     */
-    data: FirstTimeSetupStatus;
-};
-
-/**
  * ApiResponse[List[TemplateSummary]]
  */
 export type ApiResponseListTemplateSummary = {
@@ -395,6 +373,30 @@ export type ApiResponseWorkflowShareResponse = {
      * Response data
      */
     data: WorkflowShareResponse;
+};
+
+/**
+ * ApiResponse[bool]
+ */
+export type ApiResponseBool = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: boolean;
 };
 
 /**
@@ -827,26 +829,6 @@ export type FirstAdminSignupResponse = {
 };
 
 /**
- * FirstTimeSetupStatus
- *
- * Response schema for first-time setup status check.
- */
-export type FirstTimeSetupStatus = {
-    /**
-     * Requires Setup
-     *
-     * Whether the system requires first-time admin setup
-     */
-    requires_setup: boolean;
-    /**
-     * Message
-     *
-     * Status message
-     */
-    message: string;
-};
-
-/**
  * GenerateWorkflowDocsRequest
  */
 export type GenerateWorkflowDocsRequest = {
@@ -1192,6 +1174,18 @@ export type UserResponse = {
 export type UserRole = 'user' | 'admin';
 
 /**
+ * UserStatusUpdate
+ */
+export type UserStatusUpdate = {
+    /**
+     * Is Active
+     *
+     * Set to true to activate, false to deactivate
+     */
+    is_active: boolean;
+};
+
+/**
  * ValidationError
  */
 export type ValidationError = {
@@ -1497,46 +1491,46 @@ export type LogoutAuthLogoutPostResponses = {
 
 export type LogoutAuthLogoutPostResponse = LogoutAuthLogoutPostResponses[keyof LogoutAuthLogoutPostResponses];
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetData = {
+export type CheckSetupStatusSetupStatusGetData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/auth/first-time-setup';
+    url: '/setup/status';
 };
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetResponses = {
+export type CheckSetupStatusSetupStatusGetResponses = {
     /**
      * Successful Response
      */
-    200: ApiResponseFirstTimeSetupStatus;
+    200: ApiResponseBool;
 };
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetResponse = CheckFirstTimeSetupAuthFirstTimeSetupGetResponses[keyof CheckFirstTimeSetupAuthFirstTimeSetupGetResponses];
+export type CheckSetupStatusSetupStatusGetResponse = CheckSetupStatusSetupStatusGetResponses[keyof CheckSetupStatusSetupStatusGetResponses];
 
-export type FirstAdminSignupAuthFirstAdminSignupPostData = {
+export type InitializeFirstAdminSetupInitializePostData = {
     body: FirstAdminSignupRequest;
     path?: never;
     query?: never;
-    url: '/auth/first-admin-signup';
+    url: '/setup/initialize';
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostErrors = {
+export type InitializeFirstAdminSetupInitializePostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostError = FirstAdminSignupAuthFirstAdminSignupPostErrors[keyof FirstAdminSignupAuthFirstAdminSignupPostErrors];
+export type InitializeFirstAdminSetupInitializePostError = InitializeFirstAdminSetupInitializePostErrors[keyof InitializeFirstAdminSetupInitializePostErrors];
 
-export type FirstAdminSignupAuthFirstAdminSignupPostResponses = {
+export type InitializeFirstAdminSetupInitializePostResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseFirstAdminSignupResponse;
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostResponse = FirstAdminSignupAuthFirstAdminSignupPostResponses[keyof FirstAdminSignupAuthFirstAdminSignupPostResponses];
+export type InitializeFirstAdminSetupInitializePostResponse = InitializeFirstAdminSetupInitializePostResponses[keyof InitializeFirstAdminSetupInitializePostResponses];
 
 export type ListWorkflowsWorkflowsGetData = {
     body?: never;
@@ -2127,6 +2121,36 @@ export type ResetUserPasswordUsersUserIdPasswordPostResponses = {
 };
 
 export type ResetUserPasswordUsersUserIdPasswordPostResponse = ResetUserPasswordUsersUserIdPasswordPostResponses[keyof ResetUserPasswordUsersUserIdPasswordPostResponses];
+
+export type SetUserStatusUsersUserIdStatusPatchData = {
+    body: UserStatusUpdate;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: number;
+    };
+    query?: never;
+    url: '/users/{user_id}/status';
+};
+
+export type SetUserStatusUsersUserIdStatusPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetUserStatusUsersUserIdStatusPatchError = SetUserStatusUsersUserIdStatusPatchErrors[keyof SetUserStatusUsersUserIdStatusPatchErrors];
+
+export type SetUserStatusUsersUserIdStatusPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseUserResponse;
+};
+
+export type SetUserStatusUsersUserIdStatusPatchResponse = SetUserStatusUsersUserIdStatusPatchResponses[keyof SetUserStatusUsersUserIdStatusPatchResponses];
 
 export type GetMyProfileProfileMeGetData = {
     body?: never;
