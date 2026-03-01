@@ -1,17 +1,25 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev dev-infra-up dev-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down test-infra-up test-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
 ifeq ($(UNAME),)
 	DETECTED_OS := Windows
-	VENV_ACTIVATE := venv\Scripts\activate.bat
+	VENV_ACTIVATE := venv\Scripts\activate
 	PYTHON := python
 	RM := rmdir /s /q
+	# Windows-specific commands
+	EXIT_CMD := exit /b 1
+	CHECK_TEST_INFRA := docker ps --filter "name=rune-api-postgres-test" --format "{{.Names}}" | findstr "rune-api-postgres-test" >nul && docker ps --filter "name=rune-api-redis-test" --format "{{.Names}}" | findstr "rune-api-redis-test" >nul && docker ps --filter "name=rune-api-rabbitmq-test" --format "{{.Names}}" | findstr "rune-api-rabbitmq-test" >nul || (echo ❌ Test infrastructure not running. && echo Please start test services with: make test-infra-up && exit /b 1)
+	ACTIVATE_VENV_IF_EXISTS := if exist "services\api\venv" (echo Using virtual environment: services\api\venv && cd services\api && call venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1)) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && cd services\api && call .venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1)) else (echo ⚠️  No virtual environment found. Using system Python. && echo For best results, install dependencies with: make api-install && cd services\api)
 else
 	DETECTED_OS := Unix
 	VENV_ACTIVATE := . venv/bin/activate
 	PYTHON := python3
 	RM := rm -rf
+	# Unix-specific commands
+	EXIT_CMD := exit 1
+	CHECK_TEST_INFRA := docker ps --filter "name=rune-api-postgres-test" --format "{{.Names}}" | grep -q "rune-api-postgres-test" && docker ps --filter "name=rune-api-redis-test" --format "{{.Names}}" | grep -q "rune-api-redis-test" && docker ps --filter "name=rune-api-rabbitmq-test" --format "{{.Names}}" | grep -q "rune-api-rabbitmq-test" || (echo "❌ Test infrastructure not running." && echo "   Please start test services with: make test-infra-up" && exit 1)
+	ACTIVATE_VENV_IF_EXISTS := if [ -d "services/api/venv" ] || [ -d "services/api/.venv" ]; then echo "Using virtual environment: services/api/venv"; cd services/api && . venv/bin/activate; else echo "⚠️  No virtual environment found. Using system Python."; echo "   For best results, install dependencies with: make api-install"; cd services/api; fi
 endif
 
 # Default target
@@ -39,6 +47,7 @@ help:
 	@echo "  make api-install        - Install API dependencies (creates/uses venv)"
 	@echo "  make api-install-no-env - Install API dependencies to system Python"
 	@echo "  make api-dev            - Start FastAPI server in dev mode (hot-reload)"
+	@echo "  make api-test           - Run API tests with pytest"
 	@echo "  make api-lint           - Lint API code with ruff"
 	@echo "  make api-format         - Format API code with ruff"
 	@echo ""
@@ -46,6 +55,11 @@ help:
 	@echo "  make dev-infra-up       - Start shared infrastructure (postgres, redis, rabbitmq)"
 	@echo "  make dev-infra-down     - Stop shared infrastructure"
 	@echo "  Note: Run 'make dev-infra-up' before starting services"
+	@echo ""
+	@echo "Test Infrastructure:"
+	@echo "  make test-infra-up      - Start test infrastructure (postgres, redis, rabbitmq for tests)"
+	@echo "  make test-infra-down    - Stop test infrastructure"
+	@echo "  Note: Run 'make test-infra-up' before running API tests"
 	@echo ""
 	@echo "Worker targets:"
 	@echo "  make worker-install - Install worker dependencies"
@@ -91,7 +105,21 @@ api-install:
 	@echo "Setting up API dependencies..."
 ifeq ($(DETECTED_OS),Windows)
 	@if not exist "services\api\venv" if not exist "services\api\.venv" (echo Creating virtual environment... && cd services\api && $(PYTHON) -m venv venv)
-	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && cd services\api && call venv\Scripts\activate.bat && pip install -r requirements.txt && echo ✓ API dependencies installed) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && cd services\api && call .venv\Scripts\activate.bat && pip install -r requirements.txt && echo ✓ API dependencies installed) else (echo ❌ Error: No virtual environment found && echo For best results: cd services\api ^&^& python -m venv venv && exit /b 1)
+	@if exist "services\api\venv" ( \
+		echo Using virtual environment: services\api\venv && \
+		echo services\api\venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && \
+		pip install -r requirements.txt && \
+		echo ✓ API dependencies installed \
+	) else if exist "services\api\.venv" ( \
+		echo Using virtual environment: services\api\.venv && \
+		call services\api\.venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && \
+		pip install -r requirements.txt && \
+		echo ✓ API dependencies installed \
+	) else ( \
+		echo ❌ Error: No virtual environment found && \
+		echo For best results: cd services\api ^&^& python -m venv venv && \
+		exit /b 1 \
+	)
 else
 	@if [ ! -d "services/api/venv" ] && [ ! -d "services/api/.venv" ]; then \
 		echo "Creating virtual environment..."; \
@@ -163,7 +191,7 @@ dev-infra-down:
 api-dev:
 	@echo "Starting FastAPI server in development mode..."
 ifeq ($(DETECTED_OS),Windows)
-	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && echo Installing/updating dependencies... && cd services\api && call venv\Scripts\activate.bat && pip install -r requirements.txt && fastapi dev src\app.py) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && echo Installing/updating dependencies... && cd services\api && call .venv\Scripts\activate.bat && pip install -r requirements.txt && fastapi dev src\app.py) else (echo ⚠️  No virtual environment found. Using system Python. && echo For best results, install dependencies with: make api-install && cd services\api && fastapi dev src\app.py || (echo ❌ FastAPI not found. Please install dependencies: make api-install && exit /b 1))
+	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && echo Installing/updating dependencies... && cd services\api && call venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && pip install -r requirements.txt && fastapi dev src\app.py) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && echo Installing/updating dependencies... && cd services\api && call .venv\Scripts\activate || (echo ❌ Failed to activate virtual environment && exit /b 1) && pip install -r requirements.txt && fastapi dev src\app.py) else (echo ⚠️  No virtual environment found. Using system Python. && echo For best results, install dependencies with: make api-install && cd services\api && fastapi dev src\app.py || (echo ❌ FastAPI not found. Please install dependencies: make api-install && exit /b 1))
 else
 	@if [ -n "$(VENV)" ]; then \
 		if [ ! -d "$(VENV)" ]; then \
@@ -213,8 +241,16 @@ worker-build:
 # Testing & Linting
 # ======================
 
-test: web-test worker-test
+test: web-test api-test worker-test
 	@echo "✓ All tests passed"
+
+test-infra-up:
+	@echo "Starting test infrastructure services..."
+	cd services/api && docker compose -f docker-compose.test.yml up -d
+
+test-infra-down:
+	@echo "Stopping test infrastructure services..."
+	cd services/api && docker compose -f docker-compose.test.yml down -v
 
 web-test:
 	@echo "Running frontend tests..."
@@ -223,6 +259,12 @@ web-test:
 worker-test:
 	@echo "Running worker tests..."
 	cd services/rune-worker && go test ./...
+
+api-test:
+	@echo "Running API tests..."
+	@echo "Checking test infrastructure..."
+	@$(CHECK_TEST_INFRA)
+	@$(ACTIVATE_VENV_IF_EXISTS) && pytest || (echo "❌ pytest not found. Please install dependencies: make api-install" && $(EXIT_CMD))
 
 lint: web-lint api-lint worker-lint
 	@echo "✓ Linting complete"
