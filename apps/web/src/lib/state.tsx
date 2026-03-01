@@ -107,11 +107,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const userData = profileRes.data.data;
       dispatch({ type: "setUser", user: toUserProfile(userData) });
       const workflowItems = workflowsRes.data.data ?? [];
+      
       dispatch({
         type: "setWorkflows",
-        workflows: workflowItems.map((item) =>
-          listItemToWorkflowSummary(item),
-        ),
+        workflows: workflowItems.map((item) => listItemToWorkflowSummary(item)),
       });
     } catch (e) {
       dispatch({ type: "error", error: (e as Error).message });
@@ -126,6 +125,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         throw new Error("Unable to load workflows");
       }
       const items = res.data.data ?? [];
+      
       dispatch({
         type: "setWorkflows",
         workflows: items.map((item) => listItemToWorkflowSummary(item)),
