@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { NODE_REGISTRY } from "../../lib/nodeRegistry";
 import {
   useVariableInput,
+  parseVariableReferences,
   type Segment,
 } from "../../hooks/useVariableInput";
 import { useVariableTree } from "../../hooks/useVariableTree";
@@ -59,6 +60,7 @@ function buildColorMap(sources: VariableSource[]): Map<string, string> {
 function pillHtml(
   seg: Segment & { type: "variable" },
   colorMap: Map<string, string>,
+  removeIndex: number,
 ): string {
   const color = colorMap.get(seg.nodeName);
   const label = formatPillLabel(seg);
@@ -67,7 +69,7 @@ function pillHtml(
     ? `background:color-mix(in srgb, ${color} 15%, transparent);`
     : "";
   const colorStyle = color ? `color:${color};` : "";
-  return `<span contenteditable="false" data-value="${escapeAttr(seg.value)}" class="variable-pill" style="${borderStyle}${bgStyle}${colorStyle}">${escapeHtml(label)}<span class="variable-pill-remove" data-remove-value="${escapeAttr(seg.value)}">\u00d7</span></span>\u200B`;
+  return `<span contenteditable="false" data-value="${escapeAttr(seg.value)}" class="variable-pill" style="${borderStyle}${bgStyle}${colorStyle}">${escapeHtml(label)}<span class="variable-pill-remove" data-remove-index="${removeIndex}">\u00d7</span></span>\u200B`;
 }
 
 /**
@@ -83,6 +85,7 @@ function segmentsToHtml(
   // First, build a flat list of inline HTML chunks, splitting text segments
   // on newlines so we know where line breaks are.
   const lines: string[][] = [[]];
+  let variableIndex = 0;
   for (const seg of segments) {
     if (seg.type === "text") {
       const parts = seg.value.split("\n");
@@ -91,7 +94,8 @@ function segmentsToHtml(
         if (parts[i]) lines[lines.length - 1].push(escapeHtml(parts[i]));
       }
     } else {
-      lines[lines.length - 1].push(pillHtml(seg, colorMap));
+      lines[lines.length - 1].push(pillHtml(seg, colorMap, variableIndex));
+      variableIndex += 1;
     }
   }
 
@@ -294,6 +298,8 @@ export function VariableInput({
     setShowAutocomplete,
   } = useVariableInput({ value, onChange });
 
+  const variableRefs = useMemo(() => parseVariableReferences(value), [value]);
+
   // Build label -> color map from upstream sources (handles renamed nodes)
   const colorMap = buildColorMap(sources);
 
@@ -343,19 +349,27 @@ export function VariableInput({
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement;
-      const removeValue = target.getAttribute("data-remove-value");
-      if (removeValue) {
-        e.preventDefault();
-        e.stopPropagation();
-        const idx = value.indexOf(removeValue);
-        if (idx >= 0) {
-          const newValue =
-            value.slice(0, idx) + value.slice(idx + removeValue.length);
-          onChange(newValue);
-        }
-      }
+      const removeEl = target.closest(".variable-pill-remove") as HTMLElement | null;
+      if (!removeEl) return;
+
+      const indexRaw = removeEl.getAttribute("data-remove-index");
+      if (!indexRaw) return;
+
+      const removeIndex = Number.parseInt(indexRaw, 10);
+      if (!Number.isFinite(removeIndex)) return;
+
+      const ref = variableRefs[removeIndex];
+      if (!ref) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const newValue = value.slice(0, ref.start) + value.slice(ref.end);
+      onChange(newValue);
+
+      editableRef.current?.focus();
     },
-    [value, onChange],
+    [value, variableRefs, onChange, editableRef],
   );
 
   const handlePaste = useCallback(
