@@ -56,23 +56,57 @@ function buildColorMap(sources: VariableSource[]): Map<string, string> {
  * Text segments become plain text nodes; variable segments become styled pill spans
  * with data-value holding the raw $expression.
  */
+function pillHtml(
+  seg: Segment & { type: "variable" },
+  colorMap: Map<string, string>,
+): string {
+  const color = colorMap.get(seg.nodeName);
+  const label = formatPillLabel(seg);
+  const borderStyle = color ? `border-color:${color};` : "";
+  const bgStyle = color
+    ? `background:color-mix(in srgb, ${color} 15%, transparent);`
+    : "";
+  const colorStyle = color ? `color:${color};` : "";
+  return `<span contenteditable="false" data-value="${escapeAttr(seg.value)}" class="variable-pill" style="${borderStyle}${bgStyle}${colorStyle}">${escapeHtml(label)}<span class="variable-pill-remove" data-remove-value="${escapeAttr(seg.value)}">\u00d7</span></span>\u200B`;
+}
+
+/**
+ * Build HTML from segments, wrapping each line in a <div> to match the
+ * browser's native contentEditable line structure. Without this, bare <br>
+ * tags cause pills to jump to unexpected lines after the sync effect
+ * rebuilds the DOM.
+ */
 function segmentsToHtml(
   segments: Segment[],
   colorMap: Map<string, string>,
 ): string {
-  return segments
-    .map((seg) => {
-      if (seg.type === "text") {
-        return escapeHtml(seg.value);
+  // First, build a flat list of inline HTML chunks, splitting text segments
+  // on newlines so we know where line breaks are.
+  const lines: string[][] = [[]];
+  for (const seg of segments) {
+    if (seg.type === "text") {
+      const parts = seg.value.split("\n");
+      for (let i = 0; i < parts.length; i++) {
+        if (i > 0) lines.push([]);
+        if (parts[i]) lines[lines.length - 1].push(escapeHtml(parts[i]));
       }
-      const color = colorMap.get(seg.nodeName);
-      const label = formatPillLabel(seg as Segment & { type: "variable" });
-      const borderStyle = color ? `border-color:${color};` : "";
-      const bgStyle = color
-        ? `background:color-mix(in srgb, ${color} 15%, transparent);`
-        : "";
-      const colorStyle = color ? `color:${color};` : "";
-      return `<span contenteditable="false" data-value="${escapeAttr(seg.value)}" class="variable-pill" style="${borderStyle}${bgStyle}${colorStyle}">${escapeHtml(label)}<span class="variable-pill-remove" data-remove-value="${escapeAttr(seg.value)}">\u00d7</span></span>\u200B`;
+    } else {
+      lines[lines.length - 1].push(pillHtml(seg, colorMap));
+    }
+  }
+
+  // Single line: render flat (no wrapping divs) so the contentEditable
+  // behaves naturally for single-line inputs.
+  if (lines.length === 1) {
+    return lines[0].join("");
+  }
+
+  // Multi-line: wrap each line in a <div> to match Chrome's native
+  // contentEditable structure. Empty lines get a <br> placeholder.
+  return lines
+    .map((chunks) => {
+      const content = chunks.join("");
+      return `<div>${content || "<br>"}</div>`;
     })
     .join("");
 }
@@ -81,8 +115,7 @@ function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\n/g, "<br>");
+    .replace(/>/g, "&gt;");
 }
 
 function escapeAttr(str: string): string {
