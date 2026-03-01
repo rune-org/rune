@@ -8,30 +8,40 @@ A comprehensive FastAPI-based REST API service for the Rune workflow automation 
 
 Before setting up the Rune API, ensure you have the following installed:
 
-- **Python 3.12+** - Required for FastAPI and modern Python features
+- **Python 3.13+** - Required for FastAPI and modern Python features
+- **uv** - Fast Python package manager (replaces pip/venv)
 - **Git** - For version control and repository management
 - **Docker** (optional) - For containerized deployment
 
-### Virtual Environment
-
-It's strongly recommended to use a virtual environment to isolate project dependencies:
-
-#### Using venv (Built-in Python module)
+#### Installing uv
 
 ```bash
-# Navigate to the API service directory
-cd services/api
-
-# Create virtual environment
-python -m venv .venv
-
-# Activate virtual environment
-# On Windows using powershell
-.venv\Scripts\Activate.ps1
-# On macOS/Linux:
-source .venv/bin/activate
-
+# Using pip
+pip install uv
 ```
+
+For other installation methods, see the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+
+### Virtual Environment
+
+> **📦 Migration Note:** We've moved from `pip` + `venv` to `uv` for dependency management.
+> 
+> **Old workflow:** `python -m venv .venv` → activate → `pip install -r requirements.txt` → track in `requirements.txt`  
+> **New workflow:** `uv sync` → `uv run <command>` → tracked in `pyproject.toml` + `uv.lock`
+> 
+> **Key changes:**
+> - No manual venv creation or activation needed
+> - `uv add <package>` replaces `pip install` + manual requirements.txt editing
+> - `uv add --dev <package>` for dev dependencies (pytest, linters, etc.)
+> - `uv run <command>` replaces activating venv before running commands
+
+uv automatically manages virtual environments for you. When you run `uv sync`, it:
+1. Creates a `.venv` directory (if it doesn't exist)
+2. Installs all dependencies from `pyproject.toml`
+3. Separates production dependencies from dev dependencies (testing tools, linters, etc.)
+4. Generates a `uv.lock` file for reproducible builds
+
+No manual activation required - just prefix your commands with `uv run`.
 
 ### Installation
 
@@ -45,8 +55,8 @@ source .venv/bin/activate
 2. **Install Python dependencies:**
 
    ```bash
-   # Make sure your virtual environment is activated
-   pip install -r requirements.txt
+   # uv handles venv creation and dependency installation
+   uv sync
    ```
 
 3. **Create environment configuration:**
@@ -62,17 +72,31 @@ source .venv/bin/activate
 
 4. **For local development with auto-reload:**
 
+   ```bash
+   # uv run automatically uses the .venv
+   uv run fastapi dev src/app.py
+   ```
+
+### Adding/Managing Dependencies
+
+**Add a production dependency:**
 ```bash
-   # Make sure virtual environment is activated
-   # From services/api directory
-
-   # Install development dependencies
-   pip install -r requirements.txt
-
-   # Run with auto-reload for development
-   fastapi dev src/app.py
-   ### Using Docker
+uv add <package-name>
 ```
+
+**Add a dev dependency** (testing tools, linters, etc.):
+```bash
+uv add --dev <package-name>
+```
+
+**Remove a dependency:**
+```bash
+uv remove <package-name>
+```
+
+Dependencies are automatically organized in `pyproject.toml` under `[project.dependencies]` (production) and `[dependency-groups.dev]` (development), with locked versions in `uv.lock`.
+
+### Using Docker
 
 For containerized deployment, you can use Docker:
 
@@ -110,7 +134,8 @@ services/api/
 │   └── models/                   # Database models and base schemas
 │       └── __init__.py
 ├── .env.example                  # environment variables used by the application
-├── requirements.txt              # Python dependencies
+├── pyproject.toml                # Project metadata and dependencies
+├── uv.lock                       # Locked dependency versions
 ├── Dockerfile                    # Container configuration for deployment
 └── README.md                     # Comprehensive documentation (this file)
 ```
