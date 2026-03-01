@@ -1,0 +1,26 @@
+# Rune CLI Dependencies
+# =====================
+# The CLI is a standalone HTTP client that communicates with the Rune API server.
+# It does NOT share dependencies with the API (services/api).
+
+# Core CLI framework
+click>=8.1.0
+
+# HTTP client for API communication
+requests>=2.31.0
+
+# Rich terminal output
+rich>=13.7.0
+
+# JWT token handling (for local token parsing/validation)
+pyjwt>=2.8.0
+
+# Date/time utilities
+python-dateutil>=2.8.0
+
+# Configuration management
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Windows color support
+colorama>=0.4.6; sys_platform == "win32"

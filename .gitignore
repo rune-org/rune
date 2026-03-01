@@ -66,3 +66,6 @@ nginx/ssl/
 **/*.lock
 **/Cargo.lock
 **/Cargo.toml.bk
+
+#cli
+**/rune_cli.egg-info/*
