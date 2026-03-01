@@ -39,7 +39,7 @@ export const SmtpNode = memo(function SmtpNode({ id, data }: NodeProps<Node<Smtp
           To: {data.to ?? "recipient@example.com"}
         </div>
         <div className="truncate text-xs text-muted-foreground">
-          Subj: {data.subject ?? "Hello from Rune"}
+          Subj: {data.subject || "(no subject)"}
         </div>
       </div>
     </BaseNode>

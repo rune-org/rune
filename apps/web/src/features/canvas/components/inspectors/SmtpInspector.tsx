@@ -3,7 +3,8 @@ import type { SmtpData } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
 import { CredentialSelector } from "@/components/shared/CredentialSelector";
 import type { CredentialRef } from "@/lib/credentials";
-import { Textarea } from "@/components/ui/textarea";
+import { VariableInput } from "../variable-picker/VariableInput";
+import { VariableTextarea } from "../variable-picker/VariableTextarea";
 
 type SmtpInspectorProps = {
   node: Node<SmtpData>;
@@ -111,16 +112,16 @@ export function SmtpInspector({
       )}
 
       <label className="block text-xs text-muted-foreground">Subject</label>
-      <input
-        className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
+      <VariableInput
         value={node.data.subject ?? ""}
-        onChange={(e) =>
+        onChange={(v) =>
           updateSmtpData((d) => ({
             ...d,
-            subject: e.target.value,
+            subject: v,
           }))
         }
         placeholder="Email subject line"
+        nodeId={node.id}
       />
       {isExpanded && (
         <div className="text-xs text-muted-foreground/70">
@@ -129,17 +130,16 @@ export function SmtpInspector({
       )}
 
       <label className="block text-xs text-muted-foreground">Body</label>
-      <Textarea
-        className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
+      <VariableTextarea
         value={node.data.body ?? ""}
-        onChange={(e) =>
+        onChange={(v) =>
           updateSmtpData((d) => ({
             ...d,
-            body: e.target.value,
+            body: v,
           }))
         }
         placeholder="Email message body"
-        rows={isExpanded ? 6 : 3}
+        nodeId={node.id}
       />
       {isExpanded && (
         <div className="text-xs text-muted-foreground/70">

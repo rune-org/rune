@@ -162,8 +162,8 @@ export function WorkflowsTable() {
     setPendingWorkflowId(workflow.id);
     try {
       await runWorkflow(workflowId);
-      toast.info(
-        "Workflow queued for execution. Monitoring will be available once the worker pipeline is connected.",
+      toast.success(
+        "Workflow successfully executed.",
       );
     } catch (error) {
       toast.error(

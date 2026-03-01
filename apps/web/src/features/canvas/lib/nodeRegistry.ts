@@ -93,7 +93,7 @@ export const NODE_REGISTRY: NodeRegistry = {
       border: "--node-flow-border",
     },
     dimensions: { width: 200, height: 72 },
-    defaults: { label: "If", expression: "{{ var > 10 }}" },
+    defaults: { label: "If", expression: "" },
     schema: { inputs: ["condition"], outputs: ["true", "false"] },
     group: "flow",
     isTrigger: false,
@@ -113,8 +113,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     defaults: {
       label: "Switch",
       rules: [
-        { value: "$input.status", operator: "==", compare: "ok" },
-        { value: "$input.status", operator: "==", compare: "error" },
+        { value: "", operator: "==", compare: "" },
       ],
     },
     schema: { inputs: ["input"], outputs: [] }, // Dynamic based on rules
@@ -154,8 +153,8 @@ export const NODE_REGISTRY: NodeRegistry = {
       label: "SMTP",
       from: "sender@example.com",
       to: "recipient@example.com",
-      subject: "Hello from Rune",
-      body: "This is a test email",
+      subject: "",
+      body: "",
     },
     schema: { inputs: ["email"], outputs: ["sent", "error"] },
     group: "email",
@@ -193,7 +192,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     defaults: {
       label: "Edit",
       mode: "assignments",
-      assignments: [{ name: "newField", value: "{{ $json.existingField }}", type: "string" }],
+      assignments: [{ name: "newField", value: "", type: "string" }],
     },
     schema: { inputs: ["input"], outputs: ["output"] },
     group: "transform",
@@ -211,7 +210,7 @@ export const NODE_REGISTRY: NodeRegistry = {
       border: "--node-transform-border",
     },
     dimensions: { width: 220, height: 72 },
-    defaults: { label: "Split", array_field: "$json.items" },
+    defaults: { label: "Split", array_field: "" },
     schema: { inputs: ["input"], outputs: ["item"] },
     group: "transform",
     isTrigger: false,
