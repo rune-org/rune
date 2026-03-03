@@ -154,6 +154,9 @@ function FlowCanvasInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isViewingSnapshot, ctxExecutionState.graphSnapshot]);
 
+  // NOTE: Keep this effect after the snapshot save/restore effect above.
+  // While viewing history we intentionally ignore external graph prop updates so
+  // that "Return to Live" restores the pre-snapshot in-memory draft.
   useEffect(() => {
     if (isViewingSnapshot) return;
     setNodes(externalNodes ?? []);
