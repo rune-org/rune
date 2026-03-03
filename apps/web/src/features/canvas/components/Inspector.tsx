@@ -188,7 +188,7 @@ export function Inspector({
               </div>
 
               {/* Type-specific inspector */}
-              <div className={readOnly ? "pointer-events-none opacity-70" : undefined}>
+              <div inert={readOnly || undefined} className={readOnly ? "opacity-70" : undefined}>
                 {renderInspectorForm(selectedNode, updateData, false)}
               </div>
             </div>
@@ -291,7 +291,7 @@ export function Inspector({
                       <div className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         Configuration
                       </div>
-                      <div className={readOnly ? "pointer-events-none opacity-70" : undefined}>
+                      <div inert={readOnly || undefined} className={readOnly ? "opacity-70" : undefined}>
                         {renderInspectorForm(selectedNode, updateData, true)}
                       </div>
                     </div>
