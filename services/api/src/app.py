@@ -16,6 +16,7 @@ from src.db.redis import close_redis
 from src.queue.rabbitmq import close_rabbitmq
 from src.smith.agent import create_smith_agent
 from src.auth.router import router as auth_router
+from src.setup.router import router as setup_router
 from src.workflow.router import router as workflow_router
 from src.executions.router import router as executions_router
 from src.permissions.router import router as permissions_router
@@ -81,6 +82,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 
 # Include routers
 app.include_router(auth_router)
+app.include_router(setup_router)
 app.include_router(workflow_router)
 app.include_router(executions_router)
 app.include_router(permissions_router)

@@ -18,7 +18,7 @@ export default function SignInPage() {
   useEffect(() => {
     setMounted(true);
     checkFirstTimeSetup().then(({ data }) => {
-      setShowSignUp(data?.data.requires_setup ?? false);
+      setShowSignUp(data?.data ?? false);
     });
   }, []);
 
@@ -45,7 +45,7 @@ export default function SignInPage() {
   return (
     <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center py-12 px-4">
       <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(120,119,198,0.1)_0%,transparent_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(120,119,198,0.1)_0%,transparent_100%)]" />
       </div>
 
       <AuthCard
@@ -55,7 +55,10 @@ export default function SignInPage() {
           showSignUp ? (
             <span>
               New to Rune?{" "}
-              <Link href="/sign-up" className="text-white hover:underline underline-offset-4 transition-all">
+              <Link
+                href="/sign-up"
+                className="text-white hover:underline underline-offset-4 transition-all"
+              >
                 Create an account
               </Link>
             </span>
