@@ -38,7 +38,7 @@ export const IfNode = memo(function IfNode({ id, data }: NodeProps<Node<IfData>>
         {data.label ?? "If"}
       </div>
       <div className="mt-1 truncate text-xs text-muted-foreground">
-        {data.expression ?? "expression"}
+        {data.expression || "$input.status == 200"}
       </div>
       <Handle type="target" position={Position.Left} className="!bg-ring" />
       <Handle

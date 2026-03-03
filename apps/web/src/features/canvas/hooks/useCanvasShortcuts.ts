@@ -48,6 +48,9 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
       } = latestPropsRef.current;
 
       const target = e.target as Element | null;
+
+      if (target?.closest('[role="dialog"], [data-inspector]')) return;
+
       const isEditable =
         !!target &&
         (target.tagName === "INPUT" ||
@@ -56,9 +59,6 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
           (target as HTMLElement).isContentEditable);
 
       if (isEditable) return;
-
-      // Ignore shortcuts when focus is inside a dialog (e.g., expanded inspector)
-      if (target?.closest('[role="dialog"]')) return;
 
       // delete selected node(s)/edge(s)
       if (e.key === "Delete" || e.key === "Backspace") {

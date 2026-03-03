@@ -35,6 +35,7 @@ import { useGraphClipboard } from "./hooks/useGraphClipboard";
 import { useRafNodeDrag } from "./hooks/useRafNodeDrag";
 import { useSmith } from "./hooks/useSmith";
 import { ExecutionProvider } from "./context/ExecutionContext";
+import { GraphProvider } from "./context/GraphContext";
 import { SmithChatDrawer } from "@/features/smith/SmithChatDrawer";
 
 type FlowCanvasProps = {
@@ -307,6 +308,7 @@ function FlowCanvasInner({
   }, [externalNodes, externalEdges]);
 
   return (
+    <GraphProvider nodes={nodes} edges={edges}>
     <div
       ref={containerRef}
       data-canvas-dragging="false"
@@ -420,5 +422,6 @@ function FlowCanvasInner({
         onToggleTrace={setSmithShowTrace}
       />
     </div>
+    </GraphProvider>
   );
 }
