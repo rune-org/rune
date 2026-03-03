@@ -308,27 +308,22 @@ where
 
                     HydratedNode { latest, lineages, extra }
                 } else {
-                    let extra_map = obj.into_iter().collect::<HashMap<_, _>>();
-                    serde_json::from_value::<NodeExecutionInstance>(Value::Object(
-                        extra_map
-                            .iter()
-                            .map(|(k, v)| (k.clone(), v.clone()))
-                            .collect(),
-                    ))
-                    .ok()
-                    .filter(|inst| inst.status.is_some())
-                    .map_or_else(
-                        || HydratedNode {
-                            latest:   None,
-                            lineages: HashMap::new(),
-                            extra:    extra_map,
-                        },
-                        |instance| HydratedNode {
-                            latest:   Some(instance),
-                            lineages: HashMap::new(),
-                            extra:    HashMap::new(),
-                        },
-                    )
+                    let obj_clone = obj.clone();
+                    serde_json::from_value::<NodeExecutionInstance>(Value::Object(obj_clone))
+                        .ok()
+                        .filter(|inst| inst.status.is_some())
+                        .map_or_else(
+                            || HydratedNode {
+                                latest:   None,
+                                lineages: HashMap::new(),
+                                extra:    obj.into_iter().collect(),
+                            },
+                            |instance| HydratedNode {
+                                latest:   Some(instance),
+                                lineages: HashMap::new(),
+                                extra:    HashMap::new(),
+                            },
+                        )
                 }
             },
             other => serde_json::from_value::<NodeExecutionInstance>(other.clone()).map_or_else(
