@@ -179,7 +179,14 @@ function FlowCanvasInner({
     setSmithShowTrace,
     smithJustFinished,
     handleSmithSend,
-  } = useSmith({ workflowId, pushHistory, setNodes, setEdges, rfInstanceRef });
+  } = useSmith({
+    workflowId,
+    readOnly: isViewingSnapshot,
+    pushHistory,
+    setNodes,
+    setEdges,
+    rfInstanceRef,
+  });
 
   const {
     copySelection,
@@ -393,6 +400,7 @@ function FlowCanvasInner({
             onClick={openSmith}
             isSending={smithSending}
             justFinished={smithJustFinished}
+            disabled={isViewingSnapshot}
           />
         </div>
       </div>
