@@ -26,7 +26,13 @@ dsl/
 ├── generated/            # Generated files (DO NOT EDIT)
 │   ├── types.ts          # TypeScript definitions
 │   ├── types.py          # Python definitions
-│   └── types.go          # Go definitions
+│   ├── types.go          # Go definitions
+│   └── go.mod            # Go module for generated package
+├── tests/                # Hand-written tests (not generated)
+│   ├── python/           # Pytest tests for generator and generated Python types
+│   ├── ts/               # Vitest tests for generated TypeScript types
+│   └── go/                # Go tests for generated Go types (external test package)
+├── pyproject.toml        # Python project config (uv)
 └── README.md             # This file
 ```
 
@@ -81,6 +87,26 @@ Or use the Makefile target:
 ```bash
 make dsl-generate
 ```
+
+## Testing
+
+The DSL has test suites for all three generated layers. Run everything with:
+
+```bash
+make dsl-test
+```
+
+This runs, in order:
+
+1. **Python** – Generator run plus import/construct/sanitize tests in `dsl/tests/python/`. Uses [uv](https://github.com/astral-sh/uv) (same as the rest of the project). Requires uv to be installed (e.g. `curl -LsSf https://astral.sh/uv/install.sh | sh` then ensure `~/.local/bin` is on your PATH).
+2. **TypeScript** – Mock data and sanitization tests in `dsl/tests/ts/` using Vitest.
+3. **Go** – Mock data and `Sanitize()` tests in `dsl/tests/go/` (external test package that imports `dsl/generated`).
+
+To run a single layer:
+
+- **Python only:** `cd dsl && uv sync && PYTHONPATH=.. uv run pytest tests/python -v`
+- **TypeScript only:** `cd dsl/tests/ts && pnpm test`
+- **Go only:** `cd dsl/tests/go && go test ./...`
 
 ## Generated Files
 

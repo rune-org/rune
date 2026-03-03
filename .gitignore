@@ -44,6 +44,7 @@
 
 # python
 .venv
+.venv-dsl
 __pycache__
 *.pyc
 .env

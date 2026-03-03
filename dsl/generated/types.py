@@ -3,6 +3,8 @@
 DO NOT EDIT - Generated from dsl/dsl-definition.json
 """
 
+from __future__ import annotations
+
 from typing import Any, Optional, Literal, Union
 from pydantic import BaseModel, Field
 
