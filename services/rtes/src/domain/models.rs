@@ -309,9 +309,12 @@ where
                     HydratedNode { latest, lineages, extra }
                 } else {
                     let extra_map = obj.into_iter().collect::<HashMap<_, _>>();
-                    serde_json::from_value::<NodeExecutionInstance>(
-                        Value::Object(extra_map.iter().map(|(k, v)| (k.clone(), v.clone())).collect())
-                    )
+                    serde_json::from_value::<NodeExecutionInstance>(Value::Object(
+                        extra_map
+                            .iter()
+                            .map(|(k, v)| (k.clone(), v.clone()))
+                            .collect(),
+                    ))
                     .ok()
                     .filter(|inst| inst.status.is_some())
                     .map_or_else(
