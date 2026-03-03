@@ -34,7 +34,7 @@ import { useConnectionValidation } from "./hooks/useConnectionValidation";
 import { useGraphClipboard } from "./hooks/useGraphClipboard";
 import { useRafNodeDrag } from "./hooks/useRafNodeDrag";
 import { useSmith } from "./hooks/useSmith";
-import { ExecutionProvider } from "./context/ExecutionContext";
+import { ExecutionProvider, useExecution } from "./context/ExecutionContext";
 import { GraphProvider } from "./context/GraphContext";
 import { SmithChatDrawer } from "@/features/smith/SmithChatDrawer";
 
@@ -128,6 +128,42 @@ function FlowCanvasInner({
 
   useExecutionEdgeSync(executionState, setEdges);
 
+  // Historical snapshot detection
+  const { state: ctxExecutionState } = useExecution();
+  const isViewingSnapshot =
+    ctxExecutionState.isHistorical === true && !!ctxExecutionState.graphSnapshot;
+
+  // Save/restore the live canvas when entering/leaving snapshot mode.
+  const savedLiveNodesRef = useRef<CanvasNode[] | null>(null);
+  const savedLiveEdgesRef = useRef<Edge[] | null>(null);
+
+  useEffect(() => {
+    if (isViewingSnapshot && ctxExecutionState.graphSnapshot) {
+      if (savedLiveNodesRef.current === null) {
+        savedLiveNodesRef.current = nodesRef.current;
+        savedLiveEdgesRef.current = edgesRef.current;
+      }
+      setNodes(ctxExecutionState.graphSnapshot.nodes);
+      setEdges(ctxExecutionState.graphSnapshot.edges);
+    } else if (savedLiveNodesRef.current !== null) {
+      setNodes(savedLiveNodesRef.current);
+      setEdges(savedLiveEdgesRef.current ?? []);
+      savedLiveNodesRef.current = null;
+      savedLiveEdgesRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isViewingSnapshot, ctxExecutionState.graphSnapshot]);
+
+  // NOTE: Keep this effect after the snapshot save/restore effect above.
+  // While viewing history we intentionally ignore external graph prop updates so
+  // that "Return to Live" restores the pre-snapshot in-memory draft.
+  useEffect(() => {
+    if (isViewingSnapshot) return;
+    setNodes(externalNodes ?? []);
+    setEdges(externalEdges ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalNodes, externalEdges]);
+
   const { autoLayout } = useAutoLayout(nodes, edges, setNodes, setEdges, {
     onBeforeLayout: pushHistory,
   });
@@ -146,7 +182,14 @@ function FlowCanvasInner({
     setSmithShowTrace,
     smithJustFinished,
     handleSmithSend,
-  } = useSmith({ workflowId, pushHistory, setNodes, setEdges, rfInstanceRef });
+  } = useSmith({
+    workflowId,
+    readOnly: isViewingSnapshot,
+    pushHistory,
+    setNodes,
+    setEdges,
+    rfInstanceRef,
+  });
 
   const {
     copySelection,
@@ -166,6 +209,7 @@ function FlowCanvasInner({
   } = useGraphClipboard({
     nodes,
     edges,
+    readOnly: isViewingSnapshot,
     selectedNodeId,
     pushHistory,
     setNodes,
@@ -258,6 +302,11 @@ function FlowCanvasInner({
   );
 
   const onExecute = useCallback(async () => {
+    if (isViewingSnapshot) {
+      toast.error("Execution is disabled while viewing history");
+      return;
+    }
+
     resetExecution();
     if (onPersist) {
       try {
@@ -270,11 +319,12 @@ function FlowCanvasInner({
       }
     }
     void startExecution();
-  }, [resetExecution, onPersist, startExecution]);
+  }, [isViewingSnapshot, resetExecution, onPersist, startExecution]);
 
   useCanvasShortcuts({
     nodes,
     edges,
+    readOnly: isViewingSnapshot,
     selectedNodeId,
     setNodes,
     setEdges,
@@ -301,12 +351,6 @@ function FlowCanvasInner({
     },
   });
 
-  useEffect(() => {
-    setNodes(externalNodes ?? []);
-    setEdges(externalEdges ?? []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalNodes, externalEdges]);
-
   return (
     <GraphProvider nodes={nodes} edges={edges}>
     <div
@@ -327,17 +371,20 @@ function FlowCanvasInner({
         onNodeDragStop={onNodeDragStop}
         onInit={onInit}
         onPaneClick={onPaneClick}
+        readOnly={isViewingSnapshot}
       />
 
       <div className="pointer-events-none absolute left-4 top-4 z-35">
         <div ref={toolbarRef} className="pointer-events-auto flex items-center gap-2">
           <Toolbar
             onExecute={onExecute}
+            executeDisabled={isViewingSnapshot}
+            readOnly={isViewingSnapshot}
             onStop={stopExecution}
             onUndo={handleUndo}
             onRedo={handleRedo}
-            canUndo={canUndo}
-            canRedo={canRedo}
+            canUndo={!isViewingSnapshot && canUndo}
+            canRedo={!isViewingSnapshot && canRedo}
             onSave={persistGraph}
             onExportToClipboard={exportToClipboard}
             onExportToFile={exportToFile}
@@ -347,7 +394,7 @@ function FlowCanvasInner({
             onImportFromTemplate={importFromTemplate}
             onFitView={handleFitView}
             onAutoLayout={autoLayout}
-            saveDisabled={saveDisabled}
+            saveDisabled={saveDisabled || isViewingSnapshot}
             executionStatus={executionState.status}
             isStartingExecution={isStartingExecution}
             workflowId={workflowId}
@@ -356,6 +403,7 @@ function FlowCanvasInner({
             onClick={openSmith}
             isSending={smithSending}
             justFinished={smithJustFinished}
+            disabled={isViewingSnapshot}
           />
         </div>
       </div>
@@ -365,27 +413,32 @@ function FlowCanvasInner({
         selectedNode={selectedNode}
         updateSelectedNodeLabel={updateSelectedNodeLabel}
         updateData={updateNodeData}
-        onDelete={selectedNode ? deleteSelectedElements : undefined}
+        onDelete={selectedNode && !isViewingSnapshot ? deleteSelectedElements : undefined}
         isExpandedDialogOpen={isInspectorExpanded}
         setIsExpandedDialogOpen={setIsInspectorExpanded}
-        onTogglePin={togglePin}
+        onTogglePin={isViewingSnapshot ? undefined : togglePin}
         workflowId={workflowId}
+        readOnly={isViewingSnapshot}
       />
 
       <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
         <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
-          Drag to move • Connect via handles • Paste JSON to import
+          {isViewingSnapshot
+            ? "Viewing historical execution snapshot (read-only)"
+            : "Drag to move \u2022 Connect via handles \u2022 Paste JSON to import"}
         </div>
       </div>
 
-      <Library
-        containerRef={containerRef}
-        toolbarRef={toolbarRef}
-        onAdd={onLibraryAdd}
-        shortcutsByKind={shortcutsByKind}
-        onAssignShortcut={assignShortcut}
-        onResetShortcuts={resetShortcuts}
-      />
+      {!isViewingSnapshot && (
+        <Library
+          containerRef={containerRef}
+          toolbarRef={toolbarRef}
+          onAdd={onLibraryAdd}
+          shortcutsByKind={shortcutsByKind}
+          onAssignShortcut={assignShortcut}
+          onResetShortcuts={resetShortcuts}
+        />
+      )}
 
       {/* Hidden file input for importing JSON files */}
       <input
