@@ -133,27 +133,33 @@ function FlowCanvasInner({
   const isViewingSnapshot =
     ctxExecutionState.isHistorical === true && !!ctxExecutionState.graphSnapshot;
 
-  const liveNodesRef = useRef<CanvasNode[]>(externalNodes ?? []);
-  const liveEdgesRef = useRef<Edge[]>(externalEdges ?? []);
+  // Save/restore the live canvas when entering/leaving snapshot mode.
+  const savedLiveNodesRef = useRef<CanvasNode[] | null>(null);
+  const savedLiveEdgesRef = useRef<Edge[] | null>(null);
 
-  useEffect(() => {
-    if (!isViewingSnapshot) {
-      liveNodesRef.current = externalNodes ?? [];
-      liveEdgesRef.current = externalEdges ?? [];
-    }
-  }, [externalNodes, externalEdges, isViewingSnapshot]);
-
-  // Swap canvas between snapshot and live graph
   useEffect(() => {
     if (isViewingSnapshot && ctxExecutionState.graphSnapshot) {
+      if (savedLiveNodesRef.current === null) {
+        savedLiveNodesRef.current = nodesRef.current;
+        savedLiveEdgesRef.current = edgesRef.current;
+      }
       setNodes(ctxExecutionState.graphSnapshot.nodes);
       setEdges(ctxExecutionState.graphSnapshot.edges);
-    } else {
-      setNodes(liveNodesRef.current);
-      setEdges(liveEdgesRef.current);
+    } else if (savedLiveNodesRef.current !== null) {
+      setNodes(savedLiveNodesRef.current);
+      setEdges(savedLiveEdgesRef.current ?? []);
+      savedLiveNodesRef.current = null;
+      savedLiveEdgesRef.current = null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isViewingSnapshot, ctxExecutionState.graphSnapshot]);
+
+  useEffect(() => {
+    if (isViewingSnapshot) return;
+    setNodes(externalNodes ?? []);
+    setEdges(externalEdges ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalNodes, externalEdges]);
 
   const { autoLayout } = useAutoLayout(nodes, edges, setNodes, setEdges, {
     onBeforeLayout: pushHistory,
@@ -327,13 +333,6 @@ function FlowCanvasInner({
       }
     },
   });
-
-  useEffect(() => {
-    if (isViewingSnapshot) return;
-    setNodes(externalNodes ?? []);
-    setEdges(externalEdges ?? []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalNodes, externalEdges, isViewingSnapshot]);
 
   return (
     <GraphProvider nodes={nodes} edges={edges}>

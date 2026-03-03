@@ -80,6 +80,7 @@ function formatRelativeTime(date: string): string {
 function extractGraphSnapshot(doc: RtesExecutionDocument): WorkflowGraphSnapshot | undefined {
   if (!doc.nodes || Object.keys(doc.nodes).length === 0) return undefined;
 
+  let hasStoredPositions = false;
   const workflowNodes: WorkflowNode[] = [];
   for (const [nodeId, hydratedNode] of Object.entries(doc.nodes)) {
     // Fall back to latest execution instance fields when top-level fields are empty
@@ -89,6 +90,9 @@ function extractGraphSnapshot(doc: RtesExecutionDocument): WorkflowGraphSnapshot
     const name = (extra.name as string) || latest?.name || nodeId;
     const type = (extra.type as string) || latest?.node_type || "agent";
     const trigger = (extra.trigger as boolean) ?? false;
+    const position = extra.position as [number, number] | undefined;
+
+    if (position != null) hasStoredPositions = true;
 
     workflowNodes.push({
       id: nodeId,
@@ -97,7 +101,7 @@ function extractGraphSnapshot(doc: RtesExecutionDocument): WorkflowGraphSnapshot
       trigger,
       parameters: (extra.parameters as Record<string, unknown>) ?? {},
       output: (extra.output as Record<string, unknown>) ?? {},
-      position: extra.position as [number, number] | undefined,
+      position,
     });
   }
 
@@ -115,12 +119,9 @@ function extractGraphSnapshot(doc: RtesExecutionDocument): WorkflowGraphSnapshot
 
   const sanitized = sanitizeGraph({ nodes: canvasNodes, edges: canvasEdges });
 
-  // Use stored positions when available; fall back to auto-layout when
-  // positions are missing (old executions or default [100,100]).
-  const allDefault = (sanitized.nodes as CanvasNode[]).every(
-    (n) => n.position.x === 100 && n.position.y === 100,
-  );
-  if (allDefault && sanitized.nodes.length > 1) {
+  // Use stored positions when available, we fall back to auto-layout
+  // for executions that were stored before positions were persisted.
+  if (!hasStoredPositions && sanitized.nodes.length > 1) {
     const layouted = applyAutoLayout({
       nodes: sanitized.nodes as CanvasNode[],
       edges: sanitized.edges as Edge[],
