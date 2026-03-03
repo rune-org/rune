@@ -31,6 +31,7 @@ import { cn } from "@/lib/cn";
 
 type ToolbarProps = {
   onExecute: () => void;
+  executeDisabled?: boolean;
   onStop?: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -54,6 +55,7 @@ type ToolbarProps = {
 
 export const Toolbar = memo(function Toolbar({
   onExecute,
+  executeDisabled = false,
   onStop,
   onUndo,
   onRedo,
@@ -130,7 +132,7 @@ export const Toolbar = memo(function Toolbar({
           )}
         </>
       ) : (
-        <Btn onClick={onExecute} title="Execute workflow">
+        <Btn onClick={onExecute} title="Execute workflow" disabled={executeDisabled}>
           <Play className="h-4 w-4" /> Run
         </Btn>
       )}

@@ -199,6 +199,7 @@ function FlowCanvasInner({
   } = useGraphClipboard({
     nodes,
     edges,
+    readOnly: isViewingSnapshot,
     selectedNodeId,
     pushHistory,
     setNodes,
@@ -291,6 +292,11 @@ function FlowCanvasInner({
   );
 
   const onExecute = useCallback(async () => {
+    if (isViewingSnapshot) {
+      toast.error("Execution is disabled while viewing history");
+      return;
+    }
+
     resetExecution();
     if (onPersist) {
       try {
@@ -303,11 +309,12 @@ function FlowCanvasInner({
       }
     }
     void startExecution();
-  }, [resetExecution, onPersist, startExecution]);
+  }, [isViewingSnapshot, resetExecution, onPersist, startExecution]);
 
   useCanvasShortcuts({
     nodes,
     edges,
+    readOnly: isViewingSnapshot,
     selectedNodeId,
     setNodes,
     setEdges,
@@ -361,6 +368,7 @@ function FlowCanvasInner({
         <div ref={toolbarRef} className="pointer-events-auto flex items-center gap-2">
           <Toolbar
             onExecute={onExecute}
+            executeDisabled={isViewingSnapshot}
             onStop={stopExecution}
             onUndo={handleUndo}
             onRedo={handleRedo}
