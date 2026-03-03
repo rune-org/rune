@@ -369,6 +369,7 @@ function FlowCanvasInner({
           <Toolbar
             onExecute={onExecute}
             executeDisabled={isViewingSnapshot}
+            readOnly={isViewingSnapshot}
             onStop={stopExecution}
             onUndo={handleUndo}
             onRedo={handleRedo}
