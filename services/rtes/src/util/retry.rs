@@ -48,6 +48,7 @@ macro_rules! retry_backoff {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use std::sync::{
         Arc,

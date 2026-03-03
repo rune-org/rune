@@ -58,10 +58,12 @@ async def get_current_user(
 
     try:
         user = decode_access_token(access_token)
+        if not user.is_active:
+            raise Forbidden(detail="Account is deactivated")
         return user
     except Exception as e:
         # Re-raise token-specific errors as is, wrap others in Unauthorized
-        if isinstance(e, (Unauthorized,)):
+        if isinstance(e, (Unauthorized, Forbidden)):
             raise
         raise Unauthorized(detail="Invalid access token")
 

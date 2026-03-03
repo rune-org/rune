@@ -31,6 +31,8 @@ import { cn } from "@/lib/cn";
 
 type ToolbarProps = {
   onExecute: () => void;
+  executeDisabled?: boolean;
+  readOnly?: boolean;
   onStop?: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -54,6 +56,8 @@ type ToolbarProps = {
 
 export const Toolbar = memo(function Toolbar({
   onExecute,
+  executeDisabled = false,
+  readOnly = false,
   onStop,
   onUndo,
   onRedo,
@@ -74,6 +78,7 @@ export const Toolbar = memo(function Toolbar({
   workflowId,
 }: ToolbarProps) {
   const isExecuting = executionStatus === "running" || isStartingExecution;
+  const isRunDisabled = executeDisabled || readOnly;
   const Btn = ({
     onClick,
     title,
@@ -130,7 +135,7 @@ export const Toolbar = memo(function Toolbar({
           )}
         </>
       ) : (
-        <Btn onClick={onExecute} title="Execute workflow">
+        <Btn onClick={onExecute} title="Execute workflow" disabled={isRunDisabled}>
           <Play className="h-4 w-4" /> Run
         </Btn>
       )}
@@ -146,18 +151,18 @@ export const Toolbar = memo(function Toolbar({
       </Btn>
 
       <DropdownMenu>
-        <DropdownMenuTrigger className={btnClass}>
+        <DropdownMenuTrigger className={btnClass} disabled={readOnly}>
           <Download className="h-4 w-4" /> Import{" "}
           <ChevronDown className="h-3 w-3 opacity-60" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={onImportFromClipboard} className="gap-2">
+          <DropdownMenuItem onClick={onImportFromClipboard} className="gap-2" disabled={readOnly}>
             <Clipboard className="h-4 w-4" /> From Clipboard
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onImportFromFile} className="gap-2">
+          <DropdownMenuItem onClick={onImportFromFile} className="gap-2" disabled={readOnly}>
             <FileJson className="h-4 w-4" /> From File (JSON)
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onImportFromTemplate} className="gap-2">
+          <DropdownMenuItem onClick={onImportFromTemplate} className="gap-2" disabled={readOnly}>
             <FileBox className="h-4 w-4" /> From Templates
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -187,7 +192,7 @@ export const Toolbar = memo(function Toolbar({
         </Btn>
       )}
       {onAutoLayout && (
-        <Btn onClick={onAutoLayout} title="Auto Layout">
+        <Btn onClick={onAutoLayout} title="Auto Layout" disabled={readOnly}>
           <LayoutDashboard className="h-4 w-4" /> Layout
         </Btn>
       )}

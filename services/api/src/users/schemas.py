@@ -22,6 +22,12 @@ class AdminUserUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+class UserStatusUpdate(BaseModel):
+    is_active: bool = Field(
+        ..., description="Set to true to activate, false to deactivate"
+    )
+
+
 class ProfileUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=40)
     email: Optional[EmailStr] = None

@@ -45,6 +45,7 @@ type InspectorProps = {
   onTogglePin?: (nodeId: string) => void;
   renderInPanel?: boolean;
   className?: string;
+  readOnly?: boolean;
 };
 
 function renderInspectorForm(
@@ -86,6 +87,7 @@ export function Inspector({
   onTogglePin,
   renderInPanel = true,
   className,
+  readOnly,
 }: InspectorProps) {
   const [isExpandedInternal, setIsExpandedInternal] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -106,7 +108,8 @@ export function Inspector({
   };
 
   const Content = (
-    <div 
+    <div
+      data-inspector
       className={cn(
         "flex w-65 max-w-[90vw] flex-col rounded-(--radius) border border-border/60 bg-card/90 shadow-lg transition-all",
         className
@@ -119,7 +122,7 @@ export function Inspector({
         </div>
         {selectedNode && (
           <div className="flex items-center gap-1">
-            {onTogglePin && (
+            {!readOnly && onTogglePin && (
               <button
                 onClick={() => onTogglePin(selectedNode.id)}
                 title={selectedNode.data.pinned ? "Unpin node" : "Pin node"}
@@ -143,7 +146,7 @@ export function Inspector({
             >
               <Maximize2 className="h-3.5 w-3.5" />
             </button>
-            {onDelete && (
+            {!readOnly && onDelete && (
               <button
                 onClick={onDelete}
                 title="Delete node"
@@ -180,11 +183,14 @@ export function Inspector({
                   className="w-full rounded-sm border border-input bg-muted/30 px-2 py-1 text-sm"
                   value={selectedNode.data.label ?? ""}
                   onChange={(e) => updateSelectedNodeLabel(e.target.value.replace(/ /g, "_"))}
+                  readOnly={readOnly}
                 />
               </div>
 
               {/* Type-specific inspector */}
-              {renderInspectorForm(selectedNode, updateData, false)}
+              <div inert={readOnly || undefined} className={readOnly ? "opacity-70" : undefined}>
+                {renderInspectorForm(selectedNode, updateData, false)}
+              </div>
             </div>
           </div>
 
@@ -270,6 +276,7 @@ export function Inspector({
                           value={selectedNode.data.label ?? ""}
                           onChange={(e) => updateSelectedNodeLabel(e.target.value.replace(/ /g, "_"))}
                           placeholder="Enter a descriptive label"
+                          readOnly={readOnly}
                         />
                         <div className="text-xs text-muted-foreground">
                           A friendly name to identify this node in your workflow
@@ -284,7 +291,9 @@ export function Inspector({
                       <div className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         Configuration
                       </div>
-                      {renderInspectorForm(selectedNode, updateData, true)}
+                      <div inert={readOnly || undefined} className={readOnly ? "opacity-70" : undefined}>
+                        {renderInspectorForm(selectedNode, updateData, true)}
+                      </div>
                     </div>
 
                     <Separator />
@@ -353,7 +362,7 @@ export function Inspector({
                     <div className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Execution Data
                     </div>
-                    <RuntimeDataPanel nodeId={selectedNode.id} />
+                    <RuntimeDataPanel nodeId={selectedNode.id} nodeLabel={selectedNode.data.label} />
                   </div>
                 </TabsContent>
               </Tabs>

@@ -4,6 +4,7 @@ import {
   createUserUsersPost,
   updateUserUsersUserIdPut,
   deleteUserUsersUserIdDelete,
+  setUserStatusUsersUserIdStatusPatch,
 } from "@/client";
 import type { UserResponse, UserCreate, AdminUserUpdate, CreateUserResponse } from "@/client/types.gen";
 import { toast } from "@/components/ui/toast";
@@ -15,6 +16,7 @@ interface UseUserManagementReturn {
   createUser: (name: string, email: string, role: "user" | "admin") => Promise<CreateUserResponse | null>;
   updateUser: (userId: number, name: string, email: string, role: "user" | "admin") => Promise<boolean>;
   deleteUser: (userId: number) => Promise<boolean>;
+  toggleUserStatus: (userId: number, isActive: boolean) => Promise<boolean>;
 }
 
 export function useUserManagement(): UseUserManagementReturn {
@@ -25,7 +27,7 @@ export function useUserManagement(): UseUserManagementReturn {
     setLoading(true);
     try {
       const res = await getAllUsersUsersGet();
-      
+
       if (res.data?.data) {
         setUsers(res.data.data);
       } else {
@@ -40,8 +42,8 @@ export function useUserManagement(): UseUserManagementReturn {
   }, []);
 
   const createUser = useCallback(async (
-    name: string, 
-    email: string, 
+    name: string,
+    email: string,
     role: "user" | "admin"
   ): Promise<CreateUserResponse | null> => {
     const normalized = email.trim().toLowerCase();
@@ -77,7 +79,7 @@ export function useUserManagement(): UseUserManagementReturn {
 
       // Refresh users list
       await fetchUsers();
-      
+
       return created;
     } catch (err) {
       console.error("Failed to create user:", err);
@@ -142,6 +144,29 @@ export function useUserManagement(): UseUserManagementReturn {
     }
   }, [fetchUsers]);
 
+  const toggleUserStatus = useCallback(async (userId: number, isActive: boolean): Promise<boolean> => {
+    try {
+      const { error } = await setUserStatusUsersUserIdStatusPatch({
+        path: { user_id: userId },
+        body: { is_active: isActive },
+      });
+
+      if (error) {
+        console.error("Failed to update user status:", error);
+        toast.error("Failed to update user status");
+        return false;
+      }
+
+      toast.success(isActive ? "User activated" : "User deactivated");
+      await fetchUsers();
+      return true;
+    } catch (err) {
+      console.error("Failed to update user status:", err);
+      toast.error("Failed to update user status");
+      return false;
+    }
+  }, [fetchUsers]);
+
   return {
     users,
     loading,
@@ -149,5 +174,6 @@ export function useUserManagement(): UseUserManagementReturn {
     createUser,
     updateUser,
     deleteUser,
+    toggleUserStatus,
   };
 }

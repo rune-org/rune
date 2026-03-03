@@ -375,6 +375,7 @@ pub async fn start_completion_consumer(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use serde_json::json;
 
