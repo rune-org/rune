@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
@@ -65,6 +65,10 @@ help:
 	@echo "  make worker-lint    - Lint worker code"
 	@echo "  make worker-format  - Format worker code"
 	@echo "  make worker-test    - Run worker tests"
+	@echo ""
+	@echo "DSL targets:"
+	@echo "  make dsl-generate   - Generate DSL type definitions (TypeScript, Python, Go)"
+	@echo "  make dsl-test       - Run DSL tests (Python, TypeScript, Go)"
 	@echo ""
 	@echo "Docker targets:"
 	@echo "  make up                        - Start all services (alias for docker-up)"
@@ -310,3 +314,22 @@ clean-all: clean
 	$(RM) apps/web/node_modules
 	$(RM) apps/web/.pnpm-store
 	@echo "✓ All dependencies cleaned"
+
+# ======================
+# DSL Generator targets
+# ======================
+
+dsl-generate:
+	@echo "Generating DSL type definitions..."
+	@$(PYTHON) dsl/generator/generate.py
+	@echo "✓ DSL generation complete"
+
+dsl-test:
+	@echo "Running DSL Python tests..."
+	@$(CHECK_UV)
+	@cd dsl && uv sync && PYTHONPATH=.. uv run pytest tests/python -v || (echo "❌ DSL Python tests failed. Ensure uv is installed: https://github.com/astral-sh/uv" && $(EXIT_CMD))
+	@echo "Running DSL TypeScript tests..."
+	@cd dsl/tests/ts && pnpm install && pnpm test || (echo "❌ DSL TypeScript tests failed" && exit 1)
+	@echo "Running DSL Go tests..."
+	@cd dsl/tests/go && go test ./... -v || (echo "❌ DSL Go tests failed" && exit 1)
+	@echo "✓ All DSL tests passed"
