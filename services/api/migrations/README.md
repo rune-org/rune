@@ -90,8 +90,6 @@ make db-reset                # Reset DB (downgrade base + upgrade head)
 make db-shell                # Open PostgreSQL shell
 ```
 
-See [MAKEFILE_TEST_PLAN.md](MAKEFILE_TEST_PLAN.md) for a full test plan for these targets.
-
 Alternatively, from `services/api` with uv:
 
 ```bash

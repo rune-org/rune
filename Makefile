@@ -301,7 +301,7 @@ logs-frontend:
 # ======================
 
 db-shell:
-	docker exec -it rune-postgres psql -U rune -d rune_db
+	docker exec -it rune-api-postgres-dev psql -U rune -d rune_db
 
 db-revision:
 	@$(CHECK_UV)
