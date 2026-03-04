@@ -90,7 +90,7 @@ function replaceInValue<T>(value: T, oldName: string, newName: string): T {
           (rest.length === oldName.length ||
             !/[a-zA-Z0-9_-]/.test(rest[oldName.length]))
         ) {
-          result += "$" + newName;
+          result += `$${newName}`;
           i += 1 + oldName.length;
           continue;
         }
