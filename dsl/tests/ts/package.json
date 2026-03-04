@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm typecheck && vitest run"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

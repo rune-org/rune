@@ -321,7 +321,7 @@ clean-all: clean
 
 dsl-generate:
 	@echo "Generating DSL type definitions..."
-	@python3 dsl/generator/generate.py
+	@$(PYTHON) dsl/generator/generate.py
 	@echo "✓ DSL generation complete"
 
 dsl-test:

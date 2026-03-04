@@ -14,12 +14,22 @@ describe("generated DSL types", () => {
     const mockHttpParams: HttpParameters = {
       method: "GET",
       url: "https://api.example.com",
+      body: undefined,
+      query: undefined,
+      headers: undefined,
+      retry: undefined,
+      retry_delay: undefined,
+      timeout: undefined,
+      raise_on_status: undefined,
+      ignore_ssl: undefined,
     };
     const mockNode: HttpNode = {
       id: "node_1",
       name: "Fetch API",
       trigger: false,
       output: {},
+      error: undefined,
+      credentials: undefined,
       type: "http",
       parameters: mockHttpParams,
       credential_type: ["api_key", "oauth2", "basic_auth", "header", "token"],
@@ -56,6 +66,14 @@ describe("generated DSL types", () => {
     const mockParams: HttpParameters = {
       method: "POST",
       url: "https://example.com",
+      body: undefined,
+      query: undefined,
+      headers: undefined,
+      retry: undefined,
+      retry_delay: undefined,
+      timeout: undefined,
+      raise_on_status: undefined,
+      ignore_ssl: undefined,
     };
     const result = sanitizeHttpParameters(mockParams);
     expect(result.valid).toBe(true);
