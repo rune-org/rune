@@ -16,6 +16,7 @@ type RightPanelStackProps = {
   setIsExpandedDialogOpen?: (open: boolean) => void;
   onTogglePin?: (nodeId: string) => void;
   workflowId?: number | null;
+  readOnly?: boolean;
 };
 
 function isEquivalentSelectedNode(
@@ -37,6 +38,7 @@ function areEqual(prev: RightPanelStackProps, next: RightPanelStackProps) {
   return (
     prev.workflowId === next.workflowId &&
     prev.isExpandedDialogOpen === next.isExpandedDialogOpen &&
+    prev.readOnly === next.readOnly &&
     Boolean(prev.onDelete) === Boolean(next.onDelete) &&
     isEquivalentSelectedNode(prev.selectedNode, next.selectedNode)
   );
@@ -46,7 +48,7 @@ export const RightPanelStack = memo(function RightPanelStack(
   props: RightPanelStackProps,
 ) {
   const [isScrybOpen, setIsScrybOpen] = useState(false);
-  const { workflowId, ...inspectorProps } = props;
+  const { workflowId, readOnly, ...inspectorProps } = props;
 
   return (
     <div className="pointer-events-none absolute right-4 top-4 bottom-8 z-35 flex h-auto flex-col items-end justify-between gap-4">
@@ -54,6 +56,7 @@ export const RightPanelStack = memo(function RightPanelStack(
       <div className="pointer-events-auto min-h-0 flex flex-col items-end overflow-visible">
         <Inspector
           {...inspectorProps}
+          readOnly={readOnly}
           renderInPanel={false}
           className={cn(
             "transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",

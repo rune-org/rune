@@ -3,6 +3,9 @@
  * These types map to the RTES WebSocket message formats.
  */
 
+import type { CanvasNode } from "../types";
+import type { Edge } from "@xyflow/react";
+
 // Node execution status
 export type NodeExecutionStatus =
   | "idle"
@@ -55,13 +58,13 @@ export interface ExecutionState {
   totalDurationMs?: number;
   /** True when viewing a historical execution (should not re-save) */
   isHistorical?: boolean;
+  /** Snapshot of the workflow graph at the time of execution */
+  graphSnapshot?: WorkflowGraphSnapshot;
 }
 
-// TODO(rtes): Workflow graph snapshots should be stored by RTES
-// This type is kept for future RTES integration
 export interface WorkflowGraphSnapshot {
-  nodes: unknown[]; // CanvasNode[] serialized
-  edges: unknown[]; // Edge[] serialized
+  nodes: CanvasNode[];
+  edges: Edge[];
 }
 
 // TODO(rtes): Should be fetched from RTES API

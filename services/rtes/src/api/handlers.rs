@@ -200,6 +200,7 @@ pub(crate) async fn get_workflow_executions(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use std::collections::HashMap;
 
