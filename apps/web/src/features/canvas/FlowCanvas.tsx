@@ -329,7 +329,7 @@ function FlowCanvasInner({
         let uniqueLabel = newName;
         let counter = 2;
         while (existingLabels.has(uniqueLabel)) {
-          uniqueLabel = `${newName} ${counter}`;
+          uniqueLabel = `${newName}_${counter}`;
           counter++;
         }
 
