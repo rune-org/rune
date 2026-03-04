@@ -31,14 +31,13 @@ import {
 import { useAppState } from "@/lib/state";
 import type { WorkflowSummary } from "@/lib/workflows";
 import { toast } from "@/components/ui/toast";
+import { useAuth } from "@/lib/auth";
 import {
   deleteWorkflow,
   runWorkflow,
   updateWorkflowName,
   updateWorkflowStatus,
 } from "@/lib/api/workflows";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -47,6 +46,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  canExecuteWorkflow,
+  canDeleteWorkflow,
+  canShareWorkflow,
+  canRenameWorkflow,
+  canChangeWorkflowStatus,
+} from "@/lib/permissions";
+import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 function timeAgo(iso: string | null): string {
@@ -81,6 +90,9 @@ export function WorkflowsTable() {
     state: { workflows, loading },
     actions,
   } = useAppState();
+  
+  const { state: authState } = useAuth();
+  const isAdmin = authState.user?.role === "admin";
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<StatFilter>("all");
@@ -91,6 +103,9 @@ export function WorkflowsTable() {
     null,
   );
   const [deleteTarget, setDeleteTarget] = useState<WorkflowSummary | null>(
+    null,
+  );
+  const [shareTarget, setShareTarget] = useState<WorkflowSummary | null>(
     null,
   );
 
@@ -331,12 +346,17 @@ export function WorkflowsTable() {
               }
             >
               <TableCell className="font-medium text-foreground">
-                <a
-                  href={`/create/app?workflow=${w.id}`}
-                  className="text-foreground underline-offset-4 hover:underline"
-                >
-                  {w.name}
-                </a>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`/create/app?workflow=${w.id}`}
+                    className="text-foreground underline-offset-4 hover:underline"
+                  >
+                    {w.name}
+                  </a>
+                  <Badge variant={w.role === "owner" ? "secondary" : "outline"} className="text-xs">
+                    {w.role === "owner" ? "Owner" : "Shared"}
+                  </Badge>
+                </div>
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {w.triggerType}
@@ -365,32 +385,53 @@ export function WorkflowsTable() {
                         Open in Canvas
                       </a>
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => setRenameTarget(w)}
-                      disabled={isRowPending(w.id)}
-                    >
-                      Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleToggleActive(w)}
-                      disabled={isRowPending(w.id)}
-                    >
-                      {w.status === "active" ? "Deactivate" : "Activate"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleRun(w)}
-                      disabled={isRowPending(w.id)}
-                    >
-                      Run
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={() => beginDelete(w)}
-                      disabled={isRowPending(w.id)}
-                      className="text-red-400 focus:text-red-300 data-[highlighted]:bg-red-500/10 data-[highlighted]:text-red-200"
-                    >
-                      Delete
-                    </DropdownMenuItem>
+                    {canRenameWorkflow(w.role, isAdmin) && (
+                      <DropdownMenuItem
+                        onSelect={() => setRenameTarget(w)}
+                        disabled={isRowPending(w.id)}
+                      >
+                        Rename
+                      </DropdownMenuItem>
+                    )}
+                    {canChangeWorkflowStatus(w.role, isAdmin) && (
+                      <DropdownMenuItem
+                        onSelect={() => handleToggleActive(w)}
+                        disabled={isRowPending(w.id)}
+                      >
+                        {w.status === "active" ? "Deactivate" : "Activate"}
+                      </DropdownMenuItem>
+                    )}
+                    {canExecuteWorkflow(w.role, isAdmin) && (
+                      <DropdownMenuItem
+                        onSelect={() => handleRun(w)}
+                        disabled={isRowPending(w.id)}
+                      >
+                        Run
+                      </DropdownMenuItem>
+                    )}
+                    {canShareWorkflow(w.role, isAdmin) && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => setShareTarget(w)}
+                          disabled={isRowPending(w.id)}
+                        >
+                          Share
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {canDeleteWorkflow(w.role, isAdmin) && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => beginDelete(w)}
+                          disabled={isRowPending(w.id)}
+                          className="text-red-400 focus:text-red-300 data-highlighted:bg-red-500/10 data-highlighted:text-red-200"
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -417,6 +458,16 @@ export function WorkflowsTable() {
         onConfirm={confirmDelete}
         pending={pendingWorkflowId !== null}
       />
+      {shareTarget && (
+        <ShareWorkflowDialog
+          workflowId={shareTarget.id}
+          workflowName={shareTarget.name}
+          open={shareTarget !== null}
+          onOpenChange={(open) => {
+            if (!open) setShareTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 }

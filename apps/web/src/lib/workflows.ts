@@ -8,6 +8,7 @@ import {
   canvasToWorkflowData,
   workflowDataToCanvas,
 } from "@/lib/workflow-dsl";
+import type { WorkflowRole } from "@/lib/permissions";
 
 /**
  * UI-friendly summary of a workflow row (in the table view).
@@ -37,6 +38,10 @@ export type WorkflowSummary = {
    * Placeholder total run count.
    */
   runs: number;
+  /**
+   * User's role for this workflow (controls permissions).
+   */
+  role: WorkflowRole;
 };
 
 export const defaultWorkflowSummary: WorkflowSummary = {
@@ -47,6 +52,7 @@ export const defaultWorkflowSummary: WorkflowSummary = {
   lastRunAt: null,
   lastRunStatus: "n/a",
   runs: 0,
+  role: "owner",
 };
 
 export function listItemToWorkflowSummary(
@@ -57,6 +63,7 @@ export function listItemToWorkflowSummary(
     id: String(item.id),
     name: item.name,
     status: item.is_active ? "active" : "draft",
+    role: item.role,
   };
 }
 
