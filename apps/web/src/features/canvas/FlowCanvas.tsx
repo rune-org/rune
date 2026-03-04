@@ -13,6 +13,12 @@ import "./styles/reactflow.css";
 
 import { toast } from "@/components/ui/toast";
 import type { CanvasNode, NodeKind } from "./types";
+import {
+  scanVariableReferences,
+  replaceVariableReferences,
+  type ScanResult,
+} from "./lib/variableRefUpdate";
+import { RenameRefDialog, type RenameChoice } from "./components/RenameRefDialog";
 import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
@@ -70,6 +76,13 @@ function FlowCanvasInner({
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
+  const [renameDialog, setRenameDialog] = useState<{
+    oldName: string;
+    newName: string;
+    nodeId: string;
+    nodeType: NodeKind;
+    scanResult: ScanResult;
+  } | null>(null);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(null);
@@ -261,11 +274,75 @@ function FlowCanvasInner({
   );
 
   const updateSelectedNodeLabel = useCallback(
-    (label: string) => {
+    (newLabel: string) => {
       if (!selectedNode) return;
-      updateNodeData(selectedNode.id, selectedNode.type, () => ({ label }));
+      const oldName = selectedNode.data.label;
+
+      const needsScan = oldName && oldName !== newLabel;
+      if (!needsScan) {
+        updateNodeData(selectedNode.id, selectedNode.type, () => ({ label: newLabel }));
+        return;
+      }
+
+      const otherNodes = nodes.filter((n) => n.id !== selectedNode.id);
+      const result = scanVariableReferences(otherNodes, oldName);
+
+      if (result.totalRefs === 0) {
+        updateNodeData(selectedNode.id, selectedNode.type, () => ({ label: newLabel }));
+        return;
+      }
+
+      setRenameDialog({
+        oldName,
+        newName: newLabel,
+        nodeId: selectedNode.id,
+        nodeType: selectedNode.type,
+        scanResult: result,
+      });
     },
-    [selectedNode, updateNodeData],
+    [selectedNode, updateNodeData, nodes],
+  );
+
+  const handleRenameChoice = useCallback(
+    (choice: RenameChoice) => {
+      if (!renameDialog) return;
+      const { oldName, newName, nodeId, nodeType } = renameDialog;
+      setRenameDialog(null);
+
+      if (choice === "cancel") return;
+
+      pushHistory();
+
+      if (choice === "skip") {
+        updateNodeData(nodeId, nodeType, () => ({ label: newName }));
+        return;
+      }
+
+      setNodes((currentNodes) => {
+        const existingLabels = new Set(
+          currentNodes
+            .filter((n) => n.id !== nodeId)
+            .map((n) => n.data.label)
+            .filter(Boolean),
+        );
+
+        let uniqueLabel = newName;
+        let counter = 2;
+        while (existingLabels.has(uniqueLabel)) {
+          uniqueLabel = `${newName} ${counter}`;
+          counter++;
+        }
+
+        const updated = replaceVariableReferences(currentNodes, oldName, uniqueLabel);
+
+        return updated.map((n) =>
+          n.id === nodeId
+            ? { ...n, data: { ...n.data, label: uniqueLabel } } as CanvasNode
+            : n,
+        );
+      });
+    },
+    [renameDialog, pushHistory, updateNodeData, setNodes],
   );
 
   const onSelectionChange = useCallback((params: OnSelectionChangeParams) => {
@@ -474,6 +551,16 @@ function FlowCanvasInner({
         showTrace={smithShowTrace}
         onToggleTrace={setSmithShowTrace}
       />
+
+      {renameDialog && (
+        <RenameRefDialog
+          open={true}
+          oldName={renameDialog.oldName}
+          newName={renameDialog.newName}
+          scanResult={renameDialog.scanResult}
+          onChoice={handleRenameChoice}
+        />
+      )}
     </div>
     </GraphProvider>
   );
