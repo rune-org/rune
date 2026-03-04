@@ -5,16 +5,18 @@ type SmithButtonProps = {
   onClick: () => void;
   isSending: boolean;
   justFinished: boolean;
+  disabled?: boolean;
 };
 
-export function SmithButton({ onClick, isSending, justFinished }: SmithButtonProps) {
+export function SmithButton({ onClick, isSending, justFinished, disabled = false }: SmithButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-busy={isSending}
       className={cn(
-        "group relative flex h-13 w-13 items-center justify-center overflow-hidden rounded-full p-px shadow-lg transition-all hover:shadow-primary/25 hover:scale-105 active:scale-95",
+        "group relative flex h-13 w-13 items-center justify-center overflow-hidden rounded-full p-px shadow-lg transition-all hover:shadow-primary/25 hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-lg",
         justFinished && "animate-pulse",
       )}
       title="Ask Smith"

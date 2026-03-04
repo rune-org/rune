@@ -1,6 +1,7 @@
 import type { Node } from "@xyflow/react";
 import type { IfData } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
+import { VariableInput } from "../variable-picker/VariableInput";
 
 type IfInspectorProps = {
   node: Node<IfData>;
@@ -20,16 +21,16 @@ export function IfInspector({
   return (
     <div className="space-y-2">
       <label className="block text-xs text-muted-foreground">Expression</label>
-      <input
-        className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
+      <VariableInput
         value={node.data.expression ?? ""}
-        onChange={(e) =>
+        onChange={(v) =>
           updateIfData((d) => ({
             ...d,
-            expression: e.target.value,
+            expression: v,
           }))
         }
-        placeholder="e.g., value > 10"
+        placeholder="e.g., $HTTP.status > 200"
+        nodeId={node.id}
       />
       <div className="text-xs text-muted-foreground">
         Two outputs: true and false.

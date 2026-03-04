@@ -12,6 +12,7 @@ type Node struct {
 	Credentials *Credential    `json:"credentials,omitempty"`
 	Output      map[string]any `json:"output"`
 	Error       *ErrorHandling `json:"error,omitempty"`
+	Position    []float64      `json:"position,omitempty"` // Passthrough for RTES history; not used by worker
 }
 
 // HasCredentials checks if the node has credentials configured.

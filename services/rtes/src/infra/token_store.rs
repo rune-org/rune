@@ -253,7 +253,7 @@ impl TokenStore {
 #[async_trait]
 impl TokenStorePort for TokenStore {
     async fn add_token(&self, token: &ExecutionToken) -> StoreResult<()> {
-        TokenStore::add_token(self, token)
+        Self::add_token(self, token)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
     }
@@ -264,7 +264,7 @@ impl TokenStorePort for TokenStore {
         target_execution_id: Option<&str>,
         target_workflow_id: &str,
     ) -> StoreResult<bool> {
-        TokenStore::validate_access(self, user_id, target_execution_id, target_workflow_id)
+        Self::validate_access(self, user_id, target_execution_id, target_workflow_id)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
     }
@@ -274,7 +274,7 @@ impl TokenStorePort for TokenStore {
         user_id: &str,
         target_execution_id: &str,
     ) -> StoreResult<bool> {
-        TokenStore::validate_access_for_execution(self, user_id, target_execution_id)
+        Self::validate_access_for_execution(self, user_id, target_execution_id)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
     }
@@ -284,19 +284,20 @@ impl TokenStorePort for TokenStore {
         target_execution_id: &str,
         target_workflow_id: &str,
     ) -> StoreResult<bool> {
-        TokenStore::validate_execution_access(self, target_execution_id, target_workflow_id)
+        Self::validate_execution_access(self, target_execution_id, target_workflow_id)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
     }
 
     async fn validate_workflow_access(&self, target_workflow_id: &str) -> StoreResult<bool> {
-        TokenStore::validate_workflow_access(self, target_workflow_id)
+        Self::validate_workflow_access(self, target_workflow_id)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::TokenStore;
     use crate::domain::models::ExecutionToken;
