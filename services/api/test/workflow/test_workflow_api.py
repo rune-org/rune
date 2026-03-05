@@ -352,9 +352,10 @@ class TestResponseStructure:
         data = response.json()["data"]
         assert isinstance(data, list)
         if len(data) > 0:
-            required_fields = ["id", "name", "is_active"]
+            required_fields = ["id", "name", "is_active", "role"]
             for field in required_fields:
                 assert field in data[0], f"Missing field: {field}"
+            assert data[0]["role"] in ("owner", "editor", "viewer")
 
     @pytest.mark.asyncio
     async def test_response_data_types(self, authenticated_client, sample_workflow):
