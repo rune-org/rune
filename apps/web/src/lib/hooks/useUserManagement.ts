@@ -66,7 +66,14 @@ export function useUserManagement(): UseUserManagementReturn {
 
       if (error) {
         console.error("Failed to create user:", error);
-        toast.error("Failed to create user");
+        // Extract error message from validation error if available
+        let errorMessage = "Failed to create user";
+        if (error && typeof error === "object" && "detail" in error) {
+          errorMessage = (error as any).detail;
+        } else if (error && typeof error === "object" && "message" in error) {
+          errorMessage = (error as any).message;
+        }
+        toast.error(errorMessage);
         return null;
       }
 

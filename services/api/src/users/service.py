@@ -106,7 +106,7 @@ class UserService:
             name=user_data.name,
             email=normalized_email,
             hashed_password=hashed_password,
-            role=user_data.role.value,
+            role=user_data.role,
             must_change_password=must_change,
         )
 
