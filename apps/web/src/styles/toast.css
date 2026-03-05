@@ -3,6 +3,11 @@
 /* Base toast styling - override Sonner's default backgrounds */
 [data-sonner-toast] {
   background-color: transparent !important;
+  padding: 10px 14px !important;
+  min-height: unset !important;
+  font-size: 0.875rem !important;
+  line-height: 1.4 !important;
+  backdrop-filter: blur(8px) !important;
 }
 
 /* Success Toast - Green */

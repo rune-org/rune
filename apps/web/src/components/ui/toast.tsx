@@ -2,22 +2,20 @@
 
 import { Toaster as SonnerToaster, toast as sonnerToast } from "sonner";
 
-const createToastWithIcon = (type: string) => {
-  return (message: string | React.ReactNode, options?: Record<string, unknown>) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (sonnerToast as any)[type === "default" ? "message" : type](message, options);
-  };
-};
+type ToastType = "success" | "error" | "warning" | "info";
+
+const createToastVariant = (type: ToastType) => sonnerToast[type];
 
 export const toast = Object.assign(
   (message: string | React.ReactNode, options?: Record<string, unknown>) => {
     return sonnerToast(message, options);
   },
+  sonnerToast,
   {
-    success: createToastWithIcon("success"),
-    error: createToastWithIcon("error"),
-    warning: createToastWithIcon("warning"),
-    info: createToastWithIcon("info"),
+    success: createToastVariant("success"),
+    error: createToastVariant("error"),
+    warning: createToastVariant("warning"),
+    info: createToastVariant("info"),
   }
 );
 
