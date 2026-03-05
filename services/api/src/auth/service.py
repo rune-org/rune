@@ -33,7 +33,7 @@ class AuthService:
             return None
 
         if not user.is_active:
-            raise Forbidden(detail="Account is deactivated")
+            raise Forbidden(detail="Your account has been deactivated. Please contact support.")
 
         return user
 
@@ -94,7 +94,7 @@ class AuthService:
             raise InvalidTokenError(detail="User not found")
 
         if not user.is_active:
-            raise Forbidden(detail="Account is deactivated")
+            raise Forbidden(detail="Your account has been deactivated. Please contact support.")
 
         new_access_token = await create_access_token(user, db=self.db)
 
