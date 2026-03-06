@@ -72,3 +72,7 @@ nginx/ssl/
 !**/uv.lock
 **/Cargo.lock
 **/Cargo.toml.bk
+
+
+# Cursor
+.cursor/
