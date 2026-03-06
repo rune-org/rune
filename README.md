@@ -8,7 +8,7 @@
 
 ---
 
-Rune is an open-source workflow automation platform that lets you design, execute, and monitor complex automations through a visual interface. 
+Rune is an open-source workflow automation platform that lets you design, execute, and monitor complex automations through a visual interface.
 
 Whether you're orchestrating API calls, processing data pipelines, or building multi-step integrations, Rune makes it simple to go from idea to execution.
 
@@ -88,6 +88,8 @@ Share workflows with granular permissions. Owners, editors, and viewers each see
 
 ## Quick Start
 
+### Web Interface
+
 The fastest way to get Rune running is with Docker:
 
 ```bash
@@ -104,17 +106,47 @@ make up
 
 Once the containers are running, open `http://localhost:3000` in your browser.
 
+### Command-Line Interface
+
+Rune also includes a powerful CLI for workflow automation from your terminal:
+
+```bash
+# Install the CLI
+cd cli
+pip install -e .
+
+# Configure and authenticate
+rune config set-url http://localhost:8000
+rune auth login
+
+# Start automating
+rune workflow list
+rune workflow run my-workflow
+rune execution logs <execution-id>
+```
+
+**Key Features:**
+
+- 🔐 Token-based authentication (no cookies!)
+- 📋 Complete workflow management
+- 👥 User and credential management
+- 📊 Real-time execution monitoring
+- 🎨 Beautiful terminal output
+- 🤖 JSON output for scripting
+
+See the **[CLI Documentation](rune_cli/README.md)** for complete usage guide.
+
 ### What Gets Started
 
-| Service | Port | Description |
-|---------|------|-------------|
-| Frontend | 3000 | Web application |
-| API | 8000 | REST API |
-| RTES | 8080 | Real-time execution streaming |
-| PostgreSQL | 5432 | Primary database |
-| MongoDB | 27017 | Execution history |
-| Redis | 6379 | State and caching |
-| RabbitMQ | 5672 / 15672 | Message broker |
+| Service    | Port         | Description                   |
+| ---------- | ------------ | ----------------------------- |
+| Frontend   | 3000         | Web application               |
+| API        | 8000         | REST API                      |
+| RTES       | 8080         | Real-time execution streaming |
+| PostgreSQL | 5432         | Primary database              |
+| MongoDB    | 27017        | Execution history             |
+| Redis      | 6379         | State and caching             |
+| RabbitMQ   | 5672 / 15672 | Message broker                |
 
 ### Stopping Services
 
@@ -169,6 +201,14 @@ rune/
 │   ├── api/                 # FastAPI backend
 │   ├── rune-worker/         # Go execution engine
 │   └── rtes/                # Rust real-time service
+├── rune_cli/                     # Standalone CLI application
+│   ├── commands/            # CLI commands
+│   ├── auth/                # Token-based authentication
+│   ├── client/              # API client
+│   ├── core/                # Configuration and core utilities
+│   ├── styles/              # Terminal theming and output formatting
+│   ├── tests/               # Test suite
+│   └── utils/               # Utilities and formatting
 └── docker-compose.yml
 ```
 
