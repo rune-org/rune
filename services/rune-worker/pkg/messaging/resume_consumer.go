@@ -120,6 +120,8 @@ func (c *ResumeConsumer) handleResume(ctx context.Context, payload []byte) error
 	for _, nextNodeID := range nextNodes {
 		nextMsg := &messages.NodeExecutionMessage{
 			WorkflowID:         msg.WorkflowID,
+			WorkflowVersion:    msg.WorkflowVersion,
+			WorkflowVersionID:  msg.WorkflowVersionID,
 			ExecutionID:        msg.ExecutionID,
 			CurrentNode:        nextNodeID,
 			WorkflowDefinition: msg.WorkflowDefinition,

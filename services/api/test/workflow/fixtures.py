@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 from argon2 import PasswordHasher
 
-from src.db.models import User, UserRole, Workflow, WorkflowRole, WorkflowUser
+from src.db.models import User, UserRole
 from src.workflow.service import WorkflowService
 
 
@@ -31,11 +31,16 @@ async def workflow_service(test_db):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def sample_workflow(test_db, test_user):
-    """Create a sample workflow for testing."""
-    workflow = Workflow(
+async def sample_workflow(workflow_service, test_db, test_user):
+    """Create a sample workflow with one saved version."""
+    workflow = await workflow_service.create(
+        user_id=test_user.id,
         name="Sample Workflow",
         description="A sample workflow for testing",
+    )
+    await workflow_service.create_version(
+        workflow=workflow,
+        user_id=test_user.id,
         workflow_data={
             "nodes": [
                 {
@@ -48,23 +53,10 @@ async def sample_workflow(test_db, test_user):
             ],
             "edges": [{"id": "edge-1", "src": "node-1", "dst": "node-2"}],
         },
-        is_active=False,
-        version=1,
+        base_version_id=None,
+        message="Initial version",
     )
-    test_db.add(workflow)
-    await test_db.flush()
-
-    # Add user permission for test_user (no roles in MVP)
-    permission = WorkflowUser(
-        workflow_id=workflow.id,
-        user_id=test_user.id,
-        granted_by=test_user.id,
-        role=WorkflowRole.OWNER,
-    )
-    test_db.add(permission)
-    await test_db.commit()
     await test_db.refresh(workflow)
-
     return workflow
 
 
@@ -84,6 +76,7 @@ def sample_workflow_data():
                         "parameters": {"timeout": 30},
                     },
                 },
+                "trigger": True,
             },
             {
                 "id": "node-2",
@@ -115,14 +108,14 @@ def sample_workflow_data():
         "edges": [
             {
                 "id": "edge-1",
-                "source": "node-1",
-                "target": "node-2",
+                "src": "node-1",
+                "dst": "node-2",
                 "type": "default",
             },
             {
                 "id": "edge-2",
-                "source": "node-2",
-                "target": "node-3",
+                "src": "node-2",
+                "dst": "node-3",
                 "type": "default",
             },
         ],

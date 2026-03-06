@@ -36,6 +36,8 @@ func (e *Executor) publishNextNodes(ctx context.Context, msg *messages.NodeExecu
 	for _, nextNodeID := range nextNodeIDs {
 		nextMsg := &messages.NodeExecutionMessage{
 			WorkflowID:         msg.WorkflowID,
+			WorkflowVersion:    msg.WorkflowVersion,
+			WorkflowVersionID:  msg.WorkflowVersionID,
 			ExecutionID:        msg.ExecutionID,
 			CurrentNode:        nextNodeID,
 			WorkflowDefinition: msg.WorkflowDefinition,

@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import Column
+from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
@@ -107,20 +107,70 @@ class Workflow(TimestampModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field()
     description: str = Field(default="", description="Description of the workflow")
-
-    workflow_data: dict = Field(
-        default_factory=dict,
-        sa_type=JSONB,
-    )
-
     is_active: bool = Field(default=False)
-    version: int = Field(default=1)
+    latest_version_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            ForeignKey(
+                "workflow_versions.id",
+                name="fk_workflows_latest_version_id",
+                ondelete="SET NULL",
+                use_alter=True,
+            ),
+            nullable=True,
+        ),
+    )
+    published_version_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            ForeignKey(
+                "workflow_versions.id",
+                name="fk_workflows_published_version_id",
+                ondelete="SET NULL",
+                use_alter=True,
+            ),
+            nullable=True,
+        ),
+    )
 
     workflow_users: list["WorkflowUser"] = Relationship(back_populates="workflow")
     credentials: list["WorkflowCredential"] = Relationship(
         back_populates="used_in_workflows",
         link_model=WorkflowCredentialLink,
     )
+
+
+class WorkflowVersion(SQLModel, table=True):
+    __tablename__ = "workflow_versions"
+    __table_args__ = (
+        UniqueConstraint(
+            "workflow_id",
+            "version",
+            name="uq_workflow_versions_workflow_id_version",
+        ),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workflow_id: int = Field(
+        foreign_key="workflows.id",
+        ondelete="CASCADE",
+        description="Parent workflow shell",
+    )
+    version: int = Field(description="Linear workflow version number")
+    workflow_data: dict = Field(default_factory=dict, sa_type=JSONB)
+    created_by: Optional[int] = Field(
+        default=None,
+        foreign_key="users.id",
+        ondelete="SET NULL",
+        description="User who created this version",
+    )
+    message: Optional[str] = Field(
+        default=None,
+        description="User-provided message describing the saved revision",
+    )
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class WorkflowUser(TimestampModel, table=True):

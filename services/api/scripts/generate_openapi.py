@@ -1,5 +1,10 @@
+from pathlib import Path
+import sys
+
 import yaml
 from fastapi.openapi.utils import get_openapi
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.app import app
 

@@ -51,9 +51,10 @@ __pycache__
 myenv
 venv
 
-# alembic - ignore generated migrations, keep directory via .gitkeep
+# alembic
 services/api/migrations/versions/*
 !services/api/migrations/versions/.gitkeep
+!services/api/migrations/versions/*.py
 
 # golang
 services/rune-worker/main
