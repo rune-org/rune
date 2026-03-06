@@ -24,13 +24,21 @@ class WorkflowVersionConflictError(Exception):
 
 
 class WorkflowService:
-    """Database service for workflows and immutable workflow versions."""
+    """Database service for Workflow objects and immutable WorkflowVersion rows.
+
+    Holds a DB session and exposes simple methods used by API routers:
+    listing, retrieval, creation, versioning, and deletion.
+    """
 
     def __init__(self, db: AsyncSession):
         self.db = db
         self.encryptor = get_encryptor()
 
     async def list_for_user(self, user_id: int) -> list[tuple[Workflow, WorkflowRole]]:
+        """Return workflows visible to `user_id`, newest first.
+
+        Used for the `GET /workflows` endpoint.
+        """
         statement = (
             select(Workflow, WorkflowUser.role)
             .join(WorkflowUser)
@@ -41,9 +49,16 @@ class WorkflowService:
         return result.all()
 
     async def get_by_id(self, workflow_id: int) -> Workflow | None:
+        """Return a Workflow by primary key or None if not found."""
         return await self.db.get(Workflow, workflow_id)
 
     async def get_for_user(self, workflow_id: int, user_id: int) -> Workflow:
+        """Fetch a workflow and enforce that `user_id` has access to it.
+
+        Raises NotFound if the workflow doesn't exist, or Forbidden if the
+        user has no permission entry. This centralizes access checks for
+        callers so routers remain concise.
+        """
         wf = await self.get_by_id(workflow_id)
         if not wf:
             raise NotFound(detail="Workflow not found")
@@ -59,6 +74,7 @@ class WorkflowService:
         return wf
 
     async def create(self, user_id: int, name: str, description: str) -> Workflow:
+        """Create and persist a new workflow shell owned by `user_id`."""
         wf = Workflow(name=name, description=description)
         self.db.add(wf)
         await self.db.flush()
@@ -75,6 +91,7 @@ class WorkflowService:
         return wf
 
     async def update_name(self, workflow: Workflow, name: str) -> Workflow:
+        """Update only the workflow's name and persist the change."""
         workflow.name = name
         await self.db.commit()
         await self.db.refresh(workflow)
@@ -246,6 +263,11 @@ class WorkflowService:
         return copy.deepcopy(latest.workflow_data)
 
     async def delete(self, workflow: Workflow) -> None:
+        """Hard-delete the given Workflow and commit the change.
+
+        First delete all related WorkflowUser entries, then delete the workflow
+        shell itself.
+        """
         stmt = delete(WorkflowUser).where(WorkflowUser.workflow_id == workflow.id)
         await self.db.exec(stmt)
         await self.db.commit()
@@ -254,18 +276,39 @@ class WorkflowService:
         await self.db.commit()
 
     async def resolve_workflow_credentials(self, workflow_data: dict) -> dict:
+        """
+        Resolve credentials for all nodes in the workflow definition.
+
+        Iterates through all nodes in the workflow_data, finds nodes with
+        credential references, fetches the actual credential from the database,
+        decrypts it, and embeds the resolved values in place.
+
+        Args:
+            workflow_data: The workflow definition containing nodes and edges.
+
+        Returns:
+            Updated workflow_data with resolved credentials embedded in nodes.
+
+        Raises:
+            NotFound: If a referenced credential doesn't exist.
+        """
         resolved_data = copy.deepcopy(workflow_data)
         nodes = resolved_data.get("nodes", [])
 
         for node in nodes:
+            # Check if this node has a credentials reference.
             if "credentials" in node and isinstance(node["credentials"], dict):
                 cred_ref = node["credentials"]
 
+                # If it has an id field, it's a reference that needs resolving.
                 if "id" in cred_ref:
                     credential_id = cred_ref["id"]
+
+                    # Convert string ID to int if needed.
                     if isinstance(credential_id, str):
                         credential_id = int(credential_id)
 
+                    # Fetch the credential from database.
                     credential: WorkflowCredential | None = await self.db.get(
                         WorkflowCredential, credential_id
                     )
@@ -275,10 +318,12 @@ class WorkflowService:
                             detail=f"Credential with ID {credential_id} not found"
                         )
 
+                    # Decrypt the credential data.
                     decrypted_data = self.encryptor.decrypt_credential_data(
                         credential.credential_data
                     )
 
+                    # Replace the credentials reference with resolved values.
                     node["credentials"] = {
                         "id": str(credential.id),
                         "name": credential.name,

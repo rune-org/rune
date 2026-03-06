@@ -162,6 +162,10 @@ paths:
       tags:
       - Workflows
       summary: Get Workflow
+      description: 'Get a specific workflow by ID.
+
+
+        **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)'
       operationId: get_workflow_workflows__workflow_id__get
       security:
       - OAuth2PasswordBearer: []
@@ -189,6 +193,10 @@ paths:
       tags:
       - Workflows
       summary: Delete Workflow
+      description: 'Delete a workflow.
+
+
+        **Requires:** DELETE permission (OWNER only)'
       operationId: delete_workflow_workflows__workflow_id__delete
       security:
       - OAuth2PasswordBearer: []
@@ -213,6 +221,10 @@ paths:
       tags:
       - Workflows
       summary: Update Name
+      description: 'Update workflow name.
+
+
+        **Requires:** EDIT permission (OWNER or EDITOR)'
       operationId: update_name_workflows__workflow_id__name_put
       security:
       - OAuth2PasswordBearer: []
@@ -424,6 +436,24 @@ paths:
       tags:
       - Workflows
       summary: Run Workflow
+      description: 'Queue a workflow for execution.
+
+
+        Verifies the workflow exists and user has execute permission (OWNER or EDITOR),
+
+        resolves all credential references in workflow nodes,
+
+        then publishes a run message to RabbitMQ containing workflow details with
+
+        resolved credentials.
+
+        Also publishes an execution token for RTES real-time updates.
+
+
+        Returns execution_id for tracking the execution.
+
+
+        **Requires:** EXECUTE permission (OWNER or EDITOR, not VIEWER)'
       operationId: run_workflow_workflows__workflow_id__run_post
       security:
       - OAuth2PasswordBearer: []

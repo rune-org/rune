@@ -14,6 +14,20 @@ class WorkflowListItem(BaseModel):
 
 
 def normalize_and_validate_name(value: str, *, field_name: str = "name") -> str:
+    """Validate a name field.
+
+    Ensures the resulting value is not empty.
+
+    Args:
+        value: The raw input value.
+        field_name: Optional field name used in the error message.
+
+    Returns:
+        The stripped string.
+
+    Raises:
+        ValueError: If the stripped value is empty.
+    """
     normalized = value.strip()
     if not normalized:
         raise ValueError(f"{field_name} cannot be blank")

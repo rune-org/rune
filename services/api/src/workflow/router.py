@@ -36,16 +36,19 @@ router = APIRouter(prefix="/workflows", tags=["Workflows"])
 
 
 def get_workflow_service(db: DatabaseDep) -> WorkflowService:
+    """Dependency to get workflow service instance."""
     return WorkflowService(db=db)
 
 
 def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
+    """Dependency to get workflow queue service instance."""
     return WorkflowQueueService(
         connection=connection, queue_name=get_settings().rabbitmq_workflow_queue
     )
 
 
 def get_token_service(connection=Depends(get_rabbitmq)) -> ExecutionTokenService:
+    """Dependency to get execution token service instance."""
     return ExecutionTokenService(
         connection=connection, queue_name=get_settings().rabbitmq_token_queue
     )
@@ -138,6 +141,11 @@ async def get_workflow(
     workflow: Workflow = Depends(get_workflow_with_permission),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
+    """
+    Get a specific workflow by ID.
+
+    **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)
+    """
     detail = serialize_workflow_detail(
         workflow, await service.get_latest_version_with_creator(workflow)
     )
@@ -170,6 +178,11 @@ async def update_name(
     workflow: Workflow = Depends(get_workflow_with_permission),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
+    """
+    Update workflow name.
+
+    **Requires:** EDIT permission (OWNER or EDITOR)
+    """
     wf = await service.update_name(workflow, payload.name)
     detail = serialize_workflow_detail(
         wf, await service.get_latest_version_with_creator(wf)
@@ -316,6 +329,11 @@ async def delete_workflow(
     workflow: Workflow = Depends(get_workflow_with_permission),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> None:
+    """
+    Delete a workflow.
+
+    **Requires:** DELETE permission (OWNER only)
+    """
     await service.delete(workflow)
     return
 
@@ -330,6 +348,19 @@ async def run_workflow(
     queue_service: WorkflowQueueService = Depends(get_queue_service),
     token_service: ExecutionTokenService = Depends(get_token_service),
 ) -> ApiResponse[str]:
+    """
+    Queue a workflow for execution.
+
+    Verifies the workflow exists and user has execute permission (OWNER or EDITOR),
+    resolves all credential references in workflow nodes,
+    then publishes a run message to RabbitMQ containing workflow details with
+    resolved credentials.
+    Also publishes an execution token for RTES real-time updates.
+
+    Returns execution_id for tracking the execution.
+
+    **Requires:** EXECUTE permission (OWNER or EDITOR, not VIEWER)
+    """
     version = await workflow_service.get_run_version(
         workflow, payload.version_id if payload else None
     )
