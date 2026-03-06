@@ -1,0 +1,13 @@
+[project]
+name = "dsl"
+version = "0.1.0"
+description = "DSL code generator and generated types for Rune workflow definitions"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]

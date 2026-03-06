@@ -40,7 +40,7 @@ export function useUpdateNodeData(setNodes: SetNodes) {
             let counter = 2;
 
             while (existingLabels.includes(newLabel)) {
-              newLabel = `${updates.label} ${counter}`;
+              newLabel = `${updates.label}_${counter}`;
               counter++;
             }
 

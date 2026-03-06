@@ -1,0 +1,64 @@
+name: DSL CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dsl/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "dsl/**"
+
+concurrency:
+  group: dsl-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: DSL tests (Python, TypeScript, Go)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.10.7"
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: dsl/tests/ts/pnpm-lock.yaml
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.21"
+
+      - name: Run DSL Python tests
+        run: |
+          cd dsl && uv sync && PYTHONPATH=.. uv run pytest tests/python -v
+
+      - name: Run DSL TypeScript tests
+        run: |
+          cd dsl/tests/ts && pnpm install && pnpm test
+
+      - name: Run DSL Go tests
+        run: |
+          cd dsl/tests/go && go test ./... -v
