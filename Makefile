@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
@@ -69,6 +69,15 @@ help:
 	@echo "DSL targets:"
 	@echo "  make dsl-generate   - Generate DSL type definitions (TypeScript, Python, Go)"
 	@echo "  make dsl-test       - Run DSL tests (Python, TypeScript, Go)"
+	@echo ""
+	@echo "Database targets:"
+	@echo "  make db-revision msg=\"description\" - Generate new migration from model changes"
+	@echo "  make db-upgrade                     - Apply all pending migrations"
+	@echo "  make db-downgrade [rev=\"revision\"] - Rollback migrations (default: one step)"
+	@echo "  make db-current                     - Show current database version"
+	@echo "  make db-history                     - Show migration history"
+	@echo "  make db-reset                       - Reset database (downgrade to base, upgrade to head)"
+	@echo "  make db-shell                       - Open PostgreSQL shell"
 	@echo ""
 	@echo "Docker targets:"
 	@echo "  make up                        - Start all services (alias for docker-up)"
@@ -296,7 +305,50 @@ logs-frontend:
 # ======================
 
 db-shell:
-	docker exec -it rune-postgres psql -U rune -d rune_db
+	docker exec -it rune-api-postgres-dev psql -U rune -d rune_db
+
+db-revision:
+	@$(CHECK_UV)
+ifeq ($(msg),)
+	@echo "❌ Error: 'msg' parameter is required"
+	@echo "   Usage: make db-revision msg=\"description of changes\""
+	@$(EXIT_CMD)
+else
+	cd services/api && uv run alembic revision --autogenerate -m "$(msg)"
+endif
+
+db-upgrade:
+	@$(CHECK_UV)
+	cd services/api && uv run alembic upgrade head
+
+db-downgrade:
+	@$(CHECK_UV)
+	cd services/api && uv run alembic downgrade $(or $(rev),-1)
+
+db-current:
+	@$(CHECK_UV)
+	cd services/api && uv run alembic current
+
+db-history:
+	@$(CHECK_UV)
+	cd services/api && uv run alembic history
+
+db-reset:
+	@echo "⚠️  WARNING: This will reset the database by downgrading to base and upgrading to head"
+	@echo "   This is a destructive operation that will remove all data!"
+ifeq ($(DETECTED_OS),Windows)
+	@echo "⚠️  Windows detected - proceeding without confirmation prompt"
+	@$(CHECK_UV)
+	cd services/api && uv run alembic downgrade base && uv run alembic upgrade head
+else
+	@read -p "Are you sure you want to continue? [y/N]: " confirm && \
+		if [ "$$confirm" != "y" ] && [ "$$confirm" != "Y" ]; then \
+			echo "Operation cancelled."; \
+			exit 0; \
+		fi && \
+		$(CHECK_UV) && \
+		cd services/api && uv run alembic downgrade base && uv run alembic upgrade head
+endif
 
 # ======================
 # Cleanup targets
