@@ -5,8 +5,6 @@ shell pointers and derived state are consistent.
 """
 
 import asyncio
-import sys
-
 from sqlalchemy import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 

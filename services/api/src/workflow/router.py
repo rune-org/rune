@@ -63,7 +63,9 @@ def serialize_version(
         "version": version.version,
         "created_at": version.created_at,
         "created_by": (
-            WorkflowVersionCreator(id=creator.id, name=creator.name) if creator else None
+            WorkflowVersionCreator(id=creator.id, name=creator.name)
+            if creator
+            else None
         ),
         "message": version.message,
         "is_published": version.id == published_version_id,
@@ -112,7 +114,9 @@ def version_conflict_response(exc: WorkflowVersionConflictError) -> JSONResponse
             server_version_id=exc.server_version_id,
         ),
     )
-    return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=payload.model_dump())
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT, content=payload.model_dump()
+    )
 
 
 @router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
@@ -191,7 +195,9 @@ async def list_workflow_versions(
         )
         for version, creator in await service.list_versions(workflow.id)
     ]
-    return ApiResponse(success=True, message="Workflow versions retrieved", data=versions)
+    return ApiResponse(
+        success=True, message="Workflow versions retrieved", data=versions
+    )
 
 
 @router.get(

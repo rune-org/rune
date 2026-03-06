@@ -74,7 +74,9 @@ class WorkflowCreateVersion(BaseModel):
         default=None,
         description="Expected current latest version id. Null is allowed only for the first save.",
     )
-    workflow_data: dict[str, Any] = Field(..., description="Workflow definition to save")
+    workflow_data: dict[str, Any] = Field(
+        ..., description="Workflow definition to save"
+    )
     message: Optional[str] = Field(default=None, description="Revision message")
 
 

@@ -33,7 +33,9 @@ class TestWorkflowShellAPI:
         assert data["is_active"] is False
 
     @pytest.mark.asyncio
-    async def test_get_workflow_returns_latest_version(self, authenticated_client, sample_workflow):
+    async def test_get_workflow_returns_latest_version(
+        self, authenticated_client, sample_workflow
+    ):
         response = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
 
         assert response.status_code == 200
@@ -160,7 +162,9 @@ class TestWorkflowVersionsAPI:
     async def test_list_versions_returns_lightweight_metadata(
         self, authenticated_client, sample_workflow
     ):
-        response = await authenticated_client.get(f"/workflows/{sample_workflow.id}/versions")
+        response = await authenticated_client.get(
+            f"/workflows/{sample_workflow.id}/versions"
+        )
 
         assert response.status_code == 200
         data = response.json()["data"]
@@ -249,7 +253,9 @@ class TestWorkflowRunAPI:
         )
         await queue.purge()
 
-        response = await authenticated_client.post(f"/workflows/{sample_workflow.id}/run")
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/run"
+        )
         assert response.status_code == 200
 
         message = await queue.get(timeout=5)
@@ -348,7 +354,9 @@ class TestWorkflowAuthorization:
             message="Initial version",
         )
 
-        response = await authenticated_client.post(f"/workflows/{other_workflow.id}/run")
+        response = await authenticated_client.post(
+            f"/workflows/{other_workflow.id}/run"
+        )
         assert response.status_code == 403
 
 
@@ -381,7 +389,9 @@ class TestWorkflowPersistence:
         assert persisted.version == 2
 
     @pytest.mark.asyncio
-    async def test_delete_removes_workflow_shell(self, workflow_service, sample_workflow, test_db):
+    async def test_delete_removes_workflow_shell(
+        self, workflow_service, sample_workflow, test_db
+    ):
         workflow_id = sample_workflow.id
 
         await workflow_service.delete(sample_workflow)

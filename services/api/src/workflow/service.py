@@ -211,9 +211,7 @@ class WorkflowService:
         result = await self.db.exec(statement)
         return result.all()
 
-    async def get_latest_version(
-        self, workflow: Workflow
-    ) -> WorkflowVersion | None:
+    async def get_latest_version(self, workflow: Workflow) -> WorkflowVersion | None:
         if workflow.latest_version_id is None:
             return None
         return await self.get_version(workflow.id, workflow.latest_version_id)
@@ -223,7 +221,9 @@ class WorkflowService:
     ) -> tuple[WorkflowVersion, User | None] | None:
         if workflow.latest_version_id is None:
             return None
-        return await self.get_version_with_creator(workflow.id, workflow.latest_version_id)
+        return await self.get_version_with_creator(
+            workflow.id, workflow.latest_version_id
+        )
 
     async def get_run_version(
         self, workflow: Workflow, version_id: int | None
@@ -289,11 +289,7 @@ class WorkflowService:
         return resolved_data
 
     async def _lock_workflow(self, workflow_id: int) -> Workflow:
-        statement = (
-            select(Workflow)
-            .where(Workflow.id == workflow_id)
-            .with_for_update()
-        )
+        statement = select(Workflow).where(Workflow.id == workflow_id).with_for_update()
         result = await self.db.exec(statement)
         workflow = result.first()
         if not workflow:

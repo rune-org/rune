@@ -30,7 +30,7 @@ class CredentialType(str, Enum):
     OAUTH2 = "oauth2"
     BASIC_AUTH = "basic_auth"
     HEADER = "header"
-    TOKEN = "token"
+    TOKEN = "token"  # nosec B105
     CUSTOM = "custom"
     SMTP = "smtp"
 
