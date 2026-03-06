@@ -97,6 +97,28 @@ class WorkflowService:
         await self.db.refresh(workflow)
         return workflow
 
+    async def update_status(self, workflow: Workflow, is_active: bool) -> Workflow:
+        """Update publish status using the versioned workflow model.
+
+        `is_active=True` publishes the latest saved version.
+        `is_active=False` clears the published pointer.
+        """
+        locked_workflow = await self._lock_workflow(workflow.id)
+
+        if is_active:
+            latest = await self.get_latest_version(locked_workflow)
+            if not latest:
+                raise BadRequest(detail="Workflow has no saved versions")
+            locked_workflow.published_version_id = latest.id
+            locked_workflow.is_active = True
+        else:
+            locked_workflow.published_version_id = None
+            locked_workflow.is_active = False
+
+        await self.db.commit()
+        await self.db.refresh(locked_workflow)
+        return locked_workflow
+
     async def create_version(
         self,
         workflow: Workflow,

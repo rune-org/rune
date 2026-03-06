@@ -36,6 +36,19 @@ class TestWorkflowVersionPersistence:
         assert sample_workflow.is_active is True
 
     @pytest.mark.asyncio
+    async def test_update_status_false_clears_published_pointer(
+        self, workflow_service, sample_workflow, test_db
+    ):
+        latest = await workflow_service.get_latest_version(sample_workflow)
+        await workflow_service.publish_version(sample_workflow, latest.id)
+
+        await workflow_service.update_status(sample_workflow, False)
+
+        await test_db.refresh(sample_workflow)
+        assert sample_workflow.published_version_id is None
+        assert sample_workflow.is_active is False
+
+    @pytest.mark.asyncio
     async def test_restore_creates_new_row_with_copied_workflow_data(
         self, workflow_service, sample_workflow, test_user, test_db
     ):

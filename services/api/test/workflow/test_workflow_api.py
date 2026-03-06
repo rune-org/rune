@@ -60,6 +60,45 @@ class TestWorkflowShellAPI:
         assert data["name"] == "Renamed Workflow"
         assert data["latest_version"]["version"] == 1
 
+    @pytest.mark.asyncio
+    async def test_update_status_publishes_latest_version(
+        self, authenticated_client, sample_workflow
+    ):
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        latest_version_id = detail.json()["data"]["latest_version"]["id"]
+
+        response = await authenticated_client.put(
+            f"/workflows/{sample_workflow.id}/status",
+            json={"is_active": True},
+        )
+
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["is_active"] is True
+        assert data["published_version_id"] == latest_version_id
+        assert data["has_unpublished_changes"] is False
+
+    @pytest.mark.asyncio
+    async def test_update_status_can_unpublish_workflow(
+        self, authenticated_client, sample_workflow
+    ):
+        published = await authenticated_client.put(
+            f"/workflows/{sample_workflow.id}/status",
+            json={"is_active": True},
+        )
+        assert published.status_code == 200
+
+        response = await authenticated_client.put(
+            f"/workflows/{sample_workflow.id}/status",
+            json={"is_active": False},
+        )
+
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["is_active"] is False
+        assert data["published_version_id"] is None
+        assert data["has_unpublished_changes"] is True
+
 
 class TestWorkflowVersionsAPI:
     @pytest.mark.asyncio
@@ -236,6 +275,22 @@ class TestWorkflowRunAPI:
         workflow_id = create_response.json()["data"]["id"]
 
         response = await authenticated_client.post(f"/workflows/{workflow_id}/run")
+        assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_update_status_without_saved_versions_returns_400(
+        self, authenticated_client
+    ):
+        create_response = await authenticated_client.post(
+            "/workflows/",
+            json={"name": "Empty workflow", "description": ""},
+        )
+        workflow_id = create_response.json()["data"]["id"]
+
+        response = await authenticated_client.put(
+            f"/workflows/{workflow_id}/status",
+            json={"is_active": True},
+        )
         assert response.status_code == 400
 
     @pytest.mark.asyncio
