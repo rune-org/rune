@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { Loader2, CheckCircle, XCircle, AlertTriangle, Clock, X } from "lucide-react";
 import { useExecution } from "../context/ExecutionContext";
 import type { WorkflowExecutionStatus } from "../types/execution";
+import type { WsConnectionStatus } from "../hooks/useRtesWebSocket";
 import { cn } from "@/lib/cn";
 
 const AUTO_DISMISS_DELAY = 5000;
@@ -17,11 +18,39 @@ interface StatusConfig {
 
 function getStatusConfig(
   status: WorkflowExecutionStatus,
+  wsStatus: WsConnectionStatus,
   error?: string,
   totalDurationMs?: number
 ): StatusConfig | null {
   switch (status) {
     case "running":
+      if (wsStatus === "error") {
+        return {
+          icon: <AlertTriangle className="h-4 w-4" aria-hidden="true" />,
+          text: "Execution started; live status unavailable",
+          className: "bg-yellow-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-300",
+          ariaLabel: "Workflow execution started, but live status is unavailable",
+        };
+      }
+
+      if (wsStatus === "reconnecting") {
+        return {
+          icon: <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />,
+          text: "Reconnecting...",
+          className: "bg-yellow-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-300",
+          ariaLabel: "Reconnecting workflow live status",
+        };
+      }
+
+      if (wsStatus === "connecting" || wsStatus === "disconnected") {
+        return {
+          icon: <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />,
+          text: "Connecting...",
+          className: "bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400",
+          ariaLabel: "Connecting workflow live status",
+        };
+      }
+
       return {
         icon: <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />,
         text: "Executing workflow...",
@@ -64,14 +93,22 @@ function getStatusConfig(
  * Appears at the bottom-center of the canvas during/after execution.
  * Auto-dismisses after completion/failure/halt.
  */
-export function ExecutionStatusBar() {
+export function ExecutionStatusBar({
+  wsStatus = "disconnected",
+  wsReconnectAttempts = 0,
+  onDismissRunning,
+}: {
+  wsStatus?: WsConnectionStatus;
+  wsReconnectAttempts?: number;
+  onDismissRunning?: () => void;
+}) {
   const { state } = useExecution();
   const [isDismissed, setIsDismissed] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
   const statusConfig = useMemo(
-    () => getStatusConfig(state.status, state.error, state.totalDurationMs),
-    [state.status, state.error, state.totalDurationMs]
+    () => getStatusConfig(state.status, wsStatus, state.error, state.totalDurationMs),
+    [state.status, wsStatus, state.error, state.totalDurationMs]
   );
 
   // Dismiss with animation
@@ -118,6 +155,11 @@ export function ExecutionStatusBar() {
   ).length;
 
   const canDismiss = state.status !== "running";
+  const canDismissRunningHint =
+    state.status === "running" &&
+    wsReconnectAttempts >= 2 &&
+    (wsStatus === "reconnecting" || wsStatus === "error") &&
+    !!onDismissRunning;
 
   return (
     <div
@@ -143,7 +185,9 @@ export function ExecutionStatusBar() {
             <div className="mx-2 h-4 w-px bg-current opacity-20" />
             <div className="flex items-center gap-2 text-xs opacity-80">
               <Clock className="h-3 w-3" aria-hidden="true" />
-              <span aria-label={`${completedNodes} of ${totalNodes} nodes completed${runningNodes > 0 ? `, ${runningNodes} currently running` : ""}`}>
+              <span
+                aria-label={`${completedNodes} of ${totalNodes} nodes completed${runningNodes > 0 ? `, ${runningNodes} currently running` : ""}`}
+              >
                 {completedNodes}/{totalNodes} nodes
                 {runningNodes > 0 && ` (${runningNodes} running)`}
               </span>
@@ -159,6 +203,16 @@ export function ExecutionStatusBar() {
           >
             {state.executionId.slice(0, 8)}...
           </div>
+        )}
+
+        {canDismissRunningHint && (
+          <button
+            onClick={onDismissRunning}
+            className="ml-1 text-[10px] leading-none font-normal underline-offset-2 opacity-70 transition-opacity hover:opacity-100 hover:underline"
+            aria-label="Dismiss live execution status"
+          >
+            Dismiss
+          </button>
         )}
 
         {canDismiss && (
