@@ -7,7 +7,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-from src.db.models import WorkflowRole
+from src.db.models import UserRole, WorkflowRole
 
 
 class WorkflowShareRequest(BaseModel):
@@ -59,6 +59,7 @@ class WorkflowPermissionInfo(BaseModel):
     user_email: str
     user_name: str
     role: WorkflowRole
+    user_role: UserRole
     granted_at: datetime
     granted_by: Optional[int] = None
 

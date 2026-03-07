@@ -21,7 +21,7 @@ export function TopNav() {
   useEffect(() => {
     setMounted(true);
     checkFirstTimeSetup().then(({ data }) => {
-      setShowSignUp(data?.data.requires_setup ?? false);
+      setShowSignUp(data?.data ?? false);
     });
   }, []);
 

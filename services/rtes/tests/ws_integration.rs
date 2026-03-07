@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+#![allow(missing_docs, clippy::expect_used, clippy::panic, clippy::indexing_slicing)]
 
 mod common;
 

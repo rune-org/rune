@@ -69,14 +69,12 @@ services:
       - .env
     environment:
       # Database Settings
-      DATABASE_URL: postgresql://${POSTGRES_USER:-rune}:${POSTGRES_PASSWORD:-rune_password}@postgres:5432/${POSTGRES_DB:-rune_db}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-rune}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
       POSTGRES_DB: ${POSTGRES_DB:-rune_db}
       # RabbitMQ Settings
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_USER:-rune}
