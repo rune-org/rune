@@ -20,6 +20,7 @@ import {
   type LoginResponse,
   type RefreshResponse,
 } from "@/lib/api/auth";
+import { toast } from "@/components/ui/toast";
 import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
 import type { TokenResponse } from "@/client/types.gen";
 
@@ -188,7 +189,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       const { data, error } = await apiLogin(email, password);
       if (error || !data) {
-        setError(getErrorMessage(error));
+        const errorMessage = getErrorMessage(error);
+        // Display error as toast notification
+        toast.error(errorMessage);
+
+        setError(errorMessage);
         setLoading(false);
         return false;
       }
@@ -266,8 +271,12 @@ function getErrorMessage(err: unknown): string {
   if (typeof err === "string") return err;
   if (err && typeof err === "object") {
     const e = err as Record<string, unknown>;
-    if (typeof e.detail === "string") return e.detail;
+    // Try to extract from ApiResponse format (message field)
     if (typeof e.message === "string") return e.message;
+    // Try to extract detail (alternative error format)
+    if (typeof e.detail === "string") return e.detail;
+    // Check for error field
+    if (typeof e.error === "string") return e.error;
   }
-  return "Request failed";
+  return "Authentication failed. Please try again.";
 }
