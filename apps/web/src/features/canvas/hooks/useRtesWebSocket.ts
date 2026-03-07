@@ -51,6 +51,7 @@ const EXECUTION_SERVICE_TOAST_ID = "execution-service-connection";
 const MAX_RECONNECT_ATTEMPTS = 5;
 const INITIAL_RECONNECT_DELAY = 1000; // 1 second
 const MAX_RECONNECT_DELAY = 30000; // 30 seconds
+const CONNECTION_TIMEOUT_MS = 3000; // 3 seconds
 // Initial delay before first connection to allow token to be stored in Redis
 const INITIAL_CONNECTION_DELAY = 500; // 500ms
 
@@ -89,6 +90,7 @@ export function useRtesWebSocket(
   const totalReconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const initialConnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
 
   // Update status and notify
@@ -114,6 +116,10 @@ export function useRtesWebSocket(
     if (initialConnectTimeoutRef.current) {
       clearTimeout(initialConnectTimeoutRef.current);
       initialConnectTimeoutRef.current = null;
+    }
+    if (connectionTimeoutRef.current) {
+      clearTimeout(connectionTimeoutRef.current);
+      connectionTimeoutRef.current = null;
     }
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
@@ -165,8 +171,19 @@ export function useRtesWebSocket(
       if (workflowId) params.set("workflow_id", String(workflowId));
       const wsUrl = `${DEFAULT_RTES_URL}${params.toString() ? `?${params.toString()}` : ""}`;
       const ws = new WebSocket(wsUrl);
+      connectionTimeoutRef.current = setTimeout(() => {
+        if (!mountedRef.current) return;
+        if (ws.readyState === WebSocket.CONNECTING) {
+          ws.close();
+        }
+      }, CONNECTION_TIMEOUT_MS);
+
       ws.onopen = () => {
         if (!mountedRef.current) return;
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+          connectionTimeoutRef.current = null;
+        }
         reconnectAttemptRef.current = 0;
         updateStatus("connected");
         setLastError(null);
@@ -192,6 +209,10 @@ export function useRtesWebSocket(
 
       ws.onclose = (event) => {
         if (!mountedRef.current) return;
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+          connectionTimeoutRef.current = null;
+        }
 
         // Attempt to reconnect if not a clean close and we haven't exceeded max attempts
         if (
