@@ -195,6 +195,8 @@ pub struct CompletionMessage {
 #[allow(clippy::derive_partial_eq_without_eq)]
 pub struct NodeExecutionMessage {
     pub workflow_id:         String,
+    pub workflow_version:    i32,
+    pub workflow_version_id: i64,
     pub execution_id:        String,
     pub current_node:        String,
     pub workflow_definition: Value,
@@ -256,6 +258,10 @@ pub struct HydratedNode {
 pub struct ExecutionDocument {
     pub execution_id:        String,
     pub workflow_id:         String,
+    #[serde(default)]
+    pub workflow_version:    Option<i32>,
+    #[serde(default)]
+    pub workflow_version_id: Option<i64>,
     #[serde(default)]
     pub workflow_definition: Value,
     #[serde(default)]

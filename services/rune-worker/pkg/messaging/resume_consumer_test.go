@@ -12,9 +12,11 @@ import (
 
 func makeResumeMessage() *messages.NodeExecutionMessage {
 	return &messages.NodeExecutionMessage{
-		WorkflowID:  "wf-resume",
-		ExecutionID: "exec-resume",
-		CurrentNode: "wait-1",
+		WorkflowID:        "wf-resume",
+		WorkflowVersion:   4,
+		WorkflowVersionID: 29,
+		ExecutionID:       "exec-resume",
+		CurrentNode:       "wait-1",
 		WorkflowDefinition: core.Workflow{
 			WorkflowID:  "wf-resume",
 			ExecutionID: "exec-resume",
@@ -74,6 +76,9 @@ func TestResumeConsumerHandleResume_PublishesNextNode(t *testing.T) {
 
 	if nextMsg.CurrentNode != "next-1" {
 		t.Fatalf("expected next node next-1, got %s", nextMsg.CurrentNode)
+	}
+	if nextMsg.WorkflowVersion != msg.WorkflowVersion || nextMsg.WorkflowVersionID != msg.WorkflowVersionID {
+		t.Fatalf("expected workflow version metadata to be preserved")
 	}
 	if !nextMsg.IsWorkerInitiated {
 		t.Fatalf("expected worker-initiated next message")

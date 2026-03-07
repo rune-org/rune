@@ -26,9 +26,11 @@ func TestExecutorExecuteWaitNodePublishesWaitingStatusOnly(t *testing.T) {
 
 	exec := NewExecutor(reg, pub, nil)
 	msg := &messages.NodeExecutionMessage{
-		WorkflowID:  "wf-wait",
-		ExecutionID: "exec-wait",
-		CurrentNode: "wait-1",
+		WorkflowID:        "wf-wait",
+		WorkflowVersion:   2,
+		WorkflowVersionID: 11,
+		ExecutionID:       "exec-wait",
+		CurrentNode:       "wait-1",
 		WorkflowDefinition: core.Workflow{
 			WorkflowID:  "wf-wait",
 			ExecutionID: "exec-wait",
@@ -71,9 +73,11 @@ func TestExecutorHandleSplitFanOutPublishesPerItemAndNode(t *testing.T) {
 	exec := NewExecutor(nodes.NewRegistry(), pub, nil)
 
 	msg := &messages.NodeExecutionMessage{
-		WorkflowID:  "wf-split",
-		ExecutionID: "exec-split",
-		CurrentNode: "split-1",
+		WorkflowID:        "wf-split",
+		WorkflowVersion:   2,
+		WorkflowVersionID: 12,
+		ExecutionID:       "exec-split",
+		CurrentNode:       "split-1",
 		WorkflowDefinition: core.Workflow{
 			WorkflowID:  "wf-split",
 			ExecutionID: "exec-split",
@@ -112,6 +116,9 @@ func TestExecutorHandleSplitFanOutPublishesPerItemAndNode(t *testing.T) {
 
 	if first.AccumulatedContext["$item"] != "item-1" {
 		t.Fatalf("expected first item in context, got %v", first.AccumulatedContext["$item"])
+	}
+	if first.WorkflowVersion != msg.WorkflowVersion || first.WorkflowVersionID != msg.WorkflowVersionID {
+		t.Fatalf("expected workflow version metadata to be preserved")
 	}
 	if len(first.LineageStack) != 1 {
 		t.Fatalf("expected lineage stack length 1, got %d", len(first.LineageStack))

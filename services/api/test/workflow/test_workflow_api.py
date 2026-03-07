@@ -1,391 +1,455 @@
-"""API endpoint tests for workflow operations."""
+"""API endpoint tests for workflow versioning."""
+
+import json
 
 import pytest
+from sqlmodel import select
+
+from src.db.models import Workflow, WorkflowVersion
 
 
-class TestAPIAuthentication:
-    """Tests for API authentication requirements."""
-
+class TestWorkflowShellAPI:
     @pytest.mark.asyncio
     async def test_create_workflow_requires_auth(self, client):
-        """Should reject unauthenticated workflow creation."""
         response = await client.post(
-            "/workflows/", json={"name": "Test", "description": "", "workflow_data": {}}
+            "/workflows/",
+            json={"name": "Test", "description": ""},
         )
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_list_workflows_requires_auth(self, client):
-        """Should reject unauthenticated workflow listing."""
-        response = await client.get("/workflows/")
-        assert response.status_code == 401
-
-    @pytest.mark.asyncio
-    async def test_get_workflow_requires_auth(self, client, sample_workflow):
-        """Should reject unauthenticated workflow retrieval."""
-        response = await client.get(f"/workflows/{sample_workflow.id}")
-        assert response.status_code == 401
-
-    @pytest.mark.asyncio
-    async def test_update_name_requires_auth(self, client, sample_workflow):
-        """Should reject unauthenticated workflow rename."""
-        response = await client.put(
-            f"/workflows/{sample_workflow.id}/name", json={"name": "New Name"}
-        )
-        assert response.status_code == 401
-
-    @pytest.mark.asyncio
-    async def test_update_status_requires_auth(self, client, sample_workflow):
-        """Should reject unauthenticated status update."""
-        response = await client.put(
-            f"/workflows/{sample_workflow.id}/status", json={"is_active": False}
-        )
-        assert response.status_code == 401
-
-    @pytest.mark.asyncio
-    async def test_delete_workflow_requires_auth(self, client, sample_workflow):
-        """Should reject unauthenticated workflow deletion."""
-        response = await client.delete(f"/workflows/{sample_workflow.id}")
-        assert response.status_code == 401
-
-    @pytest.mark.asyncio
-    async def test_run_workflow_requires_auth(self, client, sample_workflow):
-        """Should reject unauthenticated workflow run."""
-        response = await client.post(f"/workflows/{sample_workflow.id}/run")
-        assert response.status_code == 401
-
-
-class TestAPINotFound:
-    """Tests for 404 scenarios."""
-
-    @pytest.mark.asyncio
-    async def test_get_nonexistent_workflow_returns_404(self, authenticated_client):
-        """Should return 404 for non-existent workflow."""
-        response = await authenticated_client.get("/workflows/99999")
-
-        assert response.status_code == 404
-
-    @pytest.mark.asyncio
-    async def test_delete_nonexistent_workflow_returns_404(self, authenticated_client):
-        """Should return 404 when deleting non-existent workflow."""
-        response = await authenticated_client.delete("/workflows/99999")
-
-        assert response.status_code == 404
-
-    @pytest.mark.asyncio
-    async def test_run_nonexistent_workflow_returns_404(self, authenticated_client):
-        """Should return 404 when running non-existent workflow."""
-        response = await authenticated_client.post("/workflows/99999/run")
-
-        assert response.status_code == 404
-
-
-class TestAPIValidation:
-    """Tests for request validation."""
-
-    @pytest.mark.asyncio
-    async def test_create_missing_required_fields(self, authenticated_client):
-        """Should reject creation with missing required fields (name is required)."""
+    async def test_create_shell_without_versions(self, authenticated_client):
         response = await authenticated_client.post(
             "/workflows/",
-            json={},  # missing name, description and workflow_data are optional
+            json={"name": "Customer onboarding", "description": "Shell only"},
         )
 
-        assert response.status_code == 422
-
-    @pytest.mark.asyncio
-    async def test_create_with_extra_unknown_fields(self, authenticated_client):
-        """Should ignore extra unknown fields."""
-        response = await authenticated_client.post(
-            "/workflows/",
-            json={
-                "name": "Test",
-                "description": "",
-                "workflow_data": {},
-                "unknown_field": "should be ignored",
-            },
-        )
-
-        # Should succeed
-        assert response.status_code in [201, 200]
-
-    @pytest.mark.asyncio
-    async def test_rename_missing_name_field(
-        self, authenticated_client, sample_workflow
-    ):
-        """Should reject rename without name field."""
-        response = await authenticated_client.put(
-            f"/workflows/{sample_workflow.id}/name",
-            json={},  # missing name
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.asyncio
-    async def test_status_update_missing_is_active(
-        self, authenticated_client, sample_workflow
-    ):
-        """Should reject status update without is_active field."""
-        response = await authenticated_client.put(
-            f"/workflows/{sample_workflow.id}/status",
-            json={},  # missing is_active
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.asyncio
-    async def test_invalid_json_body(self, authenticated_client):
-        """Should reject malformed JSON."""
-        response = await authenticated_client.post(
-            "/workflows/",
-            content=b"{invalid json}",
-            headers={"Content-Type": "application/json"},
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.asyncio
-    async def test_empty_string_description_allowed(self, authenticated_client):
-        """Should allow empty string for description."""
-        response = await authenticated_client.post(
-            "/workflows/",
-            json={
-                "name": "Test",
-                "description": "",
-                "workflow_data": {},
-            },
-        )
-
-        assert response.status_code in [201, 200]
-
-
-class TestAPISuccess:
-    """Tests for successful API responses."""
-
-    @pytest.mark.asyncio
-    async def test_create_returns_workflow_object(self, authenticated_client):
-        """Should return created workflow object."""
-        response = await authenticated_client.post(
-            "/workflows/",
-            json={
-                "name": "Test",
-                "description": "desc",
-                "workflow_data": {},
-            },
-        )
-
+        assert response.status_code == 201
         data = response.json()["data"]
-        assert "id" in data
-        assert data["name"] == "Test"
-        assert data["description"] == "desc"
+        assert data["name"] == "Customer onboarding"
+        assert data["latest_version"] is None
+        assert data["published_version_id"] is None
+        assert data["has_unpublished_changes"] is False
+        assert data["is_active"] is False
 
     @pytest.mark.asyncio
-    async def test_get_workflow_returns_200(
+    async def test_get_workflow_returns_latest_version(
         self, authenticated_client, sample_workflow
     ):
-        """Should return 200 for successful workflow retrieval."""
         response = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
 
         assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["id"] == sample_workflow.id
+        assert data["latest_version"]["version"] == 1
+        assert data["latest_version"]["message"] == "Initial version"
+        assert data["published_version_id"] is None
+        assert data["has_unpublished_changes"] is True
 
     @pytest.mark.asyncio
-    async def test_list_workflows_returns_200(self, authenticated_client):
-        """Should return 200 for workflow list."""
-        response = await authenticated_client.get("/workflows/")
-
-        assert response.status_code == 200
-
-    @pytest.mark.asyncio
-    async def test_update_name_returns_200(self, authenticated_client, sample_workflow):
-        """Should return 200 for successful name update."""
+    async def test_update_name_keeps_versions_intact(
+        self, authenticated_client, sample_workflow
+    ):
         response = await authenticated_client.put(
             f"/workflows/{sample_workflow.id}/name",
-            json={"name": "New Name"},
+            json={"name": "Renamed Workflow"},
         )
 
         assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["name"] == "Renamed Workflow"
+        assert data["latest_version"]["version"] == 1
 
     @pytest.mark.asyncio
-    async def test_delete_workflow_returns_204(
+    async def test_update_status_publishes_latest_version(
         self, authenticated_client, sample_workflow
     ):
-        """Should return 204 for successful deletion."""
-        response = await authenticated_client.delete(f"/workflows/{sample_workflow.id}")
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        latest_version_id = detail.json()["data"]["latest_version"]["id"]
 
-        assert response.status_code == 204
-
-    @pytest.mark.asyncio
-    async def test_set_active_returns_200(self, authenticated_client, sample_workflow):
-        """Should return 200 for status update."""
         response = await authenticated_client.put(
             f"/workflows/{sample_workflow.id}/status",
             json={"is_active": True},
         )
 
         assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["is_active"] is True
+        assert data["published_version_id"] == latest_version_id
+        assert data["has_unpublished_changes"] is False
 
     @pytest.mark.asyncio
-    async def test_run_workflow_returns_200(
+    async def test_update_status_can_unpublish_workflow(
         self, authenticated_client, sample_workflow
     ):
-        """Should return 200 when queuing workflow for execution."""
-        response = await authenticated_client.post(
-            f"/workflows/{sample_workflow.id}/run"
+        published = await authenticated_client.put(
+            f"/workflows/{sample_workflow.id}/status",
+            json={"is_active": True},
         )
+        assert published.status_code == 200
 
-        assert response.status_code == 200
-
-    @pytest.mark.asyncio
-    async def test_run_inactive_workflow_succeeds(
-        self, authenticated_client, workflow_service, test_db, sample_workflow
-    ):
-        """Should allow running inactive workflow when explicitly triggered by user."""
-        # Set workflow to inactive
-        await authenticated_client.put(
+        response = await authenticated_client.put(
             f"/workflows/{sample_workflow.id}/status",
             json={"is_active": False},
         )
 
-        # User explicitly runs the workflow
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["is_active"] is False
+        assert data["published_version_id"] is None
+        assert data["has_unpublished_changes"] is True
+
+
+class TestWorkflowVersionsAPI:
+    @pytest.mark.asyncio
+    async def test_create_first_version_for_empty_workflow(self, authenticated_client):
+        create_response = await authenticated_client.post(
+            "/workflows/",
+            json={"name": "Empty workflow", "description": ""},
+        )
+        workflow_id = create_response.json()["data"]["id"]
+
+        response = await authenticated_client.post(
+            f"/workflows/{workflow_id}/versions",
+            json={
+                "base_version_id": None,
+                "workflow_data": {
+                    "nodes": [{"id": "trigger", "type": "trigger", "trigger": True}],
+                    "edges": [],
+                },
+                "message": "Initial save",
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()["data"]
+        assert data["version"] == 1
+        assert data["message"] == "Initial save"
+        assert data["workflow_data"]["nodes"][0]["id"] == "trigger"
+
+    @pytest.mark.asyncio
+    async def test_create_second_version_increments_linearly(
+        self, authenticated_client, sample_workflow
+    ):
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        latest = detail.json()["data"]["latest_version"]
+
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": latest["id"],
+                "workflow_data": {
+                    "nodes": [
+                        {"id": "node-1", "type": "trigger", "trigger": True},
+                        {"id": "node-2", "type": "action"},
+                        {"id": "node-3", "type": "action"},
+                    ],
+                    "edges": [
+                        {"id": "edge-1", "src": "node-1", "dst": "node-2"},
+                        {"id": "edge-2", "src": "node-2", "dst": "node-3"},
+                    ],
+                },
+                "message": "Add second action",
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()["data"]
+        assert data["version"] == 2
+        assert data["message"] == "Add second action"
+
+    @pytest.mark.asyncio
+    async def test_create_version_conflict_returns_409(
+        self, authenticated_client, sample_workflow
+    ):
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        latest = detail.json()["data"]["latest_version"]
+
+        second = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": latest["id"],
+                "workflow_data": {
+                    "nodes": [{"id": "node-1", "type": "trigger", "trigger": True}],
+                    "edges": [],
+                },
+                "message": "v2",
+            },
+        )
+        assert second.status_code == 201
+
+        conflict = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": latest["id"],
+                "workflow_data": {
+                    "nodes": [{"id": "node-1", "type": "trigger", "trigger": True}],
+                    "edges": [],
+                },
+                "message": "stale save",
+            },
+        )
+
+        assert conflict.status_code == 409
+        body = conflict.json()
+        assert body["success"] is False
+        assert body["message"] == "version_conflict"
+        assert body["data"]["server_version"] == 2
+        assert isinstance(body["data"]["server_version_id"], int)
+
+    @pytest.mark.asyncio
+    async def test_list_versions_returns_lightweight_metadata(
+        self, authenticated_client, sample_workflow
+    ):
+        response = await authenticated_client.get(
+            f"/workflows/{sample_workflow.id}/versions"
+        )
+
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert len(data) == 1
+        assert "workflow_data" not in data[0]
+        assert data[0]["version"] == 1
+        assert data[0]["is_published"] is False
+
+    @pytest.mark.asyncio
+    async def test_get_specific_version_returns_workflow_data(
+        self, authenticated_client, sample_workflow
+    ):
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        version_id = detail.json()["data"]["latest_version"]["id"]
+
+        response = await authenticated_client.get(
+            f"/workflows/{sample_workflow.id}/versions/{version_id}"
+        )
+
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["id"] == version_id
+        assert "workflow_data" in data
+        assert data["workflow_data"]["nodes"][0]["id"] == "node-1"
+
+    @pytest.mark.asyncio
+    async def test_publish_sets_published_pointer_and_is_active(
+        self, authenticated_client, sample_workflow
+    ):
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        version_id = detail.json()["data"]["latest_version"]["id"]
+
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/publish",
+            json={"version_id": version_id},
+        )
+
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["published_version_id"] == version_id
+        assert data["is_active"] is True
+        assert data["has_unpublished_changes"] is False
+
+    @pytest.mark.asyncio
+    async def test_restore_creates_new_version(
+        self, authenticated_client, sample_workflow
+    ):
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        version_id = detail.json()["data"]["latest_version"]["id"]
+
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/restore/{version_id}",
+            json={},
+        )
+
+        assert response.status_code == 201
+        data = response.json()["data"]
+        assert data["version"] == 2
+        assert data["message"] == "Restored from v1"
+
+
+class TestWorkflowRunAPI:
+    @pytest.mark.asyncio
+    async def test_run_without_saved_versions_returns_400(self, authenticated_client):
+        create_response = await authenticated_client.post(
+            "/workflows/",
+            json={"name": "Empty workflow", "description": ""},
+        )
+        workflow_id = create_response.json()["data"]["id"]
+
+        response = await authenticated_client.post(f"/workflows/{workflow_id}/run")
+        assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_update_status_without_saved_versions_returns_400(
+        self, authenticated_client
+    ):
+        create_response = await authenticated_client.post(
+            "/workflows/",
+            json={"name": "Empty workflow", "description": ""},
+        )
+        workflow_id = create_response.json()["data"]["id"]
+
+        response = await authenticated_client.put(
+            f"/workflows/{workflow_id}/status",
+            json={"is_active": True},
+        )
+        assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_run_uses_latest_version_metadata(
+        self,
+        authenticated_client,
+        sample_workflow,
+        test_rabbitmq,
+        test_settings,
+    ):
+        channel = await test_rabbitmq.channel()
+        queue = await channel.declare_queue(
+            test_settings.rabbitmq_workflow_queue,
+            durable=True,
+        )
+        await queue.purge()
+
         response = await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/run"
         )
-
-        # Should succeed (user explicitly requested it)
         assert response.status_code == 200
 
-        # Verify workflow remains inactive after run
-        await test_db.refresh(sample_workflow)
-        assert sample_workflow.is_active is False
+        message = await queue.get(timeout=5)
+        assert message is not None
+        payload = json.loads(message.body.decode("utf-8"))
+        assert payload["workflow_id"] == str(sample_workflow.id)
+        assert payload["workflow_version"] == 1
+        assert payload["workflow_version_id"] > 0
+
+        await channel.close()
 
     @pytest.mark.asyncio
-    async def test_run_workflow_multiple_times(
-        self, authenticated_client, sample_workflow
+    async def test_run_can_pin_historical_version(
+        self,
+        authenticated_client,
+        sample_workflow,
+        test_rabbitmq,
+        test_settings,
     ):
-        """Should allow running same workflow multiple times."""
-        # First run
-        response1 = await authenticated_client.post(
-            f"/workflows/{sample_workflow.id}/run"
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        first_version = detail.json()["data"]["latest_version"]
+
+        second = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": first_version["id"],
+                "workflow_data": {
+                    "nodes": [
+                        {"id": "node-1", "type": "trigger", "trigger": True},
+                        {"id": "node-2", "type": "action"},
+                        {"id": "node-3", "type": "action"},
+                    ],
+                    "edges": [
+                        {"id": "edge-1", "src": "node-1", "dst": "node-2"},
+                        {"id": "edge-2", "src": "node-2", "dst": "node-3"},
+                    ],
+                },
+                "message": "Add branch",
+            },
         )
-        assert response1.status_code == 200
+        assert second.status_code == 201
 
-        # Second run (should also succeed)
-        response2 = await authenticated_client.post(
-            f"/workflows/{sample_workflow.id}/run"
+        channel = await test_rabbitmq.channel()
+        queue = await channel.declare_queue(
+            test_settings.rabbitmq_workflow_queue,
+            durable=True,
         )
-        assert response2.status_code == 200
+        await queue.purge()
+
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/run",
+            json={"version_id": first_version["id"]},
+        )
+        assert response.status_code == 200
+
+        message = await queue.get(timeout=5)
+        assert message is not None
+        payload = json.loads(message.body.decode("utf-8"))
+        assert payload["workflow_version"] == 1
+        assert payload["workflow_version_id"] == first_version["id"]
+        assert len(payload["workflow_definition"]["nodes"]) == 2
+
+        await channel.close()
 
 
-class TestAPIAuthorization:
-    """Tests for API authorization and permissions."""
-
+class TestWorkflowAuthorization:
     @pytest.mark.asyncio
     async def test_user_cannot_update_other_user_workflow(
         self, authenticated_client, workflow_service, other_user
     ):
-        """Should deny updating workflows owned by other users."""
-        # Create workflow owned by other_user
         other_workflow = await workflow_service.create(
             user_id=other_user.id,
             name="Other User Workflow",
             description="",
-            workflow_data={},
         )
 
-        # Try to update it
         response = await authenticated_client.put(
             f"/workflows/{other_workflow.id}/name", json={"name": "Hacked Name"}
         )
-
-        # Should deny access
-        assert response.status_code == 403
-
-    @pytest.mark.asyncio
-    async def test_user_cannot_delete_other_user_workflow(
-        self, authenticated_client, workflow_service, other_user
-    ):
-        """Should deny deleting workflows owned by other users."""
-        # Create workflow owned by other_user
-        other_workflow = await workflow_service.create(
-            user_id=other_user.id,
-            name="Other User Workflow",
-            description="",
-            workflow_data={},
-        )
-
-        # Try to delete it
-        response = await authenticated_client.delete(f"/workflows/{other_workflow.id}")
-
-        # Should deny access
         assert response.status_code == 403
 
     @pytest.mark.asyncio
     async def test_user_cannot_run_other_user_workflow(
-        self, authenticated_client, workflow_service, other_user
+        self, authenticated_client, workflow_service, other_user, sample_workflow_data
     ):
-        """Should deny running workflows owned by other users."""
-        # Create workflow owned by other_user
         other_workflow = await workflow_service.create(
             user_id=other_user.id,
             name="Other User Workflow",
             description="",
-            workflow_data={},
+        )
+        await workflow_service.create_version(
+            workflow=other_workflow,
+            user_id=other_user.id,
+            workflow_data=sample_workflow_data,
+            base_version_id=None,
+            message="Initial version",
         )
 
-        # Try to run it
         response = await authenticated_client.post(
             f"/workflows/{other_workflow.id}/run"
         )
-
-        # Should deny access
         assert response.status_code == 403
 
 
-class TestResponseStructure:
-    """Tests for API response structures."""
-
+class TestWorkflowPersistence:
     @pytest.mark.asyncio
-    async def test_list_response_structure(self, authenticated_client, sample_workflow):
-        """Should return array of objects with required fields."""
-        response = await authenticated_client.get("/workflows/")
-
-        data = response.json()["data"]
-        assert isinstance(data, list)
-        if len(data) > 0:
-            required_fields = ["id", "name", "is_active", "role"]
-            for field in required_fields:
-                assert field in data[0], f"Missing field: {field}"
-            assert data[0]["role"] in ("owner", "editor", "viewer")
-
-    @pytest.mark.asyncio
-    async def test_response_data_types(self, authenticated_client, sample_workflow):
-        """Should return correct data types in response."""
-        response = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
-
-        data = response.json()["data"]
-        assert isinstance(data["id"], int)
-        assert isinstance(data["name"], str)
-        assert isinstance(data["description"], (str, type(None)))
-        assert isinstance(data["workflow_data"], dict)
-        assert isinstance(data["is_active"], bool)
-
-    @pytest.mark.asyncio
-    async def test_run_workflow_response_structure(
-        self, authenticated_client, sample_workflow
+    async def test_create_version_persists_latest_pointer(
+        self,
+        workflow_service,
+        sample_workflow,
+        test_db,
+        test_user,
+        sample_workflow_data,
     ):
-        """Should return success response structure with required fields."""
-        response = await authenticated_client.post(
-            f"/workflows/{sample_workflow.id}/run"
+        latest = await workflow_service.get_latest_version(sample_workflow)
+        created = await workflow_service.create_version(
+            workflow=sample_workflow,
+            user_id=test_user.id,
+            workflow_data=sample_workflow_data,
+            base_version_id=latest.id,
+            message="Persisted version",
         )
 
-        data = response.json()
+        await test_db.refresh(sample_workflow)
+        assert sample_workflow.latest_version_id == created.id
 
-        # Check response has required fields
-        assert "success" in data
-        assert "message" in data
-        assert "data" in data
+        result = await test_db.exec(
+            select(WorkflowVersion).where(WorkflowVersion.id == created.id)
+        )
+        persisted = result.first()
+        assert persisted.version == 2
 
-        # Check field types
-        assert isinstance(data["success"], bool)
-        assert isinstance(data["message"], str)
-        assert isinstance(data["data"], str)
+    @pytest.mark.asyncio
+    async def test_delete_removes_workflow_shell(
+        self, workflow_service, sample_workflow, test_db
+    ):
+        workflow_id = sample_workflow.id
+
+        await workflow_service.delete(sample_workflow)
+
+        result = await test_db.exec(select(Workflow).where(Workflow.id == workflow_id))
+        assert result.first() is None
