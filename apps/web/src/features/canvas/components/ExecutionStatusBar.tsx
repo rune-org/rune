@@ -208,7 +208,7 @@ export function ExecutionStatusBar({
         {canDismissRunningHint && (
           <button
             onClick={onDismissRunning}
-            className="ml-1 rounded-full border border-current/20 px-2 py-0.5 text-[11px] font-medium opacity-75 transition-opacity hover:opacity-100"
+            className="ml-1 text-[10px] leading-none font-normal underline-offset-2 opacity-70 transition-opacity hover:opacity-100 hover:underline"
             aria-label="Dismiss live execution status"
           >
             Dismiss
