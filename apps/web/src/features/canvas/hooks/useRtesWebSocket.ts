@@ -231,7 +231,9 @@ export function useRtesWebSocket(
             }
           }, delay);
         } else if (totalReconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
-          showConnectionFailureToast("Unable to connect to execution service");
+          showConnectionFailureToast(
+            "Could not establish connection. Live updates unavailable."
+          );
           updateStatus("error");
           setLastError(new Error("Max reconnect attempts reached"));
         } else {
@@ -241,7 +243,9 @@ export function useRtesWebSocket(
 
       wsRef.current = ws;
     } catch (error) {
-      showConnectionFailureToast("Failed to connect to execution service");
+      showConnectionFailureToast(
+        "Real-time execution service disconnected."
+      );
       updateStatus("error");
       setLastError(error instanceof Error ? error : new Error(String(error)));
       onError?.(error instanceof Error ? error : new Error(String(error)));

@@ -74,7 +74,7 @@ export function useWorkflowExecution(
     onError: useCallback((err: Event | Error) => {
       const errorMsg = err instanceof Error ? err.message : "WebSocket error";
       setError(errorMsg);
-      toast.error("Execution connection error");
+      toast.error("Real-time execution service disconnected.");
     }, []),
   });
 
