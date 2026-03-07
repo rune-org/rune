@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down api-dev-infra-up rtes-dev-infra-up test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
@@ -49,8 +49,10 @@ help:
 	@echo "  make api-format         - Format API code with ruff"
 	@echo ""
 	@echo "Development Infrastructure:"
-	@echo "  make dev-infra-up       - Start shared infrastructure (postgres, redis, rabbitmq)"
+	@echo "  make dev-infra-up       - Start shared infrastructure (API + RTES backing services)"
 	@echo "  make dev-infra-down     - Stop shared infrastructure"
+	@echo "  make api-dev-infra-up   - Start API backing services (postgres, redis, rabbitmq, mongodb)"
+	@echo "  make rtes-dev-infra-up  - Start RTES (and otel-collector, openobserve as needed)"
 	@echo "  Note: Run 'make dev-infra-up' before starting services"
 	@echo ""
 	@echo "Test Infrastructure:"
@@ -132,13 +134,20 @@ web-dev:
 	@echo "Starting frontend in development mode..."
 	cd apps/web && pnpm dev
 
-dev-infra-up:
-	@echo "Starting shared development infrastructure services..."
-	cd services/api && docker compose -f docker-compose.dev.yml up -d
+dev-infra-up: api-dev-infra-up rtes-dev-infra-up
+	@echo "Dev infrastructure (API + RTES) is up."
+
+api-dev-infra-up:
+	@echo "Starting API backing services (postgres, redis, rabbitmq, mongodb)..."
+	docker compose up -d postgres rabbitmq redis mongodb
+
+rtes-dev-infra-up:
+	@echo "Starting RTES (and its dependencies)..."
+	docker compose up -d rtes
 
 dev-infra-down:
 	@echo "Stopping shared development infrastructure services..."
-	cd services/api && docker compose -f docker-compose.dev.yml down
+	docker compose down
 
 api-dev:
 	@echo "Starting FastAPI server in development mode..."
