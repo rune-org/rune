@@ -30,6 +30,8 @@ export interface UseRtesWebSocketOptions {
 export interface UseRtesWebSocketReturn {
   /** Current connection status */
   status: WsConnectionStatus;
+  /** Total reconnect attempts for current session */
+  reconnectAttempts: number;
   /** Manually connect to WebSocket */
   connect: () => void;
   /** Manually disconnect from WebSocket */
@@ -43,6 +45,7 @@ export interface UseRtesWebSocketReturn {
 // Default RTES WebSocket URL
 const DEFAULT_RTES_URL =
   process.env.NEXT_PUBLIC_RTES_WS_URL || "ws://localhost:3001/rt";
+const EXECUTION_SERVICE_TOAST_ID = "execution-service-connection";
 
 // Reconnection config
 const MAX_RECONNECT_ATTEMPTS = 5;
@@ -78,10 +81,12 @@ export function useRtesWebSocket(
 
   const [status, setStatus] = useState<WsConnectionStatus>("disconnected");
   const [lastError, setLastError] = useState<Error | null>(null);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
   // Refs for WebSocket and reconnection state
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttemptRef = useRef(0);
+  const totalReconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const initialConnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
@@ -135,6 +140,21 @@ export function useRtesWebSocket(
     if (!enabled) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
+    const showConnectionFailureToast = (message: string) => {
+      toast.error(message, {
+        id: EXECUTION_SERVICE_TOAST_ID,
+        duration: Infinity,
+        action: {
+          label: "Retry",
+          onClick: () => {
+            reconnectAttemptRef.current = 0;
+            totalReconnectAttemptsRef.current = 0;
+            connect();
+          },
+        },
+      });
+    };
+
     cleanup();
     updateStatus("connecting");
 
@@ -145,12 +165,12 @@ export function useRtesWebSocket(
       if (workflowId) params.set("workflow_id", String(workflowId));
       const wsUrl = `${DEFAULT_RTES_URL}${params.toString() ? `?${params.toString()}` : ""}`;
       const ws = new WebSocket(wsUrl);
-
       ws.onopen = () => {
         if (!mountedRef.current) return;
         reconnectAttemptRef.current = 0;
         updateStatus("connected");
         setLastError(null);
+        toast.dismiss(EXECUTION_SERVICE_TOAST_ID);
       };
 
       ws.onmessage = (event) => {
@@ -158,7 +178,7 @@ export function useRtesWebSocket(
         try {
           const data = JSON.parse(event.data) as RtesNodeUpdate;
           onMessage?.(data);
-        } catch (parseError) {
+        } catch {
           // Silent failure - invalid message format
         }
       };
@@ -177,26 +197,20 @@ export function useRtesWebSocket(
         if (
           enabled &&
           !event.wasClean &&
-          reconnectAttemptRef.current < MAX_RECONNECT_ATTEMPTS
+          totalReconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS
         ) {
           const delay = getReconnectDelay();
           updateStatus("reconnecting");
           reconnectAttemptRef.current++;
+          totalReconnectAttemptsRef.current++;
+          setReconnectAttempts(totalReconnectAttemptsRef.current);
           reconnectTimeoutRef.current = setTimeout(() => {
             if (mountedRef.current && enabled) {
               connect();
             }
           }, delay);
-        } else if (reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
-          toast.error("Unable to connect to execution service", {
-            action: {
-              label: "Retry",
-              onClick: () => {
-                reconnectAttemptRef.current = 0;
-                connect();
-              },
-            },
-          });
+        } else if (totalReconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+          showConnectionFailureToast("Unable to connect to execution service");
           updateStatus("error");
           setLastError(new Error("Max reconnect attempts reached"));
         } else {
@@ -206,28 +220,38 @@ export function useRtesWebSocket(
 
       wsRef.current = ws;
     } catch (error) {
-      toast.error("Failed to connect to execution service", {
-        action: {
-          label: "Retry",
-          onClick: () => connect(),
-        },
-      });
+      showConnectionFailureToast("Failed to connect to execution service");
       updateStatus("error");
       setLastError(error instanceof Error ? error : new Error(String(error)));
       onError?.(error instanceof Error ? error : new Error(String(error)));
     }
-  }, [enabled, executionId, workflowId, cleanup, updateStatus, onMessage, onError, getReconnectDelay]);
+  }, [
+    enabled,
+    executionId,
+    workflowId,
+    cleanup,
+    updateStatus,
+    onMessage,
+    onError,
+    getReconnectDelay,
+  ]);
 
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {
     reconnectAttemptRef.current = MAX_RECONNECT_ATTEMPTS; // Prevent auto-reconnect
+    totalReconnectAttemptsRef.current = MAX_RECONNECT_ATTEMPTS;
+    setReconnectAttempts(0);
     cleanup();
+    toast.dismiss(EXECUTION_SERVICE_TOAST_ID);
     updateStatus("disconnected");
   }, [cleanup, updateStatus]);
 
   // Connect/disconnect based on enabled state
   useEffect(() => {
     mountedRef.current = true;
+    reconnectAttemptRef.current = 0;
+    totalReconnectAttemptsRef.current = 0;
+    setReconnectAttempts(0);
 
     if (enabled && executionId) {
       // Add initial delay to allow token to be stored in Redis before connecting
@@ -243,12 +267,14 @@ export function useRtesWebSocket(
 
     return () => {
       mountedRef.current = false;
+      toast.dismiss(EXECUTION_SERVICE_TOAST_ID);
       cleanup();
     };
   }, [enabled, executionId, connect, disconnect, cleanup]);
 
   return {
     status,
+    reconnectAttempts,
     connect,
     disconnect,
     isConnected: status === "connected",

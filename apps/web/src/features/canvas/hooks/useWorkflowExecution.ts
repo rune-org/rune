@@ -15,6 +15,7 @@ export interface UseWorkflowExecutionOptions {
 export interface UseWorkflowExecutionReturn {
   executionState: ExecutionState;
   wsStatus: WsConnectionStatus;
+  wsReconnectAttempts: number;
   isStarting: boolean;
 
   startExecution: () => Promise<void>;
@@ -60,7 +61,7 @@ export function useWorkflowExecution(
   const isMountedRef = useRef(true);
 
   // WebSocket connection - disabled when viewing historical executions
-  const { status: wsStatus, disconnect } = useRtesWebSocket({
+  const { status: wsStatus, reconnectAttempts: wsReconnectAttempts, disconnect } = useRtesWebSocket({
     enabled: wsEnabled && !state.isHistorical,
     executionId: state.executionId,
     workflowId,
@@ -173,6 +174,7 @@ export function useWorkflowExecution(
   return {
     executionState: state,
     wsStatus,
+    wsReconnectAttempts,
     isStarting,
     startExecution,
     stopExecution,
