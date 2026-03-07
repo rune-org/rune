@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Panel } from "@xyflow/react";
 import {
   Maximize2,
@@ -75,6 +75,72 @@ function renderInspectorForm(
     default:
       return null;
   }
+}
+
+type LabelInputProps = {
+  value: string;
+  onCommit: (label: string) => void;
+  readOnly?: boolean;
+  className?: string;
+  placeholder?: string;
+};
+
+function sanitizeLabel(raw: string): string {
+  return raw.replace(/ /g, "_");
+}
+
+function LabelInput({
+  value,
+  onCommit,
+  readOnly,
+  className,
+  placeholder,
+}: LabelInputProps) {
+  const [localLabel, setLocalLabel] = useState(value);
+  const committedRef = useRef(value);
+  const latestRef = useRef({ localLabel, onCommit });
+
+  useEffect(() => {
+    latestRef.current = { localLabel, onCommit };
+  }, [localLabel, onCommit]);
+
+  useEffect(() => {
+    setLocalLabel(value);
+    committedRef.current = value;
+  }, [value]);
+
+  useEffect(() => {
+    return () => {
+      const sanitized = sanitizeLabel(latestRef.current.localLabel);
+      if (sanitized !== committedRef.current) {
+        latestRef.current.onCommit(sanitized);
+      }
+    };
+  }, []);
+
+  const commit = useCallback(() => {
+    const sanitized = sanitizeLabel(localLabel);
+    if (sanitized !== committedRef.current) {
+      onCommit(sanitized);
+      setLocalLabel(committedRef.current);
+    }
+  }, [localLabel, onCommit]);
+
+  return (
+    <input
+      className={className}
+      value={localLabel}
+      onChange={(e) => setLocalLabel(sanitizeLabel(e.target.value))}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === "Escape") {
+          e.currentTarget.blur();
+        }
+      }}
+      placeholder={placeholder}
+      readOnly={readOnly}
+    />
+  );
 }
 
 export function Inspector({
@@ -179,10 +245,10 @@ export function Inspector({
                 <label className="block text-xs text-muted-foreground">
                   Label
                 </label>
-                <input
+                <LabelInput
                   className="w-full rounded-sm border border-input bg-muted/30 px-2 py-1 text-sm"
                   value={selectedNode.data.label ?? ""}
-                  onChange={(e) => updateSelectedNodeLabel(e.target.value.replace(/ /g, "_"))}
+                  onCommit={updateSelectedNodeLabel}
                   readOnly={readOnly}
                 />
               </div>
@@ -271,10 +337,10 @@ export function Inspector({
                         <label className="block text-sm font-medium text-foreground">
                           Node Label
                         </label>
-                        <input
+                        <LabelInput
                           className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
                           value={selectedNode.data.label ?? ""}
-                          onChange={(e) => updateSelectedNodeLabel(e.target.value.replace(/ /g, "_"))}
+                          onCommit={updateSelectedNodeLabel}
                           placeholder="Enter a descriptive label"
                           readOnly={readOnly}
                         />
