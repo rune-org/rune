@@ -1,25 +1,3 @@
-"""SAML 2.0 SSO router — single-IdP model.
-
-Only one SAML configuration is allowed at a time.  Creating a second one
-returns 409 Conflict.  All public endpoints discover the active config
-automatically; no ``config_id`` is ever exposed in a URL.
-
-Endpoints
----------
-Public (no auth required):
-    GET  /auth/saml/metadata   – SP metadata XML (give this URL to Authentik)
-    GET  /auth/saml/login      – Initiate SSO redirect to IdP
-    POST /auth/saml/acs        – Assertion Consumer Service (IdP posts here)
-    POST /auth/saml/slo        – Single Logout (IdP-initiated)
-    GET  /auth/saml/discover   – Domain-based IdP discovery
-
-Admin only:
-    GET    /auth/saml/config   – Get the current SAML configuration
-    POST   /auth/saml/config   – Create the SAML configuration (409 if one exists)
-    PUT    /auth/saml/config   – Update the SAML configuration
-    DELETE /auth/saml/config   – Delete the SAML configuration
-"""
-
 import json
 import secrets
 from typing import Optional
