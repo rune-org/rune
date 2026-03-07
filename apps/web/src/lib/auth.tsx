@@ -278,5 +278,5 @@ function getErrorMessage(err: unknown): string {
     // Check for error field
     if (typeof e.error === "string") return e.error;
   }
-  return "Login failed. Please check your credentials and try again.";
+  return "Authentication failed. Please try again.";
 }
