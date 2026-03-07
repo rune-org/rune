@@ -14,6 +14,7 @@ import {
   LayoutGrid,
   LogOut,
   Play,
+  Settings,
   User,
   Workflow,
   Users,
@@ -226,8 +227,6 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
           </Link>
         </DropdownMenuItem>
 
-        {/* TODO: Implement settings page with wired backend functionality */}
-
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
@@ -333,29 +332,20 @@ export function AppSidebar() {
               />
             ))}
 
-            {/* ADMIN-ONLY "Users" BUTTON */}
+            {/* ADMIN-ONLY navigation links */}
             {isAdmin && (
-              <Link
-                href="/admin/users"
-                className={cn(
-                  "group relative flex h-12 w-full items-center rounded-xl border border-transparent text-sm font-medium text-muted-foreground motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out",
-                  "hover:border-border/70 hover:bg-muted/40 hover:text-foreground",
-                  isExpanded ? "justify-start gap-3 px-3" : "justify-center px-0"
-                )}
-              >
-                <Users className="h-5 w-5" />
-                <span
-                  aria-hidden={!isExpanded}
-                  className={cn(
-                    "pointer-events-none select-none overflow-hidden whitespace-nowrap text-sm motion-safe:transition-all",
-                    isExpanded
-                      ? "ml-1.5 max-w-[12rem] opacity-100"
-                      : "max-w-0 opacity-0"
-                  )}
-                >
-                  Users
-                </span>
-              </Link>
+              <>
+                <NavLink
+                  item={{ title: "Users", href: "/admin/users", icon: Users }}
+                  pathname={pathname}
+                  isExpanded={isExpanded}
+                />
+                <NavLink
+                  item={{ title: "Settings", href: "/admin", icon: Settings, exact: true }}
+                  pathname={pathname}
+                  isExpanded={isExpanded}
+                />
+              </>
             )}
           </nav>
 
