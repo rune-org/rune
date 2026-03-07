@@ -324,8 +324,9 @@ def reset(ctx, force: bool, keep_admin: bool):
 
 @db.command("sql")
 @click.argument("query")
+@click.option("--force", "-f", is_flag=True, help="Execute even if query may modify data")
 @click.pass_context
-def sql(ctx, query: str):
+def sql(ctx, query: str, force: bool):
     """
     Execute raw SQL query.
 
@@ -359,6 +360,15 @@ def sql(ctx, query: str):
             print_warning("This query may modify data!")
             if not confirm_action("Continue with this query?"):
                 print_info("Query cancelled")
+                return
+        else:
+            # Non-interactive/json mode: require explicit --force flag to execute
+            if not force:
+                print_json({
+                    "success": False,
+                    "error": "Query contains potentially dangerous keywords. Use --force to execute.",
+                    "query": query,
+                })
                 return
     
     # Execute query
