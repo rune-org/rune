@@ -474,14 +474,14 @@ function FlowCanvasInner({
             onImportFromClipboard={importFromClipboard}
             onImportFromFile={importFromFile}
             onImportFromTemplate={importFromTemplate}
-             onFitView={handleFitView}
-             onAutoLayout={autoLayout}
-             saveDisabled={saveDisabled || isViewingSnapshot}
-             executionStatus={executionState.status}
-             wsStatus={wsStatus}
-             isStartingExecution={isStartingExecution}
-             workflowId={workflowId}
-           />
+            onFitView={handleFitView}
+            onAutoLayout={autoLayout}
+            saveDisabled={saveDisabled || isViewingSnapshot}
+            executionStatus={executionState.status}
+            wsStatus={wsStatus}
+            isStartingExecution={isStartingExecution}
+            workflowId={workflowId}
+          />
           <SmithButton
             onClick={openSmith}
             isSending={smithSending}

@@ -185,12 +185,12 @@ export function ExecutionStatusBar({
             <div className="mx-2 h-4 w-px bg-current opacity-20" />
             <div className="flex items-center gap-2 text-xs opacity-80">
               <Clock className="h-3 w-3" aria-hidden="true" />
-               <span
-                 aria-label={`${completedNodes} of ${totalNodes} nodes completed${runningNodes > 0 ? `, ${runningNodes} currently running` : ""}`}
-               >
-                 {completedNodes}/{totalNodes} nodes
-                 {runningNodes > 0 && ` (${runningNodes} running)`}
-               </span>
+              <span
+                aria-label={`${completedNodes} of ${totalNodes} nodes completed${runningNodes > 0 ? `, ${runningNodes} currently running` : ""}`}
+              >
+                {completedNodes}/{totalNodes} nodes
+                {runningNodes > 0 && ` (${runningNodes} running)`}
+              </span>
             </div>
           </>
         )}
