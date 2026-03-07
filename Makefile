@@ -48,11 +48,16 @@ help:
 	@echo "  make api-lint           - Lint API code with ruff"
 	@echo "  make api-format         - Format API code with ruff"
 	@echo ""
+	@echo "RTES targets:"
+	@echo "  make rtes-dev            - Start RTES in development mode"
+	@echo ""
 	@echo "Development Infrastructure:"
 	@echo "  make dev-infra-up       - Start shared infrastructure (API + RTES backing services)"
 	@echo "  make dev-infra-down     - Stop shared infrastructure"
 	@echo "  make api-dev-infra-up   - Start API backing services (postgres, redis, rabbitmq, mongodb)"
-	@echo "  make rtes-dev-infra-up  - Start RTES (and otel-collector, openobserve as needed)"
+	@echo "  make api-dev-infra-down - Stop API backing services"
+	@echo "  make rtes-dev-infra-up  - Start RTES dev infra (openobserve, otel-collector)"
+	@echo "  make rtes-dev-infra-down - Stop RTES dev infra (openobserve, otel-collector)"
 	@echo "  Note: Run 'make dev-infra-up' before starting services"
 	@echo ""
 	@echo "Test Infrastructure:"
@@ -128,26 +133,37 @@ worker-install:
 
 dev: dev-infra-up
 	@echo "Starting all services in development mode..."
-	@$(MAKE) -j3 web-dev api-dev worker-dev
+	@$(MAKE) -j4 web-dev api-dev worker-dev rtes-dev
+
+dev-infra-up: api-dev-infra-up rtes-dev-infra-up
+	@echo "Dev infrastructure is up."
+
+dev-infra-down: api-dev-infra-down rtes-dev-infra-down
+	@echo "Dev infrastructure is down."
+
+api-dev-infra-up:
+	@echo "Starting API backing services (postgres, redis, rabbitmq, mongodb)..."
+	cd services/api && docker compose -f docker-compose.dev.yml up -d
+
+api-dev-infra-down:
+	@echo "Stopping API backing services..."
+	cd services/api && docker compose -f docker-compose.dev.yml down --remove-orphans
+
+rtes-dev-infra-up:
+	@echo "Starting RTES dev infra (openobserve, otel-collector)..."
+	cd services/rtes && docker compose -f docker-compose.dev.yml up -d
+
+rtes-dev-infra-down:
+	@echo "Stopping RTES dev infra (openobserve, otel-collector)..."
+	cd services/rtes && docker compose -f docker-compose.dev.yml down --remove-orphans
+
+rtes-dev:
+	@echo "Starting RTES in development mode..."
+	cd services/rtes && cargo run
 
 web-dev:
 	@echo "Starting frontend in development mode..."
 	cd apps/web && pnpm dev
-
-dev-infra-up: api-dev-infra-up rtes-dev-infra-up
-	@echo "Dev infrastructure (API + RTES) is up."
-
-api-dev-infra-up:
-	@echo "Starting API backing services (postgres, redis, rabbitmq, mongodb)..."
-	docker compose up -d postgres rabbitmq redis mongodb
-
-rtes-dev-infra-up:
-	@echo "Starting RTES (and its dependencies)..."
-	docker compose up -d rtes
-
-dev-infra-down:
-	@echo "Stopping shared development infrastructure services..."
-	docker compose down
 
 api-dev:
 	@echo "Starting FastAPI server in development mode..."

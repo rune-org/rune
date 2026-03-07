@@ -1,0 +1,30 @@
+# ============================================================================
+# RTES dev infra only: openobserve + otel-collector (no RTES app, no redis/rabbitmq/mongodb).
+# Run RTES with: make rtes-dev (cargo run). Use make api-dev-infra-up for redis/rabbitmq/mongodb.
+# ============================================================================
+
+services:
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    ports:
+      - "5080:5080"
+    environment:
+      ZO_ROOT_USER_EMAIL: admin@example.com
+      ZO_ROOT_USER_PASSWORD: password
+      ZO_DATA_DIR: /data
+    volumes:
+      - openobserve_data:/data
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    depends_on:
+      - openobserve
+
+volumes:
+  openobserve_data:
