@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ExecutionHistoryPanel } from "./ExecutionHistoryPanel";
 import type { WorkflowExecutionStatus } from "../types/execution";
+import type { WsConnectionStatus } from "../hooks/useRtesWebSocket";
 import { cn } from "@/lib/cn";
 
 type ToolbarProps = {
@@ -50,6 +51,7 @@ type ToolbarProps = {
   saveDisabled?: boolean;
 
   executionStatus?: WorkflowExecutionStatus;
+  wsStatus?: WsConnectionStatus;
   isStartingExecution?: boolean;
   workflowId?: number | null;
 };
@@ -74,11 +76,32 @@ export const Toolbar = memo(function Toolbar({
   onAutoLayout,
   saveDisabled = false,
   executionStatus = "idle",
+  wsStatus = "disconnected",
   isStartingExecution = false,
   workflowId,
 }: ToolbarProps) {
   const isExecuting = executionStatus === "running" || isStartingExecution;
   const isRunDisabled = executeDisabled || readOnly;
+  const liveStatusLabel =
+    isStartingExecution || wsStatus === "connecting" || wsStatus === "disconnected"
+      ? "Starting..."
+      : wsStatus === "reconnecting"
+        ? "Reconnecting..."
+        : wsStatus === "error"
+          ? "Live status unavailable"
+          : "Running...";
+  const liveStatusTitle =
+    wsStatus === "error"
+      ? "Execution started, but live status is unavailable"
+      : wsStatus === "reconnecting"
+        ? "Reconnecting to execution service"
+        : wsStatus === "connected"
+          ? "Running..."
+          : "Connecting to execution service";
+  const liveStatusClassName =
+    wsStatus === "error" || wsStatus === "reconnecting"
+      ? "border-yellow-500/60 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300"
+      : "border-blue-500/60 bg-blue-500/10 text-blue-600 dark:text-blue-400";
   const Btn = ({
     onClick,
     title,
@@ -118,15 +141,15 @@ export const Toolbar = memo(function Toolbar({
       {isExecuting ? (
         <>
           <button
-            title="Running..."
+            title={liveStatusTitle}
             disabled
             className={cn(
               "inline-flex h-8 items-center gap-2 rounded-sm border px-2.5 text-xs",
-              "border-blue-500/60 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+              liveStatusClassName
             )}
           >
             <Loader2 className="h-4 w-4 animate-spin" />
-            {isStartingExecution ? "Starting..." : "Running..."}
+            {liveStatusLabel}
           </button>
           {onStop && (
             <Btn onClick={onStop} title="Stop execution">
