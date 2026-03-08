@@ -1,0 +1,128 @@
+# Authentik Test IdP — fully self-contained compose file
+#
+# Completely independent from the RUNE docker-compose stack.
+# Authentik gets its own Postgres and its own Redis — no shared networks.
+# SAML uses browser-mediated POST binding, so Authentik never needs to reach
+# RUNE's containers directly; ports 9000/9443 exposed to the host are enough.
+#
+# Works in any mode:
+#   • Full-stack (docker compose up -d)
+#   • Dev (fastapi dev src/app.py + docker-compose.dev.yml)
+#   No network prerequisites in either case.
+#
+# Usage
+# -----
+#   Start:       docker compose -f docker-compose.authentik.yml up -d
+#   Stop:        docker compose -f docker-compose.authentik.yml down
+#   Full reset:  docker compose -f docker-compose.authentik.yml down -v
+#
+# First-time setup:
+#   Open http://localhost:9000/if/flow/initial-setup/ and create an admin account.
+#
+# Optional env overrides (export or put in a .env.authentik file):
+#   AUTHENTIK_POSTGRES_PASSWORD   (default: authentik_password)
+#   AUTHENTIK_SECRET_KEY          (default: insecure dev key — CHANGE in production)
+
+services:
+  # Private Postgres for Authentik — completely separate from RUNE's Postgres
+  authentik-postgres:
+    image: "postgres:16-alpine"
+    container_name: rune-authentik-postgres
+    environment:
+      POSTGRES_USER: authentik
+      POSTGRES_PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-authentik_password}
+      POSTGRES_DB: authentik
+    volumes:
+      - authentik_postgres_data:/var/lib/postgresql/data
+    networks:
+      - authentik_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authentik"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Private Redis for Authentik — completely separate from RUNE's Redis
+  authentik-redis:
+    image: "redis:8-alpine"
+    container_name: rune-authentik-redis
+    networks:
+      - authentik_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  authentik-server:
+    image: "ghcr.io/goauthentik/server:2024.10.5"
+    container_name: rune-authentik-server
+    command: server
+    environment:
+      AUTHENTIK_REDIS__HOST: authentik-redis
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgres
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-authentik_password}
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-authentik-insecure-dev-key-change-in-production-32chars}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+      AUTHENTIK_LOG_LEVEL: info
+    ports:
+      - "9000:9000"   # Authentik HTTP UI  → http://localhost:9000
+      - "9443:9443"   # Authentik HTTPS UI → https://localhost:9443
+    volumes:
+      - authentik_media:/media
+      - authentik_templates:/templates
+    networks:
+      - authentik_internal
+    depends_on:
+      authentik-postgres:
+        condition: service_healthy
+      authentik-redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  authentik-worker:
+    image: "ghcr.io/goauthentik/server:2024.10.5"
+    container_name: rune-authentik-worker
+    command: worker
+    environment:
+      AUTHENTIK_REDIS__HOST: authentik-redis
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgres
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-authentik_password}
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-authentik-insecure-dev-key-change-in-production-32chars}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+    user: root
+    volumes:
+      - authentik_media:/media
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - authentik_internal
+    depends_on:
+      authentik-postgres:
+        condition: service_healthy
+      authentik-redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+# ---------------------------------------------------------------------------
+# Authentik's own isolated network — no connection to RUNE's networks needed.
+# ---------------------------------------------------------------------------
+networks:
+  authentik_internal:
+    driver: bridge
+    name: authentik_internal_network
+
+volumes:
+  authentik_postgres_data:
+    driver: local
+  authentik_redis_data:
+    driver: local
+  authentik_media:
+    driver: local
+  authentik_templates:
+    driver: local
