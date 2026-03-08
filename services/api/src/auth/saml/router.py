@@ -26,7 +26,7 @@ from src.core.exceptions import AlreadyExists, BadRequest, NotFound
 from src.core.responses import ApiResponse
 from src.db.models import SAMLConfiguration
 
-router = APIRouter(prefix="/auth/saml", tags=["SAML SSO"])
+router = APIRouter(prefix="/auth/saml", tags=["SAML"])
 
 
 # ---------------------------------------------------------------------------
