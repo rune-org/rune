@@ -53,8 +53,9 @@ export async function shareWorkflow(
         role: role,
       },
     });
-  } catch (error: any) {
-    const message = error?.detail && typeof error.detail === 'string' ? error.detail : "Failed to share workflow";
+  } catch (error: unknown) {
+    const err = error as Record<string, unknown> | undefined;
+    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to share workflow";
     throw new Error(message);
   }
 }
@@ -80,8 +81,9 @@ export async function revokeWorkflowAccess(
         user_id: userId,
       },
     });
-  } catch (error: any) {
-    const message = error?.detail && typeof error.detail === 'string' ? error.detail : "Failed to revoke access";
+  } catch (error: unknown) {
+    const err = error as Record<string, unknown> | undefined;
+    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to revoke access";
     throw new Error(message);
   }
 }
@@ -104,9 +106,10 @@ export async function listWorkflowPermissions(
       path: { workflow_id: parseInt(workflowId) },
     });
 
-    return (response as any)?.data?.permissions || [];
-  } catch (error: any) {
-    const message = error?.detail && typeof error.detail === 'string' ? error.detail : "Failed to fetch permissions";
+    return ((response as Record<string, unknown>)?.data as Record<string, unknown>)?.permissions as WorkflowPermission[] || [];
+  } catch (error: unknown) {
+    const err = error as Record<string, unknown> | undefined;
+    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to fetch permissions";
     throw new Error(message);
   }
 }
@@ -141,8 +144,9 @@ export async function updateWorkflowUserRole(
         role: role,
       },
     });
-  } catch (error: any) {
-    const message = error?.detail && typeof error.detail === 'string' ? error.detail : "Failed to update role";
+  } catch (error: unknown) {
+    const err = error as Record<string, unknown> | undefined;
+    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to update role";
     throw new Error(message);
   }
 }

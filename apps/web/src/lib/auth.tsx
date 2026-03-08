@@ -17,8 +17,6 @@ import {
   getMyProfile as apiGetMyProfile,
   firstAdminSignup,
   type MyProfileResponse,
-  type LoginResponse,
-  type RefreshResponse,
 } from "@/lib/api/auth";
 import { toast } from "@/components/ui/toast";
 import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
@@ -113,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiGetMyProfile();
       if (response) {
-        setUser((response as any).data as AuthUser);
+        setUser((response as unknown as { data: AuthUser }).data);
         return true;
       }
       return false;
@@ -129,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiRefresh(token);
       if (response) {
         // Update stored refresh token in case backend rotates (it currently does not)
-        const payload = (response as any).data as TokenResponse;
+        const payload = (response as unknown as { data: TokenResponse }).data;
         storeRefreshToken(payload.refresh_token ?? token);
         const expMs = Date.now() + payload.expires_in * 1000;
         storeAccessExp(expMs);
@@ -202,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return false;
         }
         // Save refresh token
-        const payload = (response as any).data as TokenResponse;
+        const payload = (response as unknown as { data: TokenResponse }).data;
         storeRefreshToken(payload.refresh_token);
         const expMs = Date.now() + payload.expires_in * 1000;
         storeAccessExp(expMs);

@@ -81,7 +81,7 @@ export function ShareWorkflowDialog({
   const loadAvailableUsers = async () => {
     try {
       const response = await listUsersForSharingUsersDirectoryGet();
-      setAvailableUsers((response as any)?.data || []);
+      setAvailableUsers((response as Record<string, unknown>)?.data as typeof availableUsers || []);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to load users"

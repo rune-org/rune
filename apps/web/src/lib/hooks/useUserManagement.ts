@@ -110,7 +110,7 @@ export function useUserManagement(): UseUserManagementReturn {
           body: payload,
         });
 
-        const created = (response as any)?.data as CreateUserResponse | undefined;
+        const created = (response as unknown as { data?: CreateUserResponse })?.data;
 
         if (!created) {
           toast.error("Failed to create user");
