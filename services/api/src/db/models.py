@@ -38,8 +38,8 @@ class CredentialType(str, Enum):
 class AuthProvider(str, Enum):
     """Authentication provider for a user account."""
 
-    LOCAL = "local"  # Standard email + password login
-    SAML = "saml"  # SAML 2.0 SSO — no password
+    LOCAL = "local"
+    SAML = "saml"
 
 
 class TimestampModel(SQLModel):
