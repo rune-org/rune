@@ -1,18 +1,3 @@
-"""SAML 2.0 Service Provider business logic.
-
-Wraps ``python3-saml`` (OneLogin) to:
-* Build SP metadata XML.
-* Initiate SSO (build AuthnRequest → redirect URL).
-* Validate IdP assertions (ACS).
-* Provide replay-attack protection via Redis.
-
-Production hardening:
-* Relay state is HMAC-signed (SHA-256) so a malicious actor cannot forge it at
-  the ACS endpoint and inject an arbitrary post-login redirect path.
-* Relay state size is bounded (guards against header-too-large attacks).
-* Assertion IDs are consumed in Redis with the configured TTL to prevent replay.
-"""
-
 import base64
 import hashlib
 import hmac

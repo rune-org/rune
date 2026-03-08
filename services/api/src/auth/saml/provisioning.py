@@ -1,14 +1,3 @@
-"""JIT (Just-in-Time) SAML user provisioning.
-
-When a SAML assertion arrives at the ACS endpoint this service either:
-1. Loads the matching user (found by NameID + config).
-2. Links an existing local account that shares the same email address.
-3. Creates a brand-new SSO-only user account.
-
-SAML-provisioned accounts have ``auth_provider == AuthProvider.SAML`` and
-``hashed_password == None``.  They may only authenticate via SSO.
-"""
-
 from datetime import datetime
 
 from sqlmodel import select

@@ -1,18 +1,3 @@
-"""SAML Service Provider (SP) keypair management.
-
-Generates and manages the RSA private key + self-signed X.509 certificate that
-the SP (RUNE API) uses to sign AuthnRequests and optionally to decrypt
-assertions.  The private key is never stored in plaintext: it is Fernet-
-encrypted using the application's ENCRYPTION_KEY before being written to the
-database.
-
-Production hardening applied:
-- RSA-4096 key (NIST SP 800-131A Rev 2 compliant through 2030+).
-- 3-year certificate validity (reduces blast radius of key compromise vs 10 yr).
-- KeyUsage + ExtendedKeyUsage extensions set for strict IdP validation.
-- SubjectKeyIdentifier added for chain-building compatibility.
-"""
-
 from datetime import datetime, timedelta, timezone
 
 from cryptography import x509

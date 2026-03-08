@@ -1,5 +1,3 @@
-"""Pydantic schemas for SAML SSO endpoints."""
-
 from datetime import datetime
 from typing import Optional
 from urllib.parse import urlparse
