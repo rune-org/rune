@@ -70,10 +70,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  type RFGraph,
-  stripCredentials,
-} from "@/features/canvas/lib/graphIO";
+import { stripCredentialsFromWorkflowData } from "@/lib/workflow-dsl";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "N/A";
@@ -228,14 +225,12 @@ export function WorkflowsTable() {
         rawData &&
         Array.isArray(rawData.nodes) &&
         Array.isArray(rawData.edges);
-      const workflowData = hasGraph
-        ? stripCredentials(rawData as RFGraph)
-        : rawData ?? {};
-      const payload = {
-        name: detail.name,
-        description: detail.description ?? "",
-        workflow_data: workflowData,
-      };
+      if (!hasGraph) {
+        toast.error("Workflow has no graph data to export.");
+        return;
+      }
+      const { nodes, edges } = stripCredentialsFromWorkflowData(rawData);
+      const payload = { nodes, edges };
       const json = JSON.stringify(payload, null, 2);
       const blob = new Blob([json], { type: "application/json" });
       const url = URL.createObjectURL(blob);
