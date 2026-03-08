@@ -1,7 +1,15 @@
 import pytest_asyncio
 from argon2 import PasswordHasher
 
-from src.db.models import User, UserRole, Workflow, WorkflowRole, WorkflowUser
+from src.db.models import (
+    Execution,
+    ExecutionStatus,
+    User,
+    UserRole,
+    Workflow,
+    WorkflowRole,
+    WorkflowUser,
+)
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -109,3 +117,33 @@ async def other_client(client, other_user):
     )
     assert response.status_code == 200, f"Login failed: {response.text}"
     return client
+
+
+@pytest_asyncio.fixture(scope="function")
+async def sample_executions(test_db, sample_workflow):
+    """Create sample executions for the sample workflow."""
+    executions = [
+        Execution(
+            id="exec_completed_1",
+            workflow_id=sample_workflow.id,
+            status=ExecutionStatus.COMPLETED,
+            total_duration_ms=1500,
+        ),
+        Execution(
+            id="exec_pending_1",
+            workflow_id=sample_workflow.id,
+            status=ExecutionStatus.PENDING,
+        ),
+        Execution(
+            id="exec_failed_1",
+            workflow_id=sample_workflow.id,
+            status=ExecutionStatus.FAILED,
+            failure_reason="Node timeout",
+        ),
+    ]
+    for ex in executions:
+        test_db.add(ex)
+    await test_db.commit()
+    for ex in executions:
+        await test_db.refresh(ex)
+    return executions
