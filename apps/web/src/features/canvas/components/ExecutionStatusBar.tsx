@@ -211,7 +211,7 @@ export function ExecutionStatusBar({
             className="ml-1 text-[10px] leading-none font-normal underline-offset-2 opacity-70 transition-opacity hover:opacity-100 hover:underline"
             aria-label="Dismiss live execution status"
           >
-            Dismiss
+            Halt
           </button>
         )}
 
