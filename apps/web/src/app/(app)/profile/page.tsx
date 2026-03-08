@@ -96,18 +96,17 @@ export default function ProfilePage() {
     setIsSaving(true);
     setError(null);
 
-    const { error: apiError } = await updateMyProfile({
-      name: result.data.name,
-    });
+    try {
+      await updateMyProfile({
+        name: result.data.name,
+      });
 
-    if (apiError) {
+      // Log out user after successful update
+      await logout();
+    } catch (apiError) {
       setError(getErrorMessage(apiError));
       setIsSaving(false);
-      return;
     }
-
-    // Log out user after successful update
-    await logout();
   };
 
   const handleSaveEmail = async () => {
@@ -121,18 +120,17 @@ export default function ProfilePage() {
     setIsSaving(true);
     setError(null);
 
-    const { error: apiError } = await updateMyProfile({
-      email: result.data.email,
-    });
+    try {
+      await updateMyProfile({
+        email: result.data.email,
+      });
 
-    if (apiError) {
+      // Log out user after successful update
+      await logout();
+    } catch (apiError) {
       setError(getErrorMessage(apiError));
       setIsSaving(false);
-      return;
     }
-
-    // Log out user after successful update
-    await logout();
   };
 
   const handleCancelName = () => {

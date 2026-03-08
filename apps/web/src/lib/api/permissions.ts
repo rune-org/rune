@@ -45,16 +45,17 @@ export async function shareWorkflow(
     throw new Error("Cannot grant owner role through sharing");
   }
 
-  const { error } = await shareWorkflowWorkflowsWorkflowIdSharePost({
-    path: { workflow_id: parseInt(workflowId) },
-    body: {
-      user_id: userId,
-      role: role,
-    },
-  });
-
-  if (error) {
-    const message = typeof error.detail === 'string' ? error.detail : "Failed to share workflow";
+  try {
+    await shareWorkflowWorkflowsWorkflowIdSharePost({
+      path: { workflow_id: parseInt(workflowId) },
+      body: {
+        user_id: userId,
+        role: role,
+      },
+    });
+  } catch (error: unknown) {
+    const err = error as Record<string, unknown> | undefined;
+    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to share workflow";
     throw new Error(message);
   }
 }
@@ -73,15 +74,16 @@ export async function revokeWorkflowAccess(
   workflowId: string,
   userId: number
 ): Promise<void> {
-  const { error } = await revokeAccessWorkflowsWorkflowIdShareUserIdDelete({
-    path: {
-      workflow_id: parseInt(workflowId),
-      user_id: userId,
-    },
-  });
-
-  if (error) {
-    const message = typeof error.detail === 'string' ? error.detail : "Failed to revoke access";
+  try {
+    await revokeAccessWorkflowsWorkflowIdShareUserIdDelete({
+      path: {
+        workflow_id: parseInt(workflowId),
+        user_id: userId,
+      },
+    });
+  } catch (error: unknown) {
+    const err = error as Record<string, unknown> | undefined;
+    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to revoke access";
     throw new Error(message);
   }
 }
@@ -99,16 +101,17 @@ export async function revokeWorkflowAccess(
 export async function listWorkflowPermissions(
   workflowId: string
 ): Promise<WorkflowPermission[]> {
-  const { data, error } = await listWorkflowPermissionsWorkflowsWorkflowIdPermissionsGet({
-    path: { workflow_id: parseInt(workflowId) },
-  });
+  try {
+    const response = await listWorkflowPermissionsWorkflowsWorkflowIdPermissionsGet({
+      path: { workflow_id: parseInt(workflowId) },
+    });
 
-  if (error) {
-    const message = typeof error.detail === 'string' ? error.detail : "Failed to fetch permissions";
+    return ((response as Record<string, unknown>)?.data as Record<string, unknown>)?.permissions as WorkflowPermission[] || [];
+  } catch (error: unknown) {
+    const err = error as Record<string, unknown> | undefined;
+    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to fetch permissions";
     throw new Error(message);
   }
-
-  return data?.data?.permissions || [];
 }
 
 /**
@@ -131,18 +134,19 @@ export async function updateWorkflowUserRole(
     throw new Error("Cannot grant owner role through role update");
   }
 
-  const { error } = await updateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatch({
-    path: {
-      workflow_id: parseInt(workflowId),
-      user_id: userId,
-    },
-    body: {
-      role: role,
-    },
-  });
-
-  if (error) {
-    const message = typeof error.detail === 'string' ? error.detail : "Failed to update role";
+  try {
+    await updateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatch({
+      path: {
+        workflow_id: parseInt(workflowId),
+        user_id: userId,
+      },
+      body: {
+        role: role,
+      },
+    });
+  } catch (error: unknown) {
+    const err = error as Record<string, unknown> | undefined;
+    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to update role";
     throw new Error(message);
   }
 }

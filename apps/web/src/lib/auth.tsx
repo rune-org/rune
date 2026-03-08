@@ -17,8 +17,6 @@ import {
   getMyProfile as apiGetMyProfile,
   firstAdminSignup,
   type MyProfileResponse,
-  type LoginResponse,
-  type RefreshResponse,
 } from "@/lib/api/auth";
 import { toast } from "@/components/ui/toast";
 import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
@@ -110,33 +108,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const fetchProfile = useCallback(async () => {
-    const { data, error } = await apiGetMyProfile();
-    if (!error && data) {
-      setUser(data.data as AuthUser);
-      return true;
+    try {
+      const response = await apiGetMyProfile();
+      if (response) {
+        setUser((response as unknown as { data: AuthUser }).data);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   }, []);
 
   const refresh = useCallback(async () => {
     const token = getStoredRefreshToken();
     if (!token) return;
-    const { data, error } = await apiRefresh(token);
-    if (!error && data) {
-      // Update stored refresh token in case backend rotates (it currently does not)
-      const payload = (data as RefreshResponse).data as TokenResponse;
-      storeRefreshToken(payload.refresh_token ?? token);
-      const expMs = Date.now() + payload.expires_in * 1000;
-      storeAccessExp(expMs);
-      // schedule next refresh
-      clearScheduledRefresh();
-      const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
-      const delaySec = Math.max(payload.expires_in - leeway, 5);
-      refreshTimeoutId.current = setTimeout(async () => {
-        await refresh();
-        await fetchProfile();
-      }, delaySec * 1000);
-    } else {
+    try {
+      const response = await apiRefresh(token);
+      if (response) {
+        // Update stored refresh token in case backend rotates (it currently does not)
+        const payload = (response as unknown as { data: TokenResponse }).data;
+        storeRefreshToken(payload.refresh_token ?? token);
+        const expMs = Date.now() + payload.expires_in * 1000;
+        storeAccessExp(expMs);
+        // schedule next refresh
+        clearScheduledRefresh();
+        const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
+        const delaySec = Math.max(payload.expires_in - leeway, 5);
+        refreshTimeoutId.current = setTimeout(async () => {
+          await refresh();
+          await fetchProfile();
+        }, delaySec * 1000);
+      }
+    } catch {
       // If refresh fails, clear all
       storeRefreshToken(null);
       storeAccessExp(null);
@@ -187,32 +191,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => {
       setLoading(true);
       setError(null);
-      const { data, error } = await apiLogin(email, password);
-      if (error || !data) {
+      try {
+        const response = await apiLogin(email, password);
+        if (!response) {
+          toast.error("Login failed");
+          setError("Login failed");
+          setLoading(false);
+          return false;
+        }
+        // Save refresh token
+        const payload = (response as unknown as { data: TokenResponse }).data;
+        storeRefreshToken(payload.refresh_token);
+        const expMs = Date.now() + payload.expires_in * 1000;
+        storeAccessExp(expMs);
+        // schedule next refresh
+        clearScheduledRefresh();
+        const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
+        const delaySec = Math.max(payload.expires_in - leeway, 5);
+        refreshTimeoutId.current = setTimeout(async () => {
+          await refresh();
+          await fetchProfile();
+        }, delaySec * 1000);
+        await fetchProfile();
+        setLoading(false);
+        return true;
+      } catch (error) {
         const errorMessage = getErrorMessage(error);
         // Display error as toast notification
         toast.error(errorMessage);
-
         setError(errorMessage);
         setLoading(false);
         return false;
       }
-      // Save refresh token
-      const payload = (data as LoginResponse).data as TokenResponse;
-      storeRefreshToken(payload.refresh_token);
-      const expMs = Date.now() + payload.expires_in * 1000;
-      storeAccessExp(expMs);
-      // schedule next refresh
-      clearScheduledRefresh();
-      const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
-      const delaySec = Math.max(payload.expires_in - leeway, 5);
-      refreshTimeoutId.current = setTimeout(async () => {
-        await refresh();
-        await fetchProfile();
-      }, delaySec * 1000);
-      await fetchProfile();
-      setLoading(false);
-      return true;
     },
     [fetchProfile, refresh],
   );
@@ -221,14 +231,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (name: string, email: string, password: string) => {
       setLoading(true);
       setError(null);
-      const { error } = await firstAdminSignup(name, email, password);
-      if (error) {
+      try {
+        await firstAdminSignup(name, email, password);
+        // Auto-login after successful registration
+        return await login(email, password);
+      } catch (error) {
         setError(getErrorMessage(error));
         setLoading(false);
         return false;
       }
-      // Auto-login after successful registration
-      return await login(email, password);
     },
     [login],
   );

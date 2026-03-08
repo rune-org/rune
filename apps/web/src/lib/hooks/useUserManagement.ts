@@ -106,21 +106,11 @@ export function useUserManagement(): UseUserManagementReturn {
       };
 
       try {
-        const { data, error } = await createUserUsersPost({
+        const response = await createUserUsersPost({
           body: payload,
         });
 
-        if (error) {
-          console.error("Failed to create user:", error);
-          const errorMessage = extractErrorMessage(
-            error,
-            "Failed to create user"
-          );
-          toast.error(errorMessage);
-          return null;
-        }
-
-        const created = data?.data as CreateUserResponse | undefined;
+        const created = (response as unknown as { data?: CreateUserResponse })?.data;
 
         if (!created) {
           toast.error("Failed to create user");
@@ -131,7 +121,11 @@ export function useUserManagement(): UseUserManagementReturn {
         return created;
       } catch (err: unknown) {
         console.error("Failed to create user:", err);
-        toast.error("Failed to create user");
+        const errorMessage = extractErrorMessage(
+          err,
+          "Failed to create user"
+        );
+        toast.error(errorMessage);
         return null;
       }
     },
@@ -152,27 +146,21 @@ export function useUserManagement(): UseUserManagementReturn {
       };
 
       try {
-        const { error } = await updateUserUsersUserIdPut({
+        await updateUserUsersUserIdPut({
           path: { user_id: userId },
           body: payload,
         });
-
-        if (error) {
-          console.error("Failed to update user:", error);
-          const errorMessage = extractErrorMessage(
-            error,
-            "Failed to update user"
-          );
-          toast.error(errorMessage);
-          return false;
-        }
 
         toast.success("User updated");
         await fetchUsers();
         return true;
       } catch (err: unknown) {
         console.error("Failed to update user:", err);
-        toast.error("Failed to update user");
+        const errorMessage = extractErrorMessage(
+          err,
+          "Failed to update user"
+        );
+        toast.error(errorMessage);
         return false;
       }
     },
@@ -182,26 +170,20 @@ export function useUserManagement(): UseUserManagementReturn {
   const deleteUser = useCallback(
     async (userId: number): Promise<boolean> => {
       try {
-        const { error } = await deleteUserUsersUserIdDelete({
+        await deleteUserUsersUserIdDelete({
           path: { user_id: userId },
         });
-
-        if (error) {
-          console.error("Failed to delete user:", error);
-          const errorMessage = extractErrorMessage(
-            error,
-            "Failed to delete user"
-          );
-          toast.error(errorMessage);
-          return false;
-        }
 
         toast.success("User deleted");
         await fetchUsers();
         return true;
       } catch (err: unknown) {
         console.error("Failed to delete user:", err);
-        toast.error("Failed to delete user");
+        const errorMessage = extractErrorMessage(
+          err,
+          "Failed to delete user"
+        );
+        toast.error(errorMessage);
         return false;
       }
     },
@@ -214,24 +196,10 @@ export function useUserManagement(): UseUserManagementReturn {
       isActive: boolean
     ): Promise<boolean> => {
       try {
-        const { error } =
-          await setUserStatusUsersUserIdStatusPatch({
-            path: { user_id: userId },
-            body: { is_active: isActive },
-          });
-
-        if (error) {
-          console.error(
-            "Failed to update user status:",
-            error
-          );
-          const errorMessage = extractErrorMessage(
-            error,
-            "Failed to update user status"
-          );
-          toast.error(errorMessage);
-          return false;
-        }
+        await setUserStatusUsersUserIdStatusPatch({
+          path: { user_id: userId },
+          body: { is_active: isActive },
+        });
 
         toast.success(
           isActive ? "User activated" : "User deactivated"
@@ -243,7 +211,11 @@ export function useUserManagement(): UseUserManagementReturn {
           "Failed to update user status:",
           err
         );
-        toast.error("Failed to update user status");
+        const errorMessage = extractErrorMessage(
+          err,
+          "Failed to update user status"
+        );
+        toast.error(errorMessage);
         return false;
       }
     },
