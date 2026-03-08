@@ -106,11 +106,11 @@ export function useUserManagement(): UseUserManagementReturn {
       };
 
       try {
-        const data = await createUserUsersPost({
+        const response = await createUserUsersPost({
           body: payload,
         });
 
-        const created = data?.data as CreateUserResponse | undefined;
+        const created = (response as any)?.data as CreateUserResponse | undefined;
 
         if (!created) {
           toast.error("Failed to create user");

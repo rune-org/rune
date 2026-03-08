@@ -100,11 +100,11 @@ export async function listWorkflowPermissions(
   workflowId: string
 ): Promise<WorkflowPermission[]> {
   try {
-    const data = await listWorkflowPermissionsWorkflowsWorkflowIdPermissionsGet({
+    const response = await listWorkflowPermissionsWorkflowsWorkflowIdPermissionsGet({
       path: { workflow_id: parseInt(workflowId) },
     });
 
-    return data?.data?.permissions || [];
+    return (response as any)?.data?.permissions || [];
   } catch (error: any) {
     const message = error?.detail && typeof error.detail === 'string' ? error.detail : "Failed to fetch permissions";
     throw new Error(message);

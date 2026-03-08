@@ -111,9 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const data = await apiGetMyProfile();
-      if (data) {
-        setUser(data.data as AuthUser);
+      const response = await apiGetMyProfile();
+      if (response) {
+        setUser((response as any).data as AuthUser);
         return true;
       }
       return false;
@@ -126,10 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = getStoredRefreshToken();
     if (!token) return;
     try {
-      const data = await apiRefresh(token);
-      if (data) {
+      const response = await apiRefresh(token);
+      if (response) {
         // Update stored refresh token in case backend rotates (it currently does not)
-        const payload = (data as RefreshResponse).data as TokenResponse;
+        const payload = (response as any).data as TokenResponse;
         storeRefreshToken(payload.refresh_token ?? token);
         const expMs = Date.now() + payload.expires_in * 1000;
         storeAccessExp(expMs);
@@ -194,15 +194,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       try {
-        const data = await apiLogin(email, password);
-        if (!data) {
+        const response = await apiLogin(email, password);
+        if (!response) {
           toast.error("Login failed");
           setError("Login failed");
           setLoading(false);
           return false;
         }
         // Save refresh token
-        const payload = (data as LoginResponse).data as TokenResponse;
+        const payload = (response as any).data as TokenResponse;
         storeRefreshToken(payload.refresh_token);
         const expMs = Date.now() + payload.expires_in * 1000;
         storeAccessExp(expMs);
