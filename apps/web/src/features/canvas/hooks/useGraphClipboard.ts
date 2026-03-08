@@ -12,6 +12,7 @@ const PASTE_OFFSET = 32;
 export type UseGraphClipboardOptions = {
   nodes: CanvasNode[];
   edges: Edge[];
+  readOnly?: boolean;
   selectedNodeId: string | null;
   pushHistory: () => void;
   setNodes: React.Dispatch<React.SetStateAction<CanvasNode[]>>;
@@ -28,6 +29,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
   const {
     nodes,
     edges,
+    readOnly = false,
     selectedNodeId,
     pushHistory,
     setNodes,
@@ -134,11 +136,21 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
   }, []);
 
   const importFromFile = useCallback(() => {
+    if (readOnly) {
+      toast.error("Cannot import while viewing history");
+      return;
+    }
     fileInputRef.current?.click();
-  }, []);
+  }, [readOnly]);
 
   const handleFileImport = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (readOnly) {
+        e.target.value = "";
+        toast.error("Cannot import while viewing history");
+        return;
+      }
+
       const file = e.target.files?.[0];
       if (!file) return;
 
@@ -178,15 +190,24 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
       reader.readAsText(file);
       e.target.value = "";
     },
-    [pushHistory, setNodes, setEdges],
+    [readOnly, pushHistory, setNodes, setEdges],
   );
 
   const importFromTemplate = useCallback(() => {
+    if (readOnly) {
+      toast.error("Cannot import while viewing history");
+      return;
+    }
     setIsImportTemplateOpen(true);
-  }, []);
+  }, [readOnly]);
 
   const handleTemplateSelect = useCallback(
     (workflowData: { nodes: CanvasNode[]; edges: Edge[] }) => {
+      if (readOnly) {
+        toast.error("Cannot import while viewing history");
+        return;
+      }
+
       const parsed = sanitizeGraph(workflowData);
       pushHistory();
       setNodes(parsed.nodes as CanvasNode[]);
@@ -194,12 +215,17 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
       setIsImportTemplateOpen(false);
       toast.success("Imported workflow from template");
     },
-    [pushHistory, setNodes, setEdges],
+    [readOnly, pushHistory, setNodes, setEdges],
   );
 
   // Paste to import graph DSL or clone selections
   useEffect(() => {
     const handler = (e: ClipboardEvent) => {
+      if (readOnly) {
+        e.preventDefault();
+        return;
+      }
+
       // Ignore paste events from dialogs (e.g., expanded inspector)
       const target = e.target as HTMLElement | null;
       if (target?.closest('[role="dialog"]')) return;
@@ -300,7 +326,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
     const el = containerRef.current ?? window;
     el.addEventListener("paste", handler as EventListener);
     return () => el.removeEventListener("paste", handler as EventListener);
-  }, [pushHistory, setEdges, setNodes, setSelectedNodeId, containerRef]);
+  }, [readOnly, pushHistory, setEdges, setNodes, setSelectedNodeId, containerRef]);
 
   return {
     copySelection,

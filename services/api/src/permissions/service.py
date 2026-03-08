@@ -130,6 +130,7 @@ class PermissionService:
                     user_email=user.email,
                     user_name=user.name,
                     role=workflow_user.role,
+                    user_role=user.role,
                     granted_at=workflow_user.created_at,
                     granted_by=workflow_user.granted_by,
                 )

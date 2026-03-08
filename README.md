@@ -137,6 +137,16 @@ Rune follows a polyglot microservices architecture, using the right tool for eac
 
 ## Development
 
+### Prerequisites
+
+The API service requires **uv** for dependency management:
+
+```bash
+pip install uv
+```
+
+See [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) for other methods.
+
 For local development with hot reloading:
 
 ```bash

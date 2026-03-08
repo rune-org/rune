@@ -10,6 +10,7 @@ import { toast } from "@/components/ui/toast";
 
 export type UseSmithOptions = {
   workflowId: number | null;
+  readOnly?: boolean;
   pushHistory: () => void;
   setNodes: React.Dispatch<React.SetStateAction<CanvasNode[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
@@ -17,7 +18,14 @@ export type UseSmithOptions = {
 };
 
 export function useSmith(opts: UseSmithOptions) {
-  const { workflowId, pushHistory, setNodes, setEdges, rfInstanceRef } = opts;
+  const {
+    workflowId,
+    readOnly = false,
+    pushHistory,
+    setNodes,
+    setEdges,
+    rfInstanceRef,
+  } = opts;
 
   const [isSmithOpen, setIsSmithOpen] = useState(false);
   const [smithMessages, setSmithMessages] = useState<SmithChatMessage[]>([]);
@@ -33,12 +41,18 @@ export function useSmith(opts: UseSmithOptions) {
   smithShowTraceRef.current = smithShowTrace;
 
   const openSmith = useCallback(() => {
+    if (readOnly) {
+      toast.error("Smith is disabled while viewing history");
+      return;
+    }
     setIsSmithOpen(true);
     setSmithJustFinished(false);
-  }, []);
+  }, [readOnly]);
 
   const applySmithWorkflow = useCallback(
     (workflow: { nodes?: unknown; edges?: unknown }) => {
+      if (readOnly) return;
+
       const candidateNodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
       const candidateEdges = Array.isArray(workflow.edges) ? workflow.edges : [];
 
@@ -71,11 +85,16 @@ export function useSmith(opts: UseSmithOptions) {
 
       toast.success("Smith updated the canvas");
     },
-    [pushHistory, setEdges, setNodes, rfInstanceRef],
+    [readOnly, pushHistory, setEdges, setNodes, rfInstanceRef],
   );
 
   const handleSmithSend = useCallback(
     async (content: string) => {
+      if (readOnly) {
+        toast.error("Smith is disabled while viewing history");
+        return;
+      }
+
       const trimmed = content.trim();
       if (!trimmed || smithSendingRef.current) return;
 
@@ -166,8 +185,15 @@ export function useSmith(opts: UseSmithOptions) {
         }
       }
     },
-    [applySmithWorkflow],
+    [readOnly, applySmithWorkflow],
   );
+
+  useEffect(() => {
+    if (readOnly) {
+      setIsSmithOpen(false);
+      setPendingSmithPrompt(null);
+    }
+  }, [readOnly]);
 
   // Greeting message when drawer opens
   useEffect(() => {
@@ -210,12 +236,13 @@ export function useSmith(opts: UseSmithOptions) {
 
   // Execute pending prompt
   useEffect(() => {
+    if (readOnly) return;
     if (pendingSmithPrompt && !smithSending) {
       setIsSmithOpen(true);
       void handleSmithSend(pendingSmithPrompt);
       setPendingSmithPrompt(null);
     }
-  }, [pendingSmithPrompt, smithSending, handleSmithSend]);
+  }, [readOnly, pendingSmithPrompt, smithSending, handleSmithSend]);
 
   return {
     isSmithOpen,

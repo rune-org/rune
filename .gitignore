@@ -44,11 +44,16 @@
 
 # python
 .venv
+.venv-dsl
 __pycache__
 *.pyc
 .env
 myenv
 venv
+
+# alembic - ignore generated migrations, keep directory via .gitkeep
+services/api/migrations/versions/*
+!services/api/migrations/versions/.gitkeep
 
 # golang
 services/rune-worker/main
@@ -64,5 +69,12 @@ nginx/ssl/
 **/*.rmeta
 **/*.d
 **/*.lock
+!**/uv.lock
 **/Cargo.lock
 **/Cargo.toml.bk
+
+
+# Cursor
+.cursor/
+
+.claude

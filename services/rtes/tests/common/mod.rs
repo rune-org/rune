@@ -19,6 +19,7 @@ use rtes::{
 };
 
 #[derive(Default)]
+#[allow(clippy::struct_excessive_bools)]
 pub(crate) struct MockTokenStore {
     pub validate_access_result: bool,
     pub validate_access_for_execution_result: bool,
@@ -30,11 +31,10 @@ pub(crate) struct MockTokenStore {
 #[async_trait]
 impl TokenStorePort for MockTokenStore {
     async fn add_token(&self, token: &ExecutionToken) -> StoreResult<()> {
-        let mut guard = self
-            .added_tokens
+        self.added_tokens
             .lock()
-            .expect("mock token store mutex should not be poisoned");
-        guard.push(token.clone());
+            .expect("mock token store mutex should not be poisoned")
+            .push(token.clone());
         Ok(())
     }
 

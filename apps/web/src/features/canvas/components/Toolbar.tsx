@@ -27,10 +27,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ExecutionHistoryPanel } from "./ExecutionHistoryPanel";
 import type { WorkflowExecutionStatus } from "../types/execution";
+import type { WsConnectionStatus } from "../hooks/useRtesWebSocket";
 import { cn } from "@/lib/cn";
 
 type ToolbarProps = {
   onExecute: () => void;
+  executeDisabled?: boolean;
+  readOnly?: boolean;
   onStop?: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -48,12 +51,15 @@ type ToolbarProps = {
   saveDisabled?: boolean;
 
   executionStatus?: WorkflowExecutionStatus;
+  wsStatus?: WsConnectionStatus;
   isStartingExecution?: boolean;
   workflowId?: number | null;
 };
 
 export const Toolbar = memo(function Toolbar({
   onExecute,
+  executeDisabled = false,
+  readOnly = false,
   onStop,
   onUndo,
   onRedo,
@@ -70,10 +76,32 @@ export const Toolbar = memo(function Toolbar({
   onAutoLayout,
   saveDisabled = false,
   executionStatus = "idle",
+  wsStatus = "disconnected",
   isStartingExecution = false,
   workflowId,
 }: ToolbarProps) {
   const isExecuting = executionStatus === "running" || isStartingExecution;
+  const isRunDisabled = executeDisabled || readOnly;
+  const liveStatusLabel =
+    isStartingExecution || wsStatus === "connecting" || wsStatus === "disconnected"
+      ? "Starting..."
+      : wsStatus === "reconnecting"
+        ? "Reconnecting..."
+        : wsStatus === "error"
+          ? "Live status unavailable"
+          : "Running...";
+  const liveStatusTitle =
+    wsStatus === "error"
+      ? "Execution started, but live status is unavailable"
+      : wsStatus === "reconnecting"
+        ? "Reconnecting to execution service"
+        : wsStatus === "connected"
+          ? "Running..."
+          : "Connecting to execution service";
+  const liveStatusClassName =
+    wsStatus === "error" || wsStatus === "reconnecting"
+      ? "border-yellow-500/60 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300"
+      : "border-blue-500/60 bg-blue-500/10 text-blue-600 dark:text-blue-400";
   const Btn = ({
     onClick,
     title,
@@ -113,15 +141,15 @@ export const Toolbar = memo(function Toolbar({
       {isExecuting ? (
         <>
           <button
-            title="Running..."
+            title={liveStatusTitle}
             disabled
             className={cn(
               "inline-flex h-8 items-center gap-2 rounded-sm border px-2.5 text-xs",
-              "border-blue-500/60 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+              liveStatusClassName
             )}
           >
             <Loader2 className="h-4 w-4 animate-spin" />
-            {isStartingExecution ? "Starting..." : "Running..."}
+            {liveStatusLabel}
           </button>
           {onStop && (
             <Btn onClick={onStop} title="Stop execution">
@@ -130,7 +158,7 @@ export const Toolbar = memo(function Toolbar({
           )}
         </>
       ) : (
-        <Btn onClick={onExecute} title="Execute workflow">
+        <Btn onClick={onExecute} title="Execute workflow" disabled={isRunDisabled}>
           <Play className="h-4 w-4" /> Run
         </Btn>
       )}
@@ -146,18 +174,18 @@ export const Toolbar = memo(function Toolbar({
       </Btn>
 
       <DropdownMenu>
-        <DropdownMenuTrigger className={btnClass}>
+        <DropdownMenuTrigger className={btnClass} disabled={readOnly}>
           <Download className="h-4 w-4" /> Import{" "}
           <ChevronDown className="h-3 w-3 opacity-60" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={onImportFromClipboard} className="gap-2">
+          <DropdownMenuItem onClick={onImportFromClipboard} className="gap-2" disabled={readOnly}>
             <Clipboard className="h-4 w-4" /> From Clipboard
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onImportFromFile} className="gap-2">
+          <DropdownMenuItem onClick={onImportFromFile} className="gap-2" disabled={readOnly}>
             <FileJson className="h-4 w-4" /> From File (JSON)
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onImportFromTemplate} className="gap-2">
+          <DropdownMenuItem onClick={onImportFromTemplate} className="gap-2" disabled={readOnly}>
             <FileBox className="h-4 w-4" /> From Templates
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -187,7 +215,7 @@ export const Toolbar = memo(function Toolbar({
         </Btn>
       )}
       {onAutoLayout && (
-        <Btn onClick={onAutoLayout} title="Auto Layout">
+        <Btn onClick={onAutoLayout} title="Auto Layout" disabled={readOnly}>
           <LayoutDashboard className="h-4 w-4" /> Layout
         </Btn>
       )}
