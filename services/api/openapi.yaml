@@ -375,7 +375,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/{workflow_id}/executions:
+  /executions/:
+    get:
+      tags:
+      - Executions
+      summary: List User Executions
+      description: 'List all executions the current user has access to.
+
+
+        Returns executions for all workflows where the user has at least VIEWER access.
+
+        Admins can see all executions.'
+      operationId: list_user_executions_executions__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_list_ExecutionListItem__'
+      security:
+      - OAuth2PasswordBearer: []
+  /executions/workflows/{workflow_id}:
     get:
       tags:
       - Executions
@@ -389,7 +410,7 @@ paths:
 
 
         **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)'
-      operationId: get_workflow_executions_workflows__workflow_id__executions_get
+      operationId: get_workflow_executions_executions_workflows__workflow_id__get
       security:
       - OAuth2PasswordBearer: []
       parameters:
@@ -412,7 +433,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/{workflow_id}/executions/{execution_id}:
+  /executions/workflows/{workflow_id}/{execution_id}:
     get:
       tags:
       - Executions
@@ -426,7 +447,7 @@ paths:
 
 
         **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)'
-      operationId: get_execution_workflows__workflow_id__executions__execution_id__get
+      operationId: get_execution_executions_workflows__workflow_id___execution_id__get
       security:
       - OAuth2PasswordBearer: []
       parameters:
@@ -2229,6 +2250,28 @@ components:
       required:
       - data
       title: ApiResponse[list[CredentialShareInfo]]
+    ApiResponse_list_ExecutionListItem__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/ExecutionListItem'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[list[ExecutionListItem]]
     ApiResponse_list_UserBasicInfo__:
       properties:
         success:
@@ -2520,6 +2563,56 @@ components:
       type: object
       title: CredentialUpdate
       description: Schema for updating a credential.
+    ExecutionListItem:
+      properties:
+        id:
+          type: string
+          title: Id
+        workflow_id:
+          type: integer
+          title: Workflow Id
+        workflow_name:
+          type: string
+          title: Workflow Name
+        status:
+          $ref: '#/components/schemas/ExecutionStatus'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Completed At
+        total_duration_ms:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total Duration Ms
+        failure_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Failure Reason
+      type: object
+      required:
+      - id
+      - workflow_id
+      - workflow_name
+      - status
+      - created_at
+      title: ExecutionListItem
+    ExecutionStatus:
+      type: string
+      enum:
+      - pending
+      - completed
+      - failed
+      - halted
+      title: ExecutionStatus
+      description: Execution status enumeration.
     FirstAdminSignupRequest:
       properties:
         name:

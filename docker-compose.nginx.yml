@@ -159,6 +159,33 @@ services:
       - backend_nginx_network
     restart: unless-stopped
 
+  archivist:
+    build:
+      context: ./services/archivist
+      dockerfile: Dockerfile
+    container_name: rune-archivist
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-rune}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rune_db}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-rune}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rune_password}
+      RABBITMQ_PREFETCH: ${RABBITMQ_PREFETCH:-10}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend_nginx_network
+    restart: unless-stopped
+
   frontend:
     build:
       context: ./apps/web
