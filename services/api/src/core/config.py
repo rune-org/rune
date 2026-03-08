@@ -80,6 +80,8 @@ class Settings(BaseSettings):
     saml_frontend_url: str = "https://localhost"
     # How long (seconds) to remember a processed SAML assertion ID (replay protection).
     saml_assertion_id_ttl: int = 300
+    # Time-to-live (seconds) for one-time SSO exchange codes stored in Redis.
+    sso_code_ttl: int = 30
 
     @computed_field
     @property

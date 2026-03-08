@@ -28,9 +28,6 @@ from src.db.models import SAMLConfiguration
 
 router = APIRouter(prefix="/auth/saml", tags=["SAML SSO"])
 
-# One-time SSO code TTL in seconds — short enough to be single-use only.
-_SSO_CODE_TTL = 30
-
 
 # ---------------------------------------------------------------------------
 # Dependency factories
@@ -296,7 +293,7 @@ async def assertion_consumer_service(
     code = secrets.token_urlsafe(32)
     await redis.setex(
         f"saml:code:{code}",
-        _SSO_CODE_TTL,
+            settings.sso_code_ttl,
         json.dumps(
             {
                 "access_token": token_response.access_token,
@@ -359,7 +356,7 @@ async def single_logout(
     description=(
         "Exchange the short-lived, one-time code that the SAML ACS callback "
         "embeds in the redirect URL for real auth tokens.  The code is deleted "
-        "atomically on first use and expires after 30 seconds, so it cannot be "
+        "atomically on first use and expires after a short TTL (configurable via env), so it cannot be "
         "replayed even if the URL leaks into browser history or server logs.\n\n"
         "Returns the refresh token in the JSON body and sets the access token "
         "as an HttpOnly cookie."
