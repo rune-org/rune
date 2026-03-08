@@ -65,9 +65,7 @@ async def get_workflow_executions(
     return ApiResponse(success=True, message="Execution access granted", data=None)
 
 
-@router.get(
-    "/workflows/{workflow_id}/{execution_id}", response_model=ApiResponse[None]
-)
+@router.get("/workflows/{workflow_id}/{execution_id}", response_model=ApiResponse[None])
 @require_workflow_permission("view")
 async def get_execution(
     execution_id: str,

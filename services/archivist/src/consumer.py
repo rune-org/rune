@@ -37,7 +37,9 @@ async def handle_message(message: IncomingMessage, engine: AsyncEngine) -> None:
         await message.nack(requeue=True)
 
 
-async def start_consumer(rabbitmq_url: str, engine: AsyncEngine, settings: Settings) -> aio_pika.Connection:
+async def start_consumer(
+    rabbitmq_url: str, engine: AsyncEngine, settings: Settings
+) -> aio_pika.Connection:
     connection = await aio_pika.connect_robust(rabbitmq_url)
     channel = await connection.channel()
     await channel.set_qos(prefetch_count=settings.rabbitmq_prefetch)
