@@ -1,7 +1,7 @@
 import json
 import secrets
 from typing import Optional
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 
 from fastapi import APIRouter, Depends, Form, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -303,8 +303,11 @@ async def assertion_consumer_service(
         ),
     )
 
+    # Encode the redirect path when embedding it as a query value so
+    # characters like '?' and '&' don't break the surrounding query string.
+    encoded_redirect = quote(post_login_redirect, safe="/")
     return RedirectResponse(
-        url=f"{frontend_url}/saml-callback?code={code}&redirect={post_login_redirect}",
+        url=f"{frontend_url}/saml-callback?code={code}&redirect={encoded_redirect}",
         status_code=302,
     )
 
