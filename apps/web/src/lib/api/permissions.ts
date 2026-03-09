@@ -106,7 +106,7 @@ export async function listWorkflowPermissions(
       path: { workflow_id: parseInt(workflowId) },
     });
 
-    return ((response as Record<string, unknown>)?.data as Record<string, unknown>)?.permissions as WorkflowPermission[] || [];
+    return response.data?.data.permissions ?? [];
   } catch (error: unknown) {
     const err = error as Record<string, unknown> | undefined;
     const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to fetch permissions";
