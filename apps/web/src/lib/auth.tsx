@@ -16,13 +16,12 @@ import {
   refreshAccessToken as apiRefresh,
   getMyProfile as apiGetMyProfile,
   firstAdminSignup,
-  type MyProfileResponse,
 } from "@/lib/api/auth";
 import { toast } from "@/components/ui/toast";
 import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
-import type { TokenResponse } from "@/client/types.gen";
+import type { TokenResponse, UserResponse } from "@/client/types.gen";
 
-type AuthUser = MyProfileResponse extends { data: infer D } ? D : unknown;
+type AuthUser = UserResponse;
 
 type AuthState = {
   user: AuthUser | null;
@@ -110,8 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async () => {
     try {
       const response = await apiGetMyProfile();
-      if (response) {
-        setUser((response as unknown as { data: AuthUser }).data);
+      const profile = response.data?.data;
+      if (profile) {
+        setUser(profile);
         return true;
       }
       return false;
@@ -125,9 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) return;
     try {
       const response = await apiRefresh(token);
-      if (response) {
+      const payload = response.data?.data;
+      if (payload) {
         // Update stored refresh token in case backend rotates (it currently does not)
-        const payload = (response as unknown as { data: TokenResponse }).data;
         storeRefreshToken(payload.refresh_token ?? token);
         const expMs = Date.now() + payload.expires_in * 1000;
         storeAccessExp(expMs);
@@ -193,14 +193,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       try {
         const response = await apiLogin(email, password);
-        if (!response) {
+        const payload = response.data?.data;
+        if (!payload) {
           toast.error("Login failed");
           setError("Login failed");
           setLoading(false);
           return false;
         }
         // Save refresh token
-        const payload = (response as unknown as { data: TokenResponse }).data;
         storeRefreshToken(payload.refresh_token);
         const expMs = Date.now() + payload.expires_in * 1000;
         storeAccessExp(expMs);
