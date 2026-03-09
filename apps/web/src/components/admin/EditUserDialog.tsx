@@ -53,7 +53,7 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
     }
   };
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleBackdropClick = (_e: React.MouseEvent<HTMLDivElement>) => {
     // Prevent closing during submission
     if (isSubmitting) return;
     onClose();

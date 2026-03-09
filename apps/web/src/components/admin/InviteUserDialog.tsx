@@ -55,7 +55,7 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
     onClose();
   };
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleBackdropClick = (_e: React.MouseEvent<HTMLDivElement>) => {
     // Prevent closing during submission
     if (isSubmitting) return;
     handleClose();

@@ -17,7 +17,7 @@ const AlertDialogTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
 >(({ children, asChild, ...props }, ref) => {
-  const [open, setOpen] = React.useState(false);
+  const [_open, _setOpen] = React.useState(false);
 
   // We need to use context to communicate with the parent AlertDialog
   // For now, use a simpler approach - wrap in provider
