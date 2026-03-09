@@ -6,18 +6,12 @@ type ToastType = "success" | "error" | "warning" | "info";
 
 const createToastVariant = (type: ToastType) => sonnerToast[type];
 
-export const toast = Object.assign(
-  (message: string | React.ReactNode, options?: Record<string, unknown>) => {
-    return sonnerToast(message, options);
-  },
-  sonnerToast,
-  {
-    success: createToastVariant("success"),
-    error: createToastVariant("error"),
-    warning: createToastVariant("warning"),
-    info: createToastVariant("info"),
-  }
-);
+export const toast = Object.assign(sonnerToast, {
+  success: createToastVariant("success"),
+  error: createToastVariant("error"),
+  warning: createToastVariant("warning"),
+  info: createToastVariant("info"),
+});
 
 export function Toaster() {
   return (
