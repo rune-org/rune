@@ -76,3 +76,5 @@ nginx/ssl/
 
 # Cursor
 .cursor/
+
+.claude

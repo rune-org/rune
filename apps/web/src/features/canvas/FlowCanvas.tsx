@@ -133,6 +133,8 @@ function FlowCanvasInner({
 
   const {
     executionState,
+    wsStatus,
+    wsReconnectAttempts,
     isStarting: isStartingExecution,
     startExecution,
     stopExecution,
@@ -449,6 +451,9 @@ function FlowCanvasInner({
         onInit={onInit}
         onPaneClick={onPaneClick}
         readOnly={isViewingSnapshot}
+        wsStatus={wsStatus}
+        wsReconnectAttempts={wsReconnectAttempts}
+        onDismissRunning={stopExecution}
       />
 
       <div className="pointer-events-none absolute left-4 top-4 z-35">
@@ -473,6 +478,7 @@ function FlowCanvasInner({
             onAutoLayout={autoLayout}
             saveDisabled={saveDisabled || isViewingSnapshot}
             executionStatus={executionState.status}
+            wsStatus={wsStatus}
             isStartingExecution={isStartingExecution}
             workflowId={workflowId}
           />
