@@ -32,6 +32,7 @@ import { WaitInspector } from "./inspectors/WaitInspector";
 import { EditInspector } from "./inspectors/EditInspector";
 import { SplitInspector } from "./inspectors/SplitInspector";
 import { MergeInspector } from "./inspectors/MergeInspector";
+import { ScheduledInspector } from "./inspectors/ScheduledInspector";
 import { toast } from "@/components/ui/toast";
 import { Activity } from "lucide-react";
 
@@ -72,6 +73,8 @@ function renderInspectorForm(
       return <SplitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "merge":
       return <MergeInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "scheduled":
+      return <ScheduledInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     default:
       return null;
   }

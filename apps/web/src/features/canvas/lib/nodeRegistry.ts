@@ -67,6 +67,22 @@ export const NODE_REGISTRY: NodeRegistry = {
     hasDynamicOutputs: false,
     shortcutKey: "t",
   },
+  scheduled: {
+    kind: "scheduled",
+    label: "Scheduled Trigger",
+    icon: Clock,
+    colorTheme: {
+      base: "--node-trigger",
+      bg: "--node-trigger-bg",
+      border: "--node-trigger-border",
+    },
+    dimensions: { width: 160, height: 48 },
+    defaults: { label: "Scheduled", interval_seconds: 60 },
+    schema: { inputs: [], outputs: ["trigger"] },
+    group: "triggers",
+    isTrigger: true,
+    hasDynamicOutputs: false,
+  },
   agent: {
     kind: "agent",
     label: "Agent",

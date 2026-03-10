@@ -69,6 +69,12 @@ export type NodeDataMap = {
     wait_mode?: "wait_for_all" | "wait_for_any";
     timeout?: number;
   };
+
+  scheduled: BaseData & {
+    start_at?: string;
+    interval_seconds?: number;
+    is_active?: boolean;
+  };
 };
 
 /** A union type of all possible node kinds. */
@@ -89,6 +95,7 @@ export type EditData = NodeDataMap["edit"];
 export type SplitData = NodeDataMap["split"];
 export type AggregatorData = NodeDataMap["aggregator"];
 export type MergeData = NodeDataMap["merge"];
+export type ScheduledData = NodeDataMap["scheduled"];
 
 export type CanvasEdge = Edge;
 
