@@ -1,5 +1,5 @@
 import copy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import selectinload
 from sqlmodel import delete, select
@@ -148,15 +148,21 @@ class WorkflowService:
             if schedule_config:
                 if existing_schedule:
                     old_interval = existing_schedule.interval_seconds
+                    old_start_at = existing_schedule.start_at
+                    new_start_at = schedule_config.get("start_at", old_start_at)
                     existing_schedule.interval_seconds = schedule_config[
                         "interval_seconds"
                     ]
+                    existing_schedule.start_at = new_start_at
                     existing_schedule.is_active = schedule_config.get("is_active", True)
-                    if old_interval != existing_schedule.interval_seconds:
+                    if (
+                        old_interval != existing_schedule.interval_seconds
+                        or old_start_at != new_start_at
+                    ):
                         existing_schedule.next_run_at = self._calculate_next_run(
                             datetime.now(),
                             existing_schedule.interval_seconds,
-                            existing_schedule.start_at,
+                            new_start_at,
                         )
                     self.db.add(existing_schedule)
                 else:
@@ -198,6 +204,11 @@ class WorkflowService:
             raise NotFound(detail="No schedule found for this workflow")
 
         schedule.is_active = not schedule.is_active
+        workflow.workflow_data = self._update_schedule_node(
+            workflow.workflow_data,
+            is_active=schedule.is_active,
+        )
+        self.db.add(workflow)
         self.db.add(schedule)
         await self.db.commit()
         await self.db.refresh(schedule)
@@ -285,10 +296,24 @@ class WorkflowService:
         """Normalize a datetime value to naive UTC."""
         if isinstance(value, str):
             parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-            return parsed.replace(tzinfo=None)
+            if parsed.tzinfo is not None:
+                return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+            return parsed
         if isinstance(value, datetime) and value.tzinfo is not None:
-            return value.replace(tzinfo=None)
+            return value.astimezone(timezone.utc).replace(tzinfo=None)
         return value
+
+    def _update_schedule_node(self, workflow_data: dict, **parameters: object) -> dict:
+        """Return workflow data with the schedule node parameters updated."""
+        updated_workflow_data = copy.deepcopy(workflow_data)
+
+        for node in updated_workflow_data.get("nodes", []):
+            if node.get("type") == "ScheduleTrigger" and node.get("trigger") is True:
+                node_parameters = node.setdefault("parameters", {})
+                node_parameters.update(parameters)
+                break
+
+        return updated_workflow_data
 
     def _calculate_next_run(
         self,

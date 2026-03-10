@@ -1,9 +1,11 @@
 """Database persistence and transaction tests for workflows."""
 
+from datetime import datetime
+
 import pytest
 from sqlmodel import select
 
-from src.db.models import Workflow, WorkflowUser
+from src.db.models import ScheduledWorkflow, Workflow, WorkflowUser
 
 
 class TestDatabasePersistence:
@@ -84,6 +86,132 @@ class TestDatabasePersistence:
         names = [w.name for w in all_workflows]
         assert "WF1" in names
         assert "WF2" in names
+
+    @pytest.mark.asyncio
+    async def test_update_workflow_data_updates_scheduled_start_at(
+        self, workflow_service, test_user, test_db
+    ):
+        """Should persist edited schedule start times and recompute next run."""
+        workflow_data = {
+            "nodes": [
+                {
+                    "id": "schedule-1",
+                    "type": "ScheduleTrigger",
+                    "trigger": True,
+                    "parameters": {
+                        "interval_seconds": 300,
+                        "start_at": "2026-03-10T10:00:00Z",
+                        "is_active": True,
+                    },
+                }
+            ],
+            "edges": [],
+        }
+        wf = await workflow_service.create(
+            user_id=test_user.id,
+            name="Scheduled Workflow",
+            description="",
+            workflow_data=workflow_data,
+        )
+
+        updated_workflow_data = {
+            "nodes": [
+                {
+                    "id": "schedule-1",
+                    "type": "ScheduleTrigger",
+                    "trigger": True,
+                    "parameters": {
+                        "interval_seconds": 300,
+                        "start_at": "2099-03-10T12:00:00Z",
+                        "is_active": True,
+                    },
+                }
+            ],
+            "edges": [],
+        }
+
+        await workflow_service.update_workflow_data(wf, updated_workflow_data)
+
+        result = await test_db.exec(
+            select(ScheduledWorkflow).where(ScheduledWorkflow.workflow_id == wf.id)
+        )
+        persisted = result.first()
+
+        assert persisted is not None
+        assert persisted.start_at == datetime(2099, 3, 10, 12, 0)
+        assert persisted.next_run_at == datetime(2099, 3, 10, 12, 0)
+
+    @pytest.mark.asyncio
+    async def test_toggle_schedule_updates_workflow_data(
+        self, workflow_service, test_user, test_db
+    ):
+        """Should keep workflow_data in sync with schedule toggles."""
+        workflow_data = {
+            "nodes": [
+                {
+                    "id": "schedule-1",
+                    "type": "ScheduleTrigger",
+                    "trigger": True,
+                    "parameters": {
+                        "interval_seconds": 300,
+                        "start_at": "2026-03-10T10:00:00Z",
+                        "is_active": True,
+                    },
+                }
+            ],
+            "edges": [],
+        }
+        wf = await workflow_service.create(
+            user_id=test_user.id,
+            name="Scheduled Workflow",
+            description="",
+            workflow_data=workflow_data,
+        )
+
+        is_active = await workflow_service.toggle_schedule(wf)
+
+        result = await test_db.exec(select(Workflow).where(Workflow.id == wf.id))
+        persisted = result.first()
+
+        assert is_active is False
+        assert persisted is not None
+        assert persisted.workflow_data["nodes"][0]["parameters"]["is_active"] is False
+
+    @pytest.mark.asyncio
+    async def test_create_scheduled_workflow_normalizes_offset_start_at(
+        self, workflow_service, test_user, test_db
+    ):
+        """Should convert offset-aware datetimes to naive UTC before persisting."""
+        workflow_data = {
+            "nodes": [
+                {
+                    "id": "schedule-1",
+                    "type": "ScheduleTrigger",
+                    "trigger": True,
+                    "parameters": {
+                        "interval_seconds": 300,
+                        "start_at": "2026-03-10T10:00:00+02:00",
+                        "is_active": True,
+                    },
+                }
+            ],
+            "edges": [],
+        }
+
+        wf = await workflow_service.create(
+            user_id=test_user.id,
+            name="Scheduled Workflow",
+            description="",
+            workflow_data=workflow_data,
+        )
+
+        result = await test_db.exec(
+            select(ScheduledWorkflow).where(ScheduledWorkflow.workflow_id == wf.id)
+        )
+        persisted = result.first()
+
+        assert persisted is not None
+        assert persisted.start_at == datetime(2026, 3, 10, 8, 0)
 
 
 class TestWorkflowPermissions:
