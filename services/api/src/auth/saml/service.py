@@ -2,32 +2,19 @@ import base64
 import hashlib
 import hmac
 import json
-from dataclasses import dataclass, field
 from typing import Optional
 from urllib.parse import urlparse
 
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.settings import OneLogin_Saml2_Settings
 from redis.asyncio import Redis
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.auth.saml.keys import SAMLKeyManager
+from src.auth.saml.schemas import SAMLAttributes
 from src.core.config import get_settings
 from src.db.models import SAMLConfiguration
-
-
-# ---------------------------------------------------------------------------
-# Data container for attributes extracted from a SAML assertion
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class SAMLAttributes:
-    """Normalised user attributes extracted from a validated SAML assertion."""
-
-    name_id: str  # SAML Subject NameID – the IdP's opaque user identifier
-    email: str
-    name: str
-    session_index: Optional[str] = field(default=None)
 
 
 # ---------------------------------------------------------------------------
@@ -89,8 +76,16 @@ class SAMLService:
 
         Using a dedicated sub-key avoids mixing contexts, but keeps the
         secret count down to one master secret in .env.
+
+        Raises RuntimeError if jwt_secret_key is not configured, as an empty
+        or None key would silently disable relay state integrity protection.
         """
-        secret = (self._settings.jwt_secret_key or "").encode()
+        if not self._settings.jwt_secret_key:
+            raise RuntimeError(
+                "jwt_secret_key must be set in environment config — "
+                "SAML relay state signing requires a non-empty secret."
+            )
+        secret = self._settings.jwt_secret_key.encode()
         return hashlib.sha256(b"saml-relay-state:" + secret).digest()
 
     def _sign_relay_state(self, payload: dict) -> str:
@@ -188,6 +183,9 @@ class SAMLService:
                 "signMetadata": True,
                 "wantAttributeStatement": False,
                 "requestedAuthnContext": False,
+                # Sign outgoing SLO messages so the IdP can verify them.
+                "logoutRequestSigned": True,
+                "logoutResponseSigned": True,
             },
         }
 
@@ -346,3 +344,128 @@ class SAMLService:
         ``.get("redirect")`` without error-handling.
         """
         return self._verify_relay_state(token)
+
+    # ------------------------------------------------------------------
+    # Database helpers — kept here so routers stay thin
+    # ------------------------------------------------------------------
+
+    async def get_active_config(
+        self, db: AsyncSession
+    ) -> Optional[SAMLConfiguration]:
+        """Return the single active SAMLConfiguration, or None."""
+        result = await db.exec(
+            select(SAMLConfiguration).where(
+                SAMLConfiguration.is_active == True  # noqa: E712
+            )
+        )
+        return result.first()
+
+    async def get_any_config(
+        self, db: AsyncSession
+    ) -> Optional[SAMLConfiguration]:
+        """Return any SAMLConfiguration (active or not) — used for existence checks."""
+        result = await db.exec(select(SAMLConfiguration))
+        return result.first()
+
+    # ------------------------------------------------------------------
+    # SAML session store — maps NameID to user so SLO can revoke tokens
+    # ------------------------------------------------------------------
+
+    async def store_saml_session(
+        self,
+        name_id: str,
+        session_index: Optional[str],
+        user_id: int,
+    ) -> None:
+        """Persist a NameID → user_id mapping in Redis for SLO revocation.
+
+        The key is a SHA-256 hash of the NameID to avoid storing raw IdP
+        identifiers in Redis.  TTL matches the refresh token lifetime.
+        """
+        hashed = hashlib.sha256(name_id.encode()).hexdigest()
+        ttl = self._settings.refresh_token_expire_days * 24 * 3600
+        value = json.dumps({"user_id": user_id, "session_index": session_index})
+        await self._redis.setex(f"saml:session:{hashed}", ttl, value)
+
+    async def get_user_id_for_slo(self, name_id: str) -> Optional[int]:
+        """Return the user_id stored for *name_id*, or None if not found."""
+        hashed = hashlib.sha256(name_id.encode()).hexdigest()
+        raw = await self._redis.get(f"saml:session:{hashed}")
+        if not raw:
+            return None
+        try:
+            return int(json.loads(raw)["user_id"])
+        except (KeyError, ValueError, TypeError):
+            return None
+
+    async def delete_saml_session(self, name_id: str) -> None:
+        """Remove the stored NameID session entry after a successful SLO."""
+        hashed = hashlib.sha256(name_id.encode()).hexdigest()
+        await self._redis.delete(f"saml:session:{hashed}")
+
+    # ------------------------------------------------------------------
+    # SLO — validate IdP-initiated LogoutRequest
+    # ------------------------------------------------------------------
+
+    async def process_slo_request(
+        self,
+        config: SAMLConfiguration,
+        request_host: str,
+        is_https: bool,
+        get_data: dict,
+    ) -> tuple[str, Optional[int]]:
+        """Validate an IdP-initiated SLO LogoutRequest (HTTP-Redirect binding).
+
+        Verifies the IdP's signature before doing anything else.  A missing or
+        invalid signature raises ``ValueError`` so the router can return 400
+        without touching the user's session.
+
+        Returns:
+            (redirect_url, user_id) where *redirect_url* is the IdP SLO URL
+            with the signed LogoutResponse appended, and *user_id* is the
+            affected user (None if the session mapping has expired).
+
+        Raises:
+            ValueError: On any validation failure (missing signature, bad MAC,
+                        invalid request structure, etc.).
+        """
+        if not get_data.get("Signature"):
+            raise ValueError(
+                "SLO LogoutRequest must be signed — missing Signature parameter."
+            )
+
+        parsed = urlparse(
+            request_host if "://" in request_host else f"http://{request_host}"
+        )
+        is_https_flag = is_https
+        request_data = self._make_request_data(
+            http_host=request_host,
+            is_https=is_https_flag,
+            path="/auth/saml/slo",
+            get_data=get_data,
+        )
+
+        settings_dict = self._build_settings_dict(config)
+        auth = OneLogin_Saml2_Auth(request_data, settings_dict)
+
+        # keep_local_session=True — we manage the session ourselves (cookie +
+        # Redis).  The router is responsible for clearing those after this call.
+        redirect_url: Optional[str] = auth.process_slo(keep_local_session=True)
+
+        errors = auth.get_errors()
+        if errors:
+            raise ValueError(
+                f"SLO LogoutRequest validation failed: {'; '.join(errors)}"
+            )
+
+        # Extract NameID so we can revoke the user's tokens.
+        name_id: Optional[str] = auth.get_nameid()
+        user_id: Optional[int] = None
+        if name_id:
+            user_id = await self.get_user_id_for_slo(name_id)
+            await self.delete_saml_session(name_id)
+
+        # Fallback redirect if python3-saml didn't produce one (shouldn't
+        # happen in normal IdP-initiated SLO, but be defensive).
+        fallback = config.idp_slo_url or config.idp_sso_url
+        return redirect_url or fallback, user_id

@@ -1,46 +1,10 @@
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
-from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, field_validator
 
-
-# ---------------------------------------------------------------------------
-# Shared validators
-# ---------------------------------------------------------------------------
-
-
-def _validate_idp_url(v: Optional[str], field_label: str) -> Optional[str]:
-    """Ensure a URL is absolute (http/https) and within a sane length."""
-    if v is None:
-        return v
-    v = v.strip()
-    if len(v) > 2048:
-        raise ValueError(f"{field_label} must not exceed 2 048 characters")
-    parsed = urlparse(v)
-    if parsed.scheme not in {"http", "https"}:
-        raise ValueError(f"{field_label} must start with http:// or https://")
-    if not parsed.netloc:
-        raise ValueError(f"{field_label} is not a valid URL (missing host)")
-    return v
-
-
-def _validate_pem_certificate(v: str) -> str:
-    """Ensure the value looks like a PEM-encoded X.509 certificate."""
-    v = v.strip()
-    if not v.startswith("-----BEGIN CERTIFICATE-----"):
-        raise ValueError(
-            "idp_certificate must be a PEM-encoded X.509 certificate "
-            "starting with '-----BEGIN CERTIFICATE-----'"
-        )
-    if "-----END CERTIFICATE-----" not in v:
-        raise ValueError(
-            "idp_certificate is missing '-----END CERTIFICATE-----' footer"
-        )
-    # Rough size guard — a DER-encoded 4096-bit cert is ~2 KB; PEM is ~2.7 KB.
-    if len(v) > 8192:
-        raise ValueError("idp_certificate is unexpectedly large (> 8 KiB)")
-    return v
+from src.auth.saml.validators import validate_idp_url, validate_pem_certificate
 
 
 # ---------------------------------------------------------------------------
@@ -84,17 +48,17 @@ class SAMLConfigCreate(BaseModel):
     @field_validator("idp_sso_url")
     @classmethod
     def validate_sso_url(cls, v: str) -> str:
-        return _validate_idp_url(v, "idp_sso_url")  # type: ignore[return-value]
+        return validate_idp_url(v, "idp_sso_url")  # type: ignore[return-value]
 
     @field_validator("idp_slo_url")
     @classmethod
     def validate_slo_url(cls, v: Optional[str]) -> Optional[str]:
-        return _validate_idp_url(v, "idp_slo_url")
+        return validate_idp_url(v, "idp_slo_url")
 
     @field_validator("idp_certificate")
     @classmethod
     def validate_certificate(cls, v: str) -> str:
-        return _validate_pem_certificate(v)
+        return validate_pem_certificate(v)
 
     @field_validator("domain_hint")
     @classmethod
@@ -124,19 +88,19 @@ class SAMLConfigUpdate(BaseModel):
     @field_validator("idp_sso_url")
     @classmethod
     def validate_sso_url(cls, v: Optional[str]) -> Optional[str]:
-        return _validate_idp_url(v, "idp_sso_url")
+        return validate_idp_url(v, "idp_sso_url")
 
     @field_validator("idp_slo_url")
     @classmethod
     def validate_slo_url(cls, v: Optional[str]) -> Optional[str]:
-        return _validate_idp_url(v, "idp_slo_url")
+        return validate_idp_url(v, "idp_slo_url")
 
     @field_validator("idp_certificate")
     @classmethod
     def validate_certificate(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
-        return _validate_pem_certificate(v)
+        return validate_pem_certificate(v)
 
     @field_validator("domain_hint")
     @classmethod
@@ -236,3 +200,18 @@ class SAMLDiscoverResponse(BaseModel):
         default=None,
         description="SSO initiation URL to redirect the user to, if found",
     )
+
+
+# ---------------------------------------------------------------------------
+# SAML assertion attributes (data container, not a wire-format schema)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class SAMLAttributes:
+    """Normalised user attributes extracted from a validated SAML assertion."""
+
+    name_id: str  # SAML Subject NameID – the IdP's opaque user identifier
+    email: str
+    name: str
+    session_index: Optional[str] = field(default=None)

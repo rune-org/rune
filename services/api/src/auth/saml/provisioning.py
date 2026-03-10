@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.auth.saml.service import SAMLAttributes
+from src.auth.saml.schemas import SAMLAttributes
 from src.db.models import AuthProvider, SAMLConfiguration, User, UserRole
 
 
