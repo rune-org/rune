@@ -2,14 +2,10 @@
  * Types for the Executions page.
  */
 
+import type { ExecutionStatus } from "@/client/types.gen";
 import type { NodeExecutionData } from "../canvas/types/execution";
 
-export type ExecutionListStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed"
-  | "halted";
+export type ExecutionListStatus = ExecutionStatus;
 
 /**
  * Execution list item for display in the table.

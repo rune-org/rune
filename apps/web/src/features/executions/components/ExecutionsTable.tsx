@@ -35,11 +35,6 @@ function StatusBadge({ status }: { status: ExecutionListStatus }) {
       label: "Pending",
       className: "bg-muted text-muted-foreground",
     },
-    running: {
-      icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />,
-      label: "Running",
-      className: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    },
     completed: {
       icon: <CheckCircle className="h-3.5 w-3.5" />,
       label: "Success",
