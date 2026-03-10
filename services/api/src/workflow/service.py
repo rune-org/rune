@@ -1,4 +1,5 @@
 import copy
+import uuid
 
 from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -7,6 +8,7 @@ from src.core.exceptions import Forbidden, NotFound
 from src.credentials.encryption import get_encryptor
 from src.db.models import (
     Execution,
+    ExecutionStatus,
     Workflow,
     WorkflowCredential,
     WorkflowRole,
@@ -150,6 +152,129 @@ class WorkflowService:
 
         await self.db.delete(workflow)
         await self.db.commit()
+
+    # ------------------------------------------------------------------
+    # Bulk helpers
+    # ------------------------------------------------------------------
+
+    async def bulk_fetch_with_roles(
+        self, user_id: int, workflow_ids: list[int]
+    ) -> dict[int, tuple[Workflow, WorkflowRole | None]]:
+        """Fetch multiple workflows and the requesting user's role on each.
+
+        Uses two efficient bulk queries instead of N individual lookups.
+        Keys are only present for workflow IDs that actually exist in the
+        database.  The role value is ``None`` when the user has no
+        ``WorkflowUser`` entry (i.e. no access at all).
+        """
+        wf_stmt = select(Workflow).where(Workflow.id.in_(workflow_ids))
+        wf_result = await self.db.exec(wf_stmt)
+        workflows: dict[int, Workflow] = {wf.id: wf for wf in wf_result.all()}
+
+        if not workflows:
+            return {}
+
+        role_stmt = select(WorkflowUser.workflow_id, WorkflowUser.role).where(
+            WorkflowUser.user_id == user_id,
+            WorkflowUser.workflow_id.in_(list(workflows.keys())),
+        )
+        role_result = await self.db.exec(role_stmt)
+        roles: dict[int, WorkflowRole] = {
+            wf_id: role for wf_id, role in role_result.all()
+        }
+
+        return {wf_id: (wf, roles.get(wf_id)) for wf_id, wf in workflows.items()}
+
+    async def bulk_delete_many(self, workflows: list[Workflow]) -> None:
+        """Delete multiple workflows in a single database transaction."""
+        if not workflows:
+            return
+
+        workflow_ids = [wf.id for wf in workflows]
+
+        await self.db.exec(
+            delete(Execution).where(Execution.__table__.c.workflow_id.in_(workflow_ids))
+        )
+        await self.db.exec(
+            delete(WorkflowUser).where(
+                WorkflowUser.__table__.c.workflow_id.in_(workflow_ids)
+            )
+        )
+        for wf in workflows:
+            await self.db.delete(wf)
+
+        await self.db.commit()
+
+    async def bulk_set_status(self, workflows: list[Workflow], is_active: bool) -> None:
+        """Set ``is_active`` on many workflows in one commit."""
+        if not workflows:
+            return
+
+        for wf in workflows:
+            wf.is_active = is_active
+
+        await self.db.commit()
+
+    async def queue_workflow_execution(
+        self,
+        workflow: Workflow,
+        user_id: int,
+        queue_service,
+        token_service,
+    ) -> str:
+        """Queue a workflow for execution and return the execution_id.
+
+        Handles:
+        - Resolving credentials in workflow data
+        - Creating execution record in database
+        - Publishing execution token for real-time updates
+        - Publishing workflow run message to RabbitMQ
+
+        Args:
+            workflow: The workflow to execute
+            user_id: ID of the user triggering execution
+            queue_service: WorkflowQueueService for publishing run messages
+            token_service: ExecutionTokenService for publishing tokens
+
+        Returns:
+            execution_id (UUID string) for tracking
+
+        Raises:
+            ValueError: If workflow structure is invalid (missing trigger, etc.)
+        """
+        # Resolve credentials for all nodes in the workflow
+        resolved_workflow_data = await self.resolve_workflow_credentials(
+            workflow.workflow_data
+        )
+
+        # Generate a unique execution ID
+        execution_id = str(uuid.uuid4())
+
+        # Create execution record
+        execution = Execution(
+            id=execution_id,
+            workflow_id=workflow.id,
+            status=ExecutionStatus.PENDING,
+        )
+        self.db.add(execution)
+        await self.db.commit()
+
+        # Publish execution token for RTES authentication (with specific execution_id)
+        await token_service.publish_execution_token(
+            workflow_id=workflow.id,
+            user_id=user_id,
+            execution_id=execution_id,
+        )
+
+        # Publish workflow run message to queue with resolved credentials
+        # This may raise ValueError if workflow structure is invalid
+        await queue_service.publish_workflow_run(
+            workflow_id=workflow.id,
+            execution_id=execution_id,
+            workflow_data=resolved_workflow_data,
+        )
+
+        return execution_id
 
     async def resolve_workflow_credentials(self, workflow_data: dict) -> dict:
         """

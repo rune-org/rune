@@ -1,22 +1,22 @@
-import uuid
-
 from fastapi import APIRouter, Depends, status
 
 from src.core.config import get_settings
-from src.core.dependencies import (
-    DatabaseDep,
-    get_current_user,
-    require_password_changed,
-)
+from src.core.dependencies import DatabaseDep, require_password_changed
 from src.core.exceptions import BadRequest
 from src.core.responses import ApiResponse
-from src.db.models import Execution, ExecutionStatus, User, Workflow
+from src.db.models import User, Workflow
 from src.executions.service import ExecutionTokenService
 from src.queue.rabbitmq import get_rabbitmq
 from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
+from src.workflow.policy import WorkflowPolicy
 from src.workflow.queue import WorkflowQueueService
 from src.workflow.schemas import (
+    BulkOperationResult,
+    BulkOperationSummary,
+    BulkWorkflowAction,
+    BulkWorkflowFailure,
+    BulkWorkflowRequest,
     WorkflowCreate,
     WorkflowDetail,
     WorkflowListItem,
@@ -59,6 +59,139 @@ async def list_workflows(
         for wf, role in wfs
     ]
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
+
+
+# ---------------------------------------------------------------------------
+# Mapping: bulk action → WorkflowPolicy checker method
+# ---------------------------------------------------------------------------
+
+_BULK_ACTION_POLICY: dict[BulkWorkflowAction, str] = {
+    BulkWorkflowAction.DELETE: "can_delete",
+    BulkWorkflowAction.ACTIVATE: "can_edit",
+    BulkWorkflowAction.DEACTIVATE: "can_edit",
+    BulkWorkflowAction.EXPORT: "can_view",
+    BulkWorkflowAction.RUN: "can_execute",
+}
+
+
+@router.post("/bulk", response_model=ApiResponse[BulkOperationResult])
+async def bulk_workflow_operation(
+    payload: BulkWorkflowRequest,
+    current_user: User = Depends(require_password_changed),
+    service: WorkflowService = Depends(get_workflow_service),
+    queue_service: WorkflowQueueService = Depends(get_queue_service),
+    token_service: ExecutionTokenService = Depends(get_token_service),
+) -> ApiResponse[BulkOperationResult]:
+    """
+    Apply a single action to multiple workflows in one request.
+
+    Each workflow is evaluated individually against the caller's per-workflow
+    role, so a mixed response is expected when the user has different roles
+    across the selected workflows.  The overall HTTP status is always 200;
+    look inside ``failed`` for per-item errors.
+
+    **Actions and minimum required role:**
+
+    | action     | required role          |
+    |------------|------------------------|
+    | delete     | OWNER                  |
+    | activate   | OWNER or EDITOR        |
+    | deactivate | OWNER or EDITOR        |
+    | export     | OWNER, EDITOR, VIEWER  |
+    | run        | OWNER or EDITOR        |
+
+    **Failure reasons:**
+
+    - `not_found`        — the workflow ID does not exist
+    - `forbidden`        — the caller lacks the required role
+    - `invalid_workflow` — workflow structure is invalid for execution (`run` only)
+    """
+    policy_method_name = _BULK_ACTION_POLICY[payload.action]
+
+    # Single bulk DB round-trip: fetch all requested workflows + per-user roles.
+    fetched = await service.bulk_fetch_with_roles(current_user.id, payload.workflow_ids)
+
+    succeeded: list[int] = []
+    failed: list[BulkWorkflowFailure] = []
+    permitted_workflows: list[Workflow] = []
+    executions: dict[
+        int, str
+    ] = {}  # workflow_id -> execution_id (populated only for RUN action)
+
+    for wf_id in payload.workflow_ids:
+        if wf_id not in fetched:
+            failed.append(BulkWorkflowFailure(id=wf_id, reason="not_found"))
+            continue
+
+        wf, role = fetched[wf_id]
+        can_act: bool = getattr(WorkflowPolicy, policy_method_name)(current_user, role)
+        if not can_act:
+            failed.append(BulkWorkflowFailure(id=wf_id, reason="forbidden"))
+            continue
+
+        permitted_workflows.append(wf)
+
+    # ---- Execute the action on all permitted workflows ----
+
+    if payload.action == BulkWorkflowAction.DELETE:
+        await service.bulk_delete_many(permitted_workflows)
+        succeeded = [wf.id for wf in permitted_workflows]
+
+    elif payload.action == BulkWorkflowAction.ACTIVATE:
+        await service.bulk_set_status(permitted_workflows, is_active=True)
+        succeeded = [wf.id for wf in permitted_workflows]
+
+    elif payload.action == BulkWorkflowAction.DEACTIVATE:
+        await service.bulk_set_status(permitted_workflows, is_active=False)
+        succeeded = [wf.id for wf in permitted_workflows]
+
+    elif payload.action == BulkWorkflowAction.EXPORT:
+        succeeded = [wf.id for wf in permitted_workflows]
+        exported_details = [
+            WorkflowDetail.model_validate(wf) for wf in permitted_workflows
+        ]
+        result = BulkOperationResult(
+            action=payload.action.value,
+            succeeded=succeeded,
+            failed=failed,
+            summary=BulkOperationSummary(
+                total=len(payload.workflow_ids),
+                succeeded=len(succeeded),
+                failed=len(failed),
+            ),
+            exported=exported_details,
+        )
+        return ApiResponse(success=True, message="Bulk export completed", data=result)
+
+    elif payload.action == BulkWorkflowAction.RUN:
+        # Handle each workflow individually — each needs its own execution record,
+        # token publish, and queue publish. Any may fail due to invalid structure.
+        for wf in permitted_workflows:
+            try:
+                execution_id = await service.queue_workflow_execution(
+                    workflow=wf,
+                    user_id=current_user.id,
+                    queue_service=queue_service,
+                    token_service=token_service,
+                )
+                succeeded.append(wf.id)
+                executions[wf.id] = execution_id
+            except ValueError:
+                failed.append(BulkWorkflowFailure(id=wf.id, reason="invalid_workflow"))
+
+    summary = BulkOperationSummary(
+        total=len(payload.workflow_ids),
+        succeeded=len(succeeded),
+        failed=len(failed),
+    )
+    result = BulkOperationResult(
+        action=payload.action.value,
+        succeeded=succeeded,
+        failed=failed,
+        summary=summary,
+        executions=executions if payload.action == BulkWorkflowAction.RUN else None,
+    )
+    return ApiResponse(success=True, message="Bulk operation completed", data=result)
 
 
 @router.get("/{workflow_id}", response_model=ApiResponse[WorkflowDetail])
@@ -150,7 +283,6 @@ async def update_workflow_data(
 @require_workflow_permission("delete")
 async def delete_workflow(
     workflow: Workflow = Depends(get_workflow_with_permission),
-    current_user: User = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> None:
     """
@@ -165,7 +297,6 @@ async def delete_workflow(
 @router.post("/{workflow_id}/run", response_model=ApiResponse[str])
 @require_workflow_permission("execute")
 async def run_workflow(
-    db: DatabaseDep,
     workflow: Workflow = Depends(get_workflow_with_permission),
     current_user: User = Depends(require_password_changed),
     workflow_service: WorkflowService = Depends(get_workflow_service),
@@ -184,37 +315,12 @@ async def run_workflow(
 
     **Requires:** EXECUTE permission (OWNER or EDITOR, not VIEWER)
     """
-    # Resolve credentials for all nodes in the workflow
-    resolved_workflow_data = await workflow_service.resolve_workflow_credentials(
-        workflow.workflow_data
-    )
-
-    # Generate a unique execution ID
-    execution_id = str(uuid.uuid4())
-
-    # TODO: this is bad code — database calls do not belong in the router layer.
-    # This should be moved to a service/repository layer and refactored accordingly.
-    execution = Execution(
-        id=execution_id,
-        workflow_id=workflow.id,
-        status=ExecutionStatus.PENDING,
-    )
-    db.add(execution)
-    await db.commit()
-
-    # Publish execution token for RTES authentication (with specific execution_id)
-    await token_service.publish_execution_token(
-        workflow_id=workflow.id,
-        user_id=current_user.id,
-        execution_id=execution_id,
-    )
-
-    # Publish workflow run message to queue with resolved credentials
     try:
-        await queue_service.publish_workflow_run(
-            workflow_id=workflow.id,
-            execution_id=execution_id,
-            workflow_data=resolved_workflow_data,
+        execution_id = await workflow_service.queue_workflow_execution(
+            workflow=workflow,
+            user_id=current_user.id,
+            queue_service=queue_service,
+            token_service=token_service,
         )
     except ValueError as e:
         # Workflow validation errors (e.g., missing trigger, multiple triggers, invalid structure)
