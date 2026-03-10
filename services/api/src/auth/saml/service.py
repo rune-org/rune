@@ -430,9 +430,6 @@ class SAMLService:
                 "SLO LogoutRequest must be signed — missing Signature parameter."
             )
 
-        parsed = urlparse(
-            request_host if "://" in request_host else f"http://{request_host}"
-        )
         is_https_flag = is_https
         request_data = self._make_request_data(
             http_host=request_host,
