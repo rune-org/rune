@@ -24,6 +24,16 @@ function intervalToSeconds(days: number, hours: number, minutes: number, seconds
   return days * 86400 + hours * 3600 + minutes * 60 + seconds;
 }
 
+function toLocalDateTimeInputValue(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return offsetDate.toISOString().slice(0, 16);
+}
+
 export function ScheduledInspector({
   node,
   updateData,
@@ -115,7 +125,7 @@ export function ScheduledInspector({
           className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
           value={
             node.data.start_at
-              ? new Date(node.data.start_at).toISOString().slice(0, 16)
+              ? toLocalDateTimeInputValue(node.data.start_at)
               : ""
           }
           onInput={(e) => handleStartTimeChange(e.currentTarget.value)}

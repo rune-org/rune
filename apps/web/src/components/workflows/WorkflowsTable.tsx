@@ -56,6 +56,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
+  canChangeWorkflowStatus,
   canExecuteWorkflow,
   canDeleteWorkflow,
   canShareWorkflow,
@@ -434,18 +435,30 @@ export function WorkflowsTable() {
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {w.triggerType === "scheduled" ? (
-                  <button
-                    type="button"
-                    onClick={() => handleToggleSchedule(w)}
-                    disabled={isRowPending(w.id)}
-                    className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
-                      w.scheduleActive
-                        ? "bg-green-900/30 text-green-300 hover:bg-green-900/50"
-                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-                    }`}
-                  >
-                    {w.scheduleActive ? "Active" : "Paused"}
-                  </button>
+                  canChangeWorkflowStatus(w.role, isAdmin) ? (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSchedule(w)}
+                      disabled={isRowPending(w.id)}
+                      className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                        w.scheduleActive
+                          ? "bg-green-900/30 text-green-300 hover:bg-green-900/50"
+                          : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                      }`}
+                    >
+                      {w.scheduleActive ? "Active" : "Paused"}
+                    </button>
+                  ) : (
+                    <span
+                      className={`rounded px-2 py-0.5 text-xs font-medium ${
+                        w.scheduleActive
+                          ? "bg-green-900/30 text-green-300"
+                          : "bg-zinc-800 text-zinc-400"
+                      }`}
+                    >
+                      {w.scheduleActive ? "Active" : "Paused"}
+                    </span>
+                  )
                 ) : (
                   "\u2014"
                 )}
@@ -548,7 +561,7 @@ export function WorkflowsTable() {
                         </DropdownMenuItem>
                       )}
                       {w.triggerType === "scheduled" &&
-                        canExecuteWorkflow(w.role, isAdmin) && (
+                        canChangeWorkflowStatus(w.role, isAdmin) && (
                           <DropdownMenuItem
                             onSelect={() => handleToggleSchedule(w)}
                             disabled={isRowPending(w.id)}
