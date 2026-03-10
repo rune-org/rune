@@ -5,7 +5,13 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.exceptions import Forbidden, NotFound
 from src.credentials.encryption import get_encryptor
-from src.db.models import Workflow, WorkflowCredential, WorkflowRole, WorkflowUser
+from src.db.models import (
+    Execution,
+    Workflow,
+    WorkflowCredential,
+    WorkflowRole,
+    WorkflowUser,
+)
 
 
 class WorkflowService:
@@ -128,13 +134,20 @@ class WorkflowService:
     async def delete(self, workflow: Workflow) -> None:
         """Hard-delete the given Workflow and commit the change.
 
-        First delete all related WorkflowUser entries, then delete the workflow itself.
+        Delete related executions and access rows first, then delete the workflow.
         """
-        stmt = delete(WorkflowUser).where(WorkflowUser.workflow_id == workflow.id)
-        await self.db.exec(stmt)
-        await self.db.commit()
+        workflow_id = workflow.id
+        if workflow_id is None:
+            raise NotFound(detail="Workflow not found")
 
-        # Now delete the workflow itself
+        stmt = delete(Execution).where(Execution.__table__.c.workflow_id == workflow_id)
+        await self.db.exec(stmt)
+
+        stmt = delete(WorkflowUser).where(
+            WorkflowUser.__table__.c.workflow_id == workflow_id
+        )
+        await self.db.exec(stmt)
+
         await self.db.delete(workflow)
         await self.db.commit()
 
