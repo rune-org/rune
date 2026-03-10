@@ -140,9 +140,30 @@ archivist-install:
 # Development targets
 # ======================
 
-dev: dev-infra-up
+dev: api-dev-infra-up dev-infra-wait
 	@echo "Starting all services in development mode..."
+ifeq ($(DETECTED_OS),Windows)
 	@$(MAKE) -j5 web-dev api-dev worker-dev rtes-dev archivist-dev
+else
+	go run github.com/DarthSim/hivemind@latest Procfile.dev
+endif
+
+dev-infra-wait:
+ifeq ($(DETECTED_OS),Windows)
+	@echo "Waiting for infrastructure to be ready..."
+	@timeout /t 5 /nobreak >nul
+	@echo "  ✓ Infrastructure ready (waited 5s)"
+else
+	@echo "Waiting for infrastructure to be ready..."
+	@until docker exec rune-api-postgres-dev pg_isready -U rune -q 2>/dev/null; do sleep 1; done
+	@echo "  ✓ PostgreSQL ready"
+	@until docker exec rune-api-redis-dev redis-cli ping 2>/dev/null | grep -q PONG; do sleep 1; done
+	@echo "  ✓ Redis ready"
+	@until docker exec rune-api-rabbitmq-dev rabbitmq-diagnostics -q check_port_connectivity >/dev/null 2>&1; do sleep 1; done
+	@echo "  ✓ RabbitMQ ready"
+	@until docker exec rune-mongodb-dev mongosh --quiet --eval "db.runCommand('ping').ok" 2>/dev/null | grep -q 1; do sleep 1; done
+	@echo "  ✓ MongoDB ready"
+endif
 
 dev-infra-up: api-dev-infra-up rtes-dev-infra-up
 	@echo "Dev infrastructure is up."
