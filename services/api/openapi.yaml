@@ -74,6 +74,279 @@ paths:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
       security:
       - OAuth2PasswordBearer: []
+  /auth/saml/metadata:
+    get:
+      tags:
+      - SAML
+      summary: SP Metadata XML
+      description: Return the SP metadata XML for the active SAML configuration. Enter
+        this URL in your IdP's SP / application settings, or download and paste the
+        XML manually.
+      operationId: sp_metadata_auth_saml_metadata_get
+      responses:
+        '200':
+          description: Successful Response
+  /auth/saml/login:
+    get:
+      tags:
+      - SAML
+      summary: Initiate SSO
+      description: Redirect the browser to the IdP SSO URL. Pass ?redirect=/path to
+        land on a specific page after login.
+      operationId: saml_login_auth_saml_login_get
+      parameters:
+      - name: redirect
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Redirect
+      responses:
+        '302':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/saml/discover:
+    get:
+      tags:
+      - SAML
+      summary: IdP Discovery
+      description: Given a user email, return whether SSO is configured for that domain.
+        The frontend calls this on the login page to detect SSO automatically.
+      operationId: discover_auth_saml_discover_get
+      parameters:
+      - name: email
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Email
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_SAMLDiscoverResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/saml/acs:
+    post:
+      tags:
+      - SAML
+      summary: Assertion Consumer Service
+      description: Receives the SAML POST assertion from the IdP. Validates the assertion,
+        provisions/loads the user, sets the auth cookie, and redirects to the frontend.
+      operationId: assertion_consumer_service_auth_saml_acs_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_assertion_consumer_service_auth_saml_acs_post'
+        required: true
+      responses:
+        '302':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/saml/slo:
+    get:
+      tags:
+      - SAML
+      summary: Single Logout (IdP-initiated, HTTP-Redirect binding)
+      description: Handle an IdP-initiated Single Logout request. Validates the IdP's
+        SAML signature before touching the session. Revokes the user's refresh token,
+        clears the auth cookie, and redirects the browser back to the IdP with a signed
+        LogoutResponse.
+      operationId: single_logout_auth_saml_slo_get
+      parameters:
+      - name: SAMLRequest
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Samlrequest
+      - name: SigAlg
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sigalg
+      - name: Signature
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Signature
+      - name: RelayState
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Relaystate
+      responses:
+        '302':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/saml/exchange:
+    post:
+      tags:
+      - SAML
+      summary: Exchange SSO code for tokens
+      description: 'Exchange the short-lived, one-time code that the SAML ACS callback
+        embeds in the redirect URL for real auth tokens.  The code is deleted atomically
+        on first use and expires after a short TTL (configurable via env), so it cannot
+        be replayed even if the URL leaks into browser history or server logs.
+
+
+        Returns the refresh token in the JSON body and sets the access token as an
+        HttpOnly cookie.'
+      operationId: exchange_sso_code_auth_saml_exchange_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SAMLExchangeRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_SAMLExchangeResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/saml/config:
+    get:
+      tags:
+      - SAML
+      summary: Get SAML configuration
+      description: Return the current SAML IdP configuration.
+      operationId: get_saml_config_auth_saml_config_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_SAMLConfigResponse_'
+      security:
+      - OAuth2PasswordBearer: []
+    put:
+      tags:
+      - SAML
+      summary: Update SAML configuration
+      description: Update the existing SAML configuration. Only supplied fields are
+        changed.
+      operationId: update_saml_config_auth_saml_config_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SAMLConfigUpdate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_SAMLConfigResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - SAML
+      summary: Create SAML configuration
+      description: "Create the SAML IdP integration for this deployment. Only one\
+        \ configuration is permitted \u2014 call DELETE first to replace it. The SP\
+        \ keypair is generated automatically. Copy ``sp_entity_id``, ``sp_acs_url``,\
+        \ and ``sp_certificate`` into your IdP."
+      operationId: create_saml_config_auth_saml_config_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SAMLConfigCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_SAMLConfigResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+    delete:
+      tags:
+      - SAML
+      summary: Delete SAML configuration
+      description: Permanently delete the SAML configuration. Existing SAML-provisioned
+        users keep their accounts but can no longer log in until a new configuration
+        is created. To recreate, call POST /auth/saml/config.
+      operationId: delete_saml_config_auth_saml_config_delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
+      security:
+      - OAuth2PasswordBearer: []
   /setup/status:
     get:
       tags:
@@ -2012,6 +2285,63 @@ components:
       required:
       - data
       title: ApiResponse[NoneType]
+    ApiResponse_SAMLConfigResponse_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/SAMLConfigResponse'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[SAMLConfigResponse]
+    ApiResponse_SAMLDiscoverResponse_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/SAMLDiscoverResponse'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[SAMLDiscoverResponse]
+    ApiResponse_SAMLExchangeResponse_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/SAMLExchangeResponse'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[SAMLExchangeResponse]
     ApiResponse_TemplateDetail_:
       properties:
         success:
@@ -2358,6 +2688,19 @@ components:
       required:
       - data
       title: ApiResponse[str]
+    Body_assertion_consumer_service_auth_saml_acs_post:
+      properties:
+        SAMLResponse:
+          type: string
+          title: Samlresponse
+        RelayState:
+          type: string
+          title: Relaystate
+          default: ''
+      type: object
+      required:
+      - SAMLResponse
+      title: Body_assertion_consumer_service_auth_saml_acs_post
     ClearThreadResponse:
       properties:
         success:
@@ -2738,6 +3081,225 @@ components:
       required:
       - refresh_token
       title: RefreshRequest
+    SAMLConfigCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 80
+          minLength: 1
+          title: Name
+          description: Display name, e.g. 'Okta' or 'Azure AD'
+        idp_entity_id:
+          type: string
+          maxLength: 512
+          minLength: 1
+          title: Idp Entity Id
+          description: IdP Entity ID from their metadata XML
+        idp_sso_url:
+          type: string
+          title: Idp Sso Url
+          description: IdP SSO redirect-binding URL (must be http/https)
+        idp_slo_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idp Slo Url
+          description: IdP Single Logout URL (optional, must be http/https)
+        idp_certificate:
+          type: string
+          title: Idp Certificate
+          description: "IdP X.509 signing certificate \u2014 full PEM including BEGIN/END\
+            \ headers"
+        domain_hint:
+          anyOf:
+          - type: string
+            maxLength: 253
+          - type: 'null'
+          title: Domain Hint
+          description: Email domain for SSO auto-discovery, e.g. 'acme.com'
+      type: object
+      required:
+      - name
+      - idp_entity_id
+      - idp_sso_url
+      - idp_certificate
+      title: SAMLConfigCreate
+      description: Request body for ``POST /auth/saml/config``.
+    SAMLConfigResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        idp_entity_id:
+          type: string
+          title: Idp Entity Id
+        idp_sso_url:
+          type: string
+          title: Idp Sso Url
+        idp_slo_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idp Slo Url
+        sp_certificate:
+          type: string
+          title: Sp Certificate
+          description: "SP X.509 certificate PEM \u2013 paste into your IdP"
+        sp_entity_id:
+          type: string
+          title: Sp Entity Id
+          description: SP Entity ID / Audience URI to enter in your IdP
+        sp_acs_url:
+          type: string
+          title: Sp Acs Url
+          description: Assertion Consumer Service URL to enter in your IdP
+        sp_metadata_url:
+          type: string
+          title: Sp Metadata Url
+          description: "Public URL of this SP's metadata XML \u2013 paste into your\
+            \ IdP to auto-configure"
+        sp_slo_url:
+          type: string
+          title: Sp Slo Url
+          description: Single Logout URL to configure in your IdP (optional)
+        domain_hint:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Domain Hint
+        is_active:
+          type: boolean
+          title: Is Active
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - name
+      - idp_entity_id
+      - idp_sso_url
+      - sp_certificate
+      - sp_entity_id
+      - sp_acs_url
+      - sp_metadata_url
+      - sp_slo_url
+      - is_active
+      - created_at
+      - updated_at
+      title: SAMLConfigResponse
+      description: 'Admin-facing response for a SAML configuration.
+
+
+        Includes all IdP fields plus computed SP fields that admins need to paste
+
+        into their IdP when setting up the integration.  The SP private key is
+
+        intentionally excluded.'
+    SAMLConfigUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 80
+            minLength: 1
+          - type: 'null'
+          title: Name
+        idp_entity_id:
+          anyOf:
+          - type: string
+            maxLength: 512
+            minLength: 1
+          - type: 'null'
+          title: Idp Entity Id
+        idp_sso_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idp Sso Url
+        idp_slo_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idp Slo Url
+        idp_certificate:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idp Certificate
+        domain_hint:
+          anyOf:
+          - type: string
+            maxLength: 253
+          - type: 'null'
+          title: Domain Hint
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      type: object
+      title: SAMLConfigUpdate
+      description: Request body for ``PUT /auth/saml/config``.
+    SAMLDiscoverResponse:
+      properties:
+        found:
+          type: boolean
+          title: Found
+          description: Whether an active SAML config exists for this email domain
+        login_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Login Url
+          description: SSO initiation URL to redirect the user to, if found
+      type: object
+      required:
+      - found
+      title: SAMLDiscoverResponse
+      description: "Response for ``GET /auth/saml/discover``.\n\nIntentionally does\
+        \ **not** expose internal IDs \u2014 the single-IdP model\nmeans the login\
+        \ endpoint is always ``/auth/saml/login`` regardless."
+    SAMLExchangeRequest:
+      properties:
+        code:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Code
+          description: One-time SSO exchange code received as a URL query parameter
+            after IdP redirect
+      type: object
+      required:
+      - code
+      title: SAMLExchangeRequest
+      description: Request body for ``POST /auth/saml/exchange``.
+    SAMLExchangeResponse:
+      properties:
+        refresh_token:
+          type: string
+          title: Refresh Token
+          description: "Long-lived refresh token \u2014 store in localStorage"
+        expires_in:
+          type: integer
+          title: Expires In
+          description: Access token lifetime in seconds
+      type: object
+      required:
+      - refresh_token
+      - expires_in
+      title: SAMLExchangeResponse
+      description: "Response body for ``POST /auth/saml/exchange``.\n\nThe access\
+        \ token is delivered as an ``HttpOnly`` cookie on the same\nresponse \u2014\
+        \ it never appears in this JSON body."
     TemplateCreate:
       properties:
         name:
