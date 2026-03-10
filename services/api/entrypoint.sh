@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-echo "Running database migrations..."
+echo "Checking database migration status..."
 
 # Check if alembic_version table exists (i.e., migrations have been used before)
 if python -c "
@@ -20,9 +20,19 @@ async def check():
     return row
 exit(0 if asyncio.run(check()) else 1)
 " 2>/dev/null; then
-    # alembic_version exists — run pending migrations normally
-    echo "Alembic tracking found. Running pending migrations..."
-    alembic upgrade head
+    # alembic_version exists — check for pending migrations
+    CURRENT=$(alembic current 2>/dev/null | head -1)
+    HEAD=$(alembic heads 2>/dev/null | head -1)
+    if [ "$CURRENT" != "$HEAD" ]; then
+        echo ""
+        echo "WARNING: Pending database migrations detected!"
+        echo "  Current: $CURRENT"
+        echo "  Head:    $HEAD"
+        echo "  Run: docker exec -it rune-api alembic upgrade head"
+        echo ""
+    else
+        echo "Database is up to date."
+    fi
 else
     # No alembic_version table — check if this is an existing DB or a fresh one
     if python -c "
@@ -41,17 +51,19 @@ async def check():
     return row
 exit(0 if asyncio.run(check()) else 1)
 " 2>/dev/null; then
-        # Existing DB with tables but no alembic tracking — stamp it
-        echo "Existing database detected without migration tracking. Stamping current state..."
-        alembic stamp head
+        echo ""
+        echo "WARNING: Existing database detected without migration tracking!"
+        echo "  Run the following to initialize tracking and apply pending migrations:"
+        echo "    docker exec -it rune-api alembic stamp ba3dde446818"
+        echo "    docker exec -it rune-api alembic upgrade head"
+        echo ""
     else
-        # Fresh DB — let alembic create everything
+        # Fresh DB — this is the only case where auto-migration is safe
         echo "Fresh database detected. Creating schema via migrations..."
         alembic upgrade head
+        echo "Database schema created."
     fi
 fi
-
-echo "Database migrations complete."
 
 # Start the application
 exec "$@"
