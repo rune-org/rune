@@ -17,12 +17,12 @@ from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
 from src.workflow.queue import WorkflowQueueService
 from src.workflow.schemas import (
+    ScheduleInfo,
     WorkflowCreate,
     WorkflowDetail,
     WorkflowListItem,
     WorkflowUpdateData,
     WorkflowUpdateName,
-    WorkflowUpdateStatus,
 )
 from src.workflow.service import WorkflowService
 
@@ -53,9 +53,17 @@ async def list_workflows(
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
-    wfs = await service.list_for_user(current_user.id)
+    wfs = await service.list_for_user(current_user.id, include_schedule=True)
     items = [
-        WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active, role=role)
+        WorkflowListItem(
+            id=wf.id,
+            name=wf.name,
+            trigger_type=wf.trigger_type,
+            role=role,
+            schedule=ScheduleInfo.model_validate(wf.schedule)
+            if wf.schedule
+            else None,
+        )
         for wf, role in wfs
     ]
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
@@ -95,23 +103,6 @@ async def create_workflow(
     return ApiResponse(success=True, message="Workflow created", data=detail)
 
 
-@router.put("/{workflow_id}/status", response_model=ApiResponse[WorkflowDetail])
-@require_workflow_permission("edit")
-async def update_status(
-    payload: WorkflowUpdateStatus,
-    workflow: Workflow = Depends(get_workflow_with_permission),
-    service: WorkflowService = Depends(get_workflow_service),
-) -> ApiResponse[WorkflowDetail]:
-    """
-    Update workflow status (active/inactive).
-
-    **Requires:** EDIT permission (OWNER or EDITOR)
-    """
-    wf = await service.update_status(workflow, payload.is_active)
-    detail = WorkflowDetail.model_validate(wf)
-    return ApiResponse(success=True, message="Workflow status updated", data=detail)
-
-
 @router.put("/{workflow_id}/name", response_model=ApiResponse[WorkflowDetail])
 @require_workflow_permission("edit")
 async def update_name(
@@ -146,6 +137,27 @@ async def update_workflow_data(
     return ApiResponse(success=True, message="Workflow data updated", data=detail)
 
 
+@router.patch(
+    "/{workflow_id}/schedule/toggle", response_model=ApiResponse[ScheduleInfo]
+)
+@require_workflow_permission("edit")
+async def toggle_schedule(
+    workflow: Workflow = Depends(get_workflow_with_permission),
+    service: WorkflowService = Depends(get_workflow_service),
+) -> ApiResponse[ScheduleInfo]:
+    """
+    Toggle the active state of a workflow's schedule.
+
+    **Requires:** EDIT permission (OWNER or EDITOR)
+    """
+    is_active = await service.toggle_schedule(workflow)
+    return ApiResponse(
+        success=True,
+        message=f"Schedule {'activated' if is_active else 'paused'}",
+        data=ScheduleInfo(is_active=is_active),
+    )
+
+
 @router.delete("/{workflow_id}", status_code=status.HTTP_204_NO_CONTENT)
 @require_workflow_permission("delete")
 async def delete_workflow(
@@ -174,31 +186,20 @@ async def run_workflow(
     """
     Queue a workflow for execution.
 
-    Verifies the workflow exists and user has execute permission (OWNER or EDITOR),
-    resolves all credential references in workflow nodes,
-    then publishes a run message to RabbitMQ containing workflow details with resolved credentials.
-    Also publishes an execution token for RTES real-time updates.
-
-    Returns execution_id for tracking the execution.
-
     **Requires:** EXECUTE permission (OWNER or EDITOR, not VIEWER)
     """
-    # Resolve credentials for all nodes in the workflow
     resolved_workflow_data = await workflow_service.resolve_workflow_credentials(
         workflow.workflow_data
     )
 
-    # Generate a unique execution ID
     execution_id = str(uuid.uuid4())
 
-    # Publish execution token for RTES authentication (with specific execution_id)
     await token_service.publish_execution_token(
         workflow_id=workflow.id,
         user_id=current_user.id,
         execution_id=execution_id,
     )
 
-    # Publish workflow run message to queue with resolved credentials
     try:
         await queue_service.publish_workflow_run(
             workflow_id=workflow.id,
@@ -206,7 +207,6 @@ async def run_workflow(
             workflow_data=resolved_workflow_data,
         )
     except ValueError as e:
-        # Workflow validation errors (e.g., missing trigger, multiple triggers, invalid structure)
         raise BadRequest(detail=str(e))
 
     return ApiResponse(success=True, message="Workflow run queued", data=execution_id)
