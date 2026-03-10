@@ -1,4 +1,4 @@
-import type { WorkflowListItem, WorkflowDetail } from "@/client/types.gen";
+import type { WorkflowListItem, WorkflowDetail, TriggerType } from "@/client/types.gen";
 import type { CanvasNode, CanvasEdge } from "@/features/canvas/types";
 import type {
   WorkflowNode as WorkflowNodeDSL,
@@ -12,43 +12,24 @@ import type { WorkflowRole } from "@/lib/permissions";
 
 /**
  * UI-friendly summary of a workflow row (in the table view).
- * The backend currently only exposes minimal fields, so we derive
- * placeholder values for items like status metadata until richer data arrives.
  */
 export type WorkflowSummary = {
   id: string;
   name: string;
-  /**
-   * Derived status – treated as active when `is_active` is true, otherwise draft.
-   */
-  status: "active" | "draft";
-  /**
-   * Placeholder trigger type.
-   */
-  triggerType: string;
-  /**
-   * Placeholder last run timestamp.
-   */
+  triggerType: TriggerType;
+  /** Whether a scheduled workflow's schedule is active. */
+  scheduleActive: boolean | null;
   lastRunAt: string | null;
-  /**
-   * Placeholder run status.
-   */
   lastRunStatus: "success" | "failed" | "running" | "n/a";
-  /**
-   * Placeholder total run count.
-   */
   runs: number;
-  /**
-   * User's role for this workflow (controls permissions).
-   */
   role: WorkflowRole;
 };
 
 export const defaultWorkflowSummary: WorkflowSummary = {
   id: "",
   name: "Untitled Workflow",
-  status: "draft",
-  triggerType: "Manual",
+  triggerType: "manual",
+  scheduleActive: null,
   lastRunAt: null,
   lastRunStatus: "n/a",
   runs: 0,
@@ -62,7 +43,8 @@ export function listItemToWorkflowSummary(
     ...defaultWorkflowSummary,
     id: String(item.id),
     name: item.name,
-    status: item.is_active ? "active" : "draft",
+    triggerType: item.trigger_type ?? "manual",
+    scheduleActive: item.schedule?.is_active ?? null,
     role: item.role,
   };
 }

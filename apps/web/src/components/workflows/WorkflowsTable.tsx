@@ -42,8 +42,8 @@ import {
   deleteWorkflow,
   getWorkflowById,
   runWorkflow,
+  toggleSchedule,
   updateWorkflowName,
-  updateWorkflowStatus,
 } from "@/lib/api/workflows";
 import {
   Dialog,
@@ -60,7 +60,6 @@ import {
   canDeleteWorkflow,
   canShareWorkflow,
   canRenameWorkflow,
-  canChangeWorkflowStatus,
   canViewWorkflow,
 } from "@/lib/permissions";
 import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog";
@@ -83,21 +82,30 @@ function timeAgo(iso: string | null): string {
   return `${h}hr. ago`;
 }
 
-function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
-  if (status === "active")
-    return (
-      <Badge className="bg-emerald-900/40 text-emerald-200" variant="secondary">
-        Active
-      </Badge>
-    );
-  return (
-    <Badge className="bg-amber-900/40 text-amber-200" variant="secondary">
-      Draft
-    </Badge>
-  );
+function TriggerBadge({ triggerType }: { triggerType: WorkflowSummary["triggerType"] }) {
+  switch (triggerType) {
+    case "scheduled":
+      return (
+        <Badge className="bg-blue-900/40 text-blue-200" variant="secondary">
+          Scheduled
+        </Badge>
+      );
+    case "webhook":
+      return (
+        <Badge className="bg-purple-900/40 text-purple-200" variant="secondary">
+          Webhook
+        </Badge>
+      );
+    default:
+      return (
+        <Badge className="bg-amber-900/40 text-amber-200" variant="secondary">
+          Manual
+        </Badge>
+      );
+  }
 }
 
-type StatFilter = "all" | "active" | "runs" | "draft" | "failed";
+type StatFilter = "all" | "scheduled" | "runs" | "manual" | "failed";
 
 export function WorkflowsTable() {
   const {
@@ -130,33 +138,6 @@ export function WorkflowsTable() {
     if (workflows.length === 0) void actions.init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleToggleActive = useCallback(
-    async (workflow: WorkflowSummary) => {
-      const workflowId = Number(workflow.id);
-      if (!Number.isFinite(workflowId)) return;
-
-      setPendingWorkflowId(workflow.id);
-      try {
-        await updateWorkflowStatus(workflowId, workflow.status !== "active");
-        toast.success(
-          workflow.status === "active"
-            ? "Workflow deactivated"
-            : "Workflow activated",
-        );
-        await actions.refreshWorkflows();
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to update workflow status.",
-        );
-      } finally {
-        setPendingWorkflowId(null);
-      }
-    },
-    [actions],
-  );
 
   const beginDelete = useCallback((workflow: WorkflowSummary) => {
     setDeleteTarget(workflow);
@@ -250,6 +231,33 @@ export function WorkflowsTable() {
     }
   }, []);
 
+  const handleToggleSchedule = useCallback(
+    async (workflow: WorkflowSummary) => {
+      const workflowId = Number(workflow.id);
+      if (!Number.isFinite(workflowId)) return;
+
+      setPendingWorkflowId(workflow.id);
+      try {
+        await toggleSchedule(workflowId);
+        toast.success(
+          workflow.scheduleActive
+            ? "Schedule paused"
+            : "Schedule activated",
+        );
+        await actions.refreshWorkflows();
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to toggle schedule.",
+        );
+      } finally {
+        setPendingWorkflowId(null);
+      }
+    },
+    [actions],
+  );
+
   const handleRenameSubmit = useCallback(
     async (newName: string) => {
       if (!renameTarget) return;
@@ -285,11 +293,11 @@ export function WorkflowsTable() {
     const q = query.trim().toLowerCase();
     let list = workflows;
     switch (filter) {
-      case "active":
-        list = list.filter((w) => w.status === "active");
+      case "scheduled":
+        list = list.filter((w) => w.triggerType === "scheduled");
         break;
-      case "draft":
-        list = list.filter((w) => w.status === "draft");
+      case "manual":
+        list = list.filter((w) => w.triggerType === "manual");
         break;
       case "failed":
         list = list.filter((w) => w.lastRunStatus === "failed");
@@ -305,11 +313,11 @@ export function WorkflowsTable() {
   }, [workflows, query, filter]);
 
   const stats = useMemo(() => {
-    const active = workflows.filter((w) => w.status === "active").length;
-    const draft = workflows.filter((w) => w.status === "draft").length;
+    const scheduled = workflows.filter((w) => w.triggerType === "scheduled").length;
+    const manual = workflows.filter((w) => w.triggerType === "manual").length;
     const failed = workflows.filter((w) => w.lastRunStatus === "failed").length;
     const runs = workflows.reduce((sum, w) => sum + w.runs, 0);
-    return { active, draft, failed, runs };
+    return { scheduled, manual, failed, runs };
   }, [workflows]);
 
   const isRowPending = useCallback(
@@ -328,16 +336,16 @@ export function WorkflowsTable() {
           <button
             type="button"
             onClick={() =>
-              setFilter((f) => (f === "active" ? "all" : "active"))
+              setFilter((f) => (f === "scheduled" ? "all" : "scheduled"))
             }
-            aria-pressed={filter === "active"}
+            aria-pressed={filter === "scheduled"}
             className={
-              filter === "active"
+              filter === "scheduled"
                 ? "text-accent"
                 : "text-muted-foreground hover:text-foreground"
             }
           >
-            <span className="font-semibold">{stats.active}</span> Active
+            <span className="font-semibold">{stats.scheduled}</span> Scheduled
           </button>
           <button
             type="button"
@@ -353,15 +361,15 @@ export function WorkflowsTable() {
           </button>
           <button
             type="button"
-            onClick={() => setFilter((f) => (f === "draft" ? "all" : "draft"))}
-            aria-pressed={filter === "draft"}
+            onClick={() => setFilter((f) => (f === "manual" ? "all" : "manual"))}
+            aria-pressed={filter === "manual"}
             className={
-              filter === "draft"
+              filter === "manual"
                 ? "text-accent"
                 : "text-muted-foreground hover:text-foreground"
             }
           >
-            <span className="font-semibold">{stats.draft}</span> Draft
+            <span className="font-semibold">{stats.manual}</span> Manual
           </button>
           <button
             type="button"
@@ -394,8 +402,8 @@ export function WorkflowsTable() {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[35%]">Name</TableHead>
-            <TableHead className="w-[20%]">Trigger Type</TableHead>
-            <TableHead className="w-[20%]">Status</TableHead>
+            <TableHead className="w-[20%]">Trigger</TableHead>
+            <TableHead className="w-[20%]">Schedule</TableHead>
             <TableHead className="w-[15%]">Last Run</TableHead>
             <TableHead className="w-[10%] text-right">Actions</TableHead>
           </TableRow>
@@ -421,11 +429,26 @@ export function WorkflowsTable() {
                   </Badge>
                 </div>
               </TableCell>
-              <TableCell className="text-muted-foreground">
-                {w.triggerType}
-              </TableCell>
               <TableCell>
-                <StatusBadge status={w.status} />
+                <TriggerBadge triggerType={w.triggerType} />
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {w.triggerType === "scheduled" ? (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleSchedule(w)}
+                    disabled={isRowPending(w.id)}
+                    className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                      w.scheduleActive
+                        ? "bg-green-900/30 text-green-300 hover:bg-green-900/50"
+                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                    }`}
+                  >
+                    {w.scheduleActive ? "Active" : "Paused"}
+                  </button>
+                ) : (
+                  "\u2014"
+                )}
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {timeAgo(w.lastRunAt)}
@@ -508,16 +531,6 @@ export function WorkflowsTable() {
                           Rename
                         </DropdownMenuItem>
                       )}
-                      {canChangeWorkflowStatus(w.role, isAdmin) && (
-                        <DropdownMenuItem
-                          onSelect={() => handleToggleActive(w)}
-                          disabled={isRowPending(w.id)}
-                        >
-                          {w.status === "active"
-                            ? "Deactivate"
-                            : "Activate"}
-                        </DropdownMenuItem>
-                      )}
                       {canExecuteWorkflow(w.role, isAdmin) && (
                         <DropdownMenuItem
                           onSelect={() => handleRun(w)}
@@ -534,6 +547,17 @@ export function WorkflowsTable() {
                           Export to JSON
                         </DropdownMenuItem>
                       )}
+                      {w.triggerType === "scheduled" &&
+                        canExecuteWorkflow(w.role, isAdmin) && (
+                          <DropdownMenuItem
+                            onSelect={() => handleToggleSchedule(w)}
+                            disabled={isRowPending(w.id)}
+                          >
+                            {w.scheduleActive
+                              ? "Pause Schedule"
+                              : "Activate Schedule"}
+                          </DropdownMenuItem>
+                        )}
                       {canShareWorkflow(w.role, isAdmin) && (
                         <>
                           <DropdownMenuSeparator />
