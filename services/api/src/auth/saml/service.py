@@ -349,9 +349,7 @@ class SAMLService:
     # Database helpers
     # ------------------------------------------------------------------
 
-    async def get_active_config(
-        self, db: AsyncSession
-    ) -> Optional[SAMLConfiguration]:
+    async def get_active_config(self, db: AsyncSession) -> Optional[SAMLConfiguration]:
         """Return the single active SAMLConfiguration, or None."""
         result = await db.exec(
             select(SAMLConfiguration).where(
@@ -360,9 +358,7 @@ class SAMLService:
         )
         return result.first()
 
-    async def get_any_config(
-        self, db: AsyncSession
-    ) -> Optional[SAMLConfiguration]:
+    async def get_any_config(self, db: AsyncSession) -> Optional[SAMLConfiguration]:
         """Return any SAMLConfiguration (active or not) — used for existence checks."""
         result = await db.exec(select(SAMLConfiguration))
         return result.first()

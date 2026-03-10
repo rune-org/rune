@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Form, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlmodel import select
 
-from services.api.src.auth.dependencies import get_auth_service, get_saml_service
+from src.auth.dependencies import get_auth_service, get_saml_service
 from src.auth.saml.keys import SAMLKeyManager
 from src.auth.saml.provisioning import SAMLProvisioningService
 from src.auth.saml.schemas import (
@@ -268,7 +268,7 @@ async def assertion_consumer_service(
     code = secrets.token_urlsafe(32)
     await redis.setex(
         f"saml:code:{code}",
-            settings.sso_code_ttl,
+        settings.sso_code_ttl,
         json.dumps(
             {
                 "access_token": token_response.access_token,
