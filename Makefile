@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down api-dev-infra-up rtes-dev-infra-up test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down api-dev-infra-up rtes-dev-infra-up test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test scheduler-dev scheduler-install up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
@@ -47,6 +47,10 @@ help:
 	@echo "  make api-test           - Run API tests with pytest"
 	@echo "  make api-lint           - Lint API code with ruff"
 	@echo "  make api-format         - Format API code with ruff"
+	@echo ""
+	@echo "Scheduler targets:"
+	@echo "  make scheduler-install  - Install scheduler dependencies using uv"
+	@echo "  make scheduler-dev      - Start scheduler in dev mode"
 	@echo ""
 	@echo "RTES targets:"
 	@echo "  make rtes-dev            - Start RTES in development mode"
@@ -111,7 +115,7 @@ help:
 # Installation targets
 # ======================
 
-install: web-install api-install worker-install
+install: web-install api-install worker-install scheduler-install
 	@echo "✓ All dependencies installed"
 
 web-install:
@@ -126,6 +130,11 @@ api-install:
 worker-install:
 	@echo "Installing worker dependencies..."
 	cd services/rune-worker && go mod download
+
+scheduler-install:
+	@echo "Installing scheduler dependencies with uv..."
+	cd services/scheduler && uv sync
+	@echo "✓ Scheduler dependencies installed"
 
 # ======================
 # Development targets
@@ -176,6 +185,10 @@ endif
 worker-dev:
 	@echo "Starting worker in development mode..."
 	cd services/rune-worker && go run cmd/worker/main.go
+
+scheduler-dev:
+	@echo "Starting scheduler in development mode..."
+	set -a && . services/api/.env && set +a && cd services/scheduler && uv run python -u main.py
 
 # ======================
 # Build targets
