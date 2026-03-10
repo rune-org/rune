@@ -200,6 +200,28 @@ export type ApiResponseNoneType = {
 };
 
 /**
+ * ApiResponse[ScheduleInfo]
+ */
+export type ApiResponseScheduleInfo = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: ScheduleInfo;
+};
+
+/**
  * ApiResponse[TemplateDetail]
  */
 export type ApiResponseTemplateDetail = {
@@ -905,6 +927,18 @@ export type RefreshRequest = {
 };
 
 /**
+ * ScheduleInfo
+ *
+ * Minimal schedule info for workflow list views.
+ */
+export type ScheduleInfo = {
+    /**
+     * Is Active
+     */
+    is_active: boolean;
+};
+
+/**
  * TemplateCreate
  *
  * Schema for creating a new template.
@@ -1059,6 +1093,16 @@ export type TokenResponse = {
      */
     expires_in: number;
 };
+
+/**
+ * TriggerType
+ *
+ * Workflow trigger type enumeration.
+ *
+ * Note: ALL workflows can be manually run via API/UI.
+ * This enum tracks both automatic and manual trigger types.
+ */
+export type TriggerType = 'manual' | 'scheduled' | 'webhook';
 
 /**
  * UserBasicInfo
@@ -1240,10 +1284,6 @@ export type WorkflowDetail = {
      */
     description: string | null;
     /**
-     * Is Active
-     */
-    is_active: boolean;
-    /**
      * Workflow Data
      */
     workflow_data: {
@@ -1253,6 +1293,7 @@ export type WorkflowDetail = {
      * Version
      */
     version: number;
+    trigger_type: TriggerType;
     /**
      * Created At
      */
@@ -1285,11 +1326,9 @@ export type WorkflowListItem = {
      * Name
      */
     name: string;
-    /**
-     * Is Active
-     */
-    is_active: boolean;
+    trigger_type?: TriggerType;
     role: WorkflowRole;
+    schedule?: ScheduleInfo | null;
 };
 
 /**
@@ -1413,16 +1452,6 @@ export type WorkflowUpdateName = {
      * Name
      */
     name: string;
-};
-
-/**
- * WorkflowUpdateStatus
- */
-export type WorkflowUpdateStatus = {
-    /**
-     * Is Active
-     */
-    is_active: boolean;
 };
 
 export type LoginAuthLoginPostData = {
@@ -1633,36 +1662,6 @@ export type GetWorkflowWorkflowsWorkflowIdGetResponses = {
 
 export type GetWorkflowWorkflowsWorkflowIdGetResponse = GetWorkflowWorkflowsWorkflowIdGetResponses[keyof GetWorkflowWorkflowsWorkflowIdGetResponses];
 
-export type UpdateStatusWorkflowsWorkflowIdStatusPutData = {
-    body: WorkflowUpdateStatus;
-    path: {
-        /**
-         * Workflow Id
-         */
-        workflow_id: number;
-    };
-    query?: never;
-    url: '/workflows/{workflow_id}/status';
-};
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutError = UpdateStatusWorkflowsWorkflowIdStatusPutErrors[keyof UpdateStatusWorkflowsWorkflowIdStatusPutErrors];
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutResponses = {
-    /**
-     * Successful Response
-     */
-    200: ApiResponseWorkflowDetail;
-};
-
-export type UpdateStatusWorkflowsWorkflowIdStatusPutResponse = UpdateStatusWorkflowsWorkflowIdStatusPutResponses[keyof UpdateStatusWorkflowsWorkflowIdStatusPutResponses];
-
 export type UpdateNameWorkflowsWorkflowIdNamePutData = {
     body: WorkflowUpdateName;
     path: {
@@ -1722,6 +1721,36 @@ export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses = {
 };
 
 export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse = UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses[keyof UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses];
+
+export type ToggleScheduleWorkflowsWorkflowIdScheduleTogglePatchData = {
+    body?: never;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/schedule/toggle';
+};
+
+export type ToggleScheduleWorkflowsWorkflowIdScheduleTogglePatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ToggleScheduleWorkflowsWorkflowIdScheduleTogglePatchError = ToggleScheduleWorkflowsWorkflowIdScheduleTogglePatchErrors[keyof ToggleScheduleWorkflowsWorkflowIdScheduleTogglePatchErrors];
+
+export type ToggleScheduleWorkflowsWorkflowIdScheduleTogglePatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseScheduleInfo;
+};
+
+export type ToggleScheduleWorkflowsWorkflowIdScheduleTogglePatchResponse = ToggleScheduleWorkflowsWorkflowIdScheduleTogglePatchResponses[keyof ToggleScheduleWorkflowsWorkflowIdScheduleTogglePatchResponses];
 
 export type RunWorkflowWorkflowsWorkflowIdRunPostData = {
     body?: never;
