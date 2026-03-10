@@ -395,8 +395,17 @@ export function ExecutionsTable({
   executions,
   isLoading,
 }: ExecutionsTableProps) {
-  const [sortMode, setSortMode] = useState<SortMode>("workflow");
+  const [sortMode, setSortMode] = useState<SortMode>(() => {
+    if (typeof window === "undefined") return "workflow";
+    const stored = localStorage.getItem("executions-sort-mode");
+    return stored === "recent" ? "recent" : "workflow";
+  });
   const [query, setQuery] = useState("");
+
+  const handleSortChange = (mode: SortMode) => {
+    setSortMode(mode);
+    localStorage.setItem("executions-sort-mode", mode);
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -467,7 +476,7 @@ export function ExecutionsTable({
           />
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         </div>
-        <SortToggle mode={sortMode} onChange={setSortMode} />
+        <SortToggle mode={sortMode} onChange={handleSortChange} />
       </div>
 
       <div className="overflow-hidden rounded-[var(--radius)] border border-border/60">
