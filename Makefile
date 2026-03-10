@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down api-dev-infra-up rtes-dev-infra-up test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down api-dev-infra-up rtes-dev-infra-up test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test archivist-install archivist-dev up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
@@ -73,6 +73,10 @@ help:
 	@echo "  make worker-format  - Format worker code"
 	@echo "  make worker-test    - Run worker tests"
 	@echo ""
+	@echo "Archivist targets:"
+	@echo "  make archivist-install - Install archivist dependencies using uv"
+	@echo "  make archivist-dev     - Start archivist in dev mode"
+	@echo ""
 	@echo "DSL targets:"
 	@echo "  make dsl-generate   - Generate DSL type definitions (TypeScript, Python, Go)"
 	@echo "  make dsl-test       - Run DSL tests (Python, TypeScript, Go)"
@@ -111,7 +115,7 @@ help:
 # Installation targets
 # ======================
 
-install: web-install api-install worker-install
+install: web-install api-install worker-install archivist-install
 	@echo "✓ All dependencies installed"
 
 web-install:
@@ -127,13 +131,18 @@ worker-install:
 	@echo "Installing worker dependencies..."
 	cd services/rune-worker && go mod download
 
+archivist-install:
+	@echo "Installing archivist dependencies with uv..."
+	cd services/archivist && uv sync
+	@echo "✓ Archivist dependencies installed"
+
 # ======================
 # Development targets
 # ======================
 
 dev: dev-infra-up
 	@echo "Starting all services in development mode..."
-	@$(MAKE) -j4 web-dev api-dev worker-dev rtes-dev
+	@$(MAKE) -j5 web-dev api-dev worker-dev rtes-dev archivist-dev
 
 dev-infra-up: api-dev-infra-up rtes-dev-infra-up
 	@echo "Dev infrastructure is up."
@@ -176,6 +185,10 @@ endif
 worker-dev:
 	@echo "Starting worker in development mode..."
 	cd services/rune-worker && go run cmd/worker/main.go
+
+archivist-dev:
+	@echo "Starting archivist in development mode..."
+	cd services/archivist && uv run python -m src.main
 
 # ======================
 # Build targets
@@ -324,6 +337,9 @@ logs-worker:
 
 logs-frontend:
 	docker compose logs -f frontend
+
+logs-archivist:
+	docker compose logs -f archivist
 
 # ======================
 # Database targets
