@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Form, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlmodel import select
 
+from services.api.src.auth.dependencies import get_auth_service, get_saml_service
 from src.auth.saml.keys import SAMLKeyManager
 from src.auth.saml.provisioning import SAMLProvisioningService
 from src.auth.saml.schemas import (
@@ -27,39 +28,6 @@ from src.core.responses import ApiResponse
 from src.db.models import SAMLConfiguration
 
 router = APIRouter(prefix="/auth/saml", tags=["SAML"])
-
-
-# ---------------------------------------------------------------------------
-# Dependency factories
-# ---------------------------------------------------------------------------
-
-
-async def get_saml_service(redis: RedisDep) -> SAMLService:
-    return SAMLService(redis_client=redis)
-
-
-async def get_auth_service(db: DatabaseDep, redis: RedisDep) -> AuthService:
-    token_store = TokenStore(redis_client=redis)
-    return AuthService(db=db, token_store=token_store)
-
-
-# ---------------------------------------------------------------------------
-# DB helpers — single-IdP lookups
-# ---------------------------------------------------------------------------
-
-
-async def _get_active_config(db) -> Optional[SAMLConfiguration]:
-    """Return the single active SAMLConfiguration or None."""
-    result = await db.exec(
-        select(SAMLConfiguration).where(SAMLConfiguration.is_active == True)  # noqa: E712
-    )
-    return result.first()
-
-
-async def _get_any_config(db) -> Optional[SAMLConfiguration]:
-    """Return any SAMLConfiguration (active or not) — used for existence checks."""
-    result = await db.exec(select(SAMLConfiguration))
-    return result.first()
 
 
 # ---------------------------------------------------------------------------
@@ -135,7 +103,7 @@ async def sp_metadata(
     db: DatabaseDep,
     saml_service: SAMLService = Depends(get_saml_service),
 ) -> Response:
-    config = await _get_active_config(db)
+    config = await saml_service.get_active_config(db)
     if not config:
         raise NotFound(detail="No active SAML configuration found")
 
@@ -161,7 +129,7 @@ async def saml_login(
     redirect: Optional[str] = None,
     saml_service: SAMLService = Depends(get_saml_service),
 ) -> RedirectResponse:
-    config = await _get_active_config(db)
+    config = await saml_service.get_active_config(db)
     if not config:
         raise NotFound(detail="No active SAML configuration found")
 
@@ -236,7 +204,7 @@ async def assertion_consumer_service(
     post_login_redirect = _safe_redirect_path(relay_data.get("redirect"), default="/")
 
     # Single-IdP lookup — no config_id needed.
-    config = await _get_active_config(db)
+    config = await saml_service.get_active_config(db)
     if not config:
         return RedirectResponse(
             url=f"{frontend_url}/saml-callback?status=error&reason=no_config",
@@ -273,6 +241,13 @@ async def assertion_consumer_service(
     # ------------------------------------------------------------------
     provisioner = SAMLProvisioningService(db=db)
     user = await provisioner.get_or_create_saml_user(attrs=attrs, config=config)
+
+    # Store NameID → user_id in Redis so the SLO endpoint can revoke tokens.
+    await saml_service.store_saml_session(
+        name_id=attrs.name_id,
+        session_index=attrs.session_index,
+        user_id=user.id,  # type: ignore[arg-type]
+    )
 
     if not user.is_active:
         return RedirectResponse(
@@ -312,31 +287,71 @@ async def assertion_consumer_service(
     )
 
 
-@router.post(
+@router.get(
     "/slo",
-    summary="Single Logout",
+    summary="Single Logout (IdP-initiated, HTTP-Redirect binding)",
     description=(
-        "Handle IdP-initiated Single Logout. "
-        "Clears the auth cookie. "
-        "For a full SP-initiated SLO flow redirect the browser to the IdP SLO URL instead."
+        "Handle an IdP-initiated Single Logout request. "
+        "Validates the IdP's SAML signature before touching the session. "
+        "Revokes the user's refresh token, clears the auth cookie, and "
+        "redirects the browser back to the IdP with a signed LogoutResponse."
     ),
+    status_code=302,
 )
 async def single_logout(
     request: Request,
+    db: DatabaseDep,
+    redis: RedisDep,
+    SAMLRequest: Optional[str] = None,
+    SigAlg: Optional[str] = None,
+    Signature: Optional[str] = None,
+    RelayState: str = "",
+    saml_service: SAMLService = Depends(get_saml_service),
 ) -> Response:
-    """IdP-initiated SLO handler.
+    """IdP-initiated SLO handler (HTTP-Redirect binding).
 
-    The IdP POSTs a LogoutRequest here.  We acknowledge it, delete the
-    session cookie, and return a 200 so the IdP knows we succeeded.
-
-    Token revocation: the access token is short-lived (2 min default) so
-    letting it expire is acceptable.  The HTTP-only cookie is deleted so
-    the browser can no longer send it.  A full token-blacklist approach
-    would require the NameID from the LogoutRequest — left as a future
-    enhancement when SP-initiated SLO is implemented.
+    The IdP sends a signed GET request containing SAMLRequest, SigAlg, and
+    Signature as query parameters.  We validate the signature via python3-saml
+    before revoking any session state.  An unsigned or malformed request is
+    rejected with 400 — the user's cookie is never touched.
     """
+    config = await saml_service.get_active_config(db)
+    if not config:
+        raise NotFound(detail="No active SAML configuration found")
+
+    if not SAMLRequest:
+        raise BadRequest(detail="Missing SAMLRequest parameter")
+
     settings = get_settings()
-    response = Response(content="Logged out", status_code=200)
+    parsed = urlparse(settings.saml_sp_base_url)
+    is_https = parsed.scheme == "https"
+    http_host = parsed.netloc or request.headers.get("host", "localhost")
+
+    get_data: dict = {"SAMLRequest": SAMLRequest}
+    if SigAlg:
+        get_data["SigAlg"] = SigAlg
+    if Signature:
+        get_data["Signature"] = Signature
+    if RelayState:
+        get_data["RelayState"] = RelayState
+
+    try:
+        redirect_url, user_id = await saml_service.process_slo_request(
+            config=config,
+            request_host=http_host,
+            is_https=is_https,
+            get_data=get_data,
+        )
+    except ValueError as exc:
+        raise BadRequest(detail=str(exc))
+
+    # Revoke the user's refresh token so the session cannot be reused
+    # even if the short-lived access token has not yet expired.
+    if user_id is not None:
+        token_store = TokenStore(redis_client=redis)
+        await token_store.revoke_user_tokens(user_id)
+
+    response = RedirectResponse(url=redirect_url, status_code=302)
     response.delete_cookie(
         key=settings.cookie_name,
         httponly=True,
@@ -412,9 +427,10 @@ async def exchange_sso_code(
 async def get_saml_config(
     db: DatabaseDep,
     _: RequireAdminRole,
+    saml_service: SAMLService = Depends(get_saml_service),
 ) -> ApiResponse[SAMLConfigResponse]:
     settings = get_settings()
-    config = await _get_any_config(db)
+    config = await saml_service.get_any_config(db)
     if not config:
         raise NotFound(detail="No SAML configuration found")
 
@@ -441,8 +457,9 @@ async def create_saml_config(
     payload: SAMLConfigCreate,
     db: DatabaseDep,
     _: RequireAdminRole,
+    saml_service: SAMLService = Depends(get_saml_service),
 ) -> ApiResponse[SAMLConfigResponse]:
-    existing = await _get_any_config(db)
+    existing = await saml_service.get_any_config(db)
     if existing:
         raise AlreadyExists(
             detail=(
@@ -487,9 +504,10 @@ async def update_saml_config(
     payload: SAMLConfigUpdate,
     db: DatabaseDep,
     _: RequireAdminRole,
+    saml_service: SAMLService = Depends(get_saml_service),
 ) -> ApiResponse[SAMLConfigResponse]:
     settings = get_settings()
-    config = await _get_any_config(db)
+    config = await saml_service.get_any_config(db)
     if not config:
         raise NotFound(detail="No SAML configuration found")
 
@@ -521,8 +539,9 @@ async def update_saml_config(
 async def delete_saml_config(
     db: DatabaseDep,
     _: RequireAdminRole,
+    saml_service: SAMLService = Depends(get_saml_service),
 ) -> ApiResponse[None]:
-    config = await _get_any_config(db)
+    config = await saml_service.get_any_config(db)
     if not config:
         raise NotFound(detail="No SAML configuration found")
 
