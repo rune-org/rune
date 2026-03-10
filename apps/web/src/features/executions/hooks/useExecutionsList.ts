@@ -8,7 +8,6 @@ import type {
   ExecutionListItem,
   ExecutionMetrics,
   ExecutionFilters,
-  ExecutionDetail,
 } from "../types";
 
 function mapExecution(item: ApiExecutionListItem): ExecutionListItem {
@@ -107,8 +106,6 @@ export interface UseExecutionsListReturn {
   setFilters: (filters: ExecutionFilters) => void;
   /** Refresh the list */
   refresh: () => void;
-  /** Get execution detail by ID */
-  getExecutionDetail: (executionId: string) => ExecutionDetail | null;
 }
 
 /**
@@ -150,29 +147,6 @@ export function useExecutionsList(): UseExecutionsListReturn {
     void refresh();
   }, [refresh]);
 
-  const getExecutionDetail = useCallback(
-    (executionId: string): ExecutionDetail | null => {
-      const execution = allExecutions.find((item) => item.executionId === executionId);
-
-      if (!execution) {
-        return null;
-      }
-
-      return {
-        executionId: execution.executionId,
-        workflowId: execution.workflowId,
-        workflowName: execution.workflowName,
-        status: execution.status,
-        startedAt: execution.startedAt,
-        completedAt: execution.completedAt,
-        durationMs: execution.durationMs,
-        nodes: {},
-        error: execution.failureReason,
-      };
-    },
-    [allExecutions]
-  );
-
   return {
     executions,
     allExecutions,
@@ -181,7 +155,6 @@ export function useExecutionsList(): UseExecutionsListReturn {
     filters,
     setFilters,
     refresh,
-    getExecutionDetail,
   };
 }
 
