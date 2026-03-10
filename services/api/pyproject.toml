@@ -21,6 +21,7 @@ dependencies = [
     "python-dotenv==1.1.1",
     "redis==6.4.0",
     "sqlmodel==0.0.25",
+    "python3-saml==1.16.0",
 ]
 
 [dependency-groups]
