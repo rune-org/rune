@@ -131,12 +131,16 @@ export function useExecutionsList(): UseExecutionsListReturn {
 
     try {
       const response = await listUserExecutions();
+
+      if (response.error) {
+        throw response.error;
+      }
+
       const items = response.data?.data ?? [];
       setAllExecutions(items.map(mapExecution));
     } catch (error) {
       console.error("[useExecutionsList] Failed to fetch executions", error);
       toast.error("Failed to load executions");
-      setAllExecutions([]);
     } finally {
       setIsLoading(false);
     }
