@@ -1,7 +1,28 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import type { ExecutionListItem, ExecutionMetrics, ExecutionFilters, ExecutionDetail } from "../types";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { toast } from "@/components/ui/toast";
+import { listUserExecutions } from "@/lib/api/workflows";
+import type { ExecutionListItem as ApiExecutionListItem } from "@/client/types.gen";
+import type {
+  ExecutionListItem,
+  ExecutionMetrics,
+  ExecutionFilters,
+  ExecutionDetail,
+} from "../types";
+
+function mapExecution(item: ApiExecutionListItem): ExecutionListItem {
+  return {
+    executionId: item.id,
+    workflowId: item.workflow_id,
+    workflowName: item.workflow_name,
+    status: item.status,
+    startedAt: item.created_at,
+    completedAt: item.completed_at ?? undefined,
+    durationMs: item.total_duration_ms ?? undefined,
+    failureReason: item.failure_reason ?? undefined,
+  };
+}
 
 /**
  * Calculate metrics from execution history.
@@ -88,28 +109,15 @@ export interface UseExecutionsListReturn {
   refresh: () => void;
   /** Get execution detail by ID */
   getExecutionDetail: (executionId: string) => ExecutionDetail | null;
-  /** Delete an execution from history */
-  deleteExecution: (executionId: string) => void;
-  /** Clear all execution history */
-  clearHistory: () => void;
 }
 
 /**
  * Hook for listing all executions across workflows.
- *
- * TODO(rtes): This hook needs a new RTES endpoint to fetch all executions.
- * Currently returns empty data. The per-workflow execution history is
- * available via ExecutionHistoryPanel which uses RTES.
- *
- * Required RTES endpoint: GET /executions (with optional filters)
  */
 export function useExecutionsList(): UseExecutionsListReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState<ExecutionFilters>({ status: "all" });
-
-  // TODO(rtes): Implement fetching all executions from RTES
-  // This requires a new endpoint: GET /executions
-  const allExecutions: ExecutionListItem[] = useMemo(() => [], []);
+  const [allExecutions, setAllExecutions] = useState<ExecutionListItem[]>([]);
 
   const executions = useMemo(
     () => applyFilters(allExecutions, filters),
@@ -118,28 +126,48 @@ export function useExecutionsList(): UseExecutionsListReturn {
 
   const metrics = useMemo(() => calculateMetrics(allExecutions), [allExecutions]);
 
-  const refresh = useCallback(() => {
-    // TODO(rtes): Implement refresh from RTES
-    console.warn("[useExecutionsList] RTES endpoint not implemented yet");
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await listUserExecutions();
+      const items = response.data?.data ?? [];
+      setAllExecutions(items.map(mapExecution));
+    } catch (error) {
+      console.error("[useExecutionsList] Failed to fetch executions", error);
+      toast.error("Failed to load executions");
+      setAllExecutions([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   const getExecutionDetail = useCallback(
-    (_executionId: string): ExecutionDetail | null => {
-      // TODO(rtes): Fetch from RTES using fetchExecution()
-      return null;
+    (executionId: string): ExecutionDetail | null => {
+      const execution = allExecutions.find((item) => item.executionId === executionId);
+
+      if (!execution) {
+        return null;
+      }
+
+      return {
+        executionId: execution.executionId,
+        workflowId: execution.workflowId,
+        workflowName: execution.workflowName,
+        status: execution.status,
+        startedAt: execution.startedAt,
+        completedAt: execution.completedAt,
+        durationMs: execution.durationMs,
+        nodes: {},
+        error: execution.failureReason,
+      };
     },
-    []
+    [allExecutions]
   );
-
-  const deleteExecution = useCallback((_executionId: string) => {
-    // TODO(rtes): Implement delete endpoint in RTES
-    console.warn("[useExecutionsList] Delete not implemented in RTES");
-  }, []);
-
-  const clearHistory = useCallback(() => {
-    // TODO(rtes): Implement clear endpoint in RTES
-    console.warn("[useExecutionsList] Clear not implemented in RTES");
-  }, []);
 
   return {
     executions,
@@ -150,8 +178,6 @@ export function useExecutionsList(): UseExecutionsListReturn {
     setFilters,
     refresh,
     getExecutionDetail,
-    deleteExecution,
-    clearHistory,
   };
 }
 

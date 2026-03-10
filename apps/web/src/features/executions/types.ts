@@ -1,9 +1,15 @@
 /**
  * Types for the Executions page.
- * These extend the canvas execution types for list views.
  */
 
-import type { WorkflowExecutionStatus, NodeExecutionData } from "../canvas/types/execution";
+import type { NodeExecutionData } from "../canvas/types/execution";
+
+export type ExecutionListStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "halted";
 
 /**
  * Execution list item for display in the table.
@@ -12,13 +18,11 @@ export interface ExecutionListItem {
   executionId: string;
   workflowId: number;
   workflowName?: string;
-  status: WorkflowExecutionStatus;
+  status: ExecutionListStatus;
   startedAt: string;
   completedAt?: string;
   durationMs?: number;
-  nodeCount: number;
-  successfulNodes: number;
-  failedNodes: number;
+  failureReason?: string;
 }
 
 /**
@@ -28,7 +32,7 @@ export interface ExecutionDetail {
   executionId: string;
   workflowId: number;
   workflowName?: string;
-  status: WorkflowExecutionStatus;
+  status: ExecutionListStatus;
   startedAt: string;
   completedAt?: string;
   durationMs?: number;
@@ -54,7 +58,7 @@ export interface ExecutionMetrics {
  */
 export interface ExecutionFilters {
   workflowId?: number;
-  status?: WorkflowExecutionStatus | "all";
+  status?: ExecutionListStatus | "all";
   dateRange?: {
     start: Date;
     end: Date;

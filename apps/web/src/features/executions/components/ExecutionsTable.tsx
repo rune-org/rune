@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Table,
   TableHeader,
@@ -16,29 +15,24 @@ import {
   Clock,
   Loader2,
   AlertTriangle,
-  Eye,
-  Trash2,
-  ExternalLink,
 } from "lucide-react";
-import type { ExecutionListItem } from "../types";
-import type { WorkflowExecutionStatus } from "../../canvas/types/execution";
+import type { ExecutionListItem, ExecutionListStatus } from "../types";
 import { cn } from "@/lib/cn";
 import Link from "next/link";
 
 interface ExecutionsTableProps {
   executions: ExecutionListItem[];
   isLoading?: boolean;
-  onDelete?: (executionId: string) => void;
 }
 
-function StatusBadge({ status }: { status: WorkflowExecutionStatus }) {
+function StatusBadge({ status }: { status: ExecutionListStatus }) {
   const configs: Record<
-    WorkflowExecutionStatus,
+    ExecutionListStatus,
     { icon: React.ReactNode; label: string; className: string }
   > = {
-    idle: {
+    pending: {
       icon: <Clock className="h-3.5 w-3.5" />,
-      label: "Idle",
+      label: "Pending",
       className: "bg-muted text-muted-foreground",
     },
     running: {
@@ -105,10 +99,7 @@ function formatDate(dateStr: string): string {
 export function ExecutionsTable({
   executions,
   isLoading,
-  onDelete,
 }: ExecutionsTableProps) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -139,29 +130,17 @@ export function ExecutionsTable({
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/30 border-b border-border">
-            <TableHead className="w-[120px]">Execution ID</TableHead>
-            <TableHead className="w-[140px]">Workflow</TableHead>
-            <TableHead className="w-[110px]">Status</TableHead>
-            <TableHead className="w-[80px]">Duration</TableHead>
-            <TableHead className="w-[150px]">Nodes</TableHead>
-            <TableHead className="w-[100px]">Started</TableHead>
-            <TableHead className="w-[100px] text-right">Actions</TableHead>
+            <TableHead className="w-[140px]">Execution ID</TableHead>
+            <TableHead className="w-[180px]">Workflow</TableHead>
+            <TableHead className="w-[220px]">Status</TableHead>
+            <TableHead className="w-[90px]">Duration</TableHead>
+            <TableHead className="w-[120px]">Started</TableHead>
+            <TableHead className="w-[120px]">Completed</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {executions.map((execution) => (
-            <TableRow
-              key={execution.executionId}
-              className={cn(
-                "cursor-pointer transition-colors hover:bg-muted/30",
-                expandedId === execution.executionId && "bg-muted/40"
-              )}
-              onClick={() =>
-                setExpandedId(
-                  expandedId === execution.executionId ? null : execution.executionId
-                )
-              }
-            >
+            <TableRow key={execution.executionId} className="transition-colors hover:bg-muted/30">
               <TableCell className="font-mono text-xs">
                 {execution.executionId.slice(0, 8)}...
               </TableCell>
@@ -173,61 +152,26 @@ export function ExecutionsTable({
                 </div>
               </TableCell>
               <TableCell>
-                <StatusBadge status={execution.status} />
+                <div className="space-y-1">
+                  <StatusBadge status={execution.status} />
+                  {execution.failureReason ? (
+                    <p
+                      className="max-w-[220px] truncate text-xs text-muted-foreground"
+                      title={execution.failureReason}
+                    >
+                      {execution.failureReason}
+                    </p>
+                  ) : null}
+                </div>
               </TableCell>
               <TableCell className="tabular-nums">
                 {formatDuration(execution.durationMs)}
               </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1.5 text-xs">
-                  <span className="text-green-600 dark:text-green-400">{execution.successfulNodes}</span>
-                  <span className="text-muted-foreground">/</span>
-                  <span className="text-foreground">{execution.nodeCount}</span>
-                  {execution.failedNodes > 0 && (
-                    <span className="ml-1 text-red-500">
-                      ({execution.failedNodes} failed)
-                    </span>
-                  )}
-                </div>
-              </TableCell>
               <TableCell className="text-muted-foreground text-xs">
                 {formatDate(execution.startedAt)}
               </TableCell>
-              <TableCell>
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 p-0"
-                    disabled
-                    title="View details (coming soon)"
-                  >
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 p-0"
-                    disabled
-                    title="Open workflow (coming soon)"
-                  >
-                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                  {onDelete && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 p-0 hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(execution.executionId);
-                      }}
-                      title="Delete execution"
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  )}
-                </div>
+              <TableCell className="text-muted-foreground text-xs">
+                {execution.completedAt ? formatDate(execution.completedAt) : "-"}
               </TableCell>
             </TableRow>
           ))}
