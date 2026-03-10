@@ -24,18 +24,16 @@ class TestDatabasePersistence:
         assert persisted.name == "Updated Name"
 
     @pytest.mark.asyncio
-    async def test_workflow_status_update_persists(
+    async def test_workflow_trigger_type_persists(
         self, workflow_service, sample_workflow, test_db
     ):
-        """Should persist status changes to database."""
-        updated = await workflow_service.update_status(sample_workflow, True)
+        """Should persist trigger type from workflow data."""
+        from src.db.models import TriggerType
 
-        workflow_id = updated.id
-
-        result = await test_db.exec(select(Workflow).where(Workflow.id == workflow_id))
+        result = await test_db.exec(select(Workflow).where(Workflow.id == sample_workflow.id))
         persisted = result.first()
 
-        assert persisted.is_active is True
+        assert persisted.trigger_type == TriggerType.MANUAL
 
     @pytest.mark.asyncio
     async def test_workflow_data_persists_unchanged(

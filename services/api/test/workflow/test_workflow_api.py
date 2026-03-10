@@ -35,14 +35,6 @@ class TestAPIAuthentication:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_update_status_requires_auth(self, client, sample_workflow):
-        """Should reject unauthenticated status update."""
-        response = await client.put(
-            f"/workflows/{sample_workflow.id}/status", json={"is_active": False}
-        )
-        assert response.status_code == 401
-
-    @pytest.mark.asyncio
     async def test_delete_workflow_requires_auth(self, client, sample_workflow):
         """Should reject unauthenticated workflow deletion."""
         response = await client.delete(f"/workflows/{sample_workflow.id}")
@@ -117,18 +109,6 @@ class TestAPIValidation:
         response = await authenticated_client.put(
             f"/workflows/{sample_workflow.id}/name",
             json={},  # missing name
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.asyncio
-    async def test_status_update_missing_is_active(
-        self, authenticated_client, sample_workflow
-    ):
-        """Should reject status update without is_active field."""
-        response = await authenticated_client.put(
-            f"/workflows/{sample_workflow.id}/status",
-            json={},  # missing is_active
         )
 
         assert response.status_code == 422
@@ -215,16 +195,6 @@ class TestAPISuccess:
         assert response.status_code == 204
 
     @pytest.mark.asyncio
-    async def test_set_active_returns_200(self, authenticated_client, sample_workflow):
-        """Should return 200 for status update."""
-        response = await authenticated_client.put(
-            f"/workflows/{sample_workflow.id}/status",
-            json={"is_active": True},
-        )
-
-        assert response.status_code == 200
-
-    @pytest.mark.asyncio
     async def test_run_workflow_returns_200(
         self, authenticated_client, sample_workflow
     ):
@@ -236,27 +206,14 @@ class TestAPISuccess:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_run_inactive_workflow_succeeds(
-        self, authenticated_client, workflow_service, test_db, sample_workflow
+    async def test_run_manual_workflow_succeeds(
+        self, authenticated_client, sample_workflow
     ):
-        """Should allow running inactive workflow when explicitly triggered by user."""
-        # Set workflow to inactive
-        await authenticated_client.put(
-            f"/workflows/{sample_workflow.id}/status",
-            json={"is_active": False},
-        )
-
-        # User explicitly runs the workflow
+        """Should allow running manual workflow when explicitly triggered by user."""
         response = await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/run"
         )
-
-        # Should succeed (user explicitly requested it)
         assert response.status_code == 200
-
-        # Verify workflow remains inactive after run
-        await test_db.refresh(sample_workflow)
-        assert sample_workflow.is_active is False
 
     @pytest.mark.asyncio
     async def test_run_workflow_multiple_times(
@@ -352,7 +309,7 @@ class TestResponseStructure:
         data = response.json()["data"]
         assert isinstance(data, list)
         if len(data) > 0:
-            required_fields = ["id", "name", "is_active", "role"]
+            required_fields = ["id", "name", "trigger_type", "role"]
             for field in required_fields:
                 assert field in data[0], f"Missing field: {field}"
             assert data[0]["role"] in ("owner", "editor", "viewer")
@@ -367,7 +324,7 @@ class TestResponseStructure:
         assert isinstance(data["name"], str)
         assert isinstance(data["description"], (str, type(None)))
         assert isinstance(data["workflow_data"], dict)
-        assert isinstance(data["is_active"], bool)
+        assert data["trigger_type"] in ("manual", "scheduled", "webhook")
 
     @pytest.mark.asyncio
     async def test_run_workflow_response_structure(
