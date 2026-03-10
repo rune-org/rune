@@ -7,7 +7,13 @@ import {
   useMemo,
   useState,
 } from "react";
-import { MoreHorizontal, Search } from "lucide-react";
+import {
+  Download,
+  MoreHorizontal,
+  Play,
+  Search,
+  Trash2,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -34,6 +40,7 @@ import { toast } from "@/components/ui/toast";
 import { useAuth } from "@/lib/auth";
 import {
   deleteWorkflow,
+  getWorkflowById,
   runWorkflow,
   updateWorkflowName,
   updateWorkflowStatus,
@@ -54,9 +61,16 @@ import {
   canShareWorkflow,
   canRenameWorkflow,
   canChangeWorkflowStatus,
+  canViewWorkflow,
 } from "@/lib/permissions";
 import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { stripCredentialsFromWorkflowData } from "@/lib/workflow-dsl";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "N/A";
@@ -106,6 +120,9 @@ export function WorkflowsTable() {
     null,
   );
   const [shareTarget, setShareTarget] = useState<WorkflowSummary | null>(
+    null,
+  );
+  const [exportingWorkflowId, setExportingWorkflowId] = useState<string | null>(
     null,
   );
 
@@ -191,6 +208,48 @@ export function WorkflowsTable() {
     }
   }, []);
 
+  const handleExport = useCallback(async (workflow: WorkflowSummary) => {
+    const workflowId = Number(workflow.id);
+    if (!Number.isFinite(workflowId)) return;
+
+    setExportingWorkflowId(workflow.id);
+    try {
+      const response = await getWorkflowById(workflowId);
+      if (response.error || !response.data?.data) {
+        toast.error("Failed to load workflow for export.");
+        return;
+      }
+      const detail = response.data.data;
+      const rawData = detail.workflow_data as Record<string, unknown> | undefined;
+      const hasGraph =
+        rawData &&
+        Array.isArray(rawData.nodes) &&
+        Array.isArray(rawData.edges);
+      if (!hasGraph) {
+        toast.error("Workflow has no graph data to export.");
+        return;
+      }
+      const { nodes, edges } = stripCredentialsFromWorkflowData(rawData);
+      const payload = { nodes, edges };
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeName = (workflow.name || "workflow").replace(/[^a-zA-Z0-9-_]/g, "_");
+      a.download = `workflow-${safeName}-${workflow.id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Workflow exported");
+    } catch {
+      toast.error("Failed to export workflow.");
+    } finally {
+      setExportingWorkflowId(null);
+    }
+  }, []);
+
   const handleRenameSubmit = useCallback(
     async (newName: string) => {
       if (!renameTarget) return;
@@ -256,6 +315,10 @@ export function WorkflowsTable() {
   const isRowPending = useCallback(
     (id: string) => pendingWorkflowId === id,
     [pendingWorkflowId],
+  );
+  const isRowExporting = useCallback(
+    (id: string) => exportingWorkflowId === id,
+    [exportingWorkflowId],
   );
 
   return (
@@ -368,72 +431,135 @@ export function WorkflowsTable() {
                 {timeAgo(w.lastRunAt)}
               </TableCell>
               <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                      aria-label={`Actions for ${w.name}`}
-                      disabled={isRowPending(w.id)}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem asChild>
-                      <a href={`/create/app?workflow=${w.id}`}>
-                        Open in Canvas
-                      </a>
-                    </DropdownMenuItem>
-                    {canRenameWorkflow(w.role, isAdmin) && (
-                      <DropdownMenuItem
-                        onSelect={() => setRenameTarget(w)}
+                <div className="flex items-center justify-end gap-1">
+                  {canExecuteWorkflow(w.role, isAdmin) && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 p-0"
+                          disabled={isRowPending(w.id)}
+                          onClick={() => handleRun(w)}
+                          aria-label={`Run ${w.name}`}
+                        >
+                          <Play className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Run workflow</TooltipContent>
+                    </Tooltip>
+                  )}
+                  {canViewWorkflow(w.role, isAdmin) && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 p-0"
+                          disabled={isRowExporting(w.id)}
+                          onClick={() => handleExport(w)}
+                          aria-label={`Export ${w.name} to JSON`}
+                        >
+                          <Download className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Export to JSON</TooltipContent>
+                    </Tooltip>
+                  )}
+                  {canDeleteWorkflow(w.role, isAdmin) && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 p-0 hover:text-destructive"
+                          disabled={isRowPending(w.id)}
+                          onClick={() => beginDelete(w)}
+                          aria-label={`Delete ${w.name}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete workflow</TooltipContent>
+                    </Tooltip>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        aria-label={`More actions for ${w.name}`}
                         disabled={isRowPending(w.id)}
                       >
-                        Rename
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem asChild>
+                        <a href={`/create/app?workflow=${w.id}`}>
+                          Open in Canvas
+                        </a>
                       </DropdownMenuItem>
-                    )}
-                    {canChangeWorkflowStatus(w.role, isAdmin) && (
-                      <DropdownMenuItem
-                        onSelect={() => handleToggleActive(w)}
-                        disabled={isRowPending(w.id)}
-                      >
-                        {w.status === "active" ? "Deactivate" : "Activate"}
-                      </DropdownMenuItem>
-                    )}
-                    {canExecuteWorkflow(w.role, isAdmin) && (
-                      <DropdownMenuItem
-                        onSelect={() => handleRun(w)}
-                        disabled={isRowPending(w.id)}
-                      >
-                        Run
-                      </DropdownMenuItem>
-                    )}
-                    {canShareWorkflow(w.role, isAdmin) && (
-                      <>
-                        <DropdownMenuSeparator />
+                      {canRenameWorkflow(w.role, isAdmin) && (
                         <DropdownMenuItem
-                          onSelect={() => setShareTarget(w)}
+                          onSelect={() => setRenameTarget(w)}
                           disabled={isRowPending(w.id)}
                         >
-                          Share
+                          Rename
                         </DropdownMenuItem>
-                      </>
-                    )}
-                    {canDeleteWorkflow(w.role, isAdmin) && (
-                      <>
-                        <DropdownMenuSeparator />
+                      )}
+                      {canChangeWorkflowStatus(w.role, isAdmin) && (
                         <DropdownMenuItem
-                          onSelect={() => beginDelete(w)}
+                          onSelect={() => handleToggleActive(w)}
                           disabled={isRowPending(w.id)}
-                          className="text-red-400 focus:text-red-300 data-highlighted:bg-red-500/10 data-highlighted:text-red-200"
                         >
-                          Delete
+                          {w.status === "active"
+                            ? "Deactivate"
+                            : "Activate"}
                         </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      )}
+                      {canExecuteWorkflow(w.role, isAdmin) && (
+                        <DropdownMenuItem
+                          onSelect={() => handleRun(w)}
+                          disabled={isRowPending(w.id)}
+                        >
+                          Run
+                        </DropdownMenuItem>
+                      )}
+                      {canViewWorkflow(w.role, isAdmin) && (
+                        <DropdownMenuItem
+                          onSelect={() => handleExport(w)}
+                          disabled={isRowExporting(w.id)}
+                        >
+                          Export to JSON
+                        </DropdownMenuItem>
+                      )}
+                      {canShareWorkflow(w.role, isAdmin) && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onSelect={() => setShareTarget(w)}
+                            disabled={isRowPending(w.id)}
+                          >
+                            Share
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {canDeleteWorkflow(w.role, isAdmin) && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onSelect={() => beginDelete(w)}
+                            disabled={isRowPending(w.id)}
+                            className="text-red-400 focus:text-red-300 data-highlighted:bg-red-500/10 data-highlighted:text-red-200"
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </TableCell>
             </TableRow>
           ))}

@@ -89,14 +89,13 @@ export function ChangePasswordForm({
     setError(null);
 
     try {
-      const { data, error: apiError } = await changeMyPassword(
+      const data = await changeMyPassword(
         values.oldPassword,
         values.newPassword
       );
 
-      if (apiError || !data) {
-        const errorMessage = getErrorMessage(apiError);
-        setError(errorMessage);
+      if (!data) {
+        setError("Failed to change password");
         setIsSubmitting(false);
         return;
       }
@@ -106,8 +105,9 @@ export function ChangePasswordForm({
       if (onSuccess) {
         await onSuccess();
       }
-    } catch {
-      setError("An unexpected error occurred. Please try again.");
+    } catch (apiError) {
+      const errorMessage = getErrorMessage(apiError);
+      setError(errorMessage);
       setIsSubmitting(false);
     }
   }
