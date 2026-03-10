@@ -352,9 +352,7 @@ class SAMLService:
     async def get_active_config(self, db: AsyncSession) -> Optional[SAMLConfiguration]:
         """Return the single active SAMLConfiguration, or None."""
         result = await db.exec(
-            select(SAMLConfiguration).where(
-                SAMLConfiguration.is_active == True  # noqa: E712
-            )
+            select(SAMLConfiguration).where(SAMLConfiguration.is_active == True)  # noqa: E712
         )
         return result.first()
 
@@ -425,15 +423,15 @@ class SAMLService:
             ValueError: On any validation failure (missing signature, bad MAC,
                         invalid request structure, etc.).
         """
-        if not get_data.get("Signature"):
+        # Require Signature + SigAlg for Redirect binding
+        if not get_data.get("Signature") or not get_data.get("SigAlg"):
             raise ValueError(
-                "SLO LogoutRequest must be signed — missing Signature parameter."
+                "SLO LogoutRequest must be signed with SigAlg and Signature"
             )
 
-        is_https_flag = is_https
         request_data = self._make_request_data(
             http_host=request_host,
-            is_https=is_https_flag,
+            is_https=is_https,
             path="/auth/saml/slo",
             get_data=get_data,
         )
@@ -441,24 +439,39 @@ class SAMLService:
         settings_dict = self._build_settings_dict(config)
         auth = OneLogin_Saml2_Auth(request_data, settings_dict)
 
-        # keep_local_session=True — we manage the session ourselves (cookie +
-        # Redis).  The router is responsible for clearing those after this call.
+        # Process SLO using python3-saml. Keep local session management in our code.
         redirect_url: Optional[str] = auth.process_slo(keep_local_session=True)
 
         errors = auth.get_errors()
         if errors:
-            raise ValueError(
-                f"SLO LogoutRequest validation failed: {'; '.join(errors)}"
-            )
+            reason = auth.get_last_error_reason() or ""
+            raise ValueError(f"SLO LogoutRequest validation failed: {errors} {reason}")
 
         # Extract NameID so we can revoke the user's tokens.
         name_id: Optional[str] = auth.get_nameid()
+        slo_session_index: Optional[str] = auth.get_session_index()
         user_id: Optional[int] = None
         if name_id:
-            user_id = await self.get_user_id_for_slo(name_id)
+            hashed = hashlib.sha256(name_id.encode()).hexdigest()
+            stored_raw = await self._redis.get(f"saml:session:{hashed}")
+            if stored_raw:
+                try:
+                    stored = json.loads(stored_raw)
+                    user_id = int(stored["user_id"])
+                    stored_session_index: Optional[str] = stored.get("session_index")
+                    # If both session_index values exist and differ, continue
+                    # to revoke anyway (single-session model), but note it.
+                    if (
+                        slo_session_index
+                        and stored_session_index
+                        and slo_session_index != stored_session_index
+                    ):
+                        # mismatch — still revoke
+                        pass
+                except (KeyError, ValueError, TypeError):
+                    # malformed stored session — continue with best-effort revoke
+                    pass
             await self.delete_saml_session(name_id)
-
-        # Fallback redirect if python3-saml didn't produce one (shouldn't
-        # happen in normal IdP-initiated SLO, but be defensive).
+        # Fallback redirect if python3-saml didn't produce one
         fallback = config.idp_slo_url or config.idp_sso_url
         return redirect_url or fallback, user_id

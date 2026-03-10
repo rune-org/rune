@@ -332,6 +332,61 @@ Look for `"email": "testuser@example.com"` in the response.
 
 Expected: a 4xx error response (not a token). SAML-provisioned users must log in through Step 11.
 
+## PART 5 -- Test Single Logout (SLO)
+
+SLO can be IdP-initiated (recommended for testing) or SP-initiated. RUNE supports
+IdP-initiated SLO via HTTP-Redirect binding and will revoke the user's refresh
+token and delete the auth cookie when a valid signed LogoutRequest is received.
+
+### A. IdP-initiated SLO (quick manual test)
+
+1. Ensure you completed Step 11 and the browser has the SAML session cookie set
+   for `localhost:8000` (check DevTools → Application → Cookies).
+
+2. In Authentik Admin: find the active session for `testuser` or use the
+   application session page and click the logout/invalidate session button for
+   the RUNE application. Authentik will send a signed HTTP-Redirect LogoutRequest
+   to `http://localhost:8000/auth/saml/slo`.
+
+3. Observe the browser: RUNE should process the SLO, redirect back to the IdP
+   (or the IdP SLO URL), and the `access_token` cookie should be removed.
+
+4. Confirm refresh token revocation in Redis (from `services/api` environment):
+
+```bash
+python - <<'PY'
+import redis
+r = redis.Redis(host='localhost', port=6379, db=0)
+print(r.get('refresh_token:USER_ID'))
+PY
+```
+
+Replace `USER_ID` with the numeric id (see **GET /users** in the docs). Expect
+`None` after a successful SLO revoke.
+
+### B. SP-initiated SLO (optional)
+
+RUNE is configured to sign SP-initiated LogoutRequests. To test SP-initiated SLO
+you can add a small client endpoint that calls python3-saml's `logout()` and
+redirects the user to the returned IdP URL. If you want, I can add a helper
+endpoint to `src/auth/saml/router.py` that initiates SP logout for the current
+user — tell me if you'd like that.
+
+### C. What the SLO endpoint expects
+
+- For HTTP-Redirect binding: `SAMLRequest`, `SigAlg`, and `Signature` query
+  parameters. RUNE validates the signature and only then revokes session state.
+- `RelayState` is optional but preserved when present. RUNE also verifies the
+  relay state's MAC when relevant.
+
+### D. Troubleshooting SLO
+
+- If the request is unsigned or signature verification fails RUNE returns 400
+  and does not delete the user's cookie.
+- If the cookie is removed but the refresh token remains, check Redis
+  connectivity and logs, and ensure `TokenStore.revoke_user_tokens` can access
+  the same Redis instance RUNE uses.
+
 ---
 
 ## Troubleshooting
