@@ -346,7 +346,7 @@ class SAMLService:
         return self._verify_relay_state(token)
 
     # ------------------------------------------------------------------
-    # Database helpers — kept here so routers stay thin
+    # Database helpers
     # ------------------------------------------------------------------
 
     async def get_active_config(
