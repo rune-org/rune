@@ -393,11 +393,12 @@ export function WorkflowsTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[35%]">Name</TableHead>
-            <TableHead className="w-[20%]">Trigger Type</TableHead>
-            <TableHead className="w-[20%]">Status</TableHead>
+            <TableHead className="w-[8%]">ID</TableHead>
+            <TableHead className="w-[30%]">Name</TableHead>
+            <TableHead className="w-[17%]">Trigger Type</TableHead>
+            <TableHead className="w-[17%]">Status</TableHead>
             <TableHead className="w-[15%]">Last Run</TableHead>
-            <TableHead className="w-[10%] text-right">Actions</TableHead>
+            <TableHead className="w-[13%] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -408,6 +409,9 @@ export function WorkflowsTable() {
                 loading || isRowPending(w.id) ? "1" : undefined
               }
             >
+              <TableCell className="font-mono text-xs text-muted-foreground">
+                {w.id}
+              </TableCell>
               <TableCell className="font-medium text-foreground">
                 <div className="flex items-center gap-2">
                   <a
