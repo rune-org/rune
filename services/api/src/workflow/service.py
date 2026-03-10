@@ -154,7 +154,10 @@ class WorkflowService:
                         "interval_seconds"
                     ]
                     existing_schedule.start_at = new_start_at
-                    existing_schedule.is_active = schedule_config.get("is_active", True)
+
+                    if "is_active" in schedule_config:
+                        existing_schedule.is_active = schedule_config["is_active"]
+
                     if (
                         old_interval != existing_schedule.interval_seconds
                         or old_start_at != new_start_at

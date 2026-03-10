@@ -149,6 +149,7 @@ FETCH_DUE_SCHEDULES = """
     JOIN workflows w ON sw.workflow_id = w.id
     WHERE sw.is_active = true AND sw.next_run_at <= $1
     ORDER BY sw.next_run_at
+    FOR UPDATE OF sw SKIP LOCKED
 """
 
 UPDATE_NEXT_RUN = """
@@ -158,8 +159,8 @@ UPDATE_NEXT_RUN = """
 """
 
 
-async def process_schedule(row, db_pool, channel):
-    """Execute a single due schedule."""
+async def process_schedule(row, conn, db_pool, channel):
+    """Execute a single due schedule within the caller's transaction."""
     now = datetime.now()
     if row["next_run_at"] > now:
         log.debug(
@@ -169,13 +170,16 @@ async def process_schedule(row, db_pool, channel):
         )
         return
 
+    next_run = now + timedelta(seconds=row["interval_seconds"])
+    await conn.execute(UPDATE_NEXT_RUN, next_run, now, row["schedule_id"])
+
     workflow_data = row["workflow_data"]
     if isinstance(workflow_data, str):
         workflow_data = json.loads(workflow_data)
 
     # Resolve credentials
-    async with db_pool.acquire() as conn:
-        workflow_data = await resolve_credentials(workflow_data, conn)
+    async with db_pool.acquire() as cred_conn:
+        workflow_data = await resolve_credentials(workflow_data, cred_conn)
 
     # Publish to RabbitMQ
     exec_id = await publish_workflow(channel, row["workflow_id"], workflow_data)
@@ -184,25 +188,22 @@ async def process_schedule(row, db_pool, channel):
         row["schedule_id"], row["workflow_name"], row["workflow_id"], exec_id,
     )
 
-    # Advance next_run_at
-    next_run = now + timedelta(seconds=row["interval_seconds"])
-    async with db_pool.acquire() as conn:
-        await conn.execute(UPDATE_NEXT_RUN, next_run, now, row["schedule_id"])
-
 
 async def poll(db_pool, channel):
     """Single poll iteration: fetch due schedules and process them."""
     cutoff = datetime.now() + timedelta(seconds=LOOK_AHEAD)
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch(FETCH_DUE_SCHEDULES, cutoff)
+        async with conn.transaction():
+            rows = await conn.fetch(FETCH_DUE_SCHEDULES, cutoff)
 
-    if not rows:
-        return
+            if not rows:
+                return
 
-    results = await asyncio.gather(
-        *(process_schedule(r, db_pool, channel) for r in rows),
-        return_exceptions=True,
-    )
+            results = await asyncio.gather(
+                *(process_schedule(r, conn, db_pool, channel) for r in rows),
+                return_exceptions=True,
+            )
+
     for i, result in enumerate(results):
         if isinstance(result, Exception):
             log.error("Schedule %d failed: %s", rows[i]["schedule_id"], result)
