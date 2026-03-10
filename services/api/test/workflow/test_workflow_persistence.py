@@ -30,7 +30,9 @@ class TestDatabasePersistence:
         """Should persist trigger type from workflow data."""
         from src.db.models import TriggerType
 
-        result = await test_db.exec(select(Workflow).where(Workflow.id == sample_workflow.id))
+        result = await test_db.exec(
+            select(Workflow).where(Workflow.id == sample_workflow.id)
+        )
         persisted = result.first()
 
         assert persisted.trigger_type == TriggerType.MANUAL

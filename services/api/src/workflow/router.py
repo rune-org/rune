@@ -60,9 +60,7 @@ async def list_workflows(
             name=wf.name,
             trigger_type=wf.trigger_type,
             role=role,
-            schedule=ScheduleInfo.model_validate(wf.schedule)
-            if wf.schedule
-            else None,
+            schedule=ScheduleInfo.model_validate(wf.schedule) if wf.schedule else None,
         )
         for wf, role in wfs
     ]
