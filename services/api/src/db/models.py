@@ -23,6 +23,15 @@ class WorkflowRole(str, Enum):
     OWNER = "owner"
 
 
+class ExecutionStatus(str, Enum):
+    """Execution status enumeration."""
+
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    HALTED = "halted"
+
+
 class CredentialType(str, Enum):
     """Credential type enumeration."""
 
@@ -190,6 +199,7 @@ class Workflow(TimestampModel, table=True):
         back_populates="used_in_workflows",
         link_model=WorkflowCredentialLink,
     )
+    executions: list["Execution"] = Relationship(back_populates="workflow")
 
 
 class WorkflowUser(TimestampModel, table=True):
@@ -341,3 +351,21 @@ class WorkflowCredential(TimestampModel, table=True):
         back_populates="credential",
         cascade_delete=True,
     )
+
+
+class Execution(TimestampModel, table=True):
+    __tablename__ = "executions"
+
+    id: str = Field(primary_key=True)
+    workflow_id: int = Field(foreign_key="workflows.id", ondelete="CASCADE", index=True)
+    status: ExecutionStatus = Field(
+        default=ExecutionStatus.PENDING,
+        sa_column=Column(
+            SQLAlchemyEnum(ExecutionStatus, name="execution_status", native_enum=True),
+        ),
+    )
+    completed_at: Optional[datetime] = Field(default=None)
+    total_duration_ms: Optional[int] = Field(default=None)
+    failure_reason: Optional[str] = Field(default=None)
+
+    workflow: "Workflow" = Relationship(back_populates="executions")
