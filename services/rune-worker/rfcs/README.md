@@ -108,6 +108,30 @@ Specification for the Edit Node for data manipulation:
 
 ---
 
+### [RFC-008-list-transform-nodes.md](./RFC-008-list-transform-nodes.md)
+**Status**: Implemented  
+**Created**: 2026-03-11  
+**Title**: List Transform Nodes (`filter`, `sort`, `limit`)
+
+Specification for lightweight list-shaping nodes:
+- Rule-based filtering
+- Stable sorting with text/number/date support
+- Limiting list size while preserving working payload semantics
+
+---
+
+### [RFC-009-datetime-node.md](./RFC-009-datetime-node.md)
+**Status**: Implemented  
+**Created**: 2026-03-11  
+**Title**: Date & Time Node (`datetime`)
+
+Specification for simple date/time utilities in workflows:
+- Current time generation
+- Add/subtract operations
+- Timezone-aware formatting
+
+---
+
 ### [ISSUE_RECURSIVE_EXECUTOR.md](./ISSUE_RECURSIVE_EXECUTOR.md)
 **Status**: Superseded by RFC-001  
 **Title**: Implement Recursive Node-by-Node Executor with RabbitMQ
