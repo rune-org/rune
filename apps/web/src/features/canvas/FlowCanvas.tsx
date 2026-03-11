@@ -52,7 +52,7 @@ type FlowCanvasProps = {
   onPersist?: (graph: {
     nodes: CanvasNode[];
     edges: Edge[];
-  }) => Promise<void> | void;
+  }) => Promise<number | null | void> | number | null | void;
   onSaveWithMessage?: (graph: {
     nodes: CanvasNode[];
     edges: Edge[];
@@ -473,19 +473,30 @@ function FlowCanvasInner({
       return;
     }
 
+    if (!workflowId) {
+      toast.error("Save the workflow before execution");
+      return;
+    }
+
     resetExecution();
+    let versionIdToRun: number | undefined;
     if (onPersist) {
       try {
         const nodes = nodesRef.current;
         const edges = edgesRef.current;
-        await onPersist({ nodes, edges });
+        const persistedVersionId = await onPersist({ nodes, edges });
+        if (typeof persistedVersionId === "number") {
+          versionIdToRun = persistedVersionId;
+        } else {
+          return;
+        }
       } catch {
         toast.error("Failed to save workflow before execution");
         return;
       }
     }
-    void startExecution();
-  }, [isViewingSnapshot, resetExecution, onPersist, startExecution]);
+    void startExecution(versionIdToRun);
+  }, [isViewingSnapshot, onPersist, resetExecution, startExecution, workflowId]);
 
   useCanvasShortcuts({
     nodes,
