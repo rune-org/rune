@@ -53,10 +53,6 @@ function CreateWorkflowButton() {
       const response = await workflows.createWorkflow({
         name: name.trim() || defaultWorkflowSummary.name,
         description: description.trim() || "",
-        workflow_data: {
-          nodes: [],
-          edges: [],
-        },
       });
 
       if (!response.data) {

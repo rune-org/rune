@@ -24,6 +24,8 @@ import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
 import { SaveTemplateDialog } from "./components/SaveTemplateDialog";
 import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
+import { SaveVersionDialog } from "./components/SaveVersionDialog";
+import { VersionConflictDialog } from "./components/VersionConflictDialog";
 import { SmithButton } from "./components/SmithButton";
 import { FlowViewport } from "./components/FlowViewport";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
@@ -51,8 +53,25 @@ type FlowCanvasProps = {
     nodes: CanvasNode[];
     edges: Edge[];
   }) => Promise<void> | void;
+  onSaveWithMessage?: (graph: {
+    nodes: CanvasNode[];
+    edges: Edge[];
+  }, message: string) => Promise<void> | void;
   saveDisabled?: boolean;
   workflowId?: number | null;
+  onPublish?: () => void;
+  hasUnpublishedChanges?: boolean;
+  publishDisabled?: boolean;
+  onRestore?: (versionId: number) => void;
+  onRunVersion?: (versionId: number) => void;
+  conflictData?: {
+    serverVersion: number;
+    serverVersionId: number;
+    localGraph: { nodes: CanvasNode[]; edges: Edge[] };
+  } | null;
+  onConflictLoadServer?: () => void;
+  onConflictForceSave?: () => void;
+  onConflictCancel?: () => void;
 };
 
 export default function FlowCanvas(props: FlowCanvasProps) {
@@ -67,8 +86,18 @@ function FlowCanvasInner({
   externalNodes,
   externalEdges,
   onPersist,
+  onSaveWithMessage,
   saveDisabled = false,
   workflowId = null,
+  onPublish,
+  hasUnpublishedChanges = false,
+  publishDisabled = false,
+  onRestore,
+  onRunVersion,
+  conflictData,
+  onConflictLoadServer,
+  onConflictForceSave,
+  onConflictCancel,
 }: FlowCanvasProps) {
   const [nodes, setNodes] = useNodesState<CanvasNode>(externalNodes ?? []);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(
@@ -83,6 +112,14 @@ function FlowCanvasInner({
     nodeType: NodeKind;
     scanResult: ScanResult;
   } | null>(null);
+
+  const [versionSnapshot, setVersionSnapshot] = useState<{
+    nodes: CanvasNode[];
+    edges: Edge[];
+    versionNumber: number;
+  } | null>(null);
+
+  const [saveVersionDialogOpen, setSaveVersionDialogOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(null);
@@ -145,31 +182,51 @@ function FlowCanvasInner({
 
   // Historical snapshot detection
   const { state: ctxExecutionState } = useExecution();
-  const isViewingSnapshot =
+  const isViewingExecutionSnapshot =
     ctxExecutionState.isHistorical === true && !!ctxExecutionState.graphSnapshot;
+
+  const isViewingSnapshot = isViewingExecutionSnapshot || !!versionSnapshot;
 
   // Save/restore the live canvas when entering/leaving snapshot mode.
   const savedLiveNodesRef = useRef<CanvasNode[] | null>(null);
   const savedLiveEdgesRef = useRef<Edge[] | null>(null);
 
+  // Execution snapshot save/restore
   useEffect(() => {
-    if (isViewingSnapshot && ctxExecutionState.graphSnapshot) {
+    if (isViewingExecutionSnapshot && ctxExecutionState.graphSnapshot) {
       if (savedLiveNodesRef.current === null) {
         savedLiveNodesRef.current = nodesRef.current;
         savedLiveEdgesRef.current = edgesRef.current;
       }
       setNodes(ctxExecutionState.graphSnapshot.nodes);
       setEdges(ctxExecutionState.graphSnapshot.edges);
-    } else if (savedLiveNodesRef.current !== null) {
+    } else if (!versionSnapshot && savedLiveNodesRef.current !== null) {
       setNodes(savedLiveNodesRef.current);
       setEdges(savedLiveEdgesRef.current ?? []);
       savedLiveNodesRef.current = null;
       savedLiveEdgesRef.current = null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isViewingSnapshot, ctxExecutionState.graphSnapshot]);
+  }, [isViewingExecutionSnapshot, ctxExecutionState.graphSnapshot]);
 
-  // NOTE: Keep this effect after the snapshot save/restore effect above.
+  useEffect(() => {
+    if (versionSnapshot) {
+      if (savedLiveNodesRef.current === null) {
+        savedLiveNodesRef.current = nodesRef.current;
+        savedLiveEdgesRef.current = edgesRef.current;
+      }
+      setNodes(versionSnapshot.nodes);
+      setEdges(versionSnapshot.edges);
+    } else if (!isViewingExecutionSnapshot && savedLiveNodesRef.current !== null) {
+      setNodes(savedLiveNodesRef.current);
+      setEdges(savedLiveEdgesRef.current ?? []);
+      savedLiveNodesRef.current = null;
+      savedLiveEdgesRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versionSnapshot]);
+
+  // NOTE: Keep this effect after the snapshot save/restore effects above.
   // While viewing history we intentionally ignore external graph prop updates so
   // that "Return to Live" restores the pre-snapshot in-memory draft.
   useEffect(() => {
@@ -240,6 +297,36 @@ function FlowCanvasInner({
       edges: edgesRef.current,
     });
   }, [onPersist]);
+
+  const handleSaveVersionWithMessage = useCallback(
+    (message: string) => {
+      if (!onSaveWithMessage) return;
+      setSaveVersionDialogOpen(false);
+      return onSaveWithMessage(
+        { nodes: nodesRef.current, edges: edgesRef.current },
+        message,
+      );
+    },
+    [onSaveWithMessage],
+  );
+
+  const handleViewVersion = useCallback(
+    (snapshot: { nodes: CanvasNode[]; edges: Edge[]; versionNumber: number } | null) => {
+      setVersionSnapshot(snapshot);
+    },
+    [],
+  );
+
+  const handleRestore = useCallback(
+    (versionId: number) => {
+      savedLiveNodesRef.current = null;
+      savedLiveEdgesRef.current = null;
+
+      setVersionSnapshot(null);
+      onRestore?.(versionId);
+    },
+    [onRestore],
+  );
 
   const handleUndo = useCallback(() => {
     const state = undo();
@@ -411,6 +498,9 @@ function FlowCanvasInner({
     onSave: () => {
       void persistGraph();
     },
+    onSaveWithMessage: onSaveWithMessage
+      ? () => setSaveVersionDialogOpen(true)
+      : undefined,
     onUndo: handleUndo,
     onRedo: handleRedo,
     onCopy: () => {
@@ -429,6 +519,12 @@ function FlowCanvasInner({
       }
     },
   });
+
+  const bottomBarMessage = versionSnapshot
+    ? `Viewing version v${versionSnapshot.versionNumber} (read-only)`
+    : isViewingExecutionSnapshot
+      ? "Viewing historical execution snapshot (read-only)"
+      : "Drag to move \u2022 Connect via handles \u2022 Paste JSON to import";
 
   return (
     <GraphProvider nodes={nodes} edges={edges}>
@@ -474,13 +570,19 @@ function FlowCanvasInner({
             onImportFromClipboard={importFromClipboard}
             onImportFromFile={importFromFile}
             onImportFromTemplate={importFromTemplate}
-            onFitView={handleFitView}
             onAutoLayout={autoLayout}
             saveDisabled={saveDisabled || isViewingSnapshot}
             executionStatus={executionState.status}
             wsStatus={wsStatus}
             isStartingExecution={isStartingExecution}
             workflowId={workflowId}
+            onPublish={onPublish}
+            hasUnpublishedChanges={hasUnpublishedChanges}
+            publishDisabled={publishDisabled}
+            onRestore={handleRestore}
+            onRunVersion={onRunVersion}
+            onViewVersion={handleViewVersion}
+            viewingVersionNumber={versionSnapshot?.versionNumber}
           />
           <SmithButton
             onClick={openSmith}
@@ -506,9 +608,7 @@ function FlowCanvasInner({
 
       <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
         <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
-          {isViewingSnapshot
-            ? "Viewing historical execution snapshot (read-only)"
-            : "Drag to move \u2022 Connect via handles \u2022 Paste JSON to import"}
+          {bottomBarMessage}
         </div>
       </div>
 
@@ -545,6 +645,26 @@ function FlowCanvasInner({
         onOpenChange={setIsImportTemplateOpen}
         onSelect={handleTemplateSelect}
       />
+
+      {/* Save Version with Message dialog */}
+      <SaveVersionDialog
+        open={saveVersionDialogOpen}
+        onOpenChange={setSaveVersionDialogOpen}
+        onSave={handleSaveVersionWithMessage}
+        isSaving={saveDisabled}
+      />
+
+      {/* Version Conflict dialog */}
+      {conflictData && onConflictLoadServer && onConflictForceSave && onConflictCancel && (
+        <VersionConflictDialog
+          open={!!conflictData}
+          serverVersion={conflictData.serverVersion}
+          serverVersionId={conflictData.serverVersionId}
+          onLoadServer={onConflictLoadServer}
+          onForceSave={onConflictForceSave}
+          onCancel={onConflictCancel}
+        />
+      )}
 
       <SmithChatDrawer
         open={isSmithOpen}

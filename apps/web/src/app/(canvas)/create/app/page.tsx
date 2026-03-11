@@ -37,6 +37,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+type WorkflowMeta = {
+  publishedVersionId: number | null;
+  hasUnpublishedChanges: boolean;
+  latestVersionNumber: number | null;
+};
+
 function CanvasPageInner() {
   const params = useSearchParams();
   const router = useRouter();
@@ -54,8 +60,18 @@ function CanvasPageInner() {
     nodes: CanvasNode[];
     edges: CanvasEdge[];
   } | null>(null);
+  const [draftMessage, setDraftMessage] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftDescription, setDraftDescription] = useState("");
+
+  // Version state
+  const [baseVersionId, setBaseVersionId] = useState<number | null>(null);
+  const [workflowMeta, setWorkflowMeta] = useState<WorkflowMeta | null>(null);
+  const [conflictData, setConflictData] = useState<{
+    serverVersion: number;
+    serverVersionId: number;
+    localGraph: { nodes: CanvasNode[]; edges: CanvasEdge[] };
+  } | null>(null);
 
   const numericWorkflowId = useMemo(() => {
     if (!workflowId) return null;
@@ -97,6 +113,8 @@ function CanvasPageInner() {
         if (!abortController.signal.aborted) {
           setNodes(undefined);
           setEdges(undefined);
+          setBaseVersionId(null);
+          setWorkflowMeta(null);
         }
         return;
       }
@@ -119,7 +137,8 @@ function CanvasPageInner() {
         if (!response.data) {
           throw new Error("Workflow not found");
         }
-        const graph = detailToGraph(response.data.data);
+        const detail = response.data.data;
+        const graph = detailToGraph(detail);
         const parsed = sanitizeGraph({
           nodes: graph.nodes,
           edges: graph.edges,
@@ -130,6 +149,12 @@ function CanvasPageInner() {
         if (!abortController.signal.aborted) {
           setNodes(filteredNodes);
           setEdges(filteredEdges);
+          setBaseVersionId(detail.latest_version?.id ?? null);
+          setWorkflowMeta({
+            publishedVersionId: detail.published_version_id ?? null,
+            hasUnpublishedChanges: detail.has_unpublished_changes ?? false,
+            latestVersionNumber: detail.latest_version?.version ?? null,
+          });
         }
       } catch (err) {
         if (!abortController.signal.aborted) {
@@ -145,38 +170,65 @@ function CanvasPageInner() {
     };
   }, [workflowId, numericWorkflowId, templateId]);
 
+  const saveVersion = useCallback(
+    async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }, message?: string | null) => {
+      if (!numericWorkflowId) return;
+      setIsSaving(true);
+      try {
+        const payload = graphToWorkflowData(graph);
+        const response = await workflows.createVersion(numericWorkflowId, {
+          base_version_id: baseVersionId,
+          workflow_data: payload,
+          message: message || null,
+        });
+
+        if (response.error) {
+          const conflict = workflows.isVersionConflict(response.error, response.response);
+          if (conflict) {
+            setConflictData({
+              serverVersion: conflict.serverVersion,
+              serverVersionId: conflict.serverVersionId,
+              localGraph: graph,
+            });
+            return;
+          }
+          throw new Error("Failed to save version");
+        }
+
+        if (response.data) {
+          const newVersion = response.data.data;
+          setBaseVersionId(newVersion.id);
+          setWorkflowMeta((prev) => ({
+            publishedVersionId: prev?.publishedVersionId ?? null,
+            hasUnpublishedChanges: true,
+            latestVersionNumber: newVersion.version,
+          }));
+          toast.success("Version saved");
+        }
+      } catch (err) {
+        if (err instanceof MissingNodeCredentialsError) {
+          const nodeList = err.nodes
+            .map((n) => `${n.type} (${n.id.slice(0, 6)})`)
+            .join(", ");
+          toast.error(`Missing credentials for: ${nodeList}`);
+        } else {
+          toast.error(
+            err instanceof Error ? err.message : "Failed to save version",
+          );
+        }
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [numericWorkflowId, baseVersionId],
+  );
+
   const handlePersist = useCallback(
     async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }) => {
       if (isSaving) return;
 
       if (numericWorkflowId !== null) {
-        try {
-          setIsSaving(true);
-          const payload = graphToWorkflowData(graph);
-          const response = await workflows.updateWorkflowData(
-            numericWorkflowId,
-            payload,
-          );
-
-          if (!response.data) {
-            throw new Error("Failed to update workflow");
-          }
-
-          toast.success("Workflow updated");
-        } catch (err) {
-          if (err instanceof MissingNodeCredentialsError) {
-            const nodeList = err.nodes
-              .map((n) => `${n.type} (${n.id.slice(0, 6)})`)
-              .join(", ");
-            toast.error(`Missing credentials for: ${nodeList}`);
-          } else {
-            toast.error(
-              err instanceof Error ? err.message : "Failed to update workflow",
-            );
-          }
-        } finally {
-          setIsSaving(false);
-        }
+        await saveVersion(graph);
         return;
       }
 
@@ -186,8 +238,134 @@ function CanvasPageInner() {
       });
       setCreateDialogOpen(true);
     },
-    [isSaving, numericWorkflowId],
+    [isSaving, numericWorkflowId, saveVersion],
   );
+
+  const handleSaveWithMessage = useCallback(
+    async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }, message: string) => {
+      if (isSaving) return;
+      if (numericWorkflowId !== null) {
+        await saveVersion(graph, message);
+        return;
+      }
+      // Workflow not yet created — store graph + message and open the create dialog
+      setDraftGraph({ nodes: graph.nodes, edges: graph.edges });
+      setDraftMessage(message);
+      setCreateDialogOpen(true);
+    },
+    [isSaving, numericWorkflowId, saveVersion],
+  );
+
+  // Conflict resolution handlers
+  const handleConflictLoadServer = useCallback(async () => {
+    if (!conflictData || !numericWorkflowId) return;
+    try {
+      const response = await workflows.getVersion(numericWorkflowId, conflictData.serverVersionId);
+      if (response.data) {
+        const { versionToGraph } = await import("@/lib/workflows");
+        const graph = versionToGraph(response.data.data);
+        const parsed = sanitizeGraph({ nodes: graph.nodes, edges: graph.edges });
+        setNodes(parsed.nodes as CanvasNode[]);
+        setEdges(parsed.edges as CanvasEdge[]);
+        setBaseVersionId(conflictData.serverVersionId);
+        setWorkflowMeta((prev) => ({
+          publishedVersionId: prev?.publishedVersionId ?? null,
+          hasUnpublishedChanges: prev?.hasUnpublishedChanges ?? false,
+          latestVersionNumber: conflictData.serverVersion,
+        }));
+      }
+    } catch {
+      toast.error("Failed to load server version");
+    }
+    setConflictData(null);
+  }, [conflictData, numericWorkflowId]);
+
+  const handleConflictForceSave = useCallback(async () => {
+    if (!conflictData || !numericWorkflowId) return;
+    setConflictData(null);
+    setIsSaving(true);
+    try {
+      const payload = graphToWorkflowData(conflictData.localGraph);
+      const response = await workflows.createVersion(numericWorkflowId, {
+        base_version_id: conflictData.serverVersionId,
+        workflow_data: payload,
+      });
+      if (response.error) {
+        throw new Error("Failed to save version");
+      }
+      if (response.data) {
+        const newVersion = response.data.data;
+        setBaseVersionId(newVersion.id);
+        setWorkflowMeta((prev) => ({
+          publishedVersionId: prev?.publishedVersionId ?? null,
+          hasUnpublishedChanges: true,
+          latestVersionNumber: newVersion.version,
+        }));
+        toast.success("Version saved");
+      }
+    } catch {
+      toast.error("Failed to save version after conflict resolution");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [conflictData, numericWorkflowId]);
+
+  const handleConflictCancel = useCallback(() => {
+    setConflictData(null);
+  }, []);
+
+  const handlePublish = useCallback(async () => {
+    if (!numericWorkflowId || !baseVersionId) return;
+    try {
+      const response = await workflows.publishVersion(numericWorkflowId, baseVersionId);
+      if (response.data) {
+        const detail = response.data.data;
+        setWorkflowMeta({
+          publishedVersionId: detail.published_version_id ?? null,
+          hasUnpublishedChanges: detail.has_unpublished_changes ?? false,
+          latestVersionNumber: detail.latest_version?.version ?? null,
+        });
+        toast.success("Version published");
+        void refreshWorkflows();
+      }
+    } catch {
+      toast.error("Failed to publish version");
+    }
+  }, [numericWorkflowId, baseVersionId, refreshWorkflows]);
+
+  const handleRestore = useCallback(async (versionId: number) => {
+    if (!numericWorkflowId) return;
+    try {
+      const response = await workflows.restoreVersion(numericWorkflowId, versionId);
+      if (response.data) {
+        const { versionToGraph } = await import("@/lib/workflows");
+        const newVersion = response.data.data;
+        const graph = versionToGraph(newVersion);
+        const parsed = sanitizeGraph({ nodes: graph.nodes, edges: graph.edges });
+        setNodes(parsed.nodes as CanvasNode[]);
+        setEdges(parsed.edges as CanvasEdge[]);
+        setBaseVersionId(newVersion.id);
+        setWorkflowMeta((prev) => ({
+          publishedVersionId: prev?.publishedVersionId ?? null,
+          hasUnpublishedChanges: true,
+          latestVersionNumber: newVersion.version,
+        }));
+        toast.success(`Restored to v${newVersion.version}`);
+      }
+    } catch {
+      toast.error("Failed to restore version");
+    }
+  }, [numericWorkflowId]);
+
+  const handleRunVersion = useCallback(async (versionId: number) => {
+    if (!numericWorkflowId) return;
+    try {
+      await workflows.runWorkflow(numericWorkflowId, versionId);
+      toast.success("Workflow queued for execution");
+    } catch {
+      toast.error("Failed to run version");
+    }
+  }, [numericWorkflowId]);
 
   const handleCreateSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -201,7 +379,6 @@ function CanvasPageInner() {
         const response = await workflows.createWorkflow({
           name: draftName.trim() || defaultWorkflowSummary.name,
           description: draftDescription.trim(),
-          workflow_data: payload,
         });
 
         if (!response.data) {
@@ -209,17 +386,32 @@ function CanvasPageInner() {
         }
 
         const created = response.data.data;
-        toast.success("Workflow created");
 
-        const graphFromDetail = detailToGraph(created);
-        const sanitized = sanitizeGraph({
-          nodes: graphFromDetail.nodes,
-          edges: graphFromDetail.edges,
+        const versionResponse = await workflows.createVersion(created.id, {
+          base_version_id: null,
+          workflow_data: payload,
+          message: draftMessage,
         });
 
+        if (versionResponse.error || !versionResponse.data) {
+          throw new Error("Workflow created but failed to save initial version");
+        }
+
+        const newVersion = versionResponse.data.data;
+        const { versionToGraph } = await import("@/lib/workflows");
+        const graph = versionToGraph(newVersion);
+        const sanitized = sanitizeGraph({ nodes: graph.nodes, edges: graph.edges });
         setNodes(sanitized.nodes as CanvasNode[]);
         setEdges(sanitized.edges as CanvasEdge[]);
+        setBaseVersionId(newVersion.id);
+        setWorkflowMeta({
+          publishedVersionId: null,
+          hasUnpublishedChanges: true,
+          latestVersionNumber: newVersion.version,
+        });
+        toast.success("Workflow created");
         setDraftGraph(null);
+        setDraftMessage(null);
         setDraftName("");
         setDraftDescription("");
         setCreateDialogOpen(false);
@@ -242,6 +434,7 @@ function CanvasPageInner() {
     },
     [
       draftGraph,
+      draftMessage,
       draftName,
       draftDescription,
       refreshWorkflows,
@@ -257,8 +450,18 @@ function CanvasPageInner() {
           externalNodes={nodes}
           externalEdges={edges}
           onPersist={handlePersist}
+          onSaveWithMessage={handleSaveWithMessage}
           saveDisabled={isSaving}
           workflowId={numericWorkflowId}
+          onPublish={handlePublish}
+          hasUnpublishedChanges={workflowMeta?.hasUnpublishedChanges ?? false}
+          publishDisabled={!baseVersionId}
+          onRestore={handleRestore}
+          onRunVersion={handleRunVersion}
+          conflictData={conflictData}
+          onConflictLoadServer={handleConflictLoadServer}
+          onConflictForceSave={handleConflictForceSave}
+          onConflictCancel={handleConflictCancel}
         />
       </div>
 
@@ -323,7 +526,7 @@ function CanvasPageInner() {
                 Cancel
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "Saving…" : "Save workflow"}
+                {isSaving ? "Saving..." : "Save workflow"}
               </Button>
             </DialogFooter>
           </form>
