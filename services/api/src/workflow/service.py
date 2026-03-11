@@ -269,9 +269,12 @@ class WorkflowService:
         self, workflow: Workflow, version_id: int | None
     ) -> WorkflowVersion:
         if version_id is None:
-            version = await self.get_latest_version(workflow)
+            if workflow.published_version_id is None:
+                raise BadRequest(detail="Workflow has no published version")
+
+            version = await self.get_version(workflow.id, workflow.published_version_id)
             if not version:
-                raise BadRequest(detail="Workflow has no saved versions")
+                raise NotFound(detail="Workflow published version not found")
             return version
 
         version = await self.get_version(workflow.id, version_id)
