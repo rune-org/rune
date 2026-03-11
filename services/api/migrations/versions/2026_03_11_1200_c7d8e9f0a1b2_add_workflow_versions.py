@@ -33,16 +33,10 @@ def upgrade() -> None:
             server_default="{}",
         ),
         sa.Column("created_by", sa.Integer(), nullable=True),
-        sa.Column(
-            "message", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
+        sa.Column("message", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["workflow_id"], ["workflows.id"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["created_by"], ["users.id"], ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["workflow_id"], ["workflows.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["created_by"], ["users.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
             "workflow_id",
