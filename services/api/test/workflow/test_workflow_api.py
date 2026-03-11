@@ -189,6 +189,7 @@ class TestWorkflowVersionsAPI:
                 "message": "stale save",
             },
         )
+        assert second.status_code == 201
 
         assert conflict.status_code == 409
         body = conflict.json()
@@ -279,6 +280,8 @@ class TestWorkflowRunAPI:
         response = await authenticated_client.post(f"/workflows/{workflow_id}/run")
         assert response.status_code == 400
 
+
+class TestWorkflowRunAPI:
     @pytest.mark.asyncio
     async def test_update_status_without_saved_versions_returns_400(
         self, authenticated_client
