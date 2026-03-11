@@ -1,18 +1,34 @@
 import copy
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.core.exceptions import Forbidden, NotFound
+from src.core.exceptions import BadRequest, Forbidden, NotFound
 from src.credentials.encryption import get_encryptor
-from src.db.models import Workflow, WorkflowCredential, WorkflowRole, WorkflowUser
+from src.db.models import (
+    Execution,
+    User,
+    Workflow,
+    WorkflowCredential,
+    WorkflowRole,
+    WorkflowUser,
+    WorkflowVersion,
+)
+
+
+class WorkflowVersionConflictError(Exception):
+    def __init__(self, server_version: int, server_version_id: int):
+        self.server_version = server_version
+        self.server_version_id = server_version_id
+        super().__init__("version_conflict")
 
 
 class WorkflowService:
-    """Database service for Workflow objects.
+    """Database service for Workflow objects and immutable WorkflowVersion rows.
 
-    Holds a DB session and exposes simple methods used by API
-    routers: listing, retrieval, creation, updates, and deletion.
+    Holds a DB session and exposes simple methods used by API routers:
+    listing, retrieval, creation, versioning, and deletion.
     """
 
     def __init__(self, db: AsyncSession):
@@ -20,16 +36,15 @@ class WorkflowService:
         self.encryptor = get_encryptor()
 
     async def list_for_user(self, user_id: int) -> list[tuple[Workflow, WorkflowRole]]:
-        """Return workflows owned by `user_id`, newest first.
+        """Return workflows visible to `user_id`, newest first.
 
         Used for the `GET /workflows` endpoint.
         """
-        # Join the workflows to the junction table and filter by the user_id
         statement = (
             select(Workflow, WorkflowUser.role)
             .join(WorkflowUser)
             .where(WorkflowUser.user_id == user_id)
-            .order_by(Workflow.created_at.desc())
+            .order_by(Workflow.updated_at.desc())
         )
         result = await self.db.exec(statement)
         return result.all()
@@ -39,17 +54,16 @@ class WorkflowService:
         return await self.db.get(Workflow, workflow_id)
 
     async def get_for_user(self, workflow_id: int, user_id: int) -> Workflow:
-        """Fetch a workflow and enforce that `user_id` is the owner.
+        """Fetch a workflow and enforce that `user_id` has access to it.
 
         Raises NotFound if the workflow doesn't exist, or Forbidden if the
-        user is not the owner. This centralizes ownership checks for
-        callers (routers) so they remain concise.
+        user has no permission entry. This centralizes access checks for
+        callers so routers remain concise.
         """
         wf = await self.get_by_id(workflow_id)
         if not wf:
             raise NotFound(detail="Workflow not found")
 
-        # Verify the user has any permission entry for the workflow.
         stmt = select(WorkflowUser).where(
             WorkflowUser.workflow_id == workflow_id,
             WorkflowUser.user_id == user_id,
@@ -60,21 +74,10 @@ class WorkflowService:
 
         return wf
 
-    async def create(
-        self, user_id: int, name: str, description: str, workflow_data: dict
-    ) -> Workflow:
-        """Create and persist a new Workflow owned by `user_id`.
-
-        Commits the transaction and returns the refreshed model instance.
-        """
-        # Create the workflow record first, then add an OWNER entry in the workflow_users table
-        wf = Workflow(
-            name=name,
-            description=description,
-            workflow_data=workflow_data,
-        )
+    async def create(self, user_id: int, name: str, description: str) -> Workflow:
+        """Create and persist a new workflow shell owned by `user_id`."""
+        wf = Workflow(name=name, description=description)
         self.db.add(wf)
-        # Flush to assign the workflow primary key without committing yet
         await self.db.flush()
 
         owner = WorkflowUser(
@@ -84,100 +87,261 @@ class WorkflowService:
             granted_by=user_id,
         )
         self.db.add(owner)
-
-        # Commit both records in a single transaction
         await self.db.commit()
-
-        # This is cheaper than refreshing after each commit.
         await self.db.refresh(wf)
         return wf
 
     async def update_name(self, workflow: Workflow, name: str) -> Workflow:
-        """Update only the workflow's name and persist the change.
-
-        Caller is responsible for authorization. Returns the refreshed model.
-        """
+        """Update only the workflow's name and persist the change."""
         workflow.name = name
         await self.db.commit()
         await self.db.refresh(workflow)
         return workflow
 
     async def update_status(self, workflow: Workflow, is_active: bool) -> Workflow:
-        """Set workflow active/inactive and persist.
+        """Update publish status using the versioned workflow model.
 
-        This is intentionally simple — additional side-effects (e.g. scheduled
-        jobs) should be implemented at a higher layer if needed.
+        `is_active=True` publishes the latest saved version.
+        `is_active=False` clears the published pointer.
         """
-        workflow.is_active = is_active
-        await self.db.commit()
-        await self.db.refresh(workflow)
-        return workflow
+        locked_workflow = await self._lock_workflow(workflow.id)
 
-    async def update_workflow_data(
-        self, workflow: Workflow, workflow_data: dict
-    ) -> Workflow:
-        """Update the workflow's workflow_data field and persist the change.
+        if is_active:
+            latest = await self.get_latest_version(locked_workflow)
+            if not latest:
+                raise BadRequest(detail="Workflow has no saved versions")
+            locked_workflow.published_version_id = latest.id
+            locked_workflow.is_active = True
+        else:
+            locked_workflow.published_version_id = None
+            locked_workflow.is_active = False
 
-        Caller is responsible for authorization. Returns the refreshed model.
-        """
-        workflow.workflow_data = workflow_data
         await self.db.commit()
-        await self.db.refresh(workflow)
-        return workflow
+        await self.db.refresh(locked_workflow)
+        return locked_workflow
+
+    async def create_version(
+        self,
+        workflow: Workflow,
+        user_id: int,
+        workflow_data: dict,
+        base_version_id: int | None,
+        message: str | None = None,
+    ) -> WorkflowVersion:
+        locked_workflow = await self._lock_workflow(workflow.id)
+        current_latest = await self.get_latest_version(locked_workflow)
+
+        if current_latest is None:
+            if base_version_id is not None:
+                raise BadRequest(
+                    detail="base_version_id must be null when creating the first version"
+                )
+            next_version_number = 1
+        else:
+            if base_version_id != current_latest.id:
+                raise WorkflowVersionConflictError(
+                    server_version=current_latest.version,
+                    server_version_id=current_latest.id,
+                )
+            next_version_number = current_latest.version + 1
+
+        version = WorkflowVersion(
+            workflow_id=locked_workflow.id,
+            version=next_version_number,
+            workflow_data=workflow_data,
+            created_by=user_id,
+            message=self._normalize_message(message),
+        )
+        self.db.add(version)
+
+        try:
+            await self.db.flush()
+        except IntegrityError:
+            await self.db.rollback()
+            latest = await self._get_latest_version_by_workflow_id(workflow.id)
+            if latest:
+                raise WorkflowVersionConflictError(
+                    server_version=latest.version,
+                    server_version_id=latest.id,
+                )
+            raise
+
+        locked_workflow.latest_version_id = version.id
+        locked_workflow.is_active = locked_workflow.published_version_id is not None
+        await self.db.commit()
+        await self.db.refresh(version)
+        return version
+
+    async def publish_version(self, workflow: Workflow, version_id: int) -> Workflow:
+        locked_workflow = await self._lock_workflow(workflow.id)
+        version = await self.get_version(workflow.id, version_id)
+        if not version:
+            raise NotFound(detail="Workflow version not found")
+
+        locked_workflow.published_version_id = version.id
+        locked_workflow.is_active = True
+        await self.db.commit()
+        await self.db.refresh(locked_workflow)
+        return locked_workflow
+
+    async def restore_version(
+        self,
+        workflow: Workflow,
+        source_version_id: int,
+        user_id: int,
+        message: str | None = None,
+    ) -> WorkflowVersion:
+        locked_workflow = await self._lock_workflow(workflow.id)
+        source_version = await self.get_version(workflow.id, source_version_id)
+        if not source_version:
+            raise NotFound(detail="Workflow version not found")
+
+        latest = await self.get_latest_version(locked_workflow)
+        next_version_number = 1 if latest is None else latest.version + 1
+        version = WorkflowVersion(
+            workflow_id=locked_workflow.id,
+            version=next_version_number,
+            workflow_data=copy.deepcopy(source_version.workflow_data),
+            created_by=user_id,
+            message=self._normalize_message(message)
+            or f"Restored from v{source_version.version}",
+        )
+        self.db.add(version)
+        await self.db.flush()
+
+        locked_workflow.latest_version_id = version.id
+        locked_workflow.is_active = locked_workflow.published_version_id is not None
+        await self.db.commit()
+        await self.db.refresh(version)
+        return version
+
+    async def get_version(
+        self, workflow_id: int, version_id: int
+    ) -> WorkflowVersion | None:
+        statement = select(WorkflowVersion).where(
+            WorkflowVersion.workflow_id == workflow_id,
+            WorkflowVersion.id == version_id,
+        )
+        result = await self.db.exec(statement)
+        return result.first()
+
+    async def get_version_with_creator(
+        self, workflow_id: int, version_id: int
+    ) -> tuple[WorkflowVersion, User | None] | None:
+        statement = (
+            select(WorkflowVersion, User)
+            .outerjoin(User, User.id == WorkflowVersion.created_by)
+            .where(
+                WorkflowVersion.workflow_id == workflow_id,
+                WorkflowVersion.id == version_id,
+            )
+        )
+        result = await self.db.exec(statement)
+        return result.first()
+
+    async def list_versions(
+        self, workflow_id: int
+    ) -> list[tuple[WorkflowVersion, User | None]]:
+        statement = (
+            select(WorkflowVersion, User)
+            .outerjoin(User, User.id == WorkflowVersion.created_by)
+            .where(WorkflowVersion.workflow_id == workflow_id)
+            .order_by(WorkflowVersion.version.desc())
+        )
+        result = await self.db.exec(statement)
+        return result.all()
+
+    async def get_latest_version(self, workflow: Workflow) -> WorkflowVersion | None:
+        if workflow.latest_version_id is None:
+            return None
+        return await self.get_version(workflow.id, workflow.latest_version_id)
+
+    async def get_latest_version_with_creator(
+        self, workflow: Workflow
+    ) -> tuple[WorkflowVersion, User | None] | None:
+        if workflow.latest_version_id is None:
+            return None
+        return await self.get_version_with_creator(
+            workflow.id, workflow.latest_version_id
+        )
+
+    async def get_run_version(
+        self, workflow: Workflow, version_id: int | None
+    ) -> WorkflowVersion:
+        if version_id is None:
+            if workflow.published_version_id is None:
+                raise BadRequest(detail="Workflow has no published version")
+
+            version = await self.get_version(workflow.id, workflow.published_version_id)
+            if not version:
+                raise NotFound(detail="Workflow published version not found")
+            return version
+
+        version = await self.get_version(workflow.id, version_id)
+        if not version:
+            raise NotFound(detail="Workflow version not found")
+        return version
+
+    async def get_latest_workflow_data(self, workflow: Workflow) -> dict | None:
+        latest = await self.get_latest_version(workflow)
+        if latest is None:
+            return None
+        return copy.deepcopy(latest.workflow_data)
 
     async def delete(self, workflow: Workflow) -> None:
         """Hard-delete the given Workflow and commit the change.
 
-        First delete all related WorkflowUser entries, then delete the workflow itself.
+        Delete related executions and access rows first, then delete the workflow.
         """
-        stmt = delete(WorkflowUser).where(WorkflowUser.workflow_id == workflow.id)
-        await self.db.exec(stmt)
-        await self.db.commit()
+        workflow_id = workflow.id
+        if workflow_id is None:
+            raise NotFound(detail="Workflow not found")
 
-        # Now delete the workflow itself
+        stmt = delete(Execution).where(Execution.__table__.c.workflow_id == workflow_id)
+        await self.db.exec(stmt)
+
+        stmt = delete(WorkflowUser).where(
+            WorkflowUser.__table__.c.workflow_id == workflow_id
+        )
+        await self.db.exec(stmt)
+
         await self.db.delete(workflow)
         await self.db.commit()
 
     async def resolve_workflow_credentials(self, workflow_data: dict) -> dict:
         """
-        Resolve credentials for all nodes in the workflow.
+        Resolve credentials for all nodes in the workflow definition.
 
-        Iterates through all nodes in the workflow_data, finds nodes with credential
-        references, fetches the actual credential from the database, decrypts it,
-        and embeds the resolved values in place.
+        Iterates through all nodes in the workflow_data, finds nodes with
+        credential references, fetches the actual credential from the database,
+        decrypts it, and embeds the resolved values in place.
 
         Args:
-            workflow_data: The workflow definition containing nodes and edges
-            user_id: ID of the user requesting the workflow run
+            workflow_data: The workflow definition containing nodes and edges.
 
         Returns:
-            Updated workflow_data with resolved credentials embedded in nodes
+            Updated workflow_data with resolved credentials embedded in nodes.
 
         Raises:
-            NotFound: If a referenced credential doesn't exist
-            Forbidden: If user doesn't have access to a credential
+            NotFound: If a referenced credential doesn't exist.
         """
-        # Create a deep copy to avoid mutating the original
-
         resolved_data = copy.deepcopy(workflow_data)
-
-        # Get all nodes from the workflow
         nodes = resolved_data.get("nodes", [])
 
         for node in nodes:
-            # Check if this node has a credentials reference
+            # Check if this node has a credentials reference.
             if "credentials" in node and isinstance(node["credentials"], dict):
                 cred_ref = node["credentials"]
 
-                # If it has an id field, it's a reference that needs resolving
+                # If it has an id field, it's a reference that needs resolving.
                 if "id" in cred_ref:
                     credential_id = cred_ref["id"]
 
-                    # Convert string ID to int if needed
+                    # Convert string ID to int if needed.
                     if isinstance(credential_id, str):
                         credential_id = int(credential_id)
 
-                    # Fetch the credential from database
+                    # Fetch the credential from database.
                     credential: WorkflowCredential | None = await self.db.get(
                         WorkflowCredential, credential_id
                     )
@@ -187,17 +351,45 @@ class WorkflowService:
                             detail=f"Credential with ID {credential_id} not found"
                         )
 
-                    # Decrypt the credential data
+                    # Decrypt the credential data.
                     decrypted_data = self.encryptor.decrypt_credential_data(
                         credential.credential_data
                     )
 
-                    # Replace the credentials reference with resolved values
+                    # Replace the credentials reference with resolved values.
                     node["credentials"] = {
-                        "id": str(credential.id),  # Convert to string for Go worker
+                        "id": str(credential.id),
                         "name": credential.name,
                         "type": credential.credential_type.value,
                         "values": decrypted_data,
                     }
 
         return resolved_data
+
+    async def _lock_workflow(self, workflow_id: int) -> Workflow:
+        statement = select(Workflow).where(Workflow.id == workflow_id).with_for_update()
+        result = await self.db.exec(statement)
+        workflow = result.first()
+        if not workflow:
+            raise NotFound(detail="Workflow not found")
+        return workflow
+
+    async def _get_latest_version_by_workflow_id(
+        self, workflow_id: int
+    ) -> WorkflowVersion | None:
+        statement = (
+            select(WorkflowVersion)
+            .where(WorkflowVersion.workflow_id == workflow_id)
+            .order_by(WorkflowVersion.version.desc())
+            .limit(1)
+        )
+        result = await self.db.exec(statement)
+        return result.first()
+
+    @staticmethod
+    def _normalize_message(message: str | None) -> str | None:
+        if message is None:
+            return None
+
+        normalized = message.strip()
+        return normalized or None

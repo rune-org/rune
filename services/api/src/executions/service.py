@@ -1,9 +1,55 @@
 import time
 
 from aio_pika import RobustConnection
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.executions.schemas import ExecutionTokenMessage
+from src.db.models import Execution, User, UserRole, Workflow, WorkflowUser
+from src.executions.schemas import ExecutionListItem, ExecutionTokenMessage
 from src.queue.base import BaseQueuePublisher
+
+
+class ExecutionService:
+    """Service for querying execution records."""
+
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def list_for_user(self, user: User) -> list[ExecutionListItem]:
+        """Return all executions the user has access to, newest first.
+
+        Admins see all executions. Regular users see executions
+        for workflows where they have at least VIEWER access.
+        """
+        if user.role == UserRole.ADMIN:
+            statement = (
+                select(Execution, Workflow.name)
+                .join(Workflow, Execution.workflow_id == Workflow.id)
+                .order_by(Execution.created_at.desc())
+            )
+        else:
+            statement = (
+                select(Execution, Workflow.name)
+                .join(Workflow, Execution.workflow_id == Workflow.id)
+                .join(WorkflowUser, WorkflowUser.workflow_id == Workflow.id)
+                .where(WorkflowUser.user_id == user.id)
+                .order_by(Execution.created_at.desc())
+            )
+
+        result = await self.db.exec(statement)
+        return [
+            ExecutionListItem(
+                id=execution.id,
+                workflow_id=execution.workflow_id,
+                workflow_name=workflow_name,
+                status=execution.status,
+                created_at=execution.created_at,
+                completed_at=execution.completed_at,
+                total_duration_ms=execution.total_duration_ms,
+                failure_reason=execution.failure_reason,
+            )
+            for execution, workflow_name in result.all()
+        ]
 
 
 class ExecutionTokenService(BaseQueuePublisher):

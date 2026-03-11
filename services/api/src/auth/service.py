@@ -26,10 +26,20 @@ class AuthService:
         return result.first()
 
     async def authenticate_user(self, email: str, password: str) -> User | None:
-        """Authenticate user with email and password."""
+        """Authenticate user with email and password.
+
+        Returns None for unknown emails, wrong passwords, or accounts that have
+        no password hash (SSO-only users).  The caller is responsible for
+        distinguishing SSO users from simple invalid-credential cases.
+        """
         user = await self.get_user_by_email(email)
 
-        if not user or not verify_password(password, user.hashed_password):
+        # SSO-only users have no hashed_password – treat as not-authenticated
+        # here so that argon2 is never called with a None hash.
+        if not user or not user.hashed_password:
+            return None
+
+        if not verify_password(password, user.hashed_password):
             return None
 
         if not user.is_active:
@@ -63,7 +73,7 @@ class AuthService:
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
-            token_type="bearer",
+            token_type="bearer",  # nosec B106
             expires_in=self.settings.access_token_expire_minutes * 60,
         )
 
@@ -105,7 +115,7 @@ class AuthService:
         return TokenResponse(
             access_token=new_access_token,
             refresh_token=refresh_token,
-            token_type="bearer",
+            token_type="bearer",  # nosec B106
             expires_in=self.settings.access_token_expire_minutes * 60,
         )
 

@@ -80,6 +80,8 @@ impl ExecutionStore {
                 "edges": bson::to_bson(&edges_bson)?,
                 "accumulated_context": bson::to_bson(&msg.accumulated_context)?,
                 "workflow_id": &msg.workflow_id,
+                "workflow_version": msg.workflow_version,
+                "workflow_version_id": msg.workflow_version_id,
                 "execution_id": &msg.execution_id,
                 "updated_at": now,
             },

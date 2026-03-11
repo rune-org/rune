@@ -1,0 +1,85 @@
+/* Toast Notification Custom Styles - Override Sonner defaults */
+
+/* Base toast styling - override Sonner's default backgrounds */
+[data-sonner-toast] {
+  color: var(--foreground) !important;
+  padding: 10px 14px !important;
+  min-height: unset !important;
+  font-size: 0.875rem !important;
+  line-height: 1.4 !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 4px 24px hsl(220 55% 4% / 0.5) !important;
+}
+
+/* Success Toast */
+[data-sonner-toast][data-type="success"] {
+  background-color: var(--toast-success-bg) !important;
+  border: 1px solid var(--toast-success-border) !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-icon],
+[data-sonner-toast][data-type="success"] .toast-icon {
+  color: var(--toast-success-accent) !important;
+}
+
+/* Error Toast */
+[data-sonner-toast][data-type="error"] {
+  background-color: var(--toast-error-bg) !important;
+  border: 1px solid var(--toast-error-border) !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon],
+[data-sonner-toast][data-type="error"] .toast-icon {
+  color: var(--toast-error-accent) !important;
+}
+
+/* Warning Toast */
+[data-sonner-toast][data-type="warning"] {
+  background-color: var(--toast-warning-bg) !important;
+  border: 1px solid var(--toast-warning-border) !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-icon],
+[data-sonner-toast][data-type="warning"] .toast-icon {
+  color: var(--toast-warning-accent) !important;
+}
+
+/* Info Toast */
+[data-sonner-toast][data-type="info"] {
+  background-color: var(--toast-info-bg) !important;
+  border: 1px solid var(--toast-info-border) !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-icon],
+[data-sonner-toast][data-type="info"] .toast-icon {
+  color: var(--toast-info-accent) !important;
+}
+
+/* Neutral/Default Toast */
+[data-sonner-toast][data-type="default"],
+[data-sonner-toast]:not([data-type]) {
+  background-color: var(--toast-neutral-bg) !important;
+  border: 1px solid var(--toast-neutral-border) !important;
+}
+
+[data-sonner-toast][data-type="default"] [data-icon],
+[data-sonner-toast]:not([data-type]) [data-icon],
+[data-sonner-toast][data-type="default"] .toast-icon,
+[data-sonner-toast]:not([data-type]) .toast-icon {
+  color: var(--toast-neutral-accent) !important;
+}
+
+/* Toast Content Layout */
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Toast Icon Styling */
+.toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}

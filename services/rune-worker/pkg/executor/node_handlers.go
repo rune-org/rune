@@ -261,6 +261,8 @@ func (e *Executor) handleSplitFanOut(ctx context.Context, msg *messages.NodeExec
 		for _, nextNodeID := range nextNodes {
 			nextMsg := &messages.NodeExecutionMessage{
 				WorkflowID:         msg.WorkflowID,
+				WorkflowVersion:    msg.WorkflowVersion,
+				WorkflowVersionID:  msg.WorkflowVersionID,
 				ExecutionID:        msg.ExecutionID,
 				CurrentNode:        nextNodeID,
 				WorkflowDefinition: msg.WorkflowDefinition,
