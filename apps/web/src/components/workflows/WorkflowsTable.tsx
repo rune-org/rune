@@ -220,7 +220,7 @@ export function WorkflowsTable() {
         return;
       }
       const detail = response.data.data;
-      const rawData = detail.workflow_data as Record<string, unknown> | undefined;
+      const rawData = (detail.latest_version?.workflow_data ?? undefined) as Record<string, unknown> | undefined;
       const hasGraph =
         rawData &&
         Array.isArray(rawData.nodes) &&
@@ -420,6 +420,7 @@ export function WorkflowsTable() {
                   >
                     {w.name}
                   </a>
+                  {/* TODO: Show version badge & unpublished dot once WorkflowListItem exposes latest_version_number and has_unpublished_changes */}
                   <Badge variant={w.role === "owner" ? "secondary" : "outline"} className="text-xs">
                     {w.role === "owner" ? "Owner" : "Shared"}
                   </Badge>
@@ -538,6 +539,7 @@ export function WorkflowsTable() {
                           Export to JSON
                         </DropdownMenuItem>
                       )}
+                      {/* TODO: Add "Publish Latest Version" once WorkflowListItem exposes has_unpublished_changes */}
                       {canShareWorkflow(w.role, isAdmin) && (
                         <>
                           <DropdownMenuSeparator />
