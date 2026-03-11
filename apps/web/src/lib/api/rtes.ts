@@ -8,8 +8,8 @@
  */
 
 import {
-  getWorkflowExecutionsWorkflowsWorkflowIdExecutionsGet,
-  getExecutionWorkflowsWorkflowIdExecutionsExecutionIdGet,
+  getWorkflowExecutionsExecutionsWorkflowsWorkflowIdGet,
+  getExecutionExecutionsWorkflowsWorkflowIdExecutionIdGet,
 } from "@/client";
 // Derive HTTP URL from WebSocket URL or use default
 const RTES_WS_URL = process.env.NEXT_PUBLIC_RTES_WS_URL || "ws://localhost:3001/rt";
@@ -66,7 +66,7 @@ export async function fetchWorkflowExecutions(
 ): Promise<RtesExecutionDocument[]> {
   try {
     // Step 1: Request access token from main API (publishes to Redis)
-    const authResponse = await getWorkflowExecutionsWorkflowsWorkflowIdExecutionsGet({
+    const authResponse = await getWorkflowExecutionsExecutionsWorkflowsWorkflowIdGet({
       path: { workflow_id: workflowId },
     });
 
@@ -110,7 +110,7 @@ export async function fetchExecution(
 ): Promise<RtesExecutionDocument | null> {
   try {
     // Step 1: Request access token from main API (publishes to Redis)
-    const authResponse = await getExecutionWorkflowsWorkflowIdExecutionsExecutionIdGet({
+    const authResponse = await getExecutionExecutionsWorkflowsWorkflowIdExecutionIdGet({
       path: { workflow_id: workflowId, execution_id: executionId },
     });
 

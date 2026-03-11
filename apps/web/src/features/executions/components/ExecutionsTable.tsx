@@ -1,50 +1,46 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
+import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   CheckCircle,
   XCircle,
   Clock,
   Loader2,
   AlertTriangle,
-  Eye,
-  Trash2,
-  ExternalLink,
+  ChevronRight,
+  Layers,
+  ArrowDownWideNarrow,
+  Search,
 } from "lucide-react";
-import type { ExecutionListItem } from "../types";
-import type { WorkflowExecutionStatus } from "../../canvas/types/execution";
+import type { ExecutionListItem, ExecutionListStatus } from "../types";
 import { cn } from "@/lib/cn";
 import Link from "next/link";
+
+type SortMode = "workflow" | "recent";
+
+type ExecutionGroup = {
+  workflowId: number;
+  workflowName?: string;
+  executions: ExecutionListItem[];
+};
 
 interface ExecutionsTableProps {
   executions: ExecutionListItem[];
   isLoading?: boolean;
-  onDelete?: (executionId: string) => void;
 }
 
-function StatusBadge({ status }: { status: WorkflowExecutionStatus }) {
+function StatusBadge({ status }: { status: ExecutionListStatus }) {
   const configs: Record<
-    WorkflowExecutionStatus,
+    ExecutionListStatus,
     { icon: React.ReactNode; label: string; className: string }
   > = {
-    idle: {
+    pending: {
       icon: <Clock className="h-3.5 w-3.5" />,
-      label: "Idle",
+      label: "Pending",
       className: "bg-muted text-muted-foreground",
-    },
-    running: {
-      icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />,
-      label: "Running",
-      className: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
     },
     completed: {
       icon: <CheckCircle className="h-3.5 w-3.5" />,
@@ -102,12 +98,344 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
+function getGroupAccentDot(executions: ExecutionListItem[]): string {
+  if (executions.some((e) => e.status === "failed")) return "bg-red-500";
+  if (executions.some((e) => e.status === "halted")) return "bg-yellow-500";
+  if (executions.some((e) => e.status === "pending")) return "bg-muted-foreground";
+  return "bg-green-500";
+}
+
+function getStatusSummary(executions: ExecutionListItem[]): React.ReactNode {
+  const counts: Partial<Record<ExecutionListStatus, number>> = {};
+  for (const e of executions) {
+    counts[e.status] = (counts[e.status] ?? 0) + 1;
+  }
+
+  const order: {
+    status: ExecutionListStatus;
+    label: string;
+    className: string;
+  }[] = [
+    { status: "failed", label: "failed", className: "text-red-400" },
+    { status: "halted", label: "halted", className: "text-yellow-400" },
+    { status: "pending", label: "pending", className: "text-muted-foreground" },
+    { status: "completed", label: "passed", className: "text-green-400" },
+  ];
+
+  const parts = order
+    .filter((o) => (counts[o.status] ?? 0) > 0)
+    .map((o) => (
+      <span key={o.status} className={o.className}>
+        {counts[o.status]} {o.label}
+      </span>
+    ));
+
+  if (parts.length === 0) return null;
+
+  return (
+    <span className="hidden items-center gap-1 text-[11px] sm:flex">
+      {parts.reduce<React.ReactNode[]>((acc, part, i) => {
+        if (i > 0)
+          acc.push(
+            <span key={`sep-${i}`} className="text-muted-foreground/40">
+              /
+            </span>
+          );
+        acc.push(part);
+        return acc;
+      }, [])}
+    </span>
+  );
+}
+
+// columns: ID | Status | Duration | Started | Completed = 5
+const GROUPED_COL_COUNT = 5;
+
+const colHeaderClass =
+  "h-10 px-4 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70";
+
+function TableHead({ mode }: { mode: SortMode }) {
+  return (
+    <thead>
+      <tr className="border-b border-border/60">
+        <th className={cn(colHeaderClass, "w-[120px]")}>ID</th>
+        <th className={cn(colHeaderClass, "w-[180px]")}>
+          {mode === "recent" ? "Workflow" : "Status"}
+        </th>
+        {mode === "recent" && <th className={cn(colHeaderClass, "w-[140px]")}>Status</th>}
+        <th className={cn(colHeaderClass, "w-[90px]")}>Duration</th>
+        <th className={cn(colHeaderClass, "w-[110px]")}>Started</th>
+        <th className={cn(colHeaderClass, "w-[110px]")}>Completed</th>
+      </tr>
+    </thead>
+  );
+}
+
+function ExecutionRow({
+  execution,
+  showWorkflow,
+  isLast,
+}: {
+  execution: ExecutionListItem;
+  showWorkflow: boolean;
+  isLast: boolean;
+}) {
+  const workflowLabel =
+    execution.workflowName || `Workflow #${execution.workflowId}`;
+
+  return (
+    <tr
+      className={cn(
+        "transition-colors hover:bg-muted/20",
+        !isLast && "border-b border-border/30"
+      )}
+    >
+      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+        {execution.executionId.slice(0, 8)}
+      </td>
+
+      {showWorkflow && (
+        <td className="px-4 py-3">
+          <Link
+            href={`/create/app?workflow=${execution.workflowId}`}
+            className="truncate text-sm text-foreground underline-offset-4 transition-colors hover:text-foreground/80 hover:underline"
+          >
+            {workflowLabel}
+          </Link>
+        </td>
+      )}
+
+      <td className="px-4 py-3">
+        <div className="flex flex-col gap-1">
+          <StatusBadge status={execution.status} />
+          {execution.failureReason ? (
+            <p
+              className="max-w-[200px] truncate text-[11px] leading-tight text-muted-foreground/70"
+              title={execution.failureReason}
+            >
+              {execution.failureReason}
+            </p>
+          ) : null}
+        </div>
+      </td>
+
+      <td className="px-4 py-3 text-xs tabular-nums text-muted-foreground">
+        {formatDuration(execution.durationMs)}
+      </td>
+      <td className="px-4 py-3 text-xs text-muted-foreground">
+        {formatDate(execution.startedAt)}
+      </td>
+      <td className="px-4 py-3 text-xs text-muted-foreground">
+        {execution.completedAt ? formatDate(execution.completedAt) : "\u2014"}
+      </td>
+    </tr>
+  );
+}
+
+function GroupHeaderRow({
+  group,
+  isOpen,
+  onToggle,
+}: {
+  group: ExecutionGroup;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const dot = getGroupAccentDot(group.executions);
+  const workflowLabel =
+    group.workflowName || `Workflow #${group.workflowId}`;
+
+  return (
+    <tr
+      className={cn(
+        "border-b border-border/40 bg-muted/10 transition-colors hover:bg-muted/20",
+        "cursor-pointer select-none"
+      )}
+      onClick={onToggle}
+    >
+      <td colSpan={GROUPED_COL_COUNT - 1} className="px-4 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <ChevronRight
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-transform duration-200",
+              isOpen && "rotate-90"
+            )}
+          />
+
+          <div className={cn("h-2 w-2 shrink-0 rounded-full", dot)} />
+
+          <Link
+            href={`/create/app?workflow=${group.workflowId}`}
+            className="truncate text-sm font-medium text-foreground underline-offset-4 transition-colors hover:text-foreground/80 hover:underline"
+            title={workflowLabel}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {workflowLabel}
+          </Link>
+
+          <div className="ml-auto flex items-center gap-3">
+            {getStatusSummary(group.executions)}
+          </div>
+        </div>
+      </td>
+
+      <td className="px-4 py-2.5 text-right">
+        <Badge variant="outline" className="tabular-nums">
+          {group.executions.length}
+        </Badge>
+      </td>
+    </tr>
+  );
+}
+
+function GroupedBody({ groups }: { groups: ExecutionGroup[] }) {
+  const [openGroups, setOpenGroups] = useState<Record<number, boolean>>({});
+
+  return (
+    <tbody>
+      {groups.map((group, gi) => {
+        const isOpen = openGroups[group.workflowId] ?? true;
+
+        return (
+          <React.Fragment key={group.workflowId}>
+            <GroupHeaderRow
+              group={group}
+              isOpen={isOpen}
+              onToggle={() =>
+                setOpenGroups((prev) => ({
+                  ...prev,
+                  [group.workflowId]: !isOpen,
+                }))
+              }
+            />
+
+            {isOpen &&
+              group.executions.map((execution, ei) => (
+                <ExecutionRow
+                  key={execution.executionId}
+                  execution={execution}
+                  showWorkflow={false}
+                  isLast={
+                    ei === group.executions.length - 1 &&
+                    gi === groups.length - 1
+                  }
+                />
+              ))}
+          </React.Fragment>
+        );
+      })}
+    </tbody>
+  );
+}
+
+function RecentBody({ executions }: { executions: ExecutionListItem[] }) {
+  const sorted = useMemo(
+    () =>
+      [...executions].sort(
+        (a, b) =>
+          new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+      ),
+    [executions]
+  );
+
+  return (
+    <tbody>
+      {sorted.map((execution, i) => (
+        <ExecutionRow
+          key={execution.executionId}
+          execution={execution}
+          showWorkflow
+          isLast={i === sorted.length - 1}
+        />
+      ))}
+    </tbody>
+  );
+}
+
+function SortToggle({
+  mode,
+  onChange,
+}: {
+  mode: SortMode;
+  onChange: (mode: SortMode) => void;
+}) {
+  return (
+    <div className="inline-flex items-center rounded-lg bg-muted/30 p-1 gap-0.5">
+      <button
+        type="button"
+        onClick={() => onChange("workflow")}
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
+          mode === "workflow"
+            ? "bg-background text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <Layers className="h-3.5 w-3.5" />
+        Workflow
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("recent")}
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
+          mode === "recent"
+            ? "bg-background text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <ArrowDownWideNarrow className="h-3.5 w-3.5" />
+        Recent
+      </button>
+    </div>
+  );
+}
+
 export function ExecutionsTable({
   executions,
   isLoading,
-  onDelete,
 }: ExecutionsTableProps) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>(() => {
+    if (typeof window === "undefined") return "workflow";
+    const stored = localStorage.getItem("executions-sort-mode");
+    return stored === "recent" ? "recent" : "workflow";
+  });
+  const [query, setQuery] = useState("");
+
+  const handleSortChange = (mode: SortMode) => {
+    setSortMode(mode);
+    localStorage.setItem("executions-sort-mode", mode);
+  };
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return executions;
+    return executions.filter((e) => {
+      const name = e.workflowName?.toLowerCase() ?? "";
+      return name.includes(q) || String(e.workflowId).includes(q);
+    });
+  }, [executions, query]);
+
+  const groups = useMemo<ExecutionGroup[]>(() => {
+    const grouped = new Map<number, ExecutionGroup>();
+
+    for (const execution of filtered) {
+      const existing = grouped.get(execution.workflowId);
+
+      if (existing) {
+        existing.executions.push(execution);
+        continue;
+      }
+
+      grouped.set(execution.workflowId, {
+        workflowId: execution.workflowId,
+        workflowName: execution.workflowName,
+        executions: [execution],
+      });
+    }
+
+    return Array.from(grouped.values());
+  }, [filtered]);
 
   if (isLoading) {
     return (
@@ -121,7 +449,9 @@ export function ExecutionsTable({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Clock className="h-12 w-12 text-muted-foreground/50" />
-        <h3 className="mt-4 text-lg font-medium text-foreground">No executions yet</h3>
+        <h3 className="mt-4 text-lg font-medium text-foreground">
+          No executions yet
+        </h3>
         <p className="mt-2 text-sm text-muted-foreground">
           Run a workflow to see execution history here.
         </p>
@@ -135,104 +465,31 @@ export function ExecutionsTable({
   }
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/30 border-b border-border">
-            <TableHead className="w-[120px]">Execution ID</TableHead>
-            <TableHead className="w-[140px]">Workflow</TableHead>
-            <TableHead className="w-[110px]">Status</TableHead>
-            <TableHead className="w-[80px]">Duration</TableHead>
-            <TableHead className="w-[150px]">Nodes</TableHead>
-            <TableHead className="w-[100px]">Started</TableHead>
-            <TableHead className="w-[100px] text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {executions.map((execution) => (
-            <TableRow
-              key={execution.executionId}
-              className={cn(
-                "cursor-pointer transition-colors hover:bg-muted/30",
-                expandedId === execution.executionId && "bg-muted/40"
-              )}
-              onClick={() =>
-                setExpandedId(
-                  expandedId === execution.executionId ? null : execution.executionId
-                )
-              }
-            >
-              <TableCell className="font-mono text-xs">
-                {execution.executionId.slice(0, 8)}...
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">
-                    {execution.workflowName || `Workflow #${execution.workflowId}`}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <StatusBadge status={execution.status} />
-              </TableCell>
-              <TableCell className="tabular-nums">
-                {formatDuration(execution.durationMs)}
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1.5 text-xs">
-                  <span className="text-green-600 dark:text-green-400">{execution.successfulNodes}</span>
-                  <span className="text-muted-foreground">/</span>
-                  <span className="text-foreground">{execution.nodeCount}</span>
-                  {execution.failedNodes > 0 && (
-                    <span className="ml-1 text-red-500">
-                      ({execution.failedNodes} failed)
-                    </span>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell className="text-muted-foreground text-xs">
-                {formatDate(execution.startedAt)}
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 p-0"
-                    disabled
-                    title="View details (coming soon)"
-                  >
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 p-0"
-                    disabled
-                    title="Open workflow (coming soon)"
-                  >
-                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                  {onDelete && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 p-0 hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(execution.executionId);
-                      }}
-                      title="Delete execution"
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Input
+            placeholder="Search by workflow..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-9"
+          />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        </div>
+        <SortToggle mode={sortMode} onChange={handleSortChange} />
+      </div>
+
+      <div className="overflow-hidden rounded-[var(--radius)] border border-border/60">
+        <table className="w-full text-sm">
+          <TableHead mode={sortMode} />
+
+          {sortMode === "workflow" ? (
+            <GroupedBody groups={groups} />
+          ) : (
+            <RecentBody executions={filtered} />
+          )}
+        </table>
+      </div>
     </div>
   );
 }

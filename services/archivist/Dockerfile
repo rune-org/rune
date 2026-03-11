@@ -1,18 +1,10 @@
 FROM python:3.13-slim
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:0.10.9 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.10.7 /uv /uvx /bin/
 
 # Set the working directory
 WORKDIR /app
-
-# Install system dependencies (libxmlsec1 is required by python3-saml)
-RUN apt-get update && apt-get install -y \
-    libxml2-dev \
-    libxmlsec1-dev \
-    libxmlsec1-openssl \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
 
 # Enable bytecode compilation and copy mode (for optimization)
 ENV UV_COMPILE_BYTECODE=1 \
@@ -32,11 +24,7 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
-EXPOSE 8000
-
 # Use the virtual environment
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Run migrations before starting the application
-ENTRYPOINT ["./entrypoint.sh"]
-CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "src.main"]

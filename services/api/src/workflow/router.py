@@ -9,7 +9,7 @@ from src.core.dependencies import (
 )
 from src.core.exceptions import BadRequest, NotFound
 from src.core.responses import ApiResponse
-from src.db.models import User, Workflow
+from src.db.models import Execution, ExecutionStatus, User, Workflow
 from src.executions.service import ExecutionTokenService
 from src.queue.rabbitmq import get_rabbitmq
 from src.workflow.dependencies import get_workflow_with_permission
@@ -292,6 +292,7 @@ async def delete_workflow(
 @router.post("/{workflow_id}/run", response_model=ApiResponse[str])
 @require_workflow_permission("execute")
 async def run_workflow(
+    db: DatabaseDep,
     payload: WorkflowRunRequest | None = None,
     workflow: Workflow = Depends(get_workflow_with_permission),
     current_user: User = Depends(require_password_changed),
@@ -320,6 +321,17 @@ async def run_workflow(
     )
     execution_id = str(uuid.uuid4())
 
+    # TODO: this is bad code — database calls do not belong in the router layer.
+    # This should be moved to a service/repository layer and refactored accordingly.
+    execution = Execution(
+        id=execution_id,
+        workflow_id=workflow.id,
+        status=ExecutionStatus.PENDING,
+    )
+    db.add(execution)
+    await db.commit()
+
+    # Publish execution token for RTES authentication (with specific execution_id)
     await token_service.publish_execution_token(
         workflow_id=workflow.id,
         user_id=current_user.id,
