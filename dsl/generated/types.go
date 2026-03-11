@@ -157,6 +157,49 @@ func (n *SwitchRule) Sanitize() (bool, []string) {
   return len(errors) == 0, errors
 }
 
+type FilterRule struct {
+  // Filter rule definition
+  Field string `json:"field"`  // Field path on each list item
+  Operator string `json:"operator"`  // Comparison operator
+  Value interface{} `json:"value"`  // Value to compare against
+}
+
+func (n *FilterRule) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Field == "" {
+    errors = append(errors, "FilterRule.field is required")
+  }
+  if n.Operator == "" {
+    errors = append(errors, "FilterRule.operator is required")
+  }
+  if n.Value == nil {
+    errors = append(errors, "FilterRule.value is required")
+  }
+
+  return len(errors) == 0, errors
+}
+
+type SortRule struct {
+  // Sort rule definition
+  Field string `json:"field"`  // Field path to sort by
+  Direction string `json:"direction"`  // Sort direction
+  Type *string `json:"type"`  // Value type used for sorting
+}
+
+func (n *SortRule) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Field == "" {
+    errors = append(errors, "SortRule.field is required")
+  }
+  if n.Direction == "" {
+    errors = append(errors, "SortRule.direction is required")
+  }
+
+  return len(errors) == 0, errors
+}
+
 type EditAssignment struct {
   // Edit node assignment
   Name string `json:"name"`  // The key to set (supports dot-notation for nested objects)
@@ -281,6 +324,26 @@ func (n *LogParameters) Sanitize() (bool, []string) {
   return len(errors) == 0, errors
 }
 
+type DatetimeParameters struct {
+  // Create, shift, or format date and time values
+  Operation string `json:"operation"`  // Date and time operation
+  Date *string `json:"date"`  // Input date or timestamp to format or adjust
+  Amount *float64 `json:"amount"`  // Amount of time to add or subtract
+  Unit *string `json:"unit"`  // Unit of time for add and subtract
+  Format *string `json:"format"`  // Output format string
+  Timezone *string `json:"timezone"`  // Timezone used for parsing and formatting
+}
+
+func (n *DatetimeParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Operation == "" {
+    errors = append(errors, "DatetimeParameters.operation is required")
+  }
+
+  return len(errors) == 0, errors
+}
+
 type WaitParameters struct {
   // Wait for a specified duration
   Amount float64 `json:"amount"`  // Quantity of time
@@ -304,6 +367,52 @@ type EditParameters struct {
 }
 
 func (n *EditParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+
+  return len(errors) == 0, errors
+}
+
+type FilterParameters struct {
+  // Keep only list items that match one or more rules
+  InputArray *interface{} `json:"input_array"`  // Array to filter; defaults to the current working list
+  MatchMode *string `json:"match_mode"`  // How multiple rules are combined
+  Rules []interface{} `json:"rules"`  // Rules used to decide which items to keep
+}
+
+func (n *FilterParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Rules == nil || len(n.Rules) == 0 {
+    errors = append(errors, "FilterParameters.rules is required")
+  }
+
+  return len(errors) == 0, errors
+}
+
+type SortParameters struct {
+  // Order a list using one or more sort rules
+  InputArray *interface{} `json:"input_array"`  // Array to sort; defaults to the current working list
+  Rules []interface{} `json:"rules"`  // Ordered sort rules
+}
+
+func (n *SortParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Rules == nil || len(n.Rules) == 0 {
+    errors = append(errors, "SortParameters.rules is required")
+  }
+
+  return len(errors) == 0, errors
+}
+
+type LimitParameters struct {
+  // Keep only the first items from a list
+  InputArray *interface{} `json:"input_array"`  // Array to limit; defaults to the current working list
+  Count float64 `json:"count"`  // Number of items to keep
+}
+
+func (n *LimitParameters) Sanitize() (bool, []string) {
   var errors []string
 
 
@@ -346,9 +455,13 @@ var SMTP_CREDENTIAL_TYPE []string = []string{"smtp"}
 var CONDITIONAL_CREDENTIAL_TYPE []string = nil
 var SWITCH_CREDENTIAL_TYPE []string = nil
 var LOG_CREDENTIAL_TYPE []string = nil
+var DATETIME_CREDENTIAL_TYPE []string = nil
 var AGENT_CREDENTIAL_TYPE []string = nil
 var WAIT_CREDENTIAL_TYPE []string = nil
 var EDIT_CREDENTIAL_TYPE []string = nil
+var FILTER_CREDENTIAL_TYPE []string = nil
+var SORT_CREDENTIAL_TYPE []string = nil
+var LIMIT_CREDENTIAL_TYPE []string = nil
 var SPLIT_CREDENTIAL_TYPE []string = nil
 var AGGREGATOR_CREDENTIAL_TYPE []string = nil
 var MERGE_CREDENTIAL_TYPE []string = nil

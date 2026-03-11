@@ -134,6 +134,52 @@ class SwitchRule(BaseModel):
 
         return len(errors) == 0, errors
 
+class FilterRule(BaseModel):
+    """Filter rule definition"""
+    field: str  # Field path on each list item
+    operator: Literal["==", "!=", ">", "<", ">=", "<=", "contains"]  # Comparison operator
+    value: Any  # Value to compare against
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.field is None:
+            errors.append("FilterRule.field is required")
+        if self.field is not None and not isinstance(self.field, str):
+            errors.append("FilterRule.field must be a string")
+        if self.operator is None:
+            errors.append("FilterRule.operator is required")
+        if self.operator is not None and not isinstance(self.operator, str):
+            errors.append("FilterRule.operator must be a string")
+        if self.value is None:
+            errors.append("FilterRule.value is required")
+
+        return len(errors) == 0, errors
+
+class SortRule(BaseModel):
+    """Sort rule definition"""
+    field: str  # Field path to sort by
+    direction: Literal["asc", "desc", "ascending", "descending"]  # Sort direction
+    type_: Optional[Literal["auto", "text", "number", "date"]] = Field(alias="type")  # Value type used for sorting
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.field is None:
+            errors.append("SortRule.field is required")
+        if self.field is not None and not isinstance(self.field, str):
+            errors.append("SortRule.field must be a string")
+        if self.direction is None:
+            errors.append("SortRule.direction is required")
+        if self.direction is not None and not isinstance(self.direction, str):
+            errors.append("SortRule.direction must be a string")
+        if self.type_ is not None and not isinstance(self.type_, str):
+            errors.append("SortRule.type must be a string")
+
+        return len(errors) == 0, errors
+
 class EditAssignment(BaseModel):
     """Edit node assignment"""
     name: str  # The key to set (supports dot-notation for nested objects)
@@ -273,6 +319,36 @@ class LogParameters(BaseModel):
 
         return len(errors) == 0, errors
 
+class DatetimeParameters(BaseModel):
+    """Create, shift, or format date and time values"""
+    operation: Literal["now", "add", "subtract", "format"]  # Date and time operation
+    date: Optional[str]  # Input date or timestamp to format or adjust
+    amount: Optional[float]  # Amount of time to add or subtract
+    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]]  # Unit of time for add and subtract
+    format: Optional[str]  # Output format string
+    timezone: Optional[str]  # Timezone used for parsing and formatting
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.operation is None:
+            errors.append("DatetimeParameters.operation is required")
+        if self.operation is not None and not isinstance(self.operation, str):
+            errors.append("DatetimeParameters.operation must be a string")
+        if self.date is not None and not isinstance(self.date, str):
+            errors.append("DatetimeParameters.date must be a string")
+        if self.amount is not None and not isinstance(self.amount, (int, float)):
+            errors.append("DatetimeParameters.amount must be a number")
+        if self.unit is not None and not isinstance(self.unit, str):
+            errors.append("DatetimeParameters.unit must be a string")
+        if self.format is not None and not isinstance(self.format, str):
+            errors.append("DatetimeParameters.format must be a string")
+        if self.timezone is not None and not isinstance(self.timezone, str):
+            errors.append("DatetimeParameters.timezone must be a string")
+
+        return len(errors) == 0, errors
+
 class WaitParameters(BaseModel):
     """Wait for a specified duration"""
     amount: float  # Quantity of time
@@ -304,6 +380,53 @@ class EditParameters(BaseModel):
 
         if self.mode is not None and not isinstance(self.mode, str):
             errors.append("EditParameters.mode must be a string")
+
+        return len(errors) == 0, errors
+
+class FilterParameters(BaseModel):
+    """Keep only list items that match one or more rules"""
+    input_array: Optional[Any]  # Array to filter; defaults to the current working list
+    match_mode: Optional[Literal["all", "any"]]  # How multiple rules are combined
+    rules: list[Any]  # Rules used to decide which items to keep
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.match_mode is not None and not isinstance(self.match_mode, str):
+            errors.append("FilterParameters.match_mode must be a string")
+        if self.rules is None:
+            errors.append("FilterParameters.rules is required")
+
+        return len(errors) == 0, errors
+
+class SortParameters(BaseModel):
+    """Order a list using one or more sort rules"""
+    input_array: Optional[Any]  # Array to sort; defaults to the current working list
+    rules: list[Any]  # Ordered sort rules
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.rules is None:
+            errors.append("SortParameters.rules is required")
+
+        return len(errors) == 0, errors
+
+class LimitParameters(BaseModel):
+    """Keep only the first items from a list"""
+    input_array: Optional[Any]  # Array to limit; defaults to the current working list
+    count: float  # Number of items to keep
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.count is None:
+            errors.append("LimitParameters.count is required")
+        if self.count is not None and not isinstance(self.count, (int, float)):
+            errors.append("LimitParameters.count must be a number")
 
         return len(errors) == 0, errors
 
@@ -535,6 +658,34 @@ class LogNode(BaseNode):
 
         return len(errors) == 0, errors
 
+class DatetimeNode(BaseNode):
+    """Create, shift, or format date and time values"""
+    type_: Literal["datetime"] = Field(default="datetime", alias="type")
+    parameters: DatetimeParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"DatetimeNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
 class AgentNode(BaseNode):
     """AI agent node"""
     type_: Literal["agent"] = Field(default="agent", alias="type")
@@ -610,6 +761,90 @@ class EditNode(BaseNode):
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
                 errors.append(f"EditNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class FilterNode(BaseNode):
+    """Keep only list items that match one or more rules"""
+    type_: Literal["filter"] = Field(default="filter", alias="type")
+    parameters: FilterParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"FilterNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class SortNode(BaseNode):
+    """Order a list using one or more sort rules"""
+    type_: Literal["sort"] = Field(default="sort", alias="type")
+    parameters: SortParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"SortNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class LimitNode(BaseNode):
+    """Keep only the first items from a list"""
+    type_: Literal["limit"] = Field(default="limit", alias="type")
+    parameters: LimitParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"LimitNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
@@ -693,4 +928,4 @@ class MergeNode(BaseNode):
 
 # Union type for all nodes
 
-Node = Union[ManualTriggerNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, AgentNode, WaitNode, EditNode, SplitNode, AggregatorNode, MergeNode]
+Node = Union[ManualTriggerNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, DatetimeNode, AgentNode, WaitNode, EditNode, FilterNode, SortNode, LimitNode, SplitNode, AggregatorNode, MergeNode]
