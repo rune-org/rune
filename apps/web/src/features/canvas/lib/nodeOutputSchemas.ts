@@ -1,4 +1,4 @@
-import type { NodeKind, EditData } from "../types";
+import type { DateTimeData, EditData, NodeKind } from "../types";
 import type { VariableTreeNode } from "./variableSchema";
 
 /**
@@ -36,6 +36,31 @@ export function getStaticOutputSchema(
         { key: "success", path: "success", type: "boolean", source: "schema" },
         { key: "message_id", path: "message_id", type: "string", source: "schema" },
       ];
+
+    case "log":
+      return [
+        { key: "message", path: "message", type: "string", source: "schema" },
+        { key: "level", path: "level", type: "string", source: "schema" },
+        { key: "logged_at", path: "logged_at", type: "string", source: "schema" },
+      ];
+
+    case "datetime": {
+      const dateTimeData = data as DateTimeData | undefined;
+      return [
+        {
+          key: "result",
+          path: "result",
+          type: typeof dateTimeData?.format === "string" && dateTimeData.format.includes("2006")
+            ? "string"
+            : "string",
+          source: "schema",
+        },
+        { key: "formatted", path: "formatted", type: "string", source: "schema" },
+        { key: "unix", path: "unix", type: "number", source: "schema" },
+        { key: "timezone", path: "timezone", type: "string", source: "schema" },
+        { key: "operation", path: "operation", type: "string", source: "schema" },
+      ];
+    }
 
     case "edit": {
       const editData = data as EditData | undefined;
@@ -86,6 +111,18 @@ export function getStaticOutputSchema(
     case "merge":
       return [
         { key: "merged_context", path: "merged_context", type: "object", source: "schema", children: [] },
+      ];
+
+    case "filter":
+    case "limit":
+      return [
+        { key: "count", path: "count", type: "number", source: "schema" },
+        { key: "original_count", path: "original_count", type: "number", source: "schema" },
+      ];
+
+    case "sort":
+      return [
+        { key: "count", path: "count", type: "number", source: "schema" },
       ];
 
     case "aggregator":

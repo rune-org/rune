@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import type { CanvasNode, NodeKind } from "../types";
 import { getNodeDefaults } from "../lib/nodeRegistry";
 import { createId } from "../utils/id";
+import { sanitizeNodeLabel } from "../utils/nodeLabels";
 import type { Edge, ReactFlowInstance } from "@xyflow/react";
 
 // Helper function to calculate the node's position.
@@ -48,7 +49,7 @@ export function useAddNode(
       const defaults = getNodeDefaults(kind);
 
       setNodes((nodes) => {
-        const baseLabel = defaults.data.label ?? "Node";
+        const baseLabel = sanitizeNodeLabel(defaults.data.label ?? "Node", "Node");
         const existingLabels = nodes
           .map((node) => node.data.label)
           .filter((label): label is string => !!label);

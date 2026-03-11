@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/cn";
+import { sanitizeNodeLabel } from "../utils/nodeLabels";
 
 import { IfInspector } from "./inspectors/IfInspector";
 import { HttpInspector } from "./inspectors/HttpInspector";
@@ -29,7 +30,12 @@ import { SwitchInspector } from "./inspectors/SwitchInspector";
 import { RuntimeDataPanel } from "./inspectors/RuntimeDataPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WaitInspector } from "./inspectors/WaitInspector";
+import { LogInspector } from "./inspectors/LogInspector";
+import { DateTimeInspector } from "./inspectors/DateTimeInspector";
 import { EditInspector } from "./inspectors/EditInspector";
+import { FilterInspector } from "./inspectors/FilterInspector";
+import { SortInspector } from "./inspectors/SortInspector";
+import { LimitInspector } from "./inspectors/LimitInspector";
 import { SplitInspector } from "./inspectors/SplitInspector";
 import { MergeInspector } from "./inspectors/MergeInspector";
 import { toast } from "@/components/ui/toast";
@@ -66,8 +72,18 @@ function renderInspectorForm(
       return <SmtpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "wait":
       return <WaitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "log":
+      return <LogInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "datetime":
+      return <DateTimeInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "edit":
       return <EditInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "filter":
+      return <FilterInspector node={node} updateData={updateData} />;
+    case "sort":
+      return <SortInspector node={node} updateData={updateData} />;
+    case "limit":
+      return <LimitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "split":
       return <SplitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "merge":
@@ -86,7 +102,7 @@ type LabelInputProps = {
 };
 
 function sanitizeLabel(raw: string): string {
-  return raw.replace(/ /g, "_");
+  return sanitizeNodeLabel(raw, "");
 }
 
 function LabelInput({

@@ -27,6 +27,7 @@ type VariableInputProps = {
   className?: string;
   nodeId: string;
   multiline?: boolean;
+  transformSelectedPath?: (path: string) => string;
 };
 
 function formatPillLabel(segment: Segment & { type: "variable" }): string {
@@ -284,6 +285,7 @@ export function VariableInput({
   className,
   nodeId,
   multiline = false,
+  transformSelectedPath,
 }: VariableInputProps) {
   const sources = useVariableTree(nodeId);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -338,10 +340,10 @@ export function VariableInput({
 
   const handlePickerSelect = useCallback(
     (path: string) => {
-      insertFromPicker(path);
+      insertFromPicker(transformSelectedPath ? transformSelectedPath(path) : path);
       setPickerOpen(false);
     },
-    [insertFromPicker],
+    [insertFromPicker, transformSelectedPath],
   );
 
   const togglePicker = useCallback((e: React.MouseEvent) => {
@@ -443,7 +445,7 @@ export function VariableInput({
         <VariableAutocomplete
           sources={sources}
           query={autocompleteQuery}
-          onSelect={insertVariable}
+          onSelect={(path) => insertVariable(transformSelectedPath ? transformSelectedPath(path) : path)}
           onClose={() => setShowAutocomplete(false)}
           style={{ left: autocompleteLeft }}
         />
