@@ -281,7 +281,7 @@ class TestWorkflowRunAPI:
         assert response.status_code == 400
 
 
-class TestWorkflowRunAPI:
+class TestWorkflowStatusAPI:
     @pytest.mark.asyncio
     async def test_update_status_without_saved_versions_returns_400(
         self, authenticated_client
