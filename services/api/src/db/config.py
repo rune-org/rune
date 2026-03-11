@@ -84,7 +84,6 @@ async def init_db() -> None:
     Table creation is handled by Alembic migrations (via entrypoint.sh for fresh
     databases, or manually via 'alembic upgrade head' for existing ones).
     """
-    import src.db.models  # noqa: F401
 
     async_engine = get_async_engine()
     async with async_engine.connect() as conn:
