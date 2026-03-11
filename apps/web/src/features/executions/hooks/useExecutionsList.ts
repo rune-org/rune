@@ -104,7 +104,7 @@ export interface UseExecutionsListReturn {
  * Required RTES endpoint: GET /executions (with optional filters)
  */
 export function useExecutionsList(): UseExecutionsListReturn {
-  const [isLoading, _setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState<ExecutionFilters>({ status: "all" });
 
   // TODO(rtes): Implement fetching all executions from RTES

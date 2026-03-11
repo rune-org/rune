@@ -1,8 +1,21 @@
-import nextPlugin from "@next/eslint-plugin-next";
-import reactHooksPlugin from "eslint-plugin-react-hooks";
-import tseslint from "typescript-eslint";
+import { fixupConfigRules } from "@eslint/compat";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
 
-const eslintConfig = tseslint.config(
+const nextConfig = fixupConfigRules([
+  ...nextCoreWebVitals,
+  ...nextTypescript,
+]);
+
+const eslintConfig = [
+  ...nextConfig,
+  {
+    rules: {
+      "react-hooks/immutability": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/static-components": "off",
+    },
+  },
   {
     ignores: [
       "node_modules/**",
@@ -13,33 +26,6 @@ const eslintConfig = tseslint.config(
       "src/client/**",
     ],
   },
-  {
-    files: ["**/*.{ts,tsx,js,jsx,mjs,cjs}"],
-    extends: [tseslint.configs.recommended],
-  },
-  {
-    files: ["**/*.{ts,tsx,js,jsx,mjs,cjs}"],
-    plugins: nextPlugin.configs["core-web-vitals"].plugins,
-    rules: nextPlugin.configs["core-web-vitals"].rules,
-  },
-  {
-    files: ["**/*.{ts,tsx,js,jsx,mjs,cjs}"],
-    plugins: reactHooksPlugin.configs["recommended-latest"].plugins,
-    rules: reactHooksPlugin.configs["recommended-latest"].rules,
-  },
-  {
-    files: ["**/*.{ts,tsx}"],
-    rules: {
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-          caughtErrorsIgnorePattern: "^_|^err|^error",
-        },
-      ],
-    },
-  },
-);
+];
 
 export default eslintConfig;

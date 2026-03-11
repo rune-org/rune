@@ -58,8 +58,7 @@
     "eslint-config-next": "15.5.12",
     "shadcn": "^3.0.0",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "typescript-eslint": "^8.56.1"
+    "typescript": "^5"
   },
   "pnpm": {
     "overrides": {

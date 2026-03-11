@@ -158,7 +158,7 @@ export function useRtesWebSocket(
         try {
           const data = JSON.parse(event.data) as RtesNodeUpdate;
           onMessage?.(data);
-        } catch (_parseError) {
+        } catch (parseError) {
           // Silent failure - invalid message format
         }
       };
