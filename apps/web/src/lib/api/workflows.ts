@@ -118,19 +118,12 @@ export const requestSpecificExecutionAccess = (workflow_id: number, execution_id
 // --- Conflict error helper ---
 
 /**
- * Check if an error from createVersion is a 409 version conflict.
+ * Check if a thrown error from createVersion is a 409 version conflict.
  *
- * The @hey-api client returns `{ data: undefined, error: ApiResponseWorkflowVersionConflict, response }`.
- * The `error` object is the parsed JSON body: `{ success, message, data: { server_version, server_version_id } }`.
- * The HTTP status lives on `response.status`, not on the error object itself.
+ * With `throwOnError: true`, the @hey-api client throws the parsed JSON
+ * response body directly: `{ success, message, data: { server_version, server_version_id } }`.
  */
-export function isVersionConflict(
-  error: unknown,
-  response?: Response,
-): { serverVersion: number; serverVersionId: number } | null {
-  // If a Response is provided, verify it's actually a 409
-  if (response && response.status !== 409) return null;
-
+export function isVersionConflict(error: unknown): { serverVersion: number; serverVersionId: number } | null {
   if (error != null && typeof error === "object" && "data" in error) {
     const conflict = (error as { data?: { server_version?: number; server_version_id?: number } }).data;
     if (conflict && typeof conflict.server_version === "number" && typeof conflict.server_version_id === "number") {

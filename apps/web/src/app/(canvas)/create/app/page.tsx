@@ -43,6 +43,17 @@ type WorkflowMeta = {
   latestVersionNumber: number | null;
 };
 
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === "object" && "detail" in error) {
+    const detail = (error as { detail: unknown }).detail;
+    if (typeof detail === "string" && detail.length > 0) {
+      return detail;
+    }
+  }
+
+  return fallback;
+}
+
 function CanvasPageInner() {
   const params = useSearchParams();
   const router = useRouter();
@@ -182,31 +193,24 @@ function CanvasPageInner() {
           message: message || null,
         });
 
-        if (response.error) {
-          const conflict = workflows.isVersionConflict(response.error, response.response);
-          if (conflict) {
-            setConflictData({
-              serverVersion: conflict.serverVersion,
-              serverVersionId: conflict.serverVersionId,
-              localGraph: graph,
-            });
-            return;
-          }
-          throw new Error("Failed to save version");
-        }
-
-        if (response.data) {
-          const newVersion = response.data.data;
-          setBaseVersionId(newVersion.id);
-          setWorkflowMeta((prev) => ({
-            publishedVersionId: prev?.publishedVersionId ?? null,
-            hasUnpublishedChanges: true,
-            latestVersionNumber: newVersion.version,
-          }));
-          toast.success("Version saved");
-        }
+        const newVersion = response.data!.data;
+        setBaseVersionId(newVersion.id);
+        setWorkflowMeta((prev) => ({
+          publishedVersionId: prev?.publishedVersionId ?? null,
+          hasUnpublishedChanges: true,
+          latestVersionNumber: newVersion.version,
+        }));
+        toast.success("Version saved");
+        return newVersion.id;
       } catch (err) {
-        if (err instanceof MissingNodeCredentialsError) {
+        const conflict = workflows.isVersionConflict(err);
+        if (conflict) {
+          setConflictData({
+            serverVersion: conflict.serverVersion,
+            serverVersionId: conflict.serverVersionId,
+            localGraph: graph,
+          });
+        } else if (err instanceof MissingNodeCredentialsError) {
           const nodeList = err.nodes
             .map((n) => `${n.type} (${n.id.slice(0, 6)})`)
             .join(", ");
@@ -219,6 +223,8 @@ function CanvasPageInner() {
       } finally {
         setIsSaving(false);
       }
+
+      return null;
     },
     [numericWorkflowId, baseVersionId],
   );
@@ -228,8 +234,7 @@ function CanvasPageInner() {
       if (isSaving) return;
 
       if (numericWorkflowId !== null) {
-        await saveVersion(graph);
-        return;
+        return await saveVersion(graph);
       }
 
       setDraftGraph({
@@ -237,6 +242,7 @@ function CanvasPageInner() {
         edges: graph.edges,
       });
       setCreateDialogOpen(true);
+      return null;
     },
     [isSaving, numericWorkflowId, saveVersion],
   );
@@ -262,16 +268,19 @@ function CanvasPageInner() {
     try {
       const response = await workflows.getVersion(numericWorkflowId, conflictData.serverVersionId);
       if (response.data) {
+        const loadedVersion = response.data.data;
         const { versionToGraph } = await import("@/lib/workflows");
-        const graph = versionToGraph(response.data.data);
+        const graph = versionToGraph(loadedVersion);
         const parsed = sanitizeGraph({ nodes: graph.nodes, edges: graph.edges });
         setNodes(parsed.nodes as CanvasNode[]);
         setEdges(parsed.edges as CanvasEdge[]);
         setBaseVersionId(conflictData.serverVersionId);
         setWorkflowMeta((prev) => ({
-          publishedVersionId: prev?.publishedVersionId ?? null,
-          hasUnpublishedChanges: prev?.hasUnpublishedChanges ?? false,
-          latestVersionNumber: conflictData.serverVersion,
+          publishedVersionId: loadedVersion.is_published
+            ? loadedVersion.id
+            : prev?.publishedVersionId ?? null,
+          hasUnpublishedChanges: !loadedVersion.is_published,
+          latestVersionNumber: loadedVersion.version,
         }));
       }
     } catch {
@@ -318,18 +327,25 @@ function CanvasPageInner() {
     if (!numericWorkflowId || !baseVersionId) return;
     try {
       const response = await workflows.publishVersion(numericWorkflowId, baseVersionId);
-      if (response.data) {
-        const detail = response.data.data;
-        setWorkflowMeta({
-          publishedVersionId: detail.published_version_id ?? null,
-          hasUnpublishedChanges: detail.has_unpublished_changes ?? false,
-          latestVersionNumber: detail.latest_version?.version ?? null,
-        });
-        toast.success("Version published");
-        void refreshWorkflows();
+      if (response.error) {
+        throw new Error(getApiErrorMessage(response.error, "Failed to publish version"));
       }
-    } catch {
-      toast.error("Failed to publish version");
+      if (!response.data) {
+        throw new Error("Failed to publish version");
+      }
+
+      const detail = response.data.data;
+      setWorkflowMeta({
+        publishedVersionId: detail.published_version_id ?? null,
+        hasUnpublishedChanges: detail.has_unpublished_changes ?? false,
+        latestVersionNumber: detail.latest_version?.version ?? null,
+      });
+      toast.success("Version published");
+      void refreshWorkflows();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to publish version",
+      );
     }
   }, [numericWorkflowId, baseVersionId, refreshWorkflows]);
 
@@ -337,33 +353,48 @@ function CanvasPageInner() {
     if (!numericWorkflowId) return;
     try {
       const response = await workflows.restoreVersion(numericWorkflowId, versionId);
-      if (response.data) {
-        const { versionToGraph } = await import("@/lib/workflows");
-        const newVersion = response.data.data;
-        const graph = versionToGraph(newVersion);
-        const parsed = sanitizeGraph({ nodes: graph.nodes, edges: graph.edges });
-        setNodes(parsed.nodes as CanvasNode[]);
-        setEdges(parsed.edges as CanvasEdge[]);
-        setBaseVersionId(newVersion.id);
-        setWorkflowMeta((prev) => ({
-          publishedVersionId: prev?.publishedVersionId ?? null,
-          hasUnpublishedChanges: true,
-          latestVersionNumber: newVersion.version,
-        }));
-        toast.success(`Restored to v${newVersion.version}`);
+      if (response.error) {
+        throw new Error(getApiErrorMessage(response.error, "Failed to restore version"));
       }
-    } catch {
-      toast.error("Failed to restore version");
+      if (!response.data) {
+        throw new Error("Failed to restore version");
+      }
+
+      const { versionToGraph } = await import("@/lib/workflows");
+      const newVersion = response.data.data;
+      const graph = versionToGraph(newVersion);
+      const parsed = sanitizeGraph({ nodes: graph.nodes, edges: graph.edges });
+      setNodes(parsed.nodes as CanvasNode[]);
+      setEdges(parsed.edges as CanvasEdge[]);
+      setBaseVersionId(newVersion.id);
+      setWorkflowMeta((prev) => ({
+        publishedVersionId: prev?.publishedVersionId ?? null,
+        hasUnpublishedChanges: true,
+        latestVersionNumber: newVersion.version,
+      }));
+      toast.success(`Restored to v${newVersion.version}`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to restore version",
+      );
     }
   }, [numericWorkflowId]);
 
   const handleRunVersion = useCallback(async (versionId: number) => {
     if (!numericWorkflowId) return;
     try {
-      await workflows.runWorkflow(numericWorkflowId, versionId);
+      const response = await workflows.runWorkflow(numericWorkflowId, versionId);
+      if (response.error) {
+        throw new Error(getApiErrorMessage(response.error, "Failed to run version"));
+      }
+      if (!response.data?.data) {
+        throw new Error("Failed to run version");
+      }
       toast.success("Workflow queued for execution");
-    } catch {
-      toast.error("Failed to run version");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to run version",
+      );
     }
   }, [numericWorkflowId]);
 
