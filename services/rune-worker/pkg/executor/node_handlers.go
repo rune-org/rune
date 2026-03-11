@@ -170,8 +170,8 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 	// Accumulate result into context with $<node_name> key
 	updatedContext := e.accumulateContext(msg.AccumulatedContext, node.Name, output)
 
-	// Edit node transforms the working payload; propagate to $json for downstream expressions.
-	if node.Type == "edit" {
+	// Transform nodes update the working payload; propagate to $json for downstream expressions.
+	if shouldPropagateWorkingJSON(node.Type) {
 		if json, ok := output["$json"]; ok {
 			updatedContext["$json"] = json
 		}
@@ -222,6 +222,15 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 
 	// Publish execution messages for next nodes
 	return e.publishNextNodes(ctx, msg, nextNodes, updatedContext)
+}
+
+func shouldPropagateWorkingJSON(nodeType string) bool {
+	switch nodeType {
+	case "edit", "filter", "sort", "limit":
+		return true
+	default:
+		return false
+	}
 }
 
 // handleSplitFanOut iterates over items and publishes messages for each.
