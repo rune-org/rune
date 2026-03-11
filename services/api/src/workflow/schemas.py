@@ -176,7 +176,7 @@ class WorkflowRestoreVersion(BaseModel):
 class WorkflowRunRequest(BaseModel):
     version_id: Optional[int] = Field(
         default=None,
-        description="Specific workflow version to run. Defaults to the latest version.",
+        description="Specific workflow version to run. Defaults to the published version.",
     )
 
 

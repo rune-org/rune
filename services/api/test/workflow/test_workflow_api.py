@@ -267,7 +267,9 @@ class TestWorkflowVersionsAPI:
 
 class TestWorkflowRunAPI:
     @pytest.mark.asyncio
-    async def test_run_without_saved_versions_returns_400(self, authenticated_client):
+    async def test_run_without_published_version_returns_400(
+        self, authenticated_client
+    ):
         create_response = await authenticated_client.post(
             "/workflows/",
             json={"name": "Empty workflow", "description": ""},
@@ -294,13 +296,22 @@ class TestWorkflowRunAPI:
         assert response.status_code == 400
 
     @pytest.mark.asyncio
-    async def test_run_uses_latest_version_metadata(
+    async def test_run_uses_published_version_metadata(
         self,
         authenticated_client,
         sample_workflow,
         test_rabbitmq,
         test_settings,
     ):
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        version_id = detail.json()["data"]["latest_version"]["id"]
+
+        publish_response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/publish",
+            json={"version_id": version_id},
+        )
+        assert publish_response.status_code == 200
+
         channel = await test_rabbitmq.channel()
         queue = await channel.declare_queue(
             test_settings.rabbitmq_workflow_queue,
@@ -333,6 +344,12 @@ class TestWorkflowRunAPI:
         detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
         first_version = detail.json()["data"]["latest_version"]
 
+        publish_response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/publish",
+            json={"version_id": first_version["id"]},
+        )
+        assert publish_response.status_code == 200
+
         second = await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/versions",
             json={
@@ -363,6 +380,64 @@ class TestWorkflowRunAPI:
         response = await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/run",
             json={"version_id": first_version["id"]},
+        )
+        assert response.status_code == 200
+
+        message = await queue.get(timeout=5)
+        assert message is not None
+        payload = json.loads(message.body.decode("utf-8"))
+        assert payload["workflow_version"] == 1
+        assert payload["workflow_version_id"] == first_version["id"]
+        assert len(payload["workflow_definition"]["nodes"]) == 2
+
+        await channel.close()
+
+    @pytest.mark.asyncio
+    async def test_run_without_version_uses_published_not_latest(
+        self,
+        authenticated_client,
+        sample_workflow,
+        test_rabbitmq,
+        test_settings,
+    ):
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        first_version = detail.json()["data"]["latest_version"]
+
+        publish_response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/publish",
+            json={"version_id": first_version["id"]},
+        )
+        assert publish_response.status_code == 200
+
+        second = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": first_version["id"],
+                "workflow_data": {
+                    "nodes": [
+                        {"id": "node-1", "type": "trigger", "trigger": True},
+                        {"id": "node-2", "type": "action"},
+                        {"id": "node-3", "type": "action"},
+                    ],
+                    "edges": [
+                        {"id": "edge-1", "src": "node-1", "dst": "node-2"},
+                        {"id": "edge-2", "src": "node-2", "dst": "node-3"},
+                    ],
+                },
+                "message": "Add branch",
+            },
+        )
+        assert second.status_code == 201
+
+        channel = await test_rabbitmq.channel()
+        queue = await channel.declare_queue(
+            test_settings.rabbitmq_workflow_queue,
+            durable=True,
+        )
+        await queue.purge()
+
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/run"
         )
         assert response.status_code == 200
 
