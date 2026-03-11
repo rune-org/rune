@@ -497,6 +497,11 @@ paths:
       description: 'Update workflow status (active/inactive).
 
 
+        In the versioned model, activating publishes the latest saved version and
+
+        deactivating clears the published pointer.
+
+
         **Requires:** EDIT permission (OWNER or EDITOR)'
       operationId: update_status_workflows__workflow_id__status_put
       security:
@@ -565,16 +570,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /workflows/{workflow_id}/data:
-    put:
+  /workflows/{workflow_id}/versions:
+    get:
       tags:
       - Workflows
-      summary: Update Workflow Data
-      description: 'Update workflow data/definition.
-
-
-        **Requires:** EDIT permission (OWNER or EDITOR)'
-      operationId: update_workflow_data_workflows__workflow_id__data_put
+      summary: List Workflow Versions
+      operationId: list_workflow_versions_workflows__workflow_id__versions_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_list_WorkflowVersionListItem__'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Workflows
+      summary: Create Workflow Version
+      operationId: create_workflow_version_workflows__workflow_id__versions_post
       security:
       - OAuth2PasswordBearer: []
       parameters:
@@ -589,7 +617,81 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WorkflowUpdateData'
+              $ref: '#/components/schemas/WorkflowCreateVersion'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowVersionDetail_'
+        '409':
+          description: Someone saved a newer workflow version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowVersionConflict_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/versions/{version_id}:
+    get:
+      tags:
+      - Workflows
+      summary: Get Workflow Version
+      operationId: get_workflow_version_workflows__workflow_id__versions__version_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Version Id
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowVersionDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/publish:
+    post:
+      tags:
+      - Workflows
+      summary: Publish Workflow Version
+      operationId: publish_workflow_version_workflows__workflow_id__publish_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowPublishVersion'
       responses:
         '200':
           description: Successful Response
@@ -597,6 +699,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_WorkflowDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/restore/{version_id}:
+    post:
+      tags:
+      - Workflows
+      summary: Restore Workflow Version
+      operationId: restore_workflow_version_workflows__workflow_id__restore__version_id__post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Version Id
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/WorkflowRestoreVersion'
+              - type: 'null'
+              title: Payload
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowVersionDetail_'
         '422':
           description: Validation Error
           content:
@@ -616,6 +760,7 @@ paths:
         resolves all credential references in workflow nodes,
 
         then publishes a run message to RabbitMQ containing workflow details with
+
         resolved credentials.
 
         Also publishes an execution token for RTES real-time updates.
@@ -635,6 +780,14 @@ paths:
         schema:
           type: integer
           title: Workflow Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/WorkflowRunRequest'
+              - type: 'null'
+              title: Payload
       responses:
         '200':
           description: Successful Response
@@ -2494,6 +2647,44 @@ components:
       required:
       - data
       title: ApiResponse[WorkflowShareResponse]
+    ApiResponse_WorkflowVersionConflict_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/WorkflowVersionConflict'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[WorkflowVersionConflict]
+    ApiResponse_WorkflowVersionDetail_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/WorkflowVersionDetail'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[WorkflowVersionDetail]
     ApiResponse_bool_:
       properties:
         success:
@@ -2668,6 +2859,28 @@ components:
       required:
       - data
       title: ApiResponse[list[WorkflowListItem]]
+    ApiResponse_list_WorkflowVersionListItem__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/WorkflowVersionListItem'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[list[WorkflowVersionListItem]]
     ApiResponse_str_:
       properties:
         success:
@@ -3603,14 +3816,34 @@ components:
           - type: 'null'
           title: Description
           default: ''
-        workflow_data:
-          additionalProperties: true
-          type: object
-          title: Workflow Data
       type: object
       required:
       - name
       title: WorkflowCreate
+    WorkflowCreateVersion:
+      properties:
+        base_version_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Base Version Id
+          description: Expected current latest version id. Null is allowed only for
+            the first save.
+        workflow_data:
+          additionalProperties: true
+          type: object
+          title: Workflow Data
+          description: Workflow definition to save
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+          description: Revision message
+      type: object
+      required:
+      - workflow_data
+      title: WorkflowCreateVersion
     WorkflowDetail:
       properties:
         id:
@@ -3627,13 +3860,18 @@ components:
         is_active:
           type: boolean
           title: Is Active
-        workflow_data:
-          additionalProperties: true
-          type: object
-          title: Workflow Data
-        version:
-          type: integer
-          title: Version
+        latest_version:
+          anyOf:
+          - $ref: '#/components/schemas/WorkflowVersionDetail'
+          - type: 'null'
+        published_version_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Published Version Id
+        has_unpublished_changes:
+          type: boolean
+          title: Has Unpublished Changes
         created_at:
           type: string
           format: date-time
@@ -3648,8 +3886,7 @@ components:
       - name
       - description
       - is_active
-      - workflow_data
-      - version
+      - has_unpublished_changes
       - created_at
       - updated_at
       title: WorkflowDetail
@@ -3732,6 +3969,25 @@ components:
       - permissions
       title: WorkflowPermissionListResponse
       description: List of all users with access to a workflow.
+    WorkflowPublishVersion:
+      properties:
+        version_id:
+          type: integer
+          title: Version Id
+      type: object
+      required:
+      - version_id
+      title: WorkflowPublishVersion
+    WorkflowRestoreVersion:
+      properties:
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+          description: Revision message
+      type: object
+      title: WorkflowRestoreVersion
     WorkflowRole:
       type: string
       enum:
@@ -3750,6 +4006,16 @@ components:
       - role
       title: WorkflowRoleUpdateRequest
       description: Request to update a user's role on a workflow.
+    WorkflowRunRequest:
+      properties:
+        version_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Version Id
+          description: Specific workflow version to run. Defaults to the latest version.
+      type: object
+      title: WorkflowRunRequest
     WorkflowShareRequest:
       properties:
         user_id:
@@ -3779,17 +4045,6 @@ components:
       - message
       title: WorkflowShareResponse
       description: Response after sharing a workflow.
-    WorkflowUpdateData:
-      properties:
-        workflow_data:
-          additionalProperties: true
-          type: object
-          title: Workflow Data
-          description: Updated workflow data
-      type: object
-      required:
-      - workflow_data
-      title: WorkflowUpdateData
     WorkflowUpdateName:
       properties:
         name:
@@ -3809,6 +4064,99 @@ components:
       required:
       - is_active
       title: WorkflowUpdateStatus
+    WorkflowVersionConflict:
+      properties:
+        server_version:
+          type: integer
+          title: Server Version
+        server_version_id:
+          type: integer
+          title: Server Version Id
+      type: object
+      required:
+      - server_version
+      - server_version_id
+      title: WorkflowVersionConflict
+    WorkflowVersionCreator:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+      type: object
+      required:
+      - id
+      - name
+      title: WorkflowVersionCreator
+    WorkflowVersionDetail:
+      properties:
+        id:
+          type: integer
+          title: Id
+        version:
+          type: integer
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        created_by:
+          anyOf:
+          - $ref: '#/components/schemas/WorkflowVersionCreator'
+          - type: 'null'
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        is_published:
+          type: boolean
+          title: Is Published
+        workflow_data:
+          additionalProperties: true
+          type: object
+          title: Workflow Data
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - is_published
+      - workflow_data
+      title: WorkflowVersionDetail
+    WorkflowVersionListItem:
+      properties:
+        id:
+          type: integer
+          title: Id
+        version:
+          type: integer
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        created_by:
+          anyOf:
+          - $ref: '#/components/schemas/WorkflowVersionCreator'
+          - type: 'null'
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        is_published:
+          type: boolean
+          title: Is Published
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - is_published
+      title: WorkflowVersionListItem
   securitySchemes:
     OAuth2PasswordBearer:
       type: oauth2
