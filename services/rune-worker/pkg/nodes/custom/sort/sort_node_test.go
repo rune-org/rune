@@ -72,6 +72,21 @@ func TestSortNodeScenarios(t *testing.T) {
 			input:   map[string]any{},
 			wantIDs: []string{"p3", "p1", "p2"},
 		},
+		{
+			name: "accepts full picked field path and normalizes to item field",
+			parameters: map[string]any{
+				"input_array": "$fetch_posts.body.posts",
+				"rules":       []any{map[string]any{"field": "$fetch_posts.body.posts[0].id", "direction": "desc", "type": "number"}},
+			},
+			input: map[string]any{
+				"$fetch_posts": map[string]any{"body": map[string]any{"posts": []any{
+					map[string]any{"id": "1"},
+					map[string]any{"id": "3"},
+					map[string]any{"id": "2"},
+				}}},
+			},
+			wantIDs: []string{"3", "2", "1"},
+		},
 	}
 
 	for _, tt := range tests {

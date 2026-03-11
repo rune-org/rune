@@ -3,7 +3,6 @@ package resolver
 import (
 	"fmt"
 	"regexp"
-	"strings"
 )
 
 // Resolver handles dynamic value resolution from accumulated context.
@@ -37,8 +36,11 @@ func (r *Resolver) GetUsedKeys() []string {
 	return keys
 }
 
-// referencePattern matches $node_name.path.to.field or $node_name.array[0]
-var referencePattern = regexp.MustCompile(`\$([a-zA-Z0-9_-]+)(\.[a-zA-Z0-9_\[\]\.]+)?`)
+// referencePattern matches $node_name.path.to.field or $node_name.array[0].
+// Field paths may themselves contain $ segments, such as $Filter.$json.
+var referencePattern = regexp.MustCompile(`\$([a-zA-Z0-9_-]+)(\.[a-zA-Z0-9_\[\]\.\$-]+)?`)
+
+var fullReferencePattern = regexp.MustCompile(`^\$[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_\[\]\.\$-]+)?$`)
 
 // ResolveParameters recursively resolves all parameter values in the given map.
 // It replaces string values that match the pattern $node_name.path with the actual value
@@ -112,7 +114,7 @@ func (r *Resolver) resolveString(s string) (interface{}, error) {
 	}
 
 	// Check if the entire string is a single reference
-	if strings.HasPrefix(s, "$") && !strings.Contains(s[1:], "$") {
+	if fullReferencePattern.MatchString(s) {
 		// Single reference - return the actual value (could be any type)
 		value, err := r.resolveReference(s)
 		if err != nil {

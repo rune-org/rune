@@ -36,6 +36,13 @@ func TestDateTimeNodeScenarios(t *testing.T) {
 			wantUnix:   1772928000,
 		},
 		{
+			name:       "add days from current time when date is omitted",
+			parameters: map[string]any{"operation": "add", "amount": 1, "unit": "days", "timezone": "UTC", "format": "2006-01-02"},
+			now:        func() time.Time { return time.Date(2026, 3, 8, 10, 0, 0, 0, time.UTC) },
+			wantResult: "2026-03-09",
+			wantUnix:   1773050400,
+		},
+		{
 			name:       "format existing timestamp in another timezone",
 			parameters: map[string]any{"operation": "format", "date": "2026-03-08T15:30:00Z", "timezone": "America/New_York", "format": "2006-01-02 15:04 MST"},
 			wantResult: "2026-03-08 11:30 EDT",

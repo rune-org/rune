@@ -31,7 +31,7 @@ func NewSortNode(execCtx plugin.ExecutionContext) *SortNode {
 				continue
 			}
 			node.rules = append(node.rules, SortRule{
-				Field:     listops.StringValue(ruleMap["field"]),
+				Field:     listops.NormalizeItemFieldPath(node.inputArray, listops.StringValue(ruleMap["field"])),
 				Direction: strings.ToLower(strings.TrimSpace(listops.StringValue(ruleMap["direction"]))),
 				Type:      strings.ToLower(strings.TrimSpace(listops.StringValue(ruleMap["type"]))),
 			})

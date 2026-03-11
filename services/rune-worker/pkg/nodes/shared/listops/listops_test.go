@@ -41,3 +41,40 @@ func TestCompareForSort(t *testing.T) {
 		t.Fatalf("expected left < right, got %d", cmp)
 	}
 }
+
+func TestNormalizeItemFieldPath(t *testing.T) {
+	tests := []struct {
+		name      string
+		inputRef  any
+		field     string
+		wantField string
+	}{
+		{
+			name:      "strips picked array prefix",
+			inputRef:  "$fetch_posts.body.posts",
+			field:     "$fetch_posts.body.posts[0].userId",
+			wantField: "userId",
+		},
+		{
+			name:      "supports item reference",
+			inputRef:  "$fetch_posts.body.posts",
+			field:     "$item.title",
+			wantField: "title",
+		},
+		{
+			name:      "keeps plain field",
+			inputRef:  "$fetch_posts.body.posts",
+			field:     "userId",
+			wantField: "userId",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NormalizeItemFieldPath(tt.inputRef, tt.field)
+			if got != tt.wantField {
+				t.Fatalf("got %q want %q", got, tt.wantField)
+			}
+		})
+	}
+}

@@ -68,6 +68,23 @@ func TestFilterNodeScenarios(t *testing.T) {
 			wantIDs:   []string{"o2"},
 			wantCount: 1,
 		},
+		{
+			name: "accepts full picked field path and normalizes to item field",
+			parameters: map[string]any{
+				"input_array": "$fetch_posts.body.posts",
+				"rules": []any{
+					map[string]any{"field": "$fetch_posts.body.posts[0].userId", "operator": "==", "value": 1},
+				},
+			},
+			input: map[string]any{
+				"$fetch_posts": map[string]any{"body": map[string]any{"posts": []any{
+					map[string]any{"id": "p1", "userId": 1.0},
+					map[string]any{"id": "p2", "userId": 2.0},
+				}}},
+			},
+			wantIDs:   []string{"p1"},
+			wantCount: 1,
+		},
 	}
 
 	for _, tt := range tests {

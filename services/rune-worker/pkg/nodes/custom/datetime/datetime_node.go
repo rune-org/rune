@@ -64,17 +64,21 @@ func (n *DateTimeNode) Execute(ctx context.Context, execCtx plugin.ExecutionCont
 	case "now":
 		result = n.now().In(loc)
 	case "add", "subtract", "format":
-		if strings.TrimSpace(n.date) == "" {
+		if n.operation == "format" && strings.TrimSpace(n.date) == "" {
 			return nil, fmt.Errorf("date parameter is required for %s", n.operation)
 		}
 		if (n.operation == "add" || n.operation == "subtract") && !n.hasAmount {
 			return nil, fmt.Errorf("amount parameter is required for %s", n.operation)
 		}
-		parsed, err := parseInputTime(n.date, loc)
-		if err != nil {
-			return nil, err
+		if strings.TrimSpace(n.date) == "" {
+			result = n.now().In(loc)
+		} else {
+			parsed, err := parseInputTime(n.date, loc)
+			if err != nil {
+				return nil, err
+			}
+			result = parsed.In(loc)
 		}
-		result = parsed.In(loc)
 		if n.operation == "add" || n.operation == "subtract" {
 			result, err = applyOffset(result, n.amount, n.unit, n.operation == "subtract")
 			if err != nil {

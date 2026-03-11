@@ -108,6 +108,9 @@ func GetFieldValue(item any, field string) (any, error) {
 	if field == "" {
 		return item, nil
 	}
+	if strings.HasPrefix(field, "$item.") {
+		field = strings.TrimPrefix(field, "$item.")
+	}
 
 	trimmed := strings.TrimPrefix(field, "$")
 	trimmed = strings.TrimPrefix(trimmed, ".")
@@ -120,6 +123,46 @@ func GetFieldValue(item any, field string) (any, error) {
 		return nil, err
 	}
 	return value, nil
+}
+
+// NormalizeItemFieldPath converts a full picked reference into a field path for
+// each item in the selected list. Example:
+// input_array = $fetch_posts.body.posts
+// field      = $fetch_posts.body.posts[0].userId
+// result     = userId
+func NormalizeItemFieldPath(inputArray any, field string) string {
+	field = strings.TrimSpace(field)
+	if field == "" {
+		return field
+	}
+	if strings.HasPrefix(field, "$item.") {
+		return strings.TrimPrefix(field, "$item.")
+	}
+
+	inputRef, ok := inputArray.(string)
+	if !ok || strings.TrimSpace(inputRef) == "" {
+		return field
+	}
+
+	base := withDollarRoot(strings.TrimSpace(inputRef))
+	fieldRef := withDollarRoot(field)
+
+	for _, prefix := range []string{base + ".", base + "[0]."} {
+		if strings.HasPrefix(fieldRef, prefix) {
+			return strings.TrimPrefix(fieldRef, prefix)
+		}
+	}
+
+	if strings.HasPrefix(fieldRef, base+"[") {
+		remaining := strings.TrimPrefix(fieldRef, base)
+		if strings.HasPrefix(remaining, "[") {
+			if closeIdx := strings.Index(remaining, "]"); closeIdx >= 0 && len(remaining) > closeIdx+2 && remaining[closeIdx+1] == '.' {
+				return remaining[closeIdx+2:]
+			}
+		}
+	}
+
+	return field
 }
 
 func CompareValues(left, right any, operator string) (bool, error) {

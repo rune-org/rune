@@ -29,6 +29,9 @@ func NewFilterNode(execCtx plugin.ExecutionContext) *FilterNode {
 	}
 	if rawRules, ok := execCtx.Parameters["rules"].([]any); ok {
 		node.rules = parseRules(rawRules)
+		for i := range node.rules {
+			node.rules[i].Field = listops.NormalizeItemFieldPath(node.inputArray, node.rules[i].Field)
+		}
 	}
 	return node
 }
