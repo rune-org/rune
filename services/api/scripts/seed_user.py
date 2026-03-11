@@ -3,20 +3,20 @@ python -m scripts.seed_user
 """
 
 import asyncio
+import subprocess
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.password import hash_password
-from src.db.config import get_async_engine, init_db
+from src.db.config import get_async_engine
 from src.db.models import User, UserRole
 
 
 async def seed_test_user():
     """Create a test user if it doesn't already exist."""
-    # Initialize database tables if they don't exist
-    print("Initializing database...")
-    await init_db()
+    print("Running database migrations...")
+    subprocess.run(["alembic", "upgrade", "head"], check=True)
 
     engine = get_async_engine()
 
