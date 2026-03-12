@@ -53,7 +53,7 @@ async def _make_workflow(
     published: bool = False,
 ) -> Workflow:
     """Create a workflow with an initial version.
-    
+
     Args:
         db: Database session
         name: Workflow name
@@ -68,7 +68,7 @@ async def _make_workflow(
     )
     db.add(wf)
     await db.flush()
-    
+
     # Create initial version
     version = WorkflowVersion(
         workflow_id=wf.id,
@@ -79,14 +79,14 @@ async def _make_workflow(
     )
     db.add(version)
     await db.flush()
-    
+
     # Update workflow to reference the version
     wf.latest_version_id = version.id
     if published:
         wf.published_version_id = version.id
         wf.is_active = True
     await db.flush()
-    
+
     return wf
 
 
@@ -126,7 +126,9 @@ async def owned_workflow_b(test_db, test_user):
 @pytest_asyncio.fixture
 async def editor_workflow(test_db, test_user, other_user):
     """A workflow owned by other_user where test_user has EDITOR role."""
-    wf = await _make_workflow(test_db, "Editor Workflow", user=other_user, published=True)
+    wf = await _make_workflow(
+        test_db, "Editor Workflow", user=other_user, published=True
+    )
     await _grant(test_db, wf, other_user, WorkflowRole.OWNER, granted_by=other_user)
     await _grant(test_db, wf, test_user, WorkflowRole.EDITOR, granted_by=other_user)
     await test_db.commit()
@@ -137,7 +139,9 @@ async def editor_workflow(test_db, test_user, other_user):
 @pytest_asyncio.fixture
 async def viewer_workflow(test_db, test_user, other_user):
     """A workflow owned by other_user where test_user has VIEWER role."""
-    wf = await _make_workflow(test_db, "Viewer Workflow", user=other_user, published=True)
+    wf = await _make_workflow(
+        test_db, "Viewer Workflow", user=other_user, published=True
+    )
     await _grant(test_db, wf, other_user, WorkflowRole.OWNER, granted_by=other_user)
     await _grant(test_db, wf, test_user, WorkflowRole.VIEWER, granted_by=other_user)
     await test_db.commit()
@@ -159,7 +163,11 @@ async def inaccessible_workflow(test_db, other_user):
 async def invalid_structure_workflow(test_db, test_user):
     """An OWNER workflow whose nodes contain no trigger — run should fail."""
     wf = await _make_workflow(
-        test_db, "No Trigger", workflow_data=NO_TRIGGER_WORKFLOW_DATA, user=test_user, published=True
+        test_db,
+        "No Trigger",
+        workflow_data=NO_TRIGGER_WORKFLOW_DATA,
+        user=test_user,
+        published=True,
     )
     await _grant(test_db, wf, test_user, WorkflowRole.OWNER, granted_by=test_user)
     await test_db.commit()

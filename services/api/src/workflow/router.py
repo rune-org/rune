@@ -161,7 +161,7 @@ async def bulk_workflow_operation(
         for wf in permitted_workflows:
             latest_version = await service.get_latest_version_with_creator(wf)
             exported_details.append(WorkflowDetail.from_workflow(wf, latest_version))
-        
+
         result = BulkOperationResult(
             action=payload.action.value,
             succeeded=succeeded,
