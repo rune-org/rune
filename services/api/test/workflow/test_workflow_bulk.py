@@ -16,7 +16,7 @@ Each test class focuses on a single concern:
 
 import pytest
 import pytest_asyncio
-from src.db.models import User, Workflow, WorkflowRole, WorkflowUser
+from src.db.models import User, Workflow, WorkflowRole, WorkflowUser, WorkflowVersion
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -49,16 +49,44 @@ async def _make_workflow(
     db,
     name: str,
     workflow_data: dict | None = None,
+    user: User | None = None,
+    published: bool = False,
 ) -> Workflow:
+    """Create a workflow with an initial version.
+    
+    Args:
+        db: Database session
+        name: Workflow name
+        workflow_data: Workflow definition (defaults to MINIMAL_WORKFLOW_DATA)
+        user: User who creates the workflow
+        published: If True, set the workflow as published (for run tests)
+    """
     wf = Workflow(
         name=name,
         description="",
-        workflow_data=workflow_data or MINIMAL_WORKFLOW_DATA,
         is_active=False,
-        version=1,
     )
     db.add(wf)
     await db.flush()
+    
+    # Create initial version
+    version = WorkflowVersion(
+        workflow_id=wf.id,
+        version=1,
+        workflow_data=workflow_data or MINIMAL_WORKFLOW_DATA,
+        created_by=user.id if user else None,
+        message="Initial version",
+    )
+    db.add(version)
+    await db.flush()
+    
+    # Update workflow to reference the version
+    wf.latest_version_id = version.id
+    if published:
+        wf.published_version_id = version.id
+        wf.is_active = True
+    await db.flush()
+    
     return wf
 
 
@@ -78,7 +106,7 @@ async def _grant(
 @pytest_asyncio.fixture
 async def owned_workflow_a(test_db, test_user):
     """A workflow that test_user OWNS (first of two for multi-select tests)."""
-    wf = await _make_workflow(test_db, "Owned A")
+    wf = await _make_workflow(test_db, "Owned A", user=test_user, published=True)
     await _grant(test_db, wf, test_user, WorkflowRole.OWNER, granted_by=test_user)
     await test_db.commit()
     await test_db.refresh(wf)
@@ -88,7 +116,7 @@ async def owned_workflow_a(test_db, test_user):
 @pytest_asyncio.fixture
 async def owned_workflow_b(test_db, test_user):
     """A second workflow that test_user OWNS."""
-    wf = await _make_workflow(test_db, "Owned B")
+    wf = await _make_workflow(test_db, "Owned B", user=test_user, published=True)
     await _grant(test_db, wf, test_user, WorkflowRole.OWNER, granted_by=test_user)
     await test_db.commit()
     await test_db.refresh(wf)
@@ -98,7 +126,7 @@ async def owned_workflow_b(test_db, test_user):
 @pytest_asyncio.fixture
 async def editor_workflow(test_db, test_user, other_user):
     """A workflow owned by other_user where test_user has EDITOR role."""
-    wf = await _make_workflow(test_db, "Editor Workflow")
+    wf = await _make_workflow(test_db, "Editor Workflow", user=other_user, published=True)
     await _grant(test_db, wf, other_user, WorkflowRole.OWNER, granted_by=other_user)
     await _grant(test_db, wf, test_user, WorkflowRole.EDITOR, granted_by=other_user)
     await test_db.commit()
@@ -109,7 +137,7 @@ async def editor_workflow(test_db, test_user, other_user):
 @pytest_asyncio.fixture
 async def viewer_workflow(test_db, test_user, other_user):
     """A workflow owned by other_user where test_user has VIEWER role."""
-    wf = await _make_workflow(test_db, "Viewer Workflow")
+    wf = await _make_workflow(test_db, "Viewer Workflow", user=other_user, published=True)
     await _grant(test_db, wf, other_user, WorkflowRole.OWNER, granted_by=other_user)
     await _grant(test_db, wf, test_user, WorkflowRole.VIEWER, granted_by=other_user)
     await test_db.commit()
@@ -120,7 +148,7 @@ async def viewer_workflow(test_db, test_user, other_user):
 @pytest_asyncio.fixture
 async def inaccessible_workflow(test_db, other_user):
     """A workflow owned by other_user with NO access granted to test_user."""
-    wf = await _make_workflow(test_db, "Inaccessible")
+    wf = await _make_workflow(test_db, "Inaccessible", user=other_user, published=True)
     await _grant(test_db, wf, other_user, WorkflowRole.OWNER, granted_by=other_user)
     await test_db.commit()
     await test_db.refresh(wf)
@@ -131,7 +159,7 @@ async def inaccessible_workflow(test_db, other_user):
 async def invalid_structure_workflow(test_db, test_user):
     """An OWNER workflow whose nodes contain no trigger — run should fail."""
     wf = await _make_workflow(
-        test_db, "No Trigger", workflow_data=NO_TRIGGER_WORKFLOW_DATA
+        test_db, "No Trigger", workflow_data=NO_TRIGGER_WORKFLOW_DATA, user=test_user, published=True
     )
     await _grant(test_db, wf, test_user, WorkflowRole.OWNER, granted_by=test_user)
     await test_db.commit()
@@ -526,7 +554,9 @@ class TestBulkExport:
         assert len(data["exported"]) == 1
         exported_wf = data["exported"][0]
         assert exported_wf["id"] == owned_workflow_a.id
-        assert "workflow_data" in exported_wf
+        assert "latest_version" in exported_wf
+        assert exported_wf["latest_version"] is not None
+        assert "workflow_data" in exported_wf["latest_version"]
         assert "name" in exported_wf
 
     @pytest.mark.asyncio
