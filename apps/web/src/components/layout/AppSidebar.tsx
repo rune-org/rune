@@ -246,7 +246,9 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { state } = useAuth();                  
   const user = state.user;
-  const isAdmin = user?.role === "admin";  
+  const isAdmin = user?.role === "admin";
+
+  const adminUsersItem: NavItem = { title: "Users", href: "/admin/users" };
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
@@ -336,13 +338,13 @@ export function AppSidebar() {
             {/* ADMIN-ONLY "Users" BUTTON */}
             {isAdmin && (
               <Link
-                href="/admin/users"
-                aria-current={isItemActive(pathname, { href: "/admin/users" }) ? "page" : undefined}
+                href={adminUsersItem.href}
+                aria-current={isItemActive(pathname, adminUsersItem) ? "page" : undefined}
                 className={cn(
                   "group relative flex h-12 w-full items-center rounded-xl border border-transparent text-sm font-medium text-muted-foreground motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   isExpanded ? "justify-start gap-3 px-3" : "justify-center px-0",
-                  isItemActive(pathname, { href: "/admin/users" })
+                  isItemActive(pathname, adminUsersItem)
                     ? "border-accent/60 bg-accent/15 text-accent"
                     : "hover:border-border/70 hover:bg-muted/40 hover:text-foreground",
                 )}
