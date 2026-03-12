@@ -8,7 +8,6 @@ import {
   RotateCcw,
   RotateCw,
   Save,
-  Maximize,
   Upload,
   Download,
   LayoutDashboard,
@@ -18,6 +17,7 @@ import {
   ChevronDown,
   Loader2,
   Square,
+  Send,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,8 +26,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ExecutionHistoryPanel } from "./ExecutionHistoryPanel";
+import { VersionHistoryPanel } from "./VersionHistoryPanel";
 import type { WorkflowExecutionStatus } from "../types/execution";
 import type { WsConnectionStatus } from "../hooks/useRtesWebSocket";
+import type { CanvasNode } from "../types";
+import type { Edge } from "@xyflow/react";
 import { cn } from "@/lib/cn";
 
 type ToolbarProps = {
@@ -46,7 +49,6 @@ type ToolbarProps = {
   onImportFromClipboard: () => void;
   onImportFromFile: () => void;
   onImportFromTemplate: () => void;
-  onFitView?: () => void;
   onAutoLayout?: () => void;
   saveDisabled?: boolean;
 
@@ -54,6 +56,14 @@ type ToolbarProps = {
   wsStatus?: WsConnectionStatus;
   isStartingExecution?: boolean;
   workflowId?: number | null;
+
+  onPublish?: () => void;
+  hasUnpublishedChanges?: boolean;
+  publishDisabled?: boolean;
+  onRestore?: (versionId: number) => void;
+  onRunVersion?: (versionId: number) => void;
+  onViewVersion?: (snapshot: { nodes: CanvasNode[]; edges: Edge[]; versionNumber: number } | null) => void;
+  viewingVersionNumber?: number | null;
 };
 
 export const Toolbar = memo(function Toolbar({
@@ -72,13 +82,19 @@ export const Toolbar = memo(function Toolbar({
   onImportFromClipboard,
   onImportFromFile,
   onImportFromTemplate,
-  onFitView,
   onAutoLayout,
   saveDisabled = false,
   executionStatus = "idle",
   wsStatus = "disconnected",
   isStartingExecution = false,
   workflowId,
+  onPublish,
+  hasUnpublishedChanges = false,
+  publishDisabled = false,
+  onRestore,
+  onRunVersion,
+  onViewVersion,
+  viewingVersionNumber,
 }: ToolbarProps) {
   const isExecuting = executionStatus === "running" || isStartingExecution;
   const isRunDisabled = executeDisabled || readOnly;
@@ -163,15 +179,33 @@ export const Toolbar = memo(function Toolbar({
         </Btn>
       )}
       <ExecutionHistoryPanel workflowId={workflowId ?? null} />
+      {workflowId && onViewVersion && onRestore && (
+        <VersionHistoryPanel
+          workflowId={workflowId ?? null}
+          onViewVersion={onViewVersion}
+          onRestore={onRestore}
+          onRunVersion={onRunVersion}
+          viewingVersionNumber={viewingVersionNumber}
+          disabled={readOnly && viewingVersionNumber == null}
+        />
+      )}
       <Btn onClick={onUndo} title="Undo (Ctrl+Z)" disabled={!canUndo}>
         <RotateCcw className="h-4 w-4" /> Undo
       </Btn>
       <Btn onClick={onRedo} title="Redo (Ctrl+Shift+Z)" disabled={!canRedo}>
         <RotateCw className="h-4 w-4" /> Redo
       </Btn>
-      <Btn onClick={onSave} title="Save" disabled={saveDisabled}>
+      <Btn onClick={onSave} title="Save (Ctrl+S)" disabled={saveDisabled}>
         <Save className="h-4 w-4" /> Save
       </Btn>
+      {onPublish && hasUnpublishedChanges && !viewingVersionNumber && (
+        <div className="relative">
+          <Btn onClick={onPublish} title="Publish version" disabled={publishDisabled}>
+            <Send className="h-4 w-4" /> Publish
+          </Btn>
+          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-yellow-500 border border-card" title="Unpublished changes" />
+        </div>
+      )}
 
       <DropdownMenu>
         <DropdownMenuTrigger className={btnClass} disabled={readOnly}>
@@ -209,11 +243,6 @@ export const Toolbar = memo(function Toolbar({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {onFitView && (
-        <Btn onClick={onFitView} title="Fit View">
-          <Maximize className="h-4 w-4" /> Fit
-        </Btn>
-      )}
       {onAutoLayout && (
         <Btn onClick={onAutoLayout} title="Auto Layout" disabled={readOnly}>
           <LayoutDashboard className="h-4 w-4" /> Layout

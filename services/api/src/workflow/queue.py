@@ -20,6 +20,8 @@ class WorkflowQueueService(BaseQueuePublisher):
     async def publish_workflow_run(
         self,
         workflow_id: int,
+        workflow_version: int,
+        workflow_version_id: int,
         execution_id: str,
         workflow_data: dict,
     ) -> None:
@@ -32,6 +34,8 @@ class WorkflowQueueService(BaseQueuePublisher):
 
         Args:
             workflow_id: The workflow database ID
+            workflow_version: The immutable workflow version number
+            workflow_version_id: The immutable workflow version ID
             execution_id: Unique execution instance identifier
             workflow_data: The resolved workflow definition (nodes and edges)
 
@@ -71,6 +75,8 @@ class WorkflowQueueService(BaseQueuePublisher):
 
         payload = NodeExecutionMessage(
             workflow_id=str(workflow_id),
+            workflow_version=workflow_version,
+            workflow_version_id=workflow_version_id,
             execution_id=execution_id,
             current_node=first_node,
             workflow_definition=workflow_data,

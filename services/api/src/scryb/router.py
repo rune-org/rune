@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from src.core.dependencies import DatabaseDep
+from src.core.exceptions import BadRequest
 from src.core.responses import ApiResponse
 from src.db.models import Workflow
 from src.scryb.generator import DocumentationGenerator
@@ -22,11 +23,13 @@ def get_workflow_service(db: DatabaseDep) -> WorkflowService:
 async def generate_workflow_docs(
     style_request: GenerateWorkflowDocsRequest,
     workflow: Workflow = Depends(get_workflow_with_permission),
+    service: WorkflowService = Depends(get_workflow_service),
 ):
     """Generate documentation for the specified workflow."""
 
-    # 1. Prepare Workflow Data
-    workflow_data = workflow.workflow_data.copy() if workflow.workflow_data else {}
+    workflow_data = await service.get_latest_workflow_data(workflow)
+    if workflow_data is None:
+        raise BadRequest(detail="Workflow has no saved versions")
 
     workflow_data["id"] = str(workflow.id)
     workflow_data["name"] = workflow.name

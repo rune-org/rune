@@ -442,6 +442,50 @@ export type ApiResponseWorkflowShareResponse = {
 };
 
 /**
+ * ApiResponse[WorkflowVersionConflict]
+ */
+export type ApiResponseWorkflowVersionConflict = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: WorkflowVersionConflict;
+};
+
+/**
+ * ApiResponse[WorkflowVersionDetail]
+ */
+export type ApiResponseWorkflowVersionDetail = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: WorkflowVersionDetail;
+};
+
+/**
  * ApiResponse[bool]
  */
 export type ApiResponseBool = {
@@ -631,6 +675,30 @@ export type ApiResponseListWorkflowListItem = {
      * Response data
      */
     data: Array<WorkflowListItem>;
+};
+
+/**
+ * ApiResponse[list[WorkflowVersionListItem]]
+ */
+export type ApiResponseListWorkflowVersionListItem = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<WorkflowVersionListItem>;
 };
 
 /**
@@ -1579,12 +1647,32 @@ export type WorkflowCreate = {
      * Description
      */
     description?: string | null;
+};
+
+/**
+ * WorkflowCreateVersion
+ */
+export type WorkflowCreateVersion = {
+    /**
+     * Base Version Id
+     *
+     * Expected current latest version id. Null is allowed only for the first save.
+     */
+    base_version_id?: number | null;
     /**
      * Workflow Data
+     *
+     * Workflow definition to save
      */
-    workflow_data?: {
+    workflow_data: {
         [key: string]: unknown;
     };
+    /**
+     * Message
+     *
+     * Revision message
+     */
+    message?: string | null;
 };
 
 /**
@@ -1607,16 +1695,15 @@ export type WorkflowDetail = {
      * Is Active
      */
     is_active: boolean;
+    latest_version?: WorkflowVersionDetail | null;
     /**
-     * Workflow Data
+     * Published Version Id
      */
-    workflow_data: {
-        [key: string]: unknown;
-    };
+    published_version_id?: number | null;
     /**
-     * Version
+     * Has Unpublished Changes
      */
-    version: number;
+    has_unpublished_changes: boolean;
     /**
      * Created At
      */
@@ -1703,6 +1790,28 @@ export type WorkflowPermissionListResponse = {
 };
 
 /**
+ * WorkflowPublishVersion
+ */
+export type WorkflowPublishVersion = {
+    /**
+     * Version Id
+     */
+    version_id: number;
+};
+
+/**
+ * WorkflowRestoreVersion
+ */
+export type WorkflowRestoreVersion = {
+    /**
+     * Message
+     *
+     * Revision message
+     */
+    message?: string | null;
+};
+
+/**
  * WorkflowRole
  *
  * Workflow role enumeration.
@@ -1719,6 +1828,18 @@ export type WorkflowRoleUpdateRequest = {
      * New role to assign (EDITOR or VIEWER, not OWNER)
      */
     role: WorkflowRole;
+};
+
+/**
+ * WorkflowRunRequest
+ */
+export type WorkflowRunRequest = {
+    /**
+     * Version Id
+     *
+     * Specific workflow version to run. Defaults to the latest version.
+     */
+    version_id?: number | null;
 };
 
 /**
@@ -1756,20 +1877,6 @@ export type WorkflowShareResponse = {
 };
 
 /**
- * WorkflowUpdateData
- */
-export type WorkflowUpdateData = {
-    /**
-     * Workflow Data
-     *
-     * Updated workflow data
-     */
-    workflow_data: {
-        [key: string]: unknown;
-    };
-};
-
-/**
  * WorkflowUpdateName
  */
 export type WorkflowUpdateName = {
@@ -1787,6 +1894,94 @@ export type WorkflowUpdateStatus = {
      * Is Active
      */
     is_active: boolean;
+};
+
+/**
+ * WorkflowVersionConflict
+ */
+export type WorkflowVersionConflict = {
+    /**
+     * Server Version
+     */
+    server_version: number;
+    /**
+     * Server Version Id
+     */
+    server_version_id: number;
+};
+
+/**
+ * WorkflowVersionCreator
+ */
+export type WorkflowVersionCreator = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * WorkflowVersionDetail
+ */
+export type WorkflowVersionDetail = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    created_by?: WorkflowVersionCreator | null;
+    /**
+     * Message
+     */
+    message?: string | null;
+    /**
+     * Is Published
+     */
+    is_published: boolean;
+    /**
+     * Workflow Data
+     */
+    workflow_data: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * WorkflowVersionListItem
+ */
+export type WorkflowVersionListItem = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    created_by?: WorkflowVersionCreator | null;
+    /**
+     * Message
+     */
+    message?: string | null;
+    /**
+     * Is Published
+     */
+    is_published: boolean;
 };
 
 export type LoginAuthLoginPostData = {
@@ -2278,8 +2473,8 @@ export type UpdateNameWorkflowsWorkflowIdNamePutResponses = {
 
 export type UpdateNameWorkflowsWorkflowIdNamePutResponse = UpdateNameWorkflowsWorkflowIdNamePutResponses[keyof UpdateNameWorkflowsWorkflowIdNamePutResponses];
 
-export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutData = {
-    body: WorkflowUpdateData;
+export type ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetData = {
+    body?: never;
     path: {
         /**
          * Workflow Id
@@ -2287,29 +2482,167 @@ export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutData = {
         workflow_id: number;
     };
     query?: never;
-    url: '/workflows/{workflow_id}/data';
+    url: '/workflows/{workflow_id}/versions';
 };
 
-export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors = {
+export type ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutError = UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors[keyof UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors];
+export type ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetError = ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetErrors[keyof ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetErrors];
 
-export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses = {
+export type ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListWorkflowVersionListItem;
+};
+
+export type ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetResponse = ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetResponses[keyof ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetResponses];
+
+export type CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostData = {
+    body: WorkflowCreateVersion;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/versions';
+};
+
+export type CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostErrors = {
+    /**
+     * Someone saved a newer workflow version
+     */
+    409: ApiResponseWorkflowVersionConflict;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostError = CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostErrors[keyof CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostErrors];
+
+export type CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ApiResponseWorkflowVersionDetail;
+};
+
+export type CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostResponse = CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostResponses[keyof CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostResponses];
+
+export type GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Version Id
+         */
+        version_id: number;
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/versions/{version_id}';
+};
+
+export type GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetError = GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetErrors[keyof GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetErrors];
+
+export type GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseWorkflowVersionDetail;
+};
+
+export type GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponse = GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponses[keyof GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponses];
+
+export type PublishWorkflowVersionWorkflowsWorkflowIdPublishPostData = {
+    body: WorkflowPublishVersion;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/publish';
+};
+
+export type PublishWorkflowVersionWorkflowsWorkflowIdPublishPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PublishWorkflowVersionWorkflowsWorkflowIdPublishPostError = PublishWorkflowVersionWorkflowsWorkflowIdPublishPostErrors[keyof PublishWorkflowVersionWorkflowsWorkflowIdPublishPostErrors];
+
+export type PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseWorkflowDetail;
 };
 
-export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse = UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses[keyof UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses];
+export type PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponse = PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponses[keyof PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponses];
+
+export type RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostData = {
+    /**
+     * Payload
+     */
+    body?: WorkflowRestoreVersion | null;
+    path: {
+        /**
+         * Version Id
+         */
+        version_id: number;
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/restore/{version_id}';
+};
+
+export type RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostError = RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostErrors[keyof RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostErrors];
+
+export type RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ApiResponseWorkflowVersionDetail;
+};
+
+export type RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponse = RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponses[keyof RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponses];
 
 export type RunWorkflowWorkflowsWorkflowIdRunPostData = {
-    body?: never;
+    /**
+     * Payload
+     */
+    body?: WorkflowRunRequest | null;
     path: {
         /**
          * Workflow Id

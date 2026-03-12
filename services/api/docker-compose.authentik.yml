@@ -57,7 +57,7 @@ services:
     restart: unless-stopped
 
   authentik-server:
-    image: "ghcr.io/goauthentik/server:2024.10.5"
+    image: "ghcr.io/goauthentik/server:2026.2.1"
     container_name: rune-authentik-server
     command: server
     environment:
@@ -85,7 +85,7 @@ services:
     restart: unless-stopped
 
   authentik-worker:
-    image: "ghcr.io/goauthentik/server:2024.10.5"
+    image: "ghcr.io/goauthentik/server:2026.2.1"
     container_name: rune-authentik-worker
     command: worker
     environment:

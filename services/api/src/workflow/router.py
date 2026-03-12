@@ -1,8 +1,13 @@
-from fastapi import APIRouter, Depends, status
+import uuid
+
+from fastapi import APIRouter, Depends, Response, status
 
 from src.core.config import get_settings
-from src.core.dependencies import DatabaseDep, require_password_changed
-from src.core.exceptions import BadRequest
+from src.core.dependencies import (
+    DatabaseDep,
+    require_password_changed,
+)
+from src.core.exceptions import BadRequest, NotFound
 from src.core.responses import ApiResponse
 from src.db.models import User, Workflow
 from src.executions.service import ExecutionTokenService
@@ -18,13 +23,19 @@ from src.workflow.schemas import (
     BulkWorkflowFailure,
     BulkWorkflowRequest,
     WorkflowCreate,
+    WorkflowCreateVersion,
     WorkflowDetail,
     WorkflowListItem,
-    WorkflowUpdateData,
+    WorkflowPublishVersion,
+    WorkflowRestoreVersion,
+    WorkflowRunRequest,
     WorkflowUpdateName,
     WorkflowUpdateStatus,
+    WorkflowVersionConflict,
+    WorkflowVersionDetail,
+    WorkflowVersionListItem,
 )
-from src.workflow.service import WorkflowService
+from src.workflow.service import WorkflowService, WorkflowVersionConflictError
 
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
 
@@ -198,18 +209,23 @@ async def bulk_workflow_operation(
 @require_workflow_permission("view")
 async def get_workflow(
     workflow: Workflow = Depends(get_workflow_with_permission),
+    service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
     """
     Get a specific workflow by ID.
 
     **Requires:** VIEW permission (OWNER, EDITOR, or VIEWER)
     """
-    detail = WorkflowDetail.model_validate(workflow)
+    detail = WorkflowDetail.from_workflow(
+        workflow, await service.get_latest_version_with_creator(workflow)
+    )
     return ApiResponse(success=True, message="Workflow retrieved", data=detail)
 
 
 @router.post(
-    "/", response_model=ApiResponse[WorkflowDetail], status_code=status.HTTP_201_CREATED
+    "/",
+    response_model=ApiResponse[WorkflowDetail],
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_workflow(
     payload: WorkflowCreate,
@@ -219,12 +235,9 @@ async def create_workflow(
     wf = await service.create(
         user_id=current_user.id,
         name=payload.name,
-        description=payload.description,
-        workflow_data=payload.workflow_data,
+        description=payload.description or "",
     )
-
-    detail = WorkflowDetail.model_validate(wf)
-
+    detail = WorkflowDetail.from_workflow(wf, None)
     return ApiResponse(success=True, message="Workflow created", data=detail)
 
 
@@ -238,10 +251,15 @@ async def update_status(
     """
     Update workflow status (active/inactive).
 
+    In the versioned model, activating publishes the latest saved version and
+    deactivating clears the published pointer.
+
     **Requires:** EDIT permission (OWNER or EDITOR)
     """
     wf = await service.update_status(workflow, payload.is_active)
-    detail = WorkflowDetail.model_validate(wf)
+    detail = WorkflowDetail.from_workflow(
+        wf, await service.get_latest_version_with_creator(wf)
+    )
     return ApiResponse(success=True, message="Workflow status updated", data=detail)
 
 
@@ -258,25 +276,141 @@ async def update_name(
     **Requires:** EDIT permission (OWNER or EDITOR)
     """
     wf = await service.update_name(workflow, payload.name)
-    detail = WorkflowDetail.model_validate(wf)
+    detail = WorkflowDetail.from_workflow(
+        wf, await service.get_latest_version_with_creator(wf)
+    )
     return ApiResponse(success=True, message="Workflow name updated", data=detail)
 
 
-@router.put("/{workflow_id}/data", response_model=ApiResponse[WorkflowDetail])
+@router.get(
+    "/{workflow_id}/versions",
+    response_model=ApiResponse[list[WorkflowVersionListItem]],
+)
+@require_workflow_permission("view")
+async def list_workflow_versions(
+    workflow: Workflow = Depends(get_workflow_with_permission),
+    service: WorkflowService = Depends(get_workflow_service),
+) -> ApiResponse[list[WorkflowVersionListItem]]:
+    versions = [
+        WorkflowVersionListItem.from_version(
+            version,
+            workflow.published_version_id,
+            creator,
+        )
+        for version, creator in await service.list_versions(workflow.id)
+    ]
+    return ApiResponse(
+        success=True, message="Workflow versions retrieved", data=versions
+    )
+
+
+@router.get(
+    "/{workflow_id}/versions/{version_id}",
+    response_model=ApiResponse[WorkflowVersionDetail],
+)
+@require_workflow_permission("view")
+async def get_workflow_version(
+    version_id: int,
+    workflow: Workflow = Depends(get_workflow_with_permission),
+    service: WorkflowService = Depends(get_workflow_service),
+) -> ApiResponse[WorkflowVersionDetail]:
+    version_tuple = await service.get_version_with_creator(workflow.id, version_id)
+    if version_tuple is None:
+        raise NotFound(detail="Workflow version not found")
+
+    version, creator = version_tuple
+    detail = WorkflowVersionDetail.from_version(
+        version,
+        workflow.published_version_id,
+        creator,
+    )
+    return ApiResponse(success=True, message="Workflow version retrieved", data=detail)
+
+
+@router.post(
+    "/{workflow_id}/versions",
+    response_model=ApiResponse[WorkflowVersionDetail],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "model": ApiResponse[WorkflowVersionConflict],
+            "description": "Someone saved a newer workflow version",
+        }
+    },
+)
 @require_workflow_permission("edit")
-async def update_workflow_data(
-    payload: WorkflowUpdateData,
+async def create_workflow_version(
+    payload: WorkflowCreateVersion,
+    workflow: Workflow = Depends(get_workflow_with_permission),
+    current_user: User = Depends(require_password_changed),
+    service: WorkflowService = Depends(get_workflow_service),
+) -> ApiResponse[WorkflowVersionDetail] | Response:
+    try:
+        version = await service.create_version(
+            workflow=workflow,
+            user_id=current_user.id,
+            workflow_data=payload.workflow_data,
+            base_version_id=payload.base_version_id,
+            message=payload.message,
+        )
+    except WorkflowVersionConflictError as exc:
+        return WorkflowVersionConflict.to_response(
+            exc.server_version, exc.server_version_id
+        )
+
+    detail_tuple = await service.get_version_with_creator(workflow.id, version.id)
+    version_detail = WorkflowVersionDetail.from_version(
+        detail_tuple[0],
+        workflow.published_version_id,
+        detail_tuple[1],
+    )
+    return ApiResponse(
+        success=True,
+        message="Workflow version created",
+        data=version_detail,
+    )
+
+
+@router.post("/{workflow_id}/publish", response_model=ApiResponse[WorkflowDetail])
+@require_workflow_permission("edit")
+async def publish_workflow_version(
+    payload: WorkflowPublishVersion,
     workflow: Workflow = Depends(get_workflow_with_permission),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[WorkflowDetail]:
-    """
-    Update workflow data/definition.
+    wf = await service.publish_version(workflow, payload.version_id)
+    detail = WorkflowDetail.from_workflow(
+        wf, await service.get_latest_version_with_creator(wf)
+    )
+    return ApiResponse(success=True, message="Workflow published", data=detail)
 
-    **Requires:** EDIT permission (OWNER or EDITOR)
-    """
-    wf = await service.update_workflow_data(workflow, payload.workflow_data)
-    detail = WorkflowDetail.model_validate(wf)
-    return ApiResponse(success=True, message="Workflow data updated", data=detail)
+
+@router.post(
+    "/{workflow_id}/restore/{version_id}",
+    response_model=ApiResponse[WorkflowVersionDetail],
+    status_code=status.HTTP_201_CREATED,
+)
+@require_workflow_permission("edit")
+async def restore_workflow_version(
+    version_id: int,
+    payload: WorkflowRestoreVersion | None = None,
+    workflow: Workflow = Depends(get_workflow_with_permission),
+    current_user: User = Depends(require_password_changed),
+    service: WorkflowService = Depends(get_workflow_service),
+) -> ApiResponse[WorkflowVersionDetail]:
+    restored = await service.restore_version(
+        workflow=workflow,
+        source_version_id=version_id,
+        user_id=current_user.id,
+        message=payload.message if payload else None,
+    )
+    detail_tuple = await service.get_version_with_creator(workflow.id, restored.id)
+    detail = WorkflowVersionDetail.from_version(
+        detail_tuple[0],
+        workflow.published_version_id,
+        detail_tuple[1],
+    )
+    return ApiResponse(success=True, message="Workflow version restored", data=detail)
 
 
 @router.delete("/{workflow_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -297,6 +431,7 @@ async def delete_workflow(
 @router.post("/{workflow_id}/run", response_model=ApiResponse[str])
 @require_workflow_permission("execute")
 async def run_workflow(
+    payload: WorkflowRunRequest | None = None,
     workflow: Workflow = Depends(get_workflow_with_permission),
     current_user: User = Depends(require_password_changed),
     workflow_service: WorkflowService = Depends(get_workflow_service),
@@ -308,7 +443,8 @@ async def run_workflow(
 
     Verifies the workflow exists and user has execute permission (OWNER or EDITOR),
     resolves all credential references in workflow nodes,
-    then publishes a run message to RabbitMQ containing workflow details with resolved credentials.
+    then publishes a run message to RabbitMQ containing workflow details with
+    resolved credentials.
     Also publishes an execution token for RTES real-time updates.
 
     Returns execution_id for tracking the execution.
@@ -321,9 +457,9 @@ async def run_workflow(
             user_id=current_user.id,
             queue_service=queue_service,
             token_service=token_service,
+            version_id=payload.version_id if payload else None,
         )
     except ValueError as e:
-        # Workflow validation errors (e.g., missing trigger, multiple triggers, invalid structure)
         raise BadRequest(detail=str(e))
 
     return ApiResponse(success=True, message="Workflow run queued", data=execution_id)
