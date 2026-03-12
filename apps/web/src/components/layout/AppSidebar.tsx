@@ -142,7 +142,7 @@ function NavLink({
       {!isExpanded && (
         <span
           aria-hidden={true}
-          className="pointer-events-none absolute left-full top-1/2 ml-3 -translate-y-1/2 rounded-[calc(var(--radius)-0.25rem)] border border-border/70 bg-background/95 px-2 py-1 text-xs font-medium text-muted-foreground opacity-0 shadow-sm motion-safe:transition-all motion-safe:duration-150 motion-safe:ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
+          className="pointer-events-none absolute left-full top-1/2 ml-3 -translate-y-1/2 z-50 rounded-[calc(var(--radius)-0.25rem)] border border-border/70 bg-background/95 px-2 py-1 text-xs font-medium text-muted-foreground opacity-0 shadow-sm motion-safe:transition-all motion-safe:duration-150 motion-safe:ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
         >
           {item.title}
         </span>
@@ -202,7 +202,7 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
           {!isExpanded && (
             <span
               aria-hidden={true}
-              className="pointer-events-none absolute left-full top-1/2 ml-3 -translate-y-1/2 rounded-[calc(var(--radius)-0.25rem)] border border-border/70 bg-background/95 px-2 py-1 text-xs font-medium text-muted-foreground opacity-0 shadow-sm motion-safe:transition-all motion-safe:duration-150 motion-safe:ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
+              className="pointer-events-none absolute left-full top-1/2 ml-3 -translate-y-1/2 z-50 rounded-[calc(var(--radius)-0.25rem)] border border-border/70 bg-background/95 px-2 py-1 text-xs font-medium text-muted-foreground opacity-0 shadow-sm motion-safe:transition-all motion-safe:duration-150 motion-safe:ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
             >
               Profile
             </span>
@@ -269,7 +269,7 @@ export function AppSidebar() {
   return (
     <aside
       className={cn(
-        "sticky top-0 hidden h-screen flex-shrink-0 flex-col overflow-visible border-r border-border/60 bg-background/95 backdrop-blur motion-safe:transition-[width] motion-safe:duration-300 motion-safe:ease-out lg:flex",
+        "sticky top-0 z-20 hidden h-screen flex-shrink-0 flex-col overflow-visible border-r border-border/60 bg-background/95 backdrop-blur motion-safe:transition-[width] motion-safe:duration-300 motion-safe:ease-out lg:flex",
         isExpanded ? "w-60" : "w-20",
       )}
     >
@@ -337,10 +337,14 @@ export function AppSidebar() {
             {isAdmin && (
               <Link
                 href="/admin/users"
+                aria-current={isItemActive(pathname, { href: "/admin/users" }) ? "page" : undefined}
                 className={cn(
                   "group relative flex h-12 w-full items-center rounded-xl border border-transparent text-sm font-medium text-muted-foreground motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out",
-                  "hover:border-border/70 hover:bg-muted/40 hover:text-foreground",
-                  isExpanded ? "justify-start gap-3 px-3" : "justify-center px-0"
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  isExpanded ? "justify-start gap-3 px-3" : "justify-center px-0",
+                  isItemActive(pathname, { href: "/admin/users" })
+                    ? "border-accent/60 bg-accent/15 text-accent"
+                    : "hover:border-border/70 hover:bg-muted/40 hover:text-foreground",
                 )}
               >
                 <Users className="h-5 w-5" />
@@ -355,6 +359,14 @@ export function AppSidebar() {
                 >
                   Users
                 </span>
+                {!isExpanded && (
+                  <span
+                    aria-hidden={true}
+                    className="pointer-events-none absolute left-full top-1/2 ml-3 -translate-y-1/2 z-50 rounded-[calc(var(--radius)-0.25rem)] border border-border/70 bg-background/95 px-2 py-1 text-xs font-medium text-muted-foreground opacity-0 shadow-sm motion-safe:transition-all motion-safe:duration-150 motion-safe:ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
+                  >
+                    Users
+                  </span>
+                )}
               </Link>
             )}
           </nav>
