@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, Depends, Response, status
 
 from src.core.config import get_settings
