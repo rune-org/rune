@@ -1,5 +1,6 @@
 @import "../styles/tokens.css";
 @import "tailwindcss";
+@import "../styles/toast.css";
 
 @theme inline {
   --color-background: var(--background);

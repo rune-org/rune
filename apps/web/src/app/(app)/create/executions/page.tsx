@@ -12,22 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Trash2 } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useExecutionsList } from "@/features/executions/hooks/useExecutionsList";
 import { ExecutionsTable } from "@/features/executions/components/ExecutionsTable";
 import { MetricsCards } from "@/features/executions/components/MetricsCards";
-import type { WorkflowExecutionStatus } from "@/features/canvas/types/execution";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import type { ExecutionListStatus } from "@/features/executions/types";
 
 export default function ExecutionsPage() {
   const {
@@ -37,14 +26,12 @@ export default function ExecutionsPage() {
     filters,
     setFilters,
     refresh,
-    deleteExecution,
-    clearHistory,
   } = useExecutionsList();
 
   const handleStatusFilterChange = (value: string) => {
     setFilters({
       ...filters,
-      status: value === "all" ? "all" : (value as WorkflowExecutionStatus),
+      status: value === "all" ? "all" : (value as ExecutionListStatus),
     });
   };
 
@@ -67,10 +54,10 @@ export default function ExecutionsPage() {
               <SelectValue placeholder="Filter status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="running">Running</SelectItem>
               <SelectItem value="halted">Halted</SelectItem>
             </SelectContent>
           </Select>
@@ -81,36 +68,9 @@ export default function ExecutionsPage() {
             size="sm"
             onClick={refresh}
             disabled={isLoading}
-          >
-            <RefreshCw className={isLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-          </Button>
-
-          {/* Clear History */}
-          {executions.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Trash2 className="h-4 w-4" />
-                  Clear History
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clear all execution history?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete all {executions.length} execution
-                    records. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={clearHistory}>
-                    Clear All
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+            >
+              <RefreshCw className={isLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+            </Button>
         </div>
       </div>
 
@@ -132,7 +92,6 @@ export default function ExecutionsPage() {
         <ExecutionsTable
           executions={executions}
           isLoading={isLoading}
-          onDelete={deleteExecution}
         />
       </div>
     </Container>

@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import Column
+from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
@@ -23,6 +23,15 @@ class WorkflowRole(str, Enum):
     OWNER = "owner"
 
 
+class ExecutionStatus(str, Enum):
+    """Execution status enumeration."""
+
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    HALTED = "halted"
+
+
 class CredentialType(str, Enum):
     """Credential type enumeration."""
 
@@ -30,9 +39,16 @@ class CredentialType(str, Enum):
     OAUTH2 = "oauth2"
     BASIC_AUTH = "basic_auth"
     HEADER = "header"
-    TOKEN = "token"
+    TOKEN = "token"  # nosec B105
     CUSTOM = "custom"
     SMTP = "smtp"
+
+
+class AuthProvider(str, Enum):
+    """Authentication provider for a user account."""
+
+    LOCAL = "local"
+    SAML = "saml"
 
 
 class TimestampModel(SQLModel):
@@ -43,6 +59,52 @@ class TimestampModel(SQLModel):
         default_factory=datetime.now,
         sa_column_kwargs={"onupdate": datetime.now},
     )
+
+
+class SAMLConfiguration(TimestampModel, table=True):
+    """One record per SAML IdP integration.
+
+    Each organisation that brings their own IdP gets one row.
+    The SP private key is stored encrypted using the application's
+    ENCRYPTION_KEY (Fernet) so it is never exposed in plaintext.
+    """
+
+    __tablename__ = "samlconfiguration"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    # Display name shown in admin UI
+    name: str = Field(description="Human-readable label, e.g. 'Okta' or 'Azure AD'")
+
+    # IdP metadata values (copy from IdP metadata XML)
+    idp_entity_id: str = Field(description="IdP Entity ID (Issuer)")
+    idp_sso_url: str = Field(description="IdP SSO redirect-binding URL")
+    idp_slo_url: Optional[str] = Field(
+        default=None, description="IdP Single Logout URL (optional)"
+    )
+    idp_certificate: str = Field(
+        description="IdP X.509 signing certificate, full PEM with headers"
+    )
+
+    # SP keypair — auto-generated on config creation
+    sp_private_key_encrypted: str = Field(
+        description="SP RSA private key, Fernet-encrypted",
+        exclude=True,  # Never serialise to Pydantic outputs
+    )
+    sp_certificate: str = Field(
+        description="SP X.509 certificate, full PEM with headers"
+    )
+
+    # Optional email-domain hint for auto-discovery (e.g. 'acme.com')
+    domain_hint: Optional[str] = Field(
+        default=None,
+        description="Email domain that maps to this IdP, used for SSO discovery",
+    )
+
+    is_active: bool = Field(default=True)
+
+    # Back-reference to users provisioned through this config
+    users: list["User"] = Relationship(back_populates="saml_config")
 
 
 class WorkflowCredentialLink(TimestampModel, table=True):
@@ -68,10 +130,24 @@ class User(TimestampModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field()
     email: str = Field(unique=True)
-    hashed_password: str = Field(exclude=True)
+    # Nullable: SAML-only users have no password.
+    hashed_password: Optional[str] = Field(default=None, exclude=True)
     role: UserRole = Field(
         default=UserRole.USER,
         sa_column=Column(SQLAlchemyEnum(UserRole, name="user_role", native_enum=True)),
+    )
+    # Authentication provider — determines which login path is allowed.
+    auth_provider: AuthProvider = Field(
+        default=AuthProvider.LOCAL,
+        sa_column=Column(
+            SQLAlchemyEnum(AuthProvider, name="auth_provider", native_enum=True)
+        ),
+    )
+    # SAML NameID (unique subject from the IdP) — only set for SAML users.
+    saml_subject: Optional[str] = Field(default=None, index=True)
+    # FK to the SAMLConfiguration that created/owns this user.
+    saml_config_id: Optional[int] = Field(
+        default=None, foreign_key="samlconfiguration.id"
     )
     is_active: bool = Field(default=True)
     last_login_at: Optional[datetime] = None
@@ -80,6 +156,8 @@ class User(TimestampModel, table=True):
         description="Flag indicating user must change their password",
     )
 
+    # Relationships
+    saml_config: Optional["SAMLConfiguration"] = Relationship(back_populates="users")
     workflow_permissions: list["WorkflowUser"] = Relationship(
         back_populates="user",
         cascade_delete=True,
@@ -107,20 +185,71 @@ class Workflow(TimestampModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field()
     description: str = Field(default="", description="Description of the workflow")
-
-    workflow_data: dict = Field(
-        default_factory=dict,
-        sa_type=JSONB,
-    )
-
     is_active: bool = Field(default=False)
-    version: int = Field(default=1)
+    latest_version_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            ForeignKey(
+                "workflow_versions.id",
+                name="fk_workflows_latest_version_id",
+                ondelete="SET NULL",
+                use_alter=True,
+            ),
+            nullable=True,
+        ),
+    )
+    published_version_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(
+            Integer,
+            ForeignKey(
+                "workflow_versions.id",
+                name="fk_workflows_published_version_id",
+                ondelete="SET NULL",
+                use_alter=True,
+            ),
+            nullable=True,
+        ),
+    )
 
     workflow_users: list["WorkflowUser"] = Relationship(back_populates="workflow")
     credentials: list["WorkflowCredential"] = Relationship(
         back_populates="used_in_workflows",
         link_model=WorkflowCredentialLink,
     )
+    executions: list["Execution"] = Relationship(back_populates="workflow")
+
+
+class WorkflowVersion(SQLModel, table=True):
+    __tablename__ = "workflow_versions"
+    __table_args__ = (
+        UniqueConstraint(
+            "workflow_id",
+            "version",
+            name="uq_workflow_versions_workflow_id_version",
+        ),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workflow_id: int = Field(
+        foreign_key="workflows.id",
+        ondelete="CASCADE",
+        description="Parent workflow shell",
+    )
+    version: int = Field(description="Linear workflow version number")
+    workflow_data: dict = Field(default_factory=dict, sa_type=JSONB)
+    created_by: Optional[int] = Field(
+        default=None,
+        foreign_key="users.id",
+        ondelete="SET NULL",
+        description="User who created this version",
+    )
+    message: Optional[str] = Field(
+        default=None,
+        description="User-provided message describing the saved revision",
+    )
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class WorkflowUser(TimestampModel, table=True):
@@ -272,3 +401,21 @@ class WorkflowCredential(TimestampModel, table=True):
         back_populates="credential",
         cascade_delete=True,
     )
+
+
+class Execution(TimestampModel, table=True):
+    __tablename__ = "executions"
+
+    id: str = Field(primary_key=True)
+    workflow_id: int = Field(foreign_key="workflows.id", ondelete="CASCADE", index=True)
+    status: ExecutionStatus = Field(
+        default=ExecutionStatus.PENDING,
+        sa_column=Column(
+            SQLAlchemyEnum(ExecutionStatus, name="execution_status", native_enum=True),
+        ),
+    )
+    completed_at: Optional[datetime] = Field(default=None)
+    total_duration_ms: Optional[int] = Field(default=None)
+    failure_reason: Optional[str] = Field(default=None)
+
+    workflow: "Workflow" = Relationship(back_populates="executions")

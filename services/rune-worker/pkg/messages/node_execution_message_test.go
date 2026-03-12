@@ -33,6 +33,8 @@ func TestNodeExecutionMessageValidate(t *testing.T) {
 			name: "valid message",
 			msg: NodeExecutionMessage{
 				WorkflowID:         "wf-1",
+				WorkflowVersion:    3,
+				WorkflowVersionID:  17,
 				ExecutionID:        "exec-1",
 				CurrentNode:        "node-1",
 				WorkflowDefinition: makeTestWorkflow(),
@@ -113,6 +115,8 @@ func TestNodeExecutionMessageEncodeDecodeRoundTrip(t *testing.T) {
 
 	msg := &NodeExecutionMessage{
 		WorkflowID:         "wf-1",
+		WorkflowVersion:    3,
+		WorkflowVersionID:  17,
 		ExecutionID:        "exec-1",
 		CurrentNode:        "node-1",
 		WorkflowDefinition: makeTestWorkflow(),
@@ -145,6 +149,12 @@ func TestNodeExecutionMessageEncodeDecodeRoundTrip(t *testing.T) {
 	if decoded.ExecutionID != msg.ExecutionID {
 		t.Fatalf("execution id mismatch: got %s want %s", decoded.ExecutionID, msg.ExecutionID)
 	}
+	if decoded.WorkflowVersion != msg.WorkflowVersion {
+		t.Fatalf("workflow version mismatch: got %d want %d", decoded.WorkflowVersion, msg.WorkflowVersion)
+	}
+	if decoded.WorkflowVersionID != msg.WorkflowVersionID {
+		t.Fatalf("workflow version id mismatch: got %d want %d", decoded.WorkflowVersionID, msg.WorkflowVersionID)
+	}
 	if decoded.CurrentNode != msg.CurrentNode {
 		t.Fatalf("current node mismatch: got %s want %s", decoded.CurrentNode, msg.CurrentNode)
 	}
@@ -164,6 +174,8 @@ func TestNodeExecutionMessageGetCurrentNodeDetails(t *testing.T) {
 
 	msg := &NodeExecutionMessage{
 		WorkflowID:         "wf-1",
+		WorkflowVersion:    3,
+		WorkflowVersionID:  17,
 		ExecutionID:        "exec-1",
 		CurrentNode:        "node-1",
 		WorkflowDefinition: makeTestWorkflow(),

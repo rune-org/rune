@@ -152,28 +152,6 @@ export type ApiResponseFirstAdminSignupResponse = {
 };
 
 /**
- * ApiResponse[FirstTimeSetupStatus]
- */
-export type ApiResponseFirstTimeSetupStatus = {
-    /**
-     * Success
-     *
-     * Whether the request was successful
-     */
-    success?: boolean;
-    /**
-     * Message
-     *
-     * Human-readable message
-     */
-    message?: string;
-    /**
-     * Response data
-     */
-    data: FirstTimeSetupStatus;
-};
-
-/**
  * ApiResponse[List[TemplateSummary]]
  */
 export type ApiResponseListTemplateSummary = {
@@ -219,6 +197,72 @@ export type ApiResponseNoneType = {
      * Response data
      */
     data: null;
+};
+
+/**
+ * ApiResponse[SAMLConfigResponse]
+ */
+export type ApiResponseSamlConfigResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: SamlConfigResponse;
+};
+
+/**
+ * ApiResponse[SAMLDiscoverResponse]
+ */
+export type ApiResponseSamlDiscoverResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: SamlDiscoverResponse;
+};
+
+/**
+ * ApiResponse[SAMLExchangeResponse]
+ */
+export type ApiResponseSamlExchangeResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: SamlExchangeResponse;
 };
 
 /**
@@ -398,6 +442,74 @@ export type ApiResponseWorkflowShareResponse = {
 };
 
 /**
+ * ApiResponse[WorkflowVersionConflict]
+ */
+export type ApiResponseWorkflowVersionConflict = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: WorkflowVersionConflict;
+};
+
+/**
+ * ApiResponse[WorkflowVersionDetail]
+ */
+export type ApiResponseWorkflowVersionDetail = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: WorkflowVersionDetail;
+};
+
+/**
+ * ApiResponse[bool]
+ */
+export type ApiResponseBool = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: boolean;
+};
+
+/**
  * ApiResponse[list[CredentialResponseDropDown]]
  */
 export type ApiResponseListCredentialResponseDropDown = {
@@ -467,6 +579,30 @@ export type ApiResponseListCredentialShareInfo = {
      * Response data
      */
     data: Array<CredentialShareInfo>;
+};
+
+/**
+ * ApiResponse[list[ExecutionListItem]]
+ */
+export type ApiResponseListExecutionListItem = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<ExecutionListItem>;
 };
 
 /**
@@ -542,6 +678,30 @@ export type ApiResponseListWorkflowListItem = {
 };
 
 /**
+ * ApiResponse[list[WorkflowVersionListItem]]
+ */
+export type ApiResponseListWorkflowVersionListItem = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<WorkflowVersionListItem>;
+};
+
+/**
  * ApiResponse[str]
  */
 export type ApiResponseStr = {
@@ -563,6 +723,20 @@ export type ApiResponseStr = {
      * Response data
      */
     data: string;
+};
+
+/**
+ * Body_assertion_consumer_service_auth_saml_acs_post
+ */
+export type BodyAssertionConsumerServiceAuthSamlAcsPost = {
+    /**
+     * Samlresponse
+     */
+    SAMLResponse: string;
+    /**
+     * Relaystate
+     */
+    RelayState?: string;
 };
 
 /**
@@ -775,6 +949,48 @@ export type CredentialUpdate = {
 };
 
 /**
+ * ExecutionListItem
+ */
+export type ExecutionListItem = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Workflow Id
+     */
+    workflow_id: number;
+    /**
+     * Workflow Name
+     */
+    workflow_name: string;
+    status: ExecutionStatus;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Completed At
+     */
+    completed_at?: string | null;
+    /**
+     * Total Duration Ms
+     */
+    total_duration_ms?: number | null;
+    /**
+     * Failure Reason
+     */
+    failure_reason?: string | null;
+};
+
+/**
+ * ExecutionStatus
+ *
+ * Execution status enumeration.
+ */
+export type ExecutionStatus = 'pending' | 'completed' | 'failed' | 'halted';
+
+/**
  * FirstAdminSignupRequest
  *
  * Request schema for first-time admin account creation.
@@ -824,26 +1040,6 @@ export type FirstAdminSignupResponse = {
      * Admin's email
      */
     email: string;
-};
-
-/**
- * FirstTimeSetupStatus
- *
- * Response schema for first-time setup status check.
- */
-export type FirstTimeSetupStatus = {
-    /**
-     * Requires Setup
-     *
-     * Whether the system requires first-time admin setup
-     */
-    requires_setup: boolean;
-    /**
-     * Message
-     *
-     * Status message
-     */
-    message: string;
 };
 
 /**
@@ -920,6 +1116,224 @@ export type RefreshRequest = {
      * Valid refresh token
      */
     refresh_token: string;
+};
+
+/**
+ * SAMLConfigCreate
+ *
+ * Request body for ``POST /auth/saml/config``.
+ */
+export type SamlConfigCreate = {
+    /**
+     * Name
+     *
+     * Display name, e.g. 'Okta' or 'Azure AD'
+     */
+    name: string;
+    /**
+     * Idp Entity Id
+     *
+     * IdP Entity ID from their metadata XML
+     */
+    idp_entity_id: string;
+    /**
+     * Idp Sso Url
+     *
+     * IdP SSO redirect-binding URL (must be http/https)
+     */
+    idp_sso_url: string;
+    /**
+     * Idp Slo Url
+     *
+     * IdP Single Logout URL (optional, must be http/https)
+     */
+    idp_slo_url?: string | null;
+    /**
+     * Idp Certificate
+     *
+     * IdP X.509 signing certificate — full PEM including BEGIN/END headers
+     */
+    idp_certificate: string;
+    /**
+     * Domain Hint
+     *
+     * Email domain for SSO auto-discovery, e.g. 'acme.com'
+     */
+    domain_hint?: string | null;
+};
+
+/**
+ * SAMLConfigResponse
+ *
+ * Admin-facing response for a SAML configuration.
+ *
+ * Includes all IdP fields plus computed SP fields that admins need to paste
+ * into their IdP when setting up the integration.  The SP private key is
+ * intentionally excluded.
+ */
+export type SamlConfigResponse = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Idp Entity Id
+     */
+    idp_entity_id: string;
+    /**
+     * Idp Sso Url
+     */
+    idp_sso_url: string;
+    /**
+     * Idp Slo Url
+     */
+    idp_slo_url?: string | null;
+    /**
+     * Sp Certificate
+     *
+     * SP X.509 certificate PEM – paste into your IdP
+     */
+    sp_certificate: string;
+    /**
+     * Sp Entity Id
+     *
+     * SP Entity ID / Audience URI to enter in your IdP
+     */
+    sp_entity_id: string;
+    /**
+     * Sp Acs Url
+     *
+     * Assertion Consumer Service URL to enter in your IdP
+     */
+    sp_acs_url: string;
+    /**
+     * Sp Metadata Url
+     *
+     * Public URL of this SP's metadata XML – paste into your IdP to auto-configure
+     */
+    sp_metadata_url: string;
+    /**
+     * Sp Slo Url
+     *
+     * Single Logout URL to configure in your IdP (optional)
+     */
+    sp_slo_url: string;
+    /**
+     * Domain Hint
+     */
+    domain_hint?: string | null;
+    /**
+     * Is Active
+     */
+    is_active: boolean;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+};
+
+/**
+ * SAMLConfigUpdate
+ *
+ * Request body for ``PUT /auth/saml/config``.
+ */
+export type SamlConfigUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Idp Entity Id
+     */
+    idp_entity_id?: string | null;
+    /**
+     * Idp Sso Url
+     */
+    idp_sso_url?: string | null;
+    /**
+     * Idp Slo Url
+     */
+    idp_slo_url?: string | null;
+    /**
+     * Idp Certificate
+     */
+    idp_certificate?: string | null;
+    /**
+     * Domain Hint
+     */
+    domain_hint?: string | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean | null;
+};
+
+/**
+ * SAMLDiscoverResponse
+ *
+ * Response for ``GET /auth/saml/discover``.
+ *
+ * Intentionally does **not** expose internal IDs — the single-IdP model
+ * means the login endpoint is always ``/auth/saml/login`` regardless.
+ */
+export type SamlDiscoverResponse = {
+    /**
+     * Found
+     *
+     * Whether an active SAML config exists for this email domain
+     */
+    found: boolean;
+    /**
+     * Login Url
+     *
+     * SSO initiation URL to redirect the user to, if found
+     */
+    login_url?: string | null;
+};
+
+/**
+ * SAMLExchangeRequest
+ *
+ * Request body for ``POST /auth/saml/exchange``.
+ */
+export type SamlExchangeRequest = {
+    /**
+     * Code
+     *
+     * One-time SSO exchange code received as a URL query parameter after IdP redirect
+     */
+    code: string;
+};
+
+/**
+ * SAMLExchangeResponse
+ *
+ * Response body for ``POST /auth/saml/exchange``.
+ *
+ * The access token is delivered as an ``HttpOnly`` cookie on the same
+ * response — it never appears in this JSON body.
+ */
+export type SamlExchangeResponse = {
+    /**
+     * Refresh Token
+     *
+     * Long-lived refresh token — store in localStorage
+     */
+    refresh_token: string;
+    /**
+     * Expires In
+     *
+     * Access token lifetime in seconds
+     */
+    expires_in: number;
 };
 
 /**
@@ -1096,6 +1510,7 @@ export type UserBasicInfo = {
      * Email
      */
     email: string;
+    role: UserRole;
 };
 
 /**
@@ -1191,6 +1606,18 @@ export type UserResponse = {
 export type UserRole = 'user' | 'admin';
 
 /**
+ * UserStatusUpdate
+ */
+export type UserStatusUpdate = {
+    /**
+     * Is Active
+     *
+     * Set to true to activate, false to deactivate
+     */
+    is_active: boolean;
+};
+
+/**
  * ValidationError
  */
 export type ValidationError = {
@@ -1220,12 +1647,32 @@ export type WorkflowCreate = {
      * Description
      */
     description?: string | null;
+};
+
+/**
+ * WorkflowCreateVersion
+ */
+export type WorkflowCreateVersion = {
+    /**
+     * Base Version Id
+     *
+     * Expected current latest version id. Null is allowed only for the first save.
+     */
+    base_version_id?: number | null;
     /**
      * Workflow Data
+     *
+     * Workflow definition to save
      */
-    workflow_data?: {
+    workflow_data: {
         [key: string]: unknown;
     };
+    /**
+     * Message
+     *
+     * Revision message
+     */
+    message?: string | null;
 };
 
 /**
@@ -1248,16 +1695,15 @@ export type WorkflowDetail = {
      * Is Active
      */
     is_active: boolean;
+    latest_version?: WorkflowVersionDetail | null;
     /**
-     * Workflow Data
+     * Published Version Id
      */
-    workflow_data: {
-        [key: string]: unknown;
-    };
+    published_version_id?: number | null;
     /**
-     * Version
+     * Has Unpublished Changes
      */
-    version: number;
+    has_unpublished_changes: boolean;
     /**
      * Created At
      */
@@ -1294,6 +1740,7 @@ export type WorkflowListItem = {
      * Is Active
      */
     is_active: boolean;
+    role: WorkflowRole;
 };
 
 /**
@@ -1315,6 +1762,7 @@ export type WorkflowPermissionInfo = {
      */
     user_name: string;
     role: WorkflowRole;
+    user_role: UserRole;
     /**
      * Granted At
      */
@@ -1342,6 +1790,28 @@ export type WorkflowPermissionListResponse = {
 };
 
 /**
+ * WorkflowPublishVersion
+ */
+export type WorkflowPublishVersion = {
+    /**
+     * Version Id
+     */
+    version_id: number;
+};
+
+/**
+ * WorkflowRestoreVersion
+ */
+export type WorkflowRestoreVersion = {
+    /**
+     * Message
+     *
+     * Revision message
+     */
+    message?: string | null;
+};
+
+/**
  * WorkflowRole
  *
  * Workflow role enumeration.
@@ -1358,6 +1828,18 @@ export type WorkflowRoleUpdateRequest = {
      * New role to assign (EDITOR or VIEWER, not OWNER)
      */
     role: WorkflowRole;
+};
+
+/**
+ * WorkflowRunRequest
+ */
+export type WorkflowRunRequest = {
+    /**
+     * Version Id
+     *
+     * Specific workflow version to run. Defaults to the latest version.
+     */
+    version_id?: number | null;
 };
 
 /**
@@ -1395,20 +1877,6 @@ export type WorkflowShareResponse = {
 };
 
 /**
- * WorkflowUpdateData
- */
-export type WorkflowUpdateData = {
-    /**
-     * Workflow Data
-     *
-     * Updated workflow data
-     */
-    workflow_data: {
-        [key: string]: unknown;
-    };
-};
-
-/**
  * WorkflowUpdateName
  */
 export type WorkflowUpdateName = {
@@ -1426,6 +1894,94 @@ export type WorkflowUpdateStatus = {
      * Is Active
      */
     is_active: boolean;
+};
+
+/**
+ * WorkflowVersionConflict
+ */
+export type WorkflowVersionConflict = {
+    /**
+     * Server Version
+     */
+    server_version: number;
+    /**
+     * Server Version Id
+     */
+    server_version_id: number;
+};
+
+/**
+ * WorkflowVersionCreator
+ */
+export type WorkflowVersionCreator = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * WorkflowVersionDetail
+ */
+export type WorkflowVersionDetail = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    created_by?: WorkflowVersionCreator | null;
+    /**
+     * Message
+     */
+    message?: string | null;
+    /**
+     * Is Published
+     */
+    is_published: boolean;
+    /**
+     * Workflow Data
+     */
+    workflow_data: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * WorkflowVersionListItem
+ */
+export type WorkflowVersionListItem = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    created_by?: WorkflowVersionCreator | null;
+    /**
+     * Message
+     */
+    message?: string | null;
+    /**
+     * Is Published
+     */
+    is_published: boolean;
 };
 
 export type LoginAuthLoginPostData = {
@@ -1494,46 +2050,267 @@ export type LogoutAuthLogoutPostResponses = {
 
 export type LogoutAuthLogoutPostResponse = LogoutAuthLogoutPostResponses[keyof LogoutAuthLogoutPostResponses];
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetData = {
+export type SpMetadataAuthSamlMetadataGetData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/auth/first-time-setup';
+    url: '/auth/saml/metadata';
 };
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetResponses = {
+export type SpMetadataAuthSamlMetadataGetResponses = {
     /**
      * Successful Response
      */
-    200: ApiResponseFirstTimeSetupStatus;
+    200: unknown;
 };
 
-export type CheckFirstTimeSetupAuthFirstTimeSetupGetResponse = CheckFirstTimeSetupAuthFirstTimeSetupGetResponses[keyof CheckFirstTimeSetupAuthFirstTimeSetupGetResponses];
-
-export type FirstAdminSignupAuthFirstAdminSignupPostData = {
-    body: FirstAdminSignupRequest;
+export type SamlLoginAuthSamlLoginGetData = {
+    body?: never;
     path?: never;
-    query?: never;
-    url: '/auth/first-admin-signup';
+    query?: {
+        /**
+         * Redirect
+         */
+        redirect?: string | null;
+    };
+    url: '/auth/saml/login';
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostErrors = {
+export type SamlLoginAuthSamlLoginGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostError = FirstAdminSignupAuthFirstAdminSignupPostErrors[keyof FirstAdminSignupAuthFirstAdminSignupPostErrors];
+export type SamlLoginAuthSamlLoginGetError = SamlLoginAuthSamlLoginGetErrors[keyof SamlLoginAuthSamlLoginGetErrors];
 
-export type FirstAdminSignupAuthFirstAdminSignupPostResponses = {
+export type DiscoverAuthSamlDiscoverGetData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Email
+         */
+        email: string;
+    };
+    url: '/auth/saml/discover';
+};
+
+export type DiscoverAuthSamlDiscoverGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DiscoverAuthSamlDiscoverGetError = DiscoverAuthSamlDiscoverGetErrors[keyof DiscoverAuthSamlDiscoverGetErrors];
+
+export type DiscoverAuthSamlDiscoverGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseSamlDiscoverResponse;
+};
+
+export type DiscoverAuthSamlDiscoverGetResponse = DiscoverAuthSamlDiscoverGetResponses[keyof DiscoverAuthSamlDiscoverGetResponses];
+
+export type AssertionConsumerServiceAuthSamlAcsPostData = {
+    body: BodyAssertionConsumerServiceAuthSamlAcsPost;
+    path?: never;
+    query?: never;
+    url: '/auth/saml/acs';
+};
+
+export type AssertionConsumerServiceAuthSamlAcsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AssertionConsumerServiceAuthSamlAcsPostError = AssertionConsumerServiceAuthSamlAcsPostErrors[keyof AssertionConsumerServiceAuthSamlAcsPostErrors];
+
+export type SingleLogoutAuthSamlSloGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Samlrequest
+         */
+        SAMLRequest?: string | null;
+        /**
+         * Sigalg
+         */
+        SigAlg?: string | null;
+        /**
+         * Signature
+         */
+        Signature?: string | null;
+        /**
+         * Relaystate
+         */
+        RelayState?: string;
+    };
+    url: '/auth/saml/slo';
+};
+
+export type SingleLogoutAuthSamlSloGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SingleLogoutAuthSamlSloGetError = SingleLogoutAuthSamlSloGetErrors[keyof SingleLogoutAuthSamlSloGetErrors];
+
+export type ExchangeSsoCodeAuthSamlExchangePostData = {
+    body: SamlExchangeRequest;
+    path?: never;
+    query?: never;
+    url: '/auth/saml/exchange';
+};
+
+export type ExchangeSsoCodeAuthSamlExchangePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExchangeSsoCodeAuthSamlExchangePostError = ExchangeSsoCodeAuthSamlExchangePostErrors[keyof ExchangeSsoCodeAuthSamlExchangePostErrors];
+
+export type ExchangeSsoCodeAuthSamlExchangePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseSamlExchangeResponse;
+};
+
+export type ExchangeSsoCodeAuthSamlExchangePostResponse = ExchangeSsoCodeAuthSamlExchangePostResponses[keyof ExchangeSsoCodeAuthSamlExchangePostResponses];
+
+export type DeleteSamlConfigAuthSamlConfigDeleteData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/auth/saml/config';
+};
+
+export type DeleteSamlConfigAuthSamlConfigDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseNoneType;
+};
+
+export type DeleteSamlConfigAuthSamlConfigDeleteResponse = DeleteSamlConfigAuthSamlConfigDeleteResponses[keyof DeleteSamlConfigAuthSamlConfigDeleteResponses];
+
+export type GetSamlConfigAuthSamlConfigGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/auth/saml/config';
+};
+
+export type GetSamlConfigAuthSamlConfigGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseSamlConfigResponse;
+};
+
+export type GetSamlConfigAuthSamlConfigGetResponse = GetSamlConfigAuthSamlConfigGetResponses[keyof GetSamlConfigAuthSamlConfigGetResponses];
+
+export type CreateSamlConfigAuthSamlConfigPostData = {
+    body: SamlConfigCreate;
+    path?: never;
+    query?: never;
+    url: '/auth/saml/config';
+};
+
+export type CreateSamlConfigAuthSamlConfigPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateSamlConfigAuthSamlConfigPostError = CreateSamlConfigAuthSamlConfigPostErrors[keyof CreateSamlConfigAuthSamlConfigPostErrors];
+
+export type CreateSamlConfigAuthSamlConfigPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ApiResponseSamlConfigResponse;
+};
+
+export type CreateSamlConfigAuthSamlConfigPostResponse = CreateSamlConfigAuthSamlConfigPostResponses[keyof CreateSamlConfigAuthSamlConfigPostResponses];
+
+export type UpdateSamlConfigAuthSamlConfigPutData = {
+    body: SamlConfigUpdate;
+    path?: never;
+    query?: never;
+    url: '/auth/saml/config';
+};
+
+export type UpdateSamlConfigAuthSamlConfigPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateSamlConfigAuthSamlConfigPutError = UpdateSamlConfigAuthSamlConfigPutErrors[keyof UpdateSamlConfigAuthSamlConfigPutErrors];
+
+export type UpdateSamlConfigAuthSamlConfigPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseSamlConfigResponse;
+};
+
+export type UpdateSamlConfigAuthSamlConfigPutResponse = UpdateSamlConfigAuthSamlConfigPutResponses[keyof UpdateSamlConfigAuthSamlConfigPutResponses];
+
+export type CheckSetupStatusSetupStatusGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/setup/status';
+};
+
+export type CheckSetupStatusSetupStatusGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseBool;
+};
+
+export type CheckSetupStatusSetupStatusGetResponse = CheckSetupStatusSetupStatusGetResponses[keyof CheckSetupStatusSetupStatusGetResponses];
+
+export type InitializeFirstAdminSetupInitializePostData = {
+    body: FirstAdminSignupRequest;
+    path?: never;
+    query?: never;
+    url: '/setup/initialize';
+};
+
+export type InitializeFirstAdminSetupInitializePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type InitializeFirstAdminSetupInitializePostError = InitializeFirstAdminSetupInitializePostErrors[keyof InitializeFirstAdminSetupInitializePostErrors];
+
+export type InitializeFirstAdminSetupInitializePostResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseFirstAdminSignupResponse;
 };
 
-export type FirstAdminSignupAuthFirstAdminSignupPostResponse = FirstAdminSignupAuthFirstAdminSignupPostResponses[keyof FirstAdminSignupAuthFirstAdminSignupPostResponses];
+export type InitializeFirstAdminSetupInitializePostResponse = InitializeFirstAdminSetupInitializePostResponses[keyof InitializeFirstAdminSetupInitializePostResponses];
 
 export type ListWorkflowsWorkflowsGetData = {
     body?: never;
@@ -1696,8 +2473,8 @@ export type UpdateNameWorkflowsWorkflowIdNamePutResponses = {
 
 export type UpdateNameWorkflowsWorkflowIdNamePutResponse = UpdateNameWorkflowsWorkflowIdNamePutResponses[keyof UpdateNameWorkflowsWorkflowIdNamePutResponses];
 
-export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutData = {
-    body: WorkflowUpdateData;
+export type ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetData = {
+    body?: never;
     path: {
         /**
          * Workflow Id
@@ -1705,29 +2482,167 @@ export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutData = {
         workflow_id: number;
     };
     query?: never;
-    url: '/workflows/{workflow_id}/data';
+    url: '/workflows/{workflow_id}/versions';
 };
 
-export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors = {
+export type ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutError = UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors[keyof UpdateWorkflowDataWorkflowsWorkflowIdDataPutErrors];
+export type ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetError = ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetErrors[keyof ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetErrors];
 
-export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses = {
+export type ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListWorkflowVersionListItem;
+};
+
+export type ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetResponse = ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetResponses[keyof ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetResponses];
+
+export type CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostData = {
+    body: WorkflowCreateVersion;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/versions';
+};
+
+export type CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostErrors = {
+    /**
+     * Someone saved a newer workflow version
+     */
+    409: ApiResponseWorkflowVersionConflict;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostError = CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostErrors[keyof CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostErrors];
+
+export type CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ApiResponseWorkflowVersionDetail;
+};
+
+export type CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostResponse = CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostResponses[keyof CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostResponses];
+
+export type GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Version Id
+         */
+        version_id: number;
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/versions/{version_id}';
+};
+
+export type GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetError = GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetErrors[keyof GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetErrors];
+
+export type GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseWorkflowVersionDetail;
+};
+
+export type GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponse = GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponses[keyof GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponses];
+
+export type PublishWorkflowVersionWorkflowsWorkflowIdPublishPostData = {
+    body: WorkflowPublishVersion;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/publish';
+};
+
+export type PublishWorkflowVersionWorkflowsWorkflowIdPublishPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PublishWorkflowVersionWorkflowsWorkflowIdPublishPostError = PublishWorkflowVersionWorkflowsWorkflowIdPublishPostErrors[keyof PublishWorkflowVersionWorkflowsWorkflowIdPublishPostErrors];
+
+export type PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseWorkflowDetail;
 };
 
-export type UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponse = UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses[keyof UpdateWorkflowDataWorkflowsWorkflowIdDataPutResponses];
+export type PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponse = PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponses[keyof PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponses];
+
+export type RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostData = {
+    /**
+     * Payload
+     */
+    body?: WorkflowRestoreVersion | null;
+    path: {
+        /**
+         * Version Id
+         */
+        version_id: number;
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/restore/{version_id}';
+};
+
+export type RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostError = RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostErrors[keyof RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostErrors];
+
+export type RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ApiResponseWorkflowVersionDetail;
+};
+
+export type RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponse = RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponses[keyof RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponses];
 
 export type RunWorkflowWorkflowsWorkflowIdRunPostData = {
-    body?: never;
+    /**
+     * Payload
+     */
+    body?: WorkflowRunRequest | null;
     path: {
         /**
          * Workflow Id
@@ -1756,7 +2671,23 @@ export type RunWorkflowWorkflowsWorkflowIdRunPostResponses = {
 
 export type RunWorkflowWorkflowsWorkflowIdRunPostResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponses[keyof RunWorkflowWorkflowsWorkflowIdRunPostResponses];
 
-export type GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetData = {
+export type ListUserExecutionsExecutionsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/executions/';
+};
+
+export type ListUserExecutionsExecutionsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListExecutionListItem;
+};
+
+export type ListUserExecutionsExecutionsGetResponse = ListUserExecutionsExecutionsGetResponses[keyof ListUserExecutionsExecutionsGetResponses];
+
+export type GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetData = {
     body?: never;
     path: {
         /**
@@ -1765,28 +2696,28 @@ export type GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetData = {
         workflow_id: number;
     };
     query?: never;
-    url: '/workflows/{workflow_id}/executions';
+    url: '/executions/workflows/{workflow_id}';
 };
 
-export type GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetErrors = {
+export type GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetError = GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetErrors[keyof GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetErrors];
+export type GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetError = GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetErrors[keyof GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetErrors];
 
-export type GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponses = {
+export type GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseNoneType;
 };
 
-export type GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponse = GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponses[keyof GetWorkflowExecutionsWorkflowsWorkflowIdExecutionsGetResponses];
+export type GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetResponse = GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetResponses[keyof GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetResponses];
 
-export type GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetData = {
+export type GetExecutionExecutionsWorkflowsWorkflowIdExecutionIdGetData = {
     body?: never;
     path: {
         /**
@@ -1799,26 +2730,26 @@ export type GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetData = {
         workflow_id: number;
     };
     query?: never;
-    url: '/workflows/{workflow_id}/executions/{execution_id}';
+    url: '/executions/workflows/{workflow_id}/{execution_id}';
 };
 
-export type GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetErrors = {
+export type GetExecutionExecutionsWorkflowsWorkflowIdExecutionIdGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetError = GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetErrors[keyof GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetErrors];
+export type GetExecutionExecutionsWorkflowsWorkflowIdExecutionIdGetError = GetExecutionExecutionsWorkflowsWorkflowIdExecutionIdGetErrors[keyof GetExecutionExecutionsWorkflowsWorkflowIdExecutionIdGetErrors];
 
-export type GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponses = {
+export type GetExecutionExecutionsWorkflowsWorkflowIdExecutionIdGetResponses = {
     /**
      * Successful Response
      */
     200: ApiResponseNoneType;
 };
 
-export type GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponse = GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponses[keyof GetExecutionWorkflowsWorkflowIdExecutionsExecutionIdGetResponses];
+export type GetExecutionExecutionsWorkflowsWorkflowIdExecutionIdGetResponse = GetExecutionExecutionsWorkflowsWorkflowIdExecutionIdGetResponses[keyof GetExecutionExecutionsWorkflowsWorkflowIdExecutionIdGetResponses];
 
 export type ShareWorkflowWorkflowsWorkflowIdSharePostData = {
     body: WorkflowShareRequest;
@@ -2124,6 +3055,36 @@ export type ResetUserPasswordUsersUserIdPasswordPostResponses = {
 };
 
 export type ResetUserPasswordUsersUserIdPasswordPostResponse = ResetUserPasswordUsersUserIdPasswordPostResponses[keyof ResetUserPasswordUsersUserIdPasswordPostResponses];
+
+export type SetUserStatusUsersUserIdStatusPatchData = {
+    body: UserStatusUpdate;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: number;
+    };
+    query?: never;
+    url: '/users/{user_id}/status';
+};
+
+export type SetUserStatusUsersUserIdStatusPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetUserStatusUsersUserIdStatusPatchError = SetUserStatusUsersUserIdStatusPatchErrors[keyof SetUserStatusUsersUserIdStatusPatchErrors];
+
+export type SetUserStatusUsersUserIdStatusPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseUserResponse;
+};
+
+export type SetUserStatusUsersUserIdStatusPatchResponse = SetUserStatusUsersUserIdStatusPatchResponses[keyof SetUserStatusUsersUserIdStatusPatchResponses];
 
 export type GetMyProfileProfileMeGetData = {
     body?: never;

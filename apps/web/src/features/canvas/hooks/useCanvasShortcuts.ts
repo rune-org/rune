@@ -7,12 +7,14 @@ import type { Edge } from "@xyflow/react";
 type CanvasShortcutsProps = {
   nodes: CanvasNode[];
   edges: Edge[];
+  readOnly?: boolean;
   selectedNodeId: string | null;
   setNodes: (
     updater: (nodes: CanvasNode[]) => CanvasNode[] | CanvasNode[],
   ) => void;
   setEdges: (updater: (edges: Edge[]) => Edge[] | Edge[]) => void;
   onSave: () => void;
+  onSaveWithMessage?: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onCopy?: () => void;
@@ -36,6 +38,7 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
       const {
         nodes,
         edges,
+        readOnly,
         selectedNodeId,
         setNodes,
         setEdges,
@@ -48,6 +51,9 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
       } = latestPropsRef.current;
 
       const target = e.target as Element | null;
+
+      if (target?.closest('[role="dialog"], [data-inspector]')) return;
+
       const isEditable =
         !!target &&
         (target.tagName === "INPUT" ||
@@ -57,11 +63,13 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
 
       if (isEditable) return;
 
-      // Ignore shortcuts when focus is inside a dialog (e.g., expanded inspector)
-      if (target?.closest('[role="dialog"]')) return;
-
       // delete selected node(s)/edge(s)
       if (e.key === "Delete" || e.key === "Backspace") {
+        if (readOnly) {
+          e.preventDefault();
+          return;
+        }
+
         const selectedNodeIds = new Set(
           nodes.filter((n) => n.selected).map((n) => n.id),
         );
@@ -100,9 +108,19 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
         return;
       }
 
+      // save with message (Shift+Ctrl+S)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (readOnly) return;
+        const { onSaveWithMessage } = latestPropsRef.current;
+        if (onSaveWithMessage) onSaveWithMessage();
+        return;
+      }
+
       // save
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
+        if (readOnly) return;
         onSave();
         return;
       }
@@ -110,12 +128,14 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
       // redo
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "z") {
         e.preventDefault();
+        if (readOnly) return;
         onRedo();
         return;
       }
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
         e.preventDefault();
+        if (readOnly) return;
         onRedo();
         return;
       }
@@ -123,6 +143,7 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
       // undo
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
         e.preventDefault();
+        if (readOnly) return;
         onUndo();
         return;
       }
@@ -147,6 +168,7 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
         const kind = shortcutsRef?.current?.[key];
         if (kind && onNodeShortcut) {
           e.preventDefault();
+          if (readOnly) return;
           onNodeShortcut(kind);
         }
       }

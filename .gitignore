@@ -44,6 +44,7 @@
 
 # python
 .venv
+.venv-dsl
 __pycache__
 *.pyc
 .env
@@ -64,5 +65,12 @@ nginx/ssl/
 **/*.rmeta
 **/*.d
 **/*.lock
+!**/uv.lock
 **/Cargo.lock
 **/Cargo.toml.bk
+
+
+# Cursor
+.cursor/
+
+.claude

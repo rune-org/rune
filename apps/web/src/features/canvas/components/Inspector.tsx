@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Panel } from "@xyflow/react";
 import {
   Maximize2,
@@ -45,6 +45,7 @@ type InspectorProps = {
   onTogglePin?: (nodeId: string) => void;
   renderInPanel?: boolean;
   className?: string;
+  readOnly?: boolean;
 };
 
 function renderInspectorForm(
@@ -76,6 +77,72 @@ function renderInspectorForm(
   }
 }
 
+type LabelInputProps = {
+  value: string;
+  onCommit: (label: string) => void;
+  readOnly?: boolean;
+  className?: string;
+  placeholder?: string;
+};
+
+function sanitizeLabel(raw: string): string {
+  return raw.replace(/ /g, "_");
+}
+
+function LabelInput({
+  value,
+  onCommit,
+  readOnly,
+  className,
+  placeholder,
+}: LabelInputProps) {
+  const [localLabel, setLocalLabel] = useState(value);
+  const committedRef = useRef(value);
+  const latestRef = useRef({ localLabel, onCommit });
+
+  useEffect(() => {
+    latestRef.current = { localLabel, onCommit };
+  }, [localLabel, onCommit]);
+
+  useEffect(() => {
+    setLocalLabel(value);
+    committedRef.current = value;
+  }, [value]);
+
+  useEffect(() => {
+    return () => {
+      const sanitized = sanitizeLabel(latestRef.current.localLabel);
+      if (sanitized !== committedRef.current) {
+        latestRef.current.onCommit(sanitized);
+      }
+    };
+  }, []);
+
+  const commit = useCallback(() => {
+    const sanitized = sanitizeLabel(localLabel);
+    if (sanitized !== committedRef.current) {
+      onCommit(sanitized);
+      setLocalLabel(committedRef.current);
+    }
+  }, [localLabel, onCommit]);
+
+  return (
+    <input
+      className={className}
+      value={localLabel}
+      onChange={(e) => setLocalLabel(sanitizeLabel(e.target.value))}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === "Escape") {
+          e.currentTarget.blur();
+        }
+      }}
+      placeholder={placeholder}
+      readOnly={readOnly}
+    />
+  );
+}
+
 export function Inspector({
   selectedNode,
   updateSelectedNodeLabel,
@@ -86,6 +153,7 @@ export function Inspector({
   onTogglePin,
   renderInPanel = true,
   className,
+  readOnly,
 }: InspectorProps) {
   const [isExpandedInternal, setIsExpandedInternal] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -106,7 +174,8 @@ export function Inspector({
   };
 
   const Content = (
-    <div 
+    <div
+      data-inspector
       className={cn(
         "flex w-65 max-w-[90vw] flex-col rounded-(--radius) border border-border/60 bg-card/90 shadow-lg transition-all",
         className
@@ -119,7 +188,7 @@ export function Inspector({
         </div>
         {selectedNode && (
           <div className="flex items-center gap-1">
-            {onTogglePin && (
+            {!readOnly && onTogglePin && (
               <button
                 onClick={() => onTogglePin(selectedNode.id)}
                 title={selectedNode.data.pinned ? "Unpin node" : "Pin node"}
@@ -143,7 +212,7 @@ export function Inspector({
             >
               <Maximize2 className="h-3.5 w-3.5" />
             </button>
-            {onDelete && (
+            {!readOnly && onDelete && (
               <button
                 onClick={onDelete}
                 title="Delete node"
@@ -176,15 +245,18 @@ export function Inspector({
                 <label className="block text-xs text-muted-foreground">
                   Label
                 </label>
-                <input
+                <LabelInput
                   className="w-full rounded-sm border border-input bg-muted/30 px-2 py-1 text-sm"
                   value={selectedNode.data.label ?? ""}
-                  onChange={(e) => updateSelectedNodeLabel(e.target.value.replace(/ /g, "_"))}
+                  onCommit={updateSelectedNodeLabel}
+                  readOnly={readOnly}
                 />
               </div>
 
               {/* Type-specific inspector */}
-              {renderInspectorForm(selectedNode, updateData, false)}
+              <div inert={readOnly || undefined} className={readOnly ? "opacity-70" : undefined}>
+                {renderInspectorForm(selectedNode, updateData, false)}
+              </div>
             </div>
           </div>
 
@@ -265,11 +337,12 @@ export function Inspector({
                         <label className="block text-sm font-medium text-foreground">
                           Node Label
                         </label>
-                        <input
+                        <LabelInput
                           className="w-full rounded-sm border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
                           value={selectedNode.data.label ?? ""}
-                          onChange={(e) => updateSelectedNodeLabel(e.target.value.replace(/ /g, "_"))}
+                          onCommit={updateSelectedNodeLabel}
                           placeholder="Enter a descriptive label"
+                          readOnly={readOnly}
                         />
                         <div className="text-xs text-muted-foreground">
                           A friendly name to identify this node in your workflow
@@ -284,7 +357,9 @@ export function Inspector({
                       <div className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         Configuration
                       </div>
-                      {renderInspectorForm(selectedNode, updateData, true)}
+                      <div inert={readOnly || undefined} className={readOnly ? "opacity-70" : undefined}>
+                        {renderInspectorForm(selectedNode, updateData, true)}
+                      </div>
                     </div>
 
                     <Separator />
@@ -353,7 +428,7 @@ export function Inspector({
                     <div className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Execution Data
                     </div>
-                    <RuntimeDataPanel nodeId={selectedNode.id} />
+                    <RuntimeDataPanel nodeId={selectedNode.id} nodeLabel={selectedNode.data.label} />
                   </div>
                 </TabsContent>
               </Tabs>

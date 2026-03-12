@@ -57,7 +57,7 @@ export function useAddNode(
         let counter = 2;
 
         while (existingLabels.includes(newLabel)) {
-          newLabel = `${baseLabel} ${counter}`;
+          newLabel = `${baseLabel}_${counter}`;
           counter++;
         }
 

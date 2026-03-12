@@ -15,9 +15,10 @@ export interface UseWorkflowExecutionOptions {
 export interface UseWorkflowExecutionReturn {
   executionState: ExecutionState;
   wsStatus: WsConnectionStatus;
+  wsReconnectAttempts: number;
   isStarting: boolean;
 
-  startExecution: () => Promise<void>;
+  startExecution: (versionId?: number) => Promise<void>;
   stopExecution: () => void;
   reset: () => void;
 
@@ -60,7 +61,7 @@ export function useWorkflowExecution(
   const isMountedRef = useRef(true);
 
   // WebSocket connection - disabled when viewing historical executions
-  const { status: wsStatus, disconnect } = useRtesWebSocket({
+  const { status: wsStatus, reconnectAttempts: wsReconnectAttempts, disconnect } = useRtesWebSocket({
     enabled: wsEnabled && !state.isHistorical,
     executionId: state.executionId,
     workflowId,
@@ -73,7 +74,7 @@ export function useWorkflowExecution(
     onError: useCallback((err: Event | Error) => {
       const errorMsg = err instanceof Error ? err.message : "WebSocket error";
       setError(errorMsg);
-      toast.error("Execution connection error");
+      toast.error("Real-time execution service disconnected.");
     }, []),
   });
 
@@ -88,7 +89,7 @@ export function useWorkflowExecution(
   /**
    * Start a new workflow execution.
    */
-  const startExecution = useCallback(async () => {
+  const startExecution = useCallback(async (versionId?: number) => {
     if (!workflowId) {
       setError("No workflow ID provided");
       return;
@@ -104,7 +105,7 @@ export function useWorkflowExecution(
 
     try {
       // Call the /run endpoint
-      const response = await runWorkflow(workflowId);
+      const response = await runWorkflow(workflowId, versionId);
 
       if (!isMountedRef.current) return;
 
@@ -173,6 +174,7 @@ export function useWorkflowExecution(
   return {
     executionState: state,
     wsStatus,
+    wsReconnectAttempts,
     isStarting,
     startExecution,
     stopExecution,

@@ -69,14 +69,12 @@ services:
       - .env
     environment:
       # Database Settings
-      DATABASE_URL: postgresql://${POSTGRES_USER:-rune}:${POSTGRES_PASSWORD:-rune_password}@postgres:5432/${POSTGRES_DB:-rune_db}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-rune}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
       POSTGRES_DB: ${POSTGRES_DB:-rune_db}
       # RabbitMQ Settings
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-rune}:${RABBITMQ_PASSWORD:-rune_password}@rabbitmq:5672/
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_USER:-rune}
@@ -102,6 +100,9 @@ services:
       # Smith AI Agent Settings
       SMITH_MODEL: ${SMITH_MODEL:-gemini-2.0-flash}
       SMITH_TEMPERATURE: ${SMITH_TEMPERATURE:-0.3}
+      # SAML SSO Settings
+      SAML_SP_BASE_URL: ${SAML_SP_BASE_URL:-https://localhost/api}
+      SAML_FRONTEND_URL: ${SAML_FRONTEND_URL:-https://localhost}
     ports:
       - "8000:8000"
     depends_on:
@@ -141,6 +142,33 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    networks:
+      - backend_network
+    restart: unless-stopped
+
+  archivist:
+    build:
+      context: ./services/archivist
+      dockerfile: Dockerfile
+    container_name: rune-archivist
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-rune}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rune_db}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-rune}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rune_password}
+      RABBITMQ_PREFETCH: ${RABBITMQ_PREFETCH:-10}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - backend_network
     restart: unless-stopped

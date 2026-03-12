@@ -13,11 +13,19 @@ import "./styles/reactflow.css";
 
 import { toast } from "@/components/ui/toast";
 import type { CanvasNode, NodeKind } from "./types";
+import {
+  scanVariableReferences,
+  replaceVariableReferences,
+  type ScanResult,
+} from "./lib/variableRefUpdate";
+import { RenameRefDialog, type RenameChoice } from "./components/RenameRefDialog";
 import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
 import { SaveTemplateDialog } from "./components/SaveTemplateDialog";
 import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
+import { SaveVersionDialog } from "./components/SaveVersionDialog";
+import { VersionConflictDialog } from "./components/VersionConflictDialog";
 import { SmithButton } from "./components/SmithButton";
 import { FlowViewport } from "./components/FlowViewport";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
@@ -34,7 +42,8 @@ import { useConnectionValidation } from "./hooks/useConnectionValidation";
 import { useGraphClipboard } from "./hooks/useGraphClipboard";
 import { useRafNodeDrag } from "./hooks/useRafNodeDrag";
 import { useSmith } from "./hooks/useSmith";
-import { ExecutionProvider } from "./context/ExecutionContext";
+import { ExecutionProvider, useExecution } from "./context/ExecutionContext";
+import { GraphProvider } from "./context/GraphContext";
 import { SmithChatDrawer } from "@/features/smith/SmithChatDrawer";
 
 type FlowCanvasProps = {
@@ -43,9 +52,26 @@ type FlowCanvasProps = {
   onPersist?: (graph: {
     nodes: CanvasNode[];
     edges: Edge[];
-  }) => Promise<void> | void;
+  }) => Promise<number | null | void> | number | null | void;
+  onSaveWithMessage?: (graph: {
+    nodes: CanvasNode[];
+    edges: Edge[];
+  }, message: string) => Promise<void> | void;
   saveDisabled?: boolean;
   workflowId?: number | null;
+  onPublish?: () => void;
+  hasUnpublishedChanges?: boolean;
+  publishDisabled?: boolean;
+  onRestore?: (versionId: number) => void;
+  onRunVersion?: (versionId: number) => void;
+  conflictData?: {
+    serverVersion: number;
+    serverVersionId: number;
+    localGraph: { nodes: CanvasNode[]; edges: Edge[] };
+  } | null;
+  onConflictLoadServer?: () => void;
+  onConflictForceSave?: () => void;
+  onConflictCancel?: () => void;
 };
 
 export default function FlowCanvas(props: FlowCanvasProps) {
@@ -60,8 +86,18 @@ function FlowCanvasInner({
   externalNodes,
   externalEdges,
   onPersist,
+  onSaveWithMessage,
   saveDisabled = false,
   workflowId = null,
+  onPublish,
+  hasUnpublishedChanges = false,
+  publishDisabled = false,
+  onRestore,
+  onRunVersion,
+  conflictData,
+  onConflictLoadServer,
+  onConflictForceSave,
+  onConflictCancel,
 }: FlowCanvasProps) {
   const [nodes, setNodes] = useNodesState<CanvasNode>(externalNodes ?? []);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(
@@ -69,6 +105,21 @@ function FlowCanvasInner({
   );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
+  const [renameDialog, setRenameDialog] = useState<{
+    oldName: string;
+    newName: string;
+    nodeId: string;
+    nodeType: NodeKind;
+    scanResult: ScanResult;
+  } | null>(null);
+
+  const [versionSnapshot, setVersionSnapshot] = useState<{
+    nodes: CanvasNode[];
+    edges: Edge[];
+    versionNumber: number;
+  } | null>(null);
+
+  const [saveVersionDialogOpen, setSaveVersionDialogOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(null);
@@ -119,6 +170,8 @@ function FlowCanvasInner({
 
   const {
     executionState,
+    wsStatus,
+    wsReconnectAttempts,
     isStarting: isStartingExecution,
     startExecution,
     stopExecution,
@@ -126,6 +179,62 @@ function FlowCanvasInner({
   } = useWorkflowExecution({ workflowId });
 
   useExecutionEdgeSync(executionState, setEdges);
+
+  // Historical snapshot detection
+  const { state: ctxExecutionState } = useExecution();
+  const isViewingExecutionSnapshot =
+    ctxExecutionState.isHistorical === true && !!ctxExecutionState.graphSnapshot;
+
+  const isViewingSnapshot = isViewingExecutionSnapshot || !!versionSnapshot;
+
+  // Save/restore the live canvas when entering/leaving snapshot mode.
+  const savedLiveNodesRef = useRef<CanvasNode[] | null>(null);
+  const savedLiveEdgesRef = useRef<Edge[] | null>(null);
+
+  // Execution snapshot save/restore
+  useEffect(() => {
+    if (isViewingExecutionSnapshot && ctxExecutionState.graphSnapshot) {
+      if (savedLiveNodesRef.current === null) {
+        savedLiveNodesRef.current = nodesRef.current;
+        savedLiveEdgesRef.current = edgesRef.current;
+      }
+      setNodes(ctxExecutionState.graphSnapshot.nodes);
+      setEdges(ctxExecutionState.graphSnapshot.edges);
+    } else if (!versionSnapshot && savedLiveNodesRef.current !== null) {
+      setNodes(savedLiveNodesRef.current);
+      setEdges(savedLiveEdgesRef.current ?? []);
+      savedLiveNodesRef.current = null;
+      savedLiveEdgesRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isViewingExecutionSnapshot, ctxExecutionState.graphSnapshot]);
+
+  useEffect(() => {
+    if (versionSnapshot) {
+      if (savedLiveNodesRef.current === null) {
+        savedLiveNodesRef.current = nodesRef.current;
+        savedLiveEdgesRef.current = edgesRef.current;
+      }
+      setNodes(versionSnapshot.nodes);
+      setEdges(versionSnapshot.edges);
+    } else if (!isViewingExecutionSnapshot && savedLiveNodesRef.current !== null) {
+      setNodes(savedLiveNodesRef.current);
+      setEdges(savedLiveEdgesRef.current ?? []);
+      savedLiveNodesRef.current = null;
+      savedLiveEdgesRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versionSnapshot]);
+
+  // NOTE: Keep this effect after the snapshot save/restore effects above.
+  // While viewing history we intentionally ignore external graph prop updates so
+  // that "Return to Live" restores the pre-snapshot in-memory draft.
+  useEffect(() => {
+    if (isViewingSnapshot) return;
+    setNodes(externalNodes ?? []);
+    setEdges(externalEdges ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalNodes, externalEdges]);
 
   const { autoLayout } = useAutoLayout(nodes, edges, setNodes, setEdges, {
     onBeforeLayout: pushHistory,
@@ -145,7 +254,14 @@ function FlowCanvasInner({
     setSmithShowTrace,
     smithJustFinished,
     handleSmithSend,
-  } = useSmith({ workflowId, pushHistory, setNodes, setEdges, rfInstanceRef });
+  } = useSmith({
+    workflowId,
+    readOnly: isViewingSnapshot,
+    pushHistory,
+    setNodes,
+    setEdges,
+    rfInstanceRef,
+  });
 
   const {
     copySelection,
@@ -165,6 +281,7 @@ function FlowCanvasInner({
   } = useGraphClipboard({
     nodes,
     edges,
+    readOnly: isViewingSnapshot,
     selectedNodeId,
     pushHistory,
     setNodes,
@@ -180,6 +297,36 @@ function FlowCanvasInner({
       edges: edgesRef.current,
     });
   }, [onPersist]);
+
+  const handleSaveVersionWithMessage = useCallback(
+    (message: string) => {
+      if (!onSaveWithMessage) return;
+      setSaveVersionDialogOpen(false);
+      return onSaveWithMessage(
+        { nodes: nodesRef.current, edges: edgesRef.current },
+        message,
+      );
+    },
+    [onSaveWithMessage],
+  );
+
+  const handleViewVersion = useCallback(
+    (snapshot: { nodes: CanvasNode[]; edges: Edge[]; versionNumber: number } | null) => {
+      setVersionSnapshot(snapshot);
+    },
+    [],
+  );
+
+  const handleRestore = useCallback(
+    (versionId: number) => {
+      savedLiveNodesRef.current = null;
+      savedLiveEdgesRef.current = null;
+
+      setVersionSnapshot(null);
+      onRestore?.(versionId);
+    },
+    [onRestore],
+  );
 
   const handleUndo = useCallback(() => {
     const state = undo();
@@ -216,11 +363,75 @@ function FlowCanvasInner({
   );
 
   const updateSelectedNodeLabel = useCallback(
-    (label: string) => {
+    (newLabel: string) => {
       if (!selectedNode) return;
-      updateNodeData(selectedNode.id, selectedNode.type, () => ({ label }));
+      const oldName = selectedNode.data.label;
+
+      const needsScan = oldName && oldName !== newLabel;
+      if (!needsScan) {
+        updateNodeData(selectedNode.id, selectedNode.type, () => ({ label: newLabel }));
+        return;
+      }
+
+      const otherNodes = nodes.filter((n) => n.id !== selectedNode.id);
+      const result = scanVariableReferences(otherNodes, oldName);
+
+      if (result.totalRefs === 0) {
+        updateNodeData(selectedNode.id, selectedNode.type, () => ({ label: newLabel }));
+        return;
+      }
+
+      setRenameDialog({
+        oldName,
+        newName: newLabel,
+        nodeId: selectedNode.id,
+        nodeType: selectedNode.type,
+        scanResult: result,
+      });
     },
-    [selectedNode, updateNodeData],
+    [selectedNode, updateNodeData, nodes],
+  );
+
+  const handleRenameChoice = useCallback(
+    (choice: RenameChoice) => {
+      if (!renameDialog) return;
+      const { oldName, newName, nodeId, nodeType } = renameDialog;
+      setRenameDialog(null);
+
+      if (choice === "cancel") return;
+
+      pushHistory();
+
+      if (choice === "skip") {
+        updateNodeData(nodeId, nodeType, () => ({ label: newName }));
+        return;
+      }
+
+      setNodes((currentNodes) => {
+        const existingLabels = new Set(
+          currentNodes
+            .filter((n) => n.id !== nodeId)
+            .map((n) => n.data.label)
+            .filter(Boolean),
+        );
+
+        let uniqueLabel = newName;
+        let counter = 2;
+        while (existingLabels.has(uniqueLabel)) {
+          uniqueLabel = `${newName}_${counter}`;
+          counter++;
+        }
+
+        const updated = replaceVariableReferences(currentNodes, oldName, uniqueLabel);
+
+        return updated.map((n) =>
+          n.id === nodeId
+            ? { ...n, data: { ...n.data, label: uniqueLabel } } as CanvasNode
+            : n,
+        );
+      });
+    },
+    [renameDialog, pushHistory, updateNodeData, setNodes],
   );
 
   const onSelectionChange = useCallback((params: OnSelectionChangeParams) => {
@@ -257,23 +468,40 @@ function FlowCanvasInner({
   );
 
   const onExecute = useCallback(async () => {
+    if (isViewingSnapshot) {
+      toast.error("Execution is disabled while viewing history");
+      return;
+    }
+
+    if (!workflowId) {
+      toast.error("Save the workflow before execution");
+      return;
+    }
+
     resetExecution();
+    let versionIdToRun: number | undefined;
     if (onPersist) {
       try {
         const nodes = nodesRef.current;
         const edges = edgesRef.current;
-        await onPersist({ nodes, edges });
+        const persistedVersionId = await onPersist({ nodes, edges });
+        if (typeof persistedVersionId === "number") {
+          versionIdToRun = persistedVersionId;
+        } else {
+          return;
+        }
       } catch {
         toast.error("Failed to save workflow before execution");
         return;
       }
     }
-    void startExecution();
-  }, [resetExecution, onPersist, startExecution]);
+    void startExecution(versionIdToRun);
+  }, [isViewingSnapshot, onPersist, resetExecution, startExecution, workflowId]);
 
   useCanvasShortcuts({
     nodes,
     edges,
+    readOnly: isViewingSnapshot,
     selectedNodeId,
     setNodes,
     setEdges,
@@ -281,6 +509,9 @@ function FlowCanvasInner({
     onSave: () => {
       void persistGraph();
     },
+    onSaveWithMessage: onSaveWithMessage
+      ? () => setSaveVersionDialogOpen(true)
+      : undefined,
     onUndo: handleUndo,
     onRedo: handleRedo,
     onCopy: () => {
@@ -300,13 +531,14 @@ function FlowCanvasInner({
     },
   });
 
-  useEffect(() => {
-    setNodes(externalNodes ?? []);
-    setEdges(externalEdges ?? []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalNodes, externalEdges]);
+  const bottomBarMessage = versionSnapshot
+    ? `Viewing version v${versionSnapshot.versionNumber} (read-only)`
+    : isViewingExecutionSnapshot
+      ? "Viewing historical execution snapshot (read-only)"
+      : "Drag to move \u2022 Connect via handles \u2022 Paste JSON to import";
 
   return (
+    <GraphProvider nodes={nodes} edges={edges}>
     <div
       ref={containerRef}
       data-canvas-dragging="false"
@@ -325,17 +557,23 @@ function FlowCanvasInner({
         onNodeDragStop={onNodeDragStop}
         onInit={onInit}
         onPaneClick={onPaneClick}
+        readOnly={isViewingSnapshot}
+        wsStatus={wsStatus}
+        wsReconnectAttempts={wsReconnectAttempts}
+        onDismissRunning={stopExecution}
       />
 
       <div className="pointer-events-none absolute left-4 top-4 z-35">
         <div ref={toolbarRef} className="pointer-events-auto flex items-center gap-2">
           <Toolbar
             onExecute={onExecute}
+            executeDisabled={isViewingSnapshot}
+            readOnly={isViewingSnapshot}
             onStop={stopExecution}
             onUndo={handleUndo}
             onRedo={handleRedo}
-            canUndo={canUndo}
-            canRedo={canRedo}
+            canUndo={!isViewingSnapshot && canUndo}
+            canRedo={!isViewingSnapshot && canRedo}
             onSave={persistGraph}
             onExportToClipboard={exportToClipboard}
             onExportToFile={exportToFile}
@@ -343,17 +581,25 @@ function FlowCanvasInner({
             onImportFromClipboard={importFromClipboard}
             onImportFromFile={importFromFile}
             onImportFromTemplate={importFromTemplate}
-            onFitView={handleFitView}
             onAutoLayout={autoLayout}
-            saveDisabled={saveDisabled}
+            saveDisabled={saveDisabled || isViewingSnapshot}
             executionStatus={executionState.status}
+            wsStatus={wsStatus}
             isStartingExecution={isStartingExecution}
             workflowId={workflowId}
+            onPublish={onPublish}
+            hasUnpublishedChanges={hasUnpublishedChanges}
+            publishDisabled={publishDisabled}
+            onRestore={handleRestore}
+            onRunVersion={onRunVersion}
+            onViewVersion={handleViewVersion}
+            viewingVersionNumber={versionSnapshot?.versionNumber}
           />
           <SmithButton
             onClick={openSmith}
             isSending={smithSending}
             justFinished={smithJustFinished}
+            disabled={isViewingSnapshot}
           />
         </div>
       </div>
@@ -363,27 +609,30 @@ function FlowCanvasInner({
         selectedNode={selectedNode}
         updateSelectedNodeLabel={updateSelectedNodeLabel}
         updateData={updateNodeData}
-        onDelete={selectedNode ? deleteSelectedElements : undefined}
+        onDelete={selectedNode && !isViewingSnapshot ? deleteSelectedElements : undefined}
         isExpandedDialogOpen={isInspectorExpanded}
         setIsExpandedDialogOpen={setIsInspectorExpanded}
-        onTogglePin={togglePin}
+        onTogglePin={isViewingSnapshot ? undefined : togglePin}
         workflowId={workflowId}
+        readOnly={isViewingSnapshot}
       />
 
       <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
         <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
-          Drag to move • Connect via handles • Paste JSON to import
+          {bottomBarMessage}
         </div>
       </div>
 
-      <Library
-        containerRef={containerRef}
-        toolbarRef={toolbarRef}
-        onAdd={onLibraryAdd}
-        shortcutsByKind={shortcutsByKind}
-        onAssignShortcut={assignShortcut}
-        onResetShortcuts={resetShortcuts}
-      />
+      {!isViewingSnapshot && (
+        <Library
+          containerRef={containerRef}
+          toolbarRef={toolbarRef}
+          onAdd={onLibraryAdd}
+          shortcutsByKind={shortcutsByKind}
+          onAssignShortcut={assignShortcut}
+          onResetShortcuts={resetShortcuts}
+        />
+      )}
 
       {/* Hidden file input for importing JSON files */}
       <input
@@ -408,6 +657,26 @@ function FlowCanvasInner({
         onSelect={handleTemplateSelect}
       />
 
+      {/* Save Version with Message dialog */}
+      <SaveVersionDialog
+        open={saveVersionDialogOpen}
+        onOpenChange={setSaveVersionDialogOpen}
+        onSave={handleSaveVersionWithMessage}
+        isSaving={saveDisabled}
+      />
+
+      {/* Version Conflict dialog */}
+      {conflictData && onConflictLoadServer && onConflictForceSave && onConflictCancel && (
+        <VersionConflictDialog
+          open={!!conflictData}
+          serverVersion={conflictData.serverVersion}
+          serverVersionId={conflictData.serverVersionId}
+          onLoadServer={onConflictLoadServer}
+          onForceSave={onConflictForceSave}
+          onCancel={onConflictCancel}
+        />
+      )}
+
       <SmithChatDrawer
         open={isSmithOpen}
         onOpenChange={setIsSmithOpen}
@@ -419,6 +688,17 @@ function FlowCanvasInner({
         showTrace={smithShowTrace}
         onToggleTrace={setSmithShowTrace}
       />
+
+      {renameDialog && (
+        <RenameRefDialog
+          open={true}
+          oldName={renameDialog.oldName}
+          newName={renameDialog.newName}
+          scanResult={renameDialog.scanResult}
+          onChoice={handleRenameChoice}
+        />
+      )}
     </div>
+    </GraphProvider>
   );
 }

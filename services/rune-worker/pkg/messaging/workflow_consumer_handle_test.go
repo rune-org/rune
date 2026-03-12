@@ -69,9 +69,11 @@ func (n *testNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 
 func makeMessageForConsumer(isWorkerInitiated bool) *messages.NodeExecutionMessage {
 	return &messages.NodeExecutionMessage{
-		WorkflowID:  "wf-1",
-		ExecutionID: "exec-1",
-		CurrentNode: "node-1",
+		WorkflowID:        "wf-1",
+		WorkflowVersion:   5,
+		WorkflowVersionID: 42,
+		ExecutionID:       "exec-1",
+		CurrentNode:       "node-1",
 		WorkflowDefinition: core.Workflow{
 			WorkflowID:  "wf-1",
 			ExecutionID: "exec-1",
@@ -116,6 +118,13 @@ func TestWorkflowConsumerHandleMessage_MasterMessagePublishesWorkerInitiated(t *
 
 	if len(pub.published["workflow.worker.initiated"]) != 1 {
 		t.Fatalf("expected 1 worker initiated message, got %d", len(pub.published["workflow.worker.initiated"]))
+	}
+	workerInitiated, err := messages.DecodeNodeExecutionMessage(pub.published["workflow.worker.initiated"][0])
+	if err != nil {
+		t.Fatalf("decode worker initiated message failed: %v", err)
+	}
+	if workerInitiated.WorkflowVersion != msg.WorkflowVersion || workerInitiated.WorkflowVersionID != msg.WorkflowVersionID {
+		t.Fatalf("expected workflow version metadata to survive worker initiated fan-out")
 	}
 	if len(pub.published["workflow.node.status"]) != 2 {
 		t.Fatalf("expected 2 status messages, got %d", len(pub.published["workflow.node.status"]))
@@ -186,9 +195,11 @@ func TestWorkflowConsumerHandleMessage_ExecutorPublishFailure(t *testing.T) {
 	}
 
 	msg := &messages.NodeExecutionMessage{
-		WorkflowID:  "wf-1",
-		ExecutionID: "exec-1",
-		CurrentNode: "node-1",
+		WorkflowID:        "wf-1",
+		WorkflowVersion:   5,
+		WorkflowVersionID: 42,
+		ExecutionID:       "exec-1",
+		CurrentNode:       "node-1",
 		WorkflowDefinition: core.Workflow{
 			WorkflowID:  "wf-1",
 			ExecutionID: "exec-1",
