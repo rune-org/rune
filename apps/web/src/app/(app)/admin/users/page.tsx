@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Users, Trash2, Edit2, UserCheck, UserX } from "lucide-react";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -160,12 +161,11 @@ export default function UsersPage() {
       </div>
 
       {/* Search */}
-      <input
+      <Input
         type="text"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Search members..."
-        className="px-3 py-2 rounded-md bg-muted text-sm border border-muted-foreground/20 focus:outline-none focus:ring"
       />
 
       {/* Users table */}
