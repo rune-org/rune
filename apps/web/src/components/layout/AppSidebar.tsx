@@ -248,7 +248,7 @@ export function AppSidebar() {
   const user = state.user;
   const isAdmin = user?.role === "admin";
 
-  const adminUsersItem: NavItem = { title: "Users", href: "/admin/users" };
+  const adminUsersItem: NavItem = { title: "Users", href: "/admin/users", icon: Users };
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
@@ -335,41 +335,8 @@ export function AppSidebar() {
               />
             ))}
 
-            {/* ADMIN-ONLY "Users" BUTTON */}
             {isAdmin && (
-              <Link
-                href={adminUsersItem.href}
-                aria-current={isItemActive(pathname, adminUsersItem) ? "page" : undefined}
-                className={cn(
-                  "group relative flex h-12 w-full items-center rounded-xl border border-transparent text-sm font-medium text-muted-foreground motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                  isExpanded ? "justify-start gap-3 px-3" : "justify-center px-0",
-                  isItemActive(pathname, adminUsersItem)
-                    ? "border-accent/60 bg-accent/15 text-accent"
-                    : "hover:border-border/70 hover:bg-muted/40 hover:text-foreground",
-                )}
-              >
-                <Users className="h-5 w-5" />
-                <span
-                  aria-hidden={!isExpanded}
-                  className={cn(
-                    "pointer-events-none select-none overflow-hidden whitespace-nowrap text-sm motion-safe:transition-all",
-                    isExpanded
-                      ? "ml-1.5 max-w-[12rem] opacity-100"
-                      : "max-w-0 opacity-0"
-                  )}
-                >
-                  Users
-                </span>
-                {!isExpanded && (
-                  <span
-                    aria-hidden={true}
-                    className="pointer-events-none absolute left-full top-1/2 ml-3 -translate-y-1/2 z-50 rounded-[calc(var(--radius)-0.25rem)] border border-border/70 bg-background/95 px-2 py-1 text-xs font-medium text-muted-foreground opacity-0 shadow-sm motion-safe:transition-all motion-safe:duration-150 motion-safe:ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
-                  >
-                    Users
-                  </span>
-                )}
-              </Link>
+              <NavLink item={adminUsersItem} pathname={pathname} isExpanded={isExpanded} />
             )}
           </nav>
 
