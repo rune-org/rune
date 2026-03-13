@@ -1,16 +1,18 @@
 from fastapi import APIRouter, Depends, Response, status
 
-from src.core.config import get_settings
 from src.core.dependencies import (
-    DatabaseDep,
     require_password_changed,
 )
 from src.core.exceptions import BadRequest, NotFound
 from src.core.responses import ApiResponse
 from src.db.models import User, Workflow
 from src.executions.service import ExecutionTokenService
-from src.queue.rabbitmq import get_rabbitmq
-from src.workflow.dependencies import get_workflow_with_permission
+from src.workflow.dependencies import (
+    get_workflow_with_permission,
+    get_queue_service,
+    get_token_service,
+    get_workflow_service,
+)
 from src.workflow.permissions import require_workflow_permission
 from src.workflow.policy import WorkflowPolicy
 from src.workflow.queue import WorkflowQueueService
@@ -36,25 +38,6 @@ from src.workflow.schemas import (
 from src.workflow.service import WorkflowService, WorkflowVersionConflictError
 
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
-
-
-def get_workflow_service(db: DatabaseDep) -> WorkflowService:
-    """Dependency to get workflow service instance."""
-    return WorkflowService(db=db)
-
-
-def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
-    """Dependency to get workflow queue service instance."""
-    return WorkflowQueueService(
-        connection=connection, queue_name=get_settings().rabbitmq_workflow_queue
-    )
-
-
-def get_token_service(connection=Depends(get_rabbitmq)) -> ExecutionTokenService:
-    """Dependency to get execution token service instance."""
-    return ExecutionTokenService(
-        connection=connection, queue_name=get_settings().rabbitmq_token_queue
-    )
 
 
 @router.get("/", response_model=ApiResponse[list[WorkflowListItem]])

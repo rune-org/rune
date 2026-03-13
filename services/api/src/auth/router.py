@@ -1,30 +1,19 @@
 from fastapi import APIRouter, Depends, Response
 
+from src.auth.dependencies import get_auth_service
 from src.auth.schemas import (
     LoginRequest,
     RefreshRequest,
     TokenResponse,
 )
 from src.auth.service import AuthService
-from src.auth.token_store import TokenStore
 from src.core.config import get_settings
-from src.core.dependencies import DatabaseDep, RedisDep, get_current_user
+from src.core.dependencies import get_current_user
 from src.core.exceptions import Forbidden, Unauthorized
 from src.core.responses import ApiResponse
 from src.db.models import AuthProvider, User
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-
-
-async def get_token_store(redis: RedisDep) -> TokenStore:
-    return TokenStore(redis_client=redis)
-
-
-async def get_auth_service(
-    db: DatabaseDep,
-    token_store: TokenStore = Depends(get_token_store),
-) -> AuthService:
-    return AuthService(db=db, token_store=token_store)
 
 
 @router.post(
