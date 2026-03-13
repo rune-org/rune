@@ -151,8 +151,8 @@ function toWorkerParameters(
         params.headers = d.headers;
       if (d.query && typeof d.query === "object") params.query = d.query;
       if (typeof d.body !== "undefined") params.body = d.body as unknown;
-      if (typeof d.timeout !== "undefined") params.timeout = Number(d.timeout);
-      if (typeof d.retries !== "undefined") params.retry = Number(d.retries);
+      if (typeof d.timeout !== "undefined") params.timeout = String(d.timeout);
+      if (typeof d.retries !== "undefined") params.retry = String(d.retries);
       if (typeof d.ignoreSSL !== "undefined") params.ignore_ssl = !!d.ignoreSSL;
       return params;
     }
