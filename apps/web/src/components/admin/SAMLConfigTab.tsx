@@ -30,7 +30,6 @@ import {
   Sparkles,
   CheckCircle2,
   Upload,
-  Download,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { toast } from "@/components/ui/toast";
 import {
@@ -318,50 +318,16 @@ function ServiceProviderPanel({ config }: { config: SamlConfigResponse | null })
       return;
     }
 
-    // Strip PEM headers/whitespace to get raw base64 cert content
-    const certContent = config.sp_certificate
-      .replace(/-----BEGIN CERTIFICATE-----/g, "")
-      .replace(/-----END CERTIFICATE-----/g, "")
-      .replace(/\s+/g, "")
-      .trim();
-
-    const xml = [
-      `<?xml version="1.0" encoding="UTF-8"?>`,
-      `<md:EntityDescriptor`,
-      `  xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"`,
-      `  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"`,
-      `  entityID="${config.sp_entity_id}">`,
-      `  <md:SPSSODescriptor`,
-      `    AuthnRequestsSigned="false"`,
-      `    WantAssertionsSigned="true"`,
-      `    protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">`,
-      `    <md:KeyDescriptor use="signing">`,
-      `      <ds:KeyInfo>`,
-      `        <ds:X509Data>`,
-      `          <ds:X509Certificate>${certContent}</ds:X509Certificate>`,
-      `        </ds:X509Data>`,
-      `      </ds:KeyInfo>`,
-      `    </md:KeyDescriptor>`,
-      `    <md:SingleLogoutService`,
-      `      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"`,
-      `      Location="${config.sp_slo_url}"/>`,
-      `    <md:AssertionConsumerService`,
-      `      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"`,
-      `      Location="${config.sp_acs_url}"`,
-      `      index="1"/>`,
-      `  </md:SPSSODescriptor>`,
-      `</md:EntityDescriptor>`,
-    ].join("\n");
-
-    const blob = new Blob([xml], { type: "application/xml" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = "rune-sp-metadata.xml";
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("SP metadata exported", {
-      description: "SAML SP metadata XML downloaded successfully.",
+    // Keep backend as the single source of truth for SP metadata.
+    const opened = window.open(config.sp_metadata_url, "_blank", "noopener,noreferrer");
+    if (!opened) {
+      toast.error("Unable to open metadata URL", {
+        description: "Please allow pop-ups and try again.",
+      });
+      return;
+    }
+    toast.success("SP metadata opened", {
+      description: "Using backend-generated metadata to avoid drift.",
     });
   };
 
@@ -383,8 +349,8 @@ function ServiceProviderPanel({ config }: { config: SamlConfigResponse | null })
           onClick={handleExport}
           disabled={!config}
         >
-          <Download className="h-3.5 w-3.5" />
-          Export SP metadata XML
+          <ExternalLink className="h-3.5 w-3.5" />
+          Open metadata URL
         </Button>
       </div>
 
@@ -479,12 +445,7 @@ function IdentityProviderPanel({
   onDelete: () => void;
   submitting: boolean;
 }) {
-  const [name, setName] = useState("");
-  const [entityId, setEntityId] = useState("");
-  const [ssoUrl, setSsoUrl] = useState("");
-  const [sloUrl, setSloUrl] = useState("");
-  const [cert, setCert] = useState("");
-  const [domain, setDomain] = useState("");
+  const [form, setForm] = useState<SamlFormValues>(toFormValues(config));
   const [saved, setSaved] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const resetSavedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -492,14 +453,15 @@ function IdentityProviderPanel({
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const values = toFormValues(config);
-    setName(values.name);
-    setEntityId(values.entityId);
-    setSsoUrl(values.ssoUrl);
-    setSloUrl(values.sloUrl);
-    setCert(values.cert);
-    setDomain(values.domain);
+    setForm(toFormValues(config));
   }, [config]);
+
+  const updateField = <K extends keyof SamlFormValues>(
+    field: K,
+    value: SamlFormValues[K],
+  ) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
 
   useEffect(() => {
     return () => {
@@ -519,6 +481,8 @@ function IdentityProviderPanel({
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
       try {
+        const updates: Partial<SamlFormValues> = {};
+
         if (file.name.endsWith(".xml")) {
           // Parse IdP metadata XML via DOMParser
           const parser = new DOMParser();
@@ -539,25 +503,29 @@ function IdentityProviderPanel({
           const certEl = doc.querySelector("IDPSSODescriptor KeyDescriptor X509Certificate") ??
                          doc.querySelector("X509Certificate");
 
-          if (parsedEntityId) setEntityId(parsedEntityId);
-          if (ssoEl?.getAttribute("Location")) setSsoUrl(ssoEl.getAttribute("Location")!);
-          if (sloEl?.getAttribute("Location")) setSloUrl(sloEl.getAttribute("Location")!);
+          if (parsedEntityId) updates.entityId = parsedEntityId;
+          if (ssoEl?.getAttribute("Location")) updates.ssoUrl = ssoEl.getAttribute("Location")!;
+          if (sloEl?.getAttribute("Location")) updates.sloUrl = sloEl.getAttribute("Location")!;
           if (certEl?.textContent) {
             const raw = certEl.textContent.trim().replace(/\s+/g, "");
-            setCert(
-              `-----BEGIN CERTIFICATE-----\n${raw.match(/.{1,64}/g)?.join("\n") ?? raw}\n-----END CERTIFICATE-----`
-            );
+            updates.cert =
+              `-----BEGIN CERTIFICATE-----\n${raw.match(/.{1,64}/g)?.join("\n") ?? raw}\n-----END CERTIFICATE-----`;
           }
         } else {
           // JSON format
           const json = JSON.parse(text);
-          if (json.name)            setName(json.name);
-          if (json.idp_entity_id)   setEntityId(json.idp_entity_id);
-          if (json.idp_sso_url)     setSsoUrl(json.idp_sso_url);
-          if (json.idp_slo_url !== undefined) setSloUrl(json.idp_slo_url ?? "");
-          if (json.idp_certificate) setCert(json.idp_certificate);
-          if (json.domain_hint !== undefined) setDomain(json.domain_hint ?? "");
+          if (json.name) updates.name = json.name;
+          if (json.idp_entity_id) updates.entityId = json.idp_entity_id;
+          if (json.idp_sso_url) updates.ssoUrl = json.idp_sso_url;
+          if (json.idp_slo_url !== undefined) updates.sloUrl = json.idp_slo_url ?? "";
+          if (json.idp_certificate) updates.cert = json.idp_certificate;
+          if (json.domain_hint !== undefined) updates.domain = json.domain_hint ?? "";
         }
+
+        setForm((prev) => ({ ...prev, ...updates }));
+        toast.success("File imported", {
+          description: "IdP metadata imported successfully. Review the values and click Save.",
+        });
       } catch (err: unknown) {
         setImportError(err instanceof Error ? err.message : "Failed to parse file.");
       } finally {
@@ -565,25 +533,26 @@ function IdentityProviderPanel({
         e.target.value = "";
       }
     };
+    reader.onerror = () => {
+      setImportError("Failed to read file.");
+      e.target.value = "";
+    };
     reader.readAsText(file);
-    toast.success("File imported", {
-      description: "IdP metadata imported successfully. Review the values and click Save.",
-    });
   };
 
-  const hasCertificateInput = cert.trim().length > 0;
+  const hasCertificateInput = form.cert.trim().length > 0;
   const certOk =
-    hasCertificateInput && cert.trim().startsWith("-----BEGIN CERTIFICATE-----");
+    hasCertificateInput && form.cert.trim().startsWith("-----BEGIN CERTIFICATE-----");
 
   const isValid =
-    name.trim().length > 0 &&
-    entityId.trim().length > 0 &&
-    ssoUrl.trim().startsWith("http") &&
+    form.name.trim().length > 0 &&
+    form.entityId.trim().length > 0 &&
+    form.ssoUrl.trim().startsWith("http") &&
     (hasConfig ? !hasCertificateInput || certOk : certOk);
 
   const handleSave = async () => {
     try {
-      await onSave({ name, entityId, ssoUrl, sloUrl, cert, domain });
+      await onSave(form);
       setSaved(true);
       if (resetSavedTimeoutRef.current) {
         clearTimeout(resetSavedTimeoutRef.current);
@@ -642,8 +611,8 @@ function IdentityProviderPanel({
           </Label>
           <Input
             id="idp-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={form.name}
+            onChange={(e) => updateField("name", e.target.value)}
             placeholder="e.g. Okta, Azure AD, Authentik"
             maxLength={80}
           />
@@ -661,8 +630,8 @@ function IdentityProviderPanel({
           </Label>
           <Input
             id="idp-entity"
-            value={entityId}
-            onChange={(e) => setEntityId(e.target.value)}
+            value={form.entityId}
+            onChange={(e) => updateField("entityId", e.target.value)}
             placeholder="https://idp.example.com/app/id"
             maxLength={512}
           />
@@ -679,8 +648,8 @@ function IdentityProviderPanel({
           </Label>
           <Input
             id="idp-sso"
-            value={ssoUrl}
-            onChange={(e) => setSsoUrl(e.target.value)}
+            value={form.ssoUrl}
+            onChange={(e) => updateField("ssoUrl", e.target.value)}
             placeholder="https://idp.example.com/sso/saml/redirect"
           />
           <p className="text-[11px] text-muted-foreground">
@@ -696,8 +665,8 @@ function IdentityProviderPanel({
           </Label>
           <Input
             id="idp-slo"
-            value={sloUrl}
-            onChange={(e) => setSloUrl(e.target.value)}
+            value={form.sloUrl}
+            onChange={(e) => updateField("sloUrl", e.target.value)}
             placeholder="https://idp.example.com/slo/saml"
           />
           <p className="text-[11px] text-muted-foreground">
@@ -713,8 +682,8 @@ function IdentityProviderPanel({
           </Label>
           <Textarea
             id="idp-cert"
-            value={cert}
-            onChange={(e) => setCert(e.target.value)}
+            value={form.cert}
+            onChange={(e) => updateField("cert", e.target.value)}
             placeholder={"-----BEGIN CERTIFICATE-----\nMIIDez...\n-----END CERTIFICATE-----"}
             rows={6}
             className="resize-y font-mono text-[11px] leading-relaxed"
@@ -754,8 +723,8 @@ function IdentityProviderPanel({
             </p>
           </div>
           <Input
-            value={domain}
-            onChange={(e) => setDomain(e.target.value)}
+            value={form.domain}
+            onChange={(e) => updateField("domain", e.target.value)}
             placeholder="acme.com"
             maxLength={253}
             className="max-w-xs"
@@ -792,7 +761,7 @@ function IdentityProviderPanel({
           <div>
             <p className="text-sm font-medium">Remove SAML configuration</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Currently linked to: <span className="font-medium">{name}</span>
+              Currently linked to: <span className="font-medium">{form.name}</span>
             </p>
           </div>
           <Button
@@ -1000,26 +969,33 @@ export function SAMLConfigTab() {
           <span className="text-xs font-medium text-muted-foreground">
             {enabled ? "Enabled" : "Disabled"}
           </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={enabled}
-            onClick={() => void handleToggleEnabled()}
-            disabled={!config || submitting}
-            className={cn(
-              "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent",
-              "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
-              (!config || submitting) && "cursor-not-allowed opacity-70",
-              enabled ? "bg-accent" : "bg-muted-foreground/30",
-            )}
-          >
-            <span
-              className={cn(
-                "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out",
-                enabled ? "translate-x-5" : "translate-x-0",
-              )}
-            />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={enabled}
+                  onClick={() => void handleToggleEnabled()}
+                  disabled={!config || submitting}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent",
+                    "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
+                    (!config || submitting) && "cursor-not-allowed opacity-70",
+                    enabled ? "bg-accent" : "bg-muted-foreground/30",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out",
+                      enabled ? "translate-x-5" : "translate-x-0",
+                    )}
+                  />
+                </button>
+              </span>
+            </TooltipTrigger>
+            {!config && <TooltipContent>Create a configuration first</TooltipContent>}
+          </Tooltip>
         </div>
       </Card>
 
