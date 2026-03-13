@@ -50,9 +50,7 @@ export function getStaticOutputSchema(
         {
           key: "result",
           path: "result",
-          type: typeof dateTimeData?.format === "string" && dateTimeData.format.includes("2006")
-            ? "string"
-            : "string",
+          type: "string",
           source: "schema",
         },
         { key: "formatted", path: "formatted", type: "string", source: "schema" },
