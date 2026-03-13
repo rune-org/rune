@@ -3,7 +3,7 @@
 /**
  * SAMLConfigTab
  *
- * 100% mock UI — no backend wiring.
+ * Admin SAML configuration UI wired to generated SDK endpoints.
  * Features:
  *  - Status card with inline Enable/Disable toggle
  *  - Pill-style sub-navigation: Setup Guide • Service Provider • Identity Provider
@@ -12,7 +12,7 @@
  *  - Danger zone: delete with confirmation dialog
  */
 
-import { useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ShieldCheck,
   ShieldOff,
@@ -41,40 +41,106 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { toast } from "@/components/ui/toast";
+import {
+  createSamlConfigAuthSamlConfigPost,
+  deleteSamlConfigAuthSamlConfigDelete,
+  getSamlConfigAuthSamlConfigGet,
+  updateSamlConfigAuthSamlConfigPut,
+} from "@/client";
+import type {
+  SamlConfigCreate,
+  SamlConfigResponse,
+  SamlConfigUpdate,
+} from "@/client/types.gen";
 import { cn } from "@/lib/cn";
 
-// Mock data — swap for real API response when backend is ready
+interface SamlFormValues {
+  name: string;
+  entityId: string;
+  ssoUrl: string;
+  sloUrl: string;
+  cert: string;
+  domain: string;
+}
 
-const MOCK_CONFIG = {
-  name: "Authentik",
-  idp_entity_id: "https://auth.acme.com/application/saml/rune/",
-  idp_sso_url: "https://auth.acme.com/application/saml/rune/sso/binding/redirect/",
-  idp_slo_url: "https://auth.acme.com/application/saml/rune/slo/binding/redirect/",
-  idp_certificate: `-----BEGIN CERTIFICATE-----
-MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
-TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
-cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
-WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
-ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
------END CERTIFICATE-----`,
-  domain_hint: "acme.com",
-  is_active: true,
-  // SP fields (read-only, computed by backend)
-  sp_entity_id: "https://api.rune.acme.com/auth/saml/metadata",
-  sp_acs_url: "https://api.rune.acme.com/auth/saml/acs",
-  sp_metadata_url: "/api/auth/saml/metadata",
-  sp_slo_url: "https://api.rune.acme.com/auth/saml/slo",
-  sp_certificate: `-----BEGIN CERTIFICATE-----
-MIIDpTCCAo2gAwIBAgIUKmEobkKW6+uQ5wCvpRnKSGKz+r4wDQYJKoZIhvcNAQEL
-BQAwYjELMAkGA1UEBhMCVVMxDzANBgNVBAgMBk9yZWdvbjESMBAGA1UEBwwJUG9y
-dGxhbmQxDzANBgNVBAoMBlJ1bmVBSTEfMB0GA1UEAwwWUnVuZUFJIFNhbWwgU1Ag
------END CERTIFICATE-----`,
-};
+function toFormValues(config: SamlConfigResponse | null): SamlFormValues {
+  return {
+    name: config?.name ?? "",
+    entityId: config?.idp_entity_id ?? "",
+    ssoUrl: config?.idp_sso_url ?? "",
+    sloUrl: config?.idp_slo_url ?? "",
+    cert: "",
+    domain: config?.domain_hint ?? "",
+  };
+}
+
+function toCreatePayload(values: SamlFormValues): SamlConfigCreate {
+  return {
+    name: values.name.trim(),
+    idp_entity_id: values.entityId.trim(),
+    idp_sso_url: values.ssoUrl.trim(),
+    idp_slo_url: values.sloUrl.trim() || null,
+    idp_certificate: values.cert.trim(),
+    domain_hint: values.domain.trim() || null,
+  };
+}
+
+function toUpdatePayload(values: SamlFormValues): SamlConfigUpdate {
+  return {
+    name: values.name.trim(),
+    idp_entity_id: values.entityId.trim(),
+    idp_sso_url: values.ssoUrl.trim(),
+    idp_slo_url: values.sloUrl.trim() || null,
+    domain_hint: values.domain.trim() || null,
+    ...(values.cert.trim() ? { idp_certificate: values.cert.trim() } : {}),
+  };
+}
+
+function isErrorWithDetail(
+  error: unknown,
+): error is { detail?: string; message?: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    ("detail" in error || "message" in error)
+  );
+}
+
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (typeof error === "string") {
+    return error;
+  }
+  if (isErrorWithDetail(error)) {
+    return error.detail ?? error.message ?? fallback;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return fallback;
+}
+
+function isConfigNotFoundError(error: unknown): boolean {
+  if (!isErrorWithDetail(error)) {
+    return false;
+  }
+  const message = (error.detail ?? error.message ?? "").toLowerCase();
+  return message.includes("no saml configuration found");
+}
 
 // Shared helpers
 
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
+  const resetCopiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (resetCopiedTimeoutRef.current) {
+        clearTimeout(resetCopiedTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCopy = async () => {
     try {
@@ -88,7 +154,10 @@ function CopyButton({ value }: { value: string }) {
       document.body.removeChild(ta);
     }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (resetCopiedTimeoutRef.current) {
+      clearTimeout(resetCopiedTimeoutRef.current);
+    }
+    resetCopiedTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -243,10 +312,14 @@ function SetupGuidePanel({ onNav }: { onNav: (t: SubTab) => void }) {
 
 // Panel: Service Provider (read-only)
 
-function ServiceProviderPanel() {
+function ServiceProviderPanel({ config }: { config: SamlConfigResponse | null }) {
   const handleExport = () => {
+    if (!config) {
+      return;
+    }
+
     // Strip PEM headers/whitespace to get raw base64 cert content
-    const certContent = MOCK_CONFIG.sp_certificate
+    const certContent = config.sp_certificate
       .replace(/-----BEGIN CERTIFICATE-----/g, "")
       .replace(/-----END CERTIFICATE-----/g, "")
       .replace(/\s+/g, "")
@@ -257,7 +330,7 @@ function ServiceProviderPanel() {
       `<md:EntityDescriptor`,
       `  xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"`,
       `  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"`,
-      `  entityID="${MOCK_CONFIG.sp_entity_id}">`,
+      `  entityID="${config.sp_entity_id}">`,
       `  <md:SPSSODescriptor`,
       `    AuthnRequestsSigned="false"`,
       `    WantAssertionsSigned="true"`,
@@ -271,10 +344,10 @@ function ServiceProviderPanel() {
       `    </md:KeyDescriptor>`,
       `    <md:SingleLogoutService`,
       `      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"`,
-      `      Location="${MOCK_CONFIG.sp_slo_url}"/>`,
+      `      Location="${config.sp_slo_url}"/>`,
       `    <md:AssertionConsumerService`,
       `      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"`,
-      `      Location="${MOCK_CONFIG.sp_acs_url}"`,
+      `      Location="${config.sp_acs_url}"`,
       `      index="1"/>`,
       `  </md:SPSSODescriptor>`,
       `</md:EntityDescriptor>`,
@@ -287,6 +360,9 @@ function ServiceProviderPanel() {
     a.download = "rune-sp-metadata.xml";
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("SP metadata exported", {
+      description: "SAML SP metadata XML downloaded successfully.",
+    });
   };
 
   return (
@@ -305,11 +381,24 @@ function ServiceProviderPanel() {
           size="sm"
           className="gap-1.5 shrink-0"
           onClick={handleExport}
+          disabled={!config}
         >
           <Download className="h-3.5 w-3.5" />
           Export SP metadata XML
         </Button>
       </div>
+
+      {!config && (
+        <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3.5">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Save an Identity Provider configuration first. Service Provider values are generated by the backend after creation.
+          </p>
+        </div>
+      )}
+
+      {config && (
+        <>
 
       <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3.5">
         <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
@@ -317,7 +406,7 @@ function ServiceProviderPanel() {
           Copy these values into your IdP. If your IdP supports metadata import, just paste
           the{" "}
           <a
-            href={MOCK_CONFIG.sp_metadata_url}
+            href={config.sp_metadata_url}
             target="_blank"
             rel="noopener noreferrer"
             className="underline underline-offset-2"
@@ -331,22 +420,22 @@ function ServiceProviderPanel() {
       <div className="grid gap-5 sm:grid-cols-2">
         <ReadOnlyField
           label="Entity ID / Audience URI"
-          value={MOCK_CONFIG.sp_entity_id}
+          value={config.sp_entity_id}
           hint="Set as 'Audience URI' or 'SP Entity ID' in your IdP."
         />
         <ReadOnlyField
           label="Assertion Consumer Service (ACS) URL"
-          value={MOCK_CONFIG.sp_acs_url}
+          value={config.sp_acs_url}
           hint="The SAML callback endpoint your IdP redirects to."
         />
         <ReadOnlyField
           label="Metadata URL"
-          value={MOCK_CONFIG.sp_metadata_url}
+          value={config.sp_metadata_url}
           hint="Import in your IdP to auto-fill all SP fields at once."
         />
         <ReadOnlyField
           label="Single Logout (SLO) URL"
-          value={MOCK_CONFIG.sp_slo_url}
+          value={config.sp_slo_url}
           hint="Optional — enables IdP-initiated global logout."
         />
       </div>
@@ -355,13 +444,13 @@ function ServiceProviderPanel() {
 
       <ReadOnlyField
         label="SP Signing Certificate (PEM)"
-        value={MOCK_CONFIG.sp_certificate}
+        value={config.sp_certificate}
         hint="Paste into your IdP so it can verify signed AuthnRequests from RUNE."
         multiline
       />
 
       <a
-        href={MOCK_CONFIG.sp_metadata_url}
+        href={config.sp_metadata_url}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:underline"
@@ -369,6 +458,8 @@ function ServiceProviderPanel() {
         <ExternalLink className="h-3 w-3" />
         Open metadata XML in browser
       </a>
+      </>
+      )}
     </div>
   );
 }
@@ -376,22 +467,47 @@ function ServiceProviderPanel() {
 // Panel: Identity Provider (editable form)
 
 function IdentityProviderPanel({
+  config,
+  hasConfig,
+  onSave,
   onDelete,
   submitting,
 }: {
+  config: SamlConfigResponse | null;
+  hasConfig: boolean;
+  onSave: (values: SamlFormValues) => Promise<void>;
   onDelete: () => void;
   submitting: boolean;
 }) {
-  const [name,     setName]     = useState(MOCK_CONFIG.name);
-  const [entityId, setEntityId] = useState(MOCK_CONFIG.idp_entity_id);
-  const [ssoUrl,   setSsoUrl]   = useState(MOCK_CONFIG.idp_sso_url);
-  const [sloUrl,   setSloUrl]   = useState(MOCK_CONFIG.idp_slo_url);
-  const [cert,     setCert]     = useState(MOCK_CONFIG.idp_certificate);
-  const [domain,   setDomain]   = useState(MOCK_CONFIG.domain_hint);
-  const [saved,    setSaved]    = useState(false);
+  const [name, setName] = useState("");
+  const [entityId, setEntityId] = useState("");
+  const [ssoUrl, setSsoUrl] = useState("");
+  const [sloUrl, setSloUrl] = useState("");
+  const [cert, setCert] = useState("");
+  const [domain, setDomain] = useState("");
+  const [saved, setSaved] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const resetSavedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const values = toFormValues(config);
+    setName(values.name);
+    setEntityId(values.entityId);
+    setSsoUrl(values.ssoUrl);
+    setSloUrl(values.sloUrl);
+    setCert(values.cert);
+    setDomain(values.domain);
+  }, [config]);
+
+  useEffect(() => {
+    return () => {
+      if (resetSavedTimeoutRef.current) {
+        clearTimeout(resetSavedTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Import IdP metadata XML or JSON config file
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -450,20 +566,32 @@ function IdentityProviderPanel({
       }
     };
     reader.readAsText(file);
+    toast.success("File imported", {
+      description: "IdP metadata imported successfully. Review the values and click Save.",
+    });
   };
 
+  const hasCertificateInput = cert.trim().length > 0;
   const certOk =
-    cert.trim().length > 0 && cert.trim().startsWith("-----BEGIN CERTIFICATE-----");
+    hasCertificateInput && cert.trim().startsWith("-----BEGIN CERTIFICATE-----");
 
   const isValid =
     name.trim().length > 0 &&
     entityId.trim().length > 0 &&
     ssoUrl.trim().startsWith("http") &&
-    certOk;
+    (hasConfig ? !hasCertificateInput || certOk : certOk);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSave = async () => {
+    try {
+      await onSave({ name, entityId, ssoUrl, sloUrl, cert, domain });
+      setSaved(true);
+      if (resetSavedTimeoutRef.current) {
+        clearTimeout(resetSavedTimeoutRef.current);
+      }
+      resetSavedTimeoutRef.current = setTimeout(() => setSaved(false), 2500);
+    } catch {
+      setSaved(false);
+    }
   };
 
   return (
@@ -580,7 +708,8 @@ function IdentityProviderPanel({
         {/* Certificate */}
         <div className="grid gap-1.5">
           <Label htmlFor="idp-cert">
-            IdP Signing Certificate (PEM) <span className="text-destructive">*</span>
+            IdP Signing Certificate (PEM){" "}
+            {!hasConfig && <span className="text-destructive">*</span>}
           </Label>
           <Textarea
             id="idp-cert"
@@ -590,7 +719,7 @@ function IdentityProviderPanel({
             rows={6}
             className="resize-y font-mono text-[11px] leading-relaxed"
           />
-          {cert.trim().length > 0 && !certOk && (
+          {hasCertificateInput && !certOk && (
             <p className="flex items-center gap-1.5 text-[11px] text-destructive">
               <AlertCircle className="h-3 w-3 shrink-0" />
               Must start with{" "}
@@ -606,7 +735,9 @@ function IdentityProviderPanel({
             </p>
           )}
           <p className="text-[11px] text-muted-foreground">
-            X.509 certificate from your IdP metadata. Include full PEM headers.
+            {hasConfig
+              ? "Leave blank to keep your current certificate. Provide a value only when rotating certificates."
+              : "X.509 certificate from your IdP metadata. Include full PEM headers."}
           </p>
         </div>
 
@@ -637,16 +768,17 @@ function IdentityProviderPanel({
         {saved && (
           <span className="flex items-center gap-1.5 text-sm text-emerald-500 animate-in fade-in">
             <CheckCircle2 className="h-4 w-4" />
-            Saved successfully
+            Configuration saved
           </span>
         )}
-        <Button onClick={handleSave} disabled={!isValid || submitting} className="gap-2">
+        <Button onClick={() => void handleSave()} disabled={!isValid || submitting} className="gap-2">
           <Save className="h-4 w-4" />
-          {submitting ? "Saving…" : "Save Configuration"}
+          {submitting ? "Saving…" : hasConfig ? "Update Configuration" : "Create Configuration"}
         </Button>
       </div>
 
       {/* Danger zone */}
+      {hasConfig && (
       <div className="rounded-xl border border-destructive/25 bg-destructive/5 overflow-hidden">
         <div className="px-5 py-4">
           <p className="text-sm font-semibold text-destructive">Danger Zone</p>
@@ -660,7 +792,7 @@ function IdentityProviderPanel({
           <div>
             <p className="text-sm font-medium">Remove SAML configuration</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Currently linked to: <span className="font-medium">{MOCK_CONFIG.name}</span>
+              Currently linked to: <span className="font-medium">{name}</span>
             </p>
           </div>
           <Button
@@ -675,6 +807,7 @@ function IdentityProviderPanel({
           </Button>
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -682,13 +815,141 @@ function IdentityProviderPanel({
 // Root Component
 
 export function SAMLConfigTab() {
-  const [enabled,      setEnabled]      = useState(MOCK_CONFIG.is_active);
+  const [config, setConfig] = useState<SamlConfigResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("guide");
-  const [deleteOpen,   setDeleteOpen]   = useState(false);
-  const submitting                      = false; // mock — no async ops
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const loadConfig = useCallback(async () => {
+    try {
+      const response = await getSamlConfigAuthSamlConfigGet();
+      setConfig(response.data?.data ?? null);
+    } catch (error: unknown) {
+      if (!isConfigNotFoundError(error)) {
+        const message = extractErrorMessage(error, "Failed to load SAML configuration");
+        toast.error("Unable to load SAML configuration", {
+          description: message,
+          action: {
+            label: "Retry",
+            onClick: () => {
+              void loadConfig();
+            },
+          },
+        });
+      }
+      setConfig(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadConfig();
+  }, [loadConfig]);
+
+  const handleSaveConfig = useCallback(
+    async (values: SamlFormValues): Promise<void> => {
+      setSubmitting(true);
+      try {
+        const response = config
+          ? await updateSamlConfigAuthSamlConfigPut({ body: toUpdatePayload(values) })
+          : await createSamlConfigAuthSamlConfigPost({ body: toCreatePayload(values) });
+
+        const nextConfig = response.data?.data;
+        if (!nextConfig) {
+          throw new Error("Missing SAML config in response");
+        }
+
+        setConfig(nextConfig);
+        toast.success(config ? "SAML configuration updated" : "SAML configuration created", {
+          description: config
+            ? "Identity provider details were saved successfully."
+            : "Identity provider details were created successfully.",
+        });
+      } catch (error: unknown) {
+        const message = extractErrorMessage(error, "Failed to save SAML configuration");
+        toast.error("Unable to save SAML configuration", {
+          description: message,
+        });
+        throw error;
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [config],
+  );
+
+  const handleToggleEnabled = useCallback(async () => {
+    if (!config) {
+      toast.info("SAML setup required", {
+        description: "Create a SAML configuration before enabling single sign-on.",
+      });
+      setActiveSubTab("idp");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await updateSamlConfigAuthSamlConfigPut({
+        body: { is_active: !config.is_active },
+      });
+      const nextConfig = response.data?.data;
+      if (!nextConfig) {
+        throw new Error("Missing SAML config in response");
+      }
+      setConfig(nextConfig);
+      toast.success(nextConfig.is_active ? "SAML enabled" : "SAML disabled", {
+        description: nextConfig.is_active
+          ? "Users can now authenticate with your identity provider."
+          : "Users will use password authentication until SAML is re-enabled.",
+      });
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error, "Failed to update SAML status");
+      toast.error("Unable to update SAML status", {
+        description: message,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }, [config]);
+
+  const handleDelete = useCallback(async (): Promise<boolean> => {
+    if (!config) {
+      setDeleteOpen(false);
+      return true;
+    }
+
+    setSubmitting(true);
+    try {
+      await deleteSamlConfigAuthSamlConfigDelete();
+      setConfig(null);
+      setActiveSubTab("idp");
+      toast.success("SAML configuration removed", {
+        description: "All users have reverted to password authentication.",
+      });
+      return true;
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error, "Failed to remove SAML configuration");
+      toast.error("Unable to remove SAML configuration", {
+        description: message,
+      });
+      return false;
+    } finally {
+      setSubmitting(false);
+    }
+  }, [config]);
+
+  const enabled = config?.is_active ?? false;
+  const configName = config?.name ?? "Not configured";
+  const domainHint = config?.domain_hint;
 
   return (
     <div className="grid gap-6">
+
+      {isLoading && (
+        <Card className="px-6 py-5 text-sm text-muted-foreground">Loading SAML configuration...</Card>
+      )}
 
       {/* Status card with toggle */}
       <Card className="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
@@ -708,7 +969,7 @@ export function SAMLConfigTab() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-semibold leading-tight">
-                SAML 2.0 — {MOCK_CONFIG.name}
+                SAML 2.0 — {configName}
               </p>
               <Badge
                 variant="outline"
@@ -716,16 +977,20 @@ export function SAMLConfigTab() {
                   "text-[10px] px-2 py-0",
                   enabled
                     ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
-                    : "border-border/60 text-muted-foreground",
+                    : config
+                    ? "border-border/60 text-muted-foreground"
+                    : "border-amber-500/40 bg-amber-500/10 text-amber-500",
                 )}
               >
-                {enabled ? "Active" : "Inactive"}
+                {enabled ? "Active" : config ? "Inactive" : "Not Configured"}
               </Badge>
             </div>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
-              {enabled
-                ? `Auto-redirecting @${MOCK_CONFIG.domain_hint} users to SSO`
-                : "SAML is disabled — users use password authentication"}
+              {enabled && domainHint
+                ? `Auto-redirecting @${domainHint} users to SSO`
+                : config
+                ? "SAML is disabled — users use password authentication"
+                : "Create an Identity Provider configuration to enable SSO"}
             </p>
           </div>
         </div>
@@ -739,10 +1004,12 @@ export function SAMLConfigTab() {
             type="button"
             role="switch"
             aria-checked={enabled}
-            onClick={() => setEnabled((v) => !v)}
+            onClick={() => void handleToggleEnabled()}
+            disabled={!config || submitting}
             className={cn(
               "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent",
               "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
+              (!config || submitting) && "cursor-not-allowed opacity-70",
               enabled ? "bg-accent" : "bg-muted-foreground/30",
             )}
           >
@@ -783,9 +1050,12 @@ export function SAMLConfigTab() {
       {activeSubTab === "guide" && (
         <SetupGuidePanel onNav={setActiveSubTab} />
       )}
-      {activeSubTab === "sp" && <ServiceProviderPanel />}
+      {activeSubTab === "sp" && <ServiceProviderPanel config={config} />}
       {activeSubTab === "idp" && (
         <IdentityProviderPanel
+          config={config}
+          hasConfig={Boolean(config)}
+          onSave={handleSaveConfig}
           onDelete={() => setDeleteOpen(true)}
           submitting={submitting}
         />
@@ -799,18 +1069,15 @@ export function SAMLConfigTab() {
         description={
           <span>
             This permanently deletes the SAML integration for{" "}
-            <strong>{MOCK_CONFIG.name}</strong>. All users will revert to password
+            <strong>{configName}</strong>. All users will revert to password
             authentication. This cannot be undone.
           </span>
         }
         confirmText="Yes, remove"
         cancelText="Cancel"
         isDangerous
-        isLoading={submitting}
-        onConfirm={() => {
-          setDeleteOpen(false);
-          return true;
-        }}
+        isLoading={submitting || !config}
+        onConfirm={handleDelete}
       />
     </div>
   );
