@@ -453,10 +453,6 @@ function FlowCanvasInner({
     [],
   );
 
-  const handleFitView = useCallback(() => {
-    rfInstanceRef.current?.fitView();
-  }, []);
-
   const onPaneClick = useCallback(() => setSelectedNodeId(null), []);
 
   const onLibraryAdd = useCallback(
