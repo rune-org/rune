@@ -101,18 +101,7 @@ func (n *DateTimeNode) Execute(ctx context.Context, execCtx plugin.ExecutionCont
 
 func parseInputTime(value string, loc *time.Location) (time.Time, error) {
 	value = strings.TrimSpace(value)
-	formats := []string{
-		time.RFC3339,
-		time.RFC3339Nano,
-		"2006-01-02 15:04:05",
-		"2006-01-02 15:04",
-		"2006-01-02",
-		time.RFC1123Z,
-		time.RFC1123,
-		time.RFC822Z,
-		time.RFC822,
-	}
-	for _, format := range formats {
+	for _, format := range listops.CommonTimeFormats {
 		var parsed time.Time
 		var err error
 		if strings.Contains(format, "Z07:00") || strings.Contains(format, "MST") || strings.Contains(format, "-0700") {

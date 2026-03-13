@@ -33,7 +33,7 @@ func ResolveArrayInput(input map[string]any, raw any) ([]any, error) {
 		return nil, fmt.Errorf("expected array input, got %T", resolved)
 	}
 
-	return CloneSlice(items), nil
+	return items, nil
 }
 
 func resolveValue(input map[string]any, raw any) (any, error) {
@@ -45,9 +45,10 @@ func resolveValue(input map[string]any, raw any) (any, error) {
 
 		if strings.HasPrefix(trimmed, "$") {
 			resolved, _, err := resolver.ResolveReferenceValue(input, trimmed, true)
-			if err == nil {
-				return resolved, nil
+			if err != nil {
+				return nil, fmt.Errorf("failed to resolve reference %q: %w", trimmed, err)
 			}
+			return resolved, nil
 		}
 
 		if !strings.HasPrefix(trimmed, "$") {
@@ -156,8 +157,13 @@ func NormalizeItemFieldPath(inputArray any, field string) string {
 	if strings.HasPrefix(fieldRef, base+"[") {
 		remaining := strings.TrimPrefix(fieldRef, base)
 		if strings.HasPrefix(remaining, "[") {
-			if closeIdx := strings.Index(remaining, "]"); closeIdx >= 0 && len(remaining) > closeIdx+2 && remaining[closeIdx+1] == '.' {
-				return remaining[closeIdx+2:]
+			if closeIdx := strings.Index(remaining, "]"); closeIdx >= 0 {
+				if closeIdx == len(remaining)-1 {
+					return ""
+				}
+				if len(remaining) > closeIdx+2 && remaining[closeIdx+1] == '.' {
+					return remaining[closeIdx+2:]
+				}
 			}
 		}
 	}
@@ -332,7 +338,11 @@ func ToInt(value any) (int, bool) {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return int(rv.Uint()), true
 	case reflect.Float32, reflect.Float64:
-		return int(rv.Float()), true
+		f := rv.Float()
+		if f != float64(int(f)) {
+			return 0, false
+		}
+		return int(f), true
 	default:
 		return 0, false
 	}
@@ -395,19 +405,24 @@ func toTime(value any) (time.Time, error) {
 	}
 }
 
+// CommonTimeFormats is the ordered list of time formats used by date/time
+// parsing across the worker. Keep this list in sync and use it everywhere
+// to avoid drift between nodes.
+var CommonTimeFormats = []string{
+	time.RFC3339,
+	time.RFC3339Nano,
+	"2006-01-02 15:04:05",
+	"2006-01-02 15:04",
+	"2006-01-02",
+	time.RFC1123Z,
+	time.RFC1123,
+	time.RFC822Z,
+	time.RFC822,
+}
+
 func parseTimeString(value string) (time.Time, error) {
 	value = strings.TrimSpace(value)
-	formats := []string{
-		time.RFC3339,
-		time.RFC3339Nano,
-		"2006-01-02 15:04:05",
-		"2006-01-02",
-		time.RFC1123Z,
-		time.RFC1123,
-		time.RFC822Z,
-		time.RFC822,
-	}
-	for _, format := range formats {
+	for _, format := range CommonTimeFormats {
 		if parsed, err := time.Parse(format, value); err == nil {
 			return parsed, nil
 		}
