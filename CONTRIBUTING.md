@@ -16,9 +16,9 @@ Thank you for investing time into improving Rune. This document covers the expec
 3. **Set up your environment**:
    ```bash
    make install        # Install dependencies for all services
-   make dev-infra-up   # Start infrastructure (Postgres, Redis, RabbitMQ, MongoDB)
+   make dev            # Start all services in development mode
    ```
-   Then start individual services with `make web-dev`, `make api-dev`, `make worker-dev`, or run everything with `make up`.
+   Alternatively, you can start the infrastructure and services manually with `make dev-infra-up`, then run individual services with `make web-dev`, `make api-dev`, `make worker-dev`, `make rtes-dev`, `make archivist-dev`, or run everything in Docker with `make up`.
 4. **Make focused changes**; keep each PR tightly scoped and update documentation/configuration when behavior changes.
 5. **Run the quality checks** described below before pushing.
 6. **Open a pull request** that references the related issue and summarizes the change along with any trade-offs.
@@ -68,9 +68,10 @@ Service-scoped commands for faster iteration:
 | Service | Commands |
 |---------|----------|
 | Frontend (`apps/web`) | `make web-test`, `make web-lint`, `make web-typecheck`, `make web-format` |
-| API (`services/api`) | `make api-lint`, `make api-format` |
+| API (`services/api`) | `make api-test`, `make api-lint`, `make api-format` |
 | Worker (`services/rune-worker`) | `make worker-test`, `make worker-lint`, `make worker-format` |
 | RTES (`services/rtes`) | `cargo test`, `cargo clippy`, `cargo fmt` |
+| Archivist (`services/archivist`) | `make archivist-install`, `make archivist-dev` |
 
 If your change affects infrastructure or documentation, verify Docker Compose still starts (`make up`) and that Markdown renders correctly.
 
