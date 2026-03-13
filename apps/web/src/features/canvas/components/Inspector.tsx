@@ -79,9 +79,9 @@ function renderInspectorForm(
     case "edit":
       return <EditInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "filter":
-      return <FilterInspector node={node} updateData={updateData} />;
+      return <FilterInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "sort":
-      return <SortInspector node={node} updateData={updateData} />;
+      return <SortInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "limit":
       return <LimitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "split":

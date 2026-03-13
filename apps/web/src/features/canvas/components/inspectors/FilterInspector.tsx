@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type { Node } from "@xyflow/react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import {
@@ -16,6 +16,7 @@ import { toArraySelection, toListItemSelection } from "../../utils/listFieldPath
 type FilterInspectorProps = {
   node: Node<FilterData>;
   updateData: ReturnType<typeof useUpdateNodeData>;
+  isExpanded?: boolean;
 };
 
 const OPERATORS: FilterOperator[] = ["==", "!=", ">", "<", ">=", "<=", "contains"];
@@ -32,8 +33,17 @@ function sanitizeRules(data: FilterData): FilterRule[] {
   }));
 }
 
-export function FilterInspector({ node, updateData }: FilterInspectorProps) {
+let nextFilterRuleId = 1;
+
+export function FilterInspector({ node, updateData, isExpanded }: FilterInspectorProps) {
   const rules = useMemo(() => sanitizeRules(node.data), [node.data]);
+  const ruleIdsRef = useRef<number[]>([]);
+  while (ruleIdsRef.current.length < rules.length) {
+    ruleIdsRef.current.push(nextFilterRuleId++);
+  }
+  if (ruleIdsRef.current.length > rules.length) {
+    ruleIdsRef.current = ruleIdsRef.current.slice(0, rules.length);
+  }
 
   const updateFilterData = (updater: (data: FilterData) => FilterData) => {
     updateData(node.id, "filter", updater);
@@ -44,10 +54,12 @@ export function FilterInspector({ node, updateData }: FilterInspectorProps) {
   };
 
   const addRule = () => {
+    ruleIdsRef.current.push(nextFilterRuleId++);
     updateRules((existing) => [...existing, { field: "", operator: "==", value: "" }]);
   };
 
   const removeRule = (index: number) => {
+    ruleIdsRef.current.splice(index, 1);
     updateRules((existing) => existing.filter((_, idx) => idx !== index));
   };
 
@@ -58,6 +70,9 @@ export function FilterInspector({ node, updateData }: FilterInspectorProps) {
       if (target < 0 || target >= next.length) return next;
       const [item] = next.splice(index, 1);
       next.splice(target, 0, item);
+      const ids = ruleIdsRef.current;
+      const [movedId] = ids.splice(index, 1);
+      ids.splice(target, 0, movedId);
       return next;
     });
   };
@@ -118,7 +133,7 @@ export function FilterInspector({ node, updateData }: FilterInspectorProps) {
       <div className="space-y-3">
         {rules.map((rule, index) => (
           <div
-            key={index}
+            key={ruleIdsRef.current[index]}
             className="rounded-[calc(var(--radius)-0.3rem)] border border-border/60 bg-background/60 p-3 shadow-[inset_0_1px_0_hsla(0,0%,100%,0.03)]"
           >
             <div className="flex items-center justify-between gap-2">
@@ -204,6 +219,12 @@ export function FilterInspector({ node, updateData }: FilterInspectorProps) {
           </div>
         ))}
       </div>
+
+      {isExpanded && (
+        <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
+          Use this node to narrow down a list by keeping only the items that match your conditions, like active users or orders over a certain amount.
+        </div>
+      )}
     </div>
   );
 }
