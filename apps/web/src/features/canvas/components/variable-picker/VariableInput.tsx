@@ -306,7 +306,7 @@ export function VariableInput({
   const variableRefs = useMemo(() => parseVariableReferences(value), [value]);
 
   // Build label -> color map from upstream sources (handles renamed nodes)
-  const colorMap = buildColorMap(sources);
+  const colorMap = useMemo(() => buildColorMap(sources), [sources]);
 
   // Sync segments -> contentEditable HTML only for external changes.
   useEffect(() => {
