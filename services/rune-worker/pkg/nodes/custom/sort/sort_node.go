@@ -54,6 +54,9 @@ func (n *SortNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 	sorted := listops.CloneSlice(items)
 	var sortErr error
 	sort.SliceStable(sorted, func(i, j int) bool {
+		if sortErr != nil {
+			return false
+		}
 		result, cmpErr := n.less(sorted[i], sorted[j])
 		if cmpErr != nil {
 			sortErr = cmpErr
