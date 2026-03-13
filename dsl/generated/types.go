@@ -377,7 +377,7 @@ type FilterParameters struct {
   // Keep only list items that match one or more rules
   InputArray *interface{} `json:"input_array"`  // Array to filter; defaults to the current working list
   MatchMode *string `json:"match_mode"`  // How multiple rules are combined
-  Rules []interface{} `json:"rules"`  // Rules used to decide which items to keep
+  Rules []FilterRule `json:"rules"`  // Rules used to decide which items to keep
 }
 
 func (n *FilterParameters) Sanitize() (bool, []string) {
@@ -393,7 +393,7 @@ func (n *FilterParameters) Sanitize() (bool, []string) {
 type SortParameters struct {
   // Order a list using one or more sort rules
   InputArray *interface{} `json:"input_array"`  // Array to sort; defaults to the current working list
-  Rules []interface{} `json:"rules"`  // Ordered sort rules
+  Rules []SortRule `json:"rules"`  // Ordered sort rules
 }
 
 func (n *SortParameters) Sanitize() (bool, []string) {

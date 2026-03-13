@@ -387,7 +387,7 @@ class FilterParameters(BaseModel):
     """Keep only list items that match one or more rules"""
     input_array: Optional[Any]  # Array to filter; defaults to the current working list
     match_mode: Optional[Literal["all", "any"]]  # How multiple rules are combined
-    rules: list[Any]  # Rules used to decide which items to keep
+    rules: list[FilterRule]  # Rules used to decide which items to keep
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -403,7 +403,7 @@ class FilterParameters(BaseModel):
 class SortParameters(BaseModel):
     """Order a list using one or more sort rules"""
     input_array: Optional[Any]  # Array to sort; defaults to the current working list
-    rules: list[Any]  # Ordered sort rules
+    rules: list[SortRule]  # Ordered sort rules
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
