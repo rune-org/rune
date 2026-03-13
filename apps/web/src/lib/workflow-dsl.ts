@@ -553,3 +553,28 @@ export function workflowDataToCanvas(data: {
 
   return { nodes, edges };
 }
+
+// ————————————————————————————————————————————————————————————————
+// Sanitizer for API/DSL workflow_data (export: strip credential refs)
+// ————————————————————————————————————————————————————————————————
+
+/**
+ * Strips credential references from workflow_data nodes for safe export.
+ * Returns nodes and edges at top level; does not convert DSL to canvas shape.
+ */
+export function stripCredentialsFromWorkflowData(workflowData: {
+  nodes?: Array<Record<string, unknown>>;
+  edges?: unknown[];
+}): { nodes: Array<Record<string, unknown>>; edges: unknown[] } {
+  const edges = workflowData.edges ?? [];
+  const nodes = workflowData.nodes;
+  if (!nodes || !Array.isArray(nodes)) {
+    return { nodes: [], edges };
+  }
+  const sanitizedNodes = nodes.map((node) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- intentionally omit credentials
+    const { credentials: _omit, ...rest } = node;
+    return rest;
+  });
+  return { nodes: sanitizedNodes, edges };
+}

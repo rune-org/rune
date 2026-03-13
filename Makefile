@@ -1,17 +1,23 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev dev-infra-up dev-infra-down api-install api-install-no-env api-lint api-format worker-dev worker-lint worker-format worker-test up nginx-up down nginx-down restart restart-nginx status
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down api-dev-infra-up rtes-dev-infra-up test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test archivist-install archivist-dev up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
 ifeq ($(UNAME),)
 	DETECTED_OS := Windows
-	VENV_ACTIVATE := venv\Scripts\activate.bat
 	PYTHON := python
 	RM := rmdir /s /q
+	# Windows-specific commands
+	EXIT_CMD := exit /b 1
+	CHECK_TEST_INFRA := docker ps --filter "name=rune-api-postgres-test" --format "{{.Names}}" | findstr "rune-api-postgres-test" >nul && docker ps --filter "name=rune-api-redis-test" --format "{{.Names}}" | findstr "rune-api-redis-test" >nul && docker ps --filter "name=rune-api-rabbitmq-test" --format "{{.Names}}" | findstr "rune-api-rabbitmq-test" >nul || (echo ❌ Test infrastructure not running. && echo Please start test services with: make test-infra-up && exit /b 1)
+	CHECK_UV := where uv >nul 2>nul || (echo ❌ uv not found. Please install uv: https://github.com/astral-sh/uv && exit /b 1)
 else
 	DETECTED_OS := Unix
-	VENV_ACTIVATE := . venv/bin/activate
 	PYTHON := python3
 	RM := rm -rf
+	# Unix-specific commands
+	EXIT_CMD := exit 1
+	CHECK_TEST_INFRA := docker ps --filter "name=rune-api-postgres-test" --format "{{.Names}}" | grep -q "rune-api-postgres-test" && docker ps --filter "name=rune-api-redis-test" --format "{{.Names}}" | grep -q "rune-api-redis-test" && docker ps --filter "name=rune-api-rabbitmq-test" --format "{{.Names}}" | grep -q "rune-api-rabbitmq-test" || (echo "❌ Test infrastructure not running." && echo "   Please start test services with: make test-infra-up" && exit 1)
+	CHECK_UV := command -v uv >/dev/null 2>&1 || (echo "❌ uv not found. Please install uv: https://github.com/astral-sh/uv" && exit 1)
 endif
 
 # Default target
@@ -36,16 +42,28 @@ help:
 	@echo "  make web-typecheck - Type check frontend code"
 	@echo ""
 	@echo "API targets:"
-	@echo "  make api-install        - Install API dependencies (creates/uses venv)"
-	@echo "  make api-install-no-env - Install API dependencies to system Python"
+	@echo "  make api-install        - Install API dependencies using uv"
 	@echo "  make api-dev            - Start FastAPI server in dev mode (hot-reload)"
+	@echo "  make api-test           - Run API tests with pytest"
 	@echo "  make api-lint           - Lint API code with ruff"
 	@echo "  make api-format         - Format API code with ruff"
 	@echo ""
+	@echo "RTES targets:"
+	@echo "  make rtes-dev            - Start RTES in development mode"
+	@echo ""
 	@echo "Development Infrastructure:"
-	@echo "  make dev-infra-up       - Start shared infrastructure (postgres, redis, rabbitmq)"
+	@echo "  make dev-infra-up       - Start shared infrastructure (API + RTES backing services)"
 	@echo "  make dev-infra-down     - Stop shared infrastructure"
+	@echo "  make api-dev-infra-up   - Start API backing services (postgres, redis, rabbitmq, mongodb)"
+	@echo "  make api-dev-infra-down - Stop API backing services"
+	@echo "  make rtes-dev-infra-up  - Start RTES dev infra (openobserve, otel-collector)"
+	@echo "  make rtes-dev-infra-down - Stop RTES dev infra (openobserve, otel-collector)"
 	@echo "  Note: Run 'make dev-infra-up' before starting services"
+	@echo ""
+	@echo "Test Infrastructure:"
+	@echo "  make test-infra-up      - Start test infrastructure (postgres, redis, rabbitmq for tests)"
+	@echo "  make test-infra-down    - Stop test infrastructure"
+	@echo "  Note: Run 'make test-infra-up' before running API tests"
 	@echo ""
 	@echo "Worker targets:"
 	@echo "  make worker-install - Install worker dependencies"
@@ -54,6 +72,23 @@ help:
 	@echo "  make worker-lint    - Lint worker code"
 	@echo "  make worker-format  - Format worker code"
 	@echo "  make worker-test    - Run worker tests"
+	@echo ""
+	@echo "Archivist targets:"
+	@echo "  make archivist-install - Install archivist dependencies using uv"
+	@echo "  make archivist-dev     - Start archivist in dev mode"
+	@echo ""
+	@echo "DSL targets:"
+	@echo "  make dsl-generate   - Generate DSL type definitions (TypeScript, Python, Go)"
+	@echo "  make dsl-test       - Run DSL tests (Python, TypeScript, Go)"
+	@echo ""
+	@echo "Database targets:"
+	@echo "  make db-revision msg=\"description\" - Generate new migration from model changes"
+	@echo "  make db-upgrade                     - Apply all pending migrations"
+	@echo "  make db-downgrade [rev=\"revision\"] - Rollback migrations (default: one step)"
+	@echo "  make db-current                     - Show current database version"
+	@echo "  make db-history                     - Show migration history"
+	@echo "  make db-reset                       - Reset database (downgrade to base, upgrade to head)"
+	@echo "  make db-shell                       - Open PostgreSQL shell"
 	@echo ""
 	@echo "Docker targets:"
 	@echo "  make up                        - Start all services (alias for docker-up)"
@@ -80,7 +115,7 @@ help:
 # Installation targets
 # ======================
 
-install: web-install api-install worker-install
+install: web-install api-install worker-install archivist-install
 	@echo "✓ All dependencies installed"
 
 web-install:
@@ -88,111 +123,93 @@ web-install:
 	cd apps/web && pnpm install
 
 api-install:
-	@echo "Setting up API dependencies..."
-ifeq ($(DETECTED_OS),Windows)
-	@if not exist "services\api\venv" if not exist "services\api\.venv" (echo Creating virtual environment... && cd services\api && $(PYTHON) -m venv venv)
-	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && cd services\api && call venv\Scripts\activate.bat && pip install -r requirements.txt && echo ✓ API dependencies installed) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && cd services\api && call .venv\Scripts\activate.bat && pip install -r requirements.txt && echo ✓ API dependencies installed) else (echo ❌ Error: No virtual environment found && echo For best results: cd services\api ^&^& python -m venv venv && exit /b 1)
-else
-	@if [ ! -d "services/api/venv" ] && [ ! -d "services/api/.venv" ]; then \
-		echo "Creating virtual environment..."; \
-		cd services/api && $(PYTHON) -m venv venv; \
-	fi
-	@if [ -d "services/api/venv" ]; then \
-		echo "Using virtual environment: services/api/venv"; \
-		cd services/api && . venv/bin/activate && pip install -r requirements.txt; \
-		echo "✓ API dependencies installed"; \
-	elif [ -d "services/api/.venv" ]; then \
-		echo "Using virtual environment: services/api/.venv"; \
-		cd services/api && . .venv/bin/activate && pip install -r requirements.txt; \
-		echo "✓ API dependencies installed"; \
-	else \
-		echo "❌ Error: No virtual environment found and could not create one"; \
-		echo ""; \
-		echo "   For best results, create a virtual environment:"; \
-		echo "   cd services/api && $(PYTHON) -m venv venv"; \
-		echo ""; \
-		echo "   If you need to install to system Python (not recommended), use:"; \
-		echo "   make api-install-no-env"; \
-		exit 1; \
-	fi
-endif
-
-api-install-no-env:
-	@echo "⚠️  Warning: This will install packages to your system Python"
-	@echo "   For isolated dependencies, use 'make api-install' instead"
-	@echo ""
-ifeq ($(DETECTED_OS),Windows)
-	@echo Installing API dependencies to system Python...
-	cd services/api && pip install -r requirements.txt && echo ✓ API dependencies installed to system Python
-else
-	@read -p "Continue with system Python installation? [y/N]: " confirm && \
-		if [ "$$confirm" != "y" ] && [ "$$confirm" != "Y" ]; then \
-			echo "Installation cancelled."; \
-			exit 0; \
-		else \
-			echo "Installing API dependencies to system Python..."; \
-			cd services/api && pip install -r requirements.txt && \
-			echo "✓ API dependencies installed to system Python"; \
-		fi
-endif
+	@echo "Installing API dependencies with uv..."
+	cd services/api && uv sync
+	@echo "✓ API dependencies installed"
 
 worker-install:
 	@echo "Installing worker dependencies..."
 	cd services/rune-worker && go mod download
 
+archivist-install:
+	@echo "Installing archivist dependencies with uv..."
+	cd services/archivist && uv sync
+	@echo "✓ Archivist dependencies installed"
+
 # ======================
 # Development targets
 # ======================
 
-dev: dev-infra-up
+dev: api-dev-infra-up dev-infra-wait
 	@echo "Starting all services in development mode..."
-	@$(MAKE) -j3 web-dev api-dev worker-dev
+ifeq ($(DETECTED_OS),Windows)
+	@$(MAKE) -j5 web-dev api-dev worker-dev rtes-dev archivist-dev
+else
+	go run github.com/DarthSim/hivemind@latest Procfile.dev
+endif
+
+dev-infra-wait:
+ifeq ($(DETECTED_OS),Windows)
+	@echo "Waiting for infrastructure to be ready..."
+	@timeout /t 5 /nobreak >nul
+	@echo "  ✓ Infrastructure ready (waited 5s)"
+else
+	@echo "Waiting for infrastructure to be ready..."
+	@until docker exec rune-api-postgres-dev pg_isready -U rune -q 2>/dev/null; do sleep 1; done
+	@echo "  ✓ PostgreSQL ready"
+	@until docker exec rune-api-redis-dev redis-cli ping 2>/dev/null | grep -q PONG; do sleep 1; done
+	@echo "  ✓ Redis ready"
+	@until docker exec rune-api-rabbitmq-dev rabbitmq-diagnostics -q check_port_connectivity >/dev/null 2>&1; do sleep 1; done
+	@echo "  ✓ RabbitMQ ready"
+	@until docker exec rune-mongodb-dev mongosh --quiet --eval "db.runCommand('ping').ok" 2>/dev/null | grep -q 1; do sleep 1; done
+	@echo "  ✓ MongoDB ready"
+endif
+
+dev-infra-up: api-dev-infra-up rtes-dev-infra-up
+	@echo "Dev infrastructure is up."
+
+dev-infra-down: api-dev-infra-down rtes-dev-infra-down
+	@echo "Dev infrastructure is down."
+
+api-dev-infra-up:
+	@echo "Starting API backing services (postgres, redis, rabbitmq, mongodb)..."
+	cd services/api && docker compose -f docker-compose.dev.yml up -d
+
+api-dev-infra-down:
+	@echo "Stopping API backing services..."
+	cd services/api && docker compose -f docker-compose.dev.yml down --remove-orphans
+
+rtes-dev-infra-up:
+	@echo "Starting RTES dev infra (openobserve, otel-collector)..."
+	cd services/rtes && docker compose -f docker-compose.dev.yml up -d
+
+rtes-dev-infra-down:
+	@echo "Stopping RTES dev infra (openobserve, otel-collector)..."
+	cd services/rtes && docker compose -f docker-compose.dev.yml down --remove-orphans
+
+rtes-dev:
+	@echo "Starting RTES in development mode..."
+	cd services/rtes && cargo run
 
 web-dev:
 	@echo "Starting frontend in development mode..."
 	cd apps/web && pnpm dev
 
-dev-infra-up:
-	@echo "Starting shared development infrastructure services..."
-	cd services/api && docker compose -f docker-compose.dev.yml up -d
-
-dev-infra-down:
-	@echo "Stopping shared development infrastructure services..."
-	cd services/api && docker compose -f docker-compose.dev.yml down
-
 api-dev:
 	@echo "Starting FastAPI server in development mode..."
 ifeq ($(DETECTED_OS),Windows)
-	@if exist "services\api\venv" (echo Using virtual environment: services\api\venv && echo Installing/updating dependencies... && cd services\api && call venv\Scripts\activate.bat && pip install -r requirements.txt && fastapi dev src\app.py) else if exist "services\api\.venv" (echo Using virtual environment: services\api\.venv && echo Installing/updating dependencies... && cd services\api && call .venv\Scripts\activate.bat && pip install -r requirements.txt && fastapi dev src\app.py) else (echo ⚠️  No virtual environment found. Using system Python. && echo For best results, install dependencies with: make api-install && cd services\api && fastapi dev src\app.py || (echo ❌ FastAPI not found. Please install dependencies: make api-install && exit /b 1))
+	cd services/api && uv run fastapi dev src\app.py
 else
-	@if [ -n "$(VENV)" ]; then \
-		if [ ! -d "$(VENV)" ]; then \
-			echo "❌ Specified venv not found: $(VENV)"; \
-			exit 1; \
-		fi; \
-		echo "Using virtual environment: $(VENV)"; \
-		echo "Installing/updating dependencies..."; \
-		. $(VENV)/bin/activate && cd services/api && pip install -r requirements.txt && fastapi dev src/app.py --reload-dir src; \
-	elif [ -d "services/api/.venv" ]; then \
-		echo "Using virtual environment: services/api/.venv"; \
-		echo "Installing/updating dependencies..."; \
-		cd services/api && . .venv/bin/activate && pip install -r requirements.txt && fastapi dev src/app.py --reload-dir src; \
-	elif [ -d "services/api/venv" ]; then \
-		echo "Using virtual environment: services/api/venv"; \
-		echo "Installing/updating dependencies..."; \
-		cd services/api && . venv/bin/activate && pip install -r requirements.txt && fastapi dev src/app.py --reload-dir src; \
-	else \
-		echo "❌ No virtual environment found in services/api/ (.venv or venv)."; \
-		echo "   Create one with: cd services/api && python3 -m venv .venv"; \
-		echo "   Then install dependencies with: make api-install"; \
-		echo "   Or specify a custom path: make api-dev VENV=/path/to/venv"; \
-		exit 1; \
-	fi
+	cd services/api && uv run fastapi dev src/app.py --reload-dir src
 endif
 
 worker-dev:
 	@echo "Starting worker in development mode..."
 	cd services/rune-worker && go run cmd/worker/main.go
+
+archivist-dev:
+	@echo "Starting archivist in development mode..."
+	cd services/archivist && uv run python -m src.main
 
 # ======================
 # Build targets
@@ -213,8 +230,16 @@ worker-build:
 # Testing & Linting
 # ======================
 
-test: web-test worker-test
+test: web-test api-test worker-test
 	@echo "✓ All tests passed"
+
+test-infra-up:
+	@echo "Starting test infrastructure services..."
+	cd services/api && docker compose -f docker-compose.test.yml up -d
+
+test-infra-down:
+	@echo "Stopping test infrastructure services..."
+	cd services/api && docker compose -f docker-compose.test.yml down -v
 
 web-test:
 	@echo "Running frontend tests..."
@@ -223,6 +248,14 @@ web-test:
 worker-test:
 	@echo "Running worker tests..."
 	cd services/rune-worker && go test ./...
+
+api-test:
+	@echo "Running API tests..."
+	@echo "Checking test infrastructure..."
+	@$(CHECK_TEST_INFRA)
+	@echo "Checking uv installation..."
+	@$(CHECK_UV)
+	@cd services/api && uv run pytest || (echo "❌ pytest failed. Make sure dependencies are installed: make api-install" && $(EXIT_CMD))
 
 lint: web-lint api-lint worker-lint
 	@echo "✓ Linting complete"
@@ -237,11 +270,11 @@ web-format:
 
 api-lint:
 	@echo "Linting API with ruff..."
-	cd services/api && ruff check src/
+	cd services/api && uv run ruff check src/
 
 api-format:
 	@echo "Formatting API code with ruff..."
-	cd services/api && ruff format src/
+	cd services/api && uv run ruff format src/
 
 worker-lint:
 	@echo "Linting worker..."
@@ -326,12 +359,58 @@ logs-worker:
 logs-frontend:
 	docker compose logs -f frontend
 
+logs-archivist:
+	docker compose logs -f archivist
+
 # ======================
 # Database targets
 # ======================
 
 db-shell:
-	docker exec -it rune-postgres psql -U rune -d rune_db
+	docker exec -it rune-api-postgres-dev psql -U rune -d rune_db
+
+db-revision:
+	@$(CHECK_UV)
+ifeq ($(msg),)
+	@echo "❌ Error: 'msg' parameter is required"
+	@echo "   Usage: make db-revision msg=\"description of changes\""
+	@$(EXIT_CMD)
+else
+	cd services/api && uv run alembic revision --autogenerate -m "$(msg)"
+endif
+
+db-upgrade:
+	@$(CHECK_UV)
+	cd services/api && uv run alembic upgrade head
+
+db-downgrade:
+	@$(CHECK_UV)
+	cd services/api && uv run alembic downgrade $(or $(rev),-1)
+
+db-current:
+	@$(CHECK_UV)
+	cd services/api && uv run alembic current
+
+db-history:
+	@$(CHECK_UV)
+	cd services/api && uv run alembic history
+
+db-reset:
+	@echo "⚠️  WARNING: This will reset the database by downgrading to base and upgrading to head"
+	@echo "   This is a destructive operation that will remove all data!"
+ifeq ($(DETECTED_OS),Windows)
+	@echo "⚠️  Windows detected - proceeding without confirmation prompt"
+	@$(CHECK_UV)
+	cd services/api && uv run alembic downgrade base && uv run alembic upgrade head
+else
+	@read -p "Are you sure you want to continue? [y/N]: " confirm && \
+		if [ "$$confirm" != "y" ] && [ "$$confirm" != "Y" ]; then \
+			echo "Operation cancelled."; \
+			exit 0; \
+		fi && \
+		$(CHECK_UV) && \
+		cd services/api && uv run alembic downgrade base && uv run alembic upgrade head
+endif
 
 # ======================
 # Cleanup targets
@@ -349,3 +428,22 @@ clean-all: clean
 	$(RM) apps/web/node_modules
 	$(RM) apps/web/.pnpm-store
 	@echo "✓ All dependencies cleaned"
+
+# ======================
+# DSL Generator targets
+# ======================
+
+dsl-generate:
+	@echo "Generating DSL type definitions..."
+	@$(PYTHON) dsl/generator/generate.py
+	@echo "✓ DSL generation complete"
+
+dsl-test:
+	@echo "Running DSL Python tests..."
+	@$(CHECK_UV)
+	@cd dsl && uv sync && PYTHONPATH=.. uv run pytest tests/python -v || (echo "❌ DSL Python tests failed. Ensure uv is installed: https://github.com/astral-sh/uv" && $(EXIT_CMD))
+	@echo "Running DSL TypeScript tests..."
+	@cd dsl/tests/ts && pnpm install && pnpm test || (echo "❌ DSL TypeScript tests failed" && exit 1)
+	@echo "Running DSL Go tests..."
+	@cd dsl/tests/go && go test ./... -v || (echo "❌ DSL Go tests failed" && exit 1)
+	@echo "✓ All DSL tests passed"

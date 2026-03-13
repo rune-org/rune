@@ -78,23 +78,24 @@ alembic history --indicate-current
 
 ## Running Commands
 
-From `services/api` directory with venv activated:
+From project root using the Makefile (recommended; uses **uv**):
 
 ```bash
-# Windows PowerShell
-.\.venv\Scripts\python.exe -m alembic upgrade head
-
-# Linux/Mac
-python -m alembic upgrade head
+make db-upgrade              # Apply all pending migrations
+make db-revision msg="xxx"   # Generate new migration
+make db-downgrade            # Rollback one step (or rev="<id>" for specific)
+make db-current              # Show current revision
+make db-history              # Show migration history
+make db-reset                # Reset DB (downgrade base + upgrade head)
+make db-shell                # Open PostgreSQL shell
 ```
 
-Or use Makefile from project root (Linux/Mac):
+Alternatively, from `services/api` with uv:
 
 ```bash
-make db-migrate              # Apply migrations
-make db-revision msg="xxx"   # Generate new migration
-make db-rollback             # Rollback one
-make db-reset                # Reset DB completely
+uv run alembic upgrade head
+uv run alembic revision --autogenerate -m "description"
+# etc.
 ```
 
 ## File Structure

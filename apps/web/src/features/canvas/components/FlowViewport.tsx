@@ -19,6 +19,7 @@ import { nodeTypes } from "../nodes";
 import type { CanvasNode } from "../types";
 import { getMiniMapNodeColor, isValidNodeKind } from "../lib/nodeRegistry";
 import { ExecutionStatusBar } from "./ExecutionStatusBar";
+import type { WsConnectionStatus } from "../hooks/useRtesWebSocket";
 
 function getNodeColor(node: { type?: string }) {
   const type = node.type as string;
@@ -47,6 +48,10 @@ type FlowViewportProps = {
   >;
   onInit: (instance: ReactFlowInstance<CanvasNode, Edge>) => void;
   onPaneClick: () => void;
+  readOnly?: boolean;
+  wsStatus?: WsConnectionStatus;
+  wsReconnectAttempts?: number;
+  onDismissRunning?: () => void;
 };
 
 export const FlowViewport = memo(function FlowViewport({
@@ -62,6 +67,10 @@ export const FlowViewport = memo(function FlowViewport({
   onNodeDragStop,
   onInit,
   onPaneClick,
+  readOnly,
+  wsStatus,
+  wsReconnectAttempts,
+  onDismissRunning,
 }: FlowViewportProps) {
   return (
     <ReactFlow
@@ -81,6 +90,8 @@ export const FlowViewport = memo(function FlowViewport({
       onNodeDragStop={onNodeDragStop}
       onInit={onInit}
       onPaneClick={onPaneClick}
+      nodesDraggable={!readOnly}
+      nodesConnectable={!readOnly}
     >
       <Background />
 
@@ -95,7 +106,11 @@ export const FlowViewport = memo(function FlowViewport({
 
       <Controls style={{ height: 107, marginLeft: "222px", opacity: 0.85 }} />
 
-      <ExecutionStatusBar />
+      <ExecutionStatusBar
+        wsStatus={wsStatus}
+        wsReconnectAttempts={wsReconnectAttempts}
+        onDismissRunning={onDismissRunning}
+      />
     </ReactFlow>
   );
 });

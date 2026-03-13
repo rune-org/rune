@@ -1,4 +1,4 @@
-import type { WorkflowListItem, WorkflowDetail } from "@/client/types.gen";
+import type { WorkflowListItem, WorkflowDetail, WorkflowVersionDetail } from "@/client/types.gen";
 import type { CanvasNode, CanvasEdge } from "@/features/canvas/types";
 import type {
   WorkflowNode as WorkflowNodeDSL,
@@ -8,6 +8,7 @@ import {
   canvasToWorkflowData,
   workflowDataToCanvas,
 } from "@/lib/workflow-dsl";
+import type { WorkflowRole } from "@/lib/permissions";
 
 /**
  * UI-friendly summary of a workflow row (in the table view).
@@ -37,6 +38,18 @@ export type WorkflowSummary = {
    * Placeholder total run count.
    */
   runs: number;
+  /**
+   * User's role for this workflow (controls permissions).
+   */
+  role: WorkflowRole;
+  /**
+   * Latest version number (if versioning is active).
+   */
+  latestVersion?: number;
+  /**
+   * Whether the workflow has unpublished changes.
+   */
+  hasUnpublishedChanges?: boolean;
 };
 
 export const defaultWorkflowSummary: WorkflowSummary = {
@@ -47,6 +60,7 @@ export const defaultWorkflowSummary: WorkflowSummary = {
   lastRunAt: null,
   lastRunStatus: "n/a",
   runs: 0,
+  role: "owner",
 };
 
 export function listItemToWorkflowSummary(
@@ -57,6 +71,7 @@ export function listItemToWorkflowSummary(
     id: String(item.id),
     name: item.name,
     status: item.is_active ? "active" : "draft",
+    role: item.role,
   };
 }
 
@@ -65,8 +80,8 @@ export type WorkflowGraph = {
   edges: CanvasEdge[];
 };
 
-export function detailToGraph(detail: WorkflowDetail): WorkflowGraph {
-  const data = (detail.workflow_data ?? {}) as {
+function workflowDataToGraph(raw: Record<string, unknown>): WorkflowGraph {
+  const data = raw as {
     nodes?: WorkflowNodeDSL[] | undefined;
     edges?: WorkflowEdgeDSL[] | undefined;
   };
@@ -79,6 +94,15 @@ export function detailToGraph(detail: WorkflowDetail): WorkflowGraph {
     nodes: nodes as CanvasNode[],
     edges: edges as CanvasEdge[],
   };
+}
+
+export function detailToGraph(detail: WorkflowDetail): WorkflowGraph {
+  const raw = detail.latest_version?.workflow_data ?? {};
+  return workflowDataToGraph(raw as Record<string, unknown>);
+}
+
+export function versionToGraph(version: WorkflowVersionDetail): WorkflowGraph {
+  return workflowDataToGraph((version.workflow_data ?? {}) as Record<string, unknown>);
 }
 
 export function graphToWorkflowData(graph: WorkflowGraph): Record<string, unknown> {

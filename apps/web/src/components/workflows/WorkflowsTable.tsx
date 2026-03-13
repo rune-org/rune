@@ -7,7 +7,13 @@ import {
   useMemo,
   useState,
 } from "react";
-import { MoreHorizontal, Search } from "lucide-react";
+import {
+  Download,
+  MoreHorizontal,
+  Play,
+  Search,
+  Trash2,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -31,14 +37,14 @@ import {
 import { useAppState } from "@/lib/state";
 import type { WorkflowSummary } from "@/lib/workflows";
 import { toast } from "@/components/ui/toast";
+import { useAuth } from "@/lib/auth";
 import {
   deleteWorkflow,
+  getWorkflowById,
   runWorkflow,
   updateWorkflowName,
   updateWorkflowStatus,
 } from "@/lib/api/workflows";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +53,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  canExecuteWorkflow,
+  canDeleteWorkflow,
+  canShareWorkflow,
+  canRenameWorkflow,
+  canChangeWorkflowStatus,
+  canViewWorkflow,
+} from "@/lib/permissions";
+import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { stripCredentialsFromWorkflowData } from "@/lib/workflow-dsl";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "N/A";
@@ -81,6 +104,9 @@ export function WorkflowsTable() {
     state: { workflows, loading },
     actions,
   } = useAppState();
+  
+  const { state: authState } = useAuth();
+  const isAdmin = authState.user?.role === "admin";
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<StatFilter>("all");
@@ -91,6 +117,12 @@ export function WorkflowsTable() {
     null,
   );
   const [deleteTarget, setDeleteTarget] = useState<WorkflowSummary | null>(
+    null,
+  );
+  const [shareTarget, setShareTarget] = useState<WorkflowSummary | null>(
+    null,
+  );
+  const [exportingWorkflowId, setExportingWorkflowId] = useState<string | null>(
     null,
   );
 
@@ -162,8 +194,8 @@ export function WorkflowsTable() {
     setPendingWorkflowId(workflow.id);
     try {
       await runWorkflow(workflowId);
-      toast.info(
-        "Workflow queued for execution. Monitoring will be available once the worker pipeline is connected.",
+      toast.success(
+        "Workflow successfully executed.",
       );
     } catch (error) {
       toast.error(
@@ -173,6 +205,48 @@ export function WorkflowsTable() {
       );
     } finally {
       setPendingWorkflowId(null);
+    }
+  }, []);
+
+  const handleExport = useCallback(async (workflow: WorkflowSummary) => {
+    const workflowId = Number(workflow.id);
+    if (!Number.isFinite(workflowId)) return;
+
+    setExportingWorkflowId(workflow.id);
+    try {
+      const response = await getWorkflowById(workflowId);
+      if (response.error || !response.data?.data) {
+        toast.error("Failed to load workflow for export.");
+        return;
+      }
+      const detail = response.data.data;
+      const rawData = (detail.latest_version?.workflow_data ?? undefined) as Record<string, unknown> | undefined;
+      const hasGraph =
+        rawData &&
+        Array.isArray(rawData.nodes) &&
+        Array.isArray(rawData.edges);
+      if (!hasGraph) {
+        toast.error("Workflow has no graph data to export.");
+        return;
+      }
+      const { nodes, edges } = stripCredentialsFromWorkflowData(rawData);
+      const payload = { nodes, edges };
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeName = (workflow.name || "workflow").replace(/[^a-zA-Z0-9-_]/g, "_");
+      a.download = `workflow-${safeName}-${workflow.id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Workflow exported");
+    } catch {
+      toast.error("Failed to export workflow.");
+    } finally {
+      setExportingWorkflowId(null);
     }
   }, []);
 
@@ -241,6 +315,10 @@ export function WorkflowsTable() {
   const isRowPending = useCallback(
     (id: string) => pendingWorkflowId === id,
     [pendingWorkflowId],
+  );
+  const isRowExporting = useCallback(
+    (id: string) => exportingWorkflowId === id,
+    [exportingWorkflowId],
   );
 
   return (
@@ -315,11 +393,12 @@ export function WorkflowsTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[35%]">Name</TableHead>
-            <TableHead className="w-[20%]">Trigger Type</TableHead>
-            <TableHead className="w-[20%]">Status</TableHead>
+            <TableHead className="w-[8%]">ID</TableHead>
+            <TableHead className="w-[30%]">Name</TableHead>
+            <TableHead className="w-[17%]">Trigger Type</TableHead>
+            <TableHead className="w-[17%]">Status</TableHead>
             <TableHead className="w-[15%]">Last Run</TableHead>
-            <TableHead className="w-[10%] text-right">Actions</TableHead>
+            <TableHead className="w-[13%] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -330,13 +409,22 @@ export function WorkflowsTable() {
                 loading || isRowPending(w.id) ? "1" : undefined
               }
             >
+              <TableCell className="font-mono text-xs text-muted-foreground">
+                {w.id}
+              </TableCell>
               <TableCell className="font-medium text-foreground">
-                <a
-                  href={`/create/app?workflow=${w.id}`}
-                  className="text-foreground underline-offset-4 hover:underline"
-                >
-                  {w.name}
-                </a>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`/create/app?workflow=${w.id}`}
+                    className="text-foreground underline-offset-4 hover:underline"
+                  >
+                    {w.name}
+                  </a>
+                  {/* TODO: Show version badge & unpublished dot once WorkflowListItem exposes latest_version_number and has_unpublished_changes */}
+                  <Badge variant={w.role === "owner" ? "secondary" : "outline"} className="text-xs">
+                    {w.role === "owner" ? "Owner" : "Shared"}
+                  </Badge>
+                </div>
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {w.triggerType}
@@ -348,51 +436,136 @@ export function WorkflowsTable() {
                 {timeAgo(w.lastRunAt)}
               </TableCell>
               <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                      aria-label={`Actions for ${w.name}`}
-                      disabled={isRowPending(w.id)}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem asChild>
-                      <a href={`/create/app?workflow=${w.id}`}>
-                        Open in Canvas
-                      </a>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => setRenameTarget(w)}
-                      disabled={isRowPending(w.id)}
-                    >
-                      Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleToggleActive(w)}
-                      disabled={isRowPending(w.id)}
-                    >
-                      {w.status === "active" ? "Deactivate" : "Activate"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleRun(w)}
-                      disabled={isRowPending(w.id)}
-                    >
-                      Run
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={() => beginDelete(w)}
-                      disabled={isRowPending(w.id)}
-                      className="text-red-400 focus:text-red-300 data-[highlighted]:bg-red-500/10 data-[highlighted]:text-red-200"
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center justify-end gap-1">
+                  {canExecuteWorkflow(w.role, isAdmin) && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 p-0"
+                          disabled={isRowPending(w.id)}
+                          onClick={() => handleRun(w)}
+                          aria-label={`Run ${w.name}`}
+                        >
+                          <Play className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Run workflow</TooltipContent>
+                    </Tooltip>
+                  )}
+                  {canViewWorkflow(w.role, isAdmin) && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 p-0"
+                          disabled={isRowExporting(w.id)}
+                          onClick={() => handleExport(w)}
+                          aria-label={`Export ${w.name} to JSON`}
+                        >
+                          <Download className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Export to JSON</TooltipContent>
+                    </Tooltip>
+                  )}
+                  {canDeleteWorkflow(w.role, isAdmin) && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 p-0 hover:text-destructive"
+                          disabled={isRowPending(w.id)}
+                          onClick={() => beginDelete(w)}
+                          aria-label={`Delete ${w.name}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete workflow</TooltipContent>
+                    </Tooltip>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        aria-label={`More actions for ${w.name}`}
+                        disabled={isRowPending(w.id)}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem asChild>
+                        <a href={`/create/app?workflow=${w.id}`}>
+                          Open in Canvas
+                        </a>
+                      </DropdownMenuItem>
+                      {canRenameWorkflow(w.role, isAdmin) && (
+                        <DropdownMenuItem
+                          onSelect={() => setRenameTarget(w)}
+                          disabled={isRowPending(w.id)}
+                        >
+                          Rename
+                        </DropdownMenuItem>
+                      )}
+                      {canChangeWorkflowStatus(w.role, isAdmin) && (
+                        <DropdownMenuItem
+                          onSelect={() => handleToggleActive(w)}
+                          disabled={isRowPending(w.id)}
+                        >
+                          {w.status === "active"
+                            ? "Deactivate"
+                            : "Activate"}
+                        </DropdownMenuItem>
+                      )}
+                      {canExecuteWorkflow(w.role, isAdmin) && (
+                        <DropdownMenuItem
+                          onSelect={() => handleRun(w)}
+                          disabled={isRowPending(w.id)}
+                        >
+                          Run
+                        </DropdownMenuItem>
+                      )}
+                      {canViewWorkflow(w.role, isAdmin) && (
+                        <DropdownMenuItem
+                          onSelect={() => handleExport(w)}
+                          disabled={isRowExporting(w.id)}
+                        >
+                          Export to JSON
+                        </DropdownMenuItem>
+                      )}
+                      {/* TODO: Add "Publish Latest Version" once WorkflowListItem exposes has_unpublished_changes */}
+                      {canShareWorkflow(w.role, isAdmin) && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onSelect={() => setShareTarget(w)}
+                            disabled={isRowPending(w.id)}
+                          >
+                            Share
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {canDeleteWorkflow(w.role, isAdmin) && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onSelect={() => beginDelete(w)}
+                            disabled={isRowPending(w.id)}
+                            className="text-red-400 focus:text-red-300 data-highlighted:bg-red-500/10 data-highlighted:text-red-200"
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -417,6 +590,16 @@ export function WorkflowsTable() {
         onConfirm={confirmDelete}
         pending={pendingWorkflowId !== null}
       />
+      {shareTarget && (
+        <ShareWorkflowDialog
+          workflowId={shareTarget.id}
+          workflowName={shareTarget.name}
+          open={shareTarget !== null}
+          onOpenChange={(open) => {
+            if (!open) setShareTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 }

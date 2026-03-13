@@ -110,7 +110,7 @@ fn dto_from_execution_instance(node_id: String, exec: NodeExecutionInstance) -> 
     }
 }
 
-fn dto_with_status(status: String) -> WsNodeUpdateDto {
+const fn dto_with_status(status: String) -> WsNodeUpdateDto {
     WsNodeUpdateDto {
         node_id:          None,
         input:            None,

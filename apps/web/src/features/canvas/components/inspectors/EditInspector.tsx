@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import type { EditData, EditAssignment } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
+import { VariableInput } from "../variable-picker/VariableInput";
 
 type EditInspectorProps = {
   node: Node<EditData>;
@@ -190,13 +191,13 @@ export function EditInspector({
                 <label className="block text-[11px] text-muted-foreground">
                   Value
                 </label>
-                <input
-                  className="w-full rounded-[calc(var(--radius)-0.3rem)] border border-input bg-muted/30 px-2 py-1 text-xs"
+                <VariableInput
                   value={assignment.value ?? ""}
-                  onChange={(e) =>
-                    updateField(idx, "value", e.target.value)
+                  onChange={(v) =>
+                    updateField(idx, "value", v)
                   }
                   placeholder="{{ $json.field }} or literal"
+                  nodeId={node.id}
                 />
               </div>
               <div>

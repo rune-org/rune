@@ -195,6 +195,8 @@ pub struct CompletionMessage {
 #[allow(clippy::derive_partial_eq_without_eq)]
 pub struct NodeExecutionMessage {
     pub workflow_id:         String,
+    pub workflow_version:    i32,
+    pub workflow_version_id: i64,
     pub execution_id:        String,
     pub current_node:        String,
     pub workflow_definition: Value,
@@ -257,11 +259,17 @@ pub struct ExecutionDocument {
     pub execution_id:        String,
     pub workflow_id:         String,
     #[serde(default)]
+    pub workflow_version:    Option<i32>,
+    #[serde(default)]
+    pub workflow_version_id: Option<i64>,
+    #[serde(default)]
     pub workflow_definition: Value,
     #[serde(default)]
     pub accumulated_context: Value,
     #[serde(default, deserialize_with = "deserialize_nodes")]
     pub nodes:               HashMap<String, HydratedNode>,
+    #[serde(default)]
+    pub edges:               Vec<Value>,
     pub status:              Option<String>,
     pub name:                Option<String>,
     pub node_type:           Option<String>,
@@ -306,12 +314,15 @@ where
 
                     HydratedNode { latest, lineages, extra }
                 } else {
-                    serde_json::from_value::<NodeExecutionInstance>(Value::Object(obj.clone()))
+                    let obj_clone = obj.clone();
+                    serde_json::from_value::<NodeExecutionInstance>(Value::Object(obj_clone))
+                        .ok()
+                        .filter(|inst| inst.status.is_some())
                         .map_or_else(
-                            |_| HydratedNode {
+                            || HydratedNode {
                                 latest:   None,
                                 lineages: HashMap::new(),
-                                extra:    obj.into_iter().collect::<HashMap<_, _>>(),
+                                extra:    obj.into_iter().collect(),
                             },
                             |instance| HydratedNode {
                                 latest:   Some(instance),
@@ -341,6 +352,7 @@ where
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use serde_json::json;
 

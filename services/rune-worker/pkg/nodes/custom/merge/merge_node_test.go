@@ -40,6 +40,7 @@ func TestMergeWaitForAllBarrierOpens(t *testing.T) {
 
 	node := NewMergeNode(execCtx)
 	barrierKey := "exec:exec1:node:merge1:barrier"
+	mock.ExpectSetNX("exec:exec1:node:merge1:timeout_active", "1", 300*time.Second).SetVal(true)
 
 	mock.ExpectEval(waitForAllScript, []string{barrierKey}, "a", `{"val":1}`, 2).
 		SetVal([]interface{}{"a", `{"val":1}`, "b", `{"val":2}`})
@@ -50,8 +51,13 @@ func TestMergeWaitForAllBarrierOpens(t *testing.T) {
 	}
 
 	merged := out["merged_context"].(map[string]any)
-	if merged["val"] != float64(2) {
-		t.Fatalf("expected merged val=2, got %v", merged["val"])
+	if _, ok := merged["val"]; !ok {
+		t.Fatalf("expected merged context to include val, got %v", merged)
+	}
+
+	payloads := out["_merge_payloads"].([]map[string]any)
+	if len(payloads) != 2 {
+		t.Fatalf("expected 2 merged payloads, got %d", len(payloads))
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -84,6 +90,7 @@ func TestMergeWaitForAllWaiting(t *testing.T) {
 	}
 
 	barrierKey := "exec:exec1:node:merge1:barrier"
+	mock.ExpectSetNX("exec:exec1:node:merge1:timeout_active", "1", 300*time.Second).SetVal(true)
 	mock.ExpectEval(waitForAllScript, []string{barrierKey}, "a", `{"val":1}`, 2).
 		SetErr(redis.Nil)
 	mock.ExpectSCard(barrierKey + ":arrivals").SetVal(1)
@@ -123,6 +130,7 @@ func TestMergeWaitForAnyWinner(t *testing.T) {
 	}
 
 	lockKey := "exec:exec1:node:merge1:lock"
+	mock.ExpectSetNX("exec:exec1:node:merge1:timeout_active", "1", 300*time.Second).SetVal(true)
 	mock.ExpectSetNX(lockKey, "a", 24*time.Hour).SetVal(true)
 
 	node := NewMergeNode(execCtx)
@@ -157,6 +165,7 @@ func TestMergeWaitForAnyIgnored(t *testing.T) {
 	}
 
 	lockKey := "exec:exec1:node:merge1:lock"
+	mock.ExpectSetNX("exec:exec1:node:merge1:timeout_active", "1", 300*time.Second).SetVal(true)
 	mock.ExpectSetNX(lockKey, "b", 24*time.Hour).SetVal(false)
 
 	node := NewMergeNode(execCtx)

@@ -35,8 +35,7 @@ async function ensureRefreshed() {
     refreshPromise = (async () => {
       const token = getRefreshToken();
       if (!token) throw new Error("Missing refresh token");
-      const { error } = await refreshAccessToken(token);
-      if (error) throw error;
+      await refreshAccessToken(token);
     })()
       .catch((e) => {
         throw e;

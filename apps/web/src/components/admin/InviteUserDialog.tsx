@@ -21,8 +21,9 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
   if (!open) return null;
 
   // Validate form fields
-  const isNameValid = inviteName.trim().length > 0;
-  const isEmailValid = inviteEmail.trim().length > 0 && inviteEmail.includes("@");
+  const isNameValid = inviteName.trim().length >= 3 && inviteName.trim().length <= 40;
+  // Simple email regex pattern matching backend EmailStr validation
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail.trim());
   const isFormValid = isNameValid && isEmailValid;
 
   const handleInvite = async () => {

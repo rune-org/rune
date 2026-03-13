@@ -32,16 +32,18 @@ func (e *Executor) buildExecutionContext(msg *messages.NodeExecutionMessage, nod
 	}
 
 	execCtx := plugin.ExecutionContext{
-		ExecutionID:  msg.ExecutionID,
-		WorkflowID:   msg.WorkflowID,
-		NodeID:       node.ID,
-		Type:         node.Type,
-		Parameters:   resolvedParams,
-		Input:        msg.AccumulatedContext,
-		FromNode:     msg.FromNode,
-		RedisClient:  e.redisClient,
-		LineageStack: msg.LineageStack,
-		Workflow:     msg.WorkflowDefinition,
+		ExecutionID:       msg.ExecutionID,
+		WorkflowID:        msg.WorkflowID,
+		WorkflowVersion:   msg.WorkflowVersion,
+		WorkflowVersionID: msg.WorkflowVersionID,
+		NodeID:            node.ID,
+		Type:              node.Type,
+		Parameters:        resolvedParams,
+		Input:             msg.AccumulatedContext,
+		FromNode:          msg.FromNode,
+		RedisClient:       e.redisClient,
+		LineageStack:      msg.LineageStack,
+		Workflow:          msg.WorkflowDefinition,
 	}
 
 	// Set credentials if present (already resolved by master)

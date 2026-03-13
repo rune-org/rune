@@ -80,6 +80,8 @@ impl ExecutionStore {
                 "edges": bson::to_bson(&edges_bson)?,
                 "accumulated_context": bson::to_bson(&msg.accumulated_context)?,
                 "workflow_id": &msg.workflow_id,
+                "workflow_version": msg.workflow_version,
+                "workflow_version_id": msg.workflow_version_id,
                 "execution_id": &msg.execution_id,
                 "updated_at": now,
             },
@@ -357,7 +359,7 @@ impl ExecutionStore {
 #[async_trait]
 impl ExecutionStorePort for ExecutionStore {
     async fn upsert_execution_definition(&self, msg: &NodeExecutionMessage) -> StoreResult<()> {
-        ExecutionStore::upsert_execution_definition(self, msg)
+        Self::upsert_execution_definition(self, msg)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
     }
@@ -366,7 +368,7 @@ impl ExecutionStorePort for ExecutionStore {
         &self,
         execution_id: &str,
     ) -> StoreResult<Option<ExecutionDocument>> {
-        ExecutionStore::get_execution_document(self, execution_id)
+        Self::get_execution_document(self, execution_id)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
     }
@@ -375,19 +377,19 @@ impl ExecutionStorePort for ExecutionStore {
         &self,
         workflow_id: &str,
     ) -> StoreResult<Vec<ExecutionDocument>> {
-        ExecutionStore::get_executions_for_workflow(self, workflow_id)
+        Self::get_executions_for_workflow(self, workflow_id)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
     }
 
     async fn update_node_status(&self, msg: &NodeStatusMessage) -> StoreResult<()> {
-        ExecutionStore::update_node_status(self, msg)
+        Self::update_node_status(self, msg)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
     }
 
     async fn complete_execution(&self, msg: &CompletionMessage) -> StoreResult<()> {
-        ExecutionStore::complete_execution(self, msg)
+        Self::complete_execution(self, msg)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })
     }
@@ -548,6 +550,7 @@ fn normalize_node(node_val: Value) -> Value {
 }
 
 #[cfg(test)]
+#[allow(clippy::indexing_slicing)]
 mod tests {
     use serde_json::json;
 

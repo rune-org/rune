@@ -63,7 +63,7 @@ export function ConfirmationDialog({
             onClick={handleConfirm}
             disabled={isLoading}
           >
-            {isLoading ? "Processing…" : confirmText}
+            {isLoading ? "Processing..." : confirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

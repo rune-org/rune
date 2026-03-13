@@ -16,14 +16,12 @@ import {
   refreshAccessToken as apiRefresh,
   getMyProfile as apiGetMyProfile,
   firstAdminSignup,
-  type MyProfileResponse,
-  type LoginResponse,
-  type RefreshResponse,
 } from "@/lib/api/auth";
+import { toast } from "@/components/ui/toast";
 import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
-import type { TokenResponse } from "@/client/types.gen";
+import type { TokenResponse, UserResponse } from "@/client/types.gen";
 
-type AuthUser = MyProfileResponse extends { data: infer D } ? D : unknown;
+type AuthUser = UserResponse;
 
 type AuthState = {
   user: AuthUser | null;
@@ -109,33 +107,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const fetchProfile = useCallback(async () => {
-    const { data, error } = await apiGetMyProfile();
-    if (!error && data) {
-      setUser(data.data as AuthUser);
-      return true;
+    try {
+      const response = await apiGetMyProfile();
+      const profile = response.data?.data;
+      if (profile) {
+        setUser(profile);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   }, []);
 
   const refresh = useCallback(async () => {
     const token = getStoredRefreshToken();
     if (!token) return;
-    const { data, error } = await apiRefresh(token);
-    if (!error && data) {
-      // Update stored refresh token in case backend rotates (it currently does not)
-      const payload = (data as RefreshResponse).data as TokenResponse;
-      storeRefreshToken(payload.refresh_token ?? token);
-      const expMs = Date.now() + payload.expires_in * 1000;
-      storeAccessExp(expMs);
-      // schedule next refresh
-      clearScheduledRefresh();
-      const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
-      const delaySec = Math.max(payload.expires_in - leeway, 5);
-      refreshTimeoutId.current = setTimeout(async () => {
-        await refresh();
-        await fetchProfile();
-      }, delaySec * 1000);
-    } else {
+    try {
+      const response = await apiRefresh(token);
+      const payload = response.data?.data;
+      if (payload) {
+        // Update stored refresh token in case backend rotates (it currently does not)
+        storeRefreshToken(payload.refresh_token ?? token);
+        const expMs = Date.now() + payload.expires_in * 1000;
+        storeAccessExp(expMs);
+        // schedule next refresh
+        clearScheduledRefresh();
+        const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
+        const delaySec = Math.max(payload.expires_in - leeway, 5);
+        refreshTimeoutId.current = setTimeout(async () => {
+          await refresh();
+          await fetchProfile();
+        }, delaySec * 1000);
+      }
+    } catch {
       // If refresh fails, clear all
       storeRefreshToken(null);
       storeAccessExp(null);
@@ -186,28 +191,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => {
       setLoading(true);
       setError(null);
-      const { data, error } = await apiLogin(email, password);
-      if (error || !data) {
-        setError(getErrorMessage(error));
+      try {
+        const response = await apiLogin(email, password);
+        const payload = response.data?.data;
+        if (!payload) {
+          toast.error("Login failed");
+          setError("Login failed");
+          setLoading(false);
+          return false;
+        }
+        // Save refresh token
+        storeRefreshToken(payload.refresh_token);
+        const expMs = Date.now() + payload.expires_in * 1000;
+        storeAccessExp(expMs);
+        // schedule next refresh
+        clearScheduledRefresh();
+        const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
+        const delaySec = Math.max(payload.expires_in - leeway, 5);
+        refreshTimeoutId.current = setTimeout(async () => {
+          await refresh();
+          await fetchProfile();
+        }, delaySec * 1000);
+        await fetchProfile();
+        setLoading(false);
+        return true;
+      } catch (error) {
+        const errorMessage = getErrorMessage(error);
+        // Display error as toast notification
+        toast.error(errorMessage);
+        setError(errorMessage);
         setLoading(false);
         return false;
       }
-      // Save refresh token
-      const payload = (data as LoginResponse).data as TokenResponse;
-      storeRefreshToken(payload.refresh_token);
-      const expMs = Date.now() + payload.expires_in * 1000;
-      storeAccessExp(expMs);
-      // schedule next refresh
-      clearScheduledRefresh();
-      const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
-      const delaySec = Math.max(payload.expires_in - leeway, 5);
-      refreshTimeoutId.current = setTimeout(async () => {
-        await refresh();
-        await fetchProfile();
-      }, delaySec * 1000);
-      await fetchProfile();
-      setLoading(false);
-      return true;
     },
     [fetchProfile, refresh],
   );
@@ -216,14 +231,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (name: string, email: string, password: string) => {
       setLoading(true);
       setError(null);
-      const { error } = await firstAdminSignup(name, email, password);
-      if (error) {
+      try {
+        await firstAdminSignup(name, email, password);
+        // Auto-login after successful registration
+        return await login(email, password);
+      } catch (error) {
         setError(getErrorMessage(error));
         setLoading(false);
         return false;
       }
-      // Auto-login after successful registration
-      return await login(email, password);
     },
     [login],
   );
@@ -266,8 +282,12 @@ function getErrorMessage(err: unknown): string {
   if (typeof err === "string") return err;
   if (err && typeof err === "object") {
     const e = err as Record<string, unknown>;
-    if (typeof e.detail === "string") return e.detail;
+    // Try to extract from ApiResponse format (message field)
     if (typeof e.message === "string") return e.message;
+    // Try to extract detail (alternative error format)
+    if (typeof e.detail === "string") return e.detail;
+    // Check for error field
+    if (typeof e.error === "string") return e.error;
   }
-  return "Request failed";
+  return "Authentication failed. Please try again.";
 }

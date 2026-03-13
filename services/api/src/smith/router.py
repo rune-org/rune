@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
+from src.core.dependencies import DatabaseDep
 from src.core.dependencies import require_password_changed
 from src.db.models import User, Workflow
 from src.smith.response import SSE_RESPONSES
@@ -10,6 +11,7 @@ from src.smith.schemas import ClearThreadResponse, GenerateWorkflowRequest
 from src.smith.service import SmithAgentService
 from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
+from src.workflow.service import WorkflowService
 
 router = APIRouter(prefix="/smith", tags=["Smith"])
 
@@ -19,6 +21,10 @@ def get_smith_service(request: Request) -> SmithAgentService:
     agent = request.app.state.smith_agent
     checkpointer = request.app.state.smith_checkpointer
     return SmithAgentService(agent, checkpointer=checkpointer)
+
+
+def get_workflow_service(db: DatabaseDep) -> WorkflowService:
+    return WorkflowService(db=db)
 
 
 def build_session_id(user_id: int, workflow_id: int | str) -> str:
@@ -38,6 +44,7 @@ async def generate_workflow(
     workflow: Workflow = Depends(get_workflow_with_permission),
     current_user: User = Depends(require_password_changed),
     smith: SmithAgentService = Depends(get_smith_service),
+    workflow_service: WorkflowService = Depends(get_workflow_service),
 ) -> StreamingResponse:
     """
     Use Smith AI to generate/update a workflow from natural language.
@@ -65,12 +72,12 @@ async def generate_workflow(
     """
     session_id = build_session_id(current_user.id, workflow.id)
 
-    # Extract existing workflow data to populate initial state
     existing_nodes = []
     existing_edges = []
-    if workflow.workflow_data:
-        existing_nodes = workflow.workflow_data.get("nodes", [])
-        existing_edges = workflow.workflow_data.get("edges", [])
+    latest_workflow_data = await workflow_service.get_latest_workflow_data(workflow)
+    if latest_workflow_data:
+        existing_nodes = latest_workflow_data.get("nodes", [])
+        existing_edges = latest_workflow_data.get("edges", [])
 
     return StreamingResponse(
         smith.stream_workflow(

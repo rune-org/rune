@@ -1,9 +1,6 @@
 from fastapi import APIRouter, Depends, Response
 
 from src.auth.schemas import (
-    FirstAdminSignupRequest,
-    FirstAdminSignupResponse,
-    FirstTimeSetupStatus,
     LoginRequest,
     RefreshRequest,
     TokenResponse,
@@ -12,9 +9,9 @@ from src.auth.service import AuthService
 from src.auth.token_store import TokenStore
 from src.core.config import get_settings
 from src.core.dependencies import DatabaseDep, RedisDep, get_current_user
-from src.core.exceptions import Unauthorized
+from src.core.exceptions import Forbidden, Unauthorized
 from src.core.responses import ApiResponse
-from src.db.models import User
+from src.db.models import AuthProvider, User
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -41,6 +38,13 @@ async def login(
     response: Response,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> ApiResponse[TokenResponse]:
+    # Fetch user by email first so we can give a clear error for SSO-only accounts.
+    candidate = await auth_service.get_user_by_email(login_request.email)
+    if candidate and candidate.auth_provider == AuthProvider.SAML:
+        raise Forbidden(
+            detail="This account uses SSO. Please sign in via your organisation's identity provider."
+        )
+
     user = await auth_service.authenticate_user(
         email=login_request.email, password=login_request.password
     )
@@ -108,57 +112,3 @@ async def logout(
     )
 
     return ApiResponse(success=True, message="Logged out", data=None)
-
-
-@router.get(
-    "/first-time-setup",
-    response_model=ApiResponse[FirstTimeSetupStatus],
-    summary="Check first-time setup status",
-    description="Check if the system requires first-time admin setup. Returns true if no users exist.",
-)
-async def check_first_time_setup(
-    auth_service: AuthService = Depends(get_auth_service),
-) -> ApiResponse[FirstTimeSetupStatus]:
-    requires_setup = await auth_service.is_first_time_setup()
-
-    if requires_setup:
-        message = "First-time setup required. Please create the initial admin account."
-    else:
-        message = "System already configured. Please use the login page."
-
-    status = FirstTimeSetupStatus(
-        requires_setup=requires_setup,
-        message=message,
-    )
-
-    return ApiResponse(
-        success=True,
-        message="First-time setup status retrieved",
-        data=status,
-    )
-
-
-@router.post(
-    "/first-admin-signup",
-    response_model=ApiResponse[FirstAdminSignupResponse],
-    summary="First-time admin signup",
-    description="Create the first admin account. Only available when no users exist in the system. Includes race condition protection.",
-)
-async def first_admin_signup(
-    signup_data: FirstAdminSignupRequest,
-    auth_service: AuthService = Depends(get_auth_service),
-) -> ApiResponse[FirstAdminSignupResponse]:
-    # Create the first admin user (includes race condition protection)
-    admin_user = await auth_service.create_first_admin(signup_data)
-
-    response_data = FirstAdminSignupResponse(
-        user_id=admin_user.id,
-        name=admin_user.name,
-        email=admin_user.email,
-    )
-
-    return ApiResponse(
-        success=True,
-        message="First admin account created",
-        data=response_data,
-    )

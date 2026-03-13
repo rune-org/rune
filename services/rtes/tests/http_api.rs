@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+#![allow(missing_docs, clippy::expect_used, clippy::significant_drop_tightening)]
 
 mod common;
 
@@ -110,6 +110,8 @@ async fn get_execution_with_valid_jwt_returns_document() {
     let document: ExecutionDocument =
         serde_json::from_slice(&body).expect("response should be a valid execution document");
     assert_eq!(document.execution_id, "exec-1");
+    assert_eq!(document.workflow_version, Some(1));
+    assert_eq!(document.workflow_version_id, Some(1));
 }
 
 #[tokio::test]
@@ -188,6 +190,12 @@ async fn get_workflow_executions_with_valid_jwt_returns_documents() {
     let documents: Vec<ExecutionDocument> =
         serde_json::from_slice(&body).expect("response should be a document array");
     assert_eq!(documents.len(), 2);
+    assert!(documents.iter().all(|doc| doc.workflow_version == Some(1)));
+    assert!(
+        documents
+            .iter()
+            .all(|doc| doc.workflow_version_id == Some(1))
+    );
 }
 
 #[tokio::test]
