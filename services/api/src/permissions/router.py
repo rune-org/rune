@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, status
 
-from src.core.dependencies import DatabaseDep, get_current_user
+from src.core.dependencies import get_current_user
 from src.core.responses import ApiResponse
 from src.db.models import User, Workflow
+from src.permissions.dependencies import get_permission_service
 from src.permissions.schemas import (
     WorkflowPermissionListResponse,
     WorkflowRoleUpdateRequest,
@@ -14,11 +15,6 @@ from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
 
 router = APIRouter(prefix="/workflows", tags=["Workflow Permissions"])
-
-
-def get_permission_service(db: DatabaseDep) -> PermissionService:
-    """Dependency to get permission service instance."""
-    return PermissionService(db=db)
 
 
 @router.post(
