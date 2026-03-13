@@ -49,6 +49,17 @@ export function toListItemSelection(
     return normalized ? `$item.${normalized}` : "$item";
   }
 
+  // if inputArray is blank and normalization couldn't strip a prefix, detect
+  // an array index pattern like $Node.field[0].subfield and extract the
+  // item-relative field after the index.
+  const arrayItemMatch = rawPath.match(/\[\d+\]\.(.+)$/);
+  if (arrayItemMatch?.[1]) {
+    return `$item.${arrayItemMatch[1]}`;
+  }
+  if (/\[\d+\]$/.test(rawPath)) {
+    return "$item";
+  }
+
   return rawPath;
 }
 
