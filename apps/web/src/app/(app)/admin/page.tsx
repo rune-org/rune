@@ -31,7 +31,6 @@ interface SettingsSection {
   label: string;
   description: string;
   icon: React.ElementType;
-  badge?: string;
 }
 
 const SETTINGS_NAV: SettingsSection[] = [
@@ -46,7 +45,6 @@ const SETTINGS_NAV: SettingsSection[] = [
     label: "SSO & SAML",
     description: "Enterprise single sign-on",
     icon: Shield,
-    badge: "Active",
   },
   {
     id: "notifications",
@@ -132,9 +130,10 @@ export default function AdminSettingsPage() {
   const { state } = useAuth();
   const currentUser = state.user;
 
-  const [activeSection, setActiveSection] = useState<SectionId>("sso");
+  const [activeSection, setActiveSection] = useState<SectionId>("general");
 
   // Guard: redirect non-admins
+  // TODO(admin): move this role check into admin/layout.tsx to avoid duplication and redirect flash.
   useEffect(() => {
     if (currentUser && currentUser.role !== "admin") {
       router.replace("/create");
