@@ -106,9 +106,9 @@ async def bulk_workflow_operation(
     succeeded: list[int] = []
     failed: list[BulkWorkflowFailure] = []
     permitted_workflows: list[Workflow] = []
-    executions: dict[int, str] = (
-        {}
-    )  # workflow_id -> execution_id (populated only for RUN action)
+    executions: dict[
+        int, str
+    ] = {}  # workflow_id -> execution_id (populated only for RUN action)
 
     for wf_id in payload.workflow_ids:
         if wf_id not in fetched:
