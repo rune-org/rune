@@ -2,9 +2,10 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from src.core.dependencies import DatabaseDep, require_password_changed
+from src.core.dependencies import require_password_changed
 from src.core.responses import ApiResponse
 from src.db.models import User
+from src.templates.dependencies import get_template_service
 from src.templates.schemas import (
     TemplateCreate,
     TemplateDetail,
@@ -14,10 +15,6 @@ from src.templates.schemas import (
 from src.templates.service import TemplateService
 
 router = APIRouter(prefix="/templates", tags=["Templates"])
-
-
-def get_template_service(db: DatabaseDep) -> TemplateService:
-    return TemplateService(db=db)
 
 
 @router.get("/", response_model=ApiResponse[List[TemplateSummary]])

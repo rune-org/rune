@@ -1,21 +1,38 @@
-"""
-Workflow-specific dependency functions for authorization.
-
-This module provides dependency functions that handle workflow-level
-permission checking and resource fetching.
-"""
-
 from typing import Optional
 
-from fastapi import Request
+from fastapi import Depends, Request
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from src.core.config import get_settings
 from src.core.dependencies import DatabaseDep, RequirePasswordChanged
 from src.core.exceptions import Forbidden, NotFound
 from src.db.models import Workflow, WorkflowRole, WorkflowUser
+from src.executions.service import ExecutionTokenService
+from src.queue.rabbitmq import get_rabbitmq
 from src.workflow.permissions import VALID_WORKFLOW_ACTIONS
 from src.workflow.policy import WorkflowPolicy
+from src.workflow.queue import WorkflowQueueService
+from src.workflow.service import WorkflowService
+
+
+def get_workflow_service(db: DatabaseDep) -> WorkflowService:
+    """Dependency to get workflow service instance."""
+    return WorkflowService(db=db)
+
+
+def get_queue_service(connection=Depends(get_rabbitmq)) -> WorkflowQueueService:
+    """Dependency to get workflow queue service instance."""
+    return WorkflowQueueService(
+        connection=connection, queue_name=get_settings().rabbitmq_workflow_queue
+    )
+
+
+def get_token_service(connection=Depends(get_rabbitmq)) -> ExecutionTokenService:
+    """Dependency to get execution token service instance."""
+    return ExecutionTokenService(
+        connection=connection, queue_name=get_settings().rabbitmq_token_queue
+    )
 
 
 async def get_user_workflow_role(
