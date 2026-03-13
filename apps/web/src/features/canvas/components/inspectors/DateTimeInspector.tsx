@@ -128,6 +128,8 @@ export function DateTimeInspector({ node, updateData, isExpanded }: DateTimeInsp
             <label className="block text-xs text-muted-foreground">Amount</label>
             <input
               type="number"
+              min={0}
+              step={1}
               className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
               value={node.data.amount ?? 1}
               onChange={(e) => updateDateTimeData((d) => ({ ...d, amount: Number(e.target.value) }))}
