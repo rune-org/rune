@@ -18,7 +18,7 @@ Thank you for investing time into improving Rune. This document covers the expec
    make install        # Install dependencies for all services
    make dev            # Start all services in development mode
    ```
-   Alternatively, you can start the infrastructure and services manually with `make dev-infra-up`, then run individual services with `make web-dev`, `make api-dev`, `make worker-dev`, `make rtes-dev`, `make archivist-dev`, or run everything in Docker with `make up`.
+   Alternatively, you can start the infrastructure and services manually with `make dev-infra-up`, then run individual services with `make web-dev`, `make api-dev`, `make worker-dev`, `make rtes-dev`, `make archivist-dev`, or run everything in production mode in Docker with `make up`.
 4. **Make focused changes**; keep each PR tightly scoped and update documentation/configuration when behavior changes.
 5. **Run the quality checks** described below before pushing.
 6. **Open a pull request** that references the related issue and summarizes the change along with any trade-offs.

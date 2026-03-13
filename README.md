@@ -135,7 +135,6 @@ Rune follows a polyglot microservices architecture, using the right tool for eac
 - **API (Python/FastAPI)** - Handles authentication, workflow CRUD, credential management, and orchestration
 - **Worker (Go)** - Executes workflows recursively, node by node, with fault tolerance
 - **RTES (Rust)** - Streams execution state in real-time over WebSockets
-- **Archivist (Python)** - Handles database cleanup and maintenance
 - **Frontend (Next.js/React)** - Visual canvas built on React Flow
 
 ---
