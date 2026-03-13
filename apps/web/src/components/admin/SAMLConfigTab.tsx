@@ -4,41 +4,19 @@
  * SAMLConfigTab
  *
  * Admin SAML configuration UI wired to generated SDK endpoints.
- * Features:
- *  - Status card with inline Enable/Disable toggle
- *  - Pill-style sub-navigation: Setup Guide • Service Provider • Identity Provider
- *  - SP panel: copy-ready read-only fields
- *  - IdP form: inline validation feedback
- *  - Danger zone: delete with confirmation dialog
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  BookOpen,
+  Building2,
+  Server,
   ShieldCheck,
   ShieldOff,
-  Copy,
-  Check,
-  ExternalLink,
-  Trash2,
-  Save,
-  Info,
-  BookOpen,
-  Server,
-  Building2,
-  ChevronRight,
-  AlertCircle,
-  Sparkles,
-  CheckCircle2,
-  Upload,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { toast } from "@/components/ui/toast";
@@ -48,54 +26,14 @@ import {
   getSamlConfigAuthSamlConfigGet,
   updateSamlConfigAuthSamlConfigPut,
 } from "@/client";
-import type {
-  SamlConfigCreate,
-  SamlConfigResponse,
-  SamlConfigUpdate,
-} from "@/client/types.gen";
+import type { SamlConfigResponse } from "@/client/types.gen";
 import { cn } from "@/lib/cn";
 
-interface SamlFormValues {
-  name: string;
-  entityId: string;
-  ssoUrl: string;
-  sloUrl: string;
-  cert: string;
-  domain: string;
-}
-
-function toFormValues(config: SamlConfigResponse | null): SamlFormValues {
-  return {
-    name: config?.name ?? "",
-    entityId: config?.idp_entity_id ?? "",
-    ssoUrl: config?.idp_sso_url ?? "",
-    sloUrl: config?.idp_slo_url ?? "",
-    cert: "",
-    domain: config?.domain_hint ?? "",
-  };
-}
-
-function toCreatePayload(values: SamlFormValues): SamlConfigCreate {
-  return {
-    name: values.name.trim(),
-    idp_entity_id: values.entityId.trim(),
-    idp_sso_url: values.ssoUrl.trim(),
-    idp_slo_url: values.sloUrl.trim() || null,
-    idp_certificate: values.cert.trim(),
-    domain_hint: values.domain.trim() || null,
-  };
-}
-
-function toUpdatePayload(values: SamlFormValues): SamlConfigUpdate {
-  return {
-    name: values.name.trim(),
-    idp_entity_id: values.entityId.trim(),
-    idp_sso_url: values.ssoUrl.trim(),
-    idp_slo_url: values.sloUrl.trim() || null,
-    domain_hint: values.domain.trim() || null,
-    ...(values.cert.trim() ? { idp_certificate: values.cert.trim() } : {}),
-  };
-}
+import { toCreatePayload, toUpdatePayload } from "./saml/form";
+import { IdentityProviderPanel } from "./saml/IdentityProviderPanel";
+import { ServiceProviderPanel } from "./saml/ServiceProviderPanel";
+import { SetupGuidePanel } from "./saml/SetupGuidePanel";
+import type { SamlFormValues, SubTab } from "./saml/types";
 
 function isErrorWithDetail(
   error: unknown,
@@ -128,660 +66,11 @@ function isConfigNotFoundError(error: unknown): boolean {
   return message.includes("no saml configuration found");
 }
 
-// Shared helpers
-
-function CopyButton({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
-  const resetCopiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (resetCopiedTimeoutRef.current) {
-        clearTimeout(resetCopiedTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = value;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-    }
-    setCopied(true);
-    if (resetCopiedTimeoutRef.current) {
-      clearTimeout(resetCopiedTimeoutRef.current);
-    }
-    resetCopiedTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      title={copied ? "Copied!" : "Copy to clipboard"}
-      className={cn(
-        "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-xs transition-all",
-        copied
-          ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-500"
-          : "border-border/60 bg-muted/40 text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground",
-      )}
-    >
-      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-    </button>
-  );
-}
-
-function ReadOnlyField({
-  label,
-  value,
-  hint,
-  mono = true,
-  multiline = false,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  mono?: boolean;
-  multiline?: boolean;
-}) {
-  return (
-    <div className="grid gap-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <Label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {label}
-        </Label>
-        <CopyButton value={value} />
-      </div>
-
-      {multiline ? (
-        <div
-          className={cn(
-            "max-h-32 overflow-y-auto rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5 text-[11px] leading-relaxed text-foreground/80",
-            mono && "font-mono break-all",
-          )}
-        >
-          {value}
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
-          <span
-            className={cn(
-              "flex-1 truncate text-sm text-foreground/90",
-              mono && "font-mono text-[11px]",
-            )}
-          >
-            {value}
-          </span>
-        </div>
-      )}
-
-      {hint && (
-        <p className="text-[11px] leading-relaxed text-muted-foreground">{hint}</p>
-      )}
-    </div>
-  );
-}
-
-// Sub-navigation
-
-type SubTab = "guide" | "sp" | "idp";
-
 const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
-  { id: "guide", label: "Setup Guide",       icon: BookOpen  },
-  { id: "sp",    label: "Service Provider",  icon: Server    },
-  { id: "idp",   label: "Identity Provider", icon: Building2 },
+  { id: "guide", label: "Setup Guide", icon: BookOpen },
+  { id: "sp", label: "Service Provider", icon: Server },
+  { id: "idp", label: "Identity Provider", icon: Building2 },
 ];
-
-// Panel: Setup Guide
-
-const SETUP_STEPS = [
-  {
-    n: 1,
-    title: "Fill in your Identity Provider details",
-    desc: "Grab the Entity ID, SSO URL, and signing certificate from your IdP metadata (Okta, Azure AD, Authentik, ADFS…). Paste them in the Identity Provider tab.",
-    cta: "idp" as SubTab,
-    ctaLabel: "Open Identity Provider →",
-  },
-  {
-    n: 2,
-    title: "Copy your Service Provider details to your IdP",
-    desc: "Open the Service Provider tab and paste the ACS URL, Entity ID, and (optionally) SP certificate into your IdP application settings.",
-    cta: "sp" as SubTab,
-    ctaLabel: "Open Service Provider →",
-  },
-  {
-    n: 3,
-    title: "Optionally set an email domain hint",
-    desc: "Users whose email belongs to that domain will be auto-redirected to SSO at sign-in — no need to click a separate 'Sign in with SSO' button.",
-    cta: undefined,
-  },
-  {
-    n: 4,
-    title: "Enable & test",
-    desc: "Flip the toggle at the top of this page. Open a private window, sign in with a domain-matching email, and confirm the SAML flow completes successfully before rolling out to your team.",
-    cta: undefined,
-  },
-];
-
-function SetupGuidePanel({ onNav }: { onNav: (t: SubTab) => void }) {
-  return (
-    <div className="grid gap-4">
-      <div className="flex items-start gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3.5">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" />
-        <p className="text-sm leading-relaxed text-blue-400/90">
-          SAML 2.0 lets your team authenticate using your corporate identity provider.
-          Complete the steps below to wire up the integration.
-        </p>
-      </div>
-
-      <div className="grid gap-3">
-        {SETUP_STEPS.map(({ n, title, desc, cta, ctaLabel }) => (
-          <div
-            key={n}
-            className="flex gap-4 rounded-xl border border-border/50 bg-card px-5 py-4"
-          >
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-bold text-accent">
-              {n}
-            </div>
-            <div className="grid gap-1">
-              <p className="text-sm font-semibold">{title}</p>
-              <p className="text-xs leading-relaxed text-muted-foreground">{desc}</p>
-              {cta && (
-                <button
-                  type="button"
-                  onClick={() => onNav(cta)}
-                  className="mt-1 inline-flex w-fit items-center gap-1 text-xs font-medium text-accent hover:underline"
-                >
-                  {ctaLabel}
-                  <ChevronRight className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Panel: Service Provider (read-only)
-
-function ServiceProviderPanel({ config }: { config: SamlConfigResponse | null }) {
-  const handleExport = () => {
-    if (!config) {
-      return;
-    }
-
-    // Keep backend as the single source of truth for SP metadata.
-    const opened = window.open(config.sp_metadata_url, "_blank", "noopener,noreferrer");
-    if (!opened) {
-      toast.error("Unable to open metadata URL", {
-        description: "Please allow pop-ups and try again.",
-      });
-      return;
-    }
-    toast.success("SP metadata opened", {
-      description: "Using backend-generated metadata to avoid drift.",
-    });
-  };
-
-  return (
-    <div className="grid gap-6">
-      {/* Export bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-muted/10 px-4 py-3">
-        <div>
-          <p className="text-xs font-semibold">Share with your IdP</p>
-          <p className="text-[11px] text-muted-foreground">
-            Download standard SAML SP metadata XML to import directly into your identity provider.
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-1.5 shrink-0"
-          onClick={handleExport}
-          disabled={!config}
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          Open metadata URL
-        </Button>
-      </div>
-
-      {!config && (
-        <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3.5">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            Save an Identity Provider configuration first. Service Provider values are generated by the backend after creation.
-          </p>
-        </div>
-      )}
-
-      {config && (
-        <>
-
-      <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3.5">
-        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-        <p className="text-sm leading-relaxed text-amber-400/90">
-          Copy these values into your IdP. If your IdP supports metadata import, just paste
-          the{" "}
-          <a
-            href={config.sp_metadata_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-2"
-          >
-            Metadata URL
-          </a>{" "}
-          and skip the rest.
-        </p>
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <ReadOnlyField
-          label="Entity ID / Audience URI"
-          value={config.sp_entity_id}
-          hint="Set as 'Audience URI' or 'SP Entity ID' in your IdP."
-        />
-        <ReadOnlyField
-          label="Assertion Consumer Service (ACS) URL"
-          value={config.sp_acs_url}
-          hint="The SAML callback endpoint your IdP redirects to."
-        />
-        <ReadOnlyField
-          label="Metadata URL"
-          value={config.sp_metadata_url}
-          hint="Import in your IdP to auto-fill all SP fields at once."
-        />
-        <ReadOnlyField
-          label="Single Logout (SLO) URL"
-          value={config.sp_slo_url}
-          hint="Optional — enables IdP-initiated global logout."
-        />
-      </div>
-
-      <Separator />
-
-      <ReadOnlyField
-        label="SP Signing Certificate (PEM)"
-        value={config.sp_certificate}
-        hint="Paste into your IdP so it can verify signed AuthnRequests from RUNE."
-        multiline
-      />
-
-      <a
-        href={config.sp_metadata_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:underline"
-      >
-        <ExternalLink className="h-3 w-3" />
-        Open metadata XML in browser
-      </a>
-      </>
-      )}
-    </div>
-  );
-}
-
-// Panel: Identity Provider (editable form)
-
-function IdentityProviderPanel({
-  config,
-  hasConfig,
-  onSave,
-  onDelete,
-  submitting,
-}: {
-  config: SamlConfigResponse | null;
-  hasConfig: boolean;
-  onSave: (values: SamlFormValues) => Promise<void>;
-  onDelete: () => void;
-  submitting: boolean;
-}) {
-  const [form, setForm] = useState<SamlFormValues>(toFormValues(config));
-  const [saved, setSaved] = useState(false);
-  const [importError, setImportError] = useState<string | null>(null);
-  const resetSavedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setForm(toFormValues(config));
-  }, [config]);
-
-  const updateField = <K extends keyof SamlFormValues>(
-    field: K,
-    value: SamlFormValues[K],
-  ) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  useEffect(() => {
-    return () => {
-      if (resetSavedTimeoutRef.current) {
-        clearTimeout(resetSavedTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Import IdP metadata XML or JSON config file
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImportError(null);
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      try {
-        const updates: Partial<SamlFormValues> = {};
-
-        if (file.name.endsWith(".xml")) {
-          // Parse IdP metadata XML via DOMParser
-          const parser = new DOMParser();
-          const doc    = parser.parseFromString(text, "application/xml");
-
-          const root = doc.querySelector("EntityDescriptor");
-          if (!root) throw new Error("No EntityDescriptor found in XML.");
-
-          const parsedEntityId = root.getAttribute("entityID") ?? "";
-          const ssoEl = doc.querySelector(
-            "IDPSSODescriptor SingleSignOnService[Binding*='HTTP-Redirect'], " +
-            "IDPSSODescriptor SingleSignOnService"
-          );
-          const sloEl = doc.querySelector(
-            "IDPSSODescriptor SingleLogoutService[Binding*='HTTP-Redirect'], " +
-            "IDPSSODescriptor SingleLogoutService"
-          );
-          const certEl = doc.querySelector("IDPSSODescriptor KeyDescriptor X509Certificate") ??
-                         doc.querySelector("X509Certificate");
-
-          if (parsedEntityId) updates.entityId = parsedEntityId;
-          if (ssoEl?.getAttribute("Location")) updates.ssoUrl = ssoEl.getAttribute("Location")!;
-          if (sloEl?.getAttribute("Location")) updates.sloUrl = sloEl.getAttribute("Location")!;
-          if (certEl?.textContent) {
-            const raw = certEl.textContent.trim().replace(/\s+/g, "");
-            updates.cert =
-              `-----BEGIN CERTIFICATE-----\n${raw.match(/.{1,64}/g)?.join("\n") ?? raw}\n-----END CERTIFICATE-----`;
-          }
-        } else {
-          // JSON format
-          const json = JSON.parse(text);
-          if (json.name) updates.name = json.name;
-          if (json.idp_entity_id) updates.entityId = json.idp_entity_id;
-          if (json.idp_sso_url) updates.ssoUrl = json.idp_sso_url;
-          if (json.idp_slo_url !== undefined) updates.sloUrl = json.idp_slo_url ?? "";
-          if (json.idp_certificate) updates.cert = json.idp_certificate;
-          if (json.domain_hint !== undefined) updates.domain = json.domain_hint ?? "";
-        }
-
-        setForm((prev) => ({ ...prev, ...updates }));
-        toast.success("File imported", {
-          description: "IdP metadata imported successfully. Review the values and click Save.",
-        });
-      } catch (err: unknown) {
-        setImportError(err instanceof Error ? err.message : "Failed to parse file.");
-      } finally {
-        // Reset so the same file can be re-imported
-        e.target.value = "";
-      }
-    };
-    reader.onerror = () => {
-      setImportError("Failed to read file.");
-      e.target.value = "";
-    };
-    reader.readAsText(file);
-  };
-
-  const hasCertificateInput = form.cert.trim().length > 0;
-  const certOk =
-    hasCertificateInput && form.cert.trim().startsWith("-----BEGIN CERTIFICATE-----");
-
-  const isValid =
-    form.name.trim().length > 0 &&
-    form.entityId.trim().length > 0 &&
-    form.ssoUrl.trim().startsWith("http") &&
-    (hasConfig ? !hasCertificateInput || certOk : certOk);
-
-  const handleSave = async () => {
-    try {
-      await onSave(form);
-      setSaved(true);
-      if (resetSavedTimeoutRef.current) {
-        clearTimeout(resetSavedTimeoutRef.current);
-      }
-      resetSavedTimeoutRef.current = setTimeout(() => setSaved(false), 2500);
-    } catch {
-      setSaved(false);
-    }
-  };
-
-  return (
-    <div className="grid gap-8">
-
-      {/* Import action bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-muted/10 px-4 py-3">
-        <div>
-          <p className="text-xs font-semibold">Import from file</p>
-          <p className="text-[11px] text-muted-foreground">
-            Upload your IdP metadata XML or a previously saved JSON config to auto-fill the form.
-          </p>
-        </div>
-        {/* Hidden file input */}
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".json,.xml"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-1.5 shrink-0"
-          onClick={() => fileRef.current?.click()}
-        >
-          <Upload className="h-3.5 w-3.5" />
-          Import IdP metadata
-        </Button>
-      </div>
-
-      {/* Import error feedback */}
-      {importError && (
-        <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
-          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>{importError}</span>
-        </div>
-      )}
-
-      {/* Form fields */}
-      <div className="grid gap-5">
-        {/* Name */}
-        <div className="grid gap-1.5">
-          <Label htmlFor="idp-name">
-            Configuration Name <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="idp-name"
-            value={form.name}
-            onChange={(e) => updateField("name", e.target.value)}
-            placeholder="e.g. Okta, Azure AD, Authentik"
-            maxLength={80}
-          />
-          <p className="text-[11px] text-muted-foreground">
-            A display label for this identity provider.
-          </p>
-        </div>
-
-        <Separator />
-
-        {/* Entity ID */}
-        <div className="grid gap-1.5">
-          <Label htmlFor="idp-entity">
-            IdP Entity ID <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="idp-entity"
-            value={form.entityId}
-            onChange={(e) => updateField("entityId", e.target.value)}
-            placeholder="https://idp.example.com/app/id"
-            maxLength={512}
-          />
-          <p className="text-[11px] text-muted-foreground">
-            From your IdP metadata under{" "}
-            <code className="rounded bg-muted px-1 font-mono text-[10px]">entityID</code>.
-          </p>
-        </div>
-
-        {/* SSO URL */}
-        <div className="grid gap-1.5">
-          <Label htmlFor="idp-sso">
-            SSO Redirect URL <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="idp-sso"
-            value={form.ssoUrl}
-            onChange={(e) => updateField("ssoUrl", e.target.value)}
-            placeholder="https://idp.example.com/sso/saml/redirect"
-          />
-          <p className="text-[11px] text-muted-foreground">
-            Users are sent here to authenticate with your IdP.
-          </p>
-        </div>
-
-        {/* SLO URL */}
-        <div className="grid gap-1.5">
-          <Label htmlFor="idp-slo">
-            Single Logout URL{" "}
-            <span className="font-normal text-[11px] text-muted-foreground">(optional)</span>
-          </Label>
-          <Input
-            id="idp-slo"
-            value={form.sloUrl}
-            onChange={(e) => updateField("sloUrl", e.target.value)}
-            placeholder="https://idp.example.com/slo/saml"
-          />
-          <p className="text-[11px] text-muted-foreground">
-            Leave blank if your IdP doesn&apos;t support SLO.
-          </p>
-        </div>
-
-        {/* Certificate */}
-        <div className="grid gap-1.5">
-          <Label htmlFor="idp-cert">
-            IdP Signing Certificate (PEM){" "}
-            {!hasConfig && <span className="text-destructive">*</span>}
-          </Label>
-          <Textarea
-            id="idp-cert"
-            value={form.cert}
-            onChange={(e) => updateField("cert", e.target.value)}
-            placeholder={"-----BEGIN CERTIFICATE-----\nMIIDez...\n-----END CERTIFICATE-----"}
-            rows={6}
-            className="resize-y font-mono text-[11px] leading-relaxed"
-          />
-          {hasCertificateInput && !certOk && (
-            <p className="flex items-center gap-1.5 text-[11px] text-destructive">
-              <AlertCircle className="h-3 w-3 shrink-0" />
-              Must start with{" "}
-              <code className="rounded bg-muted px-1 font-mono text-[10px]">
-                -----BEGIN CERTIFICATE-----
-              </code>
-            </p>
-          )}
-          {certOk && (
-            <p className="flex items-center gap-1.5 text-[11px] text-emerald-500">
-              <CheckCircle2 className="h-3 w-3 shrink-0" />
-              Certificate format looks valid.
-            </p>
-          )}
-          <p className="text-[11px] text-muted-foreground">
-            {hasConfig
-              ? "Leave blank to keep your current certificate. Provide a value only when rotating certificates."
-              : "X.509 certificate from your IdP metadata. Include full PEM headers."}
-          </p>
-        </div>
-
-        {/* Domain hint — styled as a callout block */}
-        <div className="grid gap-3 rounded-xl border border-border/50 bg-muted/20 px-5 py-4">
-          <div>
-            <p className="text-sm font-semibold">
-              Email Domain Hint{" "}
-              <span className="font-normal text-[11px] text-muted-foreground">(optional)</span>
-            </p>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-              Users whose email matches this domain will be auto-redirected to SSO on the
-              sign-in page — no extra button click required.
-            </p>
-          </div>
-          <Input
-            value={form.domain}
-            onChange={(e) => updateField("domain", e.target.value)}
-            placeholder="acme.com"
-            maxLength={253}
-            className="max-w-xs"
-          />
-        </div>
-      </div>
-
-      {/* Save row */}
-      <div className="flex items-center justify-end gap-3 border-t border-border/40 pt-5">
-        {saved && (
-          <span className="flex items-center gap-1.5 text-sm text-emerald-500 animate-in fade-in">
-            <CheckCircle2 className="h-4 w-4" />
-            Configuration saved
-          </span>
-        )}
-        <Button onClick={() => void handleSave()} disabled={!isValid || submitting} className="gap-2">
-          <Save className="h-4 w-4" />
-          {submitting ? "Saving…" : hasConfig ? "Update Configuration" : "Create Configuration"}
-        </Button>
-      </div>
-
-      {/* Danger zone */}
-      {hasConfig && (
-      <div className="rounded-xl border border-destructive/25 bg-destructive/5 overflow-hidden">
-        <div className="px-5 py-4">
-          <p className="text-sm font-semibold text-destructive">Danger Zone</p>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-            Permanently removes this IdP integration. All users will revert to password
-            authentication. This action cannot be undone.
-          </p>
-        </div>
-        <Separator className="bg-destructive/20" />
-        <div className="flex items-center justify-between gap-4 px-5 py-4">
-          <div>
-            <p className="text-sm font-medium">Remove SAML configuration</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Currently linked to: <span className="font-medium">{form.name}</span>
-            </p>
-          </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onDelete}
-            disabled={submitting}
-            className="gap-1.5 shrink-0"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Remove
-          </Button>
-        </div>
-      </div>
-      )}
-    </div>
-  );
-}
-
-// Root Component
 
 export function SAMLConfigTab() {
   const [config, setConfig] = useState<SamlConfigResponse | null>(null);
@@ -915,12 +204,10 @@ export function SAMLConfigTab() {
 
   return (
     <div className="grid gap-6">
-
       {isLoading && (
         <Card className="px-6 py-5 text-sm text-muted-foreground">Loading SAML configuration...</Card>
       )}
 
-      {/* Status card with toggle */}
       <Card className="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <div
@@ -937,9 +224,7 @@ export function SAMLConfigTab() {
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold leading-tight">
-                SAML 2.0 — {configName}
-              </p>
+              <p className="text-sm font-semibold leading-tight">SAML 2.0 - {configName}</p>
               <Badge
                 variant="outline"
                 className={cn(
@@ -947,8 +232,8 @@ export function SAMLConfigTab() {
                   enabled
                     ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
                     : config
-                    ? "border-border/60 text-muted-foreground"
-                    : "border-amber-500/40 bg-amber-500/10 text-amber-500",
+                      ? "border-border/60 text-muted-foreground"
+                      : "border-amber-500/40 bg-amber-500/10 text-amber-500",
                 )}
               >
                 {enabled ? "Active" : config ? "Inactive" : "Not Configured"}
@@ -958,13 +243,12 @@ export function SAMLConfigTab() {
               {enabled && domainHint
                 ? `Auto-redirecting @${domainHint} users to SSO`
                 : config
-                ? "SAML is disabled — users use password authentication"
-                : "Create an Identity Provider configuration to enable SSO"}
+                  ? "SAML is disabled - users use password authentication"
+                  : "Create an Identity Provider configuration to enable SSO"}
             </p>
           </div>
         </div>
 
-        {/* Toggle — intentionally placed right next to the status indicator */}
         <div className="flex items-center gap-3 sm:shrink-0">
           <span className="text-xs font-medium text-muted-foreground">
             {enabled ? "Enabled" : "Disabled"}
@@ -999,7 +283,6 @@ export function SAMLConfigTab() {
         </div>
       </Card>
 
-      {/* Sub-navigation tabs */}
       <div className="flex items-center gap-1 self-start rounded-xl border border-border/50 bg-muted/20 p-1">
         {SUB_TABS.map(({ id, label, icon: Icon }) => {
           const isActive = activeSubTab === id;
@@ -1022,10 +305,7 @@ export function SAMLConfigTab() {
         })}
       </div>
 
-      {/* Panel content */}
-      {activeSubTab === "guide" && (
-        <SetupGuidePanel onNav={setActiveSubTab} />
-      )}
+      {activeSubTab === "guide" && <SetupGuidePanel onNav={setActiveSubTab} />}
       {activeSubTab === "sp" && <ServiceProviderPanel config={config} />}
       {activeSubTab === "idp" && (
         <IdentityProviderPanel
@@ -1037,16 +317,14 @@ export function SAMLConfigTab() {
         />
       )}
 
-      {/* Delete confirmation */}
       <ConfirmationDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title="Remove SAML configuration?"
         description={
           <span>
-            This permanently deletes the SAML integration for{" "}
-            <strong>{configName}</strong>. All users will revert to password
-            authentication. This cannot be undone.
+            This permanently deletes the SAML integration for <strong>{configName}</strong>. All
+            users will revert to password authentication. This cannot be undone.
           </span>
         }
         confirmText="Yes, remove"
