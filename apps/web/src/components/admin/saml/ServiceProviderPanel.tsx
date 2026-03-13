@@ -19,14 +19,23 @@ export function ServiceProviderPanel({ config }: ServiceProviderPanelProps) {
       return;
     }
 
+    if (!config.sp_metadata_url) {
+      toast.error("Unable to open metadata URL", {
+        description: "The metadata URL is not configured yet.",
+      });
+      return;
+    }
+
     // Keep backend as the single source of truth for SP metadata.
-    const opened = window.open(config.sp_metadata_url, "_blank", "noopener,noreferrer");
+    const opened = window.open(config.sp_metadata_url, "_blank");
     if (!opened) {
       toast.error("Unable to open metadata URL", {
         description: "Please allow pop-ups and try again.",
       });
       return;
     }
+
+    opened.opener = null;
 
     toast.success("SP metadata opened", {
       description: "Using backend-generated metadata to avoid drift.",
