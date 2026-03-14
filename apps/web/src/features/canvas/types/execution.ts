@@ -7,20 +7,10 @@ import type { CanvasNode } from "../types";
 import type { Edge } from "@xyflow/react";
 
 // Node execution status
-export type NodeExecutionStatus =
-  | "idle"
-  | "running"
-  | "success"
-  | "failed"
-  | "waiting";
+export type NodeExecutionStatus = "idle" | "running" | "success" | "failed" | "waiting";
 
 // Overall workflow execution status
-export type WorkflowExecutionStatus =
-  | "idle"
-  | "running"
-  | "completed"
-  | "failed"
-  | "halted";
+export type WorkflowExecutionStatus = "idle" | "running" | "completed" | "failed" | "halted";
 
 // Error structure from RTES
 export interface NodeError {

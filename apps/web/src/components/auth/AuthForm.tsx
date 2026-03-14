@@ -24,10 +24,7 @@ const signUpSchema = z.object({
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[a-z]/, "Password must contain at least one lowercase letter")
     .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(
-      /[!@#$%^&*(),.?":{}|<>]/,
-      "Password must contain at least one special character"
-    ),
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
 });
 
 type SignUpForm = z.infer<typeof signUpSchema>;
@@ -61,13 +58,11 @@ export function AuthForm() {
   }
 
   return (
-    <form
-      className="space-y-5"
-      onSubmit={form.handleSubmit(onSubmit)}
-      noValidate
-    >
+    <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-zinc-400">Name</Label>
+        <Label htmlFor="name" className="text-zinc-400">
+          Name
+        </Label>
         <Input
           id="name"
           placeholder="Jane Doe"
@@ -76,15 +71,15 @@ export function AuthForm() {
           aria-invalid={!!form.formState.errors.name}
         />
         {form.formState.errors.name ? (
-          <p className="text-xs text-red-400 mt-1">
-            {form.formState.errors.name.message}
-          </p>
+          <p className="text-xs text-red-400 mt-1">{form.formState.errors.name.message}</p>
         ) : (
           <p className="text-xs text-zinc-500 mt-1">3-40 characters</p>
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-zinc-400">Email</Label>
+        <Label htmlFor="email" className="text-zinc-400">
+          Email
+        </Label>
         <Input
           id="email"
           type="email"
@@ -94,13 +89,13 @@ export function AuthForm() {
           aria-invalid={!!form.formState.errors.email}
         />
         {form.formState.errors.email ? (
-          <p className="text-xs text-red-400 mt-1">
-            {form.formState.errors.email.message}
-          </p>
+          <p className="text-xs text-red-400 mt-1">{form.formState.errors.email.message}</p>
         ) : null}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-zinc-400">Password</Label>
+        <Label htmlFor="password" className="text-zinc-400">
+          Password
+        </Label>
         <PasswordInput
           id="password"
           placeholder="Create a secure password"
@@ -109,9 +104,7 @@ export function AuthForm() {
           aria-invalid={!!form.formState.errors.password}
         />
         {form.formState.errors.password ? (
-          <p className="text-xs text-red-400 mt-1">
-            {form.formState.errors.password.message}
-          </p>
+          <p className="text-xs text-red-400 mt-1">{form.formState.errors.password.message}</p>
         ) : (
           <p className="text-xs text-zinc-500 mt-1">
             8+ characters, uppercase, lowercase, number, and special character
@@ -125,7 +118,7 @@ export function AuthForm() {
           </p>
         </div>
       ) : null}
-      
+
       <Button
         type="submit"
         className="w-full h-11 rounded-full bg-white !text-black hover:bg-zinc-200 font-medium transition-all shadow-lg mt-2"

@@ -15,10 +15,5 @@ const sizeGap: Record<SectionSize, string> = {
 };
 
 export function Section({ className, size = "lg", ...props }: SectionProps) {
-  return (
-    <section
-      className={cn("flex flex-col", sizeGap[size], className)}
-      {...props}
-    />
-  );
+  return <section className={cn("flex flex-col", sizeGap[size], className)} {...props} />;
 }

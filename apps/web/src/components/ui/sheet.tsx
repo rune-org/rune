@@ -30,9 +30,7 @@ SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 type SheetSide = "top" | "right" | "bottom" | "left";
 
-type SheetContentProps = React.ComponentPropsWithoutRef<
-  typeof SheetPrimitive.Content
-> & {
+type SheetContentProps = React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> & {
   side?: SheetSide;
   overlayClassName?: string;
 };
@@ -47,13 +45,10 @@ const SheetContent = React.forwardRef<
       ref={ref}
       className={cn(
         "fixed z-50 flex flex-col gap-6 bg-card p-6 shadow-lg shadow-black/50",
-        side === "right" &&
-          "inset-y-0 right-0 h-full w-[19rem] border-l border-border/70",
-        side === "left" &&
-          "inset-y-0 left-0 h-full w-[19rem] border-r border-border/70",
+        side === "right" && "inset-y-0 right-0 h-full w-[19rem] border-l border-border/70",
+        side === "left" && "inset-y-0 left-0 h-full w-[19rem] border-r border-border/70",
         side === "top" && "inset-x-0 top-0 w-full border-b border-border/70",
-        side === "bottom" &&
-          "inset-x-0 bottom-0 w-full border-t border-border/70",
+        side === "bottom" && "inset-x-0 bottom-0 w-full border-t border-border/70",
         className,
       )}
       data-side={side}
@@ -68,17 +63,11 @@ const SheetContent = React.forwardRef<
 ));
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
-const SheetHeader = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col gap-1", className)} {...props} />
 );
 
-const SheetFooter = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+const SheetFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("mt-auto flex flex-col gap-2", className)} {...props} />
 );
 
@@ -86,11 +75,7 @@ const SheetTitle = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Title>
 >(({ className, ...props }, ref) => (
-  <SheetPrimitive.Title
-    ref={ref}
-    className={cn("text-lg font-semibold", className)}
-    {...props}
-  />
+  <SheetPrimitive.Title ref={ref} className={cn("text-lg font-semibold", className)} {...props} />
 ));
 SheetTitle.displayName = SheetPrimitive.Title.displayName;
 

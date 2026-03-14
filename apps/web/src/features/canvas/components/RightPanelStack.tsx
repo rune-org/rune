@@ -19,10 +19,7 @@ type RightPanelStackProps = {
   readOnly?: boolean;
 };
 
-function isEquivalentSelectedNode(
-  prev: CanvasNode | null,
-  next: CanvasNode | null,
-) {
+function isEquivalentSelectedNode(prev: CanvasNode | null, next: CanvasNode | null) {
   if (prev === next) return true;
   if (!prev || !next) return false;
 
@@ -44,9 +41,7 @@ function areEqual(prev: RightPanelStackProps, next: RightPanelStackProps) {
   );
 }
 
-export const RightPanelStack = memo(function RightPanelStack(
-  props: RightPanelStackProps,
-) {
+export const RightPanelStack = memo(function RightPanelStack(props: RightPanelStackProps) {
   const [isScrybOpen, setIsScrybOpen] = useState(false);
   const { workflowId, readOnly, ...inspectorProps } = props;
 
@@ -62,7 +57,7 @@ export const RightPanelStack = memo(function RightPanelStack(
             "transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
             // When Scryb is open, shrink the max-height of the Inspector to avoid overlap
             // The Inspector handles internal scrolling via overflow-y-auto
-            isScrybOpen ? "max-h-[40vh]" : "max-h-[calc(100vh-12rem)]"
+            isScrybOpen ? "max-h-[40vh]" : "max-h-[calc(100vh-12rem)]",
           )}
         />
       </div>

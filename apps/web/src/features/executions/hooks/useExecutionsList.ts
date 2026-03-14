@@ -4,11 +4,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { toast } from "@/components/ui/toast";
 import { listUserExecutions } from "@/lib/api/workflows";
 import type { ExecutionListItem as ApiExecutionListItem } from "@/client/types.gen";
-import type {
-  ExecutionListItem,
-  ExecutionMetrics,
-  ExecutionFilters,
-} from "../types";
+import type { ExecutionListItem, ExecutionMetrics, ExecutionFilters } from "../types";
 
 function mapExecution(item: ApiExecutionListItem): ExecutionListItem {
   return {
@@ -36,21 +32,15 @@ function calculateMetrics(executions: ExecutionListItem[]): ExecutionMetrics {
     .filter((e) => e.durationMs !== undefined)
     .map((e) => e.durationMs as number);
   const averageDurationMs =
-    durationsMs.length > 0
-      ? durationsMs.reduce((a, b) => a + b, 0) / durationsMs.length
-      : 0;
+    durationsMs.length > 0 ? durationsMs.reduce((a, b) => a + b, 0) / durationsMs.length : 0;
 
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(todayStart);
   weekStart.setDate(weekStart.getDate() - 7);
 
-  const executionsToday = executions.filter(
-    (e) => new Date(e.startedAt) >= todayStart
-  ).length;
-  const executionsThisWeek = executions.filter(
-    (e) => new Date(e.startedAt) >= weekStart
-  ).length;
+  const executionsToday = executions.filter((e) => new Date(e.startedAt) >= todayStart).length;
+  const executionsThisWeek = executions.filter((e) => new Date(e.startedAt) >= weekStart).length;
 
   return {
     totalExecutions,
@@ -68,7 +58,7 @@ function calculateMetrics(executions: ExecutionListItem[]): ExecutionMetrics {
  */
 function applyFilters(
   executions: ExecutionListItem[],
-  filters: ExecutionFilters
+  filters: ExecutionFilters,
 ): ExecutionListItem[] {
   let filtered = executions;
 
@@ -116,10 +106,7 @@ export function useExecutionsList(): UseExecutionsListReturn {
   const [filters, setFilters] = useState<ExecutionFilters>({ status: "all" });
   const [allExecutions, setAllExecutions] = useState<ExecutionListItem[]>([]);
 
-  const executions = useMemo(
-    () => applyFilters(allExecutions, filters),
-    [allExecutions, filters]
-  );
+  const executions = useMemo(() => applyFilters(allExecutions, filters), [allExecutions, filters]);
 
   const metrics = useMemo(() => calculateMetrics(allExecutions), [allExecutions]);
 

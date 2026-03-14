@@ -20,7 +20,7 @@ function getStatusConfig(
   status: WorkflowExecutionStatus,
   wsStatus: WsConnectionStatus,
   error?: string,
-  totalDurationMs?: number
+  totalDurationMs?: number,
 ): StatusConfig | null {
   switch (status) {
     case "running":
@@ -60,9 +60,7 @@ function getStatusConfig(
     case "completed":
       return {
         icon: <CheckCircle className="h-4 w-4" aria-hidden="true" />,
-        text: totalDurationMs
-          ? `Completed in ${totalDurationMs}ms`
-          : "Workflow completed",
+        text: totalDurationMs ? `Completed in ${totalDurationMs}ms` : "Workflow completed",
         className: "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400",
         ariaLabel: totalDurationMs
           ? `Workflow completed successfully in ${totalDurationMs} milliseconds`
@@ -108,7 +106,7 @@ export function ExecutionStatusBar({
 
   const statusConfig = useMemo(
     () => getStatusConfig(state.status, wsStatus, state.error, state.totalDurationMs),
-    [state.status, wsStatus, state.error, state.totalDurationMs]
+    [state.status, wsStatus, state.error, state.totalDurationMs],
   );
 
   // Dismiss with animation
@@ -130,11 +128,7 @@ export function ExecutionStatusBar({
 
   // Auto-dismiss after completion/failure/halt
   useEffect(() => {
-    if (
-      state.status === "completed" ||
-      state.status === "failed" ||
-      state.status === "halted"
-    ) {
+    if (state.status === "completed" || state.status === "failed" || state.status === "halted") {
       const timer = setTimeout(dismiss, AUTO_DISMISS_DELAY);
       return () => clearTimeout(timer);
     }
@@ -148,10 +142,10 @@ export function ExecutionStatusBar({
   // Count completed/total nodes
   const totalNodes = state.nodes.size;
   const completedNodes = Array.from(state.nodes.values()).filter(
-    (n) => n.status === "success" || n.status === "failed"
+    (n) => n.status === "success" || n.status === "failed",
   ).length;
   const runningNodes = Array.from(state.nodes.values()).filter(
-    (n) => n.status === "running"
+    (n) => n.status === "running",
   ).length;
 
   const canDismiss = state.status !== "running";
@@ -165,7 +159,7 @@ export function ExecutionStatusBar({
     <div
       className={cn(
         "absolute bottom-17 left-1/2 z-[30] -translate-x-1/2 transform transition-all duration-300",
-        isExiting && "opacity-0 translate-y-2"
+        isExiting && "opacity-0 translate-y-2",
       )}
     >
       <div
@@ -174,7 +168,7 @@ export function ExecutionStatusBar({
         aria-label={statusConfig.ariaLabel}
         className={cn(
           "flex items-center gap-3 rounded-lg border px-4 py-2.5 shadow-lg backdrop-blur-sm transition-all duration-300",
-          statusConfig.className
+          statusConfig.className,
         )}
       >
         {statusConfig.icon}

@@ -21,10 +21,7 @@ const changePasswordSchema = z
       .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
       .regex(/[a-z]/, "Password must contain at least one lowercase letter")
       .regex(/[0-9]/, "Password must contain at least one number")
-      .regex(
-        /[!@#$%^&*(),.?":{}|<>]/,
-        "Password must contain at least one special character"
-      ),
+      .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
     confirmPassword: z.string().min(1, "Please confirm your new password"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -89,10 +86,7 @@ export function ChangePasswordForm({
     setError(null);
 
     try {
-      const data = await changeMyPassword(
-        values.oldPassword,
-        values.newPassword
-      );
+      const data = await changeMyPassword(values.oldPassword, values.newPassword);
 
       if (!data) {
         setError("Failed to change password");
@@ -121,10 +115,7 @@ export function ChangePasswordForm({
       noValidate
     >
       <div className="space-y-2">
-        <Label
-          htmlFor="oldPassword"
-          className={cn(!isDialog && "text-zinc-400")}
-        >
+        <Label htmlFor="oldPassword" className={cn(!isDialog && "text-zinc-400")}>
           Current Password
         </Label>
         <PasswordInput
@@ -132,7 +123,7 @@ export function ChangePasswordForm({
           placeholder="Enter your current password"
           className={cn(
             !isDialog &&
-              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11"
+              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11",
           )}
           {...form.register("oldPassword")}
           aria-invalid={!!form.formState.errors.oldPassword}
@@ -145,10 +136,7 @@ export function ChangePasswordForm({
       </div>
 
       <div className="space-y-2">
-        <Label
-          htmlFor="newPassword"
-          className={cn(!isDialog && "text-zinc-400")}
-        >
+        <Label htmlFor="newPassword" className={cn(!isDialog && "text-zinc-400")}>
           New Password
         </Label>
         <PasswordInput
@@ -156,7 +144,7 @@ export function ChangePasswordForm({
           placeholder="Create a secure password"
           className={cn(
             !isDialog &&
-              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11"
+              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11",
           )}
           {...form.register("newPassword")}
           aria-invalid={!!form.formState.errors.newPassword}
@@ -173,10 +161,7 @@ export function ChangePasswordForm({
       </div>
 
       <div className="space-y-2">
-        <Label
-          htmlFor="confirmPassword"
-          className={cn(!isDialog && "text-zinc-400")}
-        >
+        <Label htmlFor="confirmPassword" className={cn(!isDialog && "text-zinc-400")}>
           Confirm New Password
         </Label>
         <PasswordInput
@@ -184,7 +169,7 @@ export function ChangePasswordForm({
           placeholder="Confirm your new password"
           className={cn(
             !isDialog &&
-              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11"
+              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11",
           )}
           {...form.register("confirmPassword")}
           aria-invalid={!!form.formState.errors.confirmPassword}
@@ -202,16 +187,10 @@ export function ChangePasswordForm({
             "rounded-lg p-3",
             isDialog
               ? "bg-destructive/10 text-destructive text-sm"
-              : "bg-red-500/10 border border-red-500/20"
+              : "bg-red-500/10 border border-red-500/20",
           )}
         >
-          <p
-            className={cn(
-              "font-medium",
-              isDialog ? "" : "text-xs text-red-400"
-            )}
-            role="alert"
-          >
+          <p className={cn("font-medium", isDialog ? "" : "text-xs text-red-400")} role="alert">
             {error}
           </p>
         </div>
@@ -220,12 +199,7 @@ export function ChangePasswordForm({
       {isDialog ? (
         <div className="flex justify-end gap-2 pt-2">
           {onCancel && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onCancel}
-              disabled={isSubmitting}
-            >
+            <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>
               Cancel
             </Button>
           )}

@@ -44,7 +44,7 @@ function Collapsible({
       }
       onOpenChange?.(nextOpen);
     },
-    [isControlled, onOpenChange]
+    [isControlled, onOpenChange],
   );
 
   return (
@@ -85,7 +85,7 @@ const CollapsibleTrigger = React.forwardRef<HTMLButtonElement, CollapsibleTrigge
         {children}
       </button>
     );
-  }
+  },
 );
 CollapsibleTrigger.displayName = "CollapsibleTrigger";
 
@@ -107,7 +107,7 @@ const CollapsibleContent = React.forwardRef<HTMLDivElement, CollapsibleContentPr
         className={cn(
           "overflow-hidden transition-all",
           open ? "animate-in fade-in" : "animate-out fade-out",
-          className
+          className,
         )}
         hidden={!open && !forceMount}
         {...props}
@@ -115,7 +115,7 @@ const CollapsibleContent = React.forwardRef<HTMLDivElement, CollapsibleContentPr
         {children}
       </div>
     );
-  }
+  },
 );
 CollapsibleContent.displayName = "CollapsibleContent";
 

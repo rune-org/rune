@@ -12,11 +12,7 @@ type SmtpInspectorProps = {
   isExpanded: boolean;
 };
 
-export function SmtpInspector({
-  node,
-  updateData,
-  isExpanded,
-}: SmtpInspectorProps) {
+export function SmtpInspector({ node, updateData, isExpanded }: SmtpInspectorProps) {
   const updateSmtpData = (updater: (data: SmtpData) => SmtpData) => {
     updateData(node.id, "smtp", updater);
   };
@@ -38,7 +34,7 @@ export function SmtpInspector({
         placeholder="Select SMTP credential"
         showHelp={isExpanded}
       />
-      
+
       <label className="block text-xs text-muted-foreground">From</label>
       <input
         className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
@@ -52,9 +48,7 @@ export function SmtpInspector({
         placeholder="sender@example.com"
       />
       {isExpanded && (
-        <div className="text-xs text-muted-foreground/70">
-          Email address of the sender
-        </div>
+        <div className="text-xs text-muted-foreground/70">Email address of the sender</div>
       )}
 
       <label className="block text-xs text-muted-foreground">To</label>
@@ -124,9 +118,7 @@ export function SmtpInspector({
         nodeId={node.id}
       />
       {isExpanded && (
-        <div className="text-xs text-muted-foreground/70">
-          Subject line for the email message
-        </div>
+        <div className="text-xs text-muted-foreground/70">Subject line for the email message</div>
       )}
 
       <label className="block text-xs text-muted-foreground">Body</label>
@@ -142,9 +134,7 @@ export function SmtpInspector({
         nodeId={node.id}
       />
       {isExpanded && (
-        <div className="text-xs text-muted-foreground/70">
-          The content of the email message
-        </div>
+        <div className="text-xs text-muted-foreground/70">The content of the email message</div>
       )}
     </div>
   );

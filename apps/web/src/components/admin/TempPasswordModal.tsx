@@ -31,14 +31,11 @@ export function TempPasswordModal({ open, onClose, email, password }: TempPasswo
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50"
       onClick={onClose}
     >
-      <Card 
-        className="p-6 w-full max-w-md bg-background border"
-        onClick={handleCardClick}
-      >
+      <Card className="p-6 w-full max-w-md bg-background border" onClick={handleCardClick}>
         <h3 className="text-lg font-semibold mb-2">Invitation created</h3>
         <p className="text-sm text-muted-foreground mb-4">
           Share the temporary password with the new user so they can sign in and change it.
