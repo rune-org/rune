@@ -1,0 +1,10 @@
+[project]
+name = "scheduler"
+version = "0.1.0"
+description = "Standalone polling scheduler for Rune workflow automation"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "asyncpg==0.30.0",
+    "aio-pika==9.5.7",
+    "cryptography==46.0.5",
+]
