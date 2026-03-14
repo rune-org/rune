@@ -113,6 +113,7 @@ Once the containers are running, open `http://localhost:3000` in your browser.
 | RTES | 8080 | Real-time execution streaming |
 | Worker | N/A | Execution engine background worker |
 | Archivist | N/A | Data archiver and maintainer |
+| Scheduler | N/A | Scheduled workflow trigger service |
 | PostgreSQL | 5432 | Primary database |
 | MongoDB | 27017 | Execution history |
 | Redis | 6379 | State and caching |
@@ -136,6 +137,7 @@ Rune follows a polyglot microservices architecture, using the right tool for eac
 - **Worker (Go)** - Executes workflows recursively, node by node, with fault tolerance
 - **RTES (Rust)** - Streams execution state in real-time over WebSockets
 - **Frontend (Next.js/React)** - Visual canvas built on React Flow
+- **Scheduler (Python)** - Polls PostgreSQL for due scheduled workflows and publishes them to RabbitMQ
 
 ---
 
@@ -173,6 +175,7 @@ make api-dev         # API on :8000
 make worker-dev      # Background worker
 make rtes-dev        # Real-time execution service
 make archivist-dev   # Archivist worker
+make scheduler-dev   # Scheduled workflow trigger
 ```
 
 ### Project Structure
@@ -184,7 +187,9 @@ rune/
 ├── services/
 │   ├── api/                 # FastAPI backend
 │   ├── rune-worker/         # Go execution engine
-│   └── rtes/                # Rust real-time service
+│   ├── rtes/                # Rust real-time service
+│   ├── archivist/           # Python data archiver
+│   └── scheduler/           # Python scheduled workflow trigger
 └── docker-compose.yml
 ```
 
