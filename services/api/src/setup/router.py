@@ -20,7 +20,7 @@ router = APIRouter(prefix="/setup", tags=["Setup"])
 async def check_setup_status(
     setup_service: SetupService = Depends(get_setup_service),
 ) -> ApiResponse[bool]:
-    requires_setup = await setup_service.is_first_time_setup()
+    requires_setup = await setup_service.requires_setup()
 
     if requires_setup:
         message = "First-time setup required. Please create the initial admin account."
