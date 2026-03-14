@@ -31,4 +31,6 @@ async def run_workflow_internal(
         queue_service=queue_service,
         token_service=None,
     )
-    return ApiResponse(success=True, message="Workflow execution queued", data=execution_id)
+    return ApiResponse(
+        success=True, message="Workflow execution queued", data=execution_id
+    )
