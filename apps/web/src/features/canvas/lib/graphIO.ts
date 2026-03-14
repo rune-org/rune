@@ -17,7 +17,7 @@ export type RFGraph = { nodes: RFNode[]; edges: RFEdge[] };
 export function stripCredentials(graph: RFGraph): RFGraph {
   const nodes = graph.nodes.map((node) => {
     if (node.data && typeof node.data === "object" && "credential" in node.data) {
-      const { credential: _, ...restData } = node.data as Record<string, unknown>;
+      const { credential: _credential, ...restData } = node.data as Record<string, unknown>;
       return {
         ...node,
         data: restData,
@@ -124,9 +124,9 @@ export function sanitizeGraph(graph: RFGraph, allowed = allowedTypeSet()): RFGra
  */
 export function stripExecutionStyling(graph: RFGraph): RFGraph {
   const edges = graph.edges.map((edge) => {
-    const { animated: _, style, ...rest } = edge;
+    const { animated: _animated, style, ...rest } = edge;
     if (style && typeof style === "object") {
-      const { stroke: __, ...restStyle } = style as Record<string, unknown>;
+      const { stroke: _stroke, ...restStyle } = style as Record<string, unknown>;
       const hasOtherStyles = Object.keys(restStyle).length > 0;
       return {
         ...rest,

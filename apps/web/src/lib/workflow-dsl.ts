@@ -527,7 +527,6 @@ export function stripCredentialsFromWorkflowData(workflowData: {
     return { nodes: [], edges };
   }
   const sanitizedNodes = nodes.map((node) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- intentionally omit credentials
     const { credentials: _omit, ...rest } = node;
     return rest;
   });

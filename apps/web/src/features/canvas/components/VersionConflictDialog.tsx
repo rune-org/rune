@@ -23,7 +23,7 @@ interface VersionConflictDialogProps {
 export function VersionConflictDialog({
   open,
   serverVersion,
-  serverVersionId,
+  serverVersionId: _serverVersionId,
   onLoadServer,
   onForceSave,
   onCancel,

@@ -109,7 +109,7 @@ function CanvasPageInner() {
               setEdges(filteredEdges as unknown as CanvasEdge[]);
             }
           }
-        } catch (error) {
+        } catch (_error) {
           // Silently fail if aborted (user navigated away)
         }
         return;

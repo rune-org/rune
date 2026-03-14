@@ -130,7 +130,7 @@ export function useSmith(opts: UseSmithOptions) {
                   nodes: sseEvent.workflow_nodes,
                   edges: sseEvent.workflow_edges,
                 });
-              } catch (err) {
+              } catch (_err) {
                 toast.error("Failed to apply Smith's workflow changes");
               }
               break;

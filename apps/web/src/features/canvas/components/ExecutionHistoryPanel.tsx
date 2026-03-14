@@ -252,7 +252,7 @@ export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps
 
       setRtesDocuments(docMap);
       setHistory(items);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load execution history", {
         action: {
           label: "Retry",

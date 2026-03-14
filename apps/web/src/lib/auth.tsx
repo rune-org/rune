@@ -19,7 +19,7 @@ import {
 } from "@/lib/api/auth";
 import { toast } from "@/components/ui/toast";
 import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
-import type { TokenResponse, UserResponse } from "@/client/types.gen";
+import type { UserResponse } from "@/client/types.gen";
 
 type AuthUser = UserResponse;
 

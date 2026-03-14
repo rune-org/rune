@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -16,7 +15,6 @@ import {
 } from "@/components/ui/empty";
 
 export default function HomeError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };

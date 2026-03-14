@@ -62,6 +62,7 @@ export function ShareWorkflowDialog({
       void loadPermissions();
       void loadAvailableUsers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, workflowId]);
 
   const loadPermissions = async () => {

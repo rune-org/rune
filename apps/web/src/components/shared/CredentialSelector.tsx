@@ -51,7 +51,7 @@ export function CredentialSelector({
         const filtered = response.data.data.filter((cred) => types.includes(cred.credential_type));
         setCredentials(filtered);
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Failed to load credentials");
     } finally {
       setIsLoading(false);

@@ -65,7 +65,7 @@ export function ShareCredentialDialog({
       if (usersRes.data?.data) {
         setUsers(usersRes.data.data);
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to load sharing information");
     } finally {
       setIsLoading(false);

@@ -230,7 +230,7 @@ export function AddCredentialDialog({
       setCredentialType("api_key");
       setCredentialData({});
       setOpen(false);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to create credential");
     } finally {
       setIsSubmitting(false);

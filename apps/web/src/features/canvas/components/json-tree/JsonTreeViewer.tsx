@@ -62,7 +62,7 @@ function TreeNode({
   defaultExpandDepth,
   maxDepth,
   onInsertPath,
-  isLast,
+  isLast: _isLast,
 }: {
   keyName: string | number | null;
   value: unknown;

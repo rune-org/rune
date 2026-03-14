@@ -27,6 +27,7 @@ export default function CreateCredentialsPage() {
   // Fetch credentials on mount
   useEffect(() => {
     loadCredentials();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadCredentials = async () => {
@@ -39,7 +40,7 @@ export default function CreateCredentialsPage() {
       if (response.data && response.data.data) {
         setCredentials(response.data.data);
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error("Failed to load credentials", {
         action: {
           label: "Retry",
@@ -114,7 +115,7 @@ export default function CreateCredentialsPage() {
       await credentialsAPI.deleteCredential(id);
       setCredentials((prev) => prev.filter((c) => c.id !== id));
       toast.success("Credential deleted successfully");
-    } catch (err) {
+    } catch (_err) {
       // Reload credentials to restore UI state on error
       loadCredentials();
       toast.error("Failed to delete credential. Please try again.");

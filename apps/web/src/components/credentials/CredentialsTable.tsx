@@ -95,7 +95,7 @@ export function CredentialsTable({
           try {
             const result = await getMyShareInfo(cred.id);
             return { credId: cred.id, data: result?.data?.data ?? null };
-          } catch (error) {
+          } catch (_error) {
             // Silently fail for individual share info loads
             return { credId: cred.id, data: null };
           }
@@ -135,7 +135,7 @@ export function CredentialsTable({
           try {
             const result = await getUserById(creatorId);
             return { creatorId, name: result?.data?.data?.name ?? null };
-          } catch (error) {
+          } catch (_error) {
             // Silently fail for individual creator name loads
             return { creatorId, name: null };
           }
@@ -167,7 +167,7 @@ export function CredentialsTable({
       await revokeCredentialAccess(credentialId, currentUserId);
       toast.success("You have left the shared credential");
       onSharesChanged?.();
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to leave credential");
     } finally {
       setLeavingCredentialId(null);

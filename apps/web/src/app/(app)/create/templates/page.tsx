@@ -28,7 +28,7 @@ function TemplatesPageInner() {
         if (response.data && !response.error) {
           setTemplates(response.data.data);
         }
-      } catch (error) {
+      } catch (_error) {
         toast.error("Failed to load templates", {
           action: {
             label: "Retry",
