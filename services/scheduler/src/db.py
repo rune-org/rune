@@ -11,7 +11,7 @@ FETCH_DUE_SCHEDULES = """
            w.name       AS workflow_name
     FROM scheduled_workflows sw
     JOIN workflows w ON sw.workflow_id = w.id
-    WHERE sw.is_active = true AND sw.next_run_at <= now()
+    WHERE w.is_active = true AND sw.next_run_at <= now()
     ORDER BY sw.next_run_at
     FOR UPDATE OF sw SKIP LOCKED
 """
@@ -48,5 +48,8 @@ async def poll(conn, api_client) -> None:
         else:
             log.info(
                 "Executed schedule %d | workflow=%s (id=%d) | execution=%s",
-                rows[i]["schedule_id"], rows[i]["workflow_name"], rows[i]["workflow_id"], result,
+                rows[i]["schedule_id"],
+                rows[i]["workflow_name"],
+                rows[i]["workflow_id"],
+                result,
             )
