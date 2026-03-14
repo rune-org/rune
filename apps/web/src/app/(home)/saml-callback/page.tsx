@@ -11,16 +11,13 @@ import { samlExchange } from "@/lib/api/auth";
 import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
 
 const ERROR_MESSAGES: Record<string, string> = {
-  no_config:
-    "No active SSO configuration found. Contact your administrator.",
+  no_config: "No active SSO configuration found. Contact your administrator.",
   assertion_invalid:
     "The identity provider response could not be verified. Please try again or contact your administrator.",
-  account_disabled:
-    "Your account has been disabled. Contact your administrator.",
+  account_disabled: "Your account has been disabled. Contact your administrator.",
 };
 
-const FALLBACK_ERROR =
-  "An unexpected SSO error occurred. Please try signing in again.";
+const FALLBACK_ERROR = "An unexpected SSO error occurred. Please try signing in again.";
 
 // ---------------------------------------------------------------------------
 // Redirect sanitisation — mirrors the backend _safe_redirect_path guard
@@ -115,10 +112,7 @@ function SamlCallbackContent() {
         // -------------------------------------------------------------------
         try {
           localStorage.setItem(REFRESH_TOKEN_KEY, payload.refresh_token);
-          localStorage.setItem(
-            ACCESS_EXP_KEY,
-            String(Date.now() + payload.expires_in * 1000),
-          );
+          localStorage.setItem(ACCESS_EXP_KEY, String(Date.now() + payload.expires_in * 1000));
         } catch {
           // Silently degrade in private-browsing / restricted environments.
           // The session will still work for the current tab via the cookie.
@@ -147,7 +141,6 @@ function SamlCallbackContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
   if (phase === "error") {
     return (
       <AuthCard
@@ -173,10 +166,7 @@ function SamlCallbackContent() {
   }
 
   return (
-    <AuthCard
-      title="Signing you in…"
-      description="Completing SSO authentication, please wait."
-    >
+    <AuthCard title="Signing you in…" description="Completing SSO authentication, please wait.">
       <div className="flex items-center justify-center py-6">
         <div
           className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white"
@@ -190,10 +180,7 @@ function SamlCallbackContent() {
 
 function LoadingFallback() {
   return (
-    <AuthCard
-      title="Signing you in…"
-      description="Completing SSO authentication, please wait."
-    >
+    <AuthCard title="Signing you in…" description="Completing SSO authentication, please wait.">
       <div className="flex items-center justify-center py-6">
         <div
           className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white"
