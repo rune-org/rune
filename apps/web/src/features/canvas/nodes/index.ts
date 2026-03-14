@@ -1,6 +1,7 @@
 import type { NodeTypes } from "@xyflow/react";
 import { AgentNode } from "./AgentNode";
 import { TriggerNode } from "./TriggerNode";
+import { ScheduledTriggerNode } from "./ScheduledTriggerNode";
 import { IfNode } from "./IfNode";
 import { SwitchNode } from "./SwitchNode";
 import { HttpNode } from "./HttpNode";
@@ -14,6 +15,7 @@ import { MergeNode } from "./MergeNode";
 export const nodeTypes: NodeTypes = {
   agent: AgentNode,
   trigger: TriggerNode,
+  scheduledTrigger: ScheduledTriggerNode,
   if: IfNode,
   switch: SwitchNode,
   http: HttpNode,
