@@ -1,4 +1,4 @@
-import type { DateTimeData, EditData, NodeKind } from "../types";
+import type { EditData, NodeKind } from "../types";
 import type { VariableTreeNode } from "./variableSchema";
 
 /**
@@ -44,8 +44,7 @@ export function getStaticOutputSchema(
         { key: "logged_at", path: "logged_at", type: "string", source: "schema" },
       ];
 
-    case "datetime": {
-      const dateTimeData = data as DateTimeData | undefined;
+    case "datetime":
       return [
         {
           key: "result",
@@ -58,7 +57,6 @@ export function getStaticOutputSchema(
         { key: "timezone", path: "timezone", type: "string", source: "schema" },
         { key: "operation", path: "operation", type: "string", source: "schema" },
       ];
-    }
 
     case "edit": {
       const editData = data as EditData | undefined;
