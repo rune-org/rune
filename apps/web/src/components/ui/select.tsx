@@ -42,7 +42,8 @@ const SelectContent = React.forwardRef<
       ref={ref}
       className={cn(
         "z-50 min-w-[8rem] overflow-hidden rounded-[calc(var(--radius)-0.125rem)] border border-border/70 bg-popover shadow-lg shadow-black/40",
-        position === "popper" && "translate-y-1 w-[var(--radix-select-trigger-width)]",
+        position === "popper" &&
+          "translate-y-1 w-[var(--radix-select-trigger-width)]",
         className,
       )}
       position={position}

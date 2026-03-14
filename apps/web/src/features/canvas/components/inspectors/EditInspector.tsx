@@ -20,8 +20,16 @@ type EditInspectorProps = {
 
 const TYPES = ["string", "number", "boolean", "json"] as const;
 const MODES = [
-  { value: "assignments", label: "Set fields", description: "Add or modify fields while keeping existing data" },
-  { value: "keep_only", label: "Replace all", description: "Clear existing data and only set these fields" },
+  {
+    value: "assignments",
+    label: "Set fields",
+    description: "Add or modify fields while keeping existing data",
+  },
+  {
+    value: "keep_only",
+    label: "Replace all",
+    description: "Clear existing data and only set these fields",
+  },
 ] as const;
 
 function sanitizeAssignments(data: EditData): EditAssignment[] {
@@ -29,9 +37,10 @@ function sanitizeAssignments(data: EditData): EditAssignment[] {
   return data.assignments.map((a) => ({
     name: typeof a.name === "string" ? a.name : undefined,
     value: typeof a.value === "string" ? a.value : undefined,
-    type: a.type && TYPES.includes(a.type as (typeof TYPES)[number])
-      ? a.type
-      : "string",
+    type:
+      a.type && TYPES.includes(a.type as (typeof TYPES)[number])
+        ? a.type
+        : "string",
   }));
 }
 
@@ -193,9 +202,7 @@ export function EditInspector({
                 </label>
                 <VariableInput
                   value={assignment.value ?? ""}
-                  onChange={(v) =>
-                    updateField(idx, "value", v)
-                  }
+                  onChange={(v) => updateField(idx, "value", v)}
                   placeholder="{{ $json.field }} or literal"
                   nodeId={node.id}
                 />

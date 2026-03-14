@@ -111,7 +111,9 @@ export interface RtesStackFrame {
 /**
  * Convert RTES status string to our typed status.
  */
-export function parseNodeStatus(status: string | null | undefined): NodeExecutionStatus {
+export function parseNodeStatus(
+  status: string | null | undefined,
+): NodeExecutionStatus {
   if (!status) return "idle";
 
   switch (status.toLowerCase()) {
@@ -134,7 +136,9 @@ export function parseNodeStatus(status: string | null | undefined): NodeExecutio
 /**
  * Convert RTES workflow status to our typed status.
  */
-export function parseWorkflowStatus(status: string | null | undefined): WorkflowExecutionStatus {
+export function parseWorkflowStatus(
+  status: string | null | undefined,
+): WorkflowExecutionStatus {
   if (!status) return "idle";
 
   switch (status.toLowerCase()) {
@@ -157,7 +161,9 @@ export function parseWorkflowStatus(status: string | null | undefined): Workflow
 /**
  * Convert RtesNodeUpdate to NodeExecutionData.
  */
-export function rtesUpdateToNodeData(update: RtesNodeUpdate): NodeExecutionData | null {
+export function rtesUpdateToNodeData(
+  update: RtesNodeUpdate,
+): NodeExecutionData | null {
   if (!update.node_id) return null;
 
   return {

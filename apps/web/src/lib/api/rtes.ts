@@ -12,9 +12,9 @@ import {
   getExecutionExecutionsWorkflowsWorkflowIdExecutionIdGet,
 } from "@/client";
 // Derive HTTP URL from WebSocket URL or use default
-const RTES_WS_URL = process.env.NEXT_PUBLIC_RTES_WS_URL || "ws://localhost:3001/rt";
-const RTES_BASE_URL = RTES_WS_URL
-  .replace("wss://", "https://")
+const RTES_WS_URL =
+  process.env.NEXT_PUBLIC_RTES_WS_URL || "ws://localhost:3001/rt";
+const RTES_BASE_URL = RTES_WS_URL.replace("wss://", "https://")
   .replace("ws://", "http://")
   .replace(/\/rt$/, "");
 
@@ -62,13 +62,14 @@ export interface RtesNodeExecutionInstance {
  * 2. Calls RTES to fetch executions (validates via Redis)
  */
 export async function fetchWorkflowExecutions(
-  workflowId: number
+  workflowId: number,
 ): Promise<RtesExecutionDocument[]> {
   try {
     // Step 1: Request access token from main API (publishes to Redis)
-    const authResponse = await getWorkflowExecutionsExecutionsWorkflowsWorkflowIdGet({
-      path: { workflow_id: workflowId },
-    });
+    const authResponse =
+      await getWorkflowExecutionsExecutionsWorkflowsWorkflowIdGet({
+        path: { workflow_id: workflowId },
+      });
 
     if (authResponse.error || !authResponse.data?.success) {
       console.warn("[RTES API] Failed to get execution access from main API");
@@ -77,7 +78,7 @@ export async function fetchWorkflowExecutions(
 
     // Step 2: Fetch from RTES (validates via Redis token)
     const response = await fetch(
-      `${RTES_BASE_URL}/workflows/${workflowId}/executions`
+      `${RTES_BASE_URL}/workflows/${workflowId}/executions`,
     );
 
     if (!response.ok) {
@@ -106,13 +107,14 @@ export async function fetchWorkflowExecutions(
  */
 export async function fetchExecution(
   executionId: string,
-  workflowId: number
+  workflowId: number,
 ): Promise<RtesExecutionDocument | null> {
   try {
     // Step 1: Request access token from main API (publishes to Redis)
-    const authResponse = await getExecutionExecutionsWorkflowsWorkflowIdExecutionIdGet({
-      path: { workflow_id: workflowId, execution_id: executionId },
-    });
+    const authResponse =
+      await getExecutionExecutionsWorkflowsWorkflowIdExecutionIdGet({
+        path: { workflow_id: workflowId, execution_id: executionId },
+      });
 
     if (authResponse.error || !authResponse.data?.success) {
       console.warn("[RTES API] Failed to get execution access from main API");
@@ -120,9 +122,7 @@ export async function fetchExecution(
     }
 
     // Step 2: Fetch from RTES (validates via Redis token)
-    const response = await fetch(
-      `${RTES_BASE_URL}/executions/${executionId}`
-    );
+    const response = await fetch(`${RTES_BASE_URL}/executions/${executionId}`);
 
     if (!response.ok) {
       if (response.status === 404) {

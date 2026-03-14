@@ -23,7 +23,8 @@ const VALUE_STYLES = {
 
 function formatValue(value: unknown): { text: string; style: string } {
   if (value === null) return { text: "null", style: VALUE_STYLES.null };
-  if (value === undefined) return { text: "undefined", style: VALUE_STYLES.null };
+  if (value === undefined)
+    return { text: "undefined", style: VALUE_STYLES.null };
   switch (typeof value) {
     case "string": {
       const truncated = value.length > 60 ? `${value.slice(0, 60)}...` : value;
@@ -76,18 +77,17 @@ function TreeNode({
   const [isOpen, setIsOpen] = useState(depth < defaultExpandDepth);
 
   const isExpandable =
-    value !== null &&
-    typeof value === "object" &&
-    depth < maxDepth;
+    value !== null && typeof value === "object" && depth < maxDepth;
 
   const entries = useMemo(() => {
     if (!isExpandable || !isOpen) return [];
     if (Array.isArray(value)) {
       return value.map((v, i) => ({ key: i, value: v }));
     }
-    return Object.entries(value as Record<string, unknown>).map(
-      ([k, v]) => ({ key: k, value: v }),
-    );
+    return Object.entries(value as Record<string, unknown>).map(([k, v]) => ({
+      key: k,
+      value: v,
+    }));
   }, [isExpandable, isOpen, value]);
 
   const handleCopyPath = useCallback(

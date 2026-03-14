@@ -43,9 +43,7 @@ export interface WorkflowEdge {
 }
 
 export class MissingNodeCredentialsError extends Error {
-  constructor(
-    public readonly nodes: Array<{ id: string; type: string }>,
-  ) {
+  constructor(public readonly nodes: Array<{ id: string; type: string }>) {
     super(
       `Missing credentials for nodes: ${nodes
         .map((n) => `${n.type} (${n.id})`)
@@ -98,14 +96,20 @@ function nodeName(n: CanvasNode): string {
 }
 
 // Helper to convert comma-separated email string to array
-function emailStringToArray(value: string | undefined): string[] | string | undefined {
+function emailStringToArray(
+  value: string | undefined,
+): string[] | string | undefined {
   if (!value || !value.trim()) return undefined;
   const emails = value
     .split(",")
     .map((e) => e.trim())
     .filter((e) => e.length > 0);
   // Return single string if only one email, array if multiple
-  return emails.length === 1 ? emails[0] : emails.length > 1 ? emails : undefined;
+  return emails.length === 1
+    ? emails[0]
+    : emails.length > 1
+      ? emails
+      : undefined;
 }
 
 // Helper to convert array or single string back to comma-separated string for UI
@@ -319,8 +323,7 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
         ? (params.rules as unknown[])
             .map((rule) => rule as Record<string, unknown>)
             .map((rule) => ({
-              value:
-                typeof rule.value === "string" ? rule.value : undefined,
+              value: typeof rule.value === "string" ? rule.value : undefined,
               operator:
                 typeof rule.operator === "string"
                   ? (rule.operator as SwitchRule["operator"])
@@ -339,8 +342,7 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
       to: emailArrayToString(params.to),
       cc: emailArrayToString(params.cc),
       bcc: emailArrayToString(params.bcc),
-      subject:
-        typeof params.subject === "string" ? params.subject : undefined,
+      subject: typeof params.subject === "string" ? params.subject : undefined,
       body: typeof params.body === "string" ? params.body : undefined,
     };
     return smtpData;
@@ -382,7 +384,11 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
                   : undefined,
               type:
                 typeof assignment.type === "string"
-                  ? (assignment.type as "string" | "number" | "boolean" | "json")
+                  ? (assignment.type as
+                      | "string"
+                      | "number"
+                      | "boolean"
+                      | "json")
                   : undefined,
             };
           })
@@ -537,11 +543,10 @@ export function workflowDataToCanvas(data: {
       (edge as RFEdge & { labelBgStyle?: CSSProperties }).labelBgStyle = {
         fill: bgFill,
       };
-      (edge as RFEdge & { labelBgPadding?: [number, number] }).labelBgPadding = [
-        2,
-        6,
-      ];
-      (edge as RFEdge & { labelBgBorderRadius?: number }).labelBgBorderRadius = 4;
+      (edge as RFEdge & { labelBgPadding?: [number, number] }).labelBgPadding =
+        [2, 6];
+      (edge as RFEdge & { labelBgBorderRadius?: number }).labelBgBorderRadius =
+        4;
 
       const readableLabel =
         switchHandleLabelFromId(switchHandleId || e.label) || e.label;

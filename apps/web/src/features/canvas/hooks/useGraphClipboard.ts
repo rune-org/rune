@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Edge } from "@xyflow/react";
 import type { CanvasNode } from "../types";
-import { sanitizeGraph, stringifyGraph, stripExecutionStyling } from "../lib/graphIO";
+import {
+  sanitizeGraph,
+  stringifyGraph,
+  stripExecutionStyling,
+} from "../lib/graphIO";
 import { workflowDataToCanvas } from "@/lib/workflow-dsl";
 import { toast } from "@/components/ui/toast";
 import { createId } from "../utils/id";
@@ -73,9 +77,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
 
     const selectedEdges = currentEdges
       .filter(
-        (e) =>
-          selectedNodeIds.has(e.source) &&
-          selectedNodeIds.has(e.target),
+        (e) => selectedNodeIds.has(e.source) && selectedNodeIds.has(e.target),
       )
       .map((e) => structuredClone(e));
 
@@ -84,7 +86,10 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
       return;
     }
 
-    const cleaned = stripExecutionStyling({ nodes: selectedNodes, edges: selectedEdges });
+    const cleaned = stripExecutionStyling({
+      nodes: selectedNodes,
+      edges: selectedEdges,
+    });
     const payload = {
       __runeClipboardType: CLIPBOARD_SELECTION_TYPE,
       nodes: cleaned.nodes,
@@ -102,7 +107,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
   const exportToClipboard = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(
-        stringifyGraph({ nodes: nodesRef.current, edges: edgesRef.current })
+        stringifyGraph({ nodes: nodesRef.current, edges: edgesRef.current }),
       );
       toast.success("Exported JSON to clipboard");
     } catch {
@@ -255,22 +260,32 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
 
       // Detect worker DSL format
       const isWorkerDSL = candidate.edges.some(
-        (e) => e && typeof e === "object" && "src" in e && "dst" in e
+        (e) => e && typeof e === "object" && "src" in e && "dst" in e,
       );
 
       // Convert worker DSL to canvas
       const graphData = isWorkerDSL
         ? workflowDataToCanvas({
-            nodes: candidate.nodes as Parameters<typeof workflowDataToCanvas>[0]["nodes"],
-            edges: candidate.edges as Parameters<typeof workflowDataToCanvas>[0]["edges"],
+            nodes: candidate.nodes as Parameters<
+              typeof workflowDataToCanvas
+            >[0]["nodes"],
+            edges: candidate.edges as Parameters<
+              typeof workflowDataToCanvas
+            >[0]["edges"],
           })
-        : { nodes: candidate.nodes as CanvasNode[], edges: candidate.edges as Edge[] };
+        : {
+            nodes: candidate.nodes as CanvasNode[],
+            edges: candidate.edges as Edge[],
+          };
 
       const parsed = sanitizeGraph(graphData);
 
       // For DSL imports, ignore if parsed graph is empty to prevent
       // accidentally clearing the canvas.
-      if (clipboardType !== CLIPBOARD_SELECTION_TYPE && parsed.nodes.length === 0) {
+      if (
+        clipboardType !== CLIPBOARD_SELECTION_TYPE &&
+        parsed.nodes.length === 0
+      ) {
         return;
       }
 
@@ -326,7 +341,14 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
     const el = containerRef.current ?? window;
     el.addEventListener("paste", handler as EventListener);
     return () => el.removeEventListener("paste", handler as EventListener);
-  }, [readOnly, pushHistory, setEdges, setNodes, setSelectedNodeId, containerRef]);
+  }, [
+    readOnly,
+    pushHistory,
+    setEdges,
+    setNodes,
+    setSelectedNodeId,
+    containerRef,
+  ]);
 
   return {
     copySelection,

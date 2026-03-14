@@ -1,11 +1,14 @@
 "use client";
 
 import { Container } from "@/components/shared/Container";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  ArrowRight,
-  Info
-} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ArrowRight, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -16,7 +19,7 @@ const creationOptions = [
     description: "Build a custom workflow from the ground up",
     icon: "/icons/StartFromScratchIcon.svg",
     action: "Create New",
-    href: "/create/app"
+    href: "/create/app",
   },
   {
     id: "template",
@@ -24,7 +27,7 @@ const creationOptions = [
     description: "Choose from pre-built workflow templates",
     icon: "/icons/UseTemplateIcon.svg",
     action: "Browse Templates",
-    href: "/create/templates"
+    href: "/create/templates",
   },
   {
     id: "agent",
@@ -32,8 +35,8 @@ const creationOptions = [
     description: "Let AI help you build your workflow",
     icon: "/icons/AskAgentIcon.svg",
     action: "Start with Smith",
-    href: "/create/smith"
-  }
+    href: "/create/smith",
+  },
 ];
 
 const popularWorkflows = [
@@ -43,7 +46,7 @@ const popularWorkflows = [
     fromIcon: "/icons/social/email.svg",
     toIcon: "/icons/social/stack-alert.svg",
     fromColor: "text-red-400",
-    toColor: "text-purple-400"
+    toColor: "text-purple-400",
   },
   {
     title: "Weather → Morning Email",
@@ -51,7 +54,7 @@ const popularWorkflows = [
     fromIcon: "/icons/social/weather.svg",
     toIcon: "/icons/social/email.svg",
     fromColor: "text-yellow-400",
-    toColor: "text-red-400"
+    toColor: "text-red-400",
   },
   {
     title: "Calendar → Planner",
@@ -59,7 +62,7 @@ const popularWorkflows = [
     fromIcon: "/icons/social/calendar.svg",
     toIcon: "/icons/social/planner.svg",
     fromColor: "text-blue-400",
-    toColor: "text-green-400"
+    toColor: "text-green-400",
   },
   {
     title: "RSS → Discord",
@@ -67,15 +70,18 @@ const popularWorkflows = [
     fromIcon: "/icons/social/rss.svg",
     toIcon: "/icons/social/discord_purple.svg",
     fromColor: "text-orange-400",
-    toColor: "text-indigo-400"
-  }
+    toColor: "text-indigo-400",
+  },
 ];
 
 export default function CreatePage() {
   const router = useRouter();
 
   return (
-    <Container className="flex flex-col gap-12 py-12" widthClassName="max-w-6xl">
+    <Container
+      className="flex flex-col gap-12 py-12"
+      widthClassName="max-w-6xl"
+    >
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
           Build your next workflow.
@@ -89,15 +95,15 @@ export default function CreatePage() {
       <div className="grid gap-6 md:grid-cols-3">
         {creationOptions.map((option) => {
           return (
-            <Card 
-              key={option.id} 
+            <Card
+              key={option.id}
               className="group relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-200 hover:shadow-lg cursor-pointer"
               onClick={() => router.push(option.href)}
             >
               <CardHeader className="text-center pb-6">
                 <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-2xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Image 
-                    src={option.icon} 
+                  <Image
+                    src={option.icon}
                     alt={option.title}
                     width={80}
                     height={80}
@@ -119,22 +125,25 @@ export default function CreatePage() {
         <div className="grid gap-6 md:grid-cols-2">
           {popularWorkflows.map((workflow, index) => {
             return (
-              <Card key={index} className="group hover:shadow-lg transition-all duration-200 cursor-pointer border hover:border-border/80">
+              <Card
+                key={index}
+                className="group hover:shadow-lg transition-all duration-200 cursor-pointer border hover:border-border/80"
+              >
                 <CardHeader>
                   <div className="flex items-center gap-4 mb-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/50">
-                      <Image 
-                        src={workflow.fromIcon} 
-                        alt={`${workflow.title.split(' → ')[0]} icon`}
+                      <Image
+                        src={workflow.fromIcon}
+                        alt={`${workflow.title.split(" → ")[0]} icon`}
                         width={32}
                         height={32}
                       />
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/50">
-                      <Image 
-                        src={workflow.toIcon} 
-                        alt={`${workflow.title.split(' → ')[1]} icon`}
+                      <Image
+                        src={workflow.toIcon}
+                        alt={`${workflow.title.split(" → ")[1]} icon`}
                         width={32}
                         height={32}
                       />
@@ -156,7 +165,8 @@ export default function CreatePage() {
         <CardContent className="flex items-center gap-3 p-6">
           <Info className="h-5 w-5 text-muted-foreground flex-shrink-0" />
           <p className="text-sm text-muted-foreground">
-            Don&apos;t worry, you can customize all template workflows to your services.
+            Don&apos;t worry, you can customize all template workflows to your
+            services.
           </p>
         </CardContent>
       </Card>

@@ -8,13 +8,12 @@ export type SmithSSEEvent =
   | { type: "tool_result"; output: string; call_id: string }
   | { type: "warning"; message: string }
   | {
-    type: "workflow_state";
-    workflow_nodes: WorkflowNode[];
-    workflow_edges: WorkflowEdge[];
-  }
+      type: "workflow_state";
+      workflow_nodes: WorkflowNode[];
+      workflow_edges: WorkflowEdge[];
+    }
   | { type: "error"; message: string; trace?: string }
   | { type: "stream_end" };
-
 
 export interface WorkflowNode {
   id: string;

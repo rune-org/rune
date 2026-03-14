@@ -19,9 +19,7 @@ export type VariableSource = {
 
 const MAX_KEYS = 50;
 
-function inferType(
-  value: unknown,
-): VariableTreeNode["type"] {
+function inferType(value: unknown): VariableTreeNode["type"] {
   if (value === null || value === undefined) return "unknown";
   if (Array.isArray(value)) return "array";
   switch (typeof value) {
@@ -67,8 +65,17 @@ export function jsonToVariableTree(
     }
     // Inspect the first element to infer array element structure
     const elementType = inferType(firstItem);
-    if (elementType === "object" && typeof firstItem === "object" && firstItem !== null) {
-      return jsonToVariableTree(firstItem, `${parentPath}[0]`, maxDepth, currentDepth + 1);
+    if (
+      elementType === "object" &&
+      typeof firstItem === "object" &&
+      firstItem !== null
+    ) {
+      return jsonToVariableTree(
+        firstItem,
+        `${parentPath}[0]`,
+        maxDepth,
+        currentDepth + 1,
+      );
     }
     return [
       {
@@ -95,7 +102,12 @@ export function jsonToVariableTree(
           path: fullPath,
           type: valueType,
           source: "execution" as const,
-          children: jsonToVariableTree(value, fullPath, maxDepth, currentDepth + 1),
+          children: jsonToVariableTree(
+            value,
+            fullPath,
+            maxDepth,
+            currentDepth + 1,
+          ),
         };
       }
 

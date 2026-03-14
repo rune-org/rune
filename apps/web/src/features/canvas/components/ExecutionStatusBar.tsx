@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { Loader2, CheckCircle, XCircle, AlertTriangle, Clock, X } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Clock,
+  X,
+} from "lucide-react";
 import { useExecution } from "../context/ExecutionContext";
 import type { WorkflowExecutionStatus } from "../types/execution";
 import type { WsConnectionStatus } from "../hooks/useRtesWebSocket";
@@ -20,7 +27,7 @@ function getStatusConfig(
   status: WorkflowExecutionStatus,
   wsStatus: WsConnectionStatus,
   error?: string,
-  totalDurationMs?: number
+  totalDurationMs?: number,
 ): StatusConfig | null {
   switch (status) {
     case "running":
@@ -28,8 +35,10 @@ function getStatusConfig(
         return {
           icon: <AlertTriangle className="h-4 w-4" aria-hidden="true" />,
           text: "Execution started; live status unavailable",
-          className: "bg-yellow-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-300",
-          ariaLabel: "Workflow execution started, but live status is unavailable",
+          className:
+            "bg-yellow-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-300",
+          ariaLabel:
+            "Workflow execution started, but live status is unavailable",
         };
       }
 
@@ -37,7 +46,8 @@ function getStatusConfig(
         return {
           icon: <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />,
           text: "Reconnecting...",
-          className: "bg-yellow-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-300",
+          className:
+            "bg-yellow-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-300",
           ariaLabel: "Reconnecting workflow live status",
         };
       }
@@ -46,7 +56,8 @@ function getStatusConfig(
         return {
           icon: <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />,
           text: "Connecting...",
-          className: "bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400",
+          className:
+            "bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400",
           ariaLabel: "Connecting workflow live status",
         };
       }
@@ -54,7 +65,8 @@ function getStatusConfig(
       return {
         icon: <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />,
         text: "Executing workflow...",
-        className: "bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400",
+        className:
+          "bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400",
         ariaLabel: "Workflow execution in progress",
       };
     case "completed":
@@ -63,7 +75,8 @@ function getStatusConfig(
         text: totalDurationMs
           ? `Completed in ${totalDurationMs}ms`
           : "Workflow completed",
-        className: "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400",
+        className:
+          "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400",
         ariaLabel: totalDurationMs
           ? `Workflow completed successfully in ${totalDurationMs} milliseconds`
           : "Workflow completed successfully",
@@ -72,14 +85,16 @@ function getStatusConfig(
       return {
         icon: <XCircle className="h-4 w-4" aria-hidden="true" />,
         text: error ?? "Workflow failed",
-        className: "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400",
+        className:
+          "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400",
         ariaLabel: `Workflow failed: ${error ?? "Unknown error"}`,
       };
     case "halted":
       return {
         icon: <AlertTriangle className="h-4 w-4" aria-hidden="true" />,
         text: "Workflow halted",
-        className: "bg-yellow-500/10 border-yellow-500/30 text-yellow-600 dark:text-yellow-400",
+        className:
+          "bg-yellow-500/10 border-yellow-500/30 text-yellow-600 dark:text-yellow-400",
         ariaLabel: "Workflow execution halted",
       };
     case "idle":
@@ -107,8 +122,14 @@ export function ExecutionStatusBar({
   const [isExiting, setIsExiting] = useState(false);
 
   const statusConfig = useMemo(
-    () => getStatusConfig(state.status, wsStatus, state.error, state.totalDurationMs),
-    [state.status, wsStatus, state.error, state.totalDurationMs]
+    () =>
+      getStatusConfig(
+        state.status,
+        wsStatus,
+        state.error,
+        state.totalDurationMs,
+      ),
+    [state.status, wsStatus, state.error, state.totalDurationMs],
   );
 
   // Dismiss with animation
@@ -148,10 +169,10 @@ export function ExecutionStatusBar({
   // Count completed/total nodes
   const totalNodes = state.nodes.size;
   const completedNodes = Array.from(state.nodes.values()).filter(
-    (n) => n.status === "success" || n.status === "failed"
+    (n) => n.status === "success" || n.status === "failed",
   ).length;
   const runningNodes = Array.from(state.nodes.values()).filter(
-    (n) => n.status === "running"
+    (n) => n.status === "running",
   ).length;
 
   const canDismiss = state.status !== "running";
@@ -165,7 +186,7 @@ export function ExecutionStatusBar({
     <div
       className={cn(
         "absolute bottom-17 left-1/2 z-[30] -translate-x-1/2 transform transition-all duration-300",
-        isExiting && "opacity-0 translate-y-2"
+        isExiting && "opacity-0 translate-y-2",
       )}
     >
       <div
@@ -174,7 +195,7 @@ export function ExecutionStatusBar({
         aria-label={statusConfig.ariaLabel}
         className={cn(
           "flex items-center gap-3 rounded-lg border px-4 py-2.5 shadow-lg backdrop-blur-sm transition-all duration-300",
-          statusConfig.className
+          statusConfig.className,
         )}
       >
         {statusConfig.icon}

@@ -3,7 +3,8 @@
 import { useState, useCallback, useRef, useMemo } from "react";
 
 /** Regex matching Go resolver's $ notation: $nodeName or $nodeName.field.path */
-const VARIABLE_REGEX = /\$([a-zA-Z_][a-zA-Z0-9_-]*)(?:\.([a-zA-Z0-9_\[\]\.\-]+))?/g;
+const VARIABLE_REGEX =
+  /\$([a-zA-Z_][a-zA-Z0-9_-]*)(?:\.([a-zA-Z0-9_\[\]\.\-]+))?/g;
 
 export type VariableMatch = {
   full: string;
@@ -109,7 +110,10 @@ function nodeContainsTarget(node: Node, target: Node): boolean {
   return (node as Element).contains(target);
 }
 
-function countRawAtElementBoundary(element: HTMLElement, boundaryOffset: number): number {
+function countRawAtElementBoundary(
+  element: HTMLElement,
+  boundaryOffset: number,
+): number {
   const children = Array.from(element.childNodes);
   const safeBoundary = Math.max(0, Math.min(boundaryOffset, children.length));
   let total = 0;
@@ -195,7 +199,10 @@ type CursorDomPosition = {
   offset: number;
 };
 
-function parentOffsetForNode(node: Node, after: boolean): CursorDomPosition | null {
+function parentOffsetForNode(
+  node: Node,
+  after: boolean,
+): CursorDomPosition | null {
   const parent = node.parentNode;
   if (!parent) return null;
 
@@ -307,7 +314,10 @@ function resolveCursorAtChildEnd(
   if (child.nodeType === Node.TEXT_NODE) {
     return {
       container: child,
-      offset: domOffsetFromRawTextOffset(child.textContent ?? "", childRawLength),
+      offset: domOffsetFromRawTextOffset(
+        child.textContent ?? "",
+        childRawLength,
+      ),
     };
   }
 
@@ -496,7 +506,10 @@ export function useVariableInput({ value, onChange }: UseVariableInputOptions) {
         const afterDollar = beforeCursor.slice(dollarIdx + 1);
         // Only trigger if $ is followed by nothing, or a letter/underscore (variable name start)
         // Skip if it starts with a digit (e.g. $5 for prices) or has whitespace
-        if (!/\s/.test(afterDollar) && (afterDollar.length === 0 || /^[a-zA-Z_]/.test(afterDollar))) {
+        if (
+          !/\s/.test(afterDollar) &&
+          (afterDollar.length === 0 || /^[a-zA-Z_]/.test(afterDollar))
+        ) {
           // Calculate pixel offset of cursor relative to the editable container
           const sel = window.getSelection();
           if (sel && sel.rangeCount > 0) {
@@ -533,7 +546,9 @@ export function useVariableInput({ value, onChange }: UseVariableInputOptions) {
         autocompleteRange.start >= 0 &&
         autocompleteRange.end >= autocompleteRange.start &&
         autocompleteRange.end <= value.length &&
-        value.slice(autocompleteRange.start, autocompleteRange.end).startsWith("$");
+        value
+          .slice(autocompleteRange.start, autocompleteRange.end)
+          .startsWith("$");
 
       if (hasValidRange && autocompleteRange) {
         newValue =
@@ -545,7 +560,8 @@ export function useVariableInput({ value, onChange }: UseVariableInputOptions) {
         // Fallback: insert at cursor position
         const pos = getCursorOffset(el);
         const effectivePos = pos >= 0 ? pos : value.length;
-        newValue = value.slice(0, effectivePos) + path + value.slice(effectivePos);
+        newValue =
+          value.slice(0, effectivePos) + path + value.slice(effectivePos);
         newCursorRawPos = effectivePos + path.length;
       }
 
@@ -569,7 +585,8 @@ export function useVariableInput({ value, onChange }: UseVariableInputOptions) {
       const el = editableRef.current;
       const pos = el ? getCursorOffset(el) : -1;
       const effectivePos = pos >= 0 ? pos : value.length;
-      const newValue = value.slice(0, effectivePos) + path + value.slice(effectivePos);
+      const newValue =
+        value.slice(0, effectivePos) + path + value.slice(effectivePos);
       const newCursorRawPos = effectivePos + path.length;
       onChange(newValue);
 

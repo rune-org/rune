@@ -21,13 +21,13 @@ interface UseUserManagementReturn {
   createUser: (
     name: string,
     email: string,
-    role: "user" | "admin"
+    role: "user" | "admin",
   ) => Promise<CreateUserResponse | null>;
   updateUser: (
     userId: number,
     name: string,
     email: string,
-    role: "user" | "admin"
+    role: "user" | "admin",
   ) => Promise<boolean>;
   deleteUser: (userId: number) => Promise<boolean>;
   toggleUserStatus: (userId: number, isActive: boolean) => Promise<boolean>;
@@ -37,7 +37,7 @@ interface UseUserManagementReturn {
  * Type guard for API errors that may contain detail or message fields
  */
 function isErrorWithDetail(
-  error: unknown
+  error: unknown,
 ): error is { detail?: string; message?: string } {
   return (
     typeof error === "object" &&
@@ -49,10 +49,7 @@ function isErrorWithDetail(
 /**
  * Safely extracts an error message from unknown error types
  */
-function extractErrorMessage(
-  error: unknown,
-  fallback: string
-): string {
+function extractErrorMessage(error: unknown, fallback: string): string {
   if (isErrorWithDetail(error)) {
     return error.detail ?? error.message ?? fallback;
   }
@@ -85,13 +82,13 @@ export function useUserManagement(): UseUserManagementReturn {
     async (
       name: string,
       email: string,
-      role: "user" | "admin"
+      role: "user" | "admin",
     ): Promise<CreateUserResponse | null> => {
       const normalized = email.trim().toLowerCase();
 
       // Prevent inviting existing users
       const alreadyExists = users.some(
-        (u) => u.email.toLowerCase() === normalized
+        (u) => u.email.toLowerCase() === normalized,
       );
 
       if (alreadyExists) {
@@ -121,15 +118,12 @@ export function useUserManagement(): UseUserManagementReturn {
         return created;
       } catch (err: unknown) {
         console.error("Failed to create user:", err);
-        const errorMessage = extractErrorMessage(
-          err,
-          "Failed to create user"
-        );
+        const errorMessage = extractErrorMessage(err, "Failed to create user");
         toast.error(errorMessage);
         return null;
       }
     },
-    [users, fetchUsers]
+    [users, fetchUsers],
   );
 
   const updateUser = useCallback(
@@ -137,7 +131,7 @@ export function useUserManagement(): UseUserManagementReturn {
       userId: number,
       name: string,
       email: string,
-      role: "user" | "admin"
+      role: "user" | "admin",
     ): Promise<boolean> => {
       const payload: AdminUserUpdate = {
         name,
@@ -156,15 +150,12 @@ export function useUserManagement(): UseUserManagementReturn {
         return true;
       } catch (err: unknown) {
         console.error("Failed to update user:", err);
-        const errorMessage = extractErrorMessage(
-          err,
-          "Failed to update user"
-        );
+        const errorMessage = extractErrorMessage(err, "Failed to update user");
         toast.error(errorMessage);
         return false;
       }
     },
-    [fetchUsers]
+    [fetchUsers],
   );
 
   const deleteUser = useCallback(
@@ -179,47 +170,36 @@ export function useUserManagement(): UseUserManagementReturn {
         return true;
       } catch (err: unknown) {
         console.error("Failed to delete user:", err);
-        const errorMessage = extractErrorMessage(
-          err,
-          "Failed to delete user"
-        );
+        const errorMessage = extractErrorMessage(err, "Failed to delete user");
         toast.error(errorMessage);
         return false;
       }
     },
-    [fetchUsers]
+    [fetchUsers],
   );
 
   const toggleUserStatus = useCallback(
-    async (
-      userId: number,
-      isActive: boolean
-    ): Promise<boolean> => {
+    async (userId: number, isActive: boolean): Promise<boolean> => {
       try {
         await setUserStatusUsersUserIdStatusPatch({
           path: { user_id: userId },
           body: { is_active: isActive },
         });
 
-        toast.success(
-          isActive ? "User activated" : "User deactivated"
-        );
+        toast.success(isActive ? "User activated" : "User deactivated");
         await fetchUsers();
         return true;
       } catch (err: unknown) {
-        console.error(
-          "Failed to update user status:",
-          err
-        );
+        console.error("Failed to update user status:", err);
         const errorMessage = extractErrorMessage(
           err,
-          "Failed to update user status"
+          "Failed to update user status",
         );
         toast.error(errorMessage);
         return false;
       }
     },
-    [fetchUsers]
+    [fetchUsers],
   );
 
   return {

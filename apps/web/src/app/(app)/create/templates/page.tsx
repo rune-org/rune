@@ -61,13 +61,16 @@ function TemplatesPageInner() {
   };
 
   // Group templates by category
-  const templatesByCategory = templates.reduce((acc, template) => {
-    if (!acc[template.category]) {
-      acc[template.category] = [];
-    }
-    acc[template.category].push(template);
-    return acc;
-  }, {} as Record<string, TemplateSummary[]>);
+  const templatesByCategory = templates.reduce(
+    (acc, template) => {
+      if (!acc[template.category]) {
+        acc[template.category] = [];
+      }
+      acc[template.category].push(template);
+      return acc;
+    },
+    {} as Record<string, TemplateSummary[]>,
+  );
 
   // Get recently used templates (for now, just show the first one)
   const recentlyUsed = templates.length > 0 ? [templates[0]] : [];
@@ -101,9 +104,14 @@ function TemplatesPageInner() {
   };
   if (loading) {
     return (
-      <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
+      <Container
+        className="flex flex-col gap-8 py-12"
+        widthClassName="max-w-6xl"
+      >
         <PageHeader title="Templates" />
-        <div className="text-center text-muted-foreground">Loading templates...</div>
+        <div className="text-center text-muted-foreground">
+          Loading templates...
+        </div>
       </Container>
     );
   }
@@ -111,7 +119,10 @@ function TemplatesPageInner() {
   // If a category is selected, show the category view
   if (selectedCategory) {
     return (
-      <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
+      <Container
+        className="flex flex-col gap-8 py-12"
+        widthClassName="max-w-6xl"
+      >
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -132,7 +143,9 @@ function TemplatesPageInner() {
                 className="transition-colors hover:border-accent/50 hover:bg-accent/10"
               >
                 <CardContent className="flex flex-col p-5">
-                  <CardTitle className="mb-1 text-base font-semibold">{template.name}</CardTitle>
+                  <CardTitle className="mb-1 text-base font-semibold">
+                    {template.name}
+                  </CardTitle>
                   <CardDescription className="mb-4 text-sm">
                     {template.description}
                   </CardDescription>
@@ -178,7 +191,12 @@ function TemplatesPageInner() {
               onClick={() => handleUseTemplate(template.id)}
             >
               {/* TODO(fe): Use actual template icon when available */}
-              <Image src="/icons/social/email.svg" alt="template" width={20} height={20} /> 
+              <Image
+                src="/icons/social/email.svg"
+                alt="template"
+                width={20}
+                height={20}
+              />
               <span className="text-sm">{template.name}</span>
             </div>
           ))}
@@ -194,9 +212,14 @@ function TemplatesPageInner() {
         {trendingTemplates.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {trendingTemplates.map((template) => (
-              <Card key={template.id} className="transition-colors hover:border-accent/50 hover:bg-accent/10">
+              <Card
+                key={template.id}
+                className="transition-colors hover:border-accent/50 hover:bg-accent/10"
+              >
                 <CardContent className="flex flex-col p-5">
-                  <CardTitle className="mb-1 text-base font-semibold">{template.name}</CardTitle>
+                  <CardTitle className="mb-1 text-base font-semibold">
+                    {template.name}
+                  </CardTitle>
                   <CardDescription className="mb-4 text-sm">
                     {template.description}
                   </CardDescription>
@@ -232,21 +255,47 @@ function TemplatesPageInner() {
           {/* Static category icons mapping */}
           {[
             { name: "email", icon: <Mail size={16} />, displayName: "Email" },
-            { name: "analytics", icon: <BarChart size={16} />, displayName: "Analytics" },
-            { name: "development", icon: <Code size={16} />, displayName: "Development" },
+            {
+              name: "analytics",
+              icon: <BarChart size={16} />,
+              displayName: "Analytics",
+            },
+            {
+              name: "development",
+              icon: <Code size={16} />,
+              displayName: "Development",
+            },
             { name: "cloud", icon: <Cloud size={16} />, displayName: "Cloud" },
-            { name: "scheduling", icon: <Calendar size={16} />, displayName: "Scheduling" },
-            { name: "social_media", icon: <Share2 size={16} />, displayName: "Social Media" },
+            {
+              name: "scheduling",
+              icon: <Calendar size={16} />,
+              displayName: "Scheduling",
+            },
+            {
+              name: "social_media",
+              icon: <Share2 size={16} />,
+              displayName: "Social Media",
+            },
           ]
             .filter((cat) => categories.includes(cat.name))
-            .concat([{ name: "all", icon: <FileText size={16} />, displayName: "All Templates" }])
+            .concat([
+              {
+                name: "all",
+                icon: <FileText size={16} />,
+                displayName: "All Templates",
+              },
+            ])
             .map((cat, i) => (
               <div
                 key={i}
-                onClick={() => router.push(`/create/templates?category=${cat.name}`)}
+                onClick={() =>
+                  router.push(`/create/templates?category=${cat.name}`)
+                }
                 className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/30 p-3 transition-colors hover:bg-accent/10 cursor-pointer"
               >
-                <div className="rounded-md bg-background/70 p-1.5">{cat.icon}</div>
+                <div className="rounded-md bg-background/70 p-1.5">
+                  {cat.icon}
+                </div>
                 <span className="text-sm">{cat.displayName}</span>
               </div>
             ))}
@@ -267,9 +316,14 @@ export default function TemplatesPage() {
   return (
     <Suspense
       fallback={
-        <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
+        <Container
+          className="flex flex-col gap-8 py-12"
+          widthClassName="max-w-6xl"
+        >
           <PageHeader title="Templates" />
-          <div className="text-center text-muted-foreground">Loading templates...</div>
+          <div className="text-center text-muted-foreground">
+            Loading templates...
+          </div>
         </Container>
       }
     >

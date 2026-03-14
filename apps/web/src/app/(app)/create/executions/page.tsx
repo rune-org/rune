@@ -19,14 +19,8 @@ import { MetricsCards } from "@/features/executions/components/MetricsCards";
 import type { ExecutionListStatus } from "@/features/executions/types";
 
 export default function ExecutionsPage() {
-  const {
-    executions,
-    metrics,
-    isLoading,
-    filters,
-    setFilters,
-    refresh,
-  } = useExecutionsList();
+  const { executions, metrics, isLoading, filters, setFilters, refresh } =
+    useExecutionsList();
 
   const handleStatusFilterChange = (value: string) => {
     setFilters({
@@ -68,9 +62,11 @@ export default function ExecutionsPage() {
             size="sm"
             onClick={refresh}
             disabled={isLoading}
-            >
-              <RefreshCw className={isLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-            </Button>
+          >
+            <RefreshCw
+              className={isLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"}
+            />
+          </Button>
         </div>
       </div>
 
@@ -86,13 +82,11 @@ export default function ExecutionsPage() {
             Recent Executions
           </h2>
           <div className="text-sm text-muted-foreground">
-            {executions.length} {executions.length === 1 ? "execution" : "executions"}
+            {executions.length}{" "}
+            {executions.length === 1 ? "execution" : "executions"}
           </div>
         </div>
-        <ExecutionsTable
-          executions={executions}
-          isLoading={isLoading}
-        />
+        <ExecutionsTable executions={executions} isLoading={isLoading} />
       </div>
     </Container>
   );

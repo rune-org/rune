@@ -12,7 +12,10 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { useNodeExecution } from "../../context/ExecutionContext";
-import type { NodeExecutionStatus, NodeExecutionData } from "../../types/execution";
+import type {
+  NodeExecutionStatus,
+  NodeExecutionData,
+} from "../../types/execution";
 import { cn } from "@/lib/cn";
 import {
   Collapsible,
@@ -27,7 +30,13 @@ interface RuntimeDataPanelProps {
   nodeLabel?: string;
 }
 
-function StatusBadge({ status, durationMs }: { status: NodeExecutionStatus; durationMs?: number }) {
+function StatusBadge({
+  status,
+  durationMs,
+}: {
+  status: NodeExecutionStatus;
+  durationMs?: number;
+}) {
   const statusConfig = useMemo(() => {
     switch (status) {
       case "running":
@@ -64,7 +73,12 @@ function StatusBadge({ status, durationMs }: { status: NodeExecutionStatus; dura
   }, [status]);
 
   return (
-    <div className={cn("flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium", statusConfig.className)}>
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",
+        statusConfig.className,
+      )}
+    >
       {statusConfig.icon}
       <span>{statusConfig.text}</span>
       {durationMs !== undefined && (
@@ -171,7 +185,9 @@ function ErrorDisplay({ error }: { error: NodeExecutionData["error"] }) {
         )}
         {error.details !== undefined && (
           <pre className="mt-2 max-h-32 overflow-auto rounded bg-red-500/10 p-2 font-mono text-[10px]">
-            {typeof error.details === "string" ? error.details : JSON.stringify(error.details, null, 2)}
+            {typeof error.details === "string"
+              ? error.details
+              : JSON.stringify(error.details, null, 2)}
           </pre>
         )}
       </div>
@@ -197,11 +213,26 @@ export function RuntimeDataPanel({ nodeId, nodeLabel }: RuntimeDataPanelProps) {
 
   return (
     <div className="space-y-4">
-      <StatusBadge status={nodeExecution.status} durationMs={nodeExecution.durationMs} />
+      <StatusBadge
+        status={nodeExecution.status}
+        durationMs={nodeExecution.durationMs}
+      />
 
-      <JsonSection label="Input" data={nodeExecution.input} nodeLabel={nodeLabel} />
-      <JsonSection label="Parameters" data={nodeExecution.parameters} nodeLabel={nodeLabel} />
-      <JsonSection label="Output" data={nodeExecution.output} nodeLabel={nodeLabel} />
+      <JsonSection
+        label="Input"
+        data={nodeExecution.input}
+        nodeLabel={nodeLabel}
+      />
+      <JsonSection
+        label="Parameters"
+        data={nodeExecution.parameters}
+        nodeLabel={nodeLabel}
+      />
+      <JsonSection
+        label="Output"
+        data={nodeExecution.output}
+        nodeLabel={nodeLabel}
+      />
 
       <ErrorDisplay error={nodeExecution.error} />
 

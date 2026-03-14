@@ -12,7 +12,6 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
-
 const AlertDialogTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
@@ -22,12 +21,17 @@ const AlertDialogTrigger = React.forwardRef<
   // We need to use context to communicate with the parent AlertDialog
   // For now, use a simpler approach - wrap in provider
   if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(children as React.ReactElement<React.HTMLAttributes<HTMLElement>>, {
-      onClick: (e: React.MouseEvent) => {
-        (children.props as React.HTMLAttributes<HTMLElement>).onClick?.(e as React.MouseEvent<HTMLElement>);
-        // Trigger will be handled by Dialog's trigger
+    return React.cloneElement(
+      children as React.ReactElement<React.HTMLAttributes<HTMLElement>>,
+      {
+        onClick: (e: React.MouseEvent) => {
+          (children.props as React.HTMLAttributes<HTMLElement>).onClick?.(
+            e as React.MouseEvent<HTMLElement>,
+          );
+          // Trigger will be handled by Dialog's trigger
+        },
       },
-    });
+    );
   }
 
   return (
@@ -44,7 +48,9 @@ interface AlertDialogContextValue {
   onOpenChange: (open: boolean) => void;
 }
 
-const AlertDialogContext = React.createContext<AlertDialogContextValue | null>(null);
+const AlertDialogContext = React.createContext<AlertDialogContextValue | null>(
+  null,
+);
 
 function AlertDialogRoot({
   children,
@@ -68,11 +74,13 @@ function AlertDialogRoot({
       }
       onOpenChange?.(nextOpen);
     },
-    [isControlled, onOpenChange]
+    [isControlled, onOpenChange],
   );
 
   return (
-    <AlertDialogContext.Provider value={{ open, onOpenChange: handleOpenChange }}>
+    <AlertDialogContext.Provider
+      value={{ open, onOpenChange: handleOpenChange }}
+    >
       <Dialog open={open} onOpenChange={handleOpenChange}>
         {children}
       </Dialog>
@@ -92,9 +100,12 @@ const AlertDialogTriggerSimple = React.forwardRef<
   };
 
   if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(children as React.ReactElement<{ onClick?: typeof handleClick }>, {
-      onClick: handleClick,
-    });
+    return React.cloneElement(
+      children as React.ReactElement<{ onClick?: typeof handleClick }>,
+      {
+        onClick: handleClick,
+      },
+    );
   }
 
   return (

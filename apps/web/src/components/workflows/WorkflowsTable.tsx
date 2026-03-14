@@ -1,19 +1,7 @@
 "use client";
 
-import {
-  FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import {
-  Download,
-  MoreHorizontal,
-  Play,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { Download, MoreHorizontal, Play, Search, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -104,7 +92,7 @@ export function WorkflowsTable() {
     state: { workflows, loading },
     actions,
   } = useAppState();
-  
+
   const { state: authState } = useAuth();
   const isAdmin = authState.user?.role === "admin";
 
@@ -119,9 +107,7 @@ export function WorkflowsTable() {
   const [deleteTarget, setDeleteTarget] = useState<WorkflowSummary | null>(
     null,
   );
-  const [shareTarget, setShareTarget] = useState<WorkflowSummary | null>(
-    null,
-  );
+  const [shareTarget, setShareTarget] = useState<WorkflowSummary | null>(null);
   const [exportingWorkflowId, setExportingWorkflowId] = useState<string | null>(
     null,
   );
@@ -178,9 +164,7 @@ export function WorkflowsTable() {
       await actions.refreshWorkflows();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to delete workflow.",
+        error instanceof Error ? error.message : "Failed to delete workflow.",
       );
     } finally {
       setPendingWorkflowId(null);
@@ -194,9 +178,7 @@ export function WorkflowsTable() {
     setPendingWorkflowId(workflow.id);
     try {
       await runWorkflow(workflowId);
-      toast.success(
-        "Workflow successfully executed.",
-      );
+      toast.success("Workflow successfully executed.");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -220,11 +202,11 @@ export function WorkflowsTable() {
         return;
       }
       const detail = response.data.data;
-      const rawData = (detail.latest_version?.workflow_data ?? undefined) as Record<string, unknown> | undefined;
+      const rawData = (detail.latest_version?.workflow_data ?? undefined) as
+        | Record<string, unknown>
+        | undefined;
       const hasGraph =
-        rawData &&
-        Array.isArray(rawData.nodes) &&
-        Array.isArray(rawData.edges);
+        rawData && Array.isArray(rawData.nodes) && Array.isArray(rawData.edges);
       if (!hasGraph) {
         toast.error("Workflow has no graph data to export.");
         return;
@@ -236,7 +218,10 @@ export function WorkflowsTable() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const safeName = (workflow.name || "workflow").replace(/[^a-zA-Z0-9-_]/g, "_");
+      const safeName = (workflow.name || "workflow").replace(
+        /[^a-zA-Z0-9-_]/g,
+        "_",
+      );
       a.download = `workflow-${safeName}-${workflow.id}.json`;
       document.body.appendChild(a);
       a.click();
@@ -270,9 +255,7 @@ export function WorkflowsTable() {
         await actions.refreshWorkflows();
       } catch (error) {
         toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to rename workflow.",
+          error instanceof Error ? error.message : "Failed to rename workflow.",
         );
       } finally {
         setPendingWorkflowId(null);
@@ -405,9 +388,7 @@ export function WorkflowsTable() {
           {filtered.map((w) => (
             <TableRow
               key={w.id}
-              data-loading={
-                loading || isRowPending(w.id) ? "1" : undefined
-              }
+              data-loading={loading || isRowPending(w.id) ? "1" : undefined}
             >
               <TableCell className="font-mono text-xs text-muted-foreground">
                 {w.id}
@@ -421,7 +402,10 @@ export function WorkflowsTable() {
                     {w.name}
                   </a>
                   {/* TODO: Show version badge & unpublished dot once WorkflowListItem exposes latest_version_number and has_unpublished_changes */}
-                  <Badge variant={w.role === "owner" ? "secondary" : "outline"} className="text-xs">
+                  <Badge
+                    variant={w.role === "owner" ? "secondary" : "outline"}
+                    className="text-xs"
+                  >
                     {w.role === "owner" ? "Owner" : "Shared"}
                   </Badge>
                 </div>
@@ -518,9 +502,7 @@ export function WorkflowsTable() {
                           onSelect={() => handleToggleActive(w)}
                           disabled={isRowPending(w.id)}
                         >
-                          {w.status === "active"
-                            ? "Deactivate"
-                            : "Activate"}
+                          {w.status === "active" ? "Deactivate" : "Activate"}
                         </DropdownMenuItem>
                       )}
                       {canExecuteWorkflow(w.role, isAdmin) && (
@@ -696,9 +678,7 @@ function DeleteWorkflowDialog({
       description={
         <>
           This will permanently delete the workflow{" "}
-          <span className="font-semibold">
-            {workflow?.name ?? "Untitled"}
-          </span>{" "}
+          <span className="font-semibold">{workflow?.name ?? "Untitled"}</span>{" "}
           and its configuration. This action cannot be undone.
         </>
       }

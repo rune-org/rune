@@ -12,7 +12,12 @@ interface TempPasswordModalProps {
   password: string;
 }
 
-export function TempPasswordModal({ open, onClose, email, password }: TempPasswordModalProps) {
+export function TempPasswordModal({
+  open,
+  onClose,
+  email,
+  password,
+}: TempPasswordModalProps) {
   if (!open) return null;
 
   const copyTempPassword = async () => {
@@ -31,17 +36,18 @@ export function TempPasswordModal({ open, onClose, email, password }: TempPasswo
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50"
       onClick={onClose}
     >
-      <Card 
+      <Card
         className="p-6 w-full max-w-md bg-background border"
         onClick={handleCardClick}
       >
         <h3 className="text-lg font-semibold mb-2">Invitation created</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Share the temporary password with the new user so they can sign in and change it.
+          Share the temporary password with the new user so they can sign in and
+          change it.
         </p>
 
         <div className="mb-4 p-4 bg-muted rounded">
@@ -52,7 +58,9 @@ export function TempPasswordModal({ open, onClose, email, password }: TempPasswo
             </div>
 
             <div>
-              <div className="text-xs text-muted-foreground">Temporary password</div>
+              <div className="text-xs text-muted-foreground">
+                Temporary password
+              </div>
               <div className="font-mono font-medium text-lg">{password}</div>
             </div>
           </div>

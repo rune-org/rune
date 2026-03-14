@@ -26,13 +26,17 @@ export const SwitchNode = memo(function SwitchNode({
 }: NodeProps<Node<SwitchData>>) {
   const nodeExecution = useNodeExecution(id);
   const executionStatus = nodeExecution?.status ?? "idle";
-  const rules = useMemo(() => Array.isArray(data.rules) ? data.rules : [], [data.rules]);
+  const rules = useMemo(
+    () => (Array.isArray(data.rules) ? data.rules : []),
+    [data.rules],
+  );
   const handleLayout = useMemo(() => {
     const baseTop = 64;
     const spacing = 64;
     const ruleHandles = rules.map((_, idx) => ({
       id: switchRuleHandleId(idx),
-      label: switchHandleLabelFromId(switchRuleHandleId(idx)) ?? `case ${idx + 1}`,
+      label:
+        switchHandleLabelFromId(switchRuleHandleId(idx)) ?? `case ${idx + 1}`,
       top: baseTop + idx * spacing,
     }));
     const fallbackHandle = {
@@ -48,9 +52,13 @@ export const SwitchNode = memo(function SwitchNode({
       className={cn(
         "rune-node relative w-[240px] rounded-[var(--radius)] border-2 bg-node-flow-bg p-3 text-sm text-foreground shadow-sm transition-[border-color,box-shadow,background-color] duration-200",
         executionStatus !== "idle" && executionStatus,
-        executionStatus === "running" && "animate-pulse-subtle"
+        executionStatus === "running" && "animate-pulse-subtle",
       )}
-      style={executionStatus === "idle" ? { borderColor: "var(--node-flow-border)" } : undefined}
+      style={
+        executionStatus === "idle"
+          ? { borderColor: "var(--node-flow-border)" }
+          : undefined
+      }
     >
       {executionStatus !== "idle" ? (
         <StatusIndicator status={executionStatus} />
@@ -70,7 +78,7 @@ export const SwitchNode = memo(function SwitchNode({
           <span className="truncate">{data.label ?? "Switch"}</span>
         </div>
         <span className="shrink-0 whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {rules.length} {rules.length === 1 ? 'route' : 'routes'}
+          {rules.length} {rules.length === 1 ? "route" : "routes"}
         </span>
       </div>
 
@@ -82,7 +90,8 @@ export const SwitchNode = memo(function SwitchNode({
               className="relative rounded-[calc(var(--radius)-0.35rem)] border border-border/60 bg-background/60 px-3 py-2"
             >
               <div className="text-[11px] font-semibold uppercase text-muted-foreground">
-                {switchHandleLabelFromId(switchRuleHandleId(idx)) ?? `case ${idx + 1}`}
+                {switchHandleLabelFromId(switchRuleHandleId(idx)) ??
+                  `case ${idx + 1}`}
               </div>
               <div className="mt-1 truncate text-xs text-muted-foreground">
                 {describeRule(rule)}

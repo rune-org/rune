@@ -15,7 +15,13 @@ import {
 } from "lucide-react";
 import type { NodeDataMap, NodeKind, SwitchData } from "../types";
 
-export type NodeGroup = "triggers" | "flow" | "transform" | "http" | "email" | "agents";
+export type NodeGroup =
+  | "triggers"
+  | "flow"
+  | "transform"
+  | "http"
+  | "email"
+  | "agents";
 
 export type NodeColorTheme = {
   /** base color (e.g., "--node-http") */
@@ -112,9 +118,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     dimensions: { width: 240, height: 180 },
     defaults: {
       label: "Switch",
-      rules: [
-        { value: "", operator: "==", compare: "" },
-      ],
+      rules: [{ value: "", operator: "==", compare: "" }],
     },
     schema: { inputs: ["input"], outputs: [] }, // Dynamic based on rules
     group: "flow",
@@ -282,7 +286,10 @@ export function getNodeIcon(kind: NodeKind): LucideIcon {
 // ============================================================================
 
 /** Get the base dimensions for a node type */
-export function getNodeDimensions(kind: NodeKind): { width: number; height: number } {
+export function getNodeDimensions(kind: NodeKind): {
+  width: number;
+  height: number;
+} {
   return NODE_REGISTRY[kind].dimensions;
 }
 
@@ -292,13 +299,13 @@ export function getNodeDimensionsWithData(
 ): { width: number; height: number } {
   const base = NODE_REGISTRY[kind].dimensions;
 
-	// Switch node-specific dimensions (handles dynamic resizing)
+  // Switch node-specific dimensions (handles dynamic resizing)
   if (kind === "switch") {
-  	const ruleCount = (data as SwitchData | undefined)?.rules?.length ?? 0;
-   	return { width: base.width, height: 64 + (ruleCount + 1) * 64 };
+    const ruleCount = (data as SwitchData | undefined)?.rules?.length ?? 0;
+    return { width: base.width, height: 64 + (ruleCount + 1) * 64 };
   }
 
-	// Other nodes that expect dynamic resizing should be added as needed.
+  // Other nodes that expect dynamic resizing should be added as needed.
 
   return base;
 }
@@ -324,7 +331,10 @@ export function getMiniMapNodeColor(kind: NodeKind): string {
 // Schema Helpers
 // ============================================================================
 
-export function getNodeSchema(kind: NodeKind, data?: NodeDataMap[NodeKind]): NodeSchema {
+export function getNodeSchema(
+  kind: NodeKind,
+  data?: NodeDataMap[NodeKind],
+): NodeSchema {
   const metadata = NODE_REGISTRY[kind];
 
   // Handles switch node's dynamic output schema,
@@ -332,7 +342,9 @@ export function getNodeSchema(kind: NodeKind, data?: NodeDataMap[NodeKind]): Nod
   if (metadata.hasDynamicOutputs && kind === "switch") {
     const rules =
       data && "rules" in data && Array.isArray(data.rules) ? data.rules : [];
-    const dynamicOutputs = rules.map((_, idx) => `case ${idx + 1}`).concat("fallback");
+    const dynamicOutputs = rules
+      .map((_, idx) => `case ${idx + 1}`)
+      .concat("fallback");
     return { inputs: metadata.schema.inputs, outputs: dynamicOutputs };
   }
 
@@ -353,7 +365,11 @@ const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
   triggers: { label: "Triggers", icon: Play, colorClass: "bg-node-trigger" },
   http: { label: "HTTP", icon: Globe, colorClass: "bg-node-http" },
   flow: { label: "Control Flow", icon: Route, colorClass: "bg-node-flow" },
-  transform: { label: "Data Transform", icon: Wand2, colorClass: "bg-node-transform" },
+  transform: {
+    label: "Data Transform",
+    icon: Wand2,
+    colorClass: "bg-node-transform",
+  },
   email: { label: "Email", icon: Mail, colorClass: "bg-node-email" },
   agents: { label: "Agents", icon: Bot, colorClass: "bg-node-agent" },
 };
@@ -362,7 +378,9 @@ export function getNodesByGroup(group: NodeGroup): NodeMetadata[] {
   return Object.values(NODE_REGISTRY).filter((m) => m.group === group);
 }
 
-const ALL_GROUPS: readonly NodeGroup[] = Object.keys(GROUP_METADATA) as NodeGroup[];
+const ALL_GROUPS: readonly NodeGroup[] = Object.keys(
+  GROUP_METADATA,
+) as NodeGroup[];
 export function getAllGroups(): readonly NodeGroup[] {
   return ALL_GROUPS;
 }
@@ -380,7 +398,9 @@ export function getGroupColorClass(group: NodeGroup): string {
 }
 
 /** Data Helper */
-export function getNodeDefaults<K extends NodeKind>(kind: K): { type: K; data: NodeDataMap[K] } {
+export function getNodeDefaults<K extends NodeKind>(
+  kind: K,
+): { type: K; data: NodeDataMap[K] } {
   const metadata = NODE_REGISTRY[kind];
   return {
     type: kind,
@@ -389,7 +409,9 @@ export function getNodeDefaults<K extends NodeKind>(kind: K): { type: K; data: N
 }
 
 /** Array of all node kinds for iteration */
-export const ALL_NODE_KINDS: readonly NodeKind[] = Object.keys(NODE_REGISTRY) as NodeKind[];
+export const ALL_NODE_KINDS: readonly NodeKind[] = Object.keys(
+  NODE_REGISTRY,
+) as NodeKind[];
 
 /** Build the default key→kind shortcut map from registry metadata. */
 export function getDefaultShortcuts(): Record<string, NodeKind> {

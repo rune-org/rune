@@ -14,7 +14,8 @@ const HANDLE_IDS = {
   FALSE: "false",
 };
 
-const EDGE_COLORS = { // Refers to colors of edge labels, not the actual edge colors
+const EDGE_COLORS = {
+  // Refers to colors of edge labels, not the actual edge colors
   TRUE: "hsl(142 70% 45%)", // green
   FALSE: "hsl(0 70% 50%)", // red
   SWITCH: "hsl(211 80% 55%)", // blue-ish

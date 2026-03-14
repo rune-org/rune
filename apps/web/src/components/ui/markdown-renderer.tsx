@@ -117,7 +117,7 @@ const markdownComponents: Components = {
       <code
         className={cn(
           "block overflow-x-auto rounded-lg bg-zinc-900 p-4 font-mono text-sm text-zinc-200",
-          className
+          className,
         )}
         {...props}
       >

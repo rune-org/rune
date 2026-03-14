@@ -9,14 +9,17 @@
  * error response this backend sends to the frontend.
  */
 export function extractApiErrorMessage(
-    error: unknown,
-    fallback = "An unexpected error occurred. Please try again."
+  error: unknown,
+  fallback = "An unexpected error occurred. Please try again.",
 ): string {
-    if (typeof error !== "object" || error === null) return fallback;
+  if (typeof error !== "object" || error === null) return fallback;
 
-    if ("message" in error && typeof (error as Record<string, unknown>).message === "string") {
-        return (error as { message: string }).message;
-    }
+  if (
+    "message" in error &&
+    typeof (error as Record<string, unknown>).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
 
-    return fallback;
+  return fallback;
 }

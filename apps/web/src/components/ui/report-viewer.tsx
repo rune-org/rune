@@ -49,7 +49,7 @@ export function ReportViewer({
 
   const fileSize = React.useMemo(
     () => `${(new Blob([content]).size / 1024).toFixed(1)} KB`,
-    [content]
+    [content],
   );
 
   return (

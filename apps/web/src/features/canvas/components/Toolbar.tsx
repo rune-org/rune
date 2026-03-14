@@ -62,7 +62,13 @@ type ToolbarProps = {
   publishDisabled?: boolean;
   onRestore?: (versionId: number) => void;
   onRunVersion?: (versionId: number) => void;
-  onViewVersion?: (snapshot: { nodes: CanvasNode[]; edges: Edge[]; versionNumber: number } | null) => void;
+  onViewVersion?: (
+    snapshot: {
+      nodes: CanvasNode[];
+      edges: Edge[];
+      versionNumber: number;
+    } | null,
+  ) => void;
   viewingVersionNumber?: number | null;
 };
 
@@ -99,7 +105,9 @@ export const Toolbar = memo(function Toolbar({
   const isExecuting = executionStatus === "running" || isStartingExecution;
   const isRunDisabled = executeDisabled || readOnly;
   const liveStatusLabel =
-    isStartingExecution || wsStatus === "connecting" || wsStatus === "disconnected"
+    isStartingExecution ||
+    wsStatus === "connecting" ||
+    wsStatus === "disconnected"
       ? "Starting..."
       : wsStatus === "reconnecting"
         ? "Reconnecting..."
@@ -161,7 +169,7 @@ export const Toolbar = memo(function Toolbar({
             disabled
             className={cn(
               "inline-flex h-8 items-center gap-2 rounded-sm border px-2.5 text-xs",
-              liveStatusClassName
+              liveStatusClassName,
             )}
           >
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -174,7 +182,11 @@ export const Toolbar = memo(function Toolbar({
           )}
         </>
       ) : (
-        <Btn onClick={onExecute} title="Execute workflow" disabled={isRunDisabled}>
+        <Btn
+          onClick={onExecute}
+          title="Execute workflow"
+          disabled={isRunDisabled}
+        >
           <Play className="h-4 w-4" /> Run
         </Btn>
       )}
@@ -200,10 +212,17 @@ export const Toolbar = memo(function Toolbar({
       </Btn>
       {onPublish && hasUnpublishedChanges && !viewingVersionNumber && (
         <div className="relative">
-          <Btn onClick={onPublish} title="Publish version" disabled={publishDisabled}>
+          <Btn
+            onClick={onPublish}
+            title="Publish version"
+            disabled={publishDisabled}
+          >
             <Send className="h-4 w-4" /> Publish
           </Btn>
-          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-yellow-500 border border-card" title="Unpublished changes" />
+          <span
+            className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-yellow-500 border border-card"
+            title="Unpublished changes"
+          />
         </div>
       )}
 
@@ -213,13 +232,25 @@ export const Toolbar = memo(function Toolbar({
           <ChevronDown className="h-3 w-3 opacity-60" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={onImportFromClipboard} className="gap-2" disabled={readOnly}>
+          <DropdownMenuItem
+            onClick={onImportFromClipboard}
+            className="gap-2"
+            disabled={readOnly}
+          >
             <Clipboard className="h-4 w-4" /> From Clipboard
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onImportFromFile} className="gap-2" disabled={readOnly}>
+          <DropdownMenuItem
+            onClick={onImportFromFile}
+            className="gap-2"
+            disabled={readOnly}
+          >
             <FileJson className="h-4 w-4" /> From File (JSON)
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onImportFromTemplate} className="gap-2" disabled={readOnly}>
+          <DropdownMenuItem
+            onClick={onImportFromTemplate}
+            className="gap-2"
+            disabled={readOnly}
+          >
             <FileBox className="h-4 w-4" /> From Templates
           </DropdownMenuItem>
         </DropdownMenuContent>

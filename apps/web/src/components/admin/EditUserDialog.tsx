@@ -11,10 +11,19 @@ interface EditUserDialogProps {
   open: boolean;
   onClose: () => void;
   user: UserResponse | null;
-  onUpdate: (name: string, email: string, role: "user" | "admin") => Promise<boolean>;
+  onUpdate: (
+    name: string,
+    email: string,
+    role: "user" | "admin",
+  ) => Promise<boolean>;
 }
 
-export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialogProps) {
+export function EditUserDialog({
+  open,
+  onClose,
+  user,
+  onUpdate,
+}: EditUserDialogProps) {
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editRole, setEditRole] = useState<"user" | "admin">("user");
@@ -37,7 +46,7 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
 
   const handleUpdate = async () => {
     if (!isFormValid) return;
-    
+
     setIsSubmitting(true);
     try {
       const success = await onUpdate(editName, editEmail, editRole);
@@ -65,11 +74,11 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50"
       onClick={handleBackdropClick}
     >
-      <Card 
+      <Card
         className="p-6 w-full max-w-md bg-background border"
         onClick={handleCardClick}
       >
@@ -105,8 +114,8 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button 
-            className="bg-primary text-white" 
+          <Button
+            className="bg-primary text-white"
             onClick={handleUpdate}
             disabled={isSubmitting || !isFormValid}
           >

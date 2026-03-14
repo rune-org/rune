@@ -133,7 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         storeAccessExp(expMs);
         // schedule next refresh
         clearScheduledRefresh();
-        const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
+        const leeway = Math.max(
+          LEEWAY_SECONDS,
+          Math.floor(payload.expires_in * 0.1),
+        );
         const delaySec = Math.max(payload.expires_in - leeway, 5);
         refreshTimeoutId.current = setTimeout(async () => {
           await refresh();
@@ -206,7 +209,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         storeAccessExp(expMs);
         // schedule next refresh
         clearScheduledRefresh();
-        const leeway = Math.max(LEEWAY_SECONDS, Math.floor(payload.expires_in * 0.1));
+        const leeway = Math.max(
+          LEEWAY_SECONDS,
+          Math.floor(payload.expires_in * 0.1),
+        );
         const delaySec = Math.max(payload.expires_in - leeway, 5);
         refreshTimeoutId.current = setTimeout(async () => {
           await refresh();

@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { MoreHorizontal, Search, Key, Share2, Users, LogOut } from "lucide-react";
+import {
+  MoreHorizontal,
+  Search,
+  Key,
+  Share2,
+  Users,
+  LogOut,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 import { Badge } from "@/components/ui/badge";
@@ -36,10 +43,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/toast";
-import type { CredentialResponse, CredentialType, CredentialShareInfo } from "@/client/types.gen";
+import type {
+  CredentialResponse,
+  CredentialType,
+  CredentialShareInfo,
+} from "@/client/types.gen";
 import {
   getCredentialTypeLabel,
-  CREDENTIAL_TYPE_BADGE_STYLES
+  CREDENTIAL_TYPE_BADGE_STYLES,
 } from "@/lib/credentials/types";
 import { ShareCredentialDialog } from "./ShareCredentialDialog";
 import { revokeCredentialAccess, getMyShareInfo } from "@/lib/api/credentials";
@@ -79,18 +90,31 @@ export function CredentialsTable({
 
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<CredentialType | "all">("all");
-  const [shareDialogCredential, setShareDialogCredential] = useState<Credential | null>(null);
-  const [leavingCredentialId, setLeavingCredentialId] = useState<number | null>(null);
-  const [shareInfoMap, setShareInfoMap] = useState<Record<number, CredentialShareInfo & { shared_by_name?: string | null } | null>>({});
-  const [creatorNameMap, setCreatorNameMap] = useState<Record<number, string>>({});
+  const [shareDialogCredential, setShareDialogCredential] =
+    useState<Credential | null>(null);
+  const [leavingCredentialId, setLeavingCredentialId] = useState<number | null>(
+    null,
+  );
+  const [shareInfoMap, setShareInfoMap] = useState<
+    Record<
+      number,
+      (CredentialShareInfo & { shared_by_name?: string | null }) | null
+    >
+  >({});
+  const [creatorNameMap, setCreatorNameMap] = useState<Record<number, string>>(
+    {},
+  );
 
   // Load share info for shared credentials using the my-share endpoint
   useEffect(() => {
     const loadShareInfo = async () => {
-      const newShareInfoMap: Record<number, CredentialShareInfo & { shared_by_name?: string | null } | null> = {};
+      const newShareInfoMap: Record<
+        number,
+        (CredentialShareInfo & { shared_by_name?: string | null }) | null
+      > = {};
 
       // Filter to only non-owned credentials that need share info
-      const sharedCreds = credentials.filter(cred => !cred.is_owner);
+      const sharedCreds = credentials.filter((cred) => !cred.is_owner);
 
       const results = await Promise.all(
         sharedCreds.map(async (cred) => {
@@ -101,7 +125,7 @@ export function CredentialsTable({
             // Silently fail for individual share info loads
             return { credId: cred.id, data: null };
           }
-        })
+        }),
       );
 
       // Build the map from results
@@ -129,7 +153,9 @@ export function CredentialsTable({
       }
 
       // Filter to only IDs we haven't fetched yet
-      const idsToFetch = Array.from(creatorIds).filter(id => !creatorNameMap[id]);
+      const idsToFetch = Array.from(creatorIds).filter(
+        (id) => !creatorNameMap[id],
+      );
 
       if (idsToFetch.length === 0) return;
       const results = await Promise.all(
@@ -141,7 +167,7 @@ export function CredentialsTable({
             // Silently fail for individual creator name loads
             return { creatorId, name: null };
           }
-        })
+        }),
       );
 
       // Build the updated map from results
@@ -210,13 +236,27 @@ export function CredentialsTable({
             <SelectValue placeholder="Filter by type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all" className="pl-8">All Types</SelectItem>
-            <SelectItem value="api_key" className="pl-8">API Key</SelectItem>
-            <SelectItem value="oauth2" className="pl-8">OAuth2</SelectItem>
-            <SelectItem value="basic_auth" className="pl-8">Basic Auth</SelectItem>
-            <SelectItem value="token" className="pl-8">Token</SelectItem>
-            <SelectItem value="smtp" className="pl-8">SMTP</SelectItem>
-            <SelectItem value="custom" className="pl-8">Custom</SelectItem>
+            <SelectItem value="all" className="pl-8">
+              All Types
+            </SelectItem>
+            <SelectItem value="api_key" className="pl-8">
+              API Key
+            </SelectItem>
+            <SelectItem value="oauth2" className="pl-8">
+              OAuth2
+            </SelectItem>
+            <SelectItem value="basic_auth" className="pl-8">
+              Basic Auth
+            </SelectItem>
+            <SelectItem value="token" className="pl-8">
+              Token
+            </SelectItem>
+            <SelectItem value="smtp" className="pl-8">
+              SMTP
+            </SelectItem>
+            <SelectItem value="custom" className="pl-8">
+              Custom
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -265,14 +305,20 @@ export function CredentialsTable({
                 </TableCell>
                 <TableCell>
                   {c.is_owner ? (
-                    <Badge variant="secondary" className="bg-primary/10 text-primary">
+                    <Badge
+                      variant="secondary"
+                      className="bg-primary/10 text-primary"
+                    >
                       Owner
                     </Badge>
                   ) : shareInfoMap[c.id] ? (
                     // Shared with current user
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant="outline" className="flex flex-col items-start gap-0 py-1 h-auto">
+                        <Badge
+                          variant="outline"
+                          className="flex flex-col items-start gap-0 py-1 h-auto"
+                        >
                           <span className="flex items-center gap-1">
                             <Users className="h-3 w-3" />
                             Shared by
@@ -294,7 +340,10 @@ export function CredentialsTable({
                     // Admin viewing credential not shared with them
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant="outline" className="flex flex-col items-start gap-0 py-1 h-auto">
+                        <Badge
+                          variant="outline"
+                          className="flex flex-col items-start gap-0 py-1 h-auto"
+                        >
                           <span className="flex items-center gap-1">
                             <Users className="h-3 w-3" />
                             Created by
@@ -317,14 +366,25 @@ export function CredentialsTable({
                 <TableCell className="text-muted-foreground">
                   <div className="flex flex-col">
                     <span className="text-xs font-medium text-foreground">
-                      {c.is_owner ? "Created" : shareInfoMap[c.id] ? "Shared" : "Created"}
+                      {c.is_owner
+                        ? "Created"
+                        : shareInfoMap[c.id]
+                          ? "Shared"
+                          : "Created"}
                     </span>
                     <span className="text-xs">
                       {c.is_owner
-                        ? formatDistanceToNow(new Date(c.created_at), { addSuffix: true })
+                        ? formatDistanceToNow(new Date(c.created_at), {
+                            addSuffix: true,
+                          })
                         : shareInfoMap[c.id]?.shared_at
-                          ? formatDistanceToNow(new Date(shareInfoMap[c.id]!.shared_at), { addSuffix: true })
-                          : formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                          ? formatDistanceToNow(
+                              new Date(shareInfoMap[c.id]!.shared_at),
+                              { addSuffix: true },
+                            )
+                          : formatDistanceToNow(new Date(c.created_at), {
+                              addSuffix: true,
+                            })}
                     </span>
                   </div>
                 </TableCell>
@@ -367,7 +427,9 @@ export function CredentialsTable({
                           disabled={leavingCredentialId === c.id}
                         >
                           <LogOut className="mr-2 h-4 w-4" />
-                          {leavingCredentialId === c.id ? "Removing..." : "Remove"}
+                          {leavingCredentialId === c.id
+                            ? "Removing..."
+                            : "Remove"}
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>

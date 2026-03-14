@@ -92,7 +92,6 @@ export function ImportTemplateDialog({
     {} as Record<string, TemplateSummary[]>,
   );
 
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg">

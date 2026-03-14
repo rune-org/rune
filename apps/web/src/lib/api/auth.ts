@@ -35,7 +35,11 @@ export const adminCreateUser = (
   role: "user" | "admin" = "user",
 ) => createUserUsersPost({ body: { name, email, role } });
 
-export const firstAdminSignup = (name: string, email: string, password: string) =>
+export const firstAdminSignup = (
+  name: string,
+  email: string,
+  password: string,
+) =>
   initializeFirstAdminSetupInitializePost({ body: { name, email, password } });
 
 export const checkFirstTimeSetup = () => checkSetupStatusSetupStatusGet();
@@ -50,4 +54,5 @@ export type MyProfileResponse = GetMyProfileProfileMeGetResponse;
 export type LoginResponse = LoginAuthLoginPostResponse;
 export type RefreshResponse = RefreshAuthRefreshPostResponse;
 export type LogoutResponse = LogoutAuthLogoutPostResponse;
-export type ChangeMyPasswordResponse = ChangeMyPasswordProfileMePasswordPostResponse;
+export type ChangeMyPasswordResponse =
+  ChangeMyPasswordProfileMePasswordPostResponse;

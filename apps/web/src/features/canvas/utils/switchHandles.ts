@@ -9,7 +9,9 @@ export function switchFallbackHandleId(): string {
   return SWITCH_FALLBACK_HANDLE_ID;
 }
 
-export function switchHandleLabelFromId(handleId: string | undefined | null): string | undefined {
+export function switchHandleLabelFromId(
+  handleId: string | undefined | null,
+): string | undefined {
   if (!handleId) return undefined;
   if (handleId === SWITCH_FALLBACK_HANDLE_ID) return "fallback";
   if (handleId.startsWith(SWITCH_RULE_HANDLE_PREFIX)) {
@@ -21,7 +23,9 @@ export function switchHandleLabelFromId(handleId: string | undefined | null): st
   return handleId;
 }
 
-export function switchHandleIdFromLabel(label: string | undefined | null): string | null {
+export function switchHandleIdFromLabel(
+  label: string | undefined | null,
+): string | null {
   if (!label) return null;
   const normalized = label.trim().toLowerCase();
   if (normalized === "fallback") return SWITCH_FALLBACK_HANDLE_ID;

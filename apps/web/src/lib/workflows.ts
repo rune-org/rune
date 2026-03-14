@@ -1,13 +1,14 @@
-import type { WorkflowListItem, WorkflowDetail, WorkflowVersionDetail } from "@/client/types.gen";
+import type {
+  WorkflowListItem,
+  WorkflowDetail,
+  WorkflowVersionDetail,
+} from "@/client/types.gen";
 import type { CanvasNode, CanvasEdge } from "@/features/canvas/types";
 import type {
   WorkflowNode as WorkflowNodeDSL,
   WorkflowEdge as WorkflowEdgeDSL,
 } from "@/lib/workflow-dsl";
-import {
-  canvasToWorkflowData,
-  workflowDataToCanvas,
-} from "@/lib/workflow-dsl";
+import { canvasToWorkflowData, workflowDataToCanvas } from "@/lib/workflow-dsl";
 import type { WorkflowRole } from "@/lib/permissions";
 
 /**
@@ -102,9 +103,13 @@ export function detailToGraph(detail: WorkflowDetail): WorkflowGraph {
 }
 
 export function versionToGraph(version: WorkflowVersionDetail): WorkflowGraph {
-  return workflowDataToGraph((version.workflow_data ?? {}) as Record<string, unknown>);
+  return workflowDataToGraph(
+    (version.workflow_data ?? {}) as Record<string, unknown>,
+  );
 }
 
-export function graphToWorkflowData(graph: WorkflowGraph): Record<string, unknown> {
+export function graphToWorkflowData(
+  graph: WorkflowGraph,
+): Record<string, unknown> {
   return canvasToWorkflowData(graph.nodes, graph.edges);
 }

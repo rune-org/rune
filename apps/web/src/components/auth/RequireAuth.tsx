@@ -24,7 +24,10 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!ctx) return;
     if (!ctx.state.loading && !ctx.state.user) {
-      const redirect = pathname && pathname !== "/sign-in" ? `?redirect=${encodeURIComponent(pathname)}` : "";
+      const redirect =
+        pathname && pathname !== "/sign-in"
+          ? `?redirect=${encodeURIComponent(pathname)}`
+          : "";
       router.replace(`/sign-in${redirect}`);
     }
   }, [ctx, router, pathname]);

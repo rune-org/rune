@@ -109,7 +109,11 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
       }
 
       // save with message (Shift+Ctrl+S)
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "s") {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.shiftKey &&
+        e.key.toLowerCase() === "s"
+      ) {
         e.preventDefault();
         if (readOnly) return;
         const { onSaveWithMessage } = latestPropsRef.current;
@@ -126,7 +130,11 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
       }
 
       // redo
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "z") {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.shiftKey &&
+        e.key.toLowerCase() === "z"
+      ) {
         e.preventDefault();
         if (readOnly) return;
         onRedo();

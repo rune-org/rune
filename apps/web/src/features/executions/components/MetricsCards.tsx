@@ -1,6 +1,13 @@
 "use client";
 
-import { CheckCircle, Clock, XCircle, Activity, TrendingUp, Calendar } from "lucide-react";
+import {
+  CheckCircle,
+  Clock,
+  XCircle,
+  Activity,
+  TrendingUp,
+  Calendar,
+} from "lucide-react";
 import type { ExecutionMetrics } from "../types";
 import { cn } from "@/lib/cn";
 
@@ -29,7 +36,7 @@ function MetricCard({
     <div
       className={cn(
         "rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/30",
-        className
+        className,
       )}
     >
       <div className="flex items-start justify-between">
@@ -45,7 +52,7 @@ function MetricCard({
           <div
             className={cn(
               "mt-2 flex items-center gap-1 text-xs font-medium",
-              trend.isPositive ? "text-green-600" : "text-red-600"
+              trend.isPositive ? "text-green-600" : "text-red-600",
             )}
           >
             <TrendingUp
@@ -94,7 +101,7 @@ function SuccessRateRing({ rate }: { rate: number }) {
               ? "text-green-500"
               : rate >= 50
                 ? "text-yellow-500"
-                : "text-red-500"
+                : "text-red-500",
           )}
         />
       </svg>

@@ -63,7 +63,7 @@ export function SaveTemplateDialog({
     try {
       // Strip credentials from workflow data before saving to prevent sensitive data from being exported
       const sanitizedWorkflowData = stripCredentials(workflowData);
-      
+
       const response = await createTemplate({
         name: name.trim(),
         description: description.trim(),

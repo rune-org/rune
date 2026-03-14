@@ -33,7 +33,9 @@ export function useSmith(opts: UseSmithOptions) {
   const [smithSending, setSmithSending] = useState(false);
   const [smithShowTrace, setSmithShowTrace] = useState(true);
   const [smithJustFinished, setSmithJustFinished] = useState(false);
-  const [pendingSmithPrompt, setPendingSmithPrompt] = useState<string | null>(null);
+  const [pendingSmithPrompt, setPendingSmithPrompt] = useState<string | null>(
+    null,
+  );
 
   const smithSendingRef = useRef(false);
   const smithShowTraceRef = useRef(true);
@@ -53,16 +55,24 @@ export function useSmith(opts: UseSmithOptions) {
     (workflow: { nodes?: unknown; edges?: unknown }) => {
       if (readOnly) return;
 
-      const candidateNodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
-      const candidateEdges = Array.isArray(workflow.edges) ? workflow.edges : [];
+      const candidateNodes = Array.isArray(workflow.nodes)
+        ? workflow.nodes
+        : [];
+      const candidateEdges = Array.isArray(workflow.edges)
+        ? workflow.edges
+        : [];
 
       if (candidateNodes.length === 0) {
         return;
       }
 
       const { nodes: canvasNodes, edges: canvasEdges } = workflowDataToCanvas({
-        nodes: candidateNodes as Parameters<typeof workflowDataToCanvas>[0]["nodes"],
-        edges: candidateEdges as Parameters<typeof workflowDataToCanvas>[0]["edges"],
+        nodes: candidateNodes as Parameters<
+          typeof workflowDataToCanvas
+        >[0]["nodes"],
+        edges: candidateEdges as Parameters<
+          typeof workflowDataToCanvas
+        >[0]["edges"],
       });
       const sanitized = sanitizeGraph({
         nodes: canvasNodes,
@@ -128,7 +138,10 @@ export function useSmith(opts: UseSmithOptions) {
                     { ...lastMsg, content: accumulatedContent },
                   ];
                 } else {
-                  return [...prev, { role: "smith", content: accumulatedContent }];
+                  return [
+                    ...prev,
+                    { role: "smith", content: accumulatedContent },
+                  ];
                 }
               });
               break;

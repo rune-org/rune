@@ -3,7 +3,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/cn";
 import { NODE_REGISTRY } from "../../lib/nodeRegistry";
-import type { VariableSource, VariableTreeNode } from "../../lib/variableSchema";
+import type {
+  VariableSource,
+  VariableTreeNode,
+} from "../../lib/variableSchema";
 
 type FlatEntry = {
   path: string;
@@ -147,7 +150,8 @@ export function VariableAutocomplete({
       style={style}
     >
       {filtered.map((entry, idx) => {
-        const meta = NODE_REGISTRY[entry.nodeKind as keyof typeof NODE_REGISTRY];
+        const meta =
+          NODE_REGISTRY[entry.nodeKind as keyof typeof NODE_REGISTRY];
         const Icon = meta?.icon;
 
         return (
@@ -166,7 +170,9 @@ export function VariableAutocomplete({
             {Icon && (
               <Icon
                 className="h-3 w-3 shrink-0"
-                style={meta ? { color: `var(${meta.colorTheme.base})` } : undefined}
+                style={
+                  meta ? { color: `var(${meta.colorTheme.base})` } : undefined
+                }
               />
             )}
             <span className="truncate font-medium">{entry.path}</span>

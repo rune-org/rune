@@ -63,10 +63,7 @@ export function SwitchInspector({
   };
 
   const addRule = () => {
-    updateRules((rs) => [
-      ...rs,
-      { value: "", operator: "==", compare: "" },
-    ]);
+    updateRules((rs) => [...rs, { value: "", operator: "==", compare: "" }]);
   };
 
   const removeRule = (idx: number) => {
@@ -163,16 +160,16 @@ export function SwitchInspector({
               </div>
             </div>
 
-            <div className={`mt-3 grid gap-2 ${isExpanded ? "grid-cols-3" : "grid-cols-1"}`}>
+            <div
+              className={`mt-3 grid gap-2 ${isExpanded ? "grid-cols-3" : "grid-cols-1"}`}
+            >
               <div className="space-y-1">
                 <label className="block text-[11px] text-muted-foreground">
                   Value
                 </label>
                 <VariableInput
                   value={rule.value ?? ""}
-                  onChange={(v) =>
-                    updateRuleField(idx, "value", v)
-                  }
+                  onChange={(v) => updateRuleField(idx, "value", v)}
                   placeholder="$input.status"
                   nodeId={node.id}
                 />

@@ -38,7 +38,7 @@ export function SmtpInspector({
         placeholder="Select SMTP credential"
         showHelp={isExpanded}
       />
-      
+
       <label className="block text-xs text-muted-foreground">From</label>
       <input
         className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"

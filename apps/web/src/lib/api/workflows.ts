@@ -81,7 +81,11 @@ export const listVersions = (workflow_id: number) =>
 
 export const createVersion = (
   workflow_id: number,
-  payload: { base_version_id: number | null; workflow_data: Record<string, unknown>; message?: string | null },
+  payload: {
+    base_version_id: number | null;
+    workflow_data: Record<string, unknown>;
+    message?: string | null;
+  },
 ) =>
   createWorkflowVersionWorkflowsWorkflowIdVersionsPost({
     path: { workflow_id },
@@ -99,7 +103,11 @@ export const publishVersion = (workflow_id: number, version_id: number) =>
     body: { version_id } as WorkflowPublishVersion,
   });
 
-export const restoreVersion = (workflow_id: number, version_id: number, message?: string) =>
+export const restoreVersion = (
+  workflow_id: number,
+  version_id: number,
+  message?: string,
+) =>
   restoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPost({
     path: { workflow_id, version_id },
     body: message ? ({ message } as WorkflowRestoreVersion) : null,
@@ -107,10 +115,15 @@ export const restoreVersion = (workflow_id: number, version_id: number, message?
 
 /** Request access to view all executions for a workflow (publishes wildcard token to RTES) */
 export const requestExecutionAccess = (workflow_id: number) =>
-  getWorkflowExecutionsExecutionsWorkflowsWorkflowIdGet({ path: { workflow_id } });
+  getWorkflowExecutionsExecutionsWorkflowsWorkflowIdGet({
+    path: { workflow_id },
+  });
 
 /** Request access to view a specific execution (publishes scoped token to RTES) */
-export const requestSpecificExecutionAccess = (workflow_id: number, execution_id: string) =>
+export const requestSpecificExecutionAccess = (
+  workflow_id: number,
+  execution_id: string,
+) =>
   getExecutionExecutionsWorkflowsWorkflowIdExecutionIdGet({
     path: { workflow_id, execution_id },
   });
@@ -123,11 +136,24 @@ export const requestSpecificExecutionAccess = (workflow_id: number, execution_id
  * With `throwOnError: true`, the @hey-api client throws the parsed JSON
  * response body directly: `{ success, message, data: { server_version, server_version_id } }`.
  */
-export function isVersionConflict(error: unknown): { serverVersion: number; serverVersionId: number } | null {
+export function isVersionConflict(
+  error: unknown,
+): { serverVersion: number; serverVersionId: number } | null {
   if (error != null && typeof error === "object" && "data" in error) {
-    const conflict = (error as { data?: { server_version?: number; server_version_id?: number } }).data;
-    if (conflict && typeof conflict.server_version === "number" && typeof conflict.server_version_id === "number") {
-      return { serverVersion: conflict.server_version, serverVersionId: conflict.server_version_id };
+    const conflict = (
+      error as {
+        data?: { server_version?: number; server_version_id?: number };
+      }
+    ).data;
+    if (
+      conflict &&
+      typeof conflict.server_version === "number" &&
+      typeof conflict.server_version_id === "number"
+    ) {
+      return {
+        serverVersion: conflict.server_version,
+        serverVersionId: conflict.server_version_id,
+      };
     }
   }
   return null;
@@ -135,7 +161,8 @@ export function isVersionConflict(error: unknown): { serverVersion: number; serv
 
 // Useful response types
 export type ListWorkflowsResponse = ListWorkflowsWorkflowsGetResponse;
-export type ListUserExecutionsResponse = ListUserExecutionsExecutionsGetResponse;
+export type ListUserExecutionsResponse =
+  ListUserExecutionsExecutionsGetResponse;
 export type GetWorkflowResponse = GetWorkflowWorkflowsWorkflowIdGetResponse;
 export type CreateWorkflowResponse = CreateWorkflowWorkflowsPostResponse;
 export type UpdateWorkflowNameResponse =
@@ -149,8 +176,13 @@ export type RequestExecutionAccessResponse =
   GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetResponse;
 export type RequestSpecificExecutionAccessResponse =
   GetExecutionExecutionsWorkflowsWorkflowIdExecutionIdGetResponse;
-export type ListVersionsResponse = ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetResponse;
-export type CreateVersionResponse = CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostResponse;
-export type GetVersionResponse = GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponse;
-export type PublishVersionResponse = PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponse;
-export type RestoreVersionResponse = RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponse;
+export type ListVersionsResponse =
+  ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetResponse;
+export type CreateVersionResponse =
+  CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostResponse;
+export type GetVersionResponse =
+  GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponse;
+export type PublishVersionResponse =
+  PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponse;
+export type RestoreVersionResponse =
+  RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponse;

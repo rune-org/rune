@@ -40,32 +40,37 @@ type SheetContentProps = React.ComponentPropsWithoutRef<
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, overlayClassName, ...props }, ref) => (
-  <SheetPortal>
-    <SheetOverlay className={overlayClassName} />
-    <SheetPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed z-50 flex flex-col gap-6 bg-card p-6 shadow-lg shadow-black/50",
-        side === "right" &&
-          "inset-y-0 right-0 h-full w-[19rem] border-l border-border/70",
-        side === "left" &&
-          "inset-y-0 left-0 h-full w-[19rem] border-r border-border/70",
-        side === "top" && "inset-x-0 top-0 w-full border-b border-border/70",
-        side === "bottom" &&
-          "inset-x-0 bottom-0 w-full border-t border-border/70",
-        className,
-      )}
-      data-side={side}
-      {...props}
-    >
-      {children}
-      <SheetPrimitive.Close className="absolute right-4 top-4 text-muted-foreground transition-opacity hover:opacity-80">
-        <span className="sr-only">Close</span>×
-      </SheetPrimitive.Close>
-    </SheetPrimitive.Content>
-  </SheetPortal>
-));
+>(
+  (
+    { side = "right", className, children, overlayClassName, ...props },
+    ref,
+  ) => (
+    <SheetPortal>
+      <SheetOverlay className={overlayClassName} />
+      <SheetPrimitive.Content
+        ref={ref}
+        className={cn(
+          "fixed z-50 flex flex-col gap-6 bg-card p-6 shadow-lg shadow-black/50",
+          side === "right" &&
+            "inset-y-0 right-0 h-full w-[19rem] border-l border-border/70",
+          side === "left" &&
+            "inset-y-0 left-0 h-full w-[19rem] border-r border-border/70",
+          side === "top" && "inset-x-0 top-0 w-full border-b border-border/70",
+          side === "bottom" &&
+            "inset-x-0 bottom-0 w-full border-t border-border/70",
+          className,
+        )}
+        data-side={side}
+        {...props}
+      >
+        {children}
+        <SheetPrimitive.Close className="absolute right-4 top-4 text-muted-foreground transition-opacity hover:opacity-80">
+          <span className="sr-only">Close</span>×
+        </SheetPrimitive.Close>
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  ),
+);
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
 const SheetHeader = ({

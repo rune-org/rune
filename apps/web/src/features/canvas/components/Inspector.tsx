@@ -55,23 +55,69 @@ function renderInspectorForm(
 ) {
   switch (node.type) {
     case "http":
-      return <HttpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+      return (
+        <HttpInspector
+          node={node}
+          updateData={updateData}
+          isExpanded={isExpanded}
+        />
+      );
     case "if":
-      return <IfInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+      return (
+        <IfInspector
+          node={node}
+          updateData={updateData}
+          isExpanded={isExpanded}
+        />
+      );
     case "switch":
       return (
-        <SwitchInspector node={node} updateData={updateData} isExpanded={isExpanded} />
+        <SwitchInspector
+          node={node}
+          updateData={updateData}
+          isExpanded={isExpanded}
+        />
       );
     case "smtp":
-      return <SmtpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+      return (
+        <SmtpInspector
+          node={node}
+          updateData={updateData}
+          isExpanded={isExpanded}
+        />
+      );
     case "wait":
-      return <WaitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+      return (
+        <WaitInspector
+          node={node}
+          updateData={updateData}
+          isExpanded={isExpanded}
+        />
+      );
     case "edit":
-      return <EditInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+      return (
+        <EditInspector
+          node={node}
+          updateData={updateData}
+          isExpanded={isExpanded}
+        />
+      );
     case "split":
-      return <SplitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+      return (
+        <SplitInspector
+          node={node}
+          updateData={updateData}
+          isExpanded={isExpanded}
+        />
+      );
     case "merge":
-      return <MergeInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+      return (
+        <MergeInspector
+          node={node}
+          updateData={updateData}
+          isExpanded={isExpanded}
+        />
+      );
     default:
       return null;
   }
@@ -163,7 +209,8 @@ export function Inspector({
   const setIsExpandedDialogOpen = setIsExpandedProp ?? setIsExpandedInternal;
 
   const nodeIO = useMemo(
-    () => (selectedNode ? getNodeSchema(selectedNode.type, selectedNode.data) : null),
+    () =>
+      selectedNode ? getNodeSchema(selectedNode.type, selectedNode.data) : null,
     [selectedNode],
   );
 
@@ -178,7 +225,7 @@ export function Inspector({
       data-inspector
       className={cn(
         "flex w-65 max-w-[90vw] flex-col rounded-(--radius) border border-border/60 bg-card/90 shadow-lg transition-all",
-        className
+        className,
       )}
     >
       {/* Header */}
@@ -235,10 +282,12 @@ export function Inspector({
           </div>
 
           {/* Scrollable Content */}
-          <div className={cn(
-            "overflow-y-auto p-3",
-            renderInPanel ? "max-h-[calc(100vh-16rem)]" : "flex-1 min-h-0"
-          )}>
+          <div
+            className={cn(
+              "overflow-y-auto p-3",
+              renderInPanel ? "max-h-[calc(100vh-16rem)]" : "flex-1 min-h-0",
+            )}
+          >
             <div className="space-y-3">
               {/* Label */}
               <div className="space-y-2">
@@ -254,7 +303,10 @@ export function Inspector({
               </div>
 
               {/* Type-specific inspector */}
-              <div inert={readOnly || undefined} className={readOnly ? "opacity-70" : undefined}>
+              <div
+                inert={readOnly || undefined}
+                className={readOnly ? "opacity-70" : undefined}
+              >
                 {renderInspectorForm(selectedNode, updateData, false)}
               </div>
             </div>
@@ -314,16 +366,22 @@ export function Inspector({
             {/* Scrollable Content with Tabs */}
             <div className="flex-1 overflow-y-auto">
               <Tabs defaultValue="config" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 rounded-none">
-                    <TabsTrigger value="config" className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      Configuration
-                    </TabsTrigger>
-                    <TabsTrigger value="runtime" className="flex items-center gap-2">
-                      <Activity className="h-4 w-4" />
-                      Runtime Data
-                    </TabsTrigger>
-                  </TabsList>
+                <TabsList className="grid w-full grid-cols-2 rounded-none">
+                  <TabsTrigger
+                    value="config"
+                    className="flex items-center gap-2"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Configuration
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="runtime"
+                    className="flex items-center gap-2"
+                  >
+                    <Activity className="h-4 w-4" />
+                    Runtime Data
+                  </TabsTrigger>
+                </TabsList>
 
                 {/* Configuration Tab */}
                 <TabsContent value="config" className="p-6 mt-0">
@@ -357,7 +415,10 @@ export function Inspector({
                       <div className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         Configuration
                       </div>
-                      <div inert={readOnly || undefined} className={readOnly ? "opacity-70" : undefined}>
+                      <div
+                        inert={readOnly || undefined}
+                        className={readOnly ? "opacity-70" : undefined}
+                      >
                         {renderInspectorForm(selectedNode, updateData, true)}
                       </div>
                     </div>
@@ -428,7 +489,10 @@ export function Inspector({
                     <div className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Execution Data
                     </div>
-                    <RuntimeDataPanel nodeId={selectedNode.id} nodeLabel={selectedNode.data.label} />
+                    <RuntimeDataPanel
+                      nodeId={selectedNode.id}
+                      nodeLabel={selectedNode.data.label}
+                    />
                   </div>
                 </TabsContent>
               </Tabs>
@@ -499,7 +563,8 @@ export function Inspector({
             {selectedNode && (
               <div className="rounded-sm border border-border/60 bg-muted/30 p-3">
                 <div className="text-sm font-medium text-foreground">
-                  {selectedNode.type} • {selectedNode.data.label || selectedNode.id.slice(0, 6)}
+                  {selectedNode.type} •{" "}
+                  {selectedNode.data.label || selectedNode.id.slice(0, 6)}
                 </div>
               </div>
             )}

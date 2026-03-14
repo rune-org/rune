@@ -26,7 +26,8 @@ function loadShortcuts(): Record<string, NodeKind> {
 }
 
 export function useNodeShortcuts() {
-  const [shortcuts, setShortcuts] = useState<Record<string, NodeKind>>(loadShortcuts);
+  const [shortcuts, setShortcuts] =
+    useState<Record<string, NodeKind>>(loadShortcuts);
 
   const shortcutsRef = useRef(shortcuts);
   useEffect(() => {
@@ -36,8 +37,7 @@ export function useNodeShortcuts() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(shortcuts));
-    } catch {
-    }
+    } catch {}
   }, [shortcuts]);
 
   const shortcutsByKind = useMemo(() => {

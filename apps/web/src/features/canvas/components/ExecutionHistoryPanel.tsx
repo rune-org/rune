@@ -17,9 +17,18 @@ import {
   fetchWorkflowExecutions,
   type RtesExecutionDocument,
 } from "@/lib/api/rtes";
-import type { ExecutionState, WorkflowExecutionStatus, NodeExecutionData, WorkflowGraphSnapshot } from "../types/execution";
+import type {
+  ExecutionState,
+  WorkflowExecutionStatus,
+  NodeExecutionData,
+  WorkflowGraphSnapshot,
+} from "../types/execution";
 import { parseNodeStatus } from "../types/execution";
-import { workflowDataToCanvas, type WorkflowNode, type WorkflowEdge } from "@/lib/workflow-dsl";
+import {
+  workflowDataToCanvas,
+  type WorkflowNode,
+  type WorkflowEdge,
+} from "@/lib/workflow-dsl";
 import { sanitizeGraph } from "../lib/graphIO";
 import { applyAutoLayout } from "../lib/autoLayout";
 import type { CanvasNode } from "../types";
@@ -77,7 +86,9 @@ function formatRelativeTime(date: string): string {
  * Extract a graph snapshot from an RTES execution document.
  * Converts the stored node definitions and edges back into React Flow format.
  */
-function extractGraphSnapshot(doc: RtesExecutionDocument): WorkflowGraphSnapshot | undefined {
+function extractGraphSnapshot(
+  doc: RtesExecutionDocument,
+): WorkflowGraphSnapshot | undefined {
   if (!doc.nodes || Object.keys(doc.nodes).length === 0) return undefined;
 
   let hasStoredPositions = false;
@@ -153,7 +164,9 @@ function rtesDocToExecutionState(doc: RtesExecutionDocument): ExecutionState {
         nodeId,
         status: parseNodeStatus(latest.status),
         output: latest.output,
-        error: latest.error ? { message: latest.error.message, code: latest.error.code } : undefined,
+        error: latest.error
+          ? { message: latest.error.message, code: latest.error.code }
+          : undefined,
         executedAt: latest.executed_at,
         durationMs: latest.duration_ms,
       });
@@ -188,9 +201,7 @@ function ExecutionHistoryListItem({
     <div
       className={cn(
         "group flex items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors cursor-pointer",
-        isActive
-          ? "bg-muted/60 text-foreground"
-          : "hover:bg-muted/40"
+        isActive ? "bg-muted/60 text-foreground" : "hover:bg-muted/40",
       )}
       onClick={onSelect}
     >
@@ -219,10 +230,14 @@ function ExecutionHistoryListItem({
 /**
  * Panel for browsing and loading past execution history from RTES.
  */
-export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps) {
+export function ExecutionHistoryPanel({
+  workflowId,
+}: ExecutionHistoryPanelProps) {
   const { state, dispatch } = useExecution();
   const [history, setHistory] = useState<ExecutionHistoryItem[]>([]);
-  const [rtesDocuments, setRtesDocuments] = useState<Map<string, RtesExecutionDocument>>(new Map());
+  const [rtesDocuments, setRtesDocuments] = useState<
+    Map<string, RtesExecutionDocument>
+  >(new Map());
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -252,7 +267,10 @@ export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps
       }
 
       // Sort by created_at descending (most recent first)
-      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      items.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
 
       setRtesDocuments(docMap);
       setHistory(items);
@@ -349,7 +367,9 @@ export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps
             <div className="p-1">
               {history.map((item, index) => {
                 const isActive = state.executionId === item.executionId;
-                const nextIsNotActive = history[index + 1] && state.executionId !== history[index + 1].executionId;
+                const nextIsNotActive =
+                  history[index + 1] &&
+                  state.executionId !== history[index + 1].executionId;
                 return (
                   <div key={item.executionId}>
                     <ExecutionHistoryListItem

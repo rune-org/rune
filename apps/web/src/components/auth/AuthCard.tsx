@@ -29,16 +29,16 @@ export function AuthCard({
         transition={{ duration: 0.5, ease: "easeOut" }}
         className={cn(
           "relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/40 backdrop-blur-xl shadow-2xl",
-          className
+          className,
         )}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
         <div className="relative z-10 p-8 md:p-10 flex flex-col gap-6">
           <div className="space-y-2 text-center">
-            <h1 
+            <h1
               className="text-3xl font-bold font-serif tracking-tight text-white"
-              style={{ fontFamily: 'var(--font-playfair)' }}
+              style={{ fontFamily: "var(--font-playfair)" }}
             >
               {title}
             </h1>
@@ -48,7 +48,7 @@ export function AuthCard({
               </p>
             )}
           </div>
-          
+
           {children}
 
           {footer && (

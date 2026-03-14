@@ -183,7 +183,7 @@ export function AddCredentialDialog({
   const [credentialType, setCredentialType] =
     useState<CredentialType>("api_key");
   const [credentialData, setCredentialData] = useState<Record<string, string>>(
-    {}
+    {},
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -207,7 +207,7 @@ export function AddCredentialDialog({
 
     if (missingFields.length > 0) {
       toast.error(
-        `Please fill in required fields: ${missingFields.join(", ")}`
+        `Please fill in required fields: ${missingFields.join(", ")}`,
       );
       return;
     }

@@ -119,10 +119,7 @@ function segmentsToHtml(
 }
 
 function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function escapeAttr(str: string): string {
@@ -352,7 +349,9 @@ export function VariableInput({
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement;
-      const removeEl = target.closest(".variable-pill-remove") as HTMLElement | null;
+      const removeEl = target.closest(
+        ".variable-pill-remove",
+      ) as HTMLElement | null;
       if (!removeEl) return;
 
       const indexRaw = removeEl.getAttribute("data-remove-index");
@@ -375,14 +374,11 @@ export function VariableInput({
     [value, variableRefs, onChange, editableRef],
   );
 
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      const text = e.clipboardData.getData("text/plain");
-      document.execCommand("insertText", false, text);
-    },
-    [],
-  );
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+    document.execCommand("insertText", false, text);
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {

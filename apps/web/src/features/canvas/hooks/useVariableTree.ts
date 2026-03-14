@@ -5,7 +5,11 @@ import { useGraph } from "../context/GraphContext";
 import { useExecutionOptional } from "../context/ExecutionContext";
 import { getUpstreamNodes } from "../lib/graphUtils";
 import { getStaticOutputSchema } from "../lib/nodeOutputSchemas";
-import { jsonToVariableTree, type VariableSource, type VariableTreeNode } from "../lib/variableSchema";
+import {
+  jsonToVariableTree,
+  type VariableSource,
+  type VariableTreeNode,
+} from "../lib/variableSchema";
 import type { NodeKind } from "../types";
 
 /**
@@ -84,8 +88,7 @@ export function useVariableTree(nodeId: string): VariableSource[] {
 
     return upstreamNodes.map((upstreamNode) => {
       const kind = upstreamNode.type as NodeKind;
-      const label =
-        (upstreamNode.data as { label?: string }).label ?? kind;
+      const label = (upstreamNode.data as { label?: string }).label ?? kind;
       const rootPath = `$${label}`;
 
       const staticSchema = getStaticOutputSchema(
@@ -95,7 +98,9 @@ export function useVariableTree(nodeId: string): VariableSource[] {
 
       const prefixedSchema = staticSchema.map((node) => ({
         ...node,
-        path: node.path.startsWith("$") ? node.path : `${rootPath}.${node.path}`,
+        path: node.path.startsWith("$")
+          ? node.path
+          : `${rootPath}.${node.path}`,
       }));
 
       // Check for execution data

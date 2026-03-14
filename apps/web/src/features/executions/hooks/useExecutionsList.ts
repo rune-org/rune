@@ -28,9 +28,14 @@ function mapExecution(item: ApiExecutionListItem): ExecutionListItem {
  */
 function calculateMetrics(executions: ExecutionListItem[]): ExecutionMetrics {
   const totalExecutions = executions.length;
-  const successfulExecutions = executions.filter((e) => e.status === "completed").length;
-  const failedExecutions = executions.filter((e) => e.status === "failed").length;
-  const successRate = totalExecutions > 0 ? (successfulExecutions / totalExecutions) * 100 : 0;
+  const successfulExecutions = executions.filter(
+    (e) => e.status === "completed",
+  ).length;
+  const failedExecutions = executions.filter(
+    (e) => e.status === "failed",
+  ).length;
+  const successRate =
+    totalExecutions > 0 ? (successfulExecutions / totalExecutions) * 100 : 0;
 
   const durationsMs = executions
     .filter((e) => e.durationMs !== undefined)
@@ -46,10 +51,10 @@ function calculateMetrics(executions: ExecutionListItem[]): ExecutionMetrics {
   weekStart.setDate(weekStart.getDate() - 7);
 
   const executionsToday = executions.filter(
-    (e) => new Date(e.startedAt) >= todayStart
+    (e) => new Date(e.startedAt) >= todayStart,
   ).length;
   const executionsThisWeek = executions.filter(
-    (e) => new Date(e.startedAt) >= weekStart
+    (e) => new Date(e.startedAt) >= weekStart,
   ).length;
 
   return {
@@ -68,7 +73,7 @@ function calculateMetrics(executions: ExecutionListItem[]): ExecutionMetrics {
  */
 function applyFilters(
   executions: ExecutionListItem[],
-  filters: ExecutionFilters
+  filters: ExecutionFilters,
 ): ExecutionListItem[] {
   let filtered = executions;
 
@@ -118,10 +123,13 @@ export function useExecutionsList(): UseExecutionsListReturn {
 
   const executions = useMemo(
     () => applyFilters(allExecutions, filters),
-    [allExecutions, filters]
+    [allExecutions, filters],
   );
 
-  const metrics = useMemo(() => calculateMetrics(allExecutions), [allExecutions]);
+  const metrics = useMemo(
+    () => calculateMetrics(allExecutions),
+    [allExecutions],
+  );
 
   const refresh = useCallback(async () => {
     setIsLoading(true);

@@ -50,7 +50,7 @@ export const getCredentialTypeOptions = () => {
       value: type,
       label: CREDENTIAL_TYPE_CONFIG[type].label,
       description: CREDENTIAL_TYPE_CONFIG[type].description,
-    })
+    }),
   );
 };
 

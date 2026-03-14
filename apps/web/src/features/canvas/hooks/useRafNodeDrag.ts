@@ -16,7 +16,9 @@ export function useRafNodeDrag(
   options: UseRafNodeDragOptions = {},
 ) {
   const { onDragStateChange } = options;
-  const pendingPositionChangesRef = useRef<NodeChange<CanvasNode>[] | null>(null);
+  const pendingPositionChangesRef = useRef<NodeChange<CanvasNode>[] | null>(
+    null,
+  );
   const positionFlushFrameRef = useRef<number | null>(null);
 
   const flushPositionChanges = useCallback(() => {
@@ -75,7 +77,8 @@ export function useRafNodeDrag(
       if (latestPositionChanges && latestPositionChanges.length > 0) {
         pendingPositionChangesRef.current = latestPositionChanges;
         if (positionFlushFrameRef.current === null) {
-          positionFlushFrameRef.current = requestAnimationFrame(flushPositionChanges);
+          positionFlushFrameRef.current =
+            requestAnimationFrame(flushPositionChanges);
         }
       }
     },

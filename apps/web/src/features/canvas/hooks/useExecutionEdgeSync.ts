@@ -8,7 +8,7 @@ type SetEdges = (updater: Edge[] | ((prev: Edge[]) => Edge[])) => void;
 
 export function useExecutionEdgeSync(
   executionState: ExecutionState,
-  setEdges: SetEdges
+  setEdges: SetEdges,
 ) {
   // Track which nodes have been visited (have any execution data)
   const prevVisitedNodesRef = useRef<Set<string>>(new Set());
@@ -24,7 +24,7 @@ export function useExecutionEdgeSync(
             ...e,
             animated: false,
             style: { ...(e.style || {}), stroke: undefined },
-          }))
+          })),
         );
         prevVisitedNodesRef.current = new Set();
         prevRunningNodesRef.current = new Set();
@@ -38,7 +38,12 @@ export function useExecutionEdgeSync(
     const runningNodes = new Set<string>();
 
     nodeMap.forEach((nodeData, nodeId) => {
-      if (nodeData.status === "running" || nodeData.status === "success" || nodeData.status === "failed" || nodeData.status === "waiting") {
+      if (
+        nodeData.status === "running" ||
+        nodeData.status === "success" ||
+        nodeData.status === "failed" ||
+        nodeData.status === "waiting"
+      ) {
         visitedNodes.add(nodeId);
       }
       if (nodeData.status === "running") {
@@ -67,7 +72,8 @@ export function useExecutionEdgeSync(
       }
     });
 
-    const hasChanges = newlyVisited.size > 0 || nowRunning.size > 0 || stoppedRunning.size > 0;
+    const hasChanges =
+      newlyVisited.size > 0 || nowRunning.size > 0 || stoppedRunning.size > 0;
 
     if (hasChanges) {
       setEdges((edges) =>
@@ -88,8 +94,14 @@ export function useExecutionEdgeSync(
           }
 
           if (targetVisited && !targetRunning) {
-            const currentStroke = (edge.style as Record<string, unknown> | undefined)?.stroke;
-            if (targetNewlyVisited || stoppedRunning.has(edge.target) || !currentStroke) {
+            const currentStroke = (
+              edge.style as Record<string, unknown> | undefined
+            )?.stroke;
+            if (
+              targetNewlyVisited ||
+              stoppedRunning.has(edge.target) ||
+              !currentStroke
+            ) {
               return {
                 ...edge,
                 animated: false,
@@ -102,7 +114,7 @@ export function useExecutionEdgeSync(
           }
 
           return edge;
-        })
+        }),
       );
     }
 
@@ -120,7 +132,7 @@ export function useExecutionEdgeSync(
         edges.map((e) => ({
           ...e,
           animated: false,
-        }))
+        })),
       );
     }
   }, [executionState.status, setEdges]);

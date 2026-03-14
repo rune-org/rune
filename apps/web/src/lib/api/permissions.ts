@@ -1,6 +1,6 @@
 /**
  * API functions for workflow permissions management.
- * 
+ *
  * These functions use the generated hey-api client to call the backend
  * permissions endpoints defined in services/api/src/permissions/router.py
  */
@@ -27,11 +27,11 @@ export interface WorkflowPermission {
 
 /**
  * Share a workflow with another user.
- * 
+ *
  * Backend endpoint: POST /workflows/{workflow_id}/share
- * 
+ *
  * Only OWNER can share. Cannot grant "owner" role through this endpoint.
- * 
+ *
  * @param workflowId - The workflow ID
  * @param userId - The target user ID to share with
  * @param role - The role to grant ("editor" or "viewer", not "owner")
@@ -39,7 +39,7 @@ export interface WorkflowPermission {
 export async function shareWorkflow(
   workflowId: string,
   userId: number,
-  role: WorkflowRole
+  role: WorkflowRole,
 ): Promise<void> {
   if (role === "owner") {
     throw new Error("Cannot grant owner role through sharing");
@@ -55,24 +55,27 @@ export async function shareWorkflow(
     });
   } catch (error: unknown) {
     const err = error as Record<string, unknown> | undefined;
-    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to share workflow";
+    const message =
+      err?.detail && typeof err.detail === "string"
+        ? err.detail
+        : "Failed to share workflow";
     throw new Error(message);
   }
 }
 
 /**
  * Revoke a user's access to a workflow.
- * 
+ *
  * Backend endpoint: DELETE /workflows/{workflow_id}/share/{user_id}
- * 
+ *
  * Only OWNER can revoke access.
- * 
+ *
  * @param workflowId - The workflow ID
  * @param userId - The user ID to revoke access from
  */
 export async function revokeWorkflowAccess(
   workflowId: string,
-  userId: number
+  userId: number,
 ): Promise<void> {
   try {
     await revokeAccessWorkflowsWorkflowIdShareUserIdDelete({
@@ -83,44 +86,51 @@ export async function revokeWorkflowAccess(
     });
   } catch (error: unknown) {
     const err = error as Record<string, unknown> | undefined;
-    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to revoke access";
+    const message =
+      err?.detail && typeof err.detail === "string"
+        ? err.detail
+        : "Failed to revoke access";
     throw new Error(message);
   }
 }
 
 /**
  * List all users who have access to a workflow.
- * 
+ *
  * Backend endpoint: GET /workflows/{workflow_id}/permissions
- * 
+ *
  * Any user with access (owner, editor, viewer) can list permissions.
- * 
+ *
  * @param workflowId - The workflow ID
  * @returns Array of users with their roles
  */
 export async function listWorkflowPermissions(
-  workflowId: string
+  workflowId: string,
 ): Promise<WorkflowPermission[]> {
   try {
-    const response = await listWorkflowPermissionsWorkflowsWorkflowIdPermissionsGet({
-      path: { workflow_id: parseInt(workflowId) },
-    });
+    const response =
+      await listWorkflowPermissionsWorkflowsWorkflowIdPermissionsGet({
+        path: { workflow_id: parseInt(workflowId) },
+      });
 
     return response.data?.data.permissions ?? [];
   } catch (error: unknown) {
     const err = error as Record<string, unknown> | undefined;
-    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to fetch permissions";
+    const message =
+      err?.detail && typeof err.detail === "string"
+        ? err.detail
+        : "Failed to fetch permissions";
     throw new Error(message);
   }
 }
 
 /**
  * Update a user's role for a workflow.
- * 
+ *
  * Backend endpoint: PATCH /workflows/{workflow_id}/permissions/{user_id}
- * 
+ *
  * Only OWNER can update roles. Cannot grant or transfer "owner" role.
- * 
+ *
  * @param workflowId - The workflow ID
  * @param userId - The user ID whose role to update
  * @param role - The new role ("editor" or "viewer", not "owner")
@@ -128,7 +138,7 @@ export async function listWorkflowPermissions(
 export async function updateWorkflowUserRole(
   workflowId: string,
   userId: number,
-  role: WorkflowRole
+  role: WorkflowRole,
 ): Promise<void> {
   if (role === "owner") {
     throw new Error("Cannot grant owner role through role update");
@@ -146,7 +156,10 @@ export async function updateWorkflowUserRole(
     });
   } catch (error: unknown) {
     const err = error as Record<string, unknown> | undefined;
-    const message = err?.detail && typeof err.detail === 'string' ? err.detail : "Failed to update role";
+    const message =
+      err?.detail && typeof err.detail === "string"
+        ? err.detail
+        : "Failed to update role";
     throw new Error(message);
   }
 }

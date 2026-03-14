@@ -11,7 +11,10 @@ import {
 
 import { auth, workflows as workflowsApi } from "@/lib/api";
 import type { UserResponse } from "@/client/types.gen";
-import { listItemToWorkflowSummary, type WorkflowSummary } from "@/lib/workflows";
+import {
+  listItemToWorkflowSummary,
+  type WorkflowSummary,
+} from "@/lib/workflows";
 
 type UserProfile = {
   id: string;
@@ -107,7 +110,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const userData = profileRes.data.data;
       dispatch({ type: "setUser", user: toUserProfile(userData) });
       const workflowItems = workflowsRes.data.data ?? [];
-      
+
       dispatch({
         type: "setWorkflows",
         workflows: workflowItems.map((item) => listItemToWorkflowSummary(item)),
@@ -125,7 +128,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         throw new Error("Unable to load workflows");
       }
       const items = res.data.data ?? [];
-      
+
       dispatch({
         type: "setWorkflows",
         workflows: items.map((item) => listItemToWorkflowSummary(item)),

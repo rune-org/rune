@@ -133,7 +133,7 @@ function CreateWorkflowButton() {
             >
               Cancel
             </Button>
-        <Button type="submit" disabled={isSubmitting || !name.trim()}>
+            <Button type="submit" disabled={isSubmitting || !name.trim()}>
               {isSubmitting ? "Creating…" : "Create & open canvas"}
             </Button>
           </DialogFooter>

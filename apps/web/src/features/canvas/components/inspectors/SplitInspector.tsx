@@ -23,9 +23,7 @@ export function SplitInspector({
       <label className="block text-xs text-muted-foreground">Array Field</label>
       <VariableInput
         value={node.data.array_field ?? ""}
-        onChange={(v) =>
-          updateSplitData((d) => ({ ...d, array_field: v }))
-        }
+        onChange={(v) => updateSplitData((d) => ({ ...d, array_field: v }))}
         placeholder="$json.items"
         nodeId={node.id}
       />

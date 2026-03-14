@@ -65,7 +65,7 @@ function StatusBadge({ status }: { status: ExecutionListStatus }) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-        config.className
+        config.className,
       )}
     >
       {config.icon}
@@ -101,7 +101,8 @@ function formatDate(dateStr: string): string {
 function getGroupAccentDot(executions: ExecutionListItem[]): string {
   if (executions.some((e) => e.status === "failed")) return "bg-red-500";
   if (executions.some((e) => e.status === "halted")) return "bg-yellow-500";
-  if (executions.some((e) => e.status === "pending")) return "bg-muted-foreground";
+  if (executions.some((e) => e.status === "pending"))
+    return "bg-muted-foreground";
   return "bg-green-500";
 }
 
@@ -139,7 +140,7 @@ function getStatusSummary(executions: ExecutionListItem[]): React.ReactNode {
           acc.push(
             <span key={`sep-${i}`} className="text-muted-foreground/40">
               /
-            </span>
+            </span>,
           );
         acc.push(part);
         return acc;
@@ -162,7 +163,9 @@ function TableHead({ mode }: { mode: SortMode }) {
         <th className={cn(colHeaderClass, "w-[180px]")}>
           {mode === "recent" ? "Workflow" : "Status"}
         </th>
-        {mode === "recent" && <th className={cn(colHeaderClass, "w-[140px]")}>Status</th>}
+        {mode === "recent" && (
+          <th className={cn(colHeaderClass, "w-[140px]")}>Status</th>
+        )}
         <th className={cn(colHeaderClass, "w-[90px]")}>Duration</th>
         <th className={cn(colHeaderClass, "w-[110px]")}>Started</th>
         <th className={cn(colHeaderClass, "w-[110px]")}>Completed</th>
@@ -187,7 +190,7 @@ function ExecutionRow({
     <tr
       className={cn(
         "transition-colors hover:bg-muted/20",
-        !isLast && "border-b border-border/30"
+        !isLast && "border-b border-border/30",
       )}
     >
       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
@@ -242,14 +245,13 @@ function GroupHeaderRow({
   onToggle: () => void;
 }) {
   const dot = getGroupAccentDot(group.executions);
-  const workflowLabel =
-    group.workflowName || `Workflow #${group.workflowId}`;
+  const workflowLabel = group.workflowName || `Workflow #${group.workflowId}`;
 
   return (
     <tr
       className={cn(
         "border-b border-border/40 bg-muted/10 transition-colors hover:bg-muted/20",
-        "cursor-pointer select-none"
+        "cursor-pointer select-none",
       )}
       onClick={onToggle}
     >
@@ -258,7 +260,7 @@ function GroupHeaderRow({
           <ChevronRight
             className={cn(
               "h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-transform duration-200",
-              isOpen && "rotate-90"
+              isOpen && "rotate-90",
             )}
           />
 
@@ -333,9 +335,9 @@ function RecentBody({ executions }: { executions: ExecutionListItem[] }) {
     () =>
       [...executions].sort(
         (a, b) =>
-          new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+          new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
       ),
-    [executions]
+    [executions],
   );
 
   return (
@@ -368,7 +370,7 @@ function SortToggle({
           "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
           mode === "workflow"
             ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         <Layers className="h-3.5 w-3.5" />
@@ -381,7 +383,7 @@ function SortToggle({
           "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
           mode === "recent"
             ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         <ArrowDownWideNarrow className="h-3.5 w-3.5" />

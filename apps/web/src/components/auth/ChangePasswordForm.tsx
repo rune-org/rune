@@ -23,7 +23,7 @@ const changePasswordSchema = z
       .regex(/[0-9]/, "Password must contain at least one number")
       .regex(
         /[!@#$%^&*(),.?":{}|<>]/,
-        "Password must contain at least one special character"
+        "Password must contain at least one special character",
       ),
     confirmPassword: z.string().min(1, "Please confirm your new password"),
   })
@@ -91,7 +91,7 @@ export function ChangePasswordForm({
     try {
       const data = await changeMyPassword(
         values.oldPassword,
-        values.newPassword
+        values.newPassword,
       );
 
       if (!data) {
@@ -132,13 +132,18 @@ export function ChangePasswordForm({
           placeholder="Enter your current password"
           className={cn(
             !isDialog &&
-              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11"
+              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11",
           )}
           {...form.register("oldPassword")}
           aria-invalid={!!form.formState.errors.oldPassword}
         />
         {form.formState.errors.oldPassword ? (
-          <p className={cn("text-xs mt-1", isDialog ? "text-destructive" : "text-red-400")}>
+          <p
+            className={cn(
+              "text-xs mt-1",
+              isDialog ? "text-destructive" : "text-red-400",
+            )}
+          >
             {form.formState.errors.oldPassword.message}
           </p>
         ) : null}
@@ -156,17 +161,27 @@ export function ChangePasswordForm({
           placeholder="Create a secure password"
           className={cn(
             !isDialog &&
-              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11"
+              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11",
           )}
           {...form.register("newPassword")}
           aria-invalid={!!form.formState.errors.newPassword}
         />
         {form.formState.errors.newPassword ? (
-          <p className={cn("text-xs mt-1", isDialog ? "text-destructive" : "text-red-400")}>
+          <p
+            className={cn(
+              "text-xs mt-1",
+              isDialog ? "text-destructive" : "text-red-400",
+            )}
+          >
             {form.formState.errors.newPassword.message}
           </p>
         ) : (
-          <p className={cn("text-xs mt-1", isDialog ? "text-muted-foreground" : "text-zinc-500")}>
+          <p
+            className={cn(
+              "text-xs mt-1",
+              isDialog ? "text-muted-foreground" : "text-zinc-500",
+            )}
+          >
             8+ characters, uppercase, lowercase, number, and special character
           </p>
         )}
@@ -184,13 +199,18 @@ export function ChangePasswordForm({
           placeholder="Confirm your new password"
           className={cn(
             !isDialog &&
-              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11"
+              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11",
           )}
           {...form.register("confirmPassword")}
           aria-invalid={!!form.formState.errors.confirmPassword}
         />
         {form.formState.errors.confirmPassword ? (
-          <p className={cn("text-xs mt-1", isDialog ? "text-destructive" : "text-red-400")}>
+          <p
+            className={cn(
+              "text-xs mt-1",
+              isDialog ? "text-destructive" : "text-red-400",
+            )}
+          >
             {form.formState.errors.confirmPassword.message}
           </p>
         ) : null}
@@ -202,13 +222,13 @@ export function ChangePasswordForm({
             "rounded-lg p-3",
             isDialog
               ? "bg-destructive/10 text-destructive text-sm"
-              : "bg-red-500/10 border border-red-500/20"
+              : "bg-red-500/10 border border-red-500/20",
           )}
         >
           <p
             className={cn(
               "font-medium",
-              isDialog ? "" : "text-xs text-red-400"
+              isDialog ? "" : "text-xs text-red-400",
             )}
             role="alert"
           >

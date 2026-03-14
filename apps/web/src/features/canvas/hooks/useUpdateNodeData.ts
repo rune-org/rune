@@ -35,7 +35,10 @@ export function useUpdateNodeData(setNodes: SetNodes) {
           } as NodeDataMap[T];
 
           // If label was updated, ensure it's unique
-          if (updates.label !== undefined && typeof updates.label === "string") {
+          if (
+            updates.label !== undefined &&
+            typeof updates.label === "string"
+          ) {
             let newLabel = updates.label;
             let counter = 2;
 

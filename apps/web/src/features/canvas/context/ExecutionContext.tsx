@@ -39,7 +39,7 @@ type ExecutionAction =
  */
 function executionReducer(
   state: ExecutionState,
-  action: ExecutionAction
+  action: ExecutionAction,
 ): ExecutionState {
   switch (action.type) {
     case "START_EXECUTION": {
@@ -179,22 +179,22 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
 
   const getNodeExecution = useCallback(
     (nodeId: string) => state.nodes.get(nodeId),
-    [state.nodes]
+    [state.nodes],
   );
 
   const isNodeRunning = useCallback(
     (nodeId: string) => state.nodes.get(nodeId)?.status === "running",
-    [state.nodes]
+    [state.nodes],
   );
 
   const isNodeCompleted = useCallback(
     (nodeId: string) => state.nodes.get(nodeId)?.status === "success",
-    [state.nodes]
+    [state.nodes],
   );
 
   const isNodeFailed = useCallback(
     (nodeId: string) => state.nodes.get(nodeId)?.status === "failed",
-    [state.nodes]
+    [state.nodes],
   );
 
   const isExecutionActive = state.status === "running";
@@ -209,7 +209,14 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
       isNodeFailed,
       isExecutionActive,
     }),
-    [state, getNodeExecution, isNodeRunning, isNodeCompleted, isNodeFailed, isExecutionActive]
+    [
+      state,
+      getNodeExecution,
+      isNodeRunning,
+      isNodeCompleted,
+      isNodeFailed,
+      isExecutionActive,
+    ],
   );
 
   return (
@@ -243,7 +250,9 @@ export function useExecutionOptional(): ExecutionContextValue | null {
  * Hook to get execution data for a specific node.
  * Returns undefined if node has no execution data or if outside ExecutionProvider.
  */
-export function useNodeExecution(nodeId: string): NodeExecutionData | undefined {
+export function useNodeExecution(
+  nodeId: string,
+): NodeExecutionData | undefined {
   const context = useContext(ExecutionContext);
   if (!context) return undefined;
   return context.getNodeExecution(nodeId);

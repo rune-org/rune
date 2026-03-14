@@ -202,7 +202,13 @@ type GroupProps = {
   onAssignShortcut?: (kind: NodeKind, key: string | null) => void;
 };
 
-function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }: GroupProps) {
+function Group({
+  group,
+  containerRef,
+  onAdd,
+  shortcutsByKind,
+  onAssignShortcut,
+}: GroupProps) {
   const Icon = getGroupIcon(group);
   const nodes = getNodesByGroup(group);
   const colorClass = getGroupColorClass(group);
@@ -238,7 +244,12 @@ function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }
   );
 }
 
-export function LibraryGroups({ containerRef, onAdd, shortcutsByKind, onAssignShortcut }: LibraryProps) {
+export function LibraryGroups({
+  containerRef,
+  onAdd,
+  shortcutsByKind,
+  onAssignShortcut,
+}: LibraryProps) {
   return (
     <div className="flex flex-col gap-3">
       {getAllGroups().map((group) => (

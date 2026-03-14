@@ -22,7 +22,7 @@ import {
 } from "@/lib/api/credentials";
 import { listUsersForSharing } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth";
-import type { CredentialShareInfo, UserBasicInfo} from "@/client/types.gen";
+import type { CredentialShareInfo, UserBasicInfo } from "@/client/types.gen";
 
 interface ShareCredentialDialogProps {
   open: boolean;
@@ -83,7 +83,7 @@ export function ShareCredentialDialog({
   const availableUsers = users.filter(
     (user) =>
       user.id !== currentUserId &&
-      !shares.some((share) => share.user_id === user.id)
+      !shares.some((share) => share.user_id === user.id),
   );
 
   // Helper to get user name by ID
@@ -105,8 +105,8 @@ export function ShareCredentialDialog({
         selectedUserIds.map((userId) =>
           shareCredential(credentialId, {
             user_id: userId,
-          })
-        )
+          }),
+        ),
       );
 
       // Refresh shares list to get updated data including timestamps/names
@@ -169,11 +169,12 @@ export function ShareCredentialDialog({
                   selectedUserIds={selectedUserIds}
                   onSelect={(id) => setSelectedUserIds((prev) => [...prev, id])}
                   onRemove={(id) =>
-                    setSelectedUserIds((prev) => prev.filter((uid) => uid !== id))
+                    setSelectedUserIds((prev) =>
+                      prev.filter((uid) => uid !== id),
+                    )
                   }
                   disabled={isLoading || isSharing}
                 />
-
               </div>
             </div>
           )}
@@ -252,6 +253,6 @@ export function ShareCredentialDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog >
+    </Dialog>
   );
 }

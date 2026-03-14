@@ -22,10 +22,7 @@ import {
 import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/lib/auth";
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -181,11 +178,15 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
             "group relative flex h-12 w-full items-center rounded-xl border border-transparent text-sm font-medium text-muted-foreground motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             "hover:border-border/70 hover:bg-muted/40 hover:text-foreground",
-            isExpanded ? "justify-start gap-3 px-3" : "justify-center gap-0 px-0",
+            isExpanded
+              ? "justify-start gap-3 px-3"
+              : "justify-center gap-0 px-0",
           )}
         >
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
+            <AvatarFallback className="text-xs font-semibold">
+              {initials}
+            </AvatarFallback>
           </Avatar>
           <span
             aria-hidden={!isExpanded}
@@ -210,17 +211,28 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align={isExpanded ? "end" : "start"} side="top" className="w-56">
+      <DropdownMenuContent
+        align={isExpanded ? "end" : "start"}
+        side="top"
+        className="w-56"
+      >
         <DropdownMenuLabel>
           <div className="flex flex-col gap-1">
-            <p className="text-sm font-medium text-foreground">{user?.name ?? "User"}</p>
-            <p className="text-xs font-normal text-muted-foreground">{user?.email ?? ""}</p>
+            <p className="text-sm font-medium text-foreground">
+              {user?.name ?? "User"}
+            </p>
+            <p className="text-xs font-normal text-muted-foreground">
+              {user?.email ?? ""}
+            </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         <DropdownMenuItem asChild>
-          <Link href="/profile" className="flex items-center gap-2 cursor-pointer">
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 cursor-pointer"
+          >
             <User className="h-4 w-4" />
             <span>Profile</span>
           </Link>
@@ -244,11 +256,15 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { state } = useAuth();                  
+  const { state } = useAuth();
   const user = state.user;
   const isAdmin = user?.role === "admin";
 
-  const adminUsersItem: NavItem = { title: "Users", href: "/admin/users", icon: Users };
+  const adminUsersItem: NavItem = {
+    title: "Users",
+    href: "/admin/users",
+    icon: Users,
+  };
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
@@ -276,7 +292,6 @@ export function AppSidebar() {
       )}
     >
       <div className="flex h-full flex-col justify-between py-6">
-        
         {/* Top section */}
         <div className="flex flex-col gap-4">
           <div
@@ -336,7 +351,11 @@ export function AppSidebar() {
             ))}
 
             {isAdmin && (
-              <NavLink item={adminUsersItem} pathname={pathname} isExpanded={isExpanded} />
+              <NavLink
+                item={adminUsersItem}
+                pathname={pathname}
+                isExpanded={isExpanded}
+              />
             )}
           </nav>
 

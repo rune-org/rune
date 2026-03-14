@@ -29,7 +29,12 @@ export function VersionConflictDialog({
   onCancel,
 }: VersionConflictDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onCancel();
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -42,10 +47,18 @@ export function VersionConflictDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2 text-sm">
-          <Button variant="outline" className="justify-start" onClick={onLoadServer}>
+          <Button
+            variant="outline"
+            className="justify-start"
+            onClick={onLoadServer}
+          >
             Load their version (v{serverVersion}) and discard your changes
           </Button>
-          <Button variant="outline" className="justify-start" onClick={onForceSave}>
+          <Button
+            variant="outline"
+            className="justify-start"
+            onClick={onForceSave}
+          >
             Save your changes as a new version on top of v{serverVersion}
           </Button>
         </div>

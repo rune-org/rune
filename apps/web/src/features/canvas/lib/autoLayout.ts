@@ -44,7 +44,10 @@ export interface AutoLayoutResult {
   edges: Edge[];
 }
 
-function getLayoutDimensions(node: CanvasNode): { width: number; height: number } {
+function getLayoutDimensions(node: CanvasNode): {
+  width: number;
+  height: number;
+} {
   return getNodeDimensionsWithData(node.type, node.data);
 }
 
@@ -61,7 +64,9 @@ export function applyAutoLayout({
   }
 
   const pinnedNodes = respectPinned ? nodes.filter((n) => n.data.pinned) : [];
-  const unpinnedNodes = respectPinned ? nodes.filter((n) => !n.data.pinned) : nodes;
+  const unpinnedNodes = respectPinned
+    ? nodes.filter((n) => !n.data.pinned)
+    : nodes;
 
   if (unpinnedNodes.length === 0) {
     return { nodes, edges };
@@ -87,15 +92,15 @@ export function applyAutoLayout({
 
   // Find an anchor node to preserve the user's canvas position.
   const anchorNode =
-    pinnedNodes[0] ||
-    nodes.find((n) => n.type === "trigger") ||
-    nodes[0];
+    pinnedNodes[0] || nodes.find((n) => n.type === "trigger") || nodes[0];
 
   // Calculate offset to anchor the new layout to the existing canvas position
   const anchorDagreNode = dagreGraph.node(anchorNode.id);
   const anchorDimensions = getLayoutDimensions(anchorNode);
-  const offsetX = anchorNode.position.x - (anchorDagreNode.x - anchorDimensions.width / 2); // Center co-ords to top-left conversion
-  const offsetY = anchorNode.position.y - (anchorDagreNode.y - anchorDimensions.height / 2);
+  const offsetX =
+    anchorNode.position.x - (anchorDagreNode.x - anchorDimensions.width / 2); // Center co-ords to top-left conversion
+  const offsetY =
+    anchorNode.position.y - (anchorDagreNode.y - anchorDimensions.height / 2);
 
   const layoutedNodes = nodes.map((node) => {
     if (respectPinned && node.data.pinned) {
@@ -126,7 +131,7 @@ export function applyAutoLayout({
 }
 
 /**
- * Resolve overlaps between nodes 
+ * Resolve overlaps between nodes
  * Groups nodes by approximate X position (rank), then ensures no vertical overlap within each group.
  */
 function resolveAllOverlaps(nodes: CanvasNode[]): CanvasNode[] {
@@ -275,9 +280,11 @@ function adjustForPinnedOverlaps(
       const nodeBottom = adjustedPosition.y + dimensions.height;
 
       const pinnedLeft = pinnedNode.position.x - padding;
-      const pinnedRight = pinnedNode.position.x + pinnedDimensions.width + padding;
+      const pinnedRight =
+        pinnedNode.position.x + pinnedDimensions.width + padding;
       const pinnedTop = pinnedNode.position.y - padding;
-      const pinnedBottom = pinnedNode.position.y + pinnedDimensions.height + padding;
+      const pinnedBottom =
+        pinnedNode.position.y + pinnedDimensions.height + padding;
 
       const overlapsX = nodeLeft < pinnedRight && nodeRight > pinnedLeft;
       const overlapsY = nodeTop < pinnedBottom && nodeBottom > pinnedTop;

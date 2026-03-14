@@ -44,11 +44,13 @@ function Popover({
       }
       onOpenChange?.(nextOpen);
     },
-    [isControlled, onOpenChange]
+    [isControlled, onOpenChange],
   );
 
   return (
-    <PopoverContext.Provider value={{ open, onOpenChange: handleOpenChange, triggerRef }}>
+    <PopoverContext.Provider
+      value={{ open, onOpenChange: handleOpenChange, triggerRef }}
+    >
       <div className="relative inline-block">{children}</div>
     </PopoverContext.Provider>
   );
@@ -70,14 +72,24 @@ const PopoverTrigger = React.forwardRef<HTMLButtonElement, PopoverTriggerProps>(
     const combinedRef = (node: HTMLButtonElement | null) => {
       if (typeof ref === "function") ref(node);
       else if (ref) ref.current = node;
-      (triggerRef as React.RefObject<HTMLButtonElement | null> & { current: HTMLButtonElement | null }).current = node;
+      (
+        triggerRef as React.RefObject<HTMLButtonElement | null> & {
+          current: HTMLButtonElement | null;
+        }
+      ).current = node;
     };
 
     if (asChild && React.isValidElement(children)) {
-      return React.cloneElement(children as React.ReactElement<{ onClick?: typeof handleClick; ref?: typeof combinedRef }>, {
-        onClick: handleClick,
-        ref: combinedRef,
-      });
+      return React.cloneElement(
+        children as React.ReactElement<{
+          onClick?: typeof handleClick;
+          ref?: typeof combinedRef;
+        }>,
+        {
+          onClick: handleClick,
+          ref: combinedRef,
+        },
+      );
     }
 
     return (
@@ -93,7 +105,7 @@ const PopoverTrigger = React.forwardRef<HTMLButtonElement, PopoverTriggerProps>(
         {children}
       </button>
     );
-  }
+  },
 );
 PopoverTrigger.displayName = "PopoverTrigger";
 
@@ -103,7 +115,10 @@ interface PopoverContentProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
-  ({ className, children, align = "center", sideOffset = 4, ...props }, ref) => {
+  (
+    { className, children, align = "center", sideOffset = 4, ...props },
+    ref,
+  ) => {
     const { open, onOpenChange, triggerRef } = usePopover();
     const contentRef = React.useRef<HTMLDivElement>(null);
 
@@ -154,7 +169,7 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
           "absolute z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none",
           "animate-in fade-in-0 zoom-in-95",
           alignmentClasses[align],
-          className
+          className,
         )}
         style={{ top: `calc(100% + ${sideOffset}px)` }}
         role="dialog"
@@ -163,7 +178,7 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
         {children}
       </div>
     );
-  }
+  },
 );
 PopoverContent.displayName = "PopoverContent";
 

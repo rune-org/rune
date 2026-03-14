@@ -2,10 +2,7 @@ import { fixupConfigRules } from "@eslint/compat";
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
 
-const nextConfig = fixupConfigRules([
-  ...nextCoreWebVitals,
-  ...nextTypescript,
-]);
+const nextConfig = fixupConfigRules([...nextCoreWebVitals, ...nextTypescript]);
 
 const eslintConfig = [
   ...nextConfig,

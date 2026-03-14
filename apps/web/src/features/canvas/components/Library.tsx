@@ -8,7 +8,11 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { LibraryGroups } from "./LibraryGroups";
 import type { NodeKind } from "../types";
 
@@ -96,7 +100,8 @@ export function Library({
     };
 
     document.addEventListener("mousedown", handleClickOutside, true);
-    return () => document.removeEventListener("mousedown", handleClickOutside, true);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside, true);
   }, [open]);
 
   const GUTTER = 16; // Breathing room from left edge of screen
@@ -128,7 +133,6 @@ export function Library({
     resizer.addEventListener("mousedown", onMouseDown);
     return () => resizer.removeEventListener("mousedown", onMouseDown);
   }, [panelWidth]);
- 
 
   return (
     <div className="pointer-events-none absolute inset-0 z-40">
@@ -159,7 +163,9 @@ export function Library({
           height: `calc(100% - ${top}px - 12px)`,
           left: GUTTER,
           width: panelWidth,
-          transform: open ? "translateX(0)" : `translateX(-${panelWidth + GUTTER + 12}px)`,
+          transform: open
+            ? "translateX(0)"
+            : `translateX(-${panelWidth + GUTTER + 12}px)`,
           transition: "transform 180ms ease-out",
         }}
       >
@@ -191,7 +197,8 @@ export function Library({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Right-click any library node to set or change its shortcut key.
+                  Right-click any library node to set or change its shortcut
+                  key.
                 </TooltipContent>
               </Tooltip>
             )}

@@ -23,8 +23,8 @@ export function DeleteCredentialDialog({
       description={
         <>
           Are you sure you want to delete <strong>{credentialName}</strong>?
-          This action cannot be undone, and any workflows using this
-          credential may stop working.
+          This action cannot be undone, and any workflows using this credential
+          may stop working.
         </>
       }
       cancelText="Cancel"

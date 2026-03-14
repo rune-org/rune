@@ -20,7 +20,9 @@ export const SplitNode = memo(function SplitNode({
       pinned={data.pinned}
     >
       <div className="text-xs text-muted-foreground">
-        {data.array_field ? `Split: ${data.array_field}` : "Configure array field"}
+        {data.array_field
+          ? `Split: ${data.array_field}`
+          : "Configure array field"}
       </div>
     </BaseNode>
   );

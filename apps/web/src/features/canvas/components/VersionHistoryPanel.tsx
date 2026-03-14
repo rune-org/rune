@@ -25,7 +25,13 @@ import type { Edge } from "@xyflow/react";
 
 interface VersionHistoryPanelProps {
   workflowId: number | null;
-  onViewVersion: (snapshot: { nodes: CanvasNode[]; edges: Edge[]; versionNumber: number } | null) => void;
+  onViewVersion: (
+    snapshot: {
+      nodes: CanvasNode[];
+      edges: Edge[];
+      versionNumber: number;
+    } | null,
+  ) => void;
   onRestore: (versionId: number) => void;
   onRunVersion?: (versionId: number) => void;
   viewingVersionNumber?: number | null;
@@ -70,7 +76,9 @@ export function VersionHistoryPanel({
     try {
       const response = await workflows.listVersions(workflowId);
       if (response.data) {
-        const items = [...response.data.data].sort((a, b) => b.version - a.version);
+        const items = [...response.data.data].sort(
+          (a, b) => b.version - a.version,
+        );
         setVersions(items);
       }
     } catch {
@@ -173,7 +181,7 @@ export function VersionHistoryPanel({
                       "group rounded-md px-2 py-2 text-sm transition-colors cursor-pointer",
                       isActive
                         ? "bg-muted/60 text-foreground"
-                        : "hover:bg-muted/40"
+                        : "hover:bg-muted/40",
                     )}
                     onClick={() => handleSelectVersion(v)}
                   >
@@ -200,7 +208,9 @@ export function VersionHistoryPanel({
                           {v.created_by && (
                             <>
                               <span>·</span>
-                              <span className="truncate">{v.created_by.name}</span>
+                              <span className="truncate">
+                                {v.created_by.name}
+                              </span>
                             </>
                           )}
                         </div>

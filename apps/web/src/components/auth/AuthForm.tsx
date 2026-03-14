@@ -26,7 +26,7 @@ const signUpSchema = z.object({
     .regex(/[0-9]/, "Password must contain at least one number")
     .regex(
       /[!@#$%^&*(),.?":{}|<>]/,
-      "Password must contain at least one special character"
+      "Password must contain at least one special character",
     ),
 });
 
@@ -67,7 +67,9 @@ export function AuthForm() {
       noValidate
     >
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-zinc-400">Name</Label>
+        <Label htmlFor="name" className="text-zinc-400">
+          Name
+        </Label>
         <Input
           id="name"
           placeholder="Jane Doe"
@@ -84,7 +86,9 @@ export function AuthForm() {
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-zinc-400">Email</Label>
+        <Label htmlFor="email" className="text-zinc-400">
+          Email
+        </Label>
         <Input
           id="email"
           type="email"
@@ -100,7 +104,9 @@ export function AuthForm() {
         ) : null}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-zinc-400">Password</Label>
+        <Label htmlFor="password" className="text-zinc-400">
+          Password
+        </Label>
         <PasswordInput
           id="password"
           placeholder="Create a secure password"
@@ -125,7 +131,7 @@ export function AuthForm() {
           </p>
         </div>
       ) : null}
-      
+
       <Button
         type="submit"
         className="w-full h-11 rounded-full bg-white !text-black hover:bg-zinc-200 font-medium transition-all shadow-lg mt-2"

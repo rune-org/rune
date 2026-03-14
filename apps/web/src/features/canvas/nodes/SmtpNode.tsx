@@ -6,7 +6,10 @@ import { Mail, Key, AlertCircle } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { SmtpData } from "../types";
 
-export const SmtpNode = memo(function SmtpNode({ id, data }: NodeProps<Node<SmtpData>>) {
+export const SmtpNode = memo(function SmtpNode({
+  id,
+  data,
+}: NodeProps<Node<SmtpData>>) {
   const hasCredential = !!data.credential;
 
   return (

@@ -18,7 +18,10 @@ import {
   replaceVariableReferences,
   type ScanResult,
 } from "./lib/variableRefUpdate";
-import { RenameRefDialog, type RenameChoice } from "./components/RenameRefDialog";
+import {
+  RenameRefDialog,
+  type RenameChoice,
+} from "./components/RenameRefDialog";
 import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
@@ -53,10 +56,13 @@ type FlowCanvasProps = {
     nodes: CanvasNode[];
     edges: Edge[];
   }) => Promise<number | null | void> | number | null | void;
-  onSaveWithMessage?: (graph: {
-    nodes: CanvasNode[];
-    edges: Edge[];
-  }, message: string) => Promise<void> | void;
+  onSaveWithMessage?: (
+    graph: {
+      nodes: CanvasNode[];
+      edges: Edge[];
+    },
+    message: string,
+  ) => Promise<void> | void;
   saveDisabled?: boolean;
   workflowId?: number | null;
   onPublish?: () => void;
@@ -122,7 +128,9 @@ function FlowCanvasInner({
   const [saveVersionDialogOpen, setSaveVersionDialogOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(null);
+  const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(
+    null,
+  );
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
@@ -166,7 +174,10 @@ function FlowCanvasInner({
   const addNode = useAddNode(setNodes, containerRef, rfInstanceRef);
   const updateNodeData = useUpdateNodeData(setNodes);
   const { togglePin } = usePinNode(setNodes);
-  const { pushHistory, undo, redo, canUndo, canRedo } = useCanvasHistory(nodes, edges);
+  const { pushHistory, undo, redo, canUndo, canRedo } = useCanvasHistory(
+    nodes,
+    edges,
+  );
 
   const {
     executionState,
@@ -183,7 +194,8 @@ function FlowCanvasInner({
   // Historical snapshot detection
   const { state: ctxExecutionState } = useExecution();
   const isViewingExecutionSnapshot =
-    ctxExecutionState.isHistorical === true && !!ctxExecutionState.graphSnapshot;
+    ctxExecutionState.isHistorical === true &&
+    !!ctxExecutionState.graphSnapshot;
 
   const isViewingSnapshot = isViewingExecutionSnapshot || !!versionSnapshot;
 
@@ -217,7 +229,10 @@ function FlowCanvasInner({
       }
       setNodes(versionSnapshot.nodes);
       setEdges(versionSnapshot.edges);
-    } else if (!isViewingExecutionSnapshot && savedLiveNodesRef.current !== null) {
+    } else if (
+      !isViewingExecutionSnapshot &&
+      savedLiveNodesRef.current !== null
+    ) {
       setNodes(savedLiveNodesRef.current);
       setEdges(savedLiveEdgesRef.current ?? []);
       savedLiveNodesRef.current = null;
@@ -311,7 +326,13 @@ function FlowCanvasInner({
   );
 
   const handleViewVersion = useCallback(
-    (snapshot: { nodes: CanvasNode[]; edges: Edge[]; versionNumber: number } | null) => {
+    (
+      snapshot: {
+        nodes: CanvasNode[];
+        edges: Edge[];
+        versionNumber: number;
+      } | null,
+    ) => {
       setVersionSnapshot(snapshot);
     },
     [],
@@ -369,7 +390,9 @@ function FlowCanvasInner({
 
       const needsScan = oldName && oldName !== newLabel;
       if (!needsScan) {
-        updateNodeData(selectedNode.id, selectedNode.type, () => ({ label: newLabel }));
+        updateNodeData(selectedNode.id, selectedNode.type, () => ({
+          label: newLabel,
+        }));
         return;
       }
 
@@ -377,7 +400,9 @@ function FlowCanvasInner({
       const result = scanVariableReferences(otherNodes, oldName);
 
       if (result.totalRefs === 0) {
-        updateNodeData(selectedNode.id, selectedNode.type, () => ({ label: newLabel }));
+        updateNodeData(selectedNode.id, selectedNode.type, () => ({
+          label: newLabel,
+        }));
         return;
       }
 
@@ -422,11 +447,15 @@ function FlowCanvasInner({
           counter++;
         }
 
-        const updated = replaceVariableReferences(currentNodes, oldName, uniqueLabel);
+        const updated = replaceVariableReferences(
+          currentNodes,
+          oldName,
+          uniqueLabel,
+        );
 
         return updated.map((n) =>
           n.id === nodeId
-            ? { ...n, data: { ...n.data, label: uniqueLabel } } as CanvasNode
+            ? ({ ...n, data: { ...n.data, label: uniqueLabel } } as CanvasNode)
             : n,
         );
       });
@@ -446,12 +475,9 @@ function FlowCanvasInner({
     [],
   );
 
-  const onInit = useCallback(
-    (inst: ReactFlowInstance<CanvasNode, Edge>) => {
-      rfInstanceRef.current = inst;
-    },
-    [],
-  );
+  const onInit = useCallback((inst: ReactFlowInstance<CanvasNode, Edge>) => {
+    rfInstanceRef.current = inst;
+  }, []);
 
   const handleFitView = useCallback(() => {
     rfInstanceRef.current?.fitView();
@@ -496,7 +522,13 @@ function FlowCanvasInner({
       }
     }
     void startExecution(versionIdToRun);
-  }, [isViewingSnapshot, onPersist, resetExecution, startExecution, workflowId]);
+  }, [
+    isViewingSnapshot,
+    onPersist,
+    resetExecution,
+    startExecution,
+    workflowId,
+  ]);
 
   useCanvasShortcuts({
     nodes,
@@ -539,166 +571,176 @@ function FlowCanvasInner({
 
   return (
     <GraphProvider nodes={nodes} edges={edges}>
-    <div
-      ref={containerRef}
-      data-canvas-dragging="false"
-      className="relative h-full w-full overflow-hidden"
-    >
-      <FlowViewport
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        isValidConnection={isValidConnection}
-        onSelectionChange={onSelectionChange}
-        onNodeDoubleClick={onNodeDoubleClick}
-        onNodeDragStart={onNodeDragStart}
-        onNodeDragStop={onNodeDragStop}
-        onInit={onInit}
-        onPaneClick={onPaneClick}
-        readOnly={isViewingSnapshot}
-        wsStatus={wsStatus}
-        wsReconnectAttempts={wsReconnectAttempts}
-        onDismissRunning={stopExecution}
-      />
+      <div
+        ref={containerRef}
+        data-canvas-dragging="false"
+        className="relative h-full w-full overflow-hidden"
+      >
+        <FlowViewport
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          isValidConnection={isValidConnection}
+          onSelectionChange={onSelectionChange}
+          onNodeDoubleClick={onNodeDoubleClick}
+          onNodeDragStart={onNodeDragStart}
+          onNodeDragStop={onNodeDragStop}
+          onInit={onInit}
+          onPaneClick={onPaneClick}
+          readOnly={isViewingSnapshot}
+          wsStatus={wsStatus}
+          wsReconnectAttempts={wsReconnectAttempts}
+          onDismissRunning={stopExecution}
+        />
 
-      <div className="pointer-events-none absolute left-4 top-4 z-35">
-        <div ref={toolbarRef} className="pointer-events-auto flex items-center gap-2">
-          <Toolbar
-            onExecute={onExecute}
-            executeDisabled={isViewingSnapshot}
-            readOnly={isViewingSnapshot}
-            onStop={stopExecution}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            canUndo={!isViewingSnapshot && canUndo}
-            canRedo={!isViewingSnapshot && canRedo}
-            onSave={persistGraph}
-            onExportToClipboard={exportToClipboard}
-            onExportToFile={exportToFile}
-            onExportToTemplate={exportToTemplate}
-            onImportFromClipboard={importFromClipboard}
-            onImportFromFile={importFromFile}
-            onImportFromTemplate={importFromTemplate}
-            onAutoLayout={autoLayout}
-            saveDisabled={saveDisabled || isViewingSnapshot}
-            executionStatus={executionState.status}
-            wsStatus={wsStatus}
-            isStartingExecution={isStartingExecution}
-            workflowId={workflowId}
-            onPublish={onPublish}
-            hasUnpublishedChanges={hasUnpublishedChanges}
-            publishDisabled={publishDisabled}
-            onRestore={handleRestore}
-            onRunVersion={onRunVersion}
-            onViewVersion={handleViewVersion}
-            viewingVersionNumber={versionSnapshot?.versionNumber}
-          />
-          <SmithButton
-            onClick={openSmith}
-            isSending={smithSending}
-            justFinished={smithJustFinished}
-            disabled={isViewingSnapshot}
-          />
+        <div className="pointer-events-none absolute left-4 top-4 z-35">
+          <div
+            ref={toolbarRef}
+            className="pointer-events-auto flex items-center gap-2"
+          >
+            <Toolbar
+              onExecute={onExecute}
+              executeDisabled={isViewingSnapshot}
+              readOnly={isViewingSnapshot}
+              onStop={stopExecution}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              canUndo={!isViewingSnapshot && canUndo}
+              canRedo={!isViewingSnapshot && canRedo}
+              onSave={persistGraph}
+              onExportToClipboard={exportToClipboard}
+              onExportToFile={exportToFile}
+              onExportToTemplate={exportToTemplate}
+              onImportFromClipboard={importFromClipboard}
+              onImportFromFile={importFromFile}
+              onImportFromTemplate={importFromTemplate}
+              onAutoLayout={autoLayout}
+              saveDisabled={saveDisabled || isViewingSnapshot}
+              executionStatus={executionState.status}
+              wsStatus={wsStatus}
+              isStartingExecution={isStartingExecution}
+              workflowId={workflowId}
+              onPublish={onPublish}
+              hasUnpublishedChanges={hasUnpublishedChanges}
+              publishDisabled={publishDisabled}
+              onRestore={handleRestore}
+              onRunVersion={onRunVersion}
+              onViewVersion={handleViewVersion}
+              viewingVersionNumber={versionSnapshot?.versionNumber}
+            />
+            <SmithButton
+              onClick={openSmith}
+              isSending={smithSending}
+              justFinished={smithJustFinished}
+              disabled={isViewingSnapshot}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Right Sidebar (Inspector + Scryb) */}
-      <RightPanelStack
-        selectedNode={selectedNode}
-        updateSelectedNodeLabel={updateSelectedNodeLabel}
-        updateData={updateNodeData}
-        onDelete={selectedNode && !isViewingSnapshot ? deleteSelectedElements : undefined}
-        isExpandedDialogOpen={isInspectorExpanded}
-        setIsExpandedDialogOpen={setIsInspectorExpanded}
-        onTogglePin={isViewingSnapshot ? undefined : togglePin}
-        workflowId={workflowId}
-        readOnly={isViewingSnapshot}
-      />
+        {/* Right Sidebar (Inspector + Scryb) */}
+        <RightPanelStack
+          selectedNode={selectedNode}
+          updateSelectedNodeLabel={updateSelectedNodeLabel}
+          updateData={updateNodeData}
+          onDelete={
+            selectedNode && !isViewingSnapshot
+              ? deleteSelectedElements
+              : undefined
+          }
+          isExpandedDialogOpen={isInspectorExpanded}
+          setIsExpandedDialogOpen={setIsInspectorExpanded}
+          onTogglePin={isViewingSnapshot ? undefined : togglePin}
+          workflowId={workflowId}
+          readOnly={isViewingSnapshot}
+        />
 
-      <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
-        <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
-          {bottomBarMessage}
+        <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
+          <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
+            {bottomBarMessage}
+          </div>
         </div>
+
+        {!isViewingSnapshot && (
+          <Library
+            containerRef={containerRef}
+            toolbarRef={toolbarRef}
+            onAdd={onLibraryAdd}
+            shortcutsByKind={shortcutsByKind}
+            onAssignShortcut={assignShortcut}
+            onResetShortcuts={resetShortcuts}
+          />
+        )}
+
+        {/* Hidden file input for importing JSON files */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          onChange={handleFileImport}
+          className="hidden"
+        />
+
+        {/* Save as Template dialog */}
+        <SaveTemplateDialog
+          open={isSaveTemplateOpen}
+          onOpenChange={setIsSaveTemplateOpen}
+          workflowData={{ nodes, edges }}
+        />
+
+        {/* Import from Templates dialog */}
+        <ImportTemplateDialog
+          open={isImportTemplateOpen}
+          onOpenChange={setIsImportTemplateOpen}
+          onSelect={handleTemplateSelect}
+        />
+
+        {/* Save Version with Message dialog */}
+        <SaveVersionDialog
+          open={saveVersionDialogOpen}
+          onOpenChange={setSaveVersionDialogOpen}
+          onSave={handleSaveVersionWithMessage}
+          isSaving={saveDisabled}
+        />
+
+        {/* Version Conflict dialog */}
+        {conflictData &&
+          onConflictLoadServer &&
+          onConflictForceSave &&
+          onConflictCancel && (
+            <VersionConflictDialog
+              open={!!conflictData}
+              serverVersion={conflictData.serverVersion}
+              serverVersionId={conflictData.serverVersionId}
+              onLoadServer={onConflictLoadServer}
+              onForceSave={onConflictForceSave}
+              onCancel={onConflictCancel}
+            />
+          )}
+
+        <SmithChatDrawer
+          open={isSmithOpen}
+          onOpenChange={setIsSmithOpen}
+          messages={smithMessages}
+          input={smithInput}
+          onInputChange={setSmithInput}
+          onSend={handleSmithSend}
+          isSending={smithSending}
+          showTrace={smithShowTrace}
+          onToggleTrace={setSmithShowTrace}
+        />
+
+        {renameDialog && (
+          <RenameRefDialog
+            open={true}
+            oldName={renameDialog.oldName}
+            newName={renameDialog.newName}
+            scanResult={renameDialog.scanResult}
+            onChoice={handleRenameChoice}
+          />
+        )}
       </div>
-
-      {!isViewingSnapshot && (
-        <Library
-          containerRef={containerRef}
-          toolbarRef={toolbarRef}
-          onAdd={onLibraryAdd}
-          shortcutsByKind={shortcutsByKind}
-          onAssignShortcut={assignShortcut}
-          onResetShortcuts={resetShortcuts}
-        />
-      )}
-
-      {/* Hidden file input for importing JSON files */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json,application/json"
-        onChange={handleFileImport}
-        className="hidden"
-      />
-
-      {/* Save as Template dialog */}
-      <SaveTemplateDialog
-        open={isSaveTemplateOpen}
-        onOpenChange={setIsSaveTemplateOpen}
-        workflowData={{ nodes, edges }}
-      />
-
-      {/* Import from Templates dialog */}
-      <ImportTemplateDialog
-        open={isImportTemplateOpen}
-        onOpenChange={setIsImportTemplateOpen}
-        onSelect={handleTemplateSelect}
-      />
-
-      {/* Save Version with Message dialog */}
-      <SaveVersionDialog
-        open={saveVersionDialogOpen}
-        onOpenChange={setSaveVersionDialogOpen}
-        onSave={handleSaveVersionWithMessage}
-        isSaving={saveDisabled}
-      />
-
-      {/* Version Conflict dialog */}
-      {conflictData && onConflictLoadServer && onConflictForceSave && onConflictCancel && (
-        <VersionConflictDialog
-          open={!!conflictData}
-          serverVersion={conflictData.serverVersion}
-          serverVersionId={conflictData.serverVersionId}
-          onLoadServer={onConflictLoadServer}
-          onForceSave={onConflictForceSave}
-          onCancel={onConflictCancel}
-        />
-      )}
-
-      <SmithChatDrawer
-        open={isSmithOpen}
-        onOpenChange={setIsSmithOpen}
-        messages={smithMessages}
-        input={smithInput}
-        onInputChange={setSmithInput}
-        onSend={handleSmithSend}
-        isSending={smithSending}
-        showTrace={smithShowTrace}
-        onToggleTrace={setSmithShowTrace}
-      />
-
-      {renameDialog && (
-        <RenameRefDialog
-          open={true}
-          oldName={renameDialog.oldName}
-          newName={renameDialog.newName}
-          scanResult={renameDialog.scanResult}
-          onChoice={handleRenameChoice}
-        />
-      )}
-    </div>
     </GraphProvider>
   );
 }

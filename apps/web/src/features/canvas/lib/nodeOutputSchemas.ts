@@ -13,7 +13,12 @@ export function getStaticOutputSchema(
     case "http":
       return [
         { key: "status", path: "status", type: "number", source: "schema" },
-        { key: "status_text", path: "status_text", type: "string", source: "schema" },
+        {
+          key: "status_text",
+          path: "status_text",
+          type: "string",
+          source: "schema",
+        },
         {
           key: "headers",
           path: "headers",
@@ -28,13 +33,23 @@ export function getStaticOutputSchema(
           source: "schema",
           children: [],
         },
-        { key: "duration_ms", path: "duration_ms", type: "number", source: "schema" },
+        {
+          key: "duration_ms",
+          path: "duration_ms",
+          type: "number",
+          source: "schema",
+        },
       ];
 
     case "smtp":
       return [
         { key: "success", path: "success", type: "boolean", source: "schema" },
-        { key: "message_id", path: "message_id", type: "string", source: "schema" },
+        {
+          key: "message_id",
+          path: "message_id",
+          type: "string",
+          source: "schema",
+        },
       ];
 
     case "edit": {
@@ -46,7 +61,11 @@ export function getStaticOutputSchema(
         .map((a) => ({
           key: a.name!,
           path: a.name!,
-          type: (a.type === "number" ? "number" : a.type === "boolean" ? "boolean" : "string") as VariableTreeNode["type"],
+          type: (a.type === "number"
+            ? "number"
+            : a.type === "boolean"
+              ? "boolean"
+              : "string") as VariableTreeNode["type"],
           source: "schema" as const,
         }));
     }
@@ -67,30 +86,68 @@ export function getStaticOutputSchema(
     case "if":
       return [
         { key: "result", path: "result", type: "boolean", source: "schema" },
-        { key: "expression", path: "expression", type: "string", source: "schema" },
+        {
+          key: "expression",
+          path: "expression",
+          type: "string",
+          source: "schema",
+        },
       ];
 
     case "switch":
       return [
-        { key: "output_index", path: "output_index", type: "number", source: "schema" },
-        { key: "matched_rule", path: "matched_rule", type: "object", source: "schema", children: [] },
-        { key: "fallback", path: "fallback", type: "boolean", source: "schema" },
+        {
+          key: "output_index",
+          path: "output_index",
+          type: "number",
+          source: "schema",
+        },
+        {
+          key: "matched_rule",
+          path: "matched_rule",
+          type: "object",
+          source: "schema",
+          children: [],
+        },
+        {
+          key: "fallback",
+          path: "fallback",
+          type: "boolean",
+          source: "schema",
+        },
       ];
 
     case "wait":
       return [
-        { key: "resume_at", path: "resume_at", type: "number", source: "schema" },
+        {
+          key: "resume_at",
+          path: "resume_at",
+          type: "number",
+          source: "schema",
+        },
         { key: "timer_id", path: "timer_id", type: "string", source: "schema" },
       ];
 
     case "merge":
       return [
-        { key: "merged_context", path: "merged_context", type: "object", source: "schema", children: [] },
+        {
+          key: "merged_context",
+          path: "merged_context",
+          type: "object",
+          source: "schema",
+          children: [],
+        },
       ];
 
     case "aggregator":
       return [
-        { key: "aggregated", path: "aggregated", type: "array", source: "schema", children: [] },
+        {
+          key: "aggregated",
+          path: "aggregated",
+          type: "array",
+          source: "schema",
+          children: [],
+        },
       ];
 
     default:

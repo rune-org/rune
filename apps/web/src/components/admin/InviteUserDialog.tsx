@@ -9,10 +9,18 @@ import { Label } from "@/components/ui/label";
 interface InviteUserDialogProps {
   open: boolean;
   onClose: () => void;
-  onInvite: (name: string, email: string, role: "user" | "admin") => Promise<boolean>;
+  onInvite: (
+    name: string,
+    email: string,
+    role: "user" | "admin",
+  ) => Promise<boolean>;
 }
 
-export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogProps) {
+export function InviteUserDialog({
+  open,
+  onClose,
+  onInvite,
+}: InviteUserDialogProps) {
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"user" | "admin">("user");
@@ -21,14 +29,15 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
   if (!open) return null;
 
   // Validate form fields
-  const isNameValid = inviteName.trim().length >= 3 && inviteName.trim().length <= 40;
+  const isNameValid =
+    inviteName.trim().length >= 3 && inviteName.trim().length <= 40;
   // Simple email regex pattern matching backend EmailStr validation
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail.trim());
   const isFormValid = isNameValid && isEmailValid;
 
   const handleInvite = async () => {
     if (!isFormValid) return;
-    
+
     setIsSubmitting(true);
     try {
       const success = await onInvite(inviteName, inviteEmail, inviteRole);
@@ -68,11 +77,11 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-40"
       onClick={handleBackdropClick}
     >
-      <Card 
+      <Card
         className="p-6 w-full max-w-md bg-background border"
         onClick={handleCardClick}
       >
@@ -107,11 +116,15 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={handleClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
-          <Button 
-            className="bg-primary text-white" 
+          <Button
+            className="bg-primary text-white"
             onClick={handleInvite}
             disabled={isSubmitting || !isFormValid}
           >

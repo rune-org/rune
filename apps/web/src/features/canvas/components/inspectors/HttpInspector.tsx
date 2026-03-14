@@ -12,13 +12,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const HTTP_CREDENTIAL_TYPES: ("basic_auth" | "header" | "api_key" | "oauth2" | "token")[] = [
-  "basic_auth",
-  "header",
-  "api_key",
-  "oauth2",
-  "token",
-];
+const HTTP_CREDENTIAL_TYPES: (
+  | "basic_auth"
+  | "header"
+  | "api_key"
+  | "oauth2"
+  | "token"
+)[] = ["basic_auth", "header", "api_key", "oauth2", "token"];
 
 type HttpInspectorProps = {
   node: Node<HttpData>;

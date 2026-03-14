@@ -9,10 +9,7 @@ import {
   getMyShareInfoCredentialsCredentialIdMyShareGet,
 } from "@/client";
 
-import type {
-  CredentialCreate,
-  CredentialShare,
-} from "@/client/types.gen";
+import type { CredentialCreate, CredentialShare } from "@/client/types.gen";
 
 // Readable wrappers for credentials-related SDK functions
 
@@ -49,7 +46,10 @@ export const deleteCredential = (credentialId: number) =>
  * @param credentialId - The ID of the credential to share
  * @param payload - The share data containing user_id
  */
-export const shareCredential = (credentialId: number, payload: CredentialShare) =>
+export const shareCredential = (
+  credentialId: number,
+  payload: CredentialShare,
+) =>
   shareCredentialCredentialsCredentialIdSharePost({
     path: { credential_id: credentialId },
     body: payload,
@@ -83,4 +83,3 @@ export const getMyShareInfo = (credentialId: number) =>
   getMyShareInfoCredentialsCredentialIdMyShareGet({
     path: { credential_id: credentialId },
   });
-
