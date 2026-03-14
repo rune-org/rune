@@ -17,14 +17,7 @@ import { MetricsCards } from "@/features/executions/components/MetricsCards";
 import type { ExecutionListStatus } from "@/features/executions/types";
 
 export default function ExecutionsPage() {
-  const {
-    executions,
-    metrics,
-    isLoading,
-    filters,
-    setFilters,
-    refresh,
-  } = useExecutionsList();
+  const { executions, metrics, isLoading, filters, setFilters, refresh } = useExecutionsList();
 
   const handleStatusFilterChange = (value: string) => {
     setFilters({
@@ -44,10 +37,7 @@ export default function ExecutionsPage() {
 
         <div className="flex items-center gap-3">
           {/* Status Filter */}
-          <Select
-            value={filters.status || "all"}
-            onValueChange={handleStatusFilterChange}
-          >
+          <Select value={filters.status || "all"} onValueChange={handleStatusFilterChange}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Filter status" />
             </SelectTrigger>
@@ -61,14 +51,9 @@ export default function ExecutionsPage() {
           </Select>
 
           {/* Refresh Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refresh}
-            disabled={isLoading}
-            >
-              <RefreshCw className={isLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-            </Button>
+          <Button variant="outline" size="sm" onClick={refresh} disabled={isLoading}>
+            <RefreshCw className={isLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+          </Button>
         </div>
       </div>
 
@@ -80,17 +65,12 @@ export default function ExecutionsPage() {
       {/* Executions Table */}
       <div className="mt-8">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">
-            Recent Executions
-          </h2>
+          <h2 className="text-lg font-semibold text-foreground">Recent Executions</h2>
           <div className="text-sm text-muted-foreground">
             {executions.length} {executions.length === 1 ? "execution" : "executions"}
           </div>
         </div>
-        <ExecutionsTable
-          executions={executions}
-          isLoading={isLoading}
-        />
+        <ExecutionsTable executions={executions} isLoading={isLoading} />
       </div>
     </Container>
   );

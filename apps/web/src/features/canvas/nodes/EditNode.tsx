@@ -6,10 +6,7 @@ import { Pencil } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { EditData } from "../types";
 
-export const EditNode = memo(function EditNode({
-  id,
-  data,
-}: NodeProps<Node<EditData>>) {
+export const EditNode = memo(function EditNode({ id, data }: NodeProps<Node<EditData>>) {
   const assignments = data.assignments ?? [];
   const mode = data.mode ?? "assignments";
 

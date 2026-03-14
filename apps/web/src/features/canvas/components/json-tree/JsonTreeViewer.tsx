@@ -75,19 +75,14 @@ function TreeNode({
 }) {
   const [isOpen, setIsOpen] = useState(depth < defaultExpandDepth);
 
-  const isExpandable =
-    value !== null &&
-    typeof value === "object" &&
-    depth < maxDepth;
+  const isExpandable = value !== null && typeof value === "object" && depth < maxDepth;
 
   const entries = useMemo(() => {
     if (!isExpandable || !isOpen) return [];
     if (Array.isArray(value)) {
       return value.map((v, i) => ({ key: i, value: v }));
     }
-    return Object.entries(value as Record<string, unknown>).map(
-      ([k, v]) => ({ key: k, value: v }),
-    );
+    return Object.entries(value as Record<string, unknown>).map(([k, v]) => ({ key: k, value: v }));
   }, [isExpandable, isOpen, value]);
 
   const handleCopyPath = useCallback(
@@ -120,9 +115,7 @@ function TreeNode({
     [onInsertPath, path],
   );
 
-  const { text, style } = isExpandable
-    ? { text: "", style: "" }
-    : formatValue(value);
+  const { text, style } = isExpandable ? { text: "", style: "" } : formatValue(value);
 
   return (
     <div>
@@ -160,11 +153,7 @@ function TreeNode({
         {/* Value or collapsed preview */}
         {isExpandable ? (
           <span className="truncate text-muted-foreground/70">
-            {isOpen
-              ? Array.isArray(value)
-                ? "["
-                : "{"
-              : getCollapsedPreview(value)}
+            {isOpen ? (Array.isArray(value) ? "[" : "{") : getCollapsedPreview(value)}
           </span>
         ) : (
           <span className={cn("truncate", style)}>{text}</span>
@@ -237,19 +226,13 @@ const JsonTreeViewer = memo(function JsonTreeViewer({
   className,
 }: JsonTreeViewerProps) {
   if (data === undefined || data === null) {
-    return (
-      <div className={cn("text-xs text-muted-foreground italic", className)}>
-        null
-      </div>
-    );
+    return <div className={cn("text-xs text-muted-foreground italic", className)}>null</div>;
   }
 
   // If it's a primitive, render directly
   if (typeof data !== "object") {
     const { text, style } = formatValue(data);
-    return (
-      <div className={cn("text-xs font-mono", style, className)}>{text}</div>
-    );
+    return <div className={cn("text-xs font-mono", style, className)}>{text}</div>;
   }
 
   return (

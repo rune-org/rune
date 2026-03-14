@@ -11,10 +11,7 @@ type UseRafNodeDragOptions = {
 
 // requestAnimationFrame based dragging. We coalesce high-frequency drag position
 // changes and flush them once per paint frame to keep motion visually smoother.
-export function useRafNodeDrag(
-  setNodes: SetNodes,
-  options: UseRafNodeDragOptions = {},
-) {
+export function useRafNodeDrag(setNodes: SetNodes, options: UseRafNodeDragOptions = {}) {
   const { onDragStateChange } = options;
   const pendingPositionChangesRef = useRef<NodeChange<CanvasNode>[] | null>(null);
   const positionFlushFrameRef = useRef<number | null>(null);

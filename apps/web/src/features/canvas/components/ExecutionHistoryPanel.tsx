@@ -13,11 +13,13 @@ import {
   Loader2,
 } from "lucide-react";
 import { useExecution } from "../context/ExecutionContext";
-import {
-  fetchWorkflowExecutions,
-  type RtesExecutionDocument,
-} from "@/lib/api/rtes";
-import type { ExecutionState, WorkflowExecutionStatus, NodeExecutionData, WorkflowGraphSnapshot } from "../types/execution";
+import { fetchWorkflowExecutions, type RtesExecutionDocument } from "@/lib/api/rtes";
+import type {
+  ExecutionState,
+  WorkflowExecutionStatus,
+  NodeExecutionData,
+  WorkflowGraphSnapshot,
+} from "../types/execution";
 import { parseNodeStatus } from "../types/execution";
 import { workflowDataToCanvas, type WorkflowNode, type WorkflowEdge } from "@/lib/workflow-dsl";
 import { sanitizeGraph } from "../lib/graphIO";
@@ -26,11 +28,7 @@ import type { CanvasNode } from "../types";
 import type { Edge } from "@xyflow/react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface ExecutionHistoryPanelProps {
   workflowId: number | null;
@@ -153,7 +151,9 @@ function rtesDocToExecutionState(doc: RtesExecutionDocument): ExecutionState {
         nodeId,
         status: parseNodeStatus(latest.status),
         output: latest.output,
-        error: latest.error ? { message: latest.error.message, code: latest.error.code } : undefined,
+        error: latest.error
+          ? { message: latest.error.message, code: latest.error.code }
+          : undefined,
         executedAt: latest.executed_at,
         durationMs: latest.duration_ms,
       });
@@ -188,18 +188,14 @@ function ExecutionHistoryListItem({
     <div
       className={cn(
         "group flex items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors cursor-pointer",
-        isActive
-          ? "bg-muted/60 text-foreground"
-          : "hover:bg-muted/40"
+        isActive ? "bg-muted/60 text-foreground" : "hover:bg-muted/40",
       )}
       onClick={onSelect}
     >
       {getStatusIcon(item.status)}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs truncate">
-            {item.executionId.slice(0, 8)}
-          </span>
+          <span className="font-mono text-xs truncate">{item.executionId.slice(0, 8)}</span>
           {isLive && (
             <span className="flex items-center gap-1 text-[10px] font-medium text-blue-500">
               <Radio className="h-2 w-2 animate-pulse" />
@@ -294,9 +290,7 @@ export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps
 
   // Check if currently viewing a historical execution (not the live one)
   const isViewingHistory =
-    state.executionId !== null &&
-    state.status !== "running" &&
-    state.isHistorical === true;
+    state.executionId !== null && state.status !== "running" && state.isHistorical === true;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -331,16 +325,12 @@ export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps
           {isLoading ? (
             <div className="p-6 text-center">
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground/50" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                Loading history...
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">Loading history...</p>
             </div>
           ) : history.length === 0 ? (
             <div className="p-6 text-center">
               <History className="mx-auto h-8 w-8 text-muted-foreground/50" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                No execution history yet.
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">No execution history yet.</p>
               <p className="mt-1 text-xs text-muted-foreground/70">
                 Run the workflow to see past executions.
               </p>
@@ -349,7 +339,8 @@ export function ExecutionHistoryPanel({ workflowId }: ExecutionHistoryPanelProps
             <div className="p-1">
               {history.map((item, index) => {
                 const isActive = state.executionId === item.executionId;
-                const nextIsNotActive = history[index + 1] && state.executionId !== history[index + 1].executionId;
+                const nextIsNotActive =
+                  history[index + 1] && state.executionId !== history[index + 1].executionId;
                 return (
                   <div key={item.executionId}>
                     <ExecutionHistoryListItem

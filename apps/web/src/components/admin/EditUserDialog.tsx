@@ -37,7 +37,7 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
 
   const handleUpdate = async () => {
     if (!isFormValid) return;
-    
+
     setIsSubmitting(true);
     try {
       const success = await onUpdate(editName, editEmail, editRole);
@@ -65,14 +65,11 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50"
       onClick={handleBackdropClick}
     >
-      <Card 
-        className="p-6 w-full max-w-md bg-background border"
-        onClick={handleCardClick}
-      >
+      <Card className="p-6 w-full max-w-md bg-background border" onClick={handleCardClick}>
         <h3 className="text-lg font-semibold mb-4">Edit User</h3>
 
         <Label className="text-xs text-muted-foreground">Name</Label>
@@ -105,8 +102,8 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button 
-            className="bg-primary text-white" 
+          <Button
+            className="bg-primary text-white"
             onClick={handleUpdate}
             disabled={isSubmitting || !isFormValid}
           >

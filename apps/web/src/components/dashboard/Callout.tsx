@@ -10,12 +10,9 @@ export function Callout() {
           <Info className="h-5 w-5" />
         </span>
         <div>
-          <p className="font-medium text-foreground">
-            Customize every template
-          </p>
+          <p className="font-medium text-foreground">Customize every template</p>
           <p className="text-muted-foreground">
-            Don&apos;t worry, you can map services, rename steps, and add logic
-            before you ship.
+            Don&apos;t worry, you can map services, rename steps, and add logic before you ship.
           </p>
         </div>
       </div>

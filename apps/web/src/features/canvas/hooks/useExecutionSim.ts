@@ -16,9 +16,7 @@ export function useExecutionSim(
   const stopRef = useRef<{ stopped: boolean } | null>(null);
 
   const reset = useCallback(() => {
-    setEdges((es) =>
-      es.map((e) => ({ ...e, animated: false, style: { ...(e.style || {}) } })),
-    );
+    setEdges((es) => es.map((e) => ({ ...e, animated: false, style: { ...(e.style || {}) } })));
   }, [setEdges]);
 
   const run = useCallback(async () => {
@@ -36,14 +34,11 @@ export function useExecutionSim(
       if (!(e.source in inDeg)) inDeg[e.source] = inDeg[e.source] || 0;
     });
 
-    let startNodes: CanvasNode[] = nodes.filter(
-      (n): n is CanvasNode => n.type === "trigger",
-    );
+    let startNodes: CanvasNode[] = nodes.filter((n): n is CanvasNode => n.type === "trigger");
     if (startNodes.length === 0) {
       startNodes = nodes.filter((n) => (inDeg[n.id] || 0) === 0);
     }
-    if (startNodes.length === 0 && nodes.length)
-      startNodes = [nodes[0] as CanvasNode];
+    if (startNodes.length === 0 && nodes.length) startNodes = [nodes[0] as CanvasNode];
 
     const visited = new Set<string>();
     const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));

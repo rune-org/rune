@@ -8,10 +8,7 @@ type SavePayload = { nodes: CanvasNode[]; edges: Edge[] };
 
 type Setter<T> = (updater: T[] | ((prev: T[]) => T[])) => void;
 
-export function useLocalGraph(
-  setNodes: Setter<CanvasNode>,
-  setEdges: Setter<Edge>,
-) {
+export function useLocalGraph(setNodes: Setter<CanvasNode>, setEdges: Setter<Edge>) {
   const save = useCallback(({ nodes, edges }: SavePayload) => {
     try {
       const payload = { nodes, edges, ts: Date.now() };

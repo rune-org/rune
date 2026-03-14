@@ -28,7 +28,7 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
 
   const handleInvite = async () => {
     if (!isFormValid) return;
-    
+
     setIsSubmitting(true);
     try {
       const success = await onInvite(inviteName, inviteEmail, inviteRole);
@@ -68,14 +68,11 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-40"
       onClick={handleBackdropClick}
     >
-      <Card 
-        className="p-6 w-full max-w-md bg-background border"
-        onClick={handleCardClick}
-      >
+      <Card className="p-6 w-full max-w-md bg-background border" onClick={handleCardClick}>
         <h3 className="text-lg font-semibold mb-4">Invite User</h3>
 
         <Input
@@ -110,8 +107,8 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
           <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button 
-            className="bg-primary text-white" 
+          <Button
+            className="bg-primary text-white"
             onClick={handleInvite}
             disabled={isSubmitting || !isFormValid}
           >

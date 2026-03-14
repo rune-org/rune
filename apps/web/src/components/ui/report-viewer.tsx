@@ -49,7 +49,7 @@ export function ReportViewer({
 
   const fileSize = React.useMemo(
     () => `${(new Blob([content]).size / 1024).toFixed(1)} KB`,
-    [content]
+    [content],
   );
 
   return (
@@ -112,9 +112,7 @@ export function ReportViewer({
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}
-                      <span className="hidden sm:inline">
-                        {copied ? "Copied" : "Copy"}
-                      </span>
+                      <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
                     </button>
                     <button
                       type="button"

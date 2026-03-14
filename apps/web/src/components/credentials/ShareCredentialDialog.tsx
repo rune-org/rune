@@ -22,7 +22,7 @@ import {
 } from "@/lib/api/credentials";
 import { listUsersForSharing } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth";
-import type { CredentialShareInfo, UserBasicInfo} from "@/client/types.gen";
+import type { CredentialShareInfo, UserBasicInfo } from "@/client/types.gen";
 
 interface ShareCredentialDialogProps {
   open: boolean;
@@ -81,9 +81,7 @@ export function ShareCredentialDialog({
 
   // Filter out users who already have access and the current user (can't share with yourself)
   const availableUsers = users.filter(
-    (user) =>
-      user.id !== currentUserId &&
-      !shares.some((share) => share.user_id === user.id)
+    (user) => user.id !== currentUserId && !shares.some((share) => share.user_id === user.id),
   );
 
   // Helper to get user name by ID
@@ -105,8 +103,8 @@ export function ShareCredentialDialog({
         selectedUserIds.map((userId) =>
           shareCredential(credentialId, {
             user_id: userId,
-          })
-        )
+          }),
+        ),
       );
 
       // Refresh shares list to get updated data including timestamps/names
@@ -120,8 +118,7 @@ export function ShareCredentialDialog({
       onSharesChanged?.();
       onOpenChange(false);
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Failed to share credential";
+      const message = error instanceof Error ? error.message : "Failed to share credential";
       toast.error(message);
     } finally {
       setIsSharing(false);
@@ -136,8 +133,7 @@ export function ShareCredentialDialog({
       toast.success("Access revoked successfully");
       onSharesChanged?.();
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Failed to revoke access";
+      const message = error instanceof Error ? error.message : "Failed to revoke access";
       toast.error(message);
     } finally {
       setRevokingUserId(null);
@@ -153,8 +149,8 @@ export function ShareCredentialDialog({
             Share Credential
           </DialogTitle>
           <DialogDescription>
-            Manage who has access to <strong>{credentialName}</strong>. Shared
-            users can view and use this credential in their workflows.
+            Manage who has access to <strong>{credentialName}</strong>. Shared users can view and
+            use this credential in their workflows.
           </DialogDescription>
         </DialogHeader>
 
@@ -168,12 +164,9 @@ export function ShareCredentialDialog({
                   users={availableUsers}
                   selectedUserIds={selectedUserIds}
                   onSelect={(id) => setSelectedUserIds((prev) => [...prev, id])}
-                  onRemove={(id) =>
-                    setSelectedUserIds((prev) => prev.filter((uid) => uid !== id))
-                  }
+                  onRemove={(id) => setSelectedUserIds((prev) => prev.filter((uid) => uid !== id))}
                   disabled={isLoading || isSharing}
                 />
-
               </div>
             </div>
           )}
@@ -205,9 +198,7 @@ export function ShareCredentialDialog({
                     >
                       <div className="flex flex-col">
                         <span className="font-medium">{share.user_name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {share.user_email}
-                        </span>
+                        <span className="text-xs text-muted-foreground">{share.user_email}</span>
                         <span className="text-xs text-muted-foreground">
                           Shared{" "}
                           {formatDistanceToNow(new Date(share.shared_at), {
@@ -252,6 +243,6 @@ export function ShareCredentialDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog >
+    </Dialog>
   );
 }

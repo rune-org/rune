@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  FormEvent,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { FormEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
 
@@ -17,11 +9,7 @@ import type { CanvasEdge, CanvasNode } from "@/features/canvas/types";
 import { toast } from "@/components/ui/toast";
 import { workflows } from "@/lib/api";
 import { applyTemplate } from "@/lib/api/templates";
-import {
-  detailToGraph,
-  graphToWorkflowData,
-  defaultWorkflowSummary,
-} from "@/lib/workflows";
+import { detailToGraph, graphToWorkflowData, defaultWorkflowSummary } from "@/lib/workflows";
 import { sanitizeGraph } from "@/features/canvas/lib/graphIO";
 import { useAppState } from "@/lib/state";
 import { MissingNodeCredentialsError } from "@/lib/workflow-dsl";
@@ -111,9 +99,11 @@ function CanvasPageInner() {
           if (abortController.signal.aborted) return;
 
           if (response.data && !response.error) {
-            const workflowData = response.data.data.workflow_data as { nodes: RFNode[]; edges: RFEdge[] };
-            const { nodes: filteredNodes, edges: filteredEdges } =
-              sanitizeGraph(workflowData);
+            const workflowData = response.data.data.workflow_data as {
+              nodes: RFNode[];
+              edges: RFEdge[];
+            };
+            const { nodes: filteredNodes, edges: filteredEdges } = sanitizeGraph(workflowData);
             if (!abortController.signal.aborted) {
               setNodes(filteredNodes as unknown as CanvasNode[]);
               setEdges(filteredEdges as unknown as CanvasEdge[]);
@@ -174,9 +164,7 @@ function CanvasPageInner() {
         }
       } catch (err) {
         if (!abortController.signal.aborted) {
-          toast.error(
-            err instanceof Error ? err.message : "Failed to load workflow",
-          );
+          toast.error(err instanceof Error ? err.message : "Failed to load workflow");
         }
       }
     }
@@ -216,14 +204,10 @@ function CanvasPageInner() {
             localGraph: graph,
           });
         } else if (err instanceof MissingNodeCredentialsError) {
-          const nodeList = err.nodes
-            .map((n) => `${n.type} (${n.id.slice(0, 6)})`)
-            .join(", ");
+          const nodeList = err.nodes.map((n) => `${n.type} (${n.id.slice(0, 6)})`).join(", ");
           toast.error(`Missing credentials for: ${nodeList}`);
         } else {
-          toast.error(
-            err instanceof Error ? err.message : "Failed to save version",
-          );
+          toast.error(err instanceof Error ? err.message : "Failed to save version");
         }
       } finally {
         setIsSaving(false);
@@ -283,7 +267,7 @@ function CanvasPageInner() {
         setWorkflowMeta((prev) => ({
           publishedVersionId: loadedVersion.is_published
             ? loadedVersion.id
-            : prev?.publishedVersionId ?? null,
+            : (prev?.publishedVersionId ?? null),
           hasUnpublishedChanges: !loadedVersion.is_published,
           latestVersionNumber: loadedVersion.version,
         }));
@@ -351,37 +335,43 @@ function CanvasPageInner() {
     }
   }, [numericWorkflowId, refreshWorkflows]);
 
-  const handleRestore = useCallback(async (versionId: number) => {
-    if (!numericWorkflowId) return;
-    try {
-      const response = await workflows.restoreVersion(numericWorkflowId, versionId);
-      const { versionToGraph } = await import("@/lib/workflows");
-      const newVersion = response.data!.data;
-      const graph = versionToGraph(newVersion);
-      const parsed = sanitizeGraph({ nodes: graph.nodes, edges: graph.edges });
-      setNodes(parsed.nodes as CanvasNode[]);
-      setEdges(parsed.edges as CanvasEdge[]);
-      setBaseVersionId(newVersion.id);
-      setWorkflowMeta((prev) => ({
-        publishedVersionId: prev?.publishedVersionId ?? null,
-        hasUnpublishedChanges: true,
-        latestVersionNumber: newVersion.version,
-      }));
-      toast.success(`Restored to v${newVersion.version}`);
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Failed to restore version"));
-    }
-  }, [numericWorkflowId]);
+  const handleRestore = useCallback(
+    async (versionId: number) => {
+      if (!numericWorkflowId) return;
+      try {
+        const response = await workflows.restoreVersion(numericWorkflowId, versionId);
+        const { versionToGraph } = await import("@/lib/workflows");
+        const newVersion = response.data!.data;
+        const graph = versionToGraph(newVersion);
+        const parsed = sanitizeGraph({ nodes: graph.nodes, edges: graph.edges });
+        setNodes(parsed.nodes as CanvasNode[]);
+        setEdges(parsed.edges as CanvasEdge[]);
+        setBaseVersionId(newVersion.id);
+        setWorkflowMeta((prev) => ({
+          publishedVersionId: prev?.publishedVersionId ?? null,
+          hasUnpublishedChanges: true,
+          latestVersionNumber: newVersion.version,
+        }));
+        toast.success(`Restored to v${newVersion.version}`);
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, "Failed to restore version"));
+      }
+    },
+    [numericWorkflowId],
+  );
 
-  const handleRunVersion = useCallback(async (versionId: number) => {
-    if (!numericWorkflowId) return;
-    try {
-      await workflows.runWorkflow(numericWorkflowId, versionId);
-      toast.success("Workflow queued for execution");
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "Failed to run version"));
-    }
-  }, [numericWorkflowId]);
+  const handleRunVersion = useCallback(
+    async (versionId: number) => {
+      if (!numericWorkflowId) return;
+      try {
+        await workflows.runWorkflow(numericWorkflowId, versionId);
+        toast.success("Workflow queued for execution");
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, "Failed to run version"));
+      }
+    },
+    [numericWorkflowId],
+  );
 
   const handleCreateSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -431,28 +421,16 @@ function CanvasPageInner() {
         router.replace(`/create/app?workflow=${created.id}`);
       } catch (err) {
         if (err instanceof MissingNodeCredentialsError) {
-          const nodeList = err.nodes
-            .map((n) => `${n.type} (${n.id.slice(0, 6)})`)
-            .join(", ");
+          const nodeList = err.nodes.map((n) => `${n.type} (${n.id.slice(0, 6)})`).join(", ");
           toast.error(`Missing credentials for: ${nodeList}`);
         } else {
-          toast.error(
-            err instanceof Error ? err.message : "Failed to save workflow",
-          );
+          toast.error(err instanceof Error ? err.message : "Failed to save workflow");
         }
       } finally {
         setIsSaving(false);
       }
     },
-    [
-      draftGraph,
-      draftMessage,
-      draftName,
-      draftDescription,
-      refreshWorkflows,
-      router,
-      isSaving,
-    ],
+    [draftGraph, draftMessage, draftName, draftDescription, refreshWorkflows, router, isSaving],
   );
 
   return (
@@ -494,8 +472,7 @@ function CanvasPageInner() {
           <DialogHeader>
             <DialogTitle>Save workflow</DialogTitle>
             <DialogDescription>
-              Provide a name and optional description before we create the
-              workflow.
+              Provide a name and optional description before we create the workflow.
             </DialogDescription>
           </DialogHeader>
           <form className="grid gap-4" onSubmit={handleCreateSubmit}>

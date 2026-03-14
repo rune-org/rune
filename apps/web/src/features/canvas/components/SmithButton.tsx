@@ -8,7 +8,12 @@ type SmithButtonProps = {
   disabled?: boolean;
 };
 
-export function SmithButton({ onClick, isSending, justFinished, disabled = false }: SmithButtonProps) {
+export function SmithButton({
+  onClick,
+  isSending,
+  justFinished,
+  disabled = false,
+}: SmithButtonProps) {
   return (
     <button
       type="button"
@@ -33,7 +38,9 @@ export function SmithButton({ onClick, isSending, justFinished, disabled = false
       <div
         className={cn(
           "relative flex h-full w-full items-center justify-center rounded-full border border-border/60 backdrop-blur-md transition-colors",
-          justFinished ? "bg-primary/20 border-primary/40" : "bg-background/20 group-hover:bg-background/80",
+          justFinished
+            ? "bg-primary/20 border-primary/40"
+            : "bg-background/20 group-hover:bg-background/80",
         )}
       >
         <Image

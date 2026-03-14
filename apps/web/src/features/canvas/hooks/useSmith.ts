@@ -18,14 +18,7 @@ export type UseSmithOptions = {
 };
 
 export function useSmith(opts: UseSmithOptions) {
-  const {
-    workflowId,
-    readOnly = false,
-    pushHistory,
-    setNodes,
-    setEdges,
-    rfInstanceRef,
-  } = opts;
+  const { workflowId, readOnly = false, pushHistory, setNodes, setEdges, rfInstanceRef } = opts;
 
   const [isSmithOpen, setIsSmithOpen] = useState(false);
   const [smithMessages, setSmithMessages] = useState<SmithChatMessage[]>([]);
@@ -123,10 +116,7 @@ export function useSmith(opts: UseSmithOptions) {
               setSmithMessages((prev) => {
                 const lastMsg = prev[prev.length - 1];
                 if (lastMsg?.role === "smith") {
-                  return [
-                    ...prev.slice(0, -1),
-                    { ...lastMsg, content: accumulatedContent },
-                  ];
+                  return [...prev.slice(0, -1), { ...lastMsg, content: accumulatedContent }];
                 } else {
                   return [...prev, { role: "smith", content: accumulatedContent }];
                 }
@@ -173,11 +163,7 @@ export function useSmith(opts: UseSmithOptions) {
           ]);
         }
       } catch (err) {
-        toast.error(
-          err instanceof Error
-            ? err.message
-            : "Smith could not generate the workflow",
-        );
+        toast.error(err instanceof Error ? err.message : "Smith could not generate the workflow");
       } finally {
         setSmithSending(false);
         if (smithShowTraceRef.current) {
@@ -220,9 +206,7 @@ export function useSmith(opts: UseSmithOptions) {
     if (!workflowId) return;
     try {
       const savedPrompt = localStorage.getItem(`smith-prompt-${workflowId}`);
-      const savedTracePref = localStorage.getItem(
-        `smith-show-trace-${workflowId}`,
-      );
+      const savedTracePref = localStorage.getItem(`smith-show-trace-${workflowId}`);
       if (savedPrompt) {
         setPendingSmithPrompt(savedPrompt);
         setSmithShowTrace(savedTracePref === "true");

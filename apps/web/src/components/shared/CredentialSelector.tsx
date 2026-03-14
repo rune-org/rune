@@ -9,17 +9,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  listCredentialsDropdown,
-  createCredential,
-} from "@/lib/api/credentials";
+import { listCredentialsDropdown, createCredential } from "@/lib/api/credentials";
 import { extractApiErrorMessage } from "@/lib/api/error";
 import { AddCredentialDialog } from "@/components/credentials/AddCredentialDialog";
 import { toast } from "@/components/ui/toast";
-import type {
-  CredentialResponseDropDown,
-  CredentialType,
-} from "@/client/types.gen";
+import type { CredentialResponseDropDown, CredentialType } from "@/client/types.gen";
 import type { CredentialRef } from "@/lib/credentials";
 
 interface CredentialSelectorProps {
@@ -41,9 +35,7 @@ export function CredentialSelector({
   className = "",
   showHelp = false,
 }: CredentialSelectorProps) {
-  const [credentials, setCredentials] = useState<CredentialResponseDropDown[]>(
-    [],
-  );
+  const [credentials, setCredentials] = useState<CredentialResponseDropDown[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -55,12 +47,8 @@ export function CredentialSelector({
       const response = await listCredentialsDropdown();
       if (response.data?.data) {
         // Filter credentials by type
-        const types = Array.isArray(credentialType)
-          ? credentialType
-          : [credentialType];
-        const filtered = response.data.data.filter((cred) =>
-          types.includes(cred.credential_type),
-        );
+        const types = Array.isArray(credentialType) ? credentialType : [credentialType];
+        const filtered = response.data.data.filter((cred) => types.includes(cred.credential_type));
         setCredentials(filtered);
       }
     } catch (err) {
@@ -86,9 +74,7 @@ export function CredentialSelector({
       return;
     }
 
-    const selected = credentials.find(
-      (cred) => cred.id.toString() === selectedId,
-    );
+    const selected = credentials.find((cred) => cred.id.toString() === selectedId);
     if (selected) {
       onChange({
         id: selected.id.toString(),
@@ -168,11 +154,7 @@ export function CredentialSelector({
         </button>
       </div>
 
-      <Select
-        value={selectedValue}
-        onValueChange={handleValueChange}
-        disabled={isLoading}
-      >
+      <Select value={selectedValue} onValueChange={handleValueChange} disabled={isLoading}>
         <SelectTrigger className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 text-sm">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
@@ -182,9 +164,7 @@ export function CredentialSelector({
           </SelectItem>
           {credentials.length === 0 && !isLoading && !error && (
             <SelectItem value="empty" disabled>
-              <span className="text-muted-foreground">
-                No credentials found
-              </span>
+              <span className="text-muted-foreground">No credentials found</span>
             </SelectItem>
           )}
           {credentials.map((cred) => (

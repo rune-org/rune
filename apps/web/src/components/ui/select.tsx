@@ -51,9 +51,7 @@ const SelectContent = React.forwardRef<
       <SelectPrimitive.ScrollUpButton className="flex items-center justify-center bg-popover py-2 text-muted-foreground">
         <ChevronUp className="h-4 w-4" />
       </SelectPrimitive.ScrollUpButton>
-      <SelectPrimitive.Viewport className="p-1">
-        {children}
-      </SelectPrimitive.Viewport>
+      <SelectPrimitive.Viewport className="p-1">{children}</SelectPrimitive.Viewport>
       <SelectPrimitive.ScrollDownButton className="flex items-center justify-center bg-popover py-2 text-muted-foreground">
         <ChevronDown className="h-4 w-4" />
       </SelectPrimitive.ScrollDownButton>
@@ -69,10 +67,7 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
-    className={cn(
-      "px-2 py-1.5 text-xs font-medium text-muted-foreground",
-      className,
-    )}
+    className={cn("px-2 py-1.5 text-xs font-medium text-muted-foreground", className)}
     {...props}
   />
 ));

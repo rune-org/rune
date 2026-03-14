@@ -29,11 +29,8 @@ export const logout = () => logoutAuthLogoutPost({});
 
 export const getMyProfile = () => getMyProfileProfileMeGet({});
 
-export const adminCreateUser = (
-  name: string,
-  email: string,
-  role: "user" | "admin" = "user",
-) => createUserUsersPost({ body: { name, email, role } });
+export const adminCreateUser = (name: string, email: string, role: "user" | "admin" = "user") =>
+  createUserUsersPost({ body: { name, email, role } });
 
 export const firstAdminSignup = (name: string, email: string, password: string) =>
   initializeFirstAdminSetupInitializePost({ body: { name, email, password } });

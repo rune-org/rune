@@ -57,23 +57,23 @@
   --node-agent-border: hsl(189 85% 62% / 0.35);
 
   /* Toast notification colors — dark tint of each variant's hue with glass */
-  --toast-success-bg: hsl(152 18% 14% );
+  --toast-success-bg: hsl(152 18% 14%);
   --toast-success-border: hsl(152 22% 28%);
   --toast-success-accent: hsl(152 45% 46%);
 
-  --toast-error-bg: hsl(0 16% 15% );
+  --toast-error-bg: hsl(0 16% 15%);
   --toast-error-border: hsl(0 20% 28%);
   --toast-error-accent: hsl(0 50% 55%);
 
-  --toast-warning-bg: hsl(38 16% 14% );
+  --toast-warning-bg: hsl(38 16% 14%);
   --toast-warning-border: hsl(38 20% 28%);
   --toast-warning-accent: hsl(40 50% 52%);
 
-  --toast-info-bg: hsl(217 22% 15% );
+  --toast-info-bg: hsl(217 22% 15%);
   --toast-info-border: hsl(217 24% 28%);
   --toast-info-accent: hsl(217 65% 58%);
 
-  --toast-neutral-bg: hsl(220 16% 15% );
+  --toast-neutral-bg: hsl(220 16% 15%);
   --toast-neutral-border: hsl(220 18% 26%);
   --toast-neutral-accent: hsl(215 16% 48%);
 }
