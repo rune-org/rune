@@ -14,6 +14,15 @@ const eslintConfig = [
       "react-hooks/immutability": "off",
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/static-components": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+        },
+      ],
     },
   },
   {

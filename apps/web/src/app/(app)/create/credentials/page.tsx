@@ -3,10 +3,7 @@
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
-import {
-  CredentialsTable,
-  type Credential,
-} from "@/components/credentials/CredentialsTable";
+import { CredentialsTable, type Credential } from "@/components/credentials/CredentialsTable";
 import { AddCredentialDialog } from "@/components/credentials/AddCredentialDialog";
 import { DeleteCredentialDialog } from "@/components/credentials/DeleteCredentialDialog";
 import { credentials as credentialsAPI } from "@/lib/api";
@@ -30,6 +27,7 @@ export default function CreateCredentialsPage() {
   // Fetch credentials on mount
   useEffect(() => {
     loadCredentials();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadCredentials = async () => {
@@ -42,7 +40,7 @@ export default function CreateCredentialsPage() {
       if (response.data && response.data.data) {
         setCredentials(response.data.data);
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error("Failed to load credentials", {
         action: {
           label: "Retry",
@@ -117,7 +115,7 @@ export default function CreateCredentialsPage() {
       await credentialsAPI.deleteCredential(id);
       setCredentials((prev) => prev.filter((c) => c.id !== id));
       toast.success("Credential deleted successfully");
-    } catch (err) {
+    } catch (_err) {
       // Reload credentials to restore UI state on error
       loadCredentials();
       toast.error("Failed to delete credential. Please try again.");
@@ -126,16 +124,10 @@ export default function CreateCredentialsPage() {
 
   if (error) {
     return (
-      <Container
-        className="flex flex-col gap-8 py-12"
-        widthClassName="max-w-6xl"
-      >
+      <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
         <div className="text-center text-destructive">
           <p>{error}</p>
-          <button
-            onClick={loadCredentials}
-            className="mt-4 underline hover:no-underline"
-          >
+          <button onClick={loadCredentials} className="mt-4 underline hover:no-underline">
             Try again
           </button>
         </div>

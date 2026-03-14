@@ -25,8 +25,7 @@ const docCards = [
   },
   {
     title: "Templates",
-    description:
-      "Reuse curated templates to launch faster with best practices.",
+    description: "Reuse curated templates to launch faster with best practices.",
     icon: LayoutGrid,
   },
 ];
@@ -39,10 +38,7 @@ const faqItems = [
 
 export default function CreateDocsPage() {
   return (
-    <Container
-      className="flex flex-col gap-10 py-12"
-      widthClassName="max-w-6xl"
-    >
+    <Container className="flex flex-col gap-10 py-12" widthClassName="max-w-6xl">
       <PageHeader
         title="Documentation"
         description="Welcome to the Rune documentation. Learn how to create and manage your workflows."
@@ -78,9 +74,7 @@ export default function CreateDocsPage() {
                     <CardTitle className="text-lg font-semibold text-foreground">
                       {card.title}
                     </CardTitle>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {card.description}
-                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">{card.description}</p>
                   </div>
                 </CardHeader>
               </Card>

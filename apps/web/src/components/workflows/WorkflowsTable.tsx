@@ -1,19 +1,7 @@
 "use client";
 
-import {
-  FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import {
-  Download,
-  MoreHorizontal,
-  Play,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { Download, MoreHorizontal, Play, Search, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -65,11 +53,7 @@ import {
 } from "@/lib/permissions";
 import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { stripCredentialsFromWorkflowData } from "@/lib/workflow-dsl";
 
 function timeAgo(iso: string | null): string {
@@ -104,27 +88,17 @@ export function WorkflowsTable() {
     state: { workflows, loading },
     actions,
   } = useAppState();
-  
+
   const { state: authState } = useAuth();
   const isAdmin = authState.user?.role === "admin";
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<StatFilter>("all");
-  const [pendingWorkflowId, setPendingWorkflowId] = useState<string | null>(
-    null,
-  );
-  const [renameTarget, setRenameTarget] = useState<WorkflowSummary | null>(
-    null,
-  );
-  const [deleteTarget, setDeleteTarget] = useState<WorkflowSummary | null>(
-    null,
-  );
-  const [shareTarget, setShareTarget] = useState<WorkflowSummary | null>(
-    null,
-  );
-  const [exportingWorkflowId, setExportingWorkflowId] = useState<string | null>(
-    null,
-  );
+  const [pendingWorkflowId, setPendingWorkflowId] = useState<string | null>(null);
+  const [renameTarget, setRenameTarget] = useState<WorkflowSummary | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<WorkflowSummary | null>(null);
+  const [shareTarget, setShareTarget] = useState<WorkflowSummary | null>(null);
+  const [exportingWorkflowId, setExportingWorkflowId] = useState<string | null>(null);
 
   useEffect(() => {
     if (workflows.length === 0) void actions.init();
@@ -139,18 +113,10 @@ export function WorkflowsTable() {
       setPendingWorkflowId(workflow.id);
       try {
         await updateWorkflowStatus(workflowId, workflow.status !== "active");
-        toast.success(
-          workflow.status === "active"
-            ? "Workflow deactivated"
-            : "Workflow activated",
-        );
+        toast.success(workflow.status === "active" ? "Workflow deactivated" : "Workflow activated");
         await actions.refreshWorkflows();
       } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to update workflow status.",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to update workflow status.");
       } finally {
         setPendingWorkflowId(null);
       }
@@ -177,11 +143,7 @@ export function WorkflowsTable() {
       setDeleteTarget(null);
       await actions.refreshWorkflows();
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to delete workflow.",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to delete workflow.");
     } finally {
       setPendingWorkflowId(null);
     }
@@ -194,14 +156,10 @@ export function WorkflowsTable() {
     setPendingWorkflowId(workflow.id);
     try {
       await runWorkflow(workflowId);
-      toast.success(
-        "Workflow successfully executed.",
-      );
+      toast.success("Workflow successfully executed.");
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to queue workflow for execution.",
+        error instanceof Error ? error.message : "Failed to queue workflow for execution.",
       );
     } finally {
       setPendingWorkflowId(null);
@@ -220,11 +178,10 @@ export function WorkflowsTable() {
         return;
       }
       const detail = response.data.data;
-      const rawData = (detail.latest_version?.workflow_data ?? undefined) as Record<string, unknown> | undefined;
-      const hasGraph =
-        rawData &&
-        Array.isArray(rawData.nodes) &&
-        Array.isArray(rawData.edges);
+      const rawData = (detail.latest_version?.workflow_data ?? undefined) as
+        | Record<string, unknown>
+        | undefined;
+      const hasGraph = rawData && Array.isArray(rawData.nodes) && Array.isArray(rawData.edges);
       if (!hasGraph) {
         toast.error("Workflow has no graph data to export.");
         return;
@@ -269,11 +226,7 @@ export function WorkflowsTable() {
         setRenameTarget(null);
         await actions.refreshWorkflows();
       } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to rename workflow.",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to rename workflow.");
       } finally {
         setPendingWorkflowId(null);
       }
@@ -312,10 +265,7 @@ export function WorkflowsTable() {
     return { active, draft, failed, runs };
   }, [workflows]);
 
-  const isRowPending = useCallback(
-    (id: string) => pendingWorkflowId === id,
-    [pendingWorkflowId],
-  );
+  const isRowPending = useCallback((id: string) => pendingWorkflowId === id, [pendingWorkflowId]);
   const isRowExporting = useCallback(
     (id: string) => exportingWorkflowId === id,
     [exportingWorkflowId],
@@ -327,14 +277,10 @@ export function WorkflowsTable() {
         <div className="flex items-center gap-6 text-sm">
           <button
             type="button"
-            onClick={() =>
-              setFilter((f) => (f === "active" ? "all" : "active"))
-            }
+            onClick={() => setFilter((f) => (f === "active" ? "all" : "active"))}
             aria-pressed={filter === "active"}
             className={
-              filter === "active"
-                ? "text-accent"
-                : "text-muted-foreground hover:text-foreground"
+              filter === "active" ? "text-accent" : "text-muted-foreground hover:text-foreground"
             }
           >
             <span className="font-semibold">{stats.active}</span> Active
@@ -344,9 +290,7 @@ export function WorkflowsTable() {
             onClick={() => setFilter((f) => (f === "runs" ? "all" : "runs"))}
             aria-pressed={filter === "runs"}
             className={
-              filter === "runs"
-                ? "text-accent"
-                : "text-muted-foreground hover:text-foreground"
+              filter === "runs" ? "text-accent" : "text-muted-foreground hover:text-foreground"
             }
           >
             <span className="font-semibold">{stats.runs}</span> Runs
@@ -356,23 +300,17 @@ export function WorkflowsTable() {
             onClick={() => setFilter((f) => (f === "draft" ? "all" : "draft"))}
             aria-pressed={filter === "draft"}
             className={
-              filter === "draft"
-                ? "text-accent"
-                : "text-muted-foreground hover:text-foreground"
+              filter === "draft" ? "text-accent" : "text-muted-foreground hover:text-foreground"
             }
           >
             <span className="font-semibold">{stats.draft}</span> Draft
           </button>
           <button
             type="button"
-            onClick={() =>
-              setFilter((f) => (f === "failed" ? "all" : "failed"))
-            }
+            onClick={() => setFilter((f) => (f === "failed" ? "all" : "failed"))}
             aria-pressed={filter === "failed"}
             className={
-              filter === "failed"
-                ? "text-accent"
-                : "text-muted-foreground hover:text-foreground"
+              filter === "failed" ? "text-accent" : "text-muted-foreground hover:text-foreground"
             }
           >
             <span className="font-semibold">{stats.failed}</span> Failed
@@ -403,15 +341,8 @@ export function WorkflowsTable() {
         </TableHeader>
         <TableBody>
           {filtered.map((w) => (
-            <TableRow
-              key={w.id}
-              data-loading={
-                loading || isRowPending(w.id) ? "1" : undefined
-              }
-            >
-              <TableCell className="font-mono text-xs text-muted-foreground">
-                {w.id}
-              </TableCell>
+            <TableRow key={w.id} data-loading={loading || isRowPending(w.id) ? "1" : undefined}>
+              <TableCell className="font-mono text-xs text-muted-foreground">{w.id}</TableCell>
               <TableCell className="font-medium text-foreground">
                 <div className="flex items-center gap-2">
                   <a
@@ -426,15 +357,11 @@ export function WorkflowsTable() {
                   </Badge>
                 </div>
               </TableCell>
-              <TableCell className="text-muted-foreground">
-                {w.triggerType}
-              </TableCell>
+              <TableCell className="text-muted-foreground">{w.triggerType}</TableCell>
               <TableCell>
                 <StatusBadge status={w.status} />
               </TableCell>
-              <TableCell className="text-muted-foreground">
-                {timeAgo(w.lastRunAt)}
-              </TableCell>
+              <TableCell className="text-muted-foreground">{timeAgo(w.lastRunAt)}</TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
                   {canExecuteWorkflow(w.role, isAdmin) && (
@@ -501,9 +428,7 @@ export function WorkflowsTable() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuItem asChild>
-                        <a href={`/create/app?workflow=${w.id}`}>
-                          Open in Canvas
-                        </a>
+                        <a href={`/create/app?workflow=${w.id}`}>Open in Canvas</a>
                       </DropdownMenuItem>
                       {canRenameWorkflow(w.role, isAdmin) && (
                         <DropdownMenuItem
@@ -518,9 +443,7 @@ export function WorkflowsTable() {
                           onSelect={() => handleToggleActive(w)}
                           disabled={isRowPending(w.id)}
                         >
-                          {w.status === "active"
-                            ? "Deactivate"
-                            : "Activate"}
+                          {w.status === "active" ? "Deactivate" : "Activate"}
                         </DropdownMenuItem>
                       )}
                       {canExecuteWorkflow(w.role, isAdmin) && (
@@ -611,12 +534,7 @@ type RenameWorkflowDialogProps = {
   pending: boolean;
 };
 
-function RenameWorkflowDialog({
-  workflow,
-  onClose,
-  onSubmit,
-  pending,
-}: RenameWorkflowDialogProps) {
+function RenameWorkflowDialog({ workflow, onClose, onSubmit, pending }: RenameWorkflowDialogProps) {
   const [name, setName] = useState(workflow?.name ?? "");
 
   useEffect(() => {
@@ -655,12 +573,7 @@ function RenameWorkflowDialog({
             />
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={pending}
-            >
+            <Button type="button" variant="secondary" onClick={onClose} disabled={pending}>
               Cancel
             </Button>
             <Button type="submit" disabled={pending || !name.trim()}>
@@ -696,10 +609,8 @@ function DeleteWorkflowDialog({
       description={
         <>
           This will permanently delete the workflow{" "}
-          <span className="font-semibold">
-            {workflow?.name ?? "Untitled"}
-          </span>{" "}
-          and its configuration. This action cannot be undone.
+          <span className="font-semibold">{workflow?.name ?? "Untitled"}</span> and its
+          configuration. This action cannot be undone.
         </>
       }
       cancelText="Cancel"

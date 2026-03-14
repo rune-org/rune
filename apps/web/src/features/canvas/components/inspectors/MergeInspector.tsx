@@ -20,11 +20,7 @@ const WAIT_MODES = [
   { value: "wait_for_any", label: "Wait for any branch" },
 ] as const;
 
-export function MergeInspector({
-  node,
-  updateData,
-  isExpanded,
-}: MergeInspectorProps) {
+export function MergeInspector({ node, updateData, isExpanded }: MergeInspectorProps) {
   const updateMergeData = (updater: (data: MergeData) => MergeData) => {
     updateData(node.id, "merge", updater);
   };
@@ -63,17 +59,13 @@ export function MergeInspector({
       </div>
 
       <div>
-        <label className="block text-xs text-muted-foreground">
-          Timeout (seconds)
-        </label>
+        <label className="block text-xs text-muted-foreground">Timeout (seconds)</label>
         <input
           type="number"
           min={1}
           className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
           value={node.data.timeout ?? 300}
-          onChange={(e) =>
-            updateMergeData((d) => ({ ...d, timeout: Number(e.target.value) }))
-          }
+          onChange={(e) => updateMergeData((d) => ({ ...d, timeout: Number(e.target.value) }))}
         />
         {isExpanded && (
           <div className="mt-1 text-xs text-muted-foreground/70">
@@ -84,8 +76,8 @@ export function MergeInspector({
 
       {isExpanded && (
         <div className="rounded-[calc(var(--radius)-0.3rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
-          Connect multiple branches to this node. The number of incoming edges
-          determines how many branches are synchronized.
+          Connect multiple branches to this node. The number of incoming edges determines how many
+          branches are synchronized.
         </div>
       )}
     </div>

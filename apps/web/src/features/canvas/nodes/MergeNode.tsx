@@ -6,10 +6,7 @@ import { Combine } from "lucide-react";
 import type { MergeData } from "../types";
 import { BaseNode } from "./BaseNode";
 
-export const MergeNode = memo(function MergeNode({
-  id,
-  data,
-}: NodeProps<Node<MergeData>>) {
+export const MergeNode = memo(function MergeNode({ id, data }: NodeProps<Node<MergeData>>) {
   const waitMode = data.wait_mode ?? "wait_for_all";
   const timeout = data.timeout ?? 300;
 

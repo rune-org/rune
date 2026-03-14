@@ -6,11 +6,7 @@ import type { CanvasNode } from "../types";
  * Returns topologically ordered upstream nodes (closest first), excluding self.
  * Cycle-safe via visited Set.
  */
-export function getUpstreamNodes(
-  nodeId: string,
-  nodes: CanvasNode[],
-  edges: Edge[],
-): CanvasNode[] {
+export function getUpstreamNodes(nodeId: string, nodes: CanvasNode[], edges: Edge[]): CanvasNode[] {
   // Build adjacency map: target → source[]
   const incomingMap = new Map<string, string[]>();
   for (const edge of edges) {

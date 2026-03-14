@@ -97,15 +97,11 @@ export function VariableAutocomplete({
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setSelectedIndex((prev) =>
-            prev < filtered.length - 1 ? prev + 1 : 0,
-          );
+          setSelectedIndex((prev) => (prev < filtered.length - 1 ? prev + 1 : 0));
           break;
         case "ArrowUp":
           e.preventDefault();
-          setSelectedIndex((prev) =>
-            prev > 0 ? prev - 1 : filtered.length - 1,
-          );
+          setSelectedIndex((prev) => (prev > 0 ? prev - 1 : filtered.length - 1));
           break;
         case "Enter":
           e.preventDefault();
@@ -156,9 +152,7 @@ export function VariableAutocomplete({
             type="button"
             className={cn(
               "flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors",
-              idx === selectedIndex
-                ? "bg-accent text-accent-foreground"
-                : "hover:bg-muted/50",
+              idx === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-muted/50",
             )}
             onClick={() => onSelect(entry.path)}
             onMouseEnter={() => setSelectedIndex(idx)}
@@ -170,12 +164,7 @@ export function VariableAutocomplete({
               />
             )}
             <span className="truncate font-medium">{entry.path}</span>
-            <span
-              className={cn(
-                "ml-auto shrink-0 text-[9px] uppercase",
-                TYPE_COLORS[entry.type],
-              )}
-            >
+            <span className={cn("ml-auto shrink-0 text-[9px] uppercase", TYPE_COLORS[entry.type])}>
               {entry.type}
             </span>
           </button>

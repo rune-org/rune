@@ -37,10 +37,7 @@ type ExecutionAction =
 /**
  * Reducer for execution state management.
  */
-function executionReducer(
-  state: ExecutionState,
-  action: ExecutionAction
-): ExecutionState {
+function executionReducer(state: ExecutionState, action: ExecutionAction): ExecutionState {
   switch (action.type) {
     case "START_EXECUTION": {
       return {
@@ -177,24 +174,21 @@ const ExecutionContext = createContext<ExecutionContextValue | null>(null);
 export function ExecutionProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(executionReducer, initialExecutionState);
 
-  const getNodeExecution = useCallback(
-    (nodeId: string) => state.nodes.get(nodeId),
-    [state.nodes]
-  );
+  const getNodeExecution = useCallback((nodeId: string) => state.nodes.get(nodeId), [state.nodes]);
 
   const isNodeRunning = useCallback(
     (nodeId: string) => state.nodes.get(nodeId)?.status === "running",
-    [state.nodes]
+    [state.nodes],
   );
 
   const isNodeCompleted = useCallback(
     (nodeId: string) => state.nodes.get(nodeId)?.status === "success",
-    [state.nodes]
+    [state.nodes],
   );
 
   const isNodeFailed = useCallback(
     (nodeId: string) => state.nodes.get(nodeId)?.status === "failed",
-    [state.nodes]
+    [state.nodes],
   );
 
   const isExecutionActive = state.status === "running";
@@ -209,14 +203,10 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
       isNodeFailed,
       isExecutionActive,
     }),
-    [state, getNodeExecution, isNodeRunning, isNodeCompleted, isNodeFailed, isExecutionActive]
+    [state, getNodeExecution, isNodeRunning, isNodeCompleted, isNodeFailed, isExecutionActive],
   );
 
-  return (
-    <ExecutionContext.Provider value={value}>
-      {children}
-    </ExecutionContext.Provider>
-  );
+  return <ExecutionContext.Provider value={value}>{children}</ExecutionContext.Provider>;
 }
 
 /**

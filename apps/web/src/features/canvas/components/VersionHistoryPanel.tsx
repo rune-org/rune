@@ -2,21 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "@/components/ui/toast";
-import {
-  GitCommit,
-  CheckCircle,
-  Clock,
-  Loader2,
-  RotateCcw,
-  Play,
-} from "lucide-react";
+import { GitCommit, CheckCircle, Clock, Loader2, RotateCcw, Play } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { workflows } from "@/lib/api";
 import { versionToGraph } from "@/lib/workflows";
 import type { WorkflowVersionListItem } from "@/client/types.gen";
@@ -25,7 +14,9 @@ import type { Edge } from "@xyflow/react";
 
 interface VersionHistoryPanelProps {
   workflowId: number | null;
-  onViewVersion: (snapshot: { nodes: CanvasNode[]; edges: Edge[]; versionNumber: number } | null) => void;
+  onViewVersion: (
+    snapshot: { nodes: CanvasNode[]; edges: Edge[]; versionNumber: number } | null,
+  ) => void;
   onRestore: (versionId: number) => void;
   onRunVersion?: (versionId: number) => void;
   viewingVersionNumber?: number | null;
@@ -147,16 +138,12 @@ export function VersionHistoryPanel({
           {isLoading ? (
             <div className="p-6 text-center">
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground/50" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                Loading versions...
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">Loading versions...</p>
             </div>
           ) : versions.length === 0 ? (
             <div className="p-6 text-center">
               <GitCommit className="mx-auto h-8 w-8 text-muted-foreground/50" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                No versions yet.
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">No versions yet.</p>
               <p className="mt-1 text-xs text-muted-foreground/70">
                 Save the workflow to create the first version.
               </p>
@@ -171,9 +158,7 @@ export function VersionHistoryPanel({
                     key={v.id}
                     className={cn(
                       "group rounded-md px-2 py-2 text-sm transition-colors cursor-pointer",
-                      isActive
-                        ? "bg-muted/60 text-foreground"
-                        : "hover:bg-muted/40"
+                      isActive ? "bg-muted/60 text-foreground" : "hover:bg-muted/40",
                     )}
                     onClick={() => handleSelectVersion(v)}
                   >
@@ -185,9 +170,7 @@ export function VersionHistoryPanel({
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-medium">
-                            v{v.version}
-                          </span>
+                          <span className="font-mono text-xs font-medium">v{v.version}</span>
                           {v.is_published && (
                             <span className="flex items-center gap-1 text-[10px] font-medium text-green-500">
                               <CheckCircle className="h-2.5 w-2.5" />

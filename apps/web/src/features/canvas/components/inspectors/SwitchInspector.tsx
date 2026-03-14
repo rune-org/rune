@@ -11,10 +11,7 @@ import {
 import type { SwitchData, SwitchOperator, SwitchRule } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
 import { VariableInput } from "../variable-picker/VariableInput";
-import {
-  switchHandleLabelFromId,
-  switchRuleHandleId,
-} from "../../utils/switchHandles";
+import { switchHandleLabelFromId, switchRuleHandleId } from "../../utils/switchHandles";
 
 type SwitchInspectorProps = {
   node: Node<SwitchData>;
@@ -22,15 +19,7 @@ type SwitchInspectorProps = {
   isExpanded: boolean;
 };
 
-const OPERATORS: SwitchOperator[] = [
-  "==",
-  "!=",
-  ">",
-  "<",
-  ">=",
-  "<=",
-  "contains",
-];
+const OPERATORS: SwitchOperator[] = ["==", "!=", ">", "<", ">=", "<=", "contains"];
 
 function ruleHeaderLabel(idx: number) {
   return switchHandleLabelFromId(switchRuleHandleId(idx)) ?? `case ${idx + 1}`;
@@ -48,11 +37,7 @@ function sanitizeRules(data: SwitchData): SwitchRule[] {
   }));
 }
 
-export function SwitchInspector({
-  node,
-  updateData,
-  isExpanded,
-}: SwitchInspectorProps) {
+export function SwitchInspector({ node, updateData, isExpanded }: SwitchInspectorProps) {
   const rules = useMemo(() => sanitizeRules(node.data), [node.data]);
 
   const updateRules = (updater: (rules: SwitchRule[]) => SwitchRule[]) => {
@@ -63,10 +48,7 @@ export function SwitchInspector({
   };
 
   const addRule = () => {
-    updateRules((rs) => [
-      ...rs,
-      { value: "", operator: "==", compare: "" },
-    ]);
+    updateRules((rs) => [...rs, { value: "", operator: "==", compare: "" }]);
   };
 
   const removeRule = (idx: number) => {
@@ -84,11 +66,7 @@ export function SwitchInspector({
     });
   };
 
-  const updateRuleField = (
-    idx: number,
-    field: keyof SwitchRule,
-    value: string,
-  ) => {
+  const updateRuleField = (idx: number, field: keyof SwitchRule, value: string) => {
     updateRules((rs) =>
       rs.map((r, i) =>
         i === idx
@@ -165,27 +143,19 @@ export function SwitchInspector({
 
             <div className={`mt-3 grid gap-2 ${isExpanded ? "grid-cols-3" : "grid-cols-1"}`}>
               <div className="space-y-1">
-                <label className="block text-[11px] text-muted-foreground">
-                  Value
-                </label>
+                <label className="block text-[11px] text-muted-foreground">Value</label>
                 <VariableInput
                   value={rule.value ?? ""}
-                  onChange={(v) =>
-                    updateRuleField(idx, "value", v)
-                  }
+                  onChange={(v) => updateRuleField(idx, "value", v)}
                   placeholder="$input.status"
                   nodeId={node.id}
                 />
               </div>
               <div className="space-y-1">
-                <label className="block text-[11px] text-muted-foreground">
-                  Operator
-                </label>
+                <label className="block text-[11px] text-muted-foreground">Operator</label>
                 <Select
                   value={rule.operator ?? "=="}
-                  onValueChange={(val) =>
-                    updateRuleField(idx, "operator", val as SwitchOperator)
-                  }
+                  onValueChange={(val) => updateRuleField(idx, "operator", val as SwitchOperator)}
                 >
                   <SelectTrigger className="h-auto w-full rounded-[calc(var(--radius)-0.3rem)] border-input bg-muted/30 px-2 py-1 text-xs">
                     <SelectValue />
@@ -200,15 +170,11 @@ export function SwitchInspector({
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="block text-[11px] text-muted-foreground">
-                  Compare
-                </label>
+                <label className="block text-[11px] text-muted-foreground">Compare</label>
                 <input
                   className="w-full rounded-[calc(var(--radius)-0.3rem)] border border-input bg-muted/30 px-2 py-1 text-xs"
                   value={rule.compare ?? ""}
-                  onChange={(e) =>
-                    updateRuleField(idx, "compare", e.target.value)
-                  }
+                  onChange={(e) => updateRuleField(idx, "compare", e.target.value)}
                   placeholder="approved"
                 />
               </div>
@@ -218,12 +184,12 @@ export function SwitchInspector({
       </div>
 
       <div className="rounded-[calc(var(--radius)-0.3rem)] border border-dashed border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-        Fallback output is used when none of the above rules match. Connect it
-        to the node that should handle unmatched cases.
+        Fallback output is used when none of the above rules match. Connect it to the node that
+        should handle unmatched cases.
         {isExpanded && (
           <div className="mt-1 text-[11px] text-muted-foreground/80">
-            Routes are ordered. The first matching rule wins, and its outgoing
-            edge is used. Reorder rules to change priority.
+            Routes are ordered. The first matching rule wins, and its outgoing edge is used. Reorder
+            rules to change priority.
           </div>
         )}
       </div>

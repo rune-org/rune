@@ -8,9 +8,7 @@ type JsonFieldProps = {
 };
 
 export function JsonField({ value, onChange }: JsonFieldProps) {
-  const [text, setText] = useState<string>(() =>
-    value ? JSON.stringify(value, null, 2) : "{}",
-  );
+  const [text, setText] = useState<string>(() => (value ? JSON.stringify(value, null, 2) : "{}"));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

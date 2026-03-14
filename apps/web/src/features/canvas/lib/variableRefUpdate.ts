@@ -35,10 +35,7 @@ function visitValue(path: string, value: unknown, visitor: Visitor): void {
 /**
  * Scan all nodes (except the one being renamed) for `$oldName` variable references.
  */
-export function scanVariableReferences(
-  nodes: CanvasNode[],
-  oldName: string,
-): ScanResult {
+export function scanVariableReferences(nodes: CanvasNode[], oldName: string): ScanResult {
   const references: AffectedReference[] = [];
   const affectedNodeIds = new Set<string>();
 
@@ -87,8 +84,7 @@ function replaceInValue<T>(value: T, oldName: string, newName: string): T {
         const rest = value.slice(i + 1);
         if (
           rest.startsWith(oldName) &&
-          (rest.length === oldName.length ||
-            !/[a-zA-Z0-9_-]/.test(rest[oldName.length]))
+          (rest.length === oldName.length || !/[a-zA-Z0-9_-]/.test(rest[oldName.length]))
         ) {
           result += `$${newName}`;
           i += 1 + oldName.length;

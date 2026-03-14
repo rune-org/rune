@@ -19,9 +19,7 @@ export type VariableSource = {
 
 const MAX_KEYS = 50;
 
-function inferType(
-  value: unknown,
-): VariableTreeNode["type"] {
+function inferType(value: unknown): VariableTreeNode["type"] {
   if (value === null || value === undefined) return "unknown";
   if (Array.isArray(value)) return "array";
   switch (typeof value) {

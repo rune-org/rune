@@ -47,9 +47,7 @@ export function SaveVersionDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Save version</DialogTitle>
-          <DialogDescription>
-            Add an optional message describing this version.
-          </DialogDescription>
+          <DialogDescription>Add an optional message describing this version.</DialogDescription>
         </DialogHeader>
         <form className="grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-2">

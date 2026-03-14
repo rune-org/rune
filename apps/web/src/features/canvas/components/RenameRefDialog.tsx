@@ -44,8 +44,8 @@ export function RenameRefDialog({
           <AlertDialogTitle>Update variable references?</AlertDialogTitle>
           <AlertDialogDescription className="wrap-break-word">
             Renaming <strong className="break-all">{oldName}</strong> to{" "}
-            <strong className="break-all">{newName}</strong> will
-            affect <strong>{plural(scanResult.totalRefs, "reference")}</strong> in{" "}
+            <strong className="break-all">{newName}</strong> will affect{" "}
+            <strong>{plural(scanResult.totalRefs, "reference")}</strong> in{" "}
             <strong>{plural(scanResult.affectedNodes.length, "node")}</strong>.
           </AlertDialogDescription>
         </AlertDialogHeader>

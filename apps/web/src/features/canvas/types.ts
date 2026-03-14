@@ -104,11 +104,4 @@ export type SwitchRule = {
   compare?: string;
 };
 
-export type SwitchOperator =
-  | "=="
-  | "!="
-  | ">"
-  | "<"
-  | ">="
-  | "<="
-  | "contains";
+export type SwitchOperator = "==" | "!=" | ">" | "<" | ">=" | "<=" | "contains";

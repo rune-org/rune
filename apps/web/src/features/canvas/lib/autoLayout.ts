@@ -86,10 +86,7 @@ export function applyAutoLayout({
   dagre.layout(dagreGraph);
 
   // Find an anchor node to preserve the user's canvas position.
-  const anchorNode =
-    pinnedNodes[0] ||
-    nodes.find((n) => n.type === "trigger") ||
-    nodes[0];
+  const anchorNode = pinnedNodes[0] || nodes.find((n) => n.type === "trigger") || nodes[0];
 
   // Calculate offset to anchor the new layout to the existing canvas position
   const anchorDagreNode = dagreGraph.node(anchorNode.id);
@@ -126,7 +123,7 @@ export function applyAutoLayout({
 }
 
 /**
- * Resolve overlaps between nodes 
+ * Resolve overlaps between nodes
  * Groups nodes by approximate X position (rank), then ensures no vertical overlap within each group.
  */
 function resolveAllOverlaps(nodes: CanvasNode[]): CanvasNode[] {
@@ -225,9 +222,7 @@ function reorderSiblingNodes(nodes: CanvasNode[], edges: Edge[]): CanvasNode[] {
 
     if (targets.length < 2) continue;
 
-    const currentYPositions = targets
-      .map((t) => t.node!.position.y)
-      .sort((a, b) => a - b);
+    const currentYPositions = targets.map((t) => t.node!.position.y).sort((a, b) => a - b);
 
     targets.forEach((target, idx) => {
       const node = nodeMap.get(target.nodeId);

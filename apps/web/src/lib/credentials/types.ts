@@ -45,13 +45,11 @@ export const CREDENTIAL_TYPE_CONFIG: Record<
  * Get all credential types as an array for dropdowns.
  */
 export const getCredentialTypeOptions = () => {
-  return (Object.keys(CREDENTIAL_TYPE_CONFIG) as CredentialType[]).map(
-    (type) => ({
-      value: type,
-      label: CREDENTIAL_TYPE_CONFIG[type].label,
-      description: CREDENTIAL_TYPE_CONFIG[type].description,
-    })
-  );
+  return (Object.keys(CREDENTIAL_TYPE_CONFIG) as CredentialType[]).map((type) => ({
+    value: type,
+    label: CREDENTIAL_TYPE_CONFIG[type].label,
+    description: CREDENTIAL_TYPE_CONFIG[type].description,
+  }));
 };
 
 /**
@@ -64,10 +62,7 @@ export const getCredentialTypeLabel = (type: CredentialType): string => {
 /**
  * Badge styling configuration for each credential type.
  */
-export const CREDENTIAL_TYPE_BADGE_STYLES: Record<
-  CredentialType,
-  { className: string }
-> = {
+export const CREDENTIAL_TYPE_BADGE_STYLES: Record<CredentialType, { className: string }> = {
   api_key: {
     className: "bg-blue-900/40 text-blue-200",
   },

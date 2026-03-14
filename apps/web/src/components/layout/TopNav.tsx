@@ -27,16 +27,9 @@ export function TopNav() {
 
   return (
     <header className="absolute top-0 z-50 w-full">
-      <Container
-        className="flex h-16 items-center justify-between"
-        widthClassName="max-w-6xl"
-      >
+      <Container className="flex h-16 items-center justify-between" widthClassName="max-w-6xl">
         <div className="flex-1">
-          <Logo
-            priority
-            className="h-7"
-            wrapperClassName="flex h-10 items-center"
-          />
+          <Logo priority className="h-7" wrapperClassName="flex h-10 items-center" />
         </div>
         <nav className="hidden flex-1 items-center justify-center gap-4 md:flex">
           {siteConfig.mainNav.map((item) => {
@@ -47,9 +40,7 @@ export function TopNav() {
                 href={item.href}
                 className={cn(
                   "inline-flex h-10 items-center whitespace-nowrap rounded-[calc(var(--radius)-0.5rem)] px-3 text-m font-medium transition-colors relative top-[5px]",
-                  isActive
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                  isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {item.title}

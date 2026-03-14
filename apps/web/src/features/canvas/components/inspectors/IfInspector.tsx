@@ -9,11 +9,7 @@ type IfInspectorProps = {
   isExpanded: boolean;
 };
 
-export function IfInspector({
-  node,
-  updateData,
-  isExpanded,
-}: IfInspectorProps) {
+export function IfInspector({ node, updateData, isExpanded }: IfInspectorProps) {
   const updateIfData = (updater: (data: IfData) => IfData) => {
     updateData(node.id, "if", updater);
   };
@@ -32,13 +28,11 @@ export function IfInspector({
         placeholder="e.g., $HTTP.status > 200"
         nodeId={node.id}
       />
-      <div className="text-xs text-muted-foreground">
-        Two outputs: true and false.
-      </div>
+      <div className="text-xs text-muted-foreground">Two outputs: true and false.</div>
       {isExpanded && (
         <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
-          The expression is evaluated to determine which output path to take.
-          Use logical operators and comparisons to define your condition.
+          The expression is evaluated to determine which output path to take. Use logical operators
+          and comparisons to define your condition.
         </div>
       )}
     </div>
