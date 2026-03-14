@@ -173,6 +173,36 @@ services:
       - backend_network
     restart: unless-stopped
 
+  scheduler:
+    build:
+      context: ./services/scheduler
+      dockerfile: Dockerfile
+    container_name: rune-scheduler
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-rune}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rune_db}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-rune}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rune_password}
+      RABBITMQ_QUEUE: ${RABBITMQ_WORKFLOW_QUEUE:-workflow.execution}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
+      SCHEDULER_POLL_INTERVAL: ${SCHEDULER_POLL_INTERVAL:-30}
+      SCHEDULER_LOOK_AHEAD: ${SCHEDULER_LOOK_AHEAD:-60}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend_network
+    restart: unless-stopped
+
   frontend:
     build:
       context: ./apps/web
