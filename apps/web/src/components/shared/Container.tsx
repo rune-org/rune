@@ -19,9 +19,6 @@ export function Container({
   const Comp = asChild ? Slot : "div";
 
   return (
-    <Comp
-      className={cn("mx-auto w-full px-6 sm:px-8", widthClassName, className)}
-      {...props}
-    />
+    <Comp className={cn("mx-auto w-full px-6 sm:px-8", widthClassName, className)} {...props} />
   );
 }

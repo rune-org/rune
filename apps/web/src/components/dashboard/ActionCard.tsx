@@ -19,8 +19,7 @@ const actions = {
   },
   agent: {
     title: "Ask an agent",
-    description:
-      "Describe the outcome and Rune will assemble the flow for you.",
+    description: "Describe the outcome and Rune will assemble the flow for you.",
     icon: <Sparkles className="h-6 w-6" />,
     cta: "Talk to an agent",
   },
@@ -58,9 +57,7 @@ export function ActionCard({ id, variant = "secondary" }: ActionCardProps) {
         {action.icon}
       </div>
       <div className="space-y-2 text-foreground">
-        <CardTitle className="text-xl font-semibold capitalize">
-          {action.title}
-        </CardTitle>
+        <CardTitle className="text-xl font-semibold capitalize">{action.title}</CardTitle>
         <CardDescription className="text-sm text-muted-foreground">
           {action.description}
         </CardDescription>

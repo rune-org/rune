@@ -6,11 +6,11 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
-  ReactFlowProvider
+  ReactFlowProvider,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { nodeTypes } from "@/features/canvas/nodes"; 
+import { nodeTypes } from "@/features/canvas/nodes";
 import "@/features/canvas/styles/reactflow.css";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
@@ -39,8 +39,8 @@ const INITIAL_NODES = [
       credential: {
         type: "smtp",
         id: "mock-smtp-1",
-        name: "Company SMTP"
-      }
+        name: "Company SMTP",
+      },
     },
   },
   {
@@ -52,7 +52,14 @@ const INITIAL_NODES = [
 ];
 
 const INITIAL_EDGES = [
-  { id: "edge-1", source: "trgr-1", target: "if-1", type: "default", animated: true, style: { stroke: "#52525b" } },
+  {
+    id: "edge-1",
+    source: "trgr-1",
+    target: "if-1",
+    type: "default",
+    animated: true,
+    style: { stroke: "#52525b" },
+  },
   {
     id: "edge-2",
     source: "if-1",
@@ -66,7 +73,7 @@ const INITIAL_EDGES = [
     labelBgStyle: { fill: "hsl(142 70% 45%)" },
     labelBgPadding: [2, 6] as [number, number],
     labelBgBorderRadius: 4,
-    style: { stroke: "#52525b" }
+    style: { stroke: "#52525b" },
   },
   {
     id: "edge-3",
@@ -81,7 +88,7 @@ const INITIAL_EDGES = [
     labelBgStyle: { fill: "hsl(0 70% 50%)" },
     labelBgPadding: [2, 6] as [number, number],
     labelBgBorderRadius: 4,
-    style: { stroke: "#52525b" }
+    style: { stroke: "#52525b" },
   },
 ];
 
@@ -114,11 +121,11 @@ function MarketingCanvasContent() {
         zoomOnPinch={false}
         nodesDraggable={true}
         nodesConnectable={false}
-        style={{ background: 'transparent' }}
+        style={{ background: "transparent" }}
       >
         <Background color="#CCCCCC" gap={30} size={1} />
       </ReactFlow>
-      
+
       {/* TODO: maybe add a simulation effect for the canvas component if possile */}
       {/* <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
         <Button

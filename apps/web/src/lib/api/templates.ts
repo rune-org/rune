@@ -1,10 +1,10 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import {
-    listTemplatesTemplatesGet,
-    getTemplateTemplatesTemplateIdGet,
-    createTemplateTemplatesPost,
-    deleteTemplateTemplatesTemplateIdDelete,
-    useTemplateTemplatesTemplateIdUsePost,
+  listTemplatesTemplatesGet,
+  getTemplateTemplatesTemplateIdGet,
+  createTemplateTemplatesPost,
+  deleteTemplateTemplatesTemplateIdDelete,
+  useTemplateTemplatesTemplateIdUsePost,
 } from "@/client";
 
 import type { TemplateCreate } from "@/client/types.gen";
@@ -15,17 +15,17 @@ import type { TemplateCreate } from "@/client/types.gen";
 export const listTemplates = () => listTemplatesTemplatesGet();
 
 export const getTemplate = (templateId: number) =>
-    getTemplateTemplatesTemplateIdGet({ path: { template_id: templateId } });
+  getTemplateTemplatesTemplateIdGet({ path: { template_id: templateId } });
 
 export const createTemplate = (payload: TemplateCreate) =>
-    createTemplateTemplatesPost({ body: payload });
+  createTemplateTemplatesPost({ body: payload });
 
 export const deleteTemplate = (templateId: number) =>
-    deleteTemplateTemplatesTemplateIdDelete({
-        path: { template_id: templateId },
-    });
+  deleteTemplateTemplatesTemplateIdDelete({
+    path: { template_id: templateId },
+  });
 
 export const applyTemplate = (templateId: number) =>
-    useTemplateTemplatesTemplateIdUsePost({
-        path: { template_id: templateId },
-    });
+  useTemplateTemplatesTemplateIdUsePost({
+    path: { template_id: templateId },
+  });

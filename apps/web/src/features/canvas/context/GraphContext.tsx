@@ -16,11 +16,7 @@ export function GraphProvider({
   edges,
   children,
 }: GraphContextValue & { children: ReactNode }) {
-  return (
-    <GraphContext.Provider value={{ nodes, edges }}>
-      {children}
-    </GraphContext.Provider>
-  );
+  return <GraphContext.Provider value={{ nodes, edges }}>{children}</GraphContext.Provider>;
 }
 
 export function useGraph(): GraphContextValue {

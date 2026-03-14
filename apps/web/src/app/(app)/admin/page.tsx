@@ -7,11 +7,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Settings as SettingsIcon,
-  Bell,
-  Info
-} from "lucide-react";
+import { Settings as SettingsIcon, Bell, Info } from "lucide-react";
 
 export default function AdminPage() {
   const [selectedTab, setSelectedTab] = useState("general");

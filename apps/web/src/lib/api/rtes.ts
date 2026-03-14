@@ -13,8 +13,7 @@ import {
 } from "@/client";
 // Derive HTTP URL from WebSocket URL or use default
 const RTES_WS_URL = process.env.NEXT_PUBLIC_RTES_WS_URL || "ws://localhost:3001/rt";
-const RTES_BASE_URL = RTES_WS_URL
-  .replace("wss://", "https://")
+const RTES_BASE_URL = RTES_WS_URL.replace("wss://", "https://")
   .replace("ws://", "http://")
   .replace(/\/rt$/, "");
 
@@ -62,7 +61,7 @@ export interface RtesNodeExecutionInstance {
  * 2. Calls RTES to fetch executions (validates via Redis)
  */
 export async function fetchWorkflowExecutions(
-  workflowId: number
+  workflowId: number,
 ): Promise<RtesExecutionDocument[]> {
   try {
     // Step 1: Request access token from main API (publishes to Redis)
@@ -76,9 +75,7 @@ export async function fetchWorkflowExecutions(
     }
 
     // Step 2: Fetch from RTES (validates via Redis token)
-    const response = await fetch(
-      `${RTES_BASE_URL}/workflows/${workflowId}/executions`
-    );
+    const response = await fetch(`${RTES_BASE_URL}/workflows/${workflowId}/executions`);
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
@@ -106,7 +103,7 @@ export async function fetchWorkflowExecutions(
  */
 export async function fetchExecution(
   executionId: string,
-  workflowId: number
+  workflowId: number,
 ): Promise<RtesExecutionDocument | null> {
   try {
     // Step 1: Request access token from main API (publishes to Redis)
@@ -120,9 +117,7 @@ export async function fetchExecution(
     }
 
     // Step 2: Fetch from RTES (validates via Redis token)
-    const response = await fetch(
-      `${RTES_BASE_URL}/executions/${executionId}`
-    );
+    const response = await fetch(`${RTES_BASE_URL}/executions/${executionId}`);
 
     if (!response.ok) {
       if (response.status === 404) {

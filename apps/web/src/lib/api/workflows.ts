@@ -81,7 +81,11 @@ export const listVersions = (workflow_id: number) =>
 
 export const createVersion = (
   workflow_id: number,
-  payload: { base_version_id: number | null; workflow_data: Record<string, unknown>; message?: string | null },
+  payload: {
+    base_version_id: number | null;
+    workflow_data: Record<string, unknown>;
+    message?: string | null;
+  },
 ) =>
   createWorkflowVersionWorkflowsWorkflowIdVersionsPost({
     path: { workflow_id },
@@ -123,11 +127,21 @@ export const requestSpecificExecutionAccess = (workflow_id: number, execution_id
  * With `throwOnError: true`, the @hey-api client throws the parsed JSON
  * response body directly: `{ success, message, data: { server_version, server_version_id } }`.
  */
-export function isVersionConflict(error: unknown): { serverVersion: number; serverVersionId: number } | null {
+export function isVersionConflict(
+  error: unknown,
+): { serverVersion: number; serverVersionId: number } | null {
   if (error != null && typeof error === "object" && "data" in error) {
-    const conflict = (error as { data?: { server_version?: number; server_version_id?: number } }).data;
-    if (conflict && typeof conflict.server_version === "number" && typeof conflict.server_version_id === "number") {
-      return { serverVersion: conflict.server_version, serverVersionId: conflict.server_version_id };
+    const conflict = (error as { data?: { server_version?: number; server_version_id?: number } })
+      .data;
+    if (
+      conflict &&
+      typeof conflict.server_version === "number" &&
+      typeof conflict.server_version_id === "number"
+    ) {
+      return {
+        serverVersion: conflict.server_version,
+        serverVersionId: conflict.server_version_id,
+      };
     }
   }
   return null;
@@ -138,12 +152,9 @@ export type ListWorkflowsResponse = ListWorkflowsWorkflowsGetResponse;
 export type ListUserExecutionsResponse = ListUserExecutionsExecutionsGetResponse;
 export type GetWorkflowResponse = GetWorkflowWorkflowsWorkflowIdGetResponse;
 export type CreateWorkflowResponse = CreateWorkflowWorkflowsPostResponse;
-export type UpdateWorkflowNameResponse =
-  UpdateNameWorkflowsWorkflowIdNamePutResponse;
-export type UpdateWorkflowStatusResponse =
-  UpdateStatusWorkflowsWorkflowIdStatusPutResponse;
-export type DeleteWorkflowResponse =
-  DeleteWorkflowWorkflowsWorkflowIdDeleteResponse;
+export type UpdateWorkflowNameResponse = UpdateNameWorkflowsWorkflowIdNamePutResponse;
+export type UpdateWorkflowStatusResponse = UpdateStatusWorkflowsWorkflowIdStatusPutResponse;
+export type DeleteWorkflowResponse = DeleteWorkflowWorkflowsWorkflowIdDeleteResponse;
 export type RunWorkflowResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponse;
 export type RequestExecutionAccessResponse =
   GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetResponse;
@@ -153,4 +164,5 @@ export type ListVersionsResponse = ListWorkflowVersionsWorkflowsWorkflowIdVersio
 export type CreateVersionResponse = CreateWorkflowVersionWorkflowsWorkflowIdVersionsPostResponse;
 export type GetVersionResponse = GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponse;
 export type PublishVersionResponse = PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponse;
-export type RestoreVersionResponse = RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponse;
+export type RestoreVersionResponse =
+  RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponse;

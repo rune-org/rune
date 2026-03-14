@@ -19,7 +19,7 @@ import {
 } from "@/lib/api/auth";
 import { toast } from "@/components/ui/toast";
 import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
-import type { TokenResponse, UserResponse } from "@/client/types.gen";
+import type { UserResponse } from "@/client/types.gen";
 
 type AuthUser = UserResponse;
 
@@ -52,10 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const initRef = useRef(false);
   const refreshTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const setLoading = (loading: boolean) =>
-    setState((s) => ({ ...s, loading, error: null }));
-  const setError = (message: string | null) =>
-    setState((s) => ({ ...s, error: message }));
+  const setLoading = (loading: boolean) => setState((s) => ({ ...s, loading, error: null }));
+  const setError = (message: string | null) => setState((s) => ({ ...s, error: message }));
   const setUser = (user: AuthUser | null) => setState((s) => ({ ...s, user }));
 
   const storeRefreshToken = (token: string | null) => {

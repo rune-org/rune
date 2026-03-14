@@ -12,19 +12,18 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
-
 const AlertDialogTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
 >(({ children, asChild, ...props }, ref) => {
-  const [open, setOpen] = React.useState(false);
-
   // We need to use context to communicate with the parent AlertDialog
   // For now, use a simpler approach - wrap in provider
   if (asChild && React.isValidElement(children)) {
     return React.cloneElement(children as React.ReactElement<React.HTMLAttributes<HTMLElement>>, {
       onClick: (e: React.MouseEvent) => {
-        (children.props as React.HTMLAttributes<HTMLElement>).onClick?.(e as React.MouseEvent<HTMLElement>);
+        (children.props as React.HTMLAttributes<HTMLElement>).onClick?.(
+          e as React.MouseEvent<HTMLElement>,
+        );
         // Trigger will be handled by Dialog's trigger
       },
     });
@@ -68,7 +67,7 @@ function AlertDialogRoot({
       }
       onOpenChange?.(nextOpen);
     },
-    [isControlled, onOpenChange]
+    [isControlled, onOpenChange],
   );
 
   return (
@@ -105,18 +104,13 @@ const AlertDialogTriggerSimple = React.forwardRef<
 });
 AlertDialogTriggerSimple.displayName = "AlertDialogTrigger";
 
-const AlertDialogContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, children, ...props }, ref) => (
-  <DialogContent
-    ref={ref}
-    className={cn("sm:max-w-[425px]", className)}
-    {...props}
-  >
-    {children}
-  </DialogContent>
-));
+const AlertDialogContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, children, ...props }, ref) => (
+    <DialogContent ref={ref} className={cn("sm:max-w-[425px]", className)} {...props}>
+      {children}
+    </DialogContent>
+  ),
+);
 AlertDialogContent.displayName = "AlertDialogContent";
 
 const AlertDialogHeader = DialogHeader;

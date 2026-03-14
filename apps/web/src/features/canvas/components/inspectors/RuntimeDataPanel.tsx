@@ -14,11 +14,7 @@ import { toast } from "@/components/ui/toast";
 import { useNodeExecution } from "../../context/ExecutionContext";
 import type { NodeExecutionStatus, NodeExecutionData } from "../../types/execution";
 import { cn } from "@/lib/cn";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
 import { JsonTreeViewer } from "../json-tree/JsonTreeViewer";
 
@@ -64,7 +60,12 @@ function StatusBadge({ status, durationMs }: { status: NodeExecutionStatus; dura
   }, [status]);
 
   return (
-    <div className={cn("flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium", statusConfig.className)}>
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",
+        statusConfig.className,
+      )}
+    >
       {statusConfig.icon}
       <span>{statusConfig.text}</span>
       {durationMs !== undefined && (
@@ -119,16 +120,10 @@ function JsonSection({
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-1">
       <div className="flex items-center gap-2">
         <CollapsibleTrigger className="flex flex-1 items-center gap-2 text-xs font-medium uppercase text-muted-foreground hover:text-foreground transition-colors">
-          {isOpen ? (
-            <ChevronDown className="h-3 w-3" />
-          ) : (
-            <ChevronRight className="h-3 w-3" />
-          )}
+          {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
           {label}
           {!isOpen && (
-            <span className="ml-2 truncate text-[10px] font-normal opacity-60">
-              {preview}
-            </span>
+            <span className="ml-2 truncate text-[10px] font-normal opacity-60">{preview}</span>
           )}
         </CollapsibleTrigger>
         {isOpen && (
@@ -143,11 +138,7 @@ function JsonSection({
       </div>
       <CollapsibleContent>
         <div className="max-h-64 overflow-auto rounded-md bg-muted/30 p-2">
-          <JsonTreeViewer
-            data={data}
-            rootPath={rootPath}
-            defaultExpandDepth={2}
-          />
+          <JsonTreeViewer data={data} rootPath={rootPath} defaultExpandDepth={2} />
         </div>
       </CollapsibleContent>
     </Collapsible>
@@ -161,17 +152,15 @@ function ErrorDisplay({ error }: { error: NodeExecutionData["error"] }) {
     <div className="space-y-1">
       <div className="text-xs font-medium uppercase text-red-600">Error</div>
       <div className="rounded-md bg-red-500/10 p-3 text-xs">
-        <div className="font-medium text-red-600 dark:text-red-400">
-          {error.message}
-        </div>
+        <div className="font-medium text-red-600 dark:text-red-400">{error.message}</div>
         {error.code && (
-          <div className="mt-1 text-red-600/70 dark:text-red-400/70">
-            Code: {error.code}
-          </div>
+          <div className="mt-1 text-red-600/70 dark:text-red-400/70">Code: {error.code}</div>
         )}
         {error.details !== undefined && (
           <pre className="mt-2 max-h-32 overflow-auto rounded bg-red-500/10 p-2 font-mono text-[10px]">
-            {typeof error.details === "string" ? error.details : JSON.stringify(error.details, null, 2)}
+            {typeof error.details === "string"
+              ? error.details
+              : JSON.stringify(error.details, null, 2)}
           </pre>
         )}
       </div>
@@ -185,9 +174,7 @@ export function RuntimeDataPanel({ nodeId, nodeLabel }: RuntimeDataPanelProps) {
   if (!nodeExecution || nodeExecution.status === "idle") {
     return (
       <div className="rounded-md border border-dashed border-muted p-6 text-center">
-        <div className="text-sm text-muted-foreground">
-          No execution data yet.
-        </div>
+        <div className="text-sm text-muted-foreground">No execution data yet.</div>
         <div className="mt-1 text-xs text-muted-foreground/70">
           Run the workflow to see runtime values.
         </div>

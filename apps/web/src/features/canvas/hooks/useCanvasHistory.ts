@@ -31,7 +31,7 @@ export type UseCanvasHistoryReturn = {
 export function useCanvasHistory(
   nodes: CanvasNode[],
   edges: Edge[],
-  options: UseCanvasHistoryOptions = {}
+  options: UseCanvasHistoryOptions = {},
 ): UseCanvasHistoryReturn {
   const { maxSize = MAX_HISTORY_SIZE } = options;
 
@@ -60,7 +60,7 @@ export function useCanvasHistory(
       structuredClone({
         nodes: nodesRef.current,
         edges: edgesRef.current,
-      })
+      }),
     );
 
     while (undoStack.length > maxSize) {
@@ -88,7 +88,7 @@ export function useCanvasHistory(
       structuredClone({
         nodes: nodesRef.current,
         edges: edgesRef.current,
-      })
+      }),
     );
 
     while (redoStack.length > maxSize) {
@@ -116,7 +116,7 @@ export function useCanvasHistory(
       structuredClone({
         nodes: nodesRef.current,
         edges: edgesRef.current,
-      })
+      }),
     );
 
     while (undoStack.length > maxSize) {
