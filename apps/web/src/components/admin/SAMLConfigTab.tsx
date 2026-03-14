@@ -7,13 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  BookOpen,
-  Building2,
-  Server,
-  ShieldCheck,
-  ShieldOff,
-} from "lucide-react";
+import { BookOpen, Building2, Server, ShieldCheck, ShieldOff } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -35,14 +29,8 @@ import { ServiceProviderPanel } from "./saml/ServiceProviderPanel";
 import { SetupGuidePanel } from "./saml/SetupGuidePanel";
 import type { SamlFormValues, SubTab } from "./saml/types";
 
-function isErrorWithDetail(
-  error: unknown,
-): error is { detail?: string; message?: string } {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    ("detail" in error || "message" in error)
-  );
+function isErrorWithDetail(error: unknown): error is { detail?: string; message?: string } {
+  return typeof error === "object" && error !== null && ("detail" in error || "message" in error);
 }
 
 function extractErrorMessage(error: unknown, fallback: string): string {
@@ -205,7 +193,9 @@ export function SAMLConfigTab() {
   return (
     <div className="grid gap-6">
       {isLoading && (
-        <Card className="px-6 py-5 text-sm text-muted-foreground">Loading SAML configuration...</Card>
+        <Card className="px-6 py-5 text-sm text-muted-foreground">
+          Loading SAML configuration...
+        </Card>
       )}
 
       <Card className="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">

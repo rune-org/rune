@@ -40,10 +40,7 @@ export function IdentityProviderPanel({
     setForm(toFormValues(config));
   }, [config]);
 
-  const updateField = <K extends keyof SamlFormValues>(
-    field: K,
-    value: SamlFormValues[K],
-  ) => {
+  const updateField = <K extends keyof SamlFormValues>(field: K, value: SamlFormValues[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -91,8 +88,7 @@ export function IdentityProviderPanel({
           if (sloEl?.getAttribute("Location")) updates.sloUrl = sloEl.getAttribute("Location")!;
           if (certEl?.textContent) {
             const raw = certEl.textContent.trim().replace(/\s+/g, "");
-            updates.cert =
-              `-----BEGIN CERTIFICATE-----\n${raw.match(/.{1,64}/g)?.join("\n") ?? raw}\n-----END CERTIFICATE-----`;
+            updates.cert = `-----BEGIN CERTIFICATE-----\n${raw.match(/.{1,64}/g)?.join("\n") ?? raw}\n-----END CERTIFICATE-----`;
           }
         } else {
           const json = JSON.parse(text);
@@ -124,8 +120,7 @@ export function IdentityProviderPanel({
   };
 
   const hasCertificateInput = form.cert.trim().length > 0;
-  const certOk =
-    hasCertificateInput && form.cert.trim().startsWith("-----BEGIN CERTIFICATE-----");
+  const certOk = hasCertificateInput && form.cert.trim().startsWith("-----BEGIN CERTIFICATE-----");
 
   const isValid =
     form.name.trim().length > 0 &&
@@ -213,8 +208,8 @@ export function IdentityProviderPanel({
           />
           <p className="text-[11px] text-muted-foreground">
             From your IdP metadata under{" "}
-            <code className="rounded bg-muted px-1 font-mono text-[10px]">entityID</code>. Can be a URL, URI,
-            or any string (e.g., some providers use just their name).
+            <code className="rounded bg-muted px-1 font-mono text-[10px]">entityID</code>. Can be a
+            URL, URI, or any string (e.g., some providers use just their name).
           </p>
         </div>
 
@@ -251,7 +246,8 @@ export function IdentityProviderPanel({
 
         <div className="grid gap-1.5">
           <Label htmlFor="idp-cert">
-            IdP Signing Certificate (PEM) {!hasConfig && <span className="text-destructive">*</span>}
+            IdP Signing Certificate (PEM){" "}
+            {!hasConfig && <span className="text-destructive">*</span>}
           </Label>
           <Textarea
             id="idp-cert"
@@ -311,7 +307,11 @@ export function IdentityProviderPanel({
             Configuration saved
           </span>
         )}
-        <Button onClick={() => void handleSave()} disabled={!isValid || submitting} className="gap-2">
+        <Button
+          onClick={() => void handleSave()}
+          disabled={!isValid || submitting}
+          className="gap-2"
+        >
           <Save className="h-4 w-4" />
           {submitting ? "Saving..." : hasConfig ? "Update Configuration" : "Create Configuration"}
         </Button>

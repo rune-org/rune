@@ -51,9 +51,7 @@ export function ReadOnlyField({
         </div>
       )}
 
-      {hint && (
-        <p className="text-[11px] leading-relaxed text-muted-foreground">{hint}</p>
-      )}
+      {hint && <p className="text-[11px] leading-relaxed text-muted-foreground">{hint}</p>}
     </div>
   );
 }

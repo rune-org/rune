@@ -43,17 +43,14 @@ export function SetupGuidePanel({ onNav }: SetupGuidePanelProps) {
       <div className="flex items-start gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3.5">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" />
         <p className="text-sm leading-relaxed text-blue-400/90">
-          SAML 2.0 lets your team authenticate using your corporate identity provider.
-          Complete the steps below to wire up the integration.
+          SAML 2.0 lets your team authenticate using your corporate identity provider. Complete the
+          steps below to wire up the integration.
         </p>
       </div>
 
       <div className="grid gap-3">
         {SETUP_STEPS.map(({ n, title, desc, cta, ctaLabel }) => (
-          <div
-            key={n}
-            className="flex gap-4 rounded-xl border border-border/50 bg-card px-5 py-4"
-          >
+          <div key={n} className="flex gap-4 rounded-xl border border-border/50 bg-card px-5 py-4">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-bold text-accent">
               {n}
             </div>

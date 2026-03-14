@@ -157,7 +157,6 @@ export default function AdminSettingsPage() {
 
       {/* Two-column layout */}
       <div className="flex gap-8 items-start">
-
         {/* Left: vertical nav */}
         <nav className="hidden w-52 shrink-0 flex-col gap-1 lg:flex">
           {SETTINGS_NAV.map(({ id, label, description, icon: Icon }) => {

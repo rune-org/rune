@@ -1,8 +1,4 @@
-import type {
-  SamlConfigCreate,
-  SamlConfigResponse,
-  SamlConfigUpdate,
-} from "@/client/types.gen";
+import type { SamlConfigCreate, SamlConfigResponse, SamlConfigUpdate } from "@/client/types.gen";
 
 import type { SamlFormValues } from "./types";
 
