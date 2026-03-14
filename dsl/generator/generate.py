@@ -375,6 +375,8 @@ class DSLGenerator:
             # Convert node_type to interface name
             if node_type == 'ManualTrigger':
                 interface_name = 'ManualTriggerNode'
+            elif node_type == 'ScheduledTrigger':
+                interface_name = 'ScheduledTriggerNode'
             else:
                 interface_name = f'{node_type.title().replace("_", "")}Node'
             
@@ -512,6 +514,8 @@ class DSLGenerator:
             # Convert node_type to class name (e.g., "http" -> "HttpNode", "ManualTrigger" -> "ManualTriggerNode")
             if node_type == 'ManualTrigger':
                 class_name = 'ManualTriggerNode'
+            elif node_type == 'ScheduledTrigger':
+                class_name = 'ScheduledTriggerNode'
             else:
                 class_name = f'{node_type.title().replace("_", "")}Node'
             
