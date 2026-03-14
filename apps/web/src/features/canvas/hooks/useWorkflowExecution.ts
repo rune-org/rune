@@ -18,7 +18,7 @@ export interface UseWorkflowExecutionReturn {
   wsReconnectAttempts: number;
   isStarting: boolean;
 
-  startExecution: () => Promise<void>;
+  startExecution: (versionId?: number) => Promise<void>;
   stopExecution: () => void;
   reset: () => void;
 
@@ -89,7 +89,7 @@ export function useWorkflowExecution(
   /**
    * Start a new workflow execution.
    */
-  const startExecution = useCallback(async () => {
+  const startExecution = useCallback(async (versionId?: number) => {
     if (!workflowId) {
       setError("No workflow ID provided");
       return;
@@ -105,7 +105,7 @@ export function useWorkflowExecution(
 
     try {
       // Call the /run endpoint
-      const response = await runWorkflow(workflowId);
+      const response = await runWorkflow(workflowId, versionId);
 
       if (!isMountedRef.current) return;
 

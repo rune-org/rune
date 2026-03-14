@@ -10,6 +10,7 @@ from src.db.models import (
     WorkflowRole,
     WorkflowUser,
 )
+from src.workflow.service import WorkflowService
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -50,20 +51,6 @@ async def sample_workflow(test_db, test_user):
     workflow = Workflow(
         name="Sample Workflow",
         description="A sample workflow for testing",
-        workflow_data={
-            "nodes": [
-                {
-                    "id": "node-1",
-                    "type": "trigger",
-                    "trigger": True,
-                    "data": {"label": "Start"},
-                },
-                {"id": "node-2", "type": "action", "data": {"label": "Action"}},
-            ],
-            "edges": [{"id": "edge-1", "src": "node-1", "dst": "node-2"}],
-        },
-        is_active=False,
-        version=1,
     )
     test_db.add(workflow)
     await test_db.flush()
@@ -77,6 +64,27 @@ async def sample_workflow(test_db, test_user):
     )
     test_db.add(permission)
     await test_db.commit()
+
+    workflow_service = WorkflowService(db=test_db)
+    await workflow_service.create_version(
+        workflow=workflow,
+        user_id=test_user.id,
+        workflow_data={
+            "nodes": [
+                {
+                    "id": "node-1",
+                    "type": "trigger",
+                    "trigger": True,
+                    "data": {"label": "Start"},
+                },
+                {"id": "node-2", "type": "action", "data": {"label": "Action"}},
+            ],
+            "edges": [{"id": "edge-1", "src": "node-1", "dst": "node-2"}],
+        },
+        base_version_id=None,
+        message="Initial version",
+    )
+
     await test_db.refresh(workflow)
 
     return workflow

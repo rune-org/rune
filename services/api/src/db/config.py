@@ -1,7 +1,7 @@
 from typing import AsyncGenerator, Literal
 
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.config import Environment, Settings, get_settings
@@ -79,16 +79,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Initialize database by creating tables from SQLModel definitions.
+    """Verify database connectivity on startup.
 
-    This automatically creates all tables on fresh installations.
-    For schema updates on existing databases, use Alembic migrations manually:
-        alembic upgrade head
+    Table creation is handled by Alembic migrations (via entrypoint.sh for fresh
+    databases, or manually via 'alembic upgrade head' for existing ones).
     """
-    import src.db.models  # noqa: F401
 
     async_engine = get_async_engine()
-    async with async_engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
+    async with async_engine.connect() as conn:
+        await conn.execute(sa.text("SELECT 1"))
 
-    print("Database initialized!")
+    print("Database connection verified!")

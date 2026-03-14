@@ -40,6 +40,8 @@ func (n *WaitNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 	// Freeze current execution message
 	frozen := messages.NodeExecutionMessage{
 		WorkflowID:         execCtx.WorkflowID,
+		WorkflowVersion:    execCtx.WorkflowVersion,
+		WorkflowVersionID:  execCtx.WorkflowVersionID,
 		ExecutionID:        execCtx.ExecutionID,
 		CurrentNode:        execCtx.NodeID,
 		WorkflowDefinition: execCtx.Workflow,

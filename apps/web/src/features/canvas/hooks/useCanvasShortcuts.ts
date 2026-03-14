@@ -14,6 +14,7 @@ type CanvasShortcutsProps = {
   ) => void;
   setEdges: (updater: (edges: Edge[]) => Edge[] | Edge[]) => void;
   onSave: () => void;
+  onSaveWithMessage?: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onCopy?: () => void;
@@ -104,6 +105,15 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
         e.preventDefault();
         setNodes((ns) => ns.map((n) => ({ ...n, selected: true })));
         onSelectAll?.(nodes[0]?.id ?? null);
+        return;
+      }
+
+      // save with message (Shift+Ctrl+S)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (readOnly) return;
+        const { onSaveWithMessage } = latestPropsRef.current;
+        if (onSaveWithMessage) onSaveWithMessage();
         return;
       }
 

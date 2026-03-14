@@ -135,6 +135,8 @@ pub(crate) fn sample_execution(
     ExecutionDocument {
         execution_id: execution_id.to_string(),
         workflow_id: workflow_id.to_string(),
+        workflow_version: Some(1),
+        workflow_version_id: Some(1),
         nodes,
         status: status.map(ToOwned::to_owned),
         ..ExecutionDocument::default()

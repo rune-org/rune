@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
-from src.core.dependencies import DatabaseDep
 from src.core.responses import ApiResponse
+from src.setup.dependencies import get_setup_service
 from src.setup.schemas import (
     FirstAdminSignupRequest,
     FirstAdminSignupResponse,
@@ -9,10 +9,6 @@ from src.setup.schemas import (
 from src.setup.service import SetupService
 
 router = APIRouter(prefix="/setup", tags=["Setup"])
-
-
-async def get_setup_service(db: DatabaseDep) -> SetupService:
-    return SetupService(db=db)
 
 
 @router.get(
@@ -24,7 +20,7 @@ async def get_setup_service(db: DatabaseDep) -> SetupService:
 async def check_setup_status(
     setup_service: SetupService = Depends(get_setup_service),
 ) -> ApiResponse[bool]:
-    requires_setup = await setup_service.is_first_time_setup()
+    requires_setup = await setup_service.requires_setup()
 
     if requires_setup:
         message = "First-time setup required. Please create the initial admin account."

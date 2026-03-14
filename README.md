@@ -111,10 +111,14 @@ Once the containers are running, open `http://localhost:3000` in your browser.
 | Frontend | 3000 | Web application |
 | API | 8000 | REST API |
 | RTES | 8080 | Real-time execution streaming |
+| Worker | N/A | Execution engine background worker |
+| Archivist | N/A | Data archiver and maintainer |
 | PostgreSQL | 5432 | Primary database |
 | MongoDB | 27017 | Execution history |
 | Redis | 6379 | State and caching |
 | RabbitMQ | 5672 / 15672 | Message broker |
+| OpenObserve | 5080 | Observability platform |
+| OpenTelemetry | 4317 / 4318 | Telemetry collector |
 
 ### Stopping Services
 
@@ -150,13 +154,25 @@ See [uv installation guide](https://docs.astral.sh/uv/getting-started/installati
 For local development with hot reloading:
 
 ```bash
-# Start infrastructure (Postgres, Redis, RabbitMQ, MongoDB)
+# Install dependencies for all services
+make install
+
+# Start all services in development mode
+make dev
+```
+
+Alternatively, you can start the infrastructure and services manually:
+
+```bash
+# Start infrastructure (Postgres, Redis, RabbitMQ, MongoDB, OpenObserve)
 make dev-infra-up
 
 # In separate terminals, start each service:
-make web-dev      # Frontend on :3000
-make api-dev      # API on :8000
-make worker-dev   # Background worker
+make web-dev         # Frontend on :3000
+make api-dev         # API on :8000
+make worker-dev      # Background worker
+make rtes-dev        # Real-time execution service
+make archivist-dev   # Archivist worker
 ```
 
 ### Project Structure
