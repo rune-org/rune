@@ -7,17 +7,17 @@ import type { SubTab } from "./types";
 const SETUP_STEPS = [
   {
     n: 1,
-    title: "Fill in your Identity Provider details",
-    desc: "Grab the Entity ID, SSO URL, and signing certificate from your IdP metadata (Okta, Azure AD, Authentik, ADFS...). Paste them in the Identity Provider tab.",
-    cta: "idp" as SubTab,
-    ctaLabel: "Open Identity Provider ->",
-  },
-  {
-    n: 2,
     title: "Copy your Service Provider details to your IdP",
     desc: "Open the Service Provider tab and paste the ACS URL, Entity ID, and (optionally) SP certificate into your IdP application settings.",
     cta: "sp" as SubTab,
-    ctaLabel: "Open Service Provider ->",
+    ctaLabel: "Open Service Provider",
+  },
+  {
+    n: 2,
+    title: "Fill in your Identity Provider details",
+    desc: "Grab the Entity ID, SSO URL, and signing certificate from your IdP metadata (Okta, Azure AD, Authentik, ADFS...). Paste them in the Identity Provider tab.",
+    cta: "idp" as SubTab,
+    ctaLabel: "Open Identity Provider",
   },
   {
     n: 3,
