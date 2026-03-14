@@ -10,19 +10,11 @@ interface WorkflowCardProps {
   description: string;
 }
 
-export function WorkflowCard({
-  from,
-  to,
-  title,
-  description,
-}: WorkflowCardProps) {
+export function WorkflowCard({ from, to, title, description }: WorkflowCardProps) {
   return (
     <Card className="flex flex-col gap-4 border-border/60 bg-card/70 p-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Badge
-          variant="outline"
-          className="border-border/60 text-xs uppercase tracking-wide"
-        >
+        <Badge variant="outline" className="border-border/60 text-xs uppercase tracking-wide">
           Template
         </Badge>
         <span className="flex items-center gap-2 text-foreground">

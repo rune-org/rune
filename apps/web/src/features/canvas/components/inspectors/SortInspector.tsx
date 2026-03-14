@@ -26,10 +26,7 @@ function sanitizeRules(data: SortData): SortRule[] {
   if (!Array.isArray(data.rules)) return [];
   return data.rules.map((rule) => ({
     field: typeof rule.field === "string" ? rule.field : undefined,
-    direction:
-      rule.direction && DIRECTIONS.includes(rule.direction)
-        ? rule.direction
-        : "asc",
+    direction: rule.direction && DIRECTIONS.includes(rule.direction) ? rule.direction : "asc",
     type: rule.type && VALUE_TYPES.includes(rule.type) ? rule.type : "auto",
   }));
 }
@@ -98,7 +95,9 @@ export function SortInspector({ node, updateData, isExpanded }: SortInspectorPro
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">Rules ({rules.length})</div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          Rules ({rules.length})
+        </div>
         <button
           type="button"
           onClick={addRule}
@@ -122,7 +121,9 @@ export function SortInspector({ node, updateData, isExpanded }: SortInspectorPro
             className="rounded-[calc(var(--radius)-0.3rem)] border border-border/60 bg-background/60 p-3 shadow-[inset_0_1px_0_hsla(0,0%,100%,0.03)]"
           >
             <div className="flex items-center justify-between gap-2">
-              <div className="text-xs font-semibold uppercase text-muted-foreground">Rule {index + 1}</div>
+              <div className="text-xs font-semibold uppercase text-muted-foreground">
+                Rule {index + 1}
+              </div>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -161,13 +162,12 @@ export function SortInspector({ node, updateData, isExpanded }: SortInspectorPro
                   onChange={(value) => updateRuleField(index, "field", value)}
                   placeholder="e.g. created_at"
                   nodeId={node.id}
-                  transformSelectedPath={(path) =>
-                    toListItemSelection(node.data.input_array, path)
-                  }
+                  transformSelectedPath={(path) => toListItemSelection(node.data.input_array, path)}
                 />
                 {isExpanded && (
                   <div className="text-[10px] text-muted-foreground/70">
-                    Pick a field from an example item and it will become <code>$item.field</code>. You can also type a field like <code>id</code>.
+                    Pick a field from an example item and it will become <code>$item.field</code>.
+                    You can also type a field like <code>id</code>.
                   </div>
                 )}
               </div>
@@ -216,7 +216,8 @@ export function SortInspector({ node, updateData, isExpanded }: SortInspectorPro
 
       {isExpanded && (
         <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
-          Use this node to reorder a list by one or more fields, like sorting products by price or users by signup date.
+          Use this node to reorder a list by one or more fields, like sorting products by price or
+          users by signup date.
         </div>
       )}
     </div>

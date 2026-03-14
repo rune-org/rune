@@ -2,24 +2,12 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Panel } from "@xyflow/react";
-import {
-  Maximize2,
-  Trash2,
-  ArrowRightLeft,
-  Settings,
-  Pin,
-  PinOff,
-} from "lucide-react";
+import { Maximize2, Trash2, ArrowRightLeft, Settings, Pin, PinOff } from "lucide-react";
 import type { CanvasNode } from "../types";
 import { getNodeSchema } from "../lib/nodeRegistry";
 import { useUpdateNodeData } from "../hooks/useUpdateNodeData";
 import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/cn";
 import { sanitizeNodeLabel } from "../utils/nodeLabels";
 
@@ -65,9 +53,7 @@ function renderInspectorForm(
     case "if":
       return <IfInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "switch":
-      return (
-        <SwitchInspector node={node} updateData={updateData} isExpanded={isExpanded} />
-      );
+      return <SwitchInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "smtp":
       return <SmtpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "wait":
@@ -105,13 +91,7 @@ function sanitizeLabel(raw: string): string {
   return sanitizeNodeLabel(raw, "");
 }
 
-function LabelInput({
-  value,
-  onCommit,
-  readOnly,
-  className,
-  placeholder,
-}: LabelInputProps) {
+function LabelInput({ value, onCommit, readOnly, className, placeholder }: LabelInputProps) {
   const [localLabel, setLocalLabel] = useState(value);
   const committedRef = useRef(value);
   const latestRef = useRef({ localLabel, onCommit });
@@ -194,14 +174,12 @@ export function Inspector({
       data-inspector
       className={cn(
         "flex w-65 max-w-[90vw] flex-col rounded-(--radius) border border-border/60 bg-card/90 shadow-lg transition-all",
-        className
+        className,
       )}
     >
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-border/40 p-3 pb-2">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">
-          Inspector
-        </div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">Inspector</div>
         {selectedNode && (
           <div className="flex items-center gap-1">
             {!readOnly && onTogglePin && (
@@ -251,16 +229,16 @@ export function Inspector({
           </div>
 
           {/* Scrollable Content */}
-          <div className={cn(
-            "overflow-y-auto p-3",
-            renderInPanel ? "max-h-[calc(100vh-16rem)]" : "flex-1 min-h-0"
-          )}>
+          <div
+            className={cn(
+              "overflow-y-auto p-3",
+              renderInPanel ? "max-h-[calc(100vh-16rem)]" : "flex-1 min-h-0",
+            )}
+          >
             <div className="space-y-3">
               {/* Label */}
               <div className="space-y-2">
-                <label className="block text-xs text-muted-foreground">
-                  Label
-                </label>
+                <label className="block text-xs text-muted-foreground">Label</label>
                 <LabelInput
                   className="w-full rounded-sm border border-input bg-muted/30 px-2 py-1 text-sm"
                   value={selectedNode.data.label ?? ""}
@@ -278,9 +256,7 @@ export function Inspector({
 
           {/* Footer Hint */}
           <div className="shrink-0 border-t border-border/40 px-3 py-2">
-            <div className="text-xs text-muted-foreground">
-              Double-click to expand.
-            </div>
+            <div className="text-xs text-muted-foreground">Double-click to expand.</div>
           </div>
         </>
       ) : (
@@ -295,10 +271,7 @@ export function Inspector({
     <>
       {/* Compact Inspector Panel */}
       {renderInPanel ? (
-        <Panel
-          position="top-right"
-          className="pointer-events-auto right-4! top-4!"
-        >
+        <Panel position="top-right" className="pointer-events-auto right-4! top-4!">
           {Content}
         </Panel>
       ) : (
@@ -307,10 +280,7 @@ export function Inspector({
 
       {/* Expanded Inspector Dialog */}
       {selectedNode && (
-        <Dialog
-          open={isExpandedDialogOpen}
-          onOpenChange={setIsExpandedDialogOpen}
-        >
+        <Dialog open={isExpandedDialogOpen} onOpenChange={setIsExpandedDialogOpen}>
           <DialogContent className="flex max-h-[85vh] max-w-3xl flex-col overflow-hidden p-0">
             {/* Dialog Header */}
             <DialogHeader className="shrink-0 p-6 pb-0">
@@ -330,16 +300,16 @@ export function Inspector({
             {/* Scrollable Content with Tabs */}
             <div className="flex-1 overflow-y-auto">
               <Tabs defaultValue="config" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 rounded-none">
-                    <TabsTrigger value="config" className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      Configuration
-                    </TabsTrigger>
-                    <TabsTrigger value="runtime" className="flex items-center gap-2">
-                      <Activity className="h-4 w-4" />
-                      Runtime Data
-                    </TabsTrigger>
-                  </TabsList>
+                <TabsList className="grid w-full grid-cols-2 rounded-none">
+                  <TabsTrigger value="config" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Configuration
+                  </TabsTrigger>
+                  <TabsTrigger value="runtime" className="flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Runtime Data
+                  </TabsTrigger>
+                </TabsList>
 
                 {/* Configuration Tab */}
                 <TabsContent value="config" className="p-6 mt-0">
@@ -373,7 +343,10 @@ export function Inspector({
                       <div className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         Configuration
                       </div>
-                      <div inert={readOnly || undefined} className={readOnly ? "opacity-70" : undefined}>
+                      <div
+                        inert={readOnly || undefined}
+                        className={readOnly ? "opacity-70" : undefined}
+                      >
                         {renderInspectorForm(selectedNode, updateData, true)}
                       </div>
                     </div>
@@ -403,9 +376,7 @@ export function Inspector({
                                 </div>
                               ))
                             ) : (
-                              <div className="text-sm text-muted-foreground">
-                                No inputs
-                              </div>
+                              <div className="text-sm text-muted-foreground">No inputs</div>
                             )}
                           </div>
                         </div>
@@ -427,9 +398,7 @@ export function Inspector({
                                 </div>
                               ))
                             ) : (
-                              <div className="text-sm text-muted-foreground">
-                                No outputs
-                              </div>
+                              <div className="text-sm text-muted-foreground">No outputs</div>
                             )}
                           </div>
                         </div>
@@ -444,7 +413,10 @@ export function Inspector({
                     <div className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Execution Data
                     </div>
-                    <RuntimeDataPanel nodeId={selectedNode.id} nodeLabel={selectedNode.data.label} />
+                    <RuntimeDataPanel
+                      nodeId={selectedNode.id}
+                      nodeLabel={selectedNode.data.label}
+                    />
                   </div>
                 </TabsContent>
               </Tabs>
@@ -509,8 +481,7 @@ export function Inspector({
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete this node? This action cannot be
-              undone.
+              Are you sure you want to delete this node? This action cannot be undone.
             </p>
             {selectedNode && (
               <div className="rounded-sm border border-border/60 bg-muted/30 p-3">

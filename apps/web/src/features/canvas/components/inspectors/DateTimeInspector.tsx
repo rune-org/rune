@@ -88,7 +88,9 @@ export function DateTimeInspector({ node, updateData, isExpanded }: DateTimeInsp
         <label className="block text-xs text-muted-foreground">Action</label>
         <Select
           value={operation}
-          onValueChange={(value) => updateDateTimeData((d) => ({ ...d, operation: value as DateTimeData["operation"] }))}
+          onValueChange={(value) =>
+            updateDateTimeData((d) => ({ ...d, operation: value as DateTimeData["operation"] }))
+          }
         >
           <SelectTrigger className="h-8 text-sm">
             <SelectValue />
@@ -132,14 +134,18 @@ export function DateTimeInspector({ node, updateData, isExpanded }: DateTimeInsp
               step={1}
               className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
               value={node.data.amount ?? 1}
-              onChange={(e) => updateDateTimeData((d) => ({ ...d, amount: Number(e.target.value) }))}
+              onChange={(e) =>
+                updateDateTimeData((d) => ({ ...d, amount: Number(e.target.value) }))
+              }
             />
           </div>
           <div>
             <label className="block text-xs text-muted-foreground">Unit</label>
             <Select
               value={node.data.unit ?? "days"}
-              onValueChange={(value) => updateDateTimeData((d) => ({ ...d, unit: value as DateTimeData["unit"] }))}
+              onValueChange={(value) =>
+                updateDateTimeData((d) => ({ ...d, unit: value as DateTimeData["unit"] }))
+              }
             >
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue />
@@ -231,7 +237,8 @@ export function DateTimeInspector({ node, updateData, isExpanded }: DateTimeInsp
 
       {isExpanded && (
         <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
-          Use this node for things like the current date, a deadline 3 days from now, or formatting a timestamp before sending it in a message.
+          Use this node for things like the current date, a deadline 3 days from now, or formatting
+          a timestamp before sending it in a message.
         </div>
       )}
     </div>

@@ -41,7 +41,8 @@ export function LimitInspector({ node, updateData, isExpanded }: LimitInspectorP
 
       {isExpanded && (
         <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
-          Use this node when you want just the first few results, like the top 10 leads or latest 3 orders.
+          Use this node when you want just the first few results, like the top 10 leads or latest 3
+          orders.
         </div>
       )}
     </div>

@@ -16,9 +16,7 @@ export const LimitNode = memo(function LimitNode({ id, data }: NodeProps<Node<Li
       borderColor="--node-transform-border"
       pinned={data.pinned}
     >
-      <div className="text-xs text-muted-foreground">
-        Keep first {data.count ?? 10} items
-      </div>
+      <div className="text-xs text-muted-foreground">Keep first {data.count ?? 10} items</div>
     </BaseNode>
   );
 });

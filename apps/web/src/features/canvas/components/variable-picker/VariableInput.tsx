@@ -12,11 +12,7 @@ import {
 import { useVariableTree } from "../../hooks/useVariableTree";
 import { VariableAutocomplete } from "./VariableAutocomplete";
 import { VariableTreeView } from "./VariableTreeView";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import type { VariableSource } from "../../lib/variableSchema";
 
@@ -66,9 +62,7 @@ function pillHtml(
   const color = colorMap.get(seg.nodeName);
   const label = formatPillLabel(seg);
   const borderStyle = color ? `border-color:${color};` : "";
-  const bgStyle = color
-    ? `background:color-mix(in srgb, ${color} 15%, transparent);`
-    : "";
+  const bgStyle = color ? `background:color-mix(in srgb, ${color} 15%, transparent);` : "";
   const colorStyle = color ? `color:${color};` : "";
   return `<span contenteditable="false" data-value="${escapeAttr(seg.value)}" class="variable-pill" style="${borderStyle}${bgStyle}${colorStyle}">${escapeHtml(label)}<span class="variable-pill-remove" data-remove-index="${removeIndex}">\u00d7</span></span>\u200B`;
 }
@@ -120,10 +114,7 @@ function segmentsToHtml(
 }
 
 function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function escapeAttr(str: string): string {
@@ -148,10 +139,7 @@ function InlinePickerDropdown({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
@@ -172,9 +160,7 @@ function InlinePickerDropdown({
           const lower = searchQuery.toLowerCase();
           if (source.nodeLabel.toLowerCase().includes(lower)) return source;
           const filtered = source.children.filter(
-            (c) =>
-              c.key.toLowerCase().includes(lower) ||
-              c.path.toLowerCase().includes(lower),
+            (c) => c.key.toLowerCase().includes(lower) || c.path.toLowerCase().includes(lower),
           );
           if (filtered.length === 0) return null;
           return { ...source, children: filtered };
@@ -260,10 +246,7 @@ function SourceGroup({
         ) : (
           <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
         )}
-        <Icon
-          className="h-3.5 w-3.5 shrink-0"
-          style={{ color: `var(${colorVar})` }}
-        />
+        <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: `var(${colorVar})` }} />
         <span className="truncate">{source.nodeLabel}</span>
         <span className="ml-auto shrink-0 text-[10px] text-muted-foreground/60">
           {source.children.length} fields
@@ -377,14 +360,11 @@ export function VariableInput({
     [value, variableRefs, onChange, editableRef],
   );
 
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      const text = e.clipboardData.getData("text/plain");
-      document.execCommand("insertText", false, text);
-    },
-    [],
-  );
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+    document.execCommand("insertText", false, text);
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -432,11 +412,7 @@ export function VariableInput({
           )}
           title="Insert variable"
         >
-          {pickerOpen ? (
-            <X className="h-3 w-3" />
-          ) : (
-            <Plus className="h-3 w-3" />
-          )}
+          {pickerOpen ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
         </button>
       </div>
 
@@ -445,7 +421,9 @@ export function VariableInput({
         <VariableAutocomplete
           sources={sources}
           query={autocompleteQuery}
-          onSelect={(path) => insertVariable(transformSelectedPath ? transformSelectedPath(path) : path)}
+          onSelect={(path) =>
+            insertVariable(transformSelectedPath ? transformSelectedPath(path) : path)
+          }
           onClose={() => setShowAutocomplete(false)}
           style={{ left: autocompleteLeft }}
         />

@@ -19,23 +19,9 @@ export type LogLevel = "debug" | "info" | "warn" | "error";
 
 export type DateTimeOperation = "now" | "add" | "subtract" | "format";
 
-export type DateTimeUnit =
-  | "seconds"
-  | "minutes"
-  | "hours"
-  | "days"
-  | "weeks"
-  | "months"
-  | "years";
+export type DateTimeUnit = "seconds" | "minutes" | "hours" | "days" | "weeks" | "months" | "years";
 
-export type FilterOperator =
-  | "=="
-  | "!="
-  | ">"
-  | "<"
-  | ">="
-  | "<="
-  | "contains";
+export type FilterOperator = "==" | "!=" | ">" | "<" | ">=" | "<=" | "contains";
 
 export type FilterRule = {
   field?: string;
@@ -170,11 +156,4 @@ export type SwitchRule = {
   compare?: string;
 };
 
-export type SwitchOperator =
-  | "=="
-  | "!="
-  | ">"
-  | "<"
-  | ">="
-  | "<="
-  | "contains";
+export type SwitchOperator = "==" | "!=" | ">" | "<" | ">=" | "<=" | "contains";

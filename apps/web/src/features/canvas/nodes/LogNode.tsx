@@ -18,9 +18,7 @@ export const LogNode = memo(function LogNode({ id, data }: NodeProps<Node<LogDat
     >
       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span className="truncate">{data.message?.trim() || "No message yet"}</span>
-        <span className="rounded bg-muted/40 px-2 py-0.5 uppercase">
-          {data.level ?? "info"}
-        </span>
+        <span className="rounded bg-muted/40 px-2 py-0.5 uppercase">{data.level ?? "info"}</span>
       </div>
     </BaseNode>
   );

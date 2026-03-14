@@ -57,28 +57,19 @@ const markdownComponents: Components = {
 
   // Paragraphs
   p: ({ children, ...props }) => (
-    <p
-      className="mb-4 leading-7 text-zinc-300 [&:not(:first-child)]:mt-4"
-      {...props}
-    >
+    <p className="mb-4 leading-7 text-zinc-300 [&:not(:first-child)]:mt-4" {...props}>
       {children}
     </p>
   ),
 
   // Lists
   ul: ({ children, ...props }) => (
-    <ul
-      className="my-4 ml-6 list-disc space-y-2 text-zinc-300 [&>li]:mt-2"
-      {...props}
-    >
+    <ul className="my-4 ml-6 list-disc space-y-2 text-zinc-300 [&>li]:mt-2" {...props}>
       {children}
     </ul>
   ),
   ol: ({ children, ...props }) => (
-    <ol
-      className="my-4 ml-6 list-decimal space-y-2 text-zinc-300 [&>li]:mt-2"
-      {...props}
-    >
+    <ol className="my-4 ml-6 list-decimal space-y-2 text-zinc-300 [&>li]:mt-2" {...props}>
       {children}
     </ol>
   ),
@@ -117,7 +108,7 @@ const markdownComponents: Components = {
       <code
         className={cn(
           "block overflow-x-auto rounded-lg bg-zinc-900 p-4 font-mono text-sm text-zinc-200",
-          className
+          className,
         )}
         {...props}
       >
@@ -208,16 +199,10 @@ const markdownComponents: Components = {
   ),
 };
 
-export function MarkdownRenderer({
-  content,
-  className,
-}: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
   return (
     <div className={cn("markdown-content", className)}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={markdownComponents}
-      >
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
         {content}
       </ReactMarkdown>
     </div>

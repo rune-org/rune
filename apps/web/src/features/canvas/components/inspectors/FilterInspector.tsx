@@ -25,10 +25,7 @@ function sanitizeRules(data: FilterData): FilterRule[] {
   if (!Array.isArray(data.rules)) return [];
   return data.rules.map((rule) => ({
     field: typeof rule.field === "string" ? rule.field : undefined,
-    operator:
-      rule.operator && OPERATORS.includes(rule.operator)
-        ? rule.operator
-        : "==",
+    operator: rule.operator && OPERATORS.includes(rule.operator) ? rule.operator : "==",
     value: typeof rule.value === "string" ? rule.value : undefined,
   }));
 }
@@ -100,7 +97,9 @@ export function FilterInspector({ node, updateData, isExpanded }: FilterInspecto
         <label className="block text-xs text-muted-foreground">Match mode</label>
         <Select
           value={node.data.match_mode ?? "all"}
-          onValueChange={(value) => updateFilterData((d) => ({ ...d, match_mode: value as FilterData["match_mode"] }))}
+          onValueChange={(value) =>
+            updateFilterData((d) => ({ ...d, match_mode: value as FilterData["match_mode"] }))
+          }
         >
           <SelectTrigger className="h-8 text-sm">
             <SelectValue />
@@ -113,7 +112,9 @@ export function FilterInspector({ node, updateData, isExpanded }: FilterInspecto
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">Rules ({rules.length})</div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          Rules ({rules.length})
+        </div>
         <button
           type="button"
           onClick={addRule}
@@ -137,7 +138,9 @@ export function FilterInspector({ node, updateData, isExpanded }: FilterInspecto
             className="rounded-[calc(var(--radius)-0.3rem)] border border-border/60 bg-background/60 p-3 shadow-[inset_0_1px_0_hsla(0,0%,100%,0.03)]"
           >
             <div className="flex items-center justify-between gap-2">
-              <div className="text-xs font-semibold uppercase text-muted-foreground">Rule {index + 1}</div>
+              <div className="text-xs font-semibold uppercase text-muted-foreground">
+                Rule {index + 1}
+              </div>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -176,13 +179,12 @@ export function FilterInspector({ node, updateData, isExpanded }: FilterInspecto
                   onChange={(value) => updateRuleField(index, "field", value)}
                   placeholder="e.g. userId"
                   nodeId={node.id}
-                  transformSelectedPath={(path) =>
-                    toListItemSelection(node.data.input_array, path)
-                  }
+                  transformSelectedPath={(path) => toListItemSelection(node.data.input_array, path)}
                 />
                 {isExpanded && (
                   <div className="text-[10px] text-muted-foreground/70">
-                    Pick a field from an example item and it will become <code>$item.field</code>. You can also type a field like <code>userId</code>.
+                    Pick a field from an example item and it will become <code>$item.field</code>.
+                    You can also type a field like <code>userId</code>.
                   </div>
                 )}
               </div>
@@ -222,7 +224,8 @@ export function FilterInspector({ node, updateData, isExpanded }: FilterInspecto
 
       {isExpanded && (
         <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
-          Use this node to narrow down a list by keeping only the items that match your conditions, like active users or orders over a certain amount.
+          Use this node to narrow down a list by keeping only the items that match your conditions,
+          like active users or orders over a certain amount.
         </div>
       )}
     </div>

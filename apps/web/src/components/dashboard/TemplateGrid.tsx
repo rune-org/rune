@@ -21,15 +21,13 @@ const templates = [
     from: "Calendar",
     to: "Planner",
     title: "Calendar → Planner",
-    description:
-      "Mirror events into your planning tool with metadata enrichment.",
+    description: "Mirror events into your planning tool with metadata enrichment.",
   },
   {
     from: "RSS",
     to: "Discord",
     title: "RSS → Discord",
-    description:
-      "Automatically post new blog articles into your community server.",
+    description: "Automatically post new blog articles into your community server.",
   },
 ];
 
@@ -38,12 +36,9 @@ export function TemplateGrid() {
     <section className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Popular workflows
-          </h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Popular workflows</h2>
           <p className="text-sm text-muted-foreground">
-            Jumpstart with curated templates. Customize anything before
-            deploying.
+            Jumpstart with curated templates. Customize anything before deploying.
           </p>
         </div>
         <Button variant="ghost" asChild>

@@ -12,12 +12,18 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
 // Floating Orb Component
-function FloatingOrb({ delay, duration, size, color, position }: { 
-  delay: number; 
-  duration: number; 
-  size: string; 
-  color: string; 
-  position: { x: string; y: string } 
+function FloatingOrb({
+  delay,
+  duration,
+  size,
+  color,
+  position,
+}: {
+  delay: number;
+  duration: number;
+  size: string;
+  color: string;
+  position: { x: string; y: string };
 }) {
   return (
     <motion.div
@@ -61,27 +67,54 @@ export default function SmithQuickstartPage() {
     <div className="relative min-h-screen w-full overflow-hidden bg-background selection:bg-primary/20">
       {/* Animated Background */}
       <div className="pointer-events-none absolute inset-0">
-        <FloatingOrb delay={0} duration={8} size="h-[500px] w-[500px]" color="bg-violet-600" position={{ x: "-10%", y: "-10%" }} />
-        <FloatingOrb delay={2} duration={10} size="h-[400px] w-[400px]" color="bg-blue-600" position={{ x: "70%", y: "10%" }} />
-        <FloatingOrb delay={4} duration={12} size="h-[600px] w-[600px]" color="bg-indigo-600" position={{ x: "50%", y: "60%" }} />
-        <FloatingOrb delay={1} duration={9} size="h-[300px] w-[300px]" color="bg-pink-600" position={{ x: "20%", y: "70%" }} />
-        
+        <FloatingOrb
+          delay={0}
+          duration={8}
+          size="h-[500px] w-[500px]"
+          color="bg-violet-600"
+          position={{ x: "-10%", y: "-10%" }}
+        />
+        <FloatingOrb
+          delay={2}
+          duration={10}
+          size="h-[400px] w-[400px]"
+          color="bg-blue-600"
+          position={{ x: "70%", y: "10%" }}
+        />
+        <FloatingOrb
+          delay={4}
+          duration={12}
+          size="h-[600px] w-[600px]"
+          color="bg-indigo-600"
+          position={{ x: "50%", y: "60%" }}
+        />
+        <FloatingOrb
+          delay={1}
+          duration={9}
+          size="h-[300px] w-[300px]"
+          color="bg-pink-600"
+          position={{ x: "20%", y: "70%" }}
+        />
+
         {/* Grid pattern overlay */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
-        
+
         {/* Radial gradient overlay */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--background)_70%)]" />
       </div>
 
-      <Container className="relative z-10 flex min-h-screen flex-col items-center justify-center py-12" widthClassName="max-w-5xl">
+      <Container
+        className="relative z-10 flex min-h-screen flex-col items-center justify-center py-12"
+        widthClassName="max-w-5xl"
+      >
         {/* Header Section */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="mb-12 flex flex-col items-center text-center"
         >
-          <motion.div 
+          <motion.div
             className="relative mb-8"
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
@@ -96,15 +129,20 @@ export default function SmithQuickstartPage() {
               priority
             />
           </motion.div>
-          
+
           <h1 className="mb-4 max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            <span className="italic text-foreground/90" style={{ fontFamily: 'var(--font-display), Playfair Display, serif' }}>Describe</span>
+            <span
+              className="italic text-foreground/90"
+              style={{ fontFamily: "var(--font-display), Playfair Display, serif" }}
+            >
+              Describe
+            </span>
             <span className="text-foreground/70"> it, </span>
             <span className="bg-gradient-to-r from-violet-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent">
               Smith builds it.
             </span>
           </h1>
-          
+
           <p className="max-w-xl text-base text-muted-foreground/80 md:text-lg">
             Transform your ideas into production-ready workflows with a single prompt.
           </p>
@@ -117,17 +155,21 @@ export default function SmithQuickstartPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="relative w-full max-w-3xl"
         >
-          <Card className={cn(
-            "relative overflow-hidden border-2 transition-all duration-500",
-            isFocused 
-              ? "border-primary/50 bg-background/80 shadow-[0_0_60px_-15px] shadow-primary/30" 
-              : "border-border/30 bg-background/40 hover:border-border/50"
-          )}>
+          <Card
+            className={cn(
+              "relative overflow-hidden border-2 transition-all duration-500",
+              isFocused
+                ? "border-primary/50 bg-background/80 shadow-[0_0_60px_-15px] shadow-primary/30"
+                : "border-border/30 bg-background/40 hover:border-border/50",
+            )}
+          >
             {/* Animated border glow */}
-            <div className={cn(
-              "absolute inset-0 transition-opacity duration-500",
-              isFocused ? "opacity-100" : "opacity-0"
-            )}>
+            <div
+              className={cn(
+                "absolute inset-0 transition-opacity duration-500",
+                isFocused ? "opacity-100" : "opacity-0",
+              )}
+            >
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
             </div>
@@ -138,7 +180,9 @@ export default function SmithQuickstartPage() {
                   <Wand2 className="h-5 w-5 text-primary/70" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-medium text-foreground">What would you like to build?</h2>
+                  <h2 className="text-sm font-medium text-foreground">
+                    What would you like to build?
+                  </h2>
                 </div>
               </div>
 
@@ -153,15 +197,14 @@ export default function SmithQuickstartPage() {
               />
 
               <div className="mt-4 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
-                </div>
-                
+                <div className="flex items-center gap-2 text-xs text-muted-foreground/60"></div>
+
                 <Button
                   onClick={() => handleSubmit()}
                   disabled={!prompt.trim()}
                   className={cn(
                     "group gap-2 px-6 transition-all duration-300",
-                    prompt.trim() && "shadow-lg shadow-primary/25"
+                    prompt.trim() && "shadow-lg shadow-primary/25",
                   )}
                 >
                   <span className="flex items-center gap-2">

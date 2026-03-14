@@ -36,8 +36,7 @@ export function useNodeShortcuts() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(shortcuts));
-    } catch {
-    }
+    } catch {}
   }, [shortcuts]);
 
   const shortcutsByKind = useMemo(() => {

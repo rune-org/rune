@@ -17,9 +17,9 @@ export const TriggerNode = memo(function TriggerNode({ id, data }: NodeProps<Nod
       className={cn(
         "rune-node relative w-[160px] max-w-[160px] rounded-[var(--radius)] border-2 bg-node-trigger-bg p-2 text-sm transition-[border-color,box-shadow,background-color] duration-200",
         executionStatus !== "idle" && executionStatus,
-        executionStatus === "running" && "animate-pulse-subtle"
+        executionStatus === "running" && "animate-pulse-subtle",
       )}
-      style={executionStatus === "idle" ? { borderColor: 'var(--node-trigger-border)' } : undefined}
+      style={executionStatus === "idle" ? { borderColor: "var(--node-trigger-border)" } : undefined}
     >
       {executionStatus !== "idle" ? (
         <StatusIndicator status={executionStatus} />

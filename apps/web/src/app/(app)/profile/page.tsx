@@ -7,13 +7,7 @@ import { updateMyProfile } from "@/lib/api/users";
 import type { UserResponse } from "@/client/types.gen";
 import { Container } from "@/components/shared/Container";
 import { PageHeader } from "@/components/layout/PageHeader";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -39,10 +33,7 @@ const nameSchema = z.object({
 });
 
 const emailSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Email is required")
-    .email("Please enter a valid email address"),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
 });
 
 type EditingField = "name" | "email" | null;
@@ -58,9 +49,7 @@ export default function ProfilePage() {
   const { state, logout } = useAuth();
 
   const user = state.user as UserResponse | null;
-  const roleLabel = user?.role
-    ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
-    : "User";
+  const roleLabel = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "User";
 
   useEffect(() => {
     if (user) {
@@ -162,10 +151,7 @@ export default function ProfilePage() {
   return (
     <Container className="py-8 md:py-12" widthClassName="max-w-2xl">
       <div className="space-y-8">
-        <PageHeader
-          title="Profile"
-          description="Manage your account settings"
-        />
+        <PageHeader title="Profile" description="Manage your account settings" />
 
         {/* Profile Card */}
         <Card>
@@ -190,9 +176,7 @@ export default function ProfilePage() {
 
           {/* Personal Info Section */}
           <CardContent className="pt-6">
-            <h3 className="text-sm font-medium text-muted-foreground mb-4">
-              Personal Information
-            </h3>
+            <h3 className="text-sm font-medium text-muted-foreground mb-4">Personal Information</h3>
 
             {error && (
               <div className="mb-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
@@ -232,11 +216,7 @@ export default function ProfilePage() {
                       Note: You will be logged out after updating your name.
                     </p>
                     <div className="flex gap-2">
-                      <Button
-                        onClick={handleSaveName}
-                        disabled={isSaving}
-                        size="sm"
-                      >
+                      <Button onClick={handleSaveName} disabled={isSaving} size="sm">
                         {isSaving ? "Saving..." : "Save"}
                       </Button>
                       <Button
@@ -286,11 +266,7 @@ export default function ProfilePage() {
                       Note: You will be logged out after updating your email.
                     </p>
                     <div className="flex gap-2">
-                      <Button
-                        onClick={handleSaveEmail}
-                        disabled={isSaving}
-                        size="sm"
-                      >
+                      <Button onClick={handleSaveEmail} disabled={isSaving} size="sm">
                         {isSaving ? "Saving..." : "Save"}
                       </Button>
                       <Button
@@ -314,15 +290,9 @@ export default function ProfilePage() {
 
           {/* Security Section */}
           <CardContent className="pt-6">
-            <h3 className="text-sm font-medium text-muted-foreground mb-4">
-              Security
-            </h3>
+            <h3 className="text-sm font-medium text-muted-foreground mb-4">Security</h3>
             <div className="flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsPasswordDialogOpen(true)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setIsPasswordDialogOpen(true)}>
                 Change Password
               </Button>
               <Button
@@ -340,16 +310,13 @@ export default function ProfilePage() {
       </div>
 
       {/* Change Password Dialog */}
-      <Dialog
-        open={isPasswordDialogOpen}
-        onOpenChange={handlePasswordDialogChange}
-      >
+      <Dialog open={isPasswordDialogOpen} onOpenChange={handlePasswordDialogChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Change Password</DialogTitle>
             <DialogDescription>
-              Enter your current password and choose a new one. You will be
-              logged out after changing your password.
+              Enter your current password and choose a new one. You will be logged out after
+              changing your password.
             </DialogDescription>
           </DialogHeader>
           <ChangePasswordForm

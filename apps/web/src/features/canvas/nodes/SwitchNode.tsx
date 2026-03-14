@@ -20,13 +20,10 @@ function describeRule(rule: SwitchRule): string {
   return `${lhs} ${op} ${rhs}`;
 }
 
-export const SwitchNode = memo(function SwitchNode({
-  id,
-  data,
-}: NodeProps<Node<SwitchData>>) {
+export const SwitchNode = memo(function SwitchNode({ id, data }: NodeProps<Node<SwitchData>>) {
   const nodeExecution = useNodeExecution(id);
   const executionStatus = nodeExecution?.status ?? "idle";
-  const rules = useMemo(() => Array.isArray(data.rules) ? data.rules : [], [data.rules]);
+  const rules = useMemo(() => (Array.isArray(data.rules) ? data.rules : []), [data.rules]);
   const handleLayout = useMemo(() => {
     const baseTop = 64;
     const spacing = 64;
@@ -48,7 +45,7 @@ export const SwitchNode = memo(function SwitchNode({
       className={cn(
         "rune-node relative w-[240px] max-w-[240px] rounded-[var(--radius)] border-2 bg-node-flow-bg p-3 text-sm text-foreground shadow-sm transition-[border-color,box-shadow,background-color] duration-200",
         executionStatus !== "idle" && executionStatus,
-        executionStatus === "running" && "animate-pulse-subtle"
+        executionStatus === "running" && "animate-pulse-subtle",
       )}
       style={executionStatus === "idle" ? { borderColor: "var(--node-flow-border)" } : undefined}
     >
@@ -70,7 +67,7 @@ export const SwitchNode = memo(function SwitchNode({
           <span className="truncate">{data.label ?? "Switch"}</span>
         </div>
         <span className="shrink-0 whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {rules.length} {rules.length === 1 ? 'route' : 'routes'}
+          {rules.length} {rules.length === 1 ? "route" : "routes"}
         </span>
       </div>
 
@@ -98,9 +95,7 @@ export const SwitchNode = memo(function SwitchNode({
           <div className="text-[11px] font-semibold uppercase text-muted-foreground">
             {switchHandleLabelFromId(switchFallbackHandleId()) ?? "fallback"}
           </div>
-          <div className="mt-1 text-xs text-muted-foreground">
-            Used when no rules match.
-          </div>
+          <div className="mt-1 text-xs text-muted-foreground">Used when no rules match.</div>
         </div>
       </div>
 

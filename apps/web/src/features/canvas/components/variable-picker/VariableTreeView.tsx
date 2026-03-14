@@ -82,7 +82,7 @@ function TreeRow({
       <div
         className={cn(
           "group flex items-center gap-1.5 rounded-sm px-1.5 py-1 text-xs transition-colors",
-          "cursor-pointer hover:bg-accent/50",
+          !hasChildren ? "cursor-pointer hover:bg-accent/50" : "cursor-pointer hover:bg-muted/50",
         )}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
         onClick={handleSelect}
@@ -100,7 +100,7 @@ function TreeRow({
           type="button"
           className={cn(
             "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm",
-            hasChildren ? "hover:bg-muted/60" : "cursor-default"
+            hasChildren ? "hover:bg-muted/60" : "cursor-default",
           )}
           onClick={handleToggle}
           onKeyDown={(e) => {
@@ -147,11 +147,7 @@ function TreeRow({
 
       {/* Children */}
       {hasChildren && isOpen && (
-        <VariableTreeView
-          nodes={node.children!}
-          onSelect={onSelect}
-          depth={depth + 1}
-        />
+        <VariableTreeView nodes={node.children!} onSelect={onSelect} depth={depth + 1} />
       )}
     </div>
   );
@@ -165,12 +161,7 @@ const VariableTreeView = memo(function VariableTreeView({
   return (
     <div className="space-y-0.5">
       {nodes.map((node) => (
-        <TreeRow
-          key={node.path}
-          node={node}
-          onSelect={onSelect}
-          depth={depth}
-        />
+        <TreeRow key={node.path} node={node} onSelect={onSelect} depth={depth} />
       ))}
     </div>
   );

@@ -16,9 +16,7 @@ export const AgentNode = memo(function AgentNode({ id, data }: NodeProps<Node<Ag
       borderColor="--node-agent-border"
       pinned={data.pinned}
     >
-      <div className="text-xs text-muted-foreground">
-        Model • Tools • Limits
-      </div>
+      <div className="text-xs text-muted-foreground">Model • Tools • Limits</div>
     </BaseNode>
   );
 });

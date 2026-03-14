@@ -117,9 +117,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     dimensions: { width: 240, height: 180 },
     defaults: {
       label: "Switch",
-      rules: [
-        { value: "", operator: "==", compare: "" },
-      ],
+      rules: [{ value: "", operator: "==", compare: "" }],
     },
     schema: { inputs: ["input"], outputs: [] }, // Dynamic based on rules
     group: "flow",
@@ -395,23 +393,23 @@ export function getNodeDimensionsWithData(
 ): { width: number; height: number } {
   const base = NODE_REGISTRY[kind].dimensions;
 
-	// Switch node-specific dimensions (handles dynamic resizing)
+  // Switch node-specific dimensions (handles dynamic resizing)
   if (kind === "switch") {
-   	const ruleCount = (data as SwitchData | undefined)?.rules?.length ?? 0;
-    	return { width: base.width, height: 64 + (ruleCount + 1) * 64 };
+    const ruleCount = (data as SwitchData | undefined)?.rules?.length ?? 0;
+    return { width: base.width, height: 64 + (ruleCount + 1) * 64 };
   }
 
-	if (kind === "filter") {
-		const ruleCount = (data as FilterData | undefined)?.rules?.length ?? 0;
-		return { width: base.width, height: Math.max(base.height, 72 + Math.min(ruleCount, 2) * 18) };
-	}
+  if (kind === "filter") {
+    const ruleCount = (data as FilterData | undefined)?.rules?.length ?? 0;
+    return { width: base.width, height: Math.max(base.height, 72 + Math.min(ruleCount, 2) * 18) };
+  }
 
-	if (kind === "sort") {
-		const ruleCount = (data as SortData | undefined)?.rules?.length ?? 0;
-		return { width: base.width, height: Math.max(base.height, 72 + Math.min(ruleCount, 2) * 18) };
-	}
+  if (kind === "sort") {
+    const ruleCount = (data as SortData | undefined)?.rules?.length ?? 0;
+    return { width: base.width, height: Math.max(base.height, 72 + Math.min(ruleCount, 2) * 18) };
+  }
 
-	// Other nodes that expect dynamic resizing should be added as needed.
+  // Other nodes that expect dynamic resizing should be added as needed.
 
   return base;
 }
@@ -443,8 +441,7 @@ export function getNodeSchema(kind: NodeKind, data?: NodeDataMap[NodeKind]): Nod
   // Handles switch node's dynamic output schema,
   // other nodes that expect dynamic output schema should be added as needed.
   if (metadata.hasDynamicOutputs && kind === "switch") {
-    const rules =
-      data && "rules" in data && Array.isArray(data.rules) ? data.rules : [];
+    const rules = data && "rules" in data && Array.isArray(data.rules) ? data.rules : [];
     const dynamicOutputs = rules.map((_, idx) => `case ${idx + 1}`).concat("fallback");
     return { inputs: metadata.schema.inputs, outputs: dynamicOutputs };
   }

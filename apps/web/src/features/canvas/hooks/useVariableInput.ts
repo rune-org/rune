@@ -29,10 +29,7 @@ function isPlaceholderBlock(element: HTMLElement): boolean {
   if (!isBlockElement(element)) return false;
   if (element.childNodes.length !== 1) return false;
   const first = element.firstChild;
-  return (
-    first?.nodeType === Node.ELEMENT_NODE &&
-    (first as HTMLElement).tagName === "BR"
-  );
+  return first?.nodeType === Node.ELEMENT_NODE && (first as HTMLElement).tagName === "BR";
 }
 
 function isDecorativeTrailingBreak(element: HTMLElement): boolean {
@@ -205,10 +202,7 @@ function parentOffsetForNode(node: Node, after: boolean): CursorDomPosition | nu
   return { container: parent, offset: after ? index + 1 : index };
 }
 
-function resolveCursorPosition(
-  node: Node,
-  rawOffset: number,
-): CursorDomPosition {
+function resolveCursorPosition(node: Node, rawOffset: number): CursorDomPosition {
   const safeOffset = Math.max(0, rawOffset);
 
   if (node.nodeType === Node.TEXT_NODE) {
@@ -449,11 +443,7 @@ function getCursorOffset(el: HTMLElement): number {
     return -1;
   }
 
-  const offset = countRawOffsetWithinNode(
-    el,
-    range.startContainer,
-    range.startOffset,
-  );
+  const offset = countRawOffsetWithinNode(el, range.startContainer, range.startOffset);
 
   return offset ?? getRawLength(el);
 }
@@ -496,7 +486,10 @@ export function useVariableInput({ value, onChange }: UseVariableInputOptions) {
         const afterDollar = beforeCursor.slice(dollarIdx + 1);
         // Only trigger if $ is followed by nothing, or a letter/underscore (variable name start)
         // Skip if it starts with a digit (e.g. $5 for prices) or has whitespace
-        if (!/\s/.test(afterDollar) && (afterDollar.length === 0 || /^[a-zA-Z_]/.test(afterDollar))) {
+        if (
+          !/\s/.test(afterDollar) &&
+          (afterDollar.length === 0 || /^[a-zA-Z_]/.test(afterDollar))
+        ) {
           // Calculate pixel offset of cursor relative to the editable container
           const sel = window.getSelection();
           if (sel && sel.rangeCount > 0) {
@@ -537,9 +530,7 @@ export function useVariableInput({ value, onChange }: UseVariableInputOptions) {
 
       if (hasValidRange && autocompleteRange) {
         newValue =
-          value.slice(0, autocompleteRange.start) +
-          path +
-          value.slice(autocompleteRange.end);
+          value.slice(0, autocompleteRange.start) + path + value.slice(autocompleteRange.end);
         newCursorRawPos = autocompleteRange.start + path.length;
       } else {
         // Fallback: insert at cursor position

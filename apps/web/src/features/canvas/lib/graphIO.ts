@@ -17,7 +17,7 @@ export type RFGraph = { nodes: RFNode[]; edges: RFEdge[] };
 export function stripCredentials(graph: RFGraph): RFGraph {
   const nodes = graph.nodes.map((node) => {
     if (node.data && typeof node.data === "object" && "credential" in node.data) {
-      const { credential: _, ...restData } = node.data as Record<string, unknown>;
+      const { credential: _credential, ...restData } = node.data as Record<string, unknown>;
       return {
         ...node,
         data: restData,
@@ -42,20 +42,14 @@ export function allowedTypeSet(): Set<string> {
   return new Set(Object.keys(nodeTypes));
 }
 
-export function sanitizeGraph(
-  graph: RFGraph,
-  allowed = allowedTypeSet(),
-): RFGraph {
+export function sanitizeGraph(graph: RFGraph, allowed = allowedTypeSet()): RFGraph {
   const nodes = (graph.nodes ?? []).filter(
     (n) => n && typeof n.id === "string" && allowed.has(String(n.type || "")),
   );
   const idSet = new Set(nodes.map((n) => n.id));
   const rawEdges = (graph.edges ?? []).filter(
     (e) =>
-      e &&
-      typeof e.id === "string" &&
-      idSet.has(String(e.source)) &&
-      idSet.has(String(e.target)),
+      e && typeof e.id === "string" && idSet.has(String(e.source)) && idSet.has(String(e.target)),
   );
 
   const edges = rawEdges.map((e) => {
@@ -71,21 +65,16 @@ export function sanitizeGraph(
     if (sh === "true" || sh === "false") {
       const isTrue = sh === "true";
       const edgeLabel = label ?? sh;
-      const labelStyle =
-        (e as RFEdge & EdgeMeta).labelStyle ?? {
-          fill: "white",
-          fontWeight: 600,
-        };
-      const labelBgStyle =
-        (e as RFEdge & EdgeMeta).labelBgStyle ?? {
-          fill: isTrue ? "hsl(142 70% 45%)" : "hsl(0 70% 50%)",
-        };
-      const labelShowBg =
-        (e as RFEdge & EdgeMeta).labelShowBg ?? true;
-      const labelBgPadding =
-        (e as RFEdge & EdgeMeta).labelBgPadding ?? [2, 6];
-      const labelBgBorderRadius =
-        (e as RFEdge & EdgeMeta).labelBgBorderRadius ?? 4;
+      const labelStyle = (e as RFEdge & EdgeMeta).labelStyle ?? {
+        fill: "white",
+        fontWeight: 600,
+      };
+      const labelBgStyle = (e as RFEdge & EdgeMeta).labelBgStyle ?? {
+        fill: isTrue ? "hsl(142 70% 45%)" : "hsl(0 70% 50%)",
+      };
+      const labelShowBg = (e as RFEdge & EdgeMeta).labelShowBg ?? true;
+      const labelBgPadding = (e as RFEdge & EdgeMeta).labelBgPadding ?? [2, 6];
+      const labelBgBorderRadius = (e as RFEdge & EdgeMeta).labelBgBorderRadius ?? 4;
       return {
         ...e,
         type: "default",
@@ -99,27 +88,19 @@ export function sanitizeGraph(
     }
 
     if (switchHandle) {
-      const edgeLabel =
-        switchHandleLabelFromId(switchHandle) ?? (label || switchHandle);
-      const labelStyle =
-        (e as RFEdge & EdgeMeta).labelStyle ?? {
-          fill: "white",
-          fontWeight: 600,
-        };
+      const edgeLabel = switchHandleLabelFromId(switchHandle) ?? (label || switchHandle);
+      const labelStyle = (e as RFEdge & EdgeMeta).labelStyle ?? {
+        fill: "white",
+        fontWeight: 600,
+      };
       const labelBgStyle =
         (e as RFEdge & EdgeMeta).labelBgStyle ??
         ({
-          fill:
-            switchHandle === SWITCH_FALLBACK_HANDLE_ID
-              ? "hsl(220 9% 55%)"
-              : "hsl(211 80% 55%)",
+          fill: switchHandle === SWITCH_FALLBACK_HANDLE_ID ? "hsl(220 9% 55%)" : "hsl(211 80% 55%)",
         } as CSSProperties);
-      const labelShowBg =
-        (e as RFEdge & EdgeMeta).labelShowBg ?? true;
-      const labelBgPadding =
-        (e as RFEdge & EdgeMeta).labelBgPadding ?? [2, 6];
-      const labelBgBorderRadius =
-        (e as RFEdge & EdgeMeta).labelBgBorderRadius ?? 4;
+      const labelShowBg = (e as RFEdge & EdgeMeta).labelShowBg ?? true;
+      const labelBgPadding = (e as RFEdge & EdgeMeta).labelBgPadding ?? [2, 6];
+      const labelBgBorderRadius = (e as RFEdge & EdgeMeta).labelBgBorderRadius ?? 4;
       return {
         ...e,
         type: "default",
@@ -143,9 +124,9 @@ export function sanitizeGraph(
  */
 export function stripExecutionStyling(graph: RFGraph): RFGraph {
   const edges = graph.edges.map((edge) => {
-    const { animated: _, style, ...rest } = edge;
+    const { animated: _animated, style, ...rest } = edge;
     if (style && typeof style === "object") {
-      const { stroke: __, ...restStyle } = style as Record<string, unknown>;
+      const { stroke: _stroke, ...restStyle } = style as Record<string, unknown>;
       const hasOtherStyles = Object.keys(restStyle).length > 0;
       return {
         ...rest,

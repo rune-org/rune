@@ -17,11 +17,7 @@ type WaitInspectorProps = {
 
 const UNITS = ["seconds", "minutes", "hours", "days"] as const;
 
-export function WaitInspector({
-  node,
-  updateData,
-  isExpanded,
-}: WaitInspectorProps) {
+export function WaitInspector({ node, updateData, isExpanded }: WaitInspectorProps) {
   const updateWaitData = (updater: (data: WaitData) => WaitData) => {
     updateData(node.id, "wait", updater);
   };
@@ -36,9 +32,7 @@ export function WaitInspector({
             min={1}
             className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
             value={node.data.amount ?? 1}
-            onChange={(e) =>
-              updateWaitData((d) => ({ ...d, amount: Number(e.target.value) }))
-            }
+            onChange={(e) => updateWaitData((d) => ({ ...d, amount: Number(e.target.value) }))}
           />
         </div>
         <div>
@@ -67,8 +61,7 @@ export function WaitInspector({
       </div>
       {isExpanded && (
         <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
-          Suspends workflow execution for the specified duration before
-          continuing to the next node.
+          Suspends workflow execution for the specified duration before continuing to the next node.
         </div>
       )}
     </div>

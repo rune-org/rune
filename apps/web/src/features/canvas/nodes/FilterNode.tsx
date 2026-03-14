@@ -28,7 +28,8 @@ export const FilterNode = memo(function FilterNode({ id, data }: NodeProps<Node<
     >
       <div className="truncate text-xs text-muted-foreground">{describeRule(data)}</div>
       <div className="text-[11px] text-muted-foreground/80">
-        {data.match_mode === "any" ? "Match any rule" : "Match all rules"} • {ruleCount} rule{ruleCount === 1 ? "" : "s"}
+        {data.match_mode === "any" ? "Match any rule" : "Match all rules"} • {ruleCount} rule
+        {ruleCount === 1 ? "" : "s"}
       </div>
     </BaseNode>
   );

@@ -65,7 +65,7 @@ function StatusBadge({ status }: { status: ExecutionListStatus }) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-        config.className
+        config.className,
       )}
     >
       {config.icon}
@@ -139,7 +139,7 @@ function getStatusSummary(executions: ExecutionListItem[]): React.ReactNode {
           acc.push(
             <span key={`sep-${i}`} className="text-muted-foreground/40">
               /
-            </span>
+            </span>,
           );
         acc.push(part);
         return acc;
@@ -180,15 +180,11 @@ function ExecutionRow({
   showWorkflow: boolean;
   isLast: boolean;
 }) {
-  const workflowLabel =
-    execution.workflowName || `Workflow #${execution.workflowId}`;
+  const workflowLabel = execution.workflowName || `Workflow #${execution.workflowId}`;
 
   return (
     <tr
-      className={cn(
-        "transition-colors hover:bg-muted/20",
-        !isLast && "border-b border-border/30"
-      )}
+      className={cn("transition-colors hover:bg-muted/20", !isLast && "border-b border-border/30")}
     >
       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
         {execution.executionId.slice(0, 8)}
@@ -222,9 +218,7 @@ function ExecutionRow({
       <td className="px-4 py-3 text-xs tabular-nums text-muted-foreground">
         {formatDuration(execution.durationMs)}
       </td>
-      <td className="px-4 py-3 text-xs text-muted-foreground">
-        {formatDate(execution.startedAt)}
-      </td>
+      <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(execution.startedAt)}</td>
       <td className="px-4 py-3 text-xs text-muted-foreground">
         {execution.completedAt ? formatDate(execution.completedAt) : "\u2014"}
       </td>
@@ -242,14 +236,13 @@ function GroupHeaderRow({
   onToggle: () => void;
 }) {
   const dot = getGroupAccentDot(group.executions);
-  const workflowLabel =
-    group.workflowName || `Workflow #${group.workflowId}`;
+  const workflowLabel = group.workflowName || `Workflow #${group.workflowId}`;
 
   return (
     <tr
       className={cn(
         "border-b border-border/40 bg-muted/10 transition-colors hover:bg-muted/20",
-        "cursor-pointer select-none"
+        "cursor-pointer select-none",
       )}
       onClick={onToggle}
     >
@@ -258,7 +251,7 @@ function GroupHeaderRow({
           <ChevronRight
             className={cn(
               "h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-transform duration-200",
-              isOpen && "rotate-90"
+              isOpen && "rotate-90",
             )}
           />
 
@@ -315,10 +308,7 @@ function GroupedBody({ groups }: { groups: ExecutionGroup[] }) {
                   key={execution.executionId}
                   execution={execution}
                   showWorkflow={false}
-                  isLast={
-                    ei === group.executions.length - 1 &&
-                    gi === groups.length - 1
-                  }
+                  isLast={ei === group.executions.length - 1 && gi === groups.length - 1}
                 />
               ))}
           </React.Fragment>
@@ -332,10 +322,9 @@ function RecentBody({ executions }: { executions: ExecutionListItem[] }) {
   const sorted = useMemo(
     () =>
       [...executions].sort(
-        (a, b) =>
-          new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+        (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
       ),
-    [executions]
+    [executions],
   );
 
   return (
@@ -352,13 +341,7 @@ function RecentBody({ executions }: { executions: ExecutionListItem[] }) {
   );
 }
 
-function SortToggle({
-  mode,
-  onChange,
-}: {
-  mode: SortMode;
-  onChange: (mode: SortMode) => void;
-}) {
+function SortToggle({ mode, onChange }: { mode: SortMode; onChange: (mode: SortMode) => void }) {
   return (
     <div className="inline-flex items-center rounded-lg bg-muted/30 p-1 gap-0.5">
       <button
@@ -368,7 +351,7 @@ function SortToggle({
           "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
           mode === "workflow"
             ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         <Layers className="h-3.5 w-3.5" />
@@ -381,7 +364,7 @@ function SortToggle({
           "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
           mode === "recent"
             ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         <ArrowDownWideNarrow className="h-3.5 w-3.5" />
@@ -391,10 +374,7 @@ function SortToggle({
   );
 }
 
-export function ExecutionsTable({
-  executions,
-  isLoading,
-}: ExecutionsTableProps) {
+export function ExecutionsTable({ executions, isLoading }: ExecutionsTableProps) {
   const [sortMode, setSortMode] = useState<SortMode>(() => {
     if (typeof window === "undefined") return "workflow";
     const stored = localStorage.getItem("executions-sort-mode");
@@ -449,9 +429,7 @@ export function ExecutionsTable({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Clock className="h-12 w-12 text-muted-foreground/50" />
-        <h3 className="mt-4 text-lg font-medium text-foreground">
-          No executions yet
-        </h3>
+        <h3 className="mt-4 text-lg font-medium text-foreground">No executions yet</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           Run a workflow to see execution history here.
         </p>

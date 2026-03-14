@@ -34,10 +34,7 @@ export function normalizeListItemFieldPath(
   return rawField;
 }
 
-export function toListItemSelection(
-  inputArray: string | undefined,
-  selectedPath: string,
-): string {
+export function toListItemSelection(inputArray: string | undefined, selectedPath: string): string {
   const rawPath = selectedPath.trim();
   if (!rawPath) return rawPath;
   if (rawPath === "$item" || rawPath.startsWith("$item.")) {

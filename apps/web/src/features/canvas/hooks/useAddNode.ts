@@ -14,12 +14,7 @@ function calculateNodePosition(
   clientX?: number,
   clientY?: number,
 ) {
-  if (
-    container &&
-    rfInstance &&
-    typeof clientX === "number" &&
-    typeof clientY === "number"
-  ) {
+  if (container && rfInstance && typeof clientX === "number" && typeof clientY === "number") {
     const rect = container.getBoundingClientRect();
     const position = rfInstance.screenToFlowPosition({
       x: clientX - rect.left,
@@ -31,9 +26,7 @@ function calculateNodePosition(
 }
 
 export function useAddNode(
-  setNodes: (
-    updater: (nodes: CanvasNode[]) => CanvasNode[] | CanvasNode[],
-  ) => void,
+  setNodes: (updater: (nodes: CanvasNode[]) => CanvasNode[] | CanvasNode[]) => void,
   containerRef: React.RefObject<HTMLDivElement | null>,
   rfInstanceRef: React.RefObject<ReactFlowInstance<CanvasNode, Edge> | null>,
 ) {

@@ -39,7 +39,9 @@ export function LogInspector({ node, updateData, isExpanded }: LogInspectorProps
         <label className="block text-xs text-muted-foreground">Level</label>
         <Select
           value={node.data.level ?? "info"}
-          onValueChange={(value) => updateLogData((d) => ({ ...d, level: value as LogData["level"] }))}
+          onValueChange={(value) =>
+            updateLogData((d) => ({ ...d, level: value as LogData["level"] }))
+          }
         >
           <SelectTrigger className="h-8 text-sm">
             <SelectValue />
@@ -56,7 +58,8 @@ export function LogInspector({ node, updateData, isExpanded }: LogInspectorProps
 
       {isExpanded && (
         <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
-          Use this node to leave a readable breadcrumb in the workflow run, like a note for what happened at this step.
+          Use this node to leave a readable breadcrumb in the workflow run, like a note for what
+          happened at this step.
         </div>
       )}
     </div>

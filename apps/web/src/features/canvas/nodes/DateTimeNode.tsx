@@ -34,9 +34,7 @@ export const DateTimeNode = memo(function DateTimeNode({
       pinned={data.pinned}
     >
       <div className="text-xs text-muted-foreground">{describeOperation(data)}</div>
-      <div className="truncate text-[11px] text-muted-foreground/80">
-        {data.timezone ?? "UTC"}
-      </div>
+      <div className="truncate text-[11px] text-muted-foreground/80">{data.timezone ?? "UTC"}</div>
     </BaseNode>
   );
 });

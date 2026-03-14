@@ -69,7 +69,11 @@ export function getStaticOutputSchema(
         .map((a) => ({
           key: a.name!,
           path: a.name!,
-          type: (a.type === "number" ? "number" : a.type === "boolean" ? "boolean" : "string") as VariableTreeNode["type"],
+          type: (a.type === "number"
+            ? "number"
+            : a.type === "boolean"
+              ? "boolean"
+              : "string") as VariableTreeNode["type"],
           source: "schema" as const,
         }));
     }
@@ -96,7 +100,13 @@ export function getStaticOutputSchema(
     case "switch":
       return [
         { key: "output_index", path: "output_index", type: "number", source: "schema" },
-        { key: "matched_rule", path: "matched_rule", type: "object", source: "schema", children: [] },
+        {
+          key: "matched_rule",
+          path: "matched_rule",
+          type: "object",
+          source: "schema",
+          children: [],
+        },
         { key: "fallback", path: "fallback", type: "boolean", source: "schema" },
       ];
 
@@ -108,7 +118,13 @@ export function getStaticOutputSchema(
 
     case "merge":
       return [
-        { key: "merged_context", path: "merged_context", type: "object", source: "schema", children: [] },
+        {
+          key: "merged_context",
+          path: "merged_context",
+          type: "object",
+          source: "schema",
+          children: [],
+        },
       ];
 
     case "filter":
@@ -119,9 +135,7 @@ export function getStaticOutputSchema(
       ];
 
     case "sort":
-      return [
-        { key: "count", path: "count", type: "number", source: "schema" },
-      ];
+      return [{ key: "count", path: "count", type: "number", source: "schema" }];
 
     case "aggregator":
       return [
