@@ -159,6 +159,26 @@ class EditAssignment(BaseModel):
 
 # Node Parameter Types
 
+class ScheduledtriggerParameters(BaseModel):
+    """Scheduled workflow trigger with interval-based execution"""
+    amount: float  # Quantity of time between executions
+    unit: Literal["seconds", "minutes", "hours", "days"]  # Unit of time for the interval
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.amount is None:
+            errors.append("ScheduledtriggerParameters.amount is required")
+        if self.amount is not None and not isinstance(self.amount, (int, float)):
+            errors.append("ScheduledtriggerParameters.amount must be a number")
+        if self.unit is None:
+            errors.append("ScheduledtriggerParameters.unit is required")
+        if self.unit is not None and not isinstance(self.unit, str):
+            errors.append("ScheduledtriggerParameters.unit must be a string")
+
+        return len(errors) == 0, errors
+
 class HttpParameters(BaseModel):
     """HTTP request node"""
     method: Literal["GET", "POST", "PUT", "DELETE", "PATCH"]  # HTTP method
@@ -392,6 +412,34 @@ class ManualTriggerNode(BaseNode):
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
                 errors.append(f"ManualTriggerNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class ScheduledTriggerNode(BaseNode):
+    """Scheduled workflow trigger with interval-based execution"""
+    type_: Literal["ScheduledTrigger"] = Field(default="ScheduledTrigger", alias="type")
+    parameters: ScheduledtriggerParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"ScheduledTriggerNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
@@ -693,4 +741,4 @@ class MergeNode(BaseNode):
 
 # Union type for all nodes
 
-Node = Union[ManualTriggerNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, AgentNode, WaitNode, EditNode, SplitNode, AggregatorNode, MergeNode]
+Node = Union[ManualTriggerNode, ScheduledTriggerNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, AgentNode, WaitNode, EditNode, SplitNode, AggregatorNode, MergeNode]

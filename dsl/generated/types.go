@@ -179,6 +179,22 @@ func (n *EditAssignment) Sanitize() (bool, []string) {
 
 // Node Parameter Types
 
+type ScheduledtriggerParameters struct {
+  // Scheduled workflow trigger with interval-based execution
+  Amount float64 `json:"amount"`  // Quantity of time between executions
+  Unit string `json:"unit"`  // Unit of time for the interval
+}
+
+func (n *ScheduledtriggerParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Unit == "" {
+    errors = append(errors, "ScheduledtriggerParameters.unit is required")
+  }
+
+  return len(errors) == 0, errors
+}
+
 type HttpParameters struct {
   // HTTP request node
   Method string `json:"method"`  // HTTP method
@@ -341,6 +357,7 @@ func (n *MergeParameters) Sanitize() (bool, []string) {
 // Node Credential Types
 
 var MANUALTRIGGER_CREDENTIAL_TYPE []string = nil
+var SCHEDULEDTRIGGER_CREDENTIAL_TYPE []string = nil
 var HTTP_CREDENTIAL_TYPE []string = []string{"api_key", "oauth2", "basic_auth", "header", "token"}
 var SMTP_CREDENTIAL_TYPE []string = []string{"smtp"}
 var CONDITIONAL_CREDENTIAL_TYPE []string = nil
