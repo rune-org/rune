@@ -1,6 +1,9 @@
 import logging
 import os
 import sys
+from dotenv import load_dotenv
+
+load_dotenv()
 
 POSTGRES_DSN = (
     f"postgresql://{os.getenv('POSTGRES_USER', 'rune')}:{os.getenv('POSTGRES_PASSWORD', 'rune_password')}"
@@ -9,7 +12,6 @@ POSTGRES_DSN = (
 )
 
 POLL_INTERVAL = int(os.getenv("SCHEDULER_POLL_INTERVAL", "30"))
-
 API_BASE_URL = os.getenv("API_BASE_URL", "http://api:8000")
 INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY", "")
 
