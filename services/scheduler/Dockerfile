@@ -28,7 +28,5 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
 
-HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
-    CMD ps aux | grep -q '[p]ython.*main.py' || exit 1
 
-CMD ["python", "-u", "main.py"]
+CMD ["python", "-u", "-m", "src.main"]
