@@ -36,10 +36,6 @@ export function ServiceProviderPanel({ config }: ServiceProviderPanelProps) {
     }
 
     opened.opener = null;
-
-    toast.success("SP metadata opened", {
-      description: "Using backend-generated metadata to avoid drift.",
-    });
   };
 
   return (

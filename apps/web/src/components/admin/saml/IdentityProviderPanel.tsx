@@ -208,12 +208,13 @@ export function IdentityProviderPanel({
             id="idp-entity"
             value={form.entityId}
             onChange={(e) => updateField("entityId", e.target.value)}
-            placeholder="https://idp.example.com/app/id"
+            placeholder="https://idp.example.com/app/id , urn:example:idp , or just 'idp-name'"
             maxLength={512}
           />
           <p className="text-[11px] text-muted-foreground">
             From your IdP metadata under{" "}
-            <code className="rounded bg-muted px-1 font-mono text-[10px]">entityID</code>.
+            <code className="rounded bg-muted px-1 font-mono text-[10px]">entityID</code>. Can be a URL, URI,
+            or any string (e.g., some providers use just their name).
           </p>
         </div>
 
