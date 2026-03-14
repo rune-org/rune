@@ -56,9 +56,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
     const currentEdges = edgesRef.current;
     const currentSelectedNodeId = selectedNodeIdRef.current;
 
-    const selectedNodeIds = new Set(
-      currentNodes.filter((n) => n.selected).map((n) => n.id),
-    );
+    const selectedNodeIds = new Set(currentNodes.filter((n) => n.selected).map((n) => n.id));
     if (selectedNodeIds.size === 0 && currentSelectedNodeId) {
       selectedNodeIds.add(currentSelectedNodeId);
     }
@@ -72,11 +70,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
       .map((n) => structuredClone(n));
 
     const selectedEdges = currentEdges
-      .filter(
-        (e) =>
-          selectedNodeIds.has(e.source) &&
-          selectedNodeIds.has(e.target),
-      )
+      .filter((e) => selectedNodeIds.has(e.source) && selectedNodeIds.has(e.target))
       .map((e) => structuredClone(e));
 
     if (!navigator.clipboard?.writeText) {
@@ -102,7 +96,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
   const exportToClipboard = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(
-        stringifyGraph({ nodes: nodesRef.current, edges: edgesRef.current })
+        stringifyGraph({ nodes: nodesRef.current, edges: edgesRef.current }),
       );
       toast.success("Exported JSON to clipboard");
     } catch {
@@ -164,10 +158,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
             return;
           }
           const candidate = raw as { nodes?: unknown; edges?: unknown };
-          if (
-            !Array.isArray(candidate.nodes) ||
-            !Array.isArray(candidate.edges)
-          ) {
+          if (!Array.isArray(candidate.nodes) || !Array.isArray(candidate.edges)) {
             toast.error("Invalid workflow format");
             return;
           }
@@ -255,7 +246,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
 
       // Detect worker DSL format
       const isWorkerDSL = candidate.edges.some(
-        (e) => e && typeof e === "object" && "src" in e && "dst" in e
+        (e) => e && typeof e === "object" && "src" in e && "dst" in e,
       );
 
       // Convert worker DSL to canvas
@@ -307,10 +298,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
           })
           .filter((edge): edge is Edge => edge !== null);
 
-        setNodes((current) => [
-          ...current.map((n) => ({ ...n, selected: false })),
-          ...pastedNodes,
-        ]);
+        setNodes((current) => [...current.map((n) => ({ ...n, selected: false })), ...pastedNodes]);
         setEdges((current) => [...current, ...pastedEdges]);
         setSelectedNodeId(pastedNodes[0]?.id ?? null);
         toast.success("Pasted selection from clipboard");

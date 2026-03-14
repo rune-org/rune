@@ -9,10 +9,7 @@ import {
   getMyShareInfoCredentialsCredentialIdMyShareGet,
 } from "@/client";
 
-import type {
-  CredentialCreate,
-  CredentialShare,
-} from "@/client/types.gen";
+import type { CredentialCreate, CredentialShare } from "@/client/types.gen";
 
 // Readable wrappers for credentials-related SDK functions
 
@@ -32,8 +29,7 @@ export const listCredentials = () => listCredentialsCredentialsGet();
  * List all credentials for dropdown usage
  * Returns minimal credential info (id, name, type)
  */
-export const listCredentialsDropdown = () =>
-  listCredentialsDropdownCredentialsDropdownGet();
+export const listCredentialsDropdown = () => listCredentialsDropdownCredentialsDropdownGet();
 
 /**
  * Delete a credential
@@ -83,4 +79,3 @@ export const getMyShareInfo = (credentialId: number) =>
   getMyShareInfoCredentialsCredentialIdMyShareGet({
     path: { credential_id: credentialId },
   });
-

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  ChevronLeft,
-  ChevronsRight,
-  GripHorizontal,
-  Info,
-  RotateCcw,
-} from "lucide-react";
+import { ChevronLeft, ChevronsRight, GripHorizontal, Info, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LibraryGroups } from "./LibraryGroups";
@@ -38,8 +32,7 @@ export function Library({
   useEffect(() => {
     const el = toolbarRef?.current;
     if (!el) return;
-    const update = () =>
-      setTop(Math.round(el.getBoundingClientRect().height + 22));
+    const update = () => setTop(Math.round(el.getBoundingClientRect().height + 22));
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -128,7 +121,6 @@ export function Library({
     resizer.addEventListener("mousedown", onMouseDown);
     return () => resizer.removeEventListener("mousedown", onMouseDown);
   }, [panelWidth]);
- 
 
   return (
     <div className="pointer-events-none absolute inset-0 z-40">
@@ -165,9 +157,7 @@ export function Library({
       >
         <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
           <div className="flex items-center gap-2">
-            <div className="text-xs font-medium text-muted-foreground">
-              Library
-            </div>
+            <div className="text-xs font-medium text-muted-foreground">Library</div>
             {onResetShortcuts && (
               <button
                 className="inline-flex items-center gap-1 rounded-sm p-0.5 transition-colors hover:bg-muted/40"
@@ -217,10 +207,7 @@ export function Library({
         </div>
 
         {/* Resizer handle */}
-        <div
-          ref={resizerRef}
-          className="absolute top-0 right-0 h-full w-2 cursor-ew-resize"
-        >
+        <div ref={resizerRef} className="absolute top-0 right-0 h-full w-2 cursor-ew-resize">
           <GripHorizontal className="h-full w-full text-border/50" />
         </div>
       </div>

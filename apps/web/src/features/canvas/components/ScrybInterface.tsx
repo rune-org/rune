@@ -41,8 +41,7 @@ const RUNE_HINTS = [
   "Best Practice: Use the 'Http' node to integrate with external APIs seamlessly.",
 ];
 
-const getRandomHint = () =>
-  RUNE_HINTS[Math.floor(Math.random() * RUNE_HINTS.length)];
+const getRandomHint = () => RUNE_HINTS[Math.floor(Math.random() * RUNE_HINTS.length)];
 
 type ScrybInterfaceProps = {
   isOpen?: boolean;
@@ -60,9 +59,8 @@ export function ScrybInterface({
   const [hint, setHint] = useState("");
   const [generatedDocs, setGeneratedDocs] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [targetAudience, setTargetAudience] = useState<
-    GenerateWorkflowDocsRequest["target_audience"]
-  >("Technical Developer");
+  const [targetAudience, setTargetAudience] =
+    useState<GenerateWorkflowDocsRequest["target_audience"]>("Technical Developer");
   const [reportViewerOpen, setReportViewerOpen] = useState(false);
 
   const isOpen = isOpenProp ?? isOpenInternal;
@@ -77,9 +75,7 @@ export function ScrybInterface({
       e.stopPropagation();
 
       if (!workflowId) {
-        toast.error(
-          "Please save your workflow first before generating documentation.",
-        );
+        toast.error("Please save your workflow first before generating documentation.");
         return;
       }
 
@@ -87,10 +83,7 @@ export function ScrybInterface({
       setErrorMessage(null);
 
       try {
-        const response = await scryb.generateWorkflowDocs(
-          workflowId,
-          targetAudience,
-        );
+        const response = await scryb.generateWorkflowDocs(workflowId, targetAudience);
 
         if (response.error) {
           throw new Error("Failed to generate documentation");
@@ -103,17 +96,9 @@ export function ScrybInterface({
           throw new Error("No documentation returned from the server");
         }
       } catch (err) {
-        setErrorMessage(
-          err instanceof Error
-            ? err.message
-            : "Failed to generate documentation",
-        );
+        setErrorMessage(err instanceof Error ? err.message : "Failed to generate documentation");
         setViewState("error");
-        toast.error(
-          err instanceof Error
-            ? err.message
-            : "Failed to generate documentation",
-        );
+        toast.error(err instanceof Error ? err.message : "Failed to generate documentation");
       }
     },
     [workflowId, targetAudience],
@@ -205,11 +190,7 @@ export function ScrybInterface({
 
             <div className="relative z-10">
               <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3 font-sans">
-                <div
-                  className="flex items-center gap-2"
-                  role="status"
-                  aria-live="polite"
-                >
+                <div className="flex items-center gap-2" role="status" aria-live="polite">
                   <div
                     aria-hidden="true"
                     className={cn(
@@ -219,10 +200,7 @@ export function ScrybInterface({
                         : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]",
                     )}
                   />
-                  <span
-                    id="scryb-panel-title"
-                    className="text-xs tracking-wide text-zinc-400"
-                  >
+                  <span id="scryb-panel-title" className="text-xs tracking-wide text-zinc-400">
                     {workflowId ? "Ready to Generate" : "Save Workflow First"}
                   </span>
                 </div>
@@ -267,8 +245,8 @@ export function ScrybInterface({
                           <em>Generate Documentation</em>
                         </h3>
                         <p className="text-sm leading-relaxed text-zinc-400">
-                          Transform your current workflow into comprehensive
-                          documentation with one click.
+                          Transform your current workflow into comprehensive documentation with one
+                          click.
                         </p>
                       </div>
 
@@ -280,9 +258,7 @@ export function ScrybInterface({
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            onClick={() =>
-                              setTargetAudience("Technical Developer")
-                            }
+                            onClick={() => setTargetAudience("Technical Developer")}
                             className={cn(
                               "flex-1 rounded-xl border px-3 py-2 text-xs transition-all",
                               targetAudience === "Technical Developer"
@@ -290,21 +266,15 @@ export function ScrybInterface({
                                 : "border-white/[0.05] bg-transparent text-zinc-500 hover:bg-white/[0.05]",
                             )}
                             style={{
-                              fontFamily:
-                                "ui-sans-serif, system-ui, sans-serif",
-                              fontWeight:
-                                targetAudience === "Technical Developer"
-                                  ? 700
-                                  : 400,
+                              fontFamily: "ui-sans-serif, system-ui, sans-serif",
+                              fontWeight: targetAudience === "Technical Developer" ? 700 : 400,
                             }}
                           >
                             TECHNICAL
                           </button>
                           <button
                             type="button"
-                            onClick={() =>
-                              setTargetAudience("Executive Summary")
-                            }
+                            onClick={() => setTargetAudience("Executive Summary")}
                             className={cn(
                               "flex-1 rounded-xl border px-3 py-2 text-xs transition-all",
                               targetAudience === "Executive Summary"
@@ -312,12 +282,8 @@ export function ScrybInterface({
                                 : "border-white/[0.05] bg-transparent text-zinc-500 hover:bg-white/[0.05]",
                             )}
                             style={{
-                              fontFamily:
-                                "ui-sans-serif, system-ui, sans-serif",
-                              fontWeight:
-                                targetAudience === "Executive Summary"
-                                  ? 700
-                                  : 400,
+                              fontFamily: "ui-sans-serif, system-ui, sans-serif",
+                              fontWeight: targetAudience === "Executive Summary" ? 700 : 400,
                             }}
                           >
                             EXECUTIVE
@@ -343,19 +309,14 @@ export function ScrybInterface({
                       >
                         {viewState === "generating" ? (
                           <div className="flex items-center justify-center gap-2">
-                            <Loader2
-                              className="h-4 w-4 animate-spin"
-                              aria-hidden="true"
-                            />
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                             <span className="text-sm">Synthesizing...</span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2">
                             <SquarePen className="h-4 w-4" aria-hidden="true" />
                             <span className="text-sm font-sans">
-                              {workflowId
-                                ? "Generate Docs"
-                                : "Save Workflow First"}
+                              {workflowId ? "Generate Docs" : "Save Workflow First"}
                             </span>
                             {workflowId && (
                               <ArrowRight
@@ -378,17 +339,11 @@ export function ScrybInterface({
                     >
                       <div className="flex flex-col items-center justify-center py-1 text-center">
                         <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 ring-1 ring-red-500/20">
-                          <AlertCircle
-                            className="h-7 w-7 text-red-400"
-                            aria-hidden="true"
-                          />
+                          <AlertCircle className="h-7 w-7 text-red-400" aria-hidden="true" />
                         </div>
-                        <h3 className="text-xl text-zinc-100">
-                          Generation Failed
-                        </h3>
+                        <h3 className="text-xl text-zinc-100">Generation Failed</h3>
                         <p className="pt-2.5 text-sm text-zinc-500">
-                          {errorMessage ||
-                            "An error occurred while generating documentation."}
+                          {errorMessage || "An error occurred while generating documentation."}
                         </p>
                       </div>
 
@@ -412,14 +367,9 @@ export function ScrybInterface({
                     >
                       <div className="flex flex-col items-center justify-center py-1 text-center">
                         <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/20">
-                          <Check
-                            className="h-7 w-7 text-emerald-400"
-                            aria-hidden="true"
-                          />
+                          <Check className="h-7 w-7 text-emerald-400" aria-hidden="true" />
                         </div>
-                        <h3 className="text-xl text-zinc-100">
-                          Ready to Download
-                        </h3>
+                        <h3 className="text-xl text-zinc-100">Ready to Download</h3>
                         <p className="pt-2.5 text-sm text-zinc-500">
                           Your documentation has been successfully generated.
                         </p>
@@ -428,18 +378,13 @@ export function ScrybInterface({
                       <div className="group flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.05]">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] ring-1 ring-white/[0.08]">
-                            <FileText
-                              className="h-5 w-5 text-zinc-400"
-                              aria-hidden="true"
-                            />
+                            <FileText className="h-5 w-5 text-zinc-400" aria-hidden="true" />
                           </div>
                           <div className="flex flex-col items-start gap-0.5 font-sans">
                             <span className="text-sm text-zinc-200 group-hover:text-white">
                               workflow-docs.md
                             </span>
-                            <span className="text-xs text-zinc-500">
-                              {fileSize} • Markdown
-                            </span>
+                            <span className="text-xs text-zinc-500">{fileSize} • Markdown</span>
                           </div>
                         </div>
                         <button
@@ -469,12 +414,10 @@ export function ScrybInterface({
                             color: "#18181b",
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "rgba(255,255,255,1)";
+                            e.currentTarget.style.backgroundColor = "rgba(255,255,255,1)";
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "rgba(255,255,255,0.9)";
+                            e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.9)";
                           }}
                           onClick={() => setReportViewerOpen(true)}
                         >
@@ -506,11 +449,7 @@ export function ScrybInterface({
         role="button"
         tabIndex={0}
         aria-expanded={isOpen}
-        aria-label={
-          isOpen
-            ? "Close Scryb documentation panel"
-            : "Open Scryb documentation panel"
-        }
+        aria-label={isOpen ? "Close Scryb documentation panel" : "Open Scryb documentation panel"}
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {

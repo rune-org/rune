@@ -62,7 +62,9 @@ type ToolbarProps = {
   publishDisabled?: boolean;
   onRestore?: (versionId: number) => void;
   onRunVersion?: (versionId: number) => void;
-  onViewVersion?: (snapshot: { nodes: CanvasNode[]; edges: Edge[]; versionNumber: number } | null) => void;
+  onViewVersion?: (
+    snapshot: { nodes: CanvasNode[]; edges: Edge[]; versionNumber: number } | null,
+  ) => void;
   viewingVersionNumber?: number | null;
 };
 
@@ -161,7 +163,7 @@ export const Toolbar = memo(function Toolbar({
             disabled
             className={cn(
               "inline-flex h-8 items-center gap-2 rounded-sm border px-2.5 text-xs",
-              liveStatusClassName
+              liveStatusClassName,
             )}
           >
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -203,14 +205,16 @@ export const Toolbar = memo(function Toolbar({
           <Btn onClick={onPublish} title="Publish version" disabled={publishDisabled}>
             <Send className="h-4 w-4" /> Publish
           </Btn>
-          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-yellow-500 border border-card" title="Unpublished changes" />
+          <span
+            className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-yellow-500 border border-card"
+            title="Unpublished changes"
+          />
         </div>
       )}
 
       <DropdownMenu>
         <DropdownMenuTrigger className={btnClass} disabled={readOnly}>
-          <Download className="h-4 w-4" /> Import{" "}
-          <ChevronDown className="h-3 w-3 opacity-60" />
+          <Download className="h-4 w-4" /> Import <ChevronDown className="h-3 w-3 opacity-60" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={onImportFromClipboard} className="gap-2" disabled={readOnly}>
@@ -227,8 +231,7 @@ export const Toolbar = memo(function Toolbar({
 
       <DropdownMenu>
         <DropdownMenuTrigger className={btnClass}>
-          <Upload className="h-4 w-4" /> Export{" "}
-          <ChevronDown className="h-3 w-3 opacity-60" />
+          <Upload className="h-4 w-4" /> Export <ChevronDown className="h-3 w-3 opacity-60" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={onExportToClipboard} className="gap-2">

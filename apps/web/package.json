@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"No tests defined\""
+    "test": "echo \"No tests defined\"",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.0",
@@ -56,6 +58,7 @@
     "baseline-browser-mapping": "^2.9.19",
     "eslint": "^10.0.0",
     "eslint-config-next": "16.1.6",
+    "prettier": "^3.8.1",
     "shadcn": "^4.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"

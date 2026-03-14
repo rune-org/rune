@@ -14,7 +14,8 @@ const HANDLE_IDS = {
   FALSE: "false",
 };
 
-const EDGE_COLORS = { // Refers to colors of edge labels, not the actual edge colors
+const EDGE_COLORS = {
+  // Refers to colors of edge labels, not the actual edge colors
   TRUE: "hsl(142 70% 45%)", // green
   FALSE: "hsl(0 70% 50%)", // red
   SWITCH: "hsl(211 80% 55%)", // blue-ish
@@ -35,13 +36,11 @@ export function useConditionalConnect(
       const isTrue = sourceHandle === HANDLE_IDS.TRUE;
       const isFalse = sourceHandle === HANDLE_IDS.FALSE;
       const isSwitchCase =
-        typeof sourceHandle === "string" &&
-        sourceHandle.startsWith(SWITCH_RULE_HANDLE_PREFIX);
+        typeof sourceHandle === "string" && sourceHandle.startsWith(SWITCH_RULE_HANDLE_PREFIX);
       const isSwitchFallback = sourceHandle === SWITCH_FALLBACK_HANDLE_ID;
 
       const label =
-        switchHandleLabelFromId(sourceHandle) ||
-        (isTrue || isFalse ? sourceHandle : undefined);
+        switchHandleLabelFromId(sourceHandle) || (isTrue || isFalse ? sourceHandle : undefined);
       const color = isTrue
         ? EDGE_COLORS.TRUE
         : isFalse

@@ -19,9 +19,7 @@ export const AggregatorNode = memo(function AggregatorNode({
       borderColor="--node-transform-border"
       pinned={data.pinned}
     >
-      <div className="text-xs text-muted-foreground">
-        Collects split results
-      </div>
+      <div className="text-xs text-muted-foreground">Collects split results</div>
     </BaseNode>
   );
 });

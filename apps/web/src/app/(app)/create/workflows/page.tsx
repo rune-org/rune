@@ -68,9 +68,7 @@ function CreateWorkflowButton() {
       router.push(`/create/app?workflow=${created.id}`);
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create workflow. Please try again.",
+        error instanceof Error ? error.message : "Failed to create workflow. Please try again.",
       );
     } finally {
       setIsSubmitting(false);
@@ -97,8 +95,8 @@ function CreateWorkflowButton() {
         <DialogHeader>
           <DialogTitle>Create a workflow</DialogTitle>
           <DialogDescription>
-            Give your workflow a name and optional description. You can design
-            the graph after creation.
+            Give your workflow a name and optional description. You can design the graph after
+            creation.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
@@ -133,14 +131,14 @@ function CreateWorkflowButton() {
             >
               Cancel
             </Button>
-        <Button type="submit" disabled={isSubmitting || !name.trim()}>
+            <Button type="submit" disabled={isSubmitting || !name.trim()}>
               {isSubmitting ? "Creating…" : "Create & open canvas"}
             </Button>
           </DialogFooter>
         </form>
         <p className="text-xs text-muted-foreground">
-          Need to import an existing workflow? You can paste workflow JSON
-          directly inside the canvas later.
+          Need to import an existing workflow? You can paste workflow JSON directly inside the
+          canvas later.
         </p>
       </DialogContent>
     </Dialog>

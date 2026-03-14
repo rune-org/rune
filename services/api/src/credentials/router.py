@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, status
 
-from src.core.dependencies import DatabaseDep, require_password_changed
+from src.core.dependencies import require_password_changed
 from src.core.responses import ApiResponse
+from src.credentials.dependencies import get_credential_service, get_permission_service
 from src.credentials.permissions import CredentialPermissionService
 from src.credentials.schemas import (
     CredentialCreate,
@@ -15,16 +16,6 @@ from src.credentials.service import CredentialService
 from src.db.models import User
 
 router = APIRouter(prefix="/credentials", tags=["credentials"])
-
-
-def get_credential_service(db: DatabaseDep) -> CredentialService:
-    """Dependency to get credential service instance."""
-    return CredentialService(session=db)
-
-
-def get_permission_service(db: DatabaseDep) -> CredentialPermissionService:
-    """Dependency to get permission service instance."""
-    return CredentialPermissionService(db=db)
 
 
 @router.post(

@@ -26,11 +26,7 @@ type HttpInspectorProps = {
   isExpanded: boolean;
 };
 
-export function HttpInspector({
-  node,
-  updateData,
-  isExpanded,
-}: HttpInspectorProps) {
+export function HttpInspector({ node, updateData, isExpanded }: HttpInspectorProps) {
   const updateHttpData = (updater: (data: HttpData) => HttpData) => {
     updateData(node.id, "http", updater);
   };
@@ -78,9 +74,7 @@ export function HttpInspector({
           </Select>
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground">
-            Timeout (s)
-          </label>
+          <label className="block text-xs text-muted-foreground">Timeout (s)</label>
           <input
             type="number"
             className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
@@ -161,9 +155,7 @@ export function HttpInspector({
         className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
         open={isExpanded}
       >
-        <summary className="cursor-pointer text-xs text-muted-foreground">
-          Body (JSON)
-        </summary>
+        <summary className="cursor-pointer text-xs text-muted-foreground">Body (JSON)</summary>
         <JsonField
           value={node.data.body}
           onChange={(obj) =>
@@ -183,9 +175,7 @@ export function HttpInspector({
         className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
         open={isExpanded}
       >
-        <summary className="cursor-pointer text-xs text-muted-foreground">
-          Advanced
-        </summary>
+        <summary className="cursor-pointer text-xs text-muted-foreground">Advanced</summary>
         <div className="mt-2 space-y-2 text-xs">
           <label className="flex items-center gap-2">
             <input

@@ -52,8 +52,7 @@ export function setupClientInterceptors() {
   installed = true;
 
   client.interceptors.response.use(async (response, options) => {
-    const isAuthRoute =
-      typeof options.url === "string" && options.url.startsWith("/auth/");
+    const isAuthRoute = typeof options.url === "string" && options.url.startsWith("/auth/");
     const normalized = new Headers(options.headers as HeadersInit | undefined);
     const retried = normalized.get("x-retried") === "1";
     if (response.status !== 401 || isAuthRoute || retried) {

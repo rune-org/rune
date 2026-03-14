@@ -1,9 +1,9 @@
 /**
  * Permission checking utilities for workflow role-based access control.
- * 
+ *
  * These functions match the backend WorkflowPolicy permissions defined in:
  * services/api/src/workflow/policy.py
- * 
+ *
  * Permission Matrix:
  * - OWNER: view, edit, execute, delete, share
  * - EDITOR: view, edit, execute

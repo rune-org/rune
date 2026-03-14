@@ -24,7 +24,8 @@ export function SignInForm() {
       // /change-password if the user needs to change their password
       const redirectParam = searchParams.get("redirect");
       const allowed = ["/create", "/create/app", "/profile", "/admin"] as const;
-      const isAllowed = (p: string | null): p is (typeof allowed)[number] => !!p && allowed.includes(p as (typeof allowed)[number]);
+      const isAllowed = (p: string | null): p is (typeof allowed)[number] =>
+        !!p && allowed.includes(p as (typeof allowed)[number]);
       const target = isAllowed(redirectParam) ? redirectParam : "/create";
       router.push(target);
     }
@@ -33,7 +34,9 @@ export function SignInForm() {
   return (
     <form className="space-y-5" noValidate onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-zinc-400">Email</Label>
+        <Label htmlFor="email" className="text-zinc-400">
+          Email
+        </Label>
         <Input
           id="email"
           type="email"
@@ -43,7 +46,9 @@ export function SignInForm() {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-zinc-400">Password</Label>
+        <Label htmlFor="password" className="text-zinc-400">
+          Password
+        </Label>
         <PasswordInput
           id="password"
           placeholder="••••••••"
@@ -58,10 +63,10 @@ export function SignInForm() {
           </p>
         </div>
       ) : null}
-      
-      <Button 
-        type="submit" 
-        className="w-full h-11 rounded-full bg-white !text-black hover:bg-zinc-200 font-medium transition-all shadow-lg" 
+
+      <Button
+        type="submit"
+        className="w-full h-11 rounded-full bg-white !text-black hover:bg-zinc-200 font-medium transition-all shadow-lg"
         disabled={state.loading}
       >
         {state.loading ? "Signing in…" : "Sign in"}
