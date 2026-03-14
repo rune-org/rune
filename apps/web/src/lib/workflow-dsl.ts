@@ -355,9 +355,7 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
             ? Number(params.amount)
             : undefined,
       unit:
-        typeof params.unit === "string"
-          ? (params.unit as ScheduledTriggerData["unit"])
-          : undefined,
+        typeof params.unit === "string" ? (params.unit as ScheduledTriggerData["unit"]) : undefined,
     };
     return scheduledTriggerData;
   },

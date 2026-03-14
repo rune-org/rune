@@ -23,9 +23,9 @@ export const ScheduledTriggerNode = memo(function ScheduledTriggerNode({
       className={cn(
         "rune-node relative w-[160px] rounded-[var(--radius)] border-2 bg-node-trigger-bg p-2 text-sm transition-[border-color,box-shadow,background-color] duration-200",
         executionStatus !== "idle" && executionStatus,
-        executionStatus === "running" && "animate-pulse-subtle"
+        executionStatus === "running" && "animate-pulse-subtle",
       )}
-      style={executionStatus === "idle" ? { borderColor: 'var(--node-trigger-border)' } : undefined}
+      style={executionStatus === "idle" ? { borderColor: "var(--node-trigger-border)" } : undefined}
     >
       {executionStatus !== "idle" ? (
         <StatusIndicator status={executionStatus} />
@@ -43,11 +43,7 @@ export const ScheduledTriggerNode = memo(function ScheduledTriggerNode({
         <Clock className="h-4 w-4 text-muted-foreground" />
         {data.label ?? "Scheduled Trigger"}
       </div>
-      {interval && (
-        <div className="text-xs text-muted-foreground mt-1">
-          {interval}
-        </div>
-      )}
+      {interval && <div className="text-xs text-muted-foreground mt-1">{interval}</div>}
       <Handle type="source" position={Position.Right} className="!bg-ring" />
     </div>
   );

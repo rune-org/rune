@@ -54,7 +54,9 @@ function renderInspectorForm(
     case "wait":
       return <WaitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "scheduledTrigger":
-      return <ScheduledTriggerInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+      return (
+        <ScheduledTriggerInspector node={node} updateData={updateData} isExpanded={isExpanded} />
+      );
     case "edit":
       return <EditInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "split":

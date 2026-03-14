@@ -23,7 +23,7 @@ export function ScheduledTriggerInspector({
   isExpanded,
 }: ScheduledTriggerInspectorProps) {
   const updateScheduledTriggerData = (
-    updater: (data: ScheduledTriggerData) => ScheduledTriggerData
+    updater: (data: ScheduledTriggerData) => ScheduledTriggerData,
   ) => {
     updateData(node.id, "scheduledTrigger", updater);
   };
@@ -72,8 +72,8 @@ export function ScheduledTriggerInspector({
       </div>
       {isExpanded && (
         <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
-          Triggers the workflow at regular intervals. The workflow will be executed
-          every specified duration automatically.
+          Triggers the workflow at regular intervals. The workflow will be executed every specified
+          duration automatically.
         </div>
       )}
     </div>
