@@ -96,6 +96,8 @@ services:
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}
       # Encryption Key (use from .env or default for development)
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
+      # Internal API key for scheduler → API communication
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-in-production}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-your-google-api-key-here}
       # Smith AI Agent Settings
       SMITH_MODEL: ${SMITH_MODEL:-gemini-2.0-flash}
@@ -186,19 +188,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-rune}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rune_password}
       POSTGRES_DB: ${POSTGRES_DB:-rune_db}
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: ${RABBITMQ_USER:-rune}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rune_password}
-      RABBITMQ_QUEUE: ${RABBITMQ_WORKFLOW_QUEUE:-workflow.execution}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-8eLl-T7Un3Qj5vN9sP2wK4bR6xZ0cF1mA8yD7gH3iE0=}
       SCHEDULER_POLL_INTERVAL: ${SCHEDULER_POLL_INTERVAL:-30}
-      SCHEDULER_LOOK_AHEAD: ${SCHEDULER_LOOK_AHEAD:-60}
+      API_BASE_URL: http://api:8000
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-in-production}
     depends_on:
       postgres:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      api:
+        condition: service_started
     networks:
       - backend_network
     restart: unless-stopped
