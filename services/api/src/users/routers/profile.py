@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, Response
 
 from src.auth.token_store import TokenStore
 from src.core.config import get_settings
-from src.core.dependencies import CurrentUser, RedisDep
+from src.core.dependencies import CurrentUser
 from src.core.responses import ApiResponse
-from src.users.dependencies import get_user_service
+from src.users.dependencies import get_token_store, get_user_service
 from src.users.schemas import (
     ProfileUpdate,
     UserPasswordChange,
@@ -16,10 +16,6 @@ router = APIRouter(
     prefix="/profile",
     tags=["Profile"],
 )
-
-
-async def get_token_store(redis: RedisDep) -> TokenStore:
-    return TokenStore(redis_client=redis)
 
 
 @router.get(
