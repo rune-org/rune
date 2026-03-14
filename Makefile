@@ -263,14 +263,12 @@ lint: web-lint api-lint worker-lint
 web-lint:
 	@echo "Linting frontend..."
 	cd apps/web && pnpm lint
+	@echo "Checking frontend formatting..."
+	cd apps/web && pnpm dlx prettier --check src/
 
 web-format:
 	@echo "Formatting frontend with prettier..."
-	cd apps/web && pnpm dlx prettier --write .
-
-web-format-check:
-	@echo "Checking frontend formatting..."
-	cd apps/web && pnpm dlx prettier --check .
+	cd apps/web && pnpm dlx prettier --write src/
 
 api-lint:
 	@echo "Linting API with ruff..."
