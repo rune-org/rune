@@ -11,7 +11,7 @@ FETCH_DUE_SCHEDULES = """
            w.name       AS workflow_name
     FROM scheduled_workflows sw
     JOIN workflows w ON sw.workflow_id = w.id
-    WHERE w.is_active = true AND sw.next_run_at <= now()
+    WHERE w.is_active = true AND sw.next_run_at <= $1
     ORDER BY sw.next_run_at
     FOR UPDATE OF sw SKIP LOCKED
 """
@@ -28,7 +28,7 @@ async def poll(conn, api_client) -> None:
     now = datetime.now()
 
     async with conn.transaction():
-        rows = await conn.fetch(FETCH_DUE_SCHEDULES)
+        rows = await conn.fetch(FETCH_DUE_SCHEDULES, now)
 
         if not rows:
             return
