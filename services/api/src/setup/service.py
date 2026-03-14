@@ -14,7 +14,7 @@ class SetupService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def is_first_time_setup(self) -> bool:
+    async def requires_setup(self) -> bool:
         """
         Check if the system requires first-time setup.
 
@@ -43,7 +43,7 @@ class SetupService:
             Forbidden: If system already has users (not first-time setup)
         """
         # Double-check that no users exist (race condition protection)
-        if not await self.is_first_time_setup():
+        if not await self.requires_setup():
             raise Forbidden(
                 detail="First-time setup is not available. Users already exist in the system."
             )
