@@ -268,6 +268,10 @@ web-format:
 	@echo "Formatting frontend with prettier..."
 	cd apps/web && pnpm dlx prettier --write .
 
+web-format-check:
+	@echo "Checking frontend formatting..."
+	cd apps/web && pnpm dlx prettier --check .
+
 api-lint:
 	@echo "Linting API with ruff..."
 	cd services/api && uv run ruff check src/
