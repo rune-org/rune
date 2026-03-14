@@ -109,9 +109,7 @@ func GetFieldValue(item any, field string) (any, error) {
 	if field == "" {
 		return item, nil
 	}
-	if strings.HasPrefix(field, "$item.") {
-		field = strings.TrimPrefix(field, "$item.")
-	}
+	field = strings.TrimPrefix(field, "$item.")
 
 	trimmed := strings.TrimPrefix(field, "$")
 	trimmed = strings.TrimPrefix(trimmed, ".")
