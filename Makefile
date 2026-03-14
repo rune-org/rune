@@ -264,11 +264,11 @@ web-lint:
 	@echo "Linting frontend..."
 	cd apps/web && pnpm lint
 	@echo "Checking frontend formatting..."
-	cd apps/web && pnpm prettier --check src/
+	cd apps/web && pnpm run format:check
 
 web-format:
 	@echo "Formatting frontend with prettier..."
-	cd apps/web && pnpm prettier --write src/
+	cd apps/web && pnpm run format
 
 api-lint:
 	@echo "Linting API with ruff..."

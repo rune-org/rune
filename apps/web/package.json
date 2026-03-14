@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"No tests defined\""
+    "test": "echo \"No tests defined\"",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.0",
