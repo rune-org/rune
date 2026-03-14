@@ -15,7 +15,7 @@ export const IfNode = memo(function IfNode({ id, data }: NodeProps<Node<IfData>>
   return (
     <div
       className={cn(
-        "rune-node relative w-[200px] rounded-[var(--radius)] border-2 bg-node-flow-bg p-3 text-sm text-foreground shadow-sm transition-[border-color,box-shadow,background-color] duration-200",
+        "rune-node relative w-[200px] max-w-[200px] rounded-[var(--radius)] border-2 bg-node-flow-bg p-3 text-sm text-foreground shadow-sm transition-[border-color,box-shadow,background-color] duration-200",
         executionStatus !== "idle" && executionStatus,
         executionStatus === "running" && "animate-pulse-subtle"
       )}
@@ -33,9 +33,9 @@ export const IfNode = memo(function IfNode({ id, data }: NodeProps<Node<IfData>>
           </div>
         )
       )}
-      <div className="flex items-center gap-2 font-medium">
-        <GitBranch className="h-4 w-4 text-muted-foreground" />
-        {data.label ?? "If"}
+      <div className="flex items-center gap-2 font-medium min-w-0">
+        <GitBranch className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span className="truncate">{data.label ?? "If"}</span>
       </div>
       <div className="mt-1 truncate text-xs text-muted-foreground">
         {data.expression || "$input.status == 200"}

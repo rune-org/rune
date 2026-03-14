@@ -26,7 +26,7 @@ export const SortNode = memo(function SortNode({ id, data }: NodeProps<Node<Sort
       borderColor="--node-transform-border"
       pinned={data.pinned}
     >
-      <div className="text-xs text-muted-foreground">{describeSort(data)}</div>
+      <div className="truncate text-xs text-muted-foreground">{describeSort(data)}</div>
       <div className="text-[11px] text-muted-foreground/80">
         {ruleCount} rule{ruleCount === 1 ? "" : "s"}
       </div>

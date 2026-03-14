@@ -15,7 +15,7 @@ export const TriggerNode = memo(function TriggerNode({ id, data }: NodeProps<Nod
   return (
     <div
       className={cn(
-        "rune-node relative w-[160px] rounded-[var(--radius)] border-2 bg-node-trigger-bg p-2 text-sm transition-[border-color,box-shadow,background-color] duration-200",
+        "rune-node relative w-[160px] max-w-[160px] rounded-[var(--radius)] border-2 bg-node-trigger-bg p-2 text-sm transition-[border-color,box-shadow,background-color] duration-200",
         executionStatus !== "idle" && executionStatus,
         executionStatus === "running" && "animate-pulse-subtle"
       )}
@@ -33,9 +33,9 @@ export const TriggerNode = memo(function TriggerNode({ id, data }: NodeProps<Nod
           </div>
         )
       )}
-      <div className="flex items-center gap-2 font-medium text-foreground">
-        <Play className="h-4 w-4 text-muted-foreground" />
-        {data.label ?? "Trigger"}
+      <div className="flex items-center gap-2 font-medium text-foreground min-w-0">
+        <Play className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span className="truncate">{data.label ?? "Trigger"}</span>
       </div>
       <Handle type="source" position={Position.Right} className="!bg-ring" />
     </div>
