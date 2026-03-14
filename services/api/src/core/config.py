@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     # Encryption Settings
     encryption_key: str | None = None
 
+    # Internal API Settings
+    internal_api_key: str | None = None
+
     # Smith AI Agent Settings
     smith_model: str = "gemini-2.0-flash"
     smith_temperature: float = 0.3

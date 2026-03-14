@@ -219,6 +219,7 @@ class Workflow(TimestampModel, table=True):
         link_model=WorkflowCredentialLink,
     )
     executions: list["Execution"] = Relationship(back_populates="workflow")
+    schedule: Optional["ScheduledWorkflow"] = Relationship(back_populates="workflow")
 
 
 class WorkflowVersion(SQLModel, table=True):
@@ -401,6 +402,21 @@ class WorkflowCredential(TimestampModel, table=True):
         back_populates="credential",
         cascade_delete=True,
     )
+
+
+class ScheduledWorkflow(TimestampModel, table=True):
+    __tablename__ = "scheduled_workflows"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workflow_id: int = Field(
+        foreign_key="workflows.id",
+        ondelete="CASCADE",
+        unique=True,
+    )
+    interval_seconds: int
+    next_run_at: datetime = Field(default_factory=datetime.now)
+
+    workflow: "Workflow" = Relationship(back_populates="schedule")
 
 
 class Execution(TimestampModel, table=True):
