@@ -500,7 +500,7 @@ export function VariableInput({
 }
 .inline-variable-editable.empty-placeholder:empty::before {
   content: attr(data-placeholder);
-  color: hsl(var(--muted-foreground) / 0.6);
+  color: hsl(var(--muted-foreground) / 0.4);
   pointer-events: none;
 }
 `,

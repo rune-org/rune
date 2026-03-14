@@ -258,7 +258,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     defaults: {
       label: "Filter",
       match_mode: "all",
-      rules: [{ field: "status", operator: "==", value: "active" }],
+      rules: [{ field: "", operator: "==", value: "" }],
     },
     schema: { inputs: ["items"], outputs: ["filtered"] },
     group: "transform",
@@ -278,7 +278,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     dimensions: { width: 220, height: 80 },
     defaults: {
       label: "Sort",
-      rules: [{ field: "created_at", direction: "desc", type: "date" }],
+      rules: [{ field: "", direction: "asc", type: "auto" }],
     },
     schema: { inputs: ["items"], outputs: ["sorted"] },
     group: "transform",

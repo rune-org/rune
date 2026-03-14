@@ -159,18 +159,19 @@ export function SortInspector({ node, updateData, isExpanded }: SortInspectorPro
                 <VariableInput
                   value={rule.field ?? ""}
                   onChange={(value) => updateRuleField(index, "field", value)}
-                  placeholder="$item.id or pick from a sample item"
+                  placeholder="e.g. created_at"
                   nodeId={node.id}
-                  multiline
                   transformSelectedPath={(path) =>
                     toListItemSelection(node.data.input_array, path)
                   }
                 />
-                <div className="text-[10px] text-muted-foreground/70">
-                  Pick a field from an example item and it will become <code>$item.field</code>. You can also type a field like <code>id</code>.
-                </div>
+                {isExpanded && (
+                  <div className="text-[10px] text-muted-foreground/70">
+                    Pick a field from an example item and it will become <code>$item.field</code>. You can also type a field like <code>id</code>.
+                  </div>
+                )}
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="grid grid-cols-[1fr_1fr] gap-2">
                 <div className="space-y-1">
                   <label className="block text-[11px] text-muted-foreground">Direction</label>
                   <Select
