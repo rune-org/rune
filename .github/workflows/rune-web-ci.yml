@@ -30,6 +30,7 @@ jobs:
           cache-dependency-path: apps/web/pnpm-lock.yaml
       - run: pnpm -C apps/web install
       - run: pnpm -C apps/web lint
+      - run: pnpm -C apps/web run format:check
 
   typecheck:
     name: Type Check

@@ -7,15 +7,11 @@
  * Adding a new section = one entry in SETTINGS_NAV + one case in renderContent().
  */
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  Settings,
-  Shield,
-  Bell,
-  Info,
-  ChevronRight,
-} from "lucide-react";
+import { useState } from "react";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Container } from "@/components/shared/Container";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Settings as SettingsIcon, Bell, Info } from "lucide-react";
 
 import { Container } from "@/components/shared/Container";
 import { SAMLConfigTab } from "@/components/admin/SAMLConfigTab";

@@ -49,8 +49,7 @@ function DraggableItem({
     (clientX: number, clientY: number) => {
       const container = containerRef.current;
       const flowEl = container?.querySelector<HTMLElement>(".react-flow");
-      const rect =
-        flowEl?.getBoundingClientRect() ?? container?.getBoundingClientRect();
+      const rect = flowEl?.getBoundingClientRect() ?? container?.getBoundingClientRect();
       if (!rect) return;
       const inside =
         clientX >= rect.left &&
@@ -93,11 +92,7 @@ function DraggableItem({
         cx = e.clientX;
         cy = e.clientY;
       }
-      if (
-        (cx == null || cy == null) &&
-        "changedTouches" in e &&
-        e.changedTouches?.[0]
-      ) {
+      if ((cx == null || cy == null) && "changedTouches" in e && e.changedTouches?.[0]) {
         cx = e.changedTouches[0].clientX;
         cy = e.changedTouches[0].clientY;
       }
@@ -212,10 +207,7 @@ function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }
   const sortedNodes = [...nodes].sort((a, b) => a.label.localeCompare(b.label));
 
   return (
-    <details
-      open
-      className="rounded-sm border border-border/60 bg-muted/20 p-2"
-    >
+    <details open className="rounded-sm border border-border/60 bg-muted/20 p-2">
       <summary className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
         <div className={`h-2 w-2 rounded-full ${colorClass}`} />
         <Icon className="h-3.5 w-3.5" />
@@ -238,7 +230,12 @@ function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }
   );
 }
 
-export function LibraryGroups({ containerRef, onAdd, shortcutsByKind, onAssignShortcut }: LibraryProps) {
+export function LibraryGroups({
+  containerRef,
+  onAdd,
+  shortcutsByKind,
+  onAssignShortcut,
+}: LibraryProps) {
   return (
     <div className="flex flex-col gap-3">
       {getAllGroups().map((group) => (

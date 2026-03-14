@@ -6,10 +6,7 @@ import type { ExecutionState } from "../types/execution";
 
 type SetEdges = (updater: Edge[] | ((prev: Edge[]) => Edge[])) => void;
 
-export function useExecutionEdgeSync(
-  executionState: ExecutionState,
-  setEdges: SetEdges
-) {
+export function useExecutionEdgeSync(executionState: ExecutionState, setEdges: SetEdges) {
   // Track which nodes have been visited (have any execution data)
   const prevVisitedNodesRef = useRef<Set<string>>(new Set());
   const prevRunningNodesRef = useRef<Set<string>>(new Set());
@@ -24,7 +21,7 @@ export function useExecutionEdgeSync(
             ...e,
             animated: false,
             style: { ...(e.style || {}), stroke: undefined },
-          }))
+          })),
         );
         prevVisitedNodesRef.current = new Set();
         prevRunningNodesRef.current = new Set();
@@ -38,7 +35,12 @@ export function useExecutionEdgeSync(
     const runningNodes = new Set<string>();
 
     nodeMap.forEach((nodeData, nodeId) => {
-      if (nodeData.status === "running" || nodeData.status === "success" || nodeData.status === "failed" || nodeData.status === "waiting") {
+      if (
+        nodeData.status === "running" ||
+        nodeData.status === "success" ||
+        nodeData.status === "failed" ||
+        nodeData.status === "waiting"
+      ) {
         visitedNodes.add(nodeId);
       }
       if (nodeData.status === "running") {
@@ -102,7 +104,7 @@ export function useExecutionEdgeSync(
           }
 
           return edge;
-        })
+        }),
       );
     }
 
@@ -120,7 +122,7 @@ export function useExecutionEdgeSync(
         edges.map((e) => ({
           ...e,
           animated: false,
-        }))
+        })),
       );
     }
   }, [executionState.status, setEdges]);

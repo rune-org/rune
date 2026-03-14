@@ -43,8 +43,7 @@ export interface UseRtesWebSocketReturn {
 }
 
 // Default RTES WebSocket URL
-const DEFAULT_RTES_URL =
-  process.env.NEXT_PUBLIC_RTES_WS_URL || "ws://localhost:3001/rt";
+const DEFAULT_RTES_URL = process.env.NEXT_PUBLIC_RTES_WS_URL || "ws://localhost:3001/rt";
 const EXECUTION_SERVICE_TOAST_ID = "execution-service-connection";
 
 // Reconnection config
@@ -74,11 +73,8 @@ const INITIAL_CONNECTION_DELAY = 500; // 500ms
  * });
  * ```
  */
-export function useRtesWebSocket(
-  options: UseRtesWebSocketOptions
-): UseRtesWebSocketReturn {
-  const { enabled, executionId, workflowId, onMessage, onStatusChange, onError } =
-    options;
+export function useRtesWebSocket(options: UseRtesWebSocketOptions): UseRtesWebSocketReturn {
+  const { enabled, executionId, workflowId, onMessage, onStatusChange, onError } = options;
 
   const [status, setStatus] = useState<WsConnectionStatus>("disconnected");
   const [lastError, setLastError] = useState<Error | null>(null);
@@ -99,14 +95,14 @@ export function useRtesWebSocket(
       setStatus(newStatus);
       onStatusChange?.(newStatus);
     },
-    [onStatusChange]
+    [onStatusChange],
   );
 
   // Calculate reconnect delay with exponential backoff
   const getReconnectDelay = useCallback(() => {
     const delay = Math.min(
       INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttemptRef.current),
-      MAX_RECONNECT_DELAY
+      MAX_RECONNECT_DELAY,
     );
     return delay;
   }, []);
@@ -231,9 +227,7 @@ export function useRtesWebSocket(
             }
           }, delay);
         } else if (totalReconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
-          showConnectionFailureToast(
-            "Could not establish connection. Live updates unavailable."
-          );
+          showConnectionFailureToast("Could not establish connection. Live updates unavailable.");
           updateStatus("error");
           setLastError(new Error("Max reconnect attempts reached"));
         } else {
@@ -243,9 +237,7 @@ export function useRtesWebSocket(
 
       wsRef.current = ws;
     } catch (error) {
-      showConnectionFailureToast(
-        "Real-time execution service disconnected."
-      );
+      showConnectionFailureToast("Real-time execution service disconnected.");
       updateStatus("error");
       setLastError(error instanceof Error ? error : new Error(String(error)));
       onError?.(error instanceof Error ? error : new Error(String(error)));

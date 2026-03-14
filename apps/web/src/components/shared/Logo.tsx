@@ -45,22 +45,14 @@ export function Logo({
 
   if (!href) {
     return (
-      <span
-        className={cn(
-          "inline-flex items-center leading-none",
-          wrapperClassName,
-        )}
-      >
+      <span className={cn("inline-flex items-center leading-none", wrapperClassName)}>
         {content}
       </span>
     );
   }
 
   return (
-    <Link
-      href={href}
-      className={cn("inline-flex items-center leading-none", wrapperClassName)}
-    >
+    <Link href={href} className={cn("inline-flex items-center leading-none", wrapperClassName)}>
       {content}
     </Link>
   );

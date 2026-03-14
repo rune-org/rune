@@ -6,10 +6,7 @@ import { Split } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { SplitData } from "../types";
 
-export const SplitNode = memo(function SplitNode({
-  id,
-  data,
-}: NodeProps<Node<SplitData>>) {
+export const SplitNode = memo(function SplitNode({ id, data }: NodeProps<Node<SplitData>>) {
   return (
     <BaseNode
       nodeId={id}

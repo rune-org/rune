@@ -31,11 +31,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   social_media: "Social Media",
 };
 
-export function ImportTemplateDialog({
-  open,
-  onOpenChange,
-  onSelect,
-}: ImportTemplateDialogProps) {
+export function ImportTemplateDialog({ open, onOpenChange, onSelect }: ImportTemplateDialogProps) {
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState<number | null>(null);
@@ -92,63 +88,52 @@ export function ImportTemplateDialog({
     {} as Record<string, TemplateSummary[]>,
   );
 
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Import from Templates</DialogTitle>
-          <DialogDescription>
-            Choose a template to import into your canvas.
-          </DialogDescription>
+          <DialogDescription>Choose a template to import into your canvas.</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-4">
           {loading ? (
-            <div className="py-8 text-center text-muted-foreground">
-              Loading templates...
-            </div>
+            <div className="py-8 text-center text-muted-foreground">Loading templates...</div>
           ) : templates.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">
-              No templates available
-            </div>
+            <div className="py-8 text-center text-muted-foreground">No templates available</div>
           ) : (
-            Object.entries(templatesByCategory).map(
-              ([category, categoryTemplates]) => (
-                <div key={category} className="flex flex-col gap-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {CATEGORY_LABELS[category] ?? category}
-                  </h3>
-                  <div className="flex flex-col gap-2">
-                    {categoryTemplates.map((template) => (
-                      <div
-                        key={template.id}
-                        className="flex items-center justify-between rounded-md border border-border/60 bg-muted/30 p-3 transition-colors hover:bg-muted/50"
-                      >
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-sm font-medium">
-                            {template.name}
+            Object.entries(templatesByCategory).map(([category, categoryTemplates]) => (
+              <div key={category} className="flex flex-col gap-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {CATEGORY_LABELS[category] ?? category}
+                </h3>
+                <div className="flex flex-col gap-2">
+                  {categoryTemplates.map((template) => (
+                    <div
+                      key={template.id}
+                      className="flex items-center justify-between rounded-md border border-border/60 bg-muted/30 p-3 transition-colors hover:bg-muted/50"
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium">{template.name}</span>
+                        {template.description && (
+                          <span className="text-xs text-muted-foreground">
+                            {template.description}
                           </span>
-                          {template.description && (
-                            <span className="text-xs text-muted-foreground">
-                              {template.description}
-                            </span>
-                          )}
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSelect(template.id)}
-                          disabled={importing !== null}
-                        >
-                          {importing === template.id ? "Loading..." : "Use"}
-                        </Button>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleSelect(template.id)}
+                        disabled={importing !== null}
+                      >
+                        {importing === template.id ? "Loading..." : "Use"}
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-              ),
-            )
+              </div>
+            ))
           )}
         </div>
       </DialogContent>

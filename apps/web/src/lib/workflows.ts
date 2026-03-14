@@ -4,10 +4,7 @@ import type {
   WorkflowNode as WorkflowNodeDSL,
   WorkflowEdge as WorkflowEdgeDSL,
 } from "@/lib/workflow-dsl";
-import {
-  canvasToWorkflowData,
-  workflowDataToCanvas,
-} from "@/lib/workflow-dsl";
+import { canvasToWorkflowData, workflowDataToCanvas } from "@/lib/workflow-dsl";
 import type { WorkflowRole } from "@/lib/permissions";
 
 /**
@@ -63,9 +60,7 @@ export const defaultWorkflowSummary: WorkflowSummary = {
   role: "owner",
 };
 
-export function listItemToWorkflowSummary(
-  item: WorkflowListItem,
-): WorkflowSummary {
+export function listItemToWorkflowSummary(item: WorkflowListItem): WorkflowSummary {
   return {
     ...defaultWorkflowSummary,
     id: String(item.id),

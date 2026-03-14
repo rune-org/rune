@@ -180,11 +180,8 @@ export function AddCredentialDialog({
     onOpenChange?.(newOpen);
   };
   const [name, setName] = useState("");
-  const [credentialType, setCredentialType] =
-    useState<CredentialType>("api_key");
-  const [credentialData, setCredentialData] = useState<Record<string, string>>(
-    {}
-  );
+  const [credentialType, setCredentialType] = useState<CredentialType>("api_key");
+  const [credentialData, setCredentialData] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset form when dialog opens in controlled mode
@@ -206,9 +203,7 @@ export function AddCredentialDialog({
       .map((f) => f.label);
 
     if (missingFields.length > 0) {
-      toast.error(
-        `Please fill in required fields: ${missingFields.join(", ")}`
-      );
+      toast.error(`Please fill in required fields: ${missingFields.join(", ")}`);
       return;
     }
 
@@ -235,7 +230,7 @@ export function AddCredentialDialog({
       setCredentialType("api_key");
       setCredentialData({});
       setOpen(false);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to create credential");
     } finally {
       setIsSubmitting(false);
@@ -266,8 +261,8 @@ export function AddCredentialDialog({
           <DialogHeader>
             <DialogTitle>Add credential</DialogTitle>
             <DialogDescription>
-              Store a new credential to use in your workflows. All sensitive
-              data is encrypted at rest.
+              Store a new credential to use in your workflows. All sensitive data is encrypted at
+              rest.
             </DialogDescription>
           </DialogHeader>
 
@@ -291,11 +286,7 @@ export function AddCredentialDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {CREDENTIAL_TYPES.map((type) => (
-                    <SelectItem
-                      key={type.value}
-                      value={type.value}
-                      className="pl-8"
-                    >
+                    <SelectItem key={type.value} value={type.value} className="pl-8">
                       {type.label}
                     </SelectItem>
                   ))}
@@ -304,17 +295,13 @@ export function AddCredentialDialog({
             </div>
 
             <div className="border-t border-border pt-4">
-              <p className="mb-3 text-sm font-medium text-foreground">
-                Credential Details
-              </p>
+              <p className="mb-3 text-sm font-medium text-foreground">Credential Details</p>
               <div className="flex flex-col gap-3">
                 {CREDENTIAL_FIELDS[credentialType].map((field) => (
                   <div key={field.key} className="flex flex-col gap-2">
                     <Label htmlFor={field.key}>
                       {field.label}
-                      {field.required && (
-                        <span className="text-destructive"> *</span>
-                      )}
+                      {field.required && <span className="text-destructive"> *</span>}
                     </Label>
                     {field.type === "textarea" ? (
                       <Textarea

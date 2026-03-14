@@ -1,21 +1,15 @@
 from fastapi import APIRouter, Depends
 
-from src.core.dependencies import DatabaseDep
 from src.core.exceptions import BadRequest
 from src.core.responses import ApiResponse
 from src.db.models import Workflow
 from src.scryb.generator import DocumentationGenerator
 from src.scryb.schemas import GenerateWorkflowDocsRequest, WorkflowDetailDocs
-from src.workflow.dependencies import get_workflow_with_permission
+from src.workflow.dependencies import get_workflow_service, get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
 from src.workflow.service import WorkflowService
 
 router = APIRouter(prefix="/scryb", tags=["Scryb"])
-
-
-def get_workflow_service(db: DatabaseDep) -> WorkflowService:
-    """Dependency to get workflow service instance."""
-    return WorkflowService(db=db)
 
 
 @router.post("/{workflow_id}", response_model=ApiResponse[WorkflowDetailDocs])

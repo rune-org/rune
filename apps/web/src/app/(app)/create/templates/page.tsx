@@ -3,21 +3,8 @@
 import Image from "next/image";
 import { useEffect, useState, Suspense } from "react";
 import { toast } from "@/components/ui/toast";
-import {
-  Card,
-  CardContent,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import {
-  Mail,
-  BarChart,
-  Code,
-  Cloud,
-  Calendar,
-  Share2,
-  FileText,
-} from "lucide-react";
+import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { Mail, BarChart, Code, Cloud, Calendar, Share2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/shared/Container";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -41,7 +28,7 @@ function TemplatesPageInner() {
         if (response.data && !response.error) {
           setTemplates(response.data.data);
         }
-      } catch (error) {
+      } catch (_error) {
         toast.error("Failed to load templates", {
           action: {
             label: "Retry",
@@ -61,13 +48,16 @@ function TemplatesPageInner() {
   };
 
   // Group templates by category
-  const templatesByCategory = templates.reduce((acc, template) => {
-    if (!acc[template.category]) {
-      acc[template.category] = [];
-    }
-    acc[template.category].push(template);
-    return acc;
-  }, {} as Record<string, TemplateSummary[]>);
+  const templatesByCategory = templates.reduce(
+    (acc, template) => {
+      if (!acc[template.category]) {
+        acc[template.category] = [];
+      }
+      acc[template.category].push(template);
+      return acc;
+    },
+    {} as Record<string, TemplateSummary[]>,
+  );
 
   // Get recently used templates (for now, just show the first one)
   const recentlyUsed = templates.length > 0 ? [templates[0]] : [];
@@ -133,13 +123,9 @@ function TemplatesPageInner() {
               >
                 <CardContent className="flex flex-col p-5">
                   <CardTitle className="mb-1 text-base font-semibold">{template.name}</CardTitle>
-                  <CardDescription className="mb-4 text-sm">
-                    {template.description}
-                  </CardDescription>
+                  <CardDescription className="mb-4 text-sm">{template.description}</CardDescription>
                   <div className="mt-auto flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      Create from template
-                    </span>
+                    <span className="text-xs text-muted-foreground">Create from template</span>
                     <Button
                       variant="outline"
                       size="sm"
@@ -153,9 +139,7 @@ function TemplatesPageInner() {
             ))}
           </div>
         ) : (
-          <div className="text-center text-muted-foreground py-8">
-            No templates found
-          </div>
+          <div className="text-center text-muted-foreground py-8">No templates found</div>
         )}
       </Container>
     );
@@ -178,7 +162,7 @@ function TemplatesPageInner() {
               onClick={() => handleUseTemplate(template.id)}
             >
               {/* TODO(fe): Use actual template icon when available */}
-              <Image src="/icons/social/email.svg" alt="template" width={20} height={20} /> 
+              <Image src="/icons/social/email.svg" alt="template" width={20} height={20} />
               <span className="text-sm">{template.name}</span>
             </div>
           ))}
@@ -194,16 +178,15 @@ function TemplatesPageInner() {
         {trendingTemplates.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {trendingTemplates.map((template) => (
-              <Card key={template.id} className="transition-colors hover:border-accent/50 hover:bg-accent/10">
+              <Card
+                key={template.id}
+                className="transition-colors hover:border-accent/50 hover:bg-accent/10"
+              >
                 <CardContent className="flex flex-col p-5">
                   <CardTitle className="mb-1 text-base font-semibold">{template.name}</CardTitle>
-                  <CardDescription className="mb-4 text-sm">
-                    {template.description}
-                  </CardDescription>
+                  <CardDescription className="mb-4 text-sm">{template.description}</CardDescription>
                   <div className="mt-auto flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      Create from template
-                    </span>
+                    <span className="text-xs text-muted-foreground">Create from template</span>
                     <Button
                       variant="outline"
                       size="sm"

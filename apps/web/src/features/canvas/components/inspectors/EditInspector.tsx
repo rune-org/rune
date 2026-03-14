@@ -20,8 +20,16 @@ type EditInspectorProps = {
 
 const TYPES = ["string", "number", "boolean", "json"] as const;
 const MODES = [
-  { value: "assignments", label: "Set fields", description: "Add or modify fields while keeping existing data" },
-  { value: "keep_only", label: "Replace all", description: "Clear existing data and only set these fields" },
+  {
+    value: "assignments",
+    label: "Set fields",
+    description: "Add or modify fields while keeping existing data",
+  },
+  {
+    value: "keep_only",
+    label: "Replace all",
+    description: "Clear existing data and only set these fields",
+  },
 ] as const;
 
 function sanitizeAssignments(data: EditData): EditAssignment[] {
@@ -29,26 +37,15 @@ function sanitizeAssignments(data: EditData): EditAssignment[] {
   return data.assignments.map((a) => ({
     name: typeof a.name === "string" ? a.name : undefined,
     value: typeof a.value === "string" ? a.value : undefined,
-    type: a.type && TYPES.includes(a.type as (typeof TYPES)[number])
-      ? a.type
-      : "string",
+    type: a.type && TYPES.includes(a.type as (typeof TYPES)[number]) ? a.type : "string",
   }));
 }
 
-export function EditInspector({
-  node,
-  updateData,
-  isExpanded,
-}: EditInspectorProps) {
-  const assignments = useMemo(
-    () => sanitizeAssignments(node.data),
-    [node.data],
-  );
+export function EditInspector({ node, updateData, isExpanded }: EditInspectorProps) {
+  const assignments = useMemo(() => sanitizeAssignments(node.data), [node.data]);
   const mode = node.data.mode ?? "assignments";
 
-  const updateAssignments = (
-    updater: (a: EditAssignment[]) => EditAssignment[],
-  ) => {
+  const updateAssignments = (updater: (a: EditAssignment[]) => EditAssignment[]) => {
     updateData(node.id, "edit", (d) => ({
       ...d,
       assignments: updater(sanitizeAssignments(d)),
@@ -60,10 +57,7 @@ export function EditInspector({
   };
 
   const addAssignment = () => {
-    updateAssignments((as) => [
-      ...as,
-      { name: "newField", value: "", type: "string" },
-    ]);
+    updateAssignments((as) => [...as, { name: "newField", value: "", type: "string" }]);
   };
 
   const removeAssignment = (idx: number) => {
@@ -81,24 +75,15 @@ export function EditInspector({
     });
   };
 
-  const updateField = (
-    idx: number,
-    field: keyof EditAssignment,
-    value: string,
-  ) => {
-    updateAssignments((as) =>
-      as.map((a, i) => (i === idx ? { ...a, [field]: value } : a)),
-    );
+  const updateField = (idx: number, field: keyof EditAssignment, value: string) => {
+    updateAssignments((as) => as.map((a, i) => (i === idx ? { ...a, [field]: value } : a)));
   };
 
   return (
     <div className="space-y-3">
       <div>
         <label className="block text-xs text-muted-foreground">Mode</label>
-        <Select
-          value={mode}
-          onValueChange={(v) => updateMode(v as EditData["mode"])}
-        >
+        <Select value={mode} onValueChange={(v) => updateMode(v as EditData["mode"])}>
           <SelectTrigger className="h-8 text-sm">
             <SelectValue />
           </SelectTrigger>
@@ -177,9 +162,7 @@ export function EditInspector({
 
             <div className="mt-3 space-y-2">
               <div>
-                <label className="block text-[11px] text-muted-foreground">
-                  Name
-                </label>
+                <label className="block text-[11px] text-muted-foreground">Name</label>
                 <input
                   className="w-full rounded-[calc(var(--radius)-0.3rem)] border border-input bg-muted/30 px-2 py-1 text-xs"
                   value={assignment.name ?? ""}
@@ -188,22 +171,16 @@ export function EditInspector({
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-muted-foreground">
-                  Value
-                </label>
+                <label className="block text-[11px] text-muted-foreground">Value</label>
                 <VariableInput
                   value={assignment.value ?? ""}
-                  onChange={(v) =>
-                    updateField(idx, "value", v)
-                  }
+                  onChange={(v) => updateField(idx, "value", v)}
                   placeholder="{{ $json.field }} or literal"
                   nodeId={node.id}
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-muted-foreground">
-                  Type
-                </label>
+                <label className="block text-[11px] text-muted-foreground">Type</label>
                 <Select
                   value={assignment.type ?? "string"}
                   onValueChange={(v) => updateField(idx, "type", v)}

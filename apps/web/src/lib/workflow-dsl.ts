@@ -43,14 +43,8 @@ export interface WorkflowEdge {
 }
 
 export class MissingNodeCredentialsError extends Error {
-  constructor(
-    public readonly nodes: Array<{ id: string; type: string }>,
-  ) {
-    super(
-      `Missing credentials for nodes: ${nodes
-        .map((n) => `${n.type} (${n.id})`)
-        .join(", ")}`,
-    );
+  constructor(public readonly nodes: Array<{ id: string; type: string }>) {
+    super(`Missing credentials for nodes: ${nodes.map((n) => `${n.type} (${n.id})`).join(", ")}`);
     this.name = "MissingNodeCredentialsError";
     Object.setPrototypeOf(this, new.target.prototype);
   }
@@ -119,18 +113,14 @@ function emailArrayToString(value: unknown): string | undefined {
 }
 
 // Build parameter objects for supported node types
-function toWorkerParameters(
-  n: CanvasNode,
-  edges: RFEdge[],
-): Record<string, unknown> {
+function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unknown> {
   switch (n.type) {
     case "http": {
       const d = (n.data || {}) as HttpData;
       const params: Record<string, unknown> = {};
       if (d.method) params.method = String(d.method).toUpperCase();
       if (d.url) params.url = String(d.url);
-      if (d.headers && typeof d.headers === "object")
-        params.headers = d.headers;
+      if (d.headers && typeof d.headers === "object") params.headers = d.headers;
       if (d.query && typeof d.query === "object") params.query = d.query;
       if (typeof d.body !== "undefined") params.body = d.body as unknown;
       if (typeof d.timeout !== "undefined") params.timeout = Number(d.timeout);
@@ -142,12 +132,10 @@ function toWorkerParameters(
       // Map labeled handles to true/false edge IDs
       const outgoing = edges.filter((e) => e.source === n.id);
       const trueEdge = outgoing.find(
-        (e) =>
-          (e as RFEdge & { sourceHandle?: string }).sourceHandle === "true",
+        (e) => (e as RFEdge & { sourceHandle?: string }).sourceHandle === "true",
       );
       const falseEdge = outgoing.find(
-        (e) =>
-          (e as RFEdge & { sourceHandle?: string }).sourceHandle === "false",
+        (e) => (e as RFEdge & { sourceHandle?: string }).sourceHandle === "false",
       );
       const params: Record<string, unknown> = {};
       if (trueEdge) params.true_edge_id = trueEdge.id;
@@ -176,9 +164,7 @@ function toWorkerParameters(
                 : "==";
             return {
               value:
-                typeof rule.value === "string" && rule.value.trim()
-                  ? rule.value.trim()
-                  : undefined,
+                typeof rule.value === "string" && rule.value.trim() ? rule.value.trim() : undefined,
               operator: safeOp,
               compare:
                 typeof rule.compare === "string" && rule.compare.trim()
@@ -192,16 +178,12 @@ function toWorkerParameters(
       const routes: Array<string | null> = Array(rules.length + 1).fill(null);
       rules.forEach((_, idx) => {
         const edge = outgoing.find(
-          (e) =>
-            (e as RFEdge & { sourceHandle?: string }).sourceHandle ===
-            switchRuleHandleId(idx),
+          (e) => (e as RFEdge & { sourceHandle?: string }).sourceHandle === switchRuleHandleId(idx),
         );
         if (edge) routes[idx] = edge.id;
       });
       const fallbackEdge = outgoing.find(
-        (e) =>
-          (e as RFEdge & { sourceHandle?: string }).sourceHandle ===
-          switchFallbackHandleId(),
+        (e) => (e as RFEdge & { sourceHandle?: string }).sourceHandle === switchFallbackHandleId(),
       );
       if (fallbackEdge) routes[rules.length] = fallbackEdge.id;
 
@@ -299,16 +281,14 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
           : typeof params.retry === "string"
             ? Number(params.retry)
             : undefined,
-      ignoreSSL:
-        typeof params.ignore_ssl === "boolean" ? params.ignore_ssl : undefined,
+      ignoreSSL: typeof params.ignore_ssl === "boolean" ? params.ignore_ssl : undefined,
     };
     return httpData;
   },
   if: (base, params) => {
     const ifData: IfData = {
       ...base,
-      expression:
-        typeof params.expression === "string" ? params.expression : undefined,
+      expression: typeof params.expression === "string" ? params.expression : undefined,
     };
     return ifData;
   },
@@ -319,14 +299,12 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
         ? (params.rules as unknown[])
             .map((rule) => rule as Record<string, unknown>)
             .map((rule) => ({
-              value:
-                typeof rule.value === "string" ? rule.value : undefined,
+              value: typeof rule.value === "string" ? rule.value : undefined,
               operator:
                 typeof rule.operator === "string"
                   ? (rule.operator as SwitchRule["operator"])
                   : undefined,
-              compare:
-                typeof rule.compare === "string" ? rule.compare : undefined,
+              compare: typeof rule.compare === "string" ? rule.compare : undefined,
             }))
         : [],
     };
@@ -339,8 +317,7 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
       to: emailArrayToString(params.to),
       cc: emailArrayToString(params.cc),
       bcc: emailArrayToString(params.bcc),
-      subject:
-        typeof params.subject === "string" ? params.subject : undefined,
+      subject: typeof params.subject === "string" ? params.subject : undefined,
       body: typeof params.body === "string" ? params.body : undefined,
     };
     return smtpData;
@@ -354,32 +331,20 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
           : typeof params.amount === "string"
             ? Number(params.amount)
             : undefined,
-      unit:
-        typeof params.unit === "string"
-          ? (params.unit as WaitData["unit"])
-          : undefined,
+      unit: typeof params.unit === "string" ? (params.unit as WaitData["unit"]) : undefined,
     };
     return waitData;
   },
   edit: (base, params) => {
     const editData: EditData = {
       ...base,
-      mode:
-        typeof params.mode === "string"
-          ? (params.mode as EditData["mode"])
-          : undefined,
+      mode: typeof params.mode === "string" ? (params.mode as EditData["mode"]) : undefined,
       assignments: Array.isArray(params.assignments)
         ? (params.assignments as unknown[]).map((a) => {
             const assignment = a as Record<string, unknown>;
             return {
-              name:
-                typeof assignment.name === "string"
-                  ? assignment.name
-                  : undefined,
-              value:
-                typeof assignment.value === "string"
-                  ? assignment.value
-                  : undefined,
+              name: typeof assignment.name === "string" ? assignment.name : undefined,
+              value: typeof assignment.value === "string" ? assignment.value : undefined,
               type:
                 typeof assignment.type === "string"
                   ? (assignment.type as "string" | "number" | "boolean" | "json")
@@ -476,19 +441,15 @@ export function canvasToWorkflowData(
 }
 
 // Convert stored workflow_data blueprint back to Canvas graph for editing
-export function workflowDataToCanvas(data: {
-  nodes?: WorkflowNode[];
-  edges?: WorkflowEdge[];
-}): { nodes: CanvasNode[]; edges: RFEdge[] } {
+export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: WorkflowEdge[] }): {
+  nodes: CanvasNode[];
+  edges: RFEdge[];
+} {
   const nodes: CanvasNode[] = (data.nodes ?? []).map((n) => {
     const [x, y] = (n.position ?? [100, 100]) as [number, number];
     // Map canonical type back to canvas palette names
     const canvasType =
-      n.type === "conditional"
-        ? "if"
-        : n.type === "ManualTrigger"
-          ? "trigger"
-          : n.type;
+      n.type === "conditional" ? "if" : n.type === "ManualTrigger" ? "trigger" : n.type;
     const credentials = n.credentials ? { ...n.credentials } : undefined;
     const baseData = {
       label: n.name,
@@ -496,8 +457,7 @@ export function workflowDataToCanvas(data: {
     } as CanvasNode["data"];
     const params = (n.parameters ?? {}) as Record<string, unknown>;
     const hydrateDataForNode =
-      nodeHydrators[canvasType as CanvasNode["type"]] ??
-      ((existing) => existing);
+      nodeHydrators[canvasType as CanvasNode["type"]] ?? ((existing) => existing);
     const dataForNode = hydrateDataForNode(baseData, params);
     return {
       id: n.id,
@@ -520,8 +480,7 @@ export function workflowDataToCanvas(data: {
     const isTrueFalse = e.label === "true" || e.label === "false";
     if (isTrueFalse || switchHandleId) {
       const isTrue = e.label === "true";
-      (edge as RFEdge & { sourceHandle?: string }).sourceHandle =
-        switchHandleId || e.label;
+      (edge as RFEdge & { sourceHandle?: string }).sourceHandle = switchHandleId || e.label;
       (edge as RFEdge & { labelStyle?: CSSProperties }).labelStyle = {
         fill: "white",
         fontWeight: 600,
@@ -537,14 +496,10 @@ export function workflowDataToCanvas(data: {
       (edge as RFEdge & { labelBgStyle?: CSSProperties }).labelBgStyle = {
         fill: bgFill,
       };
-      (edge as RFEdge & { labelBgPadding?: [number, number] }).labelBgPadding = [
-        2,
-        6,
-      ];
+      (edge as RFEdge & { labelBgPadding?: [number, number] }).labelBgPadding = [2, 6];
       (edge as RFEdge & { labelBgBorderRadius?: number }).labelBgBorderRadius = 4;
 
-      const readableLabel =
-        switchHandleLabelFromId(switchHandleId || e.label) || e.label;
+      const readableLabel = switchHandleLabelFromId(switchHandleId || e.label) || e.label;
       (edge as RFEdge & { label?: string }).label = readableLabel;
     }
 
@@ -572,7 +527,6 @@ export function stripCredentialsFromWorkflowData(workflowData: {
     return { nodes: [], edges };
   }
   const sanitizedNodes = nodes.map((node) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- intentionally omit credentials
     const { credentials: _omit, ...rest } = node;
     return rest;
   });

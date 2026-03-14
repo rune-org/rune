@@ -23,10 +23,7 @@ import {
 import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/lib/auth";
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,28 +67,19 @@ const topNav: NavItem[] = [
   { title: "Docs", href: "/create/docs", icon: BookOpen },
 ];
 
-const bottomNav: NavItem[] = [
-  { title: "Home", href: "/", icon: Home, exact: true },
-];
+const bottomNav: NavItem[] = [{ title: "Home", href: "/", icon: Home, exact: true }];
 
 function isItemActive(pathname: string, item: NavItem) {
   const normalizedPath =
-    pathname.endsWith("/") && pathname.length > 1
-      ? pathname.slice(0, -1)
-      : pathname;
+    pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
   const normalizedHref =
-    item.href.endsWith("/") && item.href.length > 1
-      ? item.href.slice(0, -1)
-      : item.href;
+    item.href.endsWith("/") && item.href.length > 1 ? item.href.slice(0, -1) : item.href;
 
   if (item.exact) {
     return normalizedPath === normalizedHref;
   }
 
-  return (
-    normalizedPath === normalizedHref ||
-    normalizedPath.startsWith(`${normalizedHref}/`)
-  );
+  return normalizedPath === normalizedHref || normalizedPath.startsWith(`${normalizedHref}/`);
 }
 
 function NavLink({
@@ -122,10 +110,7 @@ function NavLink({
           : "hover:border-border/70 hover:bg-muted/40 hover:text-foreground",
       )}
     >
-      <span
-        aria-hidden={true}
-        className="flex h-5 w-5 items-center justify-center text-inherit"
-      >
+      <span aria-hidden={true} className="flex h-5 w-5 items-center justify-center text-inherit">
         {content}
       </span>
       <span
@@ -243,7 +228,7 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { state } = useAuth();                  
+  const { state } = useAuth();
   const user = state.user;
   const isAdmin = user?.role === "admin";
 
@@ -273,7 +258,6 @@ export function AppSidebar() {
       )}
     >
       <div className="flex h-full flex-col justify-between py-6">
-        
         {/* Top section */}
         <div className="flex flex-col gap-4">
           <div
@@ -302,20 +286,13 @@ export function AppSidebar() {
               ) : (
                 <ChevronsRight className="h-5 w-5" aria-hidden={true} />
               )}
-              <span className="sr-only">
-                {isExpanded ? "Collapse" : "Expand"}
-              </span>
+              <span className="sr-only">{isExpanded ? "Collapse" : "Expand"}</span>
             </button>
           </div>
 
           <nav className="flex flex-col items-stretch gap-3 px-2">
             {topNav.map((item) => (
-              <NavLink
-                key={item.title}
-                item={item}
-                pathname={pathname}
-                isExpanded={isExpanded}
-              />
+              <NavLink key={item.title} item={item} pathname={pathname} isExpanded={isExpanded} />
             ))}
           </nav>
         </div>
@@ -324,12 +301,7 @@ export function AppSidebar() {
         <div className="flex flex-col items-stretch gap-3 px-2">
           <nav className="flex flex-col items-stretch gap-3">
             {bottomNav.map((item) => (
-              <NavLink
-                key={item.title}
-                item={item}
-                pathname={pathname}
-                isExpanded={isExpanded}
-              />
+              <NavLink key={item.title} item={item} pathname={pathname} isExpanded={isExpanded} />
             ))}
 
             {/* ADMIN-ONLY navigation links */}

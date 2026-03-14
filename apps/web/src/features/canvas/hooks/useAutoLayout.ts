@@ -5,9 +5,7 @@ import type { Edge } from "@xyflow/react";
 import type { CanvasNode } from "../types";
 import { applyAutoLayout } from "../lib/autoLayout";
 
-type SetNodes = (
-  updater: (nodes: CanvasNode[]) => CanvasNode[] | CanvasNode[],
-) => void;
+type SetNodes = (updater: (nodes: CanvasNode[]) => CanvasNode[] | CanvasNode[]) => void;
 
 type SetEdges = (updater: (edges: Edge[]) => Edge[] | Edge[]) => void;
 
