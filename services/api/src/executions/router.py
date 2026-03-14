@@ -1,28 +1,15 @@
 from fastapi import APIRouter, Depends
 
-from src.core.config import get_settings
-from src.core.dependencies import DatabaseDep, require_password_changed
+from src.core.dependencies import require_password_changed
 from src.core.responses import ApiResponse
 from src.db.models import User, Workflow
+from src.executions.dependencies import get_execution_service, get_token_service
 from src.executions.schemas import ExecutionListItem
 from src.executions.service import ExecutionService, ExecutionTokenService
-from src.queue.rabbitmq import get_rabbitmq
 from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
 
 router = APIRouter(prefix="/executions", tags=["Executions"])
-
-
-def get_token_service(connection=Depends(get_rabbitmq)) -> ExecutionTokenService:
-    """Dependency to get execution token service instance."""
-    return ExecutionTokenService(
-        connection=connection, queue_name=get_settings().rabbitmq_token_queue
-    )
-
-
-def get_execution_service(db: DatabaseDep) -> ExecutionService:
-    """Dependency to get execution service instance."""
-    return ExecutionService(db=db)
 
 
 @router.get("/", response_model=ApiResponse[list[ExecutionListItem]])

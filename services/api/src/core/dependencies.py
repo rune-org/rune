@@ -31,7 +31,7 @@ Usage:
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 
-async def get_current_user(
+def get_current_user(
     request: Request,
     token: str | None = Depends(oauth2_scheme),
 ) -> User:
