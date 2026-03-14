@@ -222,7 +222,7 @@ archivist-dev:
 
 scheduler-dev:
 	@echo "Starting scheduler in development mode..."
-	cd services/scheduler && uv run python main.py
+	cd services/scheduler && uv run python -m src.main
 
 # ======================
 # Build targets
