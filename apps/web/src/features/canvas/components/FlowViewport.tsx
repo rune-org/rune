@@ -37,15 +37,9 @@ type FlowViewportProps = {
   onConnect: OnConnect;
   isValidConnection: IsValidConnection;
   onSelectionChange: (params: OnSelectionChangeParams) => void;
-  onNodeDoubleClick: NonNullable<
-    ReactFlowProps<CanvasNode, Edge>["onNodeDoubleClick"]
-  >;
-  onNodeDragStart: NonNullable<
-    ReactFlowProps<CanvasNode, Edge>["onNodeDragStart"]
-  >;
-  onNodeDragStop: NonNullable<
-    ReactFlowProps<CanvasNode, Edge>["onNodeDragStop"]
-  >;
+  onNodeDoubleClick: NonNullable<ReactFlowProps<CanvasNode, Edge>["onNodeDoubleClick"]>;
+  onNodeDragStart: NonNullable<ReactFlowProps<CanvasNode, Edge>["onNodeDragStart"]>;
+  onNodeDragStop: NonNullable<ReactFlowProps<CanvasNode, Edge>["onNodeDragStop"]>;
   onInit: (instance: ReactFlowInstance<CanvasNode, Edge>) => void;
   onPaneClick: () => void;
   readOnly?: boolean;

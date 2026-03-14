@@ -31,17 +31,14 @@ export const listUsers = () => getAllUsersUsersGet();
 
 export const listUsersForSharing = () => listUsersForSharingUsersDirectoryGet();
 
-export const getUserById = (user_id: number) =>
-  getUserByIdUsersUserIdGet({ path: { user_id } });
+export const getUserById = (user_id: number) => getUserByIdUsersUserIdGet({ path: { user_id } });
 
-export const createUser = (payload: UserCreate) =>
-  createUserUsersPost({ body: payload });
+export const createUser = (payload: UserCreate) => createUserUsersPost({ body: payload });
 
 export const updateUser = (user_id: number, payload: AdminUserUpdate) =>
   updateUserUsersUserIdPut({ path: { user_id }, body: payload });
 
-export const deleteUser = (user_id: number) =>
-  deleteUserUsersUserIdDelete({ path: { user_id } });
+export const deleteUser = (user_id: number) => deleteUserUsersUserIdDelete({ path: { user_id } });
 
 export const setUserStatus = (user_id: number, payload: UserStatusUpdate) =>
   setUserStatusUsersUserIdStatusPatch({ path: { user_id }, body: payload });

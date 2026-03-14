@@ -81,11 +81,16 @@
 
 /* Subtle pulse animation for running nodes */
 @keyframes pulse-subtle {
-  0%, 100% {
-    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2), 0 2px 4px -2px rgba(59, 130, 246, 0.1);
+  0%,
+  100% {
+    box-shadow:
+      0 4px 6px -1px rgba(59, 130, 246, 0.2),
+      0 2px 4px -2px rgba(59, 130, 246, 0.1);
   }
   50% {
-    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3), 0 4px 6px -4px rgba(59, 130, 246, 0.2);
+    box-shadow:
+      0 10px 15px -3px rgba(59, 130, 246, 0.3),
+      0 4px 6px -4px rgba(59, 130, 246, 0.2);
   }
 }
 
@@ -102,7 +107,9 @@
 /* Success state */
 .rune-node.success {
   border-color: rgb(34 197 94) !important; /* green-500 */
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 /* Waiting state */
@@ -112,9 +119,23 @@
 
 /* Failed state with shake animation */
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-  20%, 40%, 60%, 80% { transform: translateX(2px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(2px);
+  }
 }
 
 .rune-node.failed {
@@ -141,5 +162,7 @@
 .react-flow__edge-path.active {
   stroke: var(--ring);
   stroke-width: 3px;
-  transition: stroke 0.3s, stroke-width 0.3s;
+  transition:
+    stroke 0.3s,
+    stroke-width 0.3s;
 }

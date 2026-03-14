@@ -17,19 +17,12 @@ interface MetricCardProps {
   className?: string;
 }
 
-function MetricCard({
-  title,
-  value,
-  subtitle,
-  icon,
-  trend,
-  className,
-}: MetricCardProps) {
+function MetricCard({ title, value, subtitle, icon, trend, className }: MetricCardProps) {
   return (
     <div
       className={cn(
         "rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/30",
-        className
+        className,
       )}
     >
       <div className="flex items-start justify-between">
@@ -38,19 +31,15 @@ function MetricCard({
       </div>
       <div className="mt-3">
         <div className="text-2xl font-semibold text-foreground">{value}</div>
-        {subtitle && (
-          <div className="mt-1 text-xs text-muted-foreground">{subtitle}</div>
-        )}
+        {subtitle && <div className="mt-1 text-xs text-muted-foreground">{subtitle}</div>}
         {trend && (
           <div
             className={cn(
               "mt-2 flex items-center gap-1 text-xs font-medium",
-              trend.isPositive ? "text-green-600" : "text-red-600"
+              trend.isPositive ? "text-green-600" : "text-red-600",
             )}
           >
-            <TrendingUp
-              className={cn("h-3 w-3", !trend.isPositive && "rotate-180")}
-            />
+            <TrendingUp className={cn("h-3 w-3", !trend.isPositive && "rotate-180")} />
             {trend.value}%
           </div>
         )}
@@ -90,17 +79,11 @@ function SuccessRateRing({ rate }: { rate: number }) {
           strokeLinecap="round"
           className={cn(
             "transition-all duration-700",
-            rate >= 80
-              ? "text-green-500"
-              : rate >= 50
-                ? "text-yellow-500"
-                : "text-red-500"
+            rate >= 80 ? "text-green-500" : rate >= 50 ? "text-yellow-500" : "text-red-500",
           )}
         />
       </svg>
-      <div className="absolute text-lg font-semibold text-foreground">
-        {Math.round(rate)}%
-      </div>
+      <div className="absolute text-lg font-semibold text-foreground">{Math.round(rate)}%</div>
     </div>
   );
 }
@@ -126,9 +109,7 @@ export function MetricsCards({ metrics }: MetricsCardsProps) {
 
       <div className="rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/30">
         <div className="flex items-start justify-between">
-          <div className="text-sm font-medium text-muted-foreground">
-            Success Rate
-          </div>
+          <div className="text-sm font-medium text-muted-foreground">Success Rate</div>
         </div>
         <div className="mt-2 flex items-center justify-center">
           <SuccessRateRing rate={metrics.successRate} />

@@ -41,7 +41,7 @@ export const BaseNode = memo(function BaseNode({
         "rune-node relative w-[220px] rounded-[var(--radius)] border-2 p-3 text-sm text-foreground shadow-sm transition-[border-color,box-shadow,background-color] duration-200",
         bgClassName,
         executionStatus !== "idle" && executionStatus,
-        executionStatus === "running" && "animate-pulse-subtle"
+        executionStatus === "running" && "animate-pulse-subtle",
       )}
       style={borderStyle}
     >

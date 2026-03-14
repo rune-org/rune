@@ -6,10 +6,7 @@ import { Clock } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { WaitData } from "../types";
 
-export const WaitNode = memo(function WaitNode({
-  id,
-  data,
-}: NodeProps<Node<WaitData>>) {
+export const WaitNode = memo(function WaitNode({ id, data }: NodeProps<Node<WaitData>>) {
   const amount = data.amount ?? 1;
   const unit = data.unit ?? "seconds";
 

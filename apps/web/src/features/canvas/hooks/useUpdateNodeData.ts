@@ -3,9 +3,7 @@
 import { useCallback } from "react";
 import type { CanvasNode, NodeDataMap, NodeKind } from "../types";
 
-type SetNodes = (
-  updater: (nodes: CanvasNode[]) => CanvasNode[] | CanvasNode[],
-) => void;
+type SetNodes = (updater: (nodes: CanvasNode[]) => CanvasNode[] | CanvasNode[]) => void;
 
 export function useUpdateNodeData(setNodes: SetNodes) {
   return useCallback(

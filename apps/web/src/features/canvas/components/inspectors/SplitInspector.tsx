@@ -9,11 +9,7 @@ type SplitInspectorProps = {
   isExpanded: boolean;
 };
 
-export function SplitInspector({
-  node,
-  updateData,
-  isExpanded,
-}: SplitInspectorProps) {
+export function SplitInspector({ node, updateData, isExpanded }: SplitInspectorProps) {
   const updateSplitData = (updater: (data: SplitData) => SplitData) => {
     updateData(node.id, "split", updater);
   };
@@ -23,20 +19,15 @@ export function SplitInspector({
       <label className="block text-xs text-muted-foreground">Array Field</label>
       <VariableInput
         value={node.data.array_field ?? ""}
-        onChange={(v) =>
-          updateSplitData((d) => ({ ...d, array_field: v }))
-        }
+        onChange={(v) => updateSplitData((d) => ({ ...d, array_field: v }))}
         placeholder="$json.items"
         nodeId={node.id}
       />
-      <div className="text-xs text-muted-foreground">
-        Path to the array field to iterate over.
-      </div>
+      <div className="text-xs text-muted-foreground">Path to the array field to iterate over.</div>
       {isExpanded && (
         <div className="rounded-[calc(var(--radius)-0.25rem)] border border-border/40 bg-muted/20 p-2 text-xs text-muted-foreground/70">
-          The Split node takes an array and creates a separate execution branch
-          for each item. Use with an Aggregator node to collect results back
-          together.
+          The Split node takes an array and creates a separate execution branch for each item. Use
+          with an Aggregator node to collect results back together.
         </div>
       )}
     </div>

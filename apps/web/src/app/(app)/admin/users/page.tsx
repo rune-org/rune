@@ -20,15 +20,8 @@ export default function UsersPage() {
   const { state } = useAuth();
   const currentUser = state.user;
 
-  const {
-    users,
-    loading,
-    fetchUsers,
-    createUser,
-    updateUser,
-    deleteUser,
-    toggleUserStatus,
-  } = useUserManagement();
+  const { users, loading, fetchUsers, createUser, updateUser, deleteUser, toggleUserStatus } =
+    useUserManagement();
 
   // Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,9 +54,7 @@ export default function UsersPage() {
   }, [currentUser, router]);
 
   if (!currentUser) {
-    return (
-      <div className="p-8 text-sm text-muted-foreground">Loading user...</div>
-    );
+    return <div className="p-8 text-sm text-muted-foreground">Loading user...</div>;
   }
   if (currentUser.role !== "admin") {
     return null;
@@ -139,9 +130,7 @@ export default function UsersPage() {
 
   // Filtered users for table
   const filteredUsers = users.filter((u) =>
-    `${u.name ?? ""} ${u.email ?? ""}`
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase()),
+    `${u.name ?? ""} ${u.email ?? ""}`.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -184,10 +173,7 @@ export default function UsersPage() {
           <tbody>
             {filteredUsers.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="py-6 text-center text-sm text-muted-foreground"
-                >
+                <td colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
                   {loading ? "Loading users..." : "No users found."}
                 </td>
               </tr>
@@ -241,9 +227,7 @@ export default function UsersPage() {
                         <Button
                           variant="outline"
                           className="p-2"
-                          onClick={() =>
-                            toggleUserStatus(Number(u.id), !u.is_active)
-                          }
+                          onClick={() => toggleUserStatus(Number(u.id), !u.is_active)}
                           title={u.is_active ? "Deactivate" : "Activate"}
                         >
                           {u.is_active ? (
@@ -309,8 +293,8 @@ export default function UsersPage() {
         title="Delete user"
         description={
           <>
-            Are you sure you want to permanently delete{" "}
-            <strong>{deletingUser?.email}</strong>? This cannot be undone.
+            Are you sure you want to permanently delete <strong>{deletingUser?.email}</strong>? This
+            cannot be undone.
           </>
         }
         cancelText="Cancel"

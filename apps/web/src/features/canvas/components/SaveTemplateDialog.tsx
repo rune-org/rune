@@ -42,11 +42,7 @@ const CATEGORIES = [
   { value: "social_media", label: "Social Media" },
 ];
 
-export function SaveTemplateDialog({
-  open,
-  onOpenChange,
-  workflowData,
-}: SaveTemplateDialogProps) {
+export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTemplateDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("general");
@@ -63,7 +59,7 @@ export function SaveTemplateDialog({
     try {
       // Strip credentials from workflow data before saving to prevent sensitive data from being exported
       const sanitizedWorkflowData = stripCredentials(workflowData);
-      
+
       const response = await createTemplate({
         name: name.trim(),
         description: description.trim(),
@@ -96,9 +92,7 @@ export function SaveTemplateDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Save as Template</DialogTitle>
-          <DialogDescription>
-            Save your current workflow as a reusable template.
-          </DialogDescription>
+          <DialogDescription>Save your current workflow as a reusable template.</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-4">
@@ -154,11 +148,7 @@ export function SaveTemplateDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={saving}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving}>

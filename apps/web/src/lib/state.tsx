@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useReducer,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useMemo, useReducer, type ReactNode } from "react";
 
 import { auth, workflows as workflowsApi } from "@/lib/api";
 import type { UserResponse } from "@/client/types.gen";
@@ -107,7 +100,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const userData = profileRes.data.data;
       dispatch({ type: "setUser", user: toUserProfile(userData) });
       const workflowItems = workflowsRes.data.data ?? [];
-      
+
       dispatch({
         type: "setWorkflows",
         workflows: workflowItems.map((item) => listItemToWorkflowSummary(item)),
@@ -125,7 +118,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         throw new Error("Unable to load workflows");
       }
       const items = res.data.data ?? [];
-      
+
       dispatch({
         type: "setWorkflows",
         workflows: items.map((item) => listItemToWorkflowSummary(item)),

@@ -9,9 +9,7 @@ type CanvasShortcutsProps = {
   edges: Edge[];
   readOnly?: boolean;
   selectedNodeId: string | null;
-  setNodes: (
-    updater: (nodes: CanvasNode[]) => CanvasNode[] | CanvasNode[],
-  ) => void;
+  setNodes: (updater: (nodes: CanvasNode[]) => CanvasNode[] | CanvasNode[]) => void;
   setEdges: (updater: (edges: Edge[]) => Edge[] | Edge[]) => void;
   onSave: () => void;
   onSaveWithMessage?: () => void;
@@ -70,18 +68,10 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
           return;
         }
 
-        const selectedNodeIds = new Set(
-          nodes.filter((n) => n.selected).map((n) => n.id),
-        );
-        const selectedEdgeIds = new Set(
-          edges.filter((e) => e.selected).map((e) => e.id),
-        );
+        const selectedNodeIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
+        const selectedEdgeIds = new Set(edges.filter((e) => e.selected).map((e) => e.id));
 
-        if (
-          selectedNodeIds.size === 0 &&
-          selectedEdgeIds.size === 0 &&
-          selectedNodeId
-        ) {
+        if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0 && selectedNodeId) {
           selectedNodeIds.add(selectedNodeId);
         }
 
@@ -159,8 +149,7 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
 
       if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
         if (e.repeat) return;
-        const inCanvasContext =
-          target === document.body || !!target?.closest(".react-flow");
+        const inCanvasContext = target === document.body || !!target?.closest(".react-flow");
         if (!inCanvasContext) return;
 
         const key = e.key.toLowerCase();

@@ -53,7 +53,7 @@ export function ShareWorkflowDialog({
   const [userToRevoke, setUserToRevoke] = useState<{ id: number; name: string } | null>(null);
 
   // Check if selected user is an admin
-  const selectedUser = availableUsers.find(u => u.id === parseInt(selectedUserId || "0"));
+  const selectedUser = availableUsers.find((u) => u.id === parseInt(selectedUserId || "0"));
   const isSelectedUserAdmin = selectedUser?.role === "admin";
 
   // Load permissions and available users when dialog opens
@@ -62,6 +62,7 @@ export function ShareWorkflowDialog({
       void loadPermissions();
       void loadAvailableUsers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, workflowId]);
 
   const loadPermissions = async () => {
@@ -70,9 +71,7 @@ export function ShareWorkflowDialog({
       const perms = await listWorkflowPermissions(workflowId);
       setPermissions(perms);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load permissions"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to load permissions");
     } finally {
       setLoading(false);
     }
@@ -83,9 +82,7 @@ export function ShareWorkflowDialog({
       const response = await listUsersForSharingUsersDirectoryGet();
       setAvailableUsers(response.data?.data ?? []);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load users"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to load users");
     }
   };
 
@@ -105,9 +102,7 @@ export function ShareWorkflowDialog({
       setSelectedRole("viewer");
       await loadPermissions();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to share workflow"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to share workflow");
     } finally {
       setLoading(false);
     }
@@ -121,9 +116,7 @@ export function ShareWorkflowDialog({
       await loadPermissions();
       return true;
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to revoke access"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to revoke access");
       return false;
     } finally {
       setLoading(false);
@@ -138,9 +131,7 @@ export function ShareWorkflowDialog({
       toast.success(`User role changed to ${newRole}`);
       await loadPermissions();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update role"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to update role");
     } finally {
       setLoading(false);
     }
@@ -165,11 +156,7 @@ export function ShareWorkflowDialog({
                 <Label htmlFor="user-select" className="sr-only">
                   Select User
                 </Label>
-                <Select
-                  value={selectedUserId}
-                  onValueChange={setSelectedUserId}
-                  disabled={loading}
-                >
+                <Select value={selectedUserId} onValueChange={setSelectedUserId} disabled={loading}>
                   <SelectTrigger id="user-select">
                     <SelectValue placeholder="Select a user..." />
                   </SelectTrigger>
@@ -205,7 +192,8 @@ export function ShareWorkflowDialog({
             </div>
             {isSelectedUserAdmin && (
               <p className="text-xs text-blue-400">
-                Note: Admin users automatically have full privileges (editor access) on all workflows.
+                Note: Admin users automatically have full privileges (editor access) on all
+                workflows.
               </p>
             )}
             {!isSelectedUserAdmin && (
@@ -220,9 +208,7 @@ export function ShareWorkflowDialog({
           <div className="space-y-4">
             <h3 className="text-sm font-medium">People with Access</h3>
             {loading && permissions.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">
-                Loading...
-              </div>
+              <div className="text-sm text-muted-foreground py-8 text-center">Loading...</div>
             ) : permissions.length === 0 ? (
               <div className="text-sm text-muted-foreground py-8 text-center">
                 No shared access yet
@@ -231,9 +217,9 @@ export function ShareWorkflowDialog({
               <div className="space-y-2">
                 {permissions.map((perm) => {
                   // Check if this shared user is an admin
-                  const sharedUser = availableUsers.find(u => u.id === perm.user_id);
+                  const sharedUser = availableUsers.find((u) => u.id === perm.user_id);
                   const isSharedUserAdmin = sharedUser?.role === "admin";
-                  
+
                   return (
                     <div
                       key={perm.user_id}
@@ -241,9 +227,7 @@ export function ShareWorkflowDialog({
                     >
                       <div className="flex-1">
                         <div className="font-medium text-sm">{perm.user_name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {perm.user_email}
-                        </div>
+                        <div className="text-xs text-muted-foreground">{perm.user_email}</div>
                       </div>
                       <div className="flex items-center gap-2">
                         {perm.role === "owner" ? (
@@ -275,7 +259,9 @@ export function ShareWorkflowDialog({
                               variant="ghost"
                               size="sm"
                               className="h-8"
-                              onClick={() => setUserToRevoke({ id: perm.user_id, name: perm.user_name })}
+                              onClick={() =>
+                                setUserToRevoke({ id: perm.user_id, name: perm.user_name })
+                              }
                               disabled={loading}
                             >
                               <X className="h-4 w-4 mr-1" />
@@ -301,8 +287,8 @@ export function ShareWorkflowDialog({
         title="Remove Access"
         description={
           <>
-            Are you sure you want to remove <strong>{userToRevoke?.name}</strong>&apos;s access to this workflow?
-            They will no longer be able to view or edit it.
+            Are you sure you want to remove <strong>{userToRevoke?.name}</strong>&apos;s access to
+            this workflow? They will no longer be able to view or edit it.
           </>
         }
         confirmText="Remove Access"

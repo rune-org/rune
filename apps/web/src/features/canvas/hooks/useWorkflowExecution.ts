@@ -48,7 +48,7 @@ export interface UseWorkflowExecutionReturn {
  * ```
  */
 export function useWorkflowExecution(
-  options: UseWorkflowExecutionOptions
+  options: UseWorkflowExecutionOptions,
 ): UseWorkflowExecutionReturn {
   const { workflowId } = options;
 
@@ -61,7 +61,11 @@ export function useWorkflowExecution(
   const isMountedRef = useRef(true);
 
   // WebSocket connection - disabled when viewing historical executions
-  const { status: wsStatus, reconnectAttempts: wsReconnectAttempts, disconnect } = useRtesWebSocket({
+  const {
+    status: wsStatus,
+    reconnectAttempts: wsReconnectAttempts,
+    disconnect,
+  } = useRtesWebSocket({
     enabled: wsEnabled && !state.isHistorical,
     executionId: state.executionId,
     workflowId,
@@ -69,7 +73,7 @@ export function useWorkflowExecution(
       (data: RtesNodeUpdate) => {
         dispatch({ type: "NODE_UPDATE", payload: data });
       },
-      [dispatch]
+      [dispatch],
     ),
     onError: useCallback((err: Event | Error) => {
       const errorMsg = err instanceof Error ? err.message : "WebSocket error";
@@ -89,63 +93,65 @@ export function useWorkflowExecution(
   /**
    * Start a new workflow execution.
    */
-  const startExecution = useCallback(async (versionId?: number) => {
-    if (!workflowId) {
-      setError("No workflow ID provided");
-      return;
-    }
-
-    if (state.status === "running") {
-      console.warn("[Execution] Already running");
-      return;
-    }
-
-    setIsStarting(true);
-    setError(null);
-
-    try {
-      // Call the /run endpoint
-      const response = await runWorkflow(workflowId, versionId);
-
-      if (!isMountedRef.current) return;
-
-      if (response.error) {
-        const errorMsg =
-          typeof response.error === "object" && "detail" in response.error
-            ? String((response.error as { detail: unknown }).detail)
-            : "Failed to start execution";
-        throw new Error(errorMsg);
+  const startExecution = useCallback(
+    async (versionId?: number) => {
+      if (!workflowId) {
+        setError("No workflow ID provided");
+        return;
       }
 
-      // Extract execution_id from response
-      const executionId = response.data?.data;
-      if (!executionId) {
-        throw new Error("No execution ID returned from API");
+      if (state.status === "running") {
+        console.warn("[Execution] Already running");
+        return;
       }
 
+      setIsStarting(true);
+      setError(null);
 
-      // Dispatch start action
-      dispatch({
-        type: "START_EXECUTION",
-        executionId,
-        workflowId,
-      });
+      try {
+        // Call the /run endpoint
+        const response = await runWorkflow(workflowId, versionId);
 
-      // Enable WebSocket connection
-      setWsEnabled(true);
-    } catch (err) {
-      if (!isMountedRef.current) return;
+        if (!isMountedRef.current) return;
 
-      const errorMsg = err instanceof Error ? err.message : "Failed to start execution";
-      setError(errorMsg);
-      toast.error(errorMsg);
-      dispatch({ type: "SET_ERROR", error: errorMsg });
-    } finally {
-      if (isMountedRef.current) {
-        setIsStarting(false);
+        if (response.error) {
+          const errorMsg =
+            typeof response.error === "object" && "detail" in response.error
+              ? String((response.error as { detail: unknown }).detail)
+              : "Failed to start execution";
+          throw new Error(errorMsg);
+        }
+
+        // Extract execution_id from response
+        const executionId = response.data?.data;
+        if (!executionId) {
+          throw new Error("No execution ID returned from API");
+        }
+
+        // Dispatch start action
+        dispatch({
+          type: "START_EXECUTION",
+          executionId,
+          workflowId,
+        });
+
+        // Enable WebSocket connection
+        setWsEnabled(true);
+      } catch (err) {
+        if (!isMountedRef.current) return;
+
+        const errorMsg = err instanceof Error ? err.message : "Failed to start execution";
+        setError(errorMsg);
+        toast.error(errorMsg);
+        dispatch({ type: "SET_ERROR", error: errorMsg });
+      } finally {
+        if (isMountedRef.current) {
+          setIsStarting(false);
+        }
       }
-    }
-  }, [workflowId, state.status, dispatch]);
+    },
+    [workflowId, state.status, dispatch],
+  );
 
   /**
    * Stop the current execution.
