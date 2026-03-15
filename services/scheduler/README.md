@@ -33,12 +33,7 @@ The scheduler is included in the root `docker-compose.yml` and starts automatica
 | `POSTGRES_DB` | `rune_db` | Database name |
 | `POSTGRES_USER` | `rune` | Database user |
 | `POSTGRES_PASSWORD` | `rune_password` | Database password |
-| `RABBITMQ_HOST` | `localhost` | RabbitMQ host |
-| `RABBITMQ_PORT` | `5672` | RabbitMQ port |
-| `RABBITMQ_USER` | `rune` | RabbitMQ user |
-| `RABBITMQ_PASSWORD` | `rune_password` | RabbitMQ password |
-| `RABBITMQ_QUEUE` | `workflow.execution` | Queue name |
-| `ENCRYPTION_KEY` | — | Fernet key for credential decryption (must match API) |
+| `API_BASE_URL` | `http://localhost:8000` | Deployment Backend master url |
+| `INTERNAL_API_KEY` | `Key` | Used for internal authantication between services |
 | `SCHEDULER_POLL_INTERVAL` | `30` | Poll interval in seconds |
-| `SCHEDULER_LOOK_AHEAD` | `60` | Look-ahead window in seconds |
 | `LOG_LEVEL` | `INFO` | Logging level |
