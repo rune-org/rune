@@ -1,0 +1,160 @@
+# Installation
+
+Get Rune up and running on your local machine or server.
+
+## Prerequisites
+
+Before installing Rune, ensure you have:
+
+- **Docker** (version 20.10 or higher) and **Docker Compose** (v2+)
+- **Git** (for cloning the repository)
+- At least **4 GB of available RAM** (multiple services run concurrently)
+
+## Quick Install with Docker Compose
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/rune.git
+cd rune
+
+# Start all services
+docker compose up -d
+```
+
+This starts the full platform:
+
+| Service | URL / Port | Description |
+|---------|-----------|-------------|
+| **Frontend** | [http://localhost:3000](http://localhost:3000) | Web UI — workflow builder, dashboard, docs |
+| **API** | [http://localhost:8000](http://localhost:8000) | FastAPI REST API |
+| **RTES** | `ws://localhost:8080/rt` | Real-time execution WebSocket |
+| **PostgreSQL** | Port 5432 | Primary data store |
+| **Redis** | Port 6379 | Token store, caching, worker state |
+| **RabbitMQ** | Port 5672 (AMQP) / 15672 (management UI) | Message queue |
+| **MongoDB** | Port 27017 | Execution history persistence |
+| **OpenObserve** | [http://localhost:5080](http://localhost:5080) | Observability dashboard |
+
+## First-Time Setup
+
+When you first open the Rune UI, the platform detects that no users exist and presents the **first-time admin setup** screen.
+
+1. Open [http://localhost:3000](http://localhost:3000)
+2. Fill in your **name**, **email**, and **password**
+3. Click **Create Admin Account**
+
+This creates the first admin user. The first-time setup endpoint is automatically disabled once a user exists — it cannot be exploited later.
+
+### Password Requirements
+
+Passwords must meet all of these criteria:
+- At least **8 characters**
+- At least one **uppercase** letter (A-Z)
+- At least one **lowercase** letter (a-z)
+- At least one **digit** (0-9)
+- At least one **special character** (`!@#$%^&*(),.?":{}|<>`)
+
+## Environment Configuration
+
+The platform reads environment variables from a `.env` file at the project root. Key settings:
+
+```bash
+# Database
+POSTGRES_USER=rune
+POSTGRES_PASSWORD=rune_password
+POSTGRES_DB=rune_db
+
+# JWT Authentication
+JWT_SECRET_KEY=your-secret-key-here          # REQUIRED — generate a strong random key
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30               # Access token TTL
+REFRESH_TOKEN_EXPIRE_DAYS=30                 # Refresh token TTL
+
+# Credential Encryption
+ENCRYPTION_KEY=your-fernet-key-here          # REQUIRED — generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+# AI Features (optional)
+GOOGLE_API_KEY=your-google-api-key           # Required for Smith AI and Scryb doc generation
+SMITH_MODEL=gemini/gemini-2.5-flash-lite     # LLM model for Smith agent
+```
+
+### Generating Keys
+
+```bash
+# Generate a JWT secret key
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# Generate a Fernet encryption key (for credential encryption)
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+## Development Setup
+
+For local development without Docker:
+
+### API Service (Python)
+
+```bash
+cd services/api
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run database migrations
+alembic upgrade head
+
+# Start the API server
+uvicorn src.app:app --reload --port 8000
+```
+
+### Frontend (Next.js)
+
+```bash
+cd apps/web
+
+# Install dependencies
+pnpm install
+
+# Start the development server
+pnpm dev
+```
+
+The frontend runs at [http://localhost:3000](http://localhost:3000).
+
+### Worker (Go)
+
+```bash
+cd services/rune-worker
+
+# Run the worker
+go run cmd/worker/main.go
+```
+
+### RTES (Rust)
+
+```bash
+cd services/rtes
+
+# Run the real-time execution service
+cargo run
+```
+
+> **Note:** Local development still requires PostgreSQL, Redis, RabbitMQ, and MongoDB to be running. You can start just the infrastructure with:
+> ```bash
+> docker compose up -d postgres redis rabbitmq mongodb
+> ```
+
+## Verifying the Installation
+
+1. Open [http://localhost:3000](http://localhost:3000) — you should see the Rune login or setup page
+2. Check the API health: `curl http://localhost:8000/health`
+3. Access the RabbitMQ management UI at [http://localhost:15672](http://localhost:15672) (default: `rune` / `rune_password`)
+
+## Next Steps
+
+- [Quick Start Guide](/docs/getting-started/quick-start) — Build and run your first workflow
+- [Creating Workflows](/docs/guides/creating-workflows) — Detailed workflow building guide
+- [Architecture Overview](/docs/architecture) — Understand how Rune's services work together

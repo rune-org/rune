@@ -1,0 +1,119 @@
+# Rune Documentation
+
+Welcome to the official Rune documentation. Rune is an open-source workflow automation platform that lets you visually build, execute, and monitor complex automation workflows.
+
+## What is Rune?
+
+Rune is a self-hosted workflow automation platform designed for teams who need full control over their automation infrastructure. With Rune, you can:
+
+- **Build Visual Workflows** — Design automation workflows using a drag-and-drop canvas with a rich node library
+- **Connect External Services** — Make HTTP requests, send emails via SMTP, and integrate with any API
+- **Handle Complex Logic** — Use conditional branching, multi-way switches, data transformations, and parallel processing
+- **Execute at Scale** — Run workflows reliably with built-in error handling, retries, and real-time monitoring
+- **AI-Powered Building** — Use the Smith AI agent to generate workflows from natural language descriptions
+- **Collaborate** — Share workflows and credentials with team members using role-based access control
+- **Self-Hosted** — Deploy on your own infrastructure with Docker Compose for complete data ownership
+
+## Platform Architecture
+
+Rune consists of four core services:
+
+| Service | Technology | Purpose |
+|---------|-----------|---------|
+| **API** | Python / FastAPI | REST API, authentication, workflow management, AI agents |
+| **Worker** | Go | Workflow execution engine — processes nodes recursively via message queue |
+| **RTES** | Rust / Axum | Real-Time Execution Service — WebSocket updates and execution persistence |
+| **Frontend** | Next.js / React | Visual workflow builder, dashboard, and documentation |
+
+Supporting infrastructure includes **PostgreSQL**, **Redis**, **RabbitMQ**, and **MongoDB**.
+
+## Getting Started
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginTop: '2rem' }}>
+  <div style={{ padding: '1.5rem', border: '1px solid var(--nextra-border)', borderRadius: '8px' }}>
+    <h3>📦 Installation</h3>
+    <p>Set up Rune on your machine with Docker Compose in under 5 minutes.</p>
+    <a href="/docs/getting-started">Install Rune →</a>
+  </div>
+
+  <div style={{ padding: '1.5rem', border: '1px solid var(--nextra-border)', borderRadius: '8px' }}>
+    <h3>🚀 Quick Start</h3>
+    <p>Build and run your first automated workflow step by step.</p>
+    <a href="/docs/getting-started/quick-start">Quick Start →</a>
+  </div>
+
+  <div style={{ padding: '1.5rem', border: '1px solid var(--nextra-border)', borderRadius: '8px' }}>
+    <h3>📚 User Guides</h3>
+    <p>Explore nodes, credentials, templates, executions, and the AI builder.</p>
+    <a href="/docs/guides/creating-workflows">View Guides →</a>
+  </div>
+
+  <div style={{ padding: '1.5rem', border: '1px solid var(--nextra-border)', borderRadius: '8px' }}>
+    <h3>🔗 API Reference</h3>
+    <p>Complete REST API documentation with all endpoints and schemas.</p>
+    <a href="/docs/api-reference/rest-api">API Reference →</a>
+  </div>
+
+  <div style={{ padding: '1.5rem', border: '1px solid var(--nextra-border)', borderRadius: '8px' }}>
+    <h3>🏗️ Architecture</h3>
+    <p>Understand how Rune's services communicate and process workflows.</p>
+    <a href="/docs/architecture">Architecture →</a>
+  </div>
+
+  <div style={{ padding: '1.5rem', border: '1px solid var(--nextra-border)', borderRadius: '8px' }}>
+    <h3>🤖 Smith AI</h3>
+    <p>Generate workflows from natural language using the AI-powered builder.</p>
+    <a href="/docs/guides/smith-ai">Smith AI →</a>
+  </div>
+</div>
+
+## Key Features
+
+### Visual Workflow Builder
+Design workflows using an intuitive drag-and-drop canvas powered by React Flow. Connect nodes visually, configure parameters, and see your automation logic take shape in real time.
+
+### 9 Built-in Node Types
+Rune ships with a comprehensive set of execution nodes:
+
+| Node | Purpose |
+|------|---------|
+| **HTTP** | Make REST API calls with full header, query, body, retry, and auth support |
+| **SMTP** | Send emails with CC/BCC, credential-based SMTP authentication |
+| **Conditional** | Boolean if/else branching with expression evaluation |
+| **Switch** | Multi-path routing based on ordered comparison rules |
+| **Split** | Fan-out — iterate over arrays with parallel branch execution |
+| **Aggregator** | Fan-in — collect and merge results from split branches |
+| **Merge** | Synchronize converging branches (wait-for-all or wait-for-any) |
+| **Wait** | Pause execution for a configurable duration (seconds to days) |
+| **Edit** | Transform data with field assignments and JavaScript expressions |
+
+### Encrypted Credential Management
+Store API keys, OAuth tokens, SMTP passwords, and custom credentials with **Fernet symmetric encryption**. Share credentials with team members without exposing sensitive values.
+
+### Real-time Execution Monitoring
+Watch workflow executions live via WebSocket. Each node's status (running, success, failed, waiting) streams to the browser as it happens, backed by MongoDB persistence.
+
+### Smith AI Workflow Builder
+Describe what you want to automate in plain English, and Rune's AI agent (powered by Google Gemini) builds the workflow for you — creating nodes, connecting edges, and configuring parameters via an interactive chat.
+
+### Role-Based Access Control
+- **Workflow roles**: Owner, Editor, Viewer — with granular permissions for view, edit, execute, delete, and share
+- **Credential roles**: Owner can share; shared users can use but not modify
+- **Admin override**: Admins can bypass all permission checks
+
+### Workflow Templates
+Save and reuse workflow configurations. Browse public templates or share your own with the team.
+
+## Quick Links
+
+- [Installation Guide](/docs/getting-started)
+- [Quick Start Tutorial](/docs/getting-started/quick-start)
+- [Creating Workflows](/docs/guides/creating-workflows)
+- [Understanding Nodes](/docs/guides/nodes)
+- [Managing Credentials](/docs/guides/credentials)
+- [Execution Monitoring](/docs/guides/executions)
+- [Templates](/docs/guides/templates)
+- [Smith AI Builder](/docs/guides/smith-ai)
+- [System Architecture](/docs/architecture)
+- [REST API Reference](/docs/api-reference/rest-api)
+- [Authentication](/docs/api-reference/authentication)

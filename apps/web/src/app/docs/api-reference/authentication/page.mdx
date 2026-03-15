@@ -1,0 +1,261 @@
+# Authentication
+
+Learn how to authenticate with the Rune API.
+
+## Overview
+
+Rune uses **JWT (JSON Web Tokens)** for authentication. There are no API keys or OAuth scopes — authentication is handled entirely through access tokens and refresh tokens.
+
+Two authentication methods are supported simultaneously:
+
+| Method | Use Case |
+|--------|----------|
+| **HTTP-only cookie** | Browser-based sessions (set automatically on login) |
+| **Bearer token** | Programmatic API access |
+
+Both methods validate the same JWT token. Use whichever is appropriate for your client.
+
+## Authentication Flow
+
+### 1. First-Time Setup
+
+Before any user can log in, the system must be initialized:
+
+```bash
+# Check if setup is needed
+GET /setup/status
+# → { "data": { "is_setup_complete": false } }
+
+# Create the first admin account
+POST /setup/initialize
+Content-Type: application/json
+
+{
+  "first_name": "Admin",
+  "last_name": "User",
+  "email": "admin@example.com",
+  "password": "SecurePass1!"
+}
+```
+
+This endpoint only works when no users exist in the system.
+
+### 2. Login
+
+```bash
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "SecurePass1!"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIs...",
+    "token_type": "bearer"
+  }
+}
+```
+
+The response also sets two HTTP-only cookies:
+- `access_token` — short-lived JWT
+- `refresh_token` — long-lived token for renewal
+
+### 3. Make Authenticated Requests
+
+**Using Bearer token:**
+```bash
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  http://localhost:8000/workflows/
+```
+
+**Using cookies (browser):**
+Cookies are sent automatically by the browser. No manual headers needed.
+
+### 4. Refresh Token
+
+When the access token expires, use the refresh token to get a new one:
+
+```bash
+POST /auth/refresh
+Cookie: refresh_token=<token>
+```
+
+The server returns a new access token and updates the cookie.
+
+### 5. Logout
+
+```bash
+POST /auth/logout
+Authorization: Bearer <token>
+```
+
+This clears both cookies and invalidates the refresh token in Redis.
+
+## Token Details
+
+### Access Token
+
+| Property | Value |
+|----------|-------|
+| Algorithm | HS256 |
+| Expiry | Configurable via `ACCESS_TOKEN_EXPIRE_MINUTES` env var |
+| Storage | HTTP-only cookie or returned in login response |
+| Contains | `sub` (user ID), `exp` (expiration), `iat` (issued at) |
+
+### Refresh Token
+
+| Property | Value |
+|----------|-------|
+| Expiry | 30 days |
+| Storage | HTTP-only cookie + Redis |
+| Purpose | Issue new access tokens without re-entering credentials |
+
+Refresh tokens are stored in Redis with a 30-day TTL. When you logout, the token is deleted from Redis, making it immediately invalid.
+
+## Password Requirements
+
+Passwords must meet all of the following:
+
+- Minimum **8 characters**
+- At least **1 uppercase** letter
+- At least **1 lowercase** letter
+- At least **1 digit**
+- At least **1 special character** (e.g., `!@#$%^&*`)
+
+```
+❌ "password"        → Missing uppercase, digit, special char
+❌ "Password1"       → Missing special character
+✅ "SecurePass1!"    → Meets all requirements
+```
+
+## User Roles
+
+Rune has two roles:
+
+| Role | Permissions |
+|------|-------------|
+| `admin` | Full access — manage users, change roles, access all admin endpoints |
+| `user` | Standard access — manage own workflows, credentials, and profile |
+
+### Admin-Only Endpoints
+
+- `GET /users/` — List all users
+- `GET /users/{id}` — Get any user
+- `PATCH /users/{id}` — Update any user
+- `PATCH /users/{id}/role` — Change user role
+- `DELETE /users/{id}` — Delete a user
+- `POST /auth/register` — Create new user accounts
+
+### Standard User Endpoints
+
+- `GET /profile/` — View own profile
+- `PATCH /profile/` — Update own profile
+- `PATCH /profile/password` — Change own password
+- All workflow, credential, template, execution, smith, and scryb endpoints
+
+## How Authentication Works Internally
+
+1. **Login**: The server validates the email/password against the bcrypt hash in PostgreSQL
+2. **Token generation**: A JWT access token is signed with the `SECRET_KEY` environment variable
+3. **Refresh token**: A random token is generated and stored in Redis with a 30-day TTL
+4. **Cookie setting**: Both tokens are set as `httpOnly`, `secure` (in production), `sameSite=lax` cookies
+5. **Request validation**: On each request, the `get_current_user` dependency extracts the token from either the `Authorization` header or the `access_token` cookie, decodes it, and loads the user from PostgreSQL
+6. **Admin check**: Admin endpoints additionally use `require_admin` which checks `user.role == "admin"`
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SECRET_KEY` | JWT signing key | Required |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime in minutes | `30` |
+| `COOKIE_DOMAIN` | Domain for auth cookies | `localhost` |
+
+## Security Notes
+
+- Access tokens are **stateless** — they can't be individually revoked before expiry
+- Refresh tokens are **stateful** — stored in Redis and can be revoked instantly via logout
+- Cookies use `httpOnly` flag to prevent JavaScript access (XSS protection)
+- Cookies use `secure` flag in production (HTTPS only)
+- Passwords are hashed with **bcrypt** before storage
+- The `SECRET_KEY` should be a strong random string — generate one with:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(64))"
+```
+
+## Code Examples
+
+### Python
+
+```python
+import requests
+
+BASE = "http://localhost:8000"
+
+# Login
+resp = requests.post(f"{BASE}/auth/login", json={
+    "email": "admin@example.com",
+    "password": "SecurePass1!"
+})
+token = resp.json()["data"]["access_token"]
+
+# Use the token
+headers = {"Authorization": f"Bearer {token}"}
+workflows = requests.get(f"{BASE}/workflows/", headers=headers)
+print(workflows.json())
+```
+
+### JavaScript (Fetch)
+
+```javascript
+// Login
+const res = await fetch('http://localhost:8000/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'admin@example.com',
+    password: 'SecurePass1!'
+  }),
+  credentials: 'include' // Include cookies
+});
+
+const { data } = await res.json();
+
+// Use cookie-based auth (browser)
+const workflows = await fetch('http://localhost:8000/workflows/', {
+  credentials: 'include'
+});
+
+// Or use Bearer token
+const workflows2 = await fetch('http://localhost:8000/workflows/', {
+  headers: { 'Authorization': `Bearer ${data.access_token}` }
+});
+```
+
+### cURL
+
+```bash
+# Login and capture token
+TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"SecurePass1!"}' \
+  | jq -r '.data.access_token')
+
+# Use the token
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8000/workflows/
+```
+
+## Next Steps
+
+- [REST API Reference](/docs/api-reference/rest-api) — Full endpoint documentation
+- [Managing Credentials](/docs/guides/credentials) — Store and use secrets
+- [Getting Started](/docs/getting-started) — Setup and first workflow
