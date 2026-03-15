@@ -73,6 +73,19 @@ function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
   );
 }
 
+function LastRunCell({ lastRun, loaded }: { lastRun?: ApiExecutionListItem; loaded: boolean }) {
+  if (!loaded) return "\u2014";
+  if (!lastRun) return "N/A";
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span>{formatRelativeTime(lastRun.created_at)}</span>
+      </TooltipTrigger>
+      <TooltipContent>{formatAbsoluteTime(lastRun.created_at)}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 type StatFilter = "all" | "active" | "runs" | "draft" | "failed";
 
 export function WorkflowsTable() {
@@ -101,7 +114,6 @@ export function WorkflowsTable() {
         });
       }
     } catch {
-      // Silently fail — "Last Run" will show N/A
     } finally {
       setExecutionsLoaded(true);
     }
@@ -397,19 +409,7 @@ export function WorkflowsTable() {
                 <StatusBadge status={w.status} />
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {(() => {
-                  if (!executionsLoaded) return "\u2014";
-                  const lastRun = lastRunByWorkflow.get(w.id);
-                  if (!lastRun) return "N/A";
-                  return (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>{formatRelativeTime(lastRun.created_at)}</span>
-                      </TooltipTrigger>
-                      <TooltipContent>{formatAbsoluteTime(lastRun.created_at)}</TooltipContent>
-                    </Tooltip>
-                  );
-                })()}
+                <LastRunCell lastRun={lastRunByWorkflow.get(w.id)} loaded={executionsLoaded} />
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
