@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { ExecutionListItem, ExecutionListStatus } from "../types";
 import { cn } from "@/lib/cn";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
 
 type SortMode = "workflow" | "recent";
@@ -96,6 +97,10 @@ function formatDate(dateStr: string): string {
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
   return date.toLocaleDateString();
+}
+
+function formatAbsoluteDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleString();
 }
 
 function getGroupAccentDot(executions: ExecutionListItem[]): string {
@@ -186,8 +191,13 @@ function ExecutionRow({
     <tr
       className={cn("transition-colors hover:bg-muted/20", !isLast && "border-b border-border/30")}
     >
-      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-        {execution.executionId.slice(0, 8)}
+      <td className="px-4 py-3">
+        <Link
+          href={`/create/app?workflow=${execution.workflowId}&execution=${execution.executionId}`}
+          className="font-mono text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground/80 hover:underline"
+        >
+          {execution.executionId.slice(0, 8)}
+        </Link>
       </td>
 
       {showWorkflow && (
@@ -218,9 +228,23 @@ function ExecutionRow({
       <td className="px-4 py-3 text-xs tabular-nums text-muted-foreground">
         {formatDuration(execution.durationMs)}
       </td>
-      <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(execution.startedAt)}</td>
       <td className="px-4 py-3 text-xs text-muted-foreground">
-        {execution.completedAt ? formatDate(execution.completedAt) : "\u2014"}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>{formatDate(execution.startedAt)}</span>
+          </TooltipTrigger>
+          <TooltipContent>{formatAbsoluteDate(execution.startedAt)}</TooltipContent>
+        </Tooltip>
+      </td>
+      <td className="px-4 py-3 text-xs text-muted-foreground">
+        {execution.completedAt ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>{formatDate(execution.completedAt)}</span>
+            </TooltipTrigger>
+            <TooltipContent>{formatAbsoluteDate(execution.completedAt)}</TooltipContent>
+          </Tooltip>
+        ) : "\u2014"}
       </td>
     </tr>
   );
