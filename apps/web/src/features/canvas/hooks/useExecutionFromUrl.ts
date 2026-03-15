@@ -23,10 +23,12 @@ export function useExecutionFromUrl(workflowId: number | null) {
   const paramsString = params.toString();
 
   const prevIsHistoricalRef = useRef(state.isHistorical);
+  const pendingExecutionParamRef = useRef<string | null | undefined>(undefined);
 
   // Update the URL's ?execution= param without a full navigation
   const setExecutionParam = useCallback(
     (id: string | null) => {
+      pendingExecutionParamRef.current = id;
       const next = new URLSearchParams(paramsString);
       if (id) {
         next.set("execution", id);
@@ -38,9 +40,32 @@ export function useExecutionFromUrl(workflowId: number | null) {
     [paramsString, router],
   );
 
+  useEffect(() => {
+    if (pendingExecutionParamRef.current === undefined) return;
+    if (executionIdFromUrl === pendingExecutionParamRef.current) {
+      pendingExecutionParamRef.current = undefined;
+    }
+  }, [executionIdFromUrl]);
+
+  // Strip ?execution= from URL when leaving historical mode (e.g. new live run, reset)
+  // before the URL-driven load effect runs again.
+  useEffect(() => {
+    const wasHistorical = prevIsHistoricalRef.current;
+    prevIsHistoricalRef.current = state.isHistorical;
+
+    if (wasHistorical && !state.isHistorical && executionIdFromUrl) {
+      setExecutionParam(null);
+    }
+  }, [state.isHistorical, executionIdFromUrl, setExecutionParam]);
+
   // Load execution from URL param
   useEffect(() => {
     if (!executionIdFromUrl || workflowId === null) return;
+
+    const pendingExecutionParam = pendingExecutionParamRef.current;
+    if (pendingExecutionParam !== undefined && executionIdFromUrl !== pendingExecutionParam) {
+      return;
+    }
 
     if (state.executionId === executionIdFromUrl && state.isHistorical) return;
 
@@ -75,16 +100,6 @@ export function useExecutionFromUrl(workflowId: number | null) {
     dispatch,
     setExecutionParam,
   ]);
-
-  // Strip ?execution= from URL when leaving historical mode (e.g. new live run, reset)
-  useEffect(() => {
-    const wasHistorical = prevIsHistoricalRef.current;
-    prevIsHistoricalRef.current = state.isHistorical;
-
-    if (wasHistorical && !state.isHistorical && executionIdFromUrl) {
-      setExecutionParam(null);
-    }
-  }, [state.isHistorical, executionIdFromUrl, setExecutionParam]);
 
   return { setExecutionParam };
 }
