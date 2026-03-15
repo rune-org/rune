@@ -29,10 +29,12 @@ import { useAuth } from "@/lib/auth";
 import {
   deleteWorkflow,
   getWorkflowById,
+  listUserExecutions,
   runWorkflow,
   updateWorkflowName,
   updateWorkflowStatus,
 } from "@/lib/api/workflows";
+import type { ExecutionListItem as ApiExecutionListItem } from "@/client/types.gen";
 import {
   Dialog,
   DialogContent,
@@ -56,15 +58,19 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { stripCredentialsFromWorkflowData } from "@/lib/workflow-dsl";
 
-function timeAgo(iso: string | null): string {
+function formatRelativeTime(iso: string | null): string {
   if (!iso) return "N/A";
-  const diff = Date.now() - new Date(iso).getTime();
-  const h = Math.floor(diff / (1000 * 60 * 60));
-  if (h < 1) {
-    const m = Math.max(1, Math.floor(diff / (1000 * 60)));
-    return `${m}m ago`;
-  }
-  return `${h}hr. ago`;
+  const date = new Date(iso);
+  const diffMs = Date.now() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
 }
 
 function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
@@ -91,6 +97,45 @@ export function WorkflowsTable() {
 
   const { state: authState } = useAuth();
   const isAdmin = authState.user?.role === "admin";
+
+  // HACK: The /workflows endpoint doesn't expose execution history yet,
+  // so we fetch from /executions (archivist) and join client-side.
+  const [executionItems, setExecutionItems] = useState<ApiExecutionListItem[]>([]);
+  const [executionsLoaded, setExecutionsLoaded] = useState(false);
+
+  const refreshExecutions = useCallback(async () => {
+    try {
+      const res = await listUserExecutions();
+      const items = res.data?.data;
+      if (items) {
+        setExecutionItems((prev) => {
+          if (prev.length === items.length && prev.every((e, i) => e.id === items[i].id))
+            return prev;
+          return items;
+        });
+      }
+    } catch {
+      // Silently fail — "Last Run" will show N/A
+    } finally {
+      setExecutionsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshExecutions();
+  }, [refreshExecutions]);
+
+  const lastRunByWorkflow = useMemo(() => {
+    const map = new Map<string, ApiExecutionListItem>();
+    for (const exec of executionItems) {
+      const key = String(exec.workflow_id);
+      const existing = map.get(key);
+      if (!existing || exec.created_at > existing.created_at) {
+        map.set(key, exec);
+      }
+    }
+    return map;
+  }, [executionItems]);
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<StatFilter>("all");
@@ -157,6 +202,7 @@ export function WorkflowsTable() {
     try {
       await runWorkflow(workflowId);
       toast.success("Workflow successfully executed.");
+      void refreshExecutions();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to queue workflow for execution.",
@@ -164,7 +210,7 @@ export function WorkflowsTable() {
     } finally {
       setPendingWorkflowId(null);
     }
-  }, []);
+  }, [refreshExecutions]);
 
   const handleExport = useCallback(async (workflow: WorkflowSummary) => {
     const workflowId = Number(workflow.id);
@@ -245,25 +291,25 @@ export function WorkflowsTable() {
         list = list.filter((w) => w.status === "draft");
         break;
       case "failed":
-        list = list.filter((w) => w.lastRunStatus === "failed");
+        list = list.filter((w) => lastRunByWorkflow.get(w.id)?.status === "failed");
         break;
       case "runs":
-        list = list.filter((w) => w.runs > 0);
+        list = list.filter((w) => lastRunByWorkflow.has(w.id));
         break;
       default:
         break;
     }
     if (!q) return list;
     return list.filter((w) => w.name.toLowerCase().includes(q));
-  }, [workflows, query, filter]);
+  }, [workflows, query, filter, lastRunByWorkflow]);
 
   const stats = useMemo(() => {
     const active = workflows.filter((w) => w.status === "active").length;
     const draft = workflows.filter((w) => w.status === "draft").length;
-    const failed = workflows.filter((w) => w.lastRunStatus === "failed").length;
-    const runs = workflows.reduce((sum, w) => sum + w.runs, 0);
+    const failed = workflows.filter((w) => lastRunByWorkflow.get(w.id)?.status === "failed").length;
+    const runs = executionItems.length;
     return { active, draft, failed, runs };
-  }, [workflows]);
+  }, [workflows, lastRunByWorkflow, executionItems.length]);
 
   const isRowPending = useCallback((id: string) => pendingWorkflowId === id, [pendingWorkflowId]);
   const isRowExporting = useCallback(
@@ -361,7 +407,23 @@ export function WorkflowsTable() {
               <TableCell>
                 <StatusBadge status={w.status} />
               </TableCell>
-              <TableCell className="text-muted-foreground">{timeAgo(w.lastRunAt)}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {(() => {
+                  if (!executionsLoaded) return "\u2014";
+                  const lastRun = lastRunByWorkflow.get(w.id);
+                  if (!lastRun) return "N/A";
+                  return (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>{formatRelativeTime(lastRun.created_at)}</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {new Date(lastRun.created_at).toLocaleString()}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })()}
+              </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
                   {canExecuteWorkflow(w.role, isAdmin) && (
