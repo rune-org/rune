@@ -95,7 +95,9 @@ export function WorkflowsDataTable({
               <Checkbox
                 aria-label="Select all visible workflows"
                 className="mx-auto"
-                checked={allFilteredSelected ? true : someFilteredSelected ? "indeterminate" : false}
+                checked={
+                  allFilteredSelected ? true : someFilteredSelected ? "indeterminate" : false
+                }
                 onCheckedChange={onSelectAllFiltered}
               />
             </div>

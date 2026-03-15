@@ -126,8 +126,8 @@ export function WorkflowsDialogs({
           <>
             This will permanently delete {deletableCount} workflow{deletableCount > 1 ? "s" : ""}.{" "}
             {selectedCount - deletableCount} selected workflow
-            {selectedCount - deletableCount === 1 ? " is" : "s are"} skipped because you do not
-            have delete permission. This action cannot be undone.
+            {selectedCount - deletableCount === 1 ? " is" : "s are"} skipped because you do not have
+            delete permission. This action cannot be undone.
           </>
         }
         cancelText="Cancel"
