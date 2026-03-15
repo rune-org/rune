@@ -1,32 +1,151 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import type { CheckedState } from "@radix-ui/react-checkbox";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { toast } from "@/components/ui/toast";
 import { useAuth } from "@/lib/auth";
 import {
+  bulkWorkflowOperation,
   deleteWorkflow,
+  listUserExecutions,
   runWorkflow,
   updateWorkflowName,
   updateWorkflowStatus,
 } from "@/lib/api/workflows";
+import { stripCredentialsFromWorkflowData } from "@/lib/workflow-dsl";
+import {
+  canChangeWorkflowStatus,
+  canDeleteWorkflow,
+  canExecuteWorkflow,
+  canViewWorkflow,
+} from "@/lib/permissions";
 import { useAppState } from "@/lib/state";
 import type { WorkflowSummary } from "@/lib/workflows";
+import type {
+  BulkWorkflowAction,
+  BulkWorkflowFailure,
+  ExecutionListItem as ApiExecutionListItem,
+  WorkflowDetail,
+} from "@/client/types.gen";
 import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog";
 import { WorkflowBulkActionsBar } from "@/components/workflows/table/WorkflowBulkActionsBar";
+import { WorkflowsDialogs } from "@/components/workflows/table/WorkflowDialogs";
 import { WorkflowsDataTable } from "@/components/workflows/table/WorkflowsDataTable";
 import { WorkflowsTableFilters } from "@/components/workflows/table/WorkflowsTableFilters";
-import {
-  buildWorkflowExportFile,
-  bulkExportWorkflowDetails,
-  downloadWorkflowFile,
-} from "@/components/workflows/table/workflowExport";
-import { runWorkflowBulkOperation } from "@/components/workflows/table/workflowBulkOperations";
-import { DeleteWorkflowDialog } from "@/components/workflows/table/dialogs/DeleteWorkflowDialog";
-import { RenameWorkflowDialog } from "@/components/workflows/table/dialogs/RenameWorkflowDialog";
-import { BulkDeleteWorkflowsDialog } from "@/components/workflows/table/dialogs/BulkDeleteWorkflowsDialog";
-import { useWorkflowExecutionsLookup } from "@/components/workflows/table/hooks/useWorkflowExecutionsLookup";
-import { useWorkflowTableModel } from "@/components/workflows/table/hooks/useWorkflowTableModel";
+
+type StatFilter = "all" | "active" | "runs" | "draft" | "failed";
+type ExportableWorkflow = Pick<WorkflowSummary, "id" | "name">;
+
+type BulkWorkflowResult = {
+  succeededIds: number[];
+  failed: BulkWorkflowFailure[];
+  succeededCount: number;
+  failedCount: number;
+  exported: WorkflowDetail[];
+};
+
+function buildWorkflowExportFile(
+  workflow: ExportableWorkflow,
+  detail: WorkflowDetail,
+): {
+  blob: Blob;
+  fileName: string;
+} {
+  const workflowId = Number(workflow.id);
+  if (!Number.isFinite(workflowId)) {
+    throw new Error("Invalid workflow ID");
+  }
+
+  const rawData = (detail.latest_version?.workflow_data ?? undefined) as
+    | Record<string, unknown>
+    | undefined;
+  const hasGraph = rawData && Array.isArray(rawData.nodes) && Array.isArray(rawData.edges);
+  if (!hasGraph) {
+    throw new Error("Workflow has no graph data to export");
+  }
+
+  const { nodes, edges } = stripCredentialsFromWorkflowData(rawData);
+  const payload = { nodes, edges };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const safeName = (workflow.name || "workflow").replace(/[^a-zA-Z0-9-_]/g, "_");
+
+  return {
+    blob,
+    fileName: `workflow-${safeName}-${workflow.id}.json`,
+  };
+}
+
+async function bulkExportWorkflowDetails(workflowIds: number[]) {
+  if (workflowIds.length === 0) {
+    return {
+      exported: [] as WorkflowDetail[],
+      failedCount: 0,
+      succeededCount: 0,
+    };
+  }
+
+  const response = await bulkWorkflowOperation({
+    action: "export",
+    workflow_ids: workflowIds,
+  });
+
+  if (response.error || !response.data?.data) {
+    throw new Error("Bulk export failed");
+  }
+
+  const result = response.data.data;
+  return {
+    exported: result.exported ?? [],
+    failedCount: result.summary.failed,
+    succeededCount: result.summary.succeeded,
+  };
+}
+
+function downloadWorkflowFile(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
+async function runWorkflowBulkOperation(
+  action: BulkWorkflowAction,
+  workflowIds: number[],
+): Promise<BulkWorkflowResult> {
+  if (workflowIds.length === 0) {
+    return {
+      succeededIds: [],
+      failed: [],
+      succeededCount: 0,
+      failedCount: 0,
+      exported: [],
+    };
+  }
+
+  const response = await bulkWorkflowOperation({
+    action,
+    workflow_ids: workflowIds,
+  });
+
+  if (response.error || !response.data?.data) {
+    throw new Error(`Bulk ${action} failed`);
+  }
+
+  const result = response.data.data;
+  return {
+    succeededIds: result.succeeded,
+    failed: result.failed,
+    succeededCount: result.summary.succeeded,
+    failedCount: result.summary.failed,
+    exported: result.exported ?? [],
+  };
+}
 
 export function WorkflowsTable() {
   const {
@@ -37,8 +156,8 @@ export function WorkflowsTable() {
   const { state: authState } = useAuth();
   const isAdmin = authState.user?.role === "admin";
 
-  const { executionItems, executionsLoaded, lastRunByWorkflow, refreshExecutions } =
-    useWorkflowExecutionsLookup();
+  const [executionItems, setExecutionItems] = useState<ApiExecutionListItem[]>([]);
+  const [executionsLoaded, setExecutionsLoaded] = useState(false);
 
   const [pendingWorkflowIds, setPendingWorkflowIds] = useState<Set<string>>(new Set());
   const [exportingWorkflowIds, setExportingWorkflowIds] = useState<Set<string>>(new Set());
@@ -47,32 +166,154 @@ export function WorkflowsTable() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [shareTarget, setShareTarget] = useState<WorkflowSummary | null>(null);
 
-  const {
-    query,
-    setQuery,
-    filter,
-    setFilter,
-    filtered,
-    stats,
-    selectedWorkflowIds,
-    selectedCount,
-    allFilteredSelected,
-    someFilteredSelected,
-    selectedRunnable,
-    selectedActivatable,
-    selectedDeactivatable,
-    selectedDeletable,
-    selectedExportable,
-    clearSelection,
-    handleSelectAllFiltered,
-    handleToggleSelected,
-    setSelectedWorkflowIds,
-  } = useWorkflowTableModel({
-    workflows,
-    isAdmin,
-    lastRunByWorkflow,
-    executionItems,
-  });
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<StatFilter>("all");
+  const [selectedWorkflowIds, setSelectedWorkflowIds] = useState<Set<string>>(new Set());
+
+  const refreshExecutions = useCallback(async () => {
+    try {
+      const response = await listUserExecutions();
+      const items = response.data?.data;
+      if (items) {
+        setExecutionItems((prev) => {
+          if (
+            prev.length === items.length &&
+            prev.every((item, index) => item.id === items[index].id)
+          ) {
+            return prev;
+          }
+          return items;
+        });
+      }
+    } catch {
+      // Keep table rendering resilient; show N/A when executions cannot be loaded.
+    } finally {
+      setExecutionsLoaded(true);
+    }
+  }, []);
+
+  const lastRunByWorkflow = useMemo(() => {
+    const map = new Map<string, ApiExecutionListItem>();
+    for (const execution of executionItems) {
+      const key = String(execution.workflow_id);
+      const existing = map.get(key);
+      if (!existing || execution.created_at > existing.created_at) {
+        map.set(key, execution);
+      }
+    }
+    return map;
+  }, [executionItems]);
+
+  const filtered = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    let list = workflows;
+
+    switch (filter) {
+      case "active":
+        list = list.filter((workflow) => workflow.status === "active");
+        break;
+      case "draft":
+        list = list.filter((workflow) => workflow.status === "draft");
+        break;
+      case "failed":
+        list = list.filter((workflow) => lastRunByWorkflow.get(workflow.id)?.status === "failed");
+        break;
+      case "runs":
+        list = list.filter((workflow) => lastRunByWorkflow.has(workflow.id));
+        break;
+      default:
+        break;
+    }
+
+    if (!normalizedQuery) return list;
+    return list.filter((workflow) => workflow.name.toLowerCase().includes(normalizedQuery));
+  }, [filter, lastRunByWorkflow, query, workflows]);
+
+  const filteredWorkflowIdSet = useMemo(
+    () => new Set(filtered.map((workflow) => workflow.id)),
+    [filtered],
+  );
+
+  useEffect(() => {
+    setSelectedWorkflowIds((prev) => {
+      const next = new Set([...prev].filter((id) => filteredWorkflowIdSet.has(id)));
+      if (next.size === prev.size) return prev;
+      return next;
+    });
+  }, [filteredWorkflowIdSet]);
+
+  const stats = useMemo(() => {
+    const active = workflows.filter((workflow) => workflow.status === "active").length;
+    const draft = workflows.filter((workflow) => workflow.status === "draft").length;
+    const failed = workflows.filter(
+      (workflow) => lastRunByWorkflow.get(workflow.id)?.status === "failed",
+    ).length;
+    const runs = executionItems.length;
+
+    return { active, draft, failed, runs };
+  }, [executionItems.length, lastRunByWorkflow, workflows]);
+
+  const selectedWorkflows = useMemo(
+    () => filtered.filter((workflow) => selectedWorkflowIds.has(workflow.id)),
+    [filtered, selectedWorkflowIds],
+  );
+
+  const selectedCount = selectedWorkflows.length;
+  const allFilteredSelected = filtered.length > 0 && selectedCount === filtered.length;
+  const someFilteredSelected = selectedCount > 0 && selectedCount < filtered.length;
+
+  const selectedRunnable = useMemo(
+    () => selectedWorkflows.filter((workflow) => canExecuteWorkflow(workflow.role, isAdmin)),
+    [isAdmin, selectedWorkflows],
+  );
+  const selectedActivatable = useMemo(
+    () =>
+      selectedWorkflows.filter(
+        (workflow) =>
+          workflow.status !== "active" && canChangeWorkflowStatus(workflow.role, isAdmin),
+      ),
+    [isAdmin, selectedWorkflows],
+  );
+  const selectedDeactivatable = useMemo(
+    () =>
+      selectedWorkflows.filter(
+        (workflow) =>
+          workflow.status === "active" && canChangeWorkflowStatus(workflow.role, isAdmin),
+      ),
+    [isAdmin, selectedWorkflows],
+  );
+  const selectedDeletable = useMemo(
+    () => selectedWorkflows.filter((workflow) => canDeleteWorkflow(workflow.role, isAdmin)),
+    [isAdmin, selectedWorkflows],
+  );
+  const selectedExportable = useMemo(
+    () => selectedWorkflows.filter((workflow) => canViewWorkflow(workflow.role, isAdmin)),
+    [isAdmin, selectedWorkflows],
+  );
+
+  const clearSelection = useCallback(() => {
+    setSelectedWorkflowIds(new Set());
+  }, []);
+
+  const handleSelectAllFiltered = useCallback(
+    (checked: CheckedState) => {
+      if (checked === true) {
+        setSelectedWorkflowIds(new Set(filtered.map((workflow) => workflow.id)));
+        return;
+      }
+      setSelectedWorkflowIds(new Set());
+    },
+    [filtered],
+  );
+
+  const handleToggleSelected = useCallback((workflowId: string, checked: CheckedState) => {
+    setSelectedWorkflowIds((prev) => {
+      const next = new Set(prev);
+      if (checked === true) next.add(workflowId);
+      else next.delete(workflowId);
+      return next;
+    });
+  }, []);
 
   const markWorkflowsPending = useCallback((ids: string[], pending: boolean) => {
     setPendingWorkflowIds((prev) => {
@@ -100,6 +341,10 @@ export function WorkflowsTable() {
     if (workflows.length === 0) void actions.init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    void refreshExecutions();
+  }, [refreshExecutions]);
 
   const handleToggleActive = useCallback(
     async (workflow: WorkflowSummary) => {
@@ -426,25 +671,19 @@ export function WorkflowsTable() {
         onShare={setShareTarget}
       />
 
-      <RenameWorkflowDialog
-        workflow={renameTarget}
-        onClose={() => setRenameTarget(null)}
-        onSubmit={handleRenameSubmit}
-        pending={hasPendingWorkflowOps}
-      />
-      <DeleteWorkflowDialog
-        workflow={deleteTarget}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={confirmDelete}
-        pending={hasPendingWorkflowOps}
-      />
-      <BulkDeleteWorkflowsDialog
-        open={bulkDeleteOpen}
-        onCancel={() => setBulkDeleteOpen(false)}
-        onConfirm={handleBulkDelete}
+      <WorkflowsDialogs
+        renameTarget={renameTarget}
+        deleteTarget={deleteTarget}
+        bulkDeleteOpen={bulkDeleteOpen}
         pending={hasPendingWorkflowOps}
         selectedCount={selectedCount}
         deletableCount={selectedDeletable.length}
+        onRenameClose={() => setRenameTarget(null)}
+        onRenameSubmit={handleRenameSubmit}
+        onDeleteCancel={() => setDeleteTarget(null)}
+        onDeleteConfirm={confirmDelete}
+        onBulkDeleteCancel={() => setBulkDeleteOpen(false)}
+        onBulkDeleteConfirm={handleBulkDelete}
       />
 
       {shareTarget && (
