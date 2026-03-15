@@ -10,7 +10,14 @@ import type {
   SwitchRule,
   SmtpData,
   WaitData,
+  LogData,
+  DateTimeData,
   EditData,
+  FilterData,
+  FilterRule,
+  SortData,
+  SortRule,
+  LimitData,
   SplitData,
   AggregatorData,
   MergeData,
@@ -23,6 +30,7 @@ import {
   switchHandleLabelFromId,
   switchRuleHandleId,
 } from "@/features/canvas/utils/switchHandles";
+import { sanitizeNodeLabel } from "@/features/canvas/utils/nodeLabels";
 
 export interface WorkflowNode<Params = Record<string, unknown>> {
   id: string;
@@ -71,8 +79,18 @@ function toWorkerType(canvasType: string): string {
       return "agent";
     case "wait":
       return "wait";
+    case "log":
+      return "log";
+    case "datetime":
+      return "datetime";
     case "edit":
       return "edit";
+    case "filter":
+      return "filter";
+    case "sort":
+      return "sort";
+    case "limit":
+      return "limit";
     case "split":
       return "split";
     case "aggregator":
@@ -87,7 +105,7 @@ function toWorkerType(canvasType: string): string {
 // Human-friendly node naming
 function nodeName(n: CanvasNode): string {
   const base = (n.data as { label?: string }).label;
-  if (base && base.trim()) return base.trim();
+  if (base && base.trim()) return sanitizeNodeLabel(base.trim(), "Node");
   return n.type.charAt(0).toUpperCase() + n.type.slice(1);
 }
 
@@ -123,8 +141,8 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (d.headers && typeof d.headers === "object") params.headers = d.headers;
       if (d.query && typeof d.query === "object") params.query = d.query;
       if (typeof d.body !== "undefined") params.body = d.body as unknown;
-      if (typeof d.timeout !== "undefined") params.timeout = Number(d.timeout);
-      if (typeof d.retries !== "undefined") params.retry = Number(d.retries);
+      if (typeof d.timeout !== "undefined") params.timeout = String(d.timeout);
+      if (typeof d.retries !== "undefined") params.retry = String(d.retries);
       if (typeof d.ignoreSSL !== "undefined") params.ignore_ssl = !!d.ignoreSSL;
       return params;
     }
@@ -210,6 +228,24 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (d.unit) params.unit = String(d.unit);
       return params;
     }
+    case "log": {
+      const d = (n.data || {}) as LogData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.message === "string") params.message = d.message;
+      if (d.level) params.level = d.level;
+      return params;
+    }
+    case "datetime": {
+      const d = (n.data || {}) as DateTimeData;
+      const params: Record<string, unknown> = {};
+      if (d.operation) params.operation = d.operation;
+      if (typeof d.date === "string" && d.date.trim()) params.date = d.date;
+      if (typeof d.amount !== "undefined") params.amount = Number(d.amount);
+      if (d.unit) params.unit = d.unit;
+      if (typeof d.format === "string" && d.format.trim()) params.format = d.format;
+      if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
+      return params;
+    }
     case "edit": {
       const d = (n.data || {}) as EditData;
       const params: Record<string, unknown> = {};
@@ -221,6 +257,43 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
           type: a.type || "string",
         }));
       }
+      return params;
+    }
+    case "filter": {
+      const d = (n.data || {}) as FilterData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.input_array === "string" && d.input_array.trim())
+        params.input_array = d.input_array.trim();
+      if (d.match_mode) params.match_mode = d.match_mode;
+      if (Array.isArray(d.rules) && d.rules.length > 0) {
+        params.rules = d.rules.map((rule) => ({
+          field: rule.field || "",
+          operator: rule.operator || "==",
+          value: rule.value || "",
+        }));
+      }
+      return params;
+    }
+    case "sort": {
+      const d = (n.data || {}) as SortData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.input_array === "string" && d.input_array.trim())
+        params.input_array = d.input_array.trim();
+      if (Array.isArray(d.rules) && d.rules.length > 0) {
+        params.rules = d.rules.map((rule) => ({
+          field: rule.field || "",
+          direction: rule.direction || "asc",
+          type: rule.type || "auto",
+        }));
+      }
+      return params;
+    }
+    case "limit": {
+      const d = (n.data || {}) as LimitData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.input_array === "string" && d.input_array.trim())
+        params.input_array = d.input_array.trim();
+      if (typeof d.count !== "undefined" && d.count !== "") params.count = Number(d.count);
       return params;
     }
     case "split": {
@@ -335,6 +408,34 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
     };
     return waitData;
   },
+  log: (base, params) => {
+    const logData: LogData = {
+      ...base,
+      message: typeof params.message === "string" ? params.message : undefined,
+      level: typeof params.level === "string" ? (params.level as LogData["level"]) : undefined,
+    };
+    return logData;
+  },
+  datetime: (base, params) => {
+    const dateTimeData: DateTimeData = {
+      ...base,
+      operation:
+        typeof params.operation === "string"
+          ? (params.operation as DateTimeData["operation"])
+          : undefined,
+      date: typeof params.date === "string" ? params.date : undefined,
+      amount:
+        typeof params.amount === "number"
+          ? params.amount
+          : typeof params.amount === "string"
+            ? Number(params.amount)
+            : undefined,
+      unit: typeof params.unit === "string" ? (params.unit as DateTimeData["unit"]) : undefined,
+      format: typeof params.format === "string" ? params.format : undefined,
+      timezone: typeof params.timezone === "string" ? params.timezone : undefined,
+    };
+    return dateTimeData;
+  },
   edit: (base, params) => {
     const editData: EditData = {
       ...base,
@@ -354,6 +455,66 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
         : [],
     };
     return editData;
+  },
+  filter: (base, params) => {
+    const filterData: FilterData = {
+      ...base,
+      input_array: typeof params.input_array === "string" ? params.input_array : undefined,
+      match_mode:
+        typeof params.match_mode === "string"
+          ? (params.match_mode as FilterData["match_mode"])
+          : undefined,
+      rules: Array.isArray(params.rules)
+        ? (params.rules as unknown[])
+            .map((rule) => rule as Record<string, unknown>)
+            .map((rule) => ({
+              field: typeof rule.field === "string" ? rule.field : undefined,
+              operator:
+                typeof rule.operator === "string"
+                  ? (rule.operator as FilterRule["operator"])
+                  : undefined,
+              value:
+                typeof rule.value === "string"
+                  ? rule.value
+                  : rule.value != null
+                    ? String(rule.value)
+                    : undefined,
+            }))
+        : [],
+    };
+    return filterData;
+  },
+  sort: (base, params) => {
+    const sortData: SortData = {
+      ...base,
+      input_array: typeof params.input_array === "string" ? params.input_array : undefined,
+      rules: Array.isArray(params.rules)
+        ? (params.rules as unknown[])
+            .map((rule) => rule as Record<string, unknown>)
+            .map((rule) => ({
+              field: typeof rule.field === "string" ? rule.field : undefined,
+              direction:
+                typeof rule.direction === "string"
+                  ? (rule.direction as SortRule["direction"])
+                  : undefined,
+              type: typeof rule.type === "string" ? (rule.type as SortRule["type"]) : undefined,
+            }))
+        : [],
+    };
+    return sortData;
+  },
+  limit: (base, params) => {
+    const limitData: LimitData = {
+      ...base,
+      input_array: typeof params.input_array === "string" ? params.input_array : undefined,
+      count:
+        typeof params.count === "number"
+          ? params.count
+          : typeof params.count === "string"
+            ? params.count
+            : undefined,
+    };
+    return limitData;
   },
   split: (base, params) => {
     const splitData: SplitData = {
@@ -452,7 +613,7 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
       n.type === "conditional" ? "if" : n.type === "ManualTrigger" ? "trigger" : n.type;
     const credentials = n.credentials ? { ...n.credentials } : undefined;
     const baseData = {
-      label: n.name,
+      label: sanitizeNodeLabel(n.name, "Node"),
       ...(credentials ? { credential: credentials } : {}),
     } as CanvasNode["data"];
     const params = (n.parameters ?? {}) as Record<string, unknown>;

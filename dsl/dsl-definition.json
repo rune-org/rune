@@ -54,7 +54,7 @@
           "type": "string",
           "required": true,
           "description": "Node type identifier",
-          "enum": ["ManualTrigger", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge"]
+          "enum": ["ManualTrigger", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge", "datetime", "filter", "sort", "limit"]
         },
         "parameters": {
           "type": "object",
@@ -298,6 +298,49 @@
         }
       }
     },
+
+    "datetime": {
+      "description": "Create, shift, or format date and time values",
+      "credential_type": null,
+      "parameters": {
+        "operation": {
+          "type": "string",
+          "required": true,
+          "description": "Date and time operation",
+          "enum": ["now", "add", "subtract", "format"],
+          "default": "now"
+        },
+        "date": {
+          "type": "string",
+          "required": false,
+          "description": "Input date or timestamp to format or adjust"
+        },
+        "amount": {
+          "type": "number",
+          "required": false,
+          "description": "Amount of time to add or subtract"
+        },
+        "unit": {
+          "type": "string",
+          "required": false,
+          "description": "Unit of time for add and subtract",
+          "enum": ["seconds", "minutes", "hours", "days", "weeks", "months", "years"],
+          "default": "days"
+        },
+        "format": {
+          "type": "string",
+          "required": false,
+          "description": "Output format string",
+          "default": "2006-01-02T15:04:05Z07:00"
+        },
+        "timezone": {
+          "type": "string",
+          "required": false,
+          "description": "Timezone used for parsing and formatting",
+          "default": "UTC"
+        }
+      }
+    },
     
     "agent": {
       "description": "AI agent node",
@@ -340,6 +383,66 @@
           "required": false,
           "description": "List of field operations",
           "default": []
+        }
+      }
+    },
+
+    "filter": {
+      "description": "Keep only list items that match one or more rules",
+      "credential_type": null,
+      "parameters": {
+        "input_array": {
+          "type": "any",
+          "required": false,
+          "description": "Array to filter; defaults to the current working list"
+        },
+        "match_mode": {
+          "type": "string",
+          "required": false,
+          "description": "How multiple rules are combined",
+          "enum": ["all", "any"],
+          "default": "all"
+        },
+        "rules": {
+          "type": "array",
+          "items_type": "FilterRule",
+          "required": true,
+          "description": "Rules used to decide which items to keep"
+        }
+      }
+    },
+
+    "sort": {
+      "description": "Order a list using one or more sort rules",
+      "credential_type": null,
+      "parameters": {
+        "input_array": {
+          "type": "any",
+          "required": false,
+          "description": "Array to sort; defaults to the current working list"
+        },
+        "rules": {
+          "type": "array",
+          "items_type": "SortRule",
+          "required": true,
+          "description": "Ordered sort rules"
+        }
+      }
+    },
+
+    "limit": {
+      "description": "Keep only the first items from a list",
+      "credential_type": null,
+      "parameters": {
+        "input_array": {
+          "type": "any",
+          "required": false,
+          "description": "Array to limit; defaults to the current working list"
+        },
+        "count": {
+          "type": "number",
+          "required": true,
+          "description": "Number of items to keep"
         }
       }
     },
@@ -405,6 +508,52 @@
         }
       }
     },
+
+    "FilterRule": {
+      "description": "Filter rule definition",
+      "fields": {
+        "field": {
+          "type": "string",
+          "required": true,
+          "description": "Field path on each list item"
+        },
+        "operator": {
+          "type": "string",
+          "required": true,
+          "description": "Comparison operator",
+          "enum": ["==", "!=", ">", "<", ">=", "<=", "contains"]
+        },
+        "value": {
+          "type": "any",
+          "required": true,
+          "description": "Value to compare against"
+        }
+      }
+    },
+
+    "SortRule": {
+      "description": "Sort rule definition",
+      "fields": {
+        "field": {
+          "type": "string",
+          "required": true,
+          "description": "Field path to sort by"
+        },
+        "direction": {
+          "type": "string",
+          "required": true,
+          "description": "Sort direction",
+          "enum": ["asc", "desc", "ascending", "descending"]
+        },
+        "type": {
+          "type": "string",
+          "required": false,
+          "description": "Value type used for sorting",
+          "enum": ["auto", "text", "number", "date"],
+          "default": "auto"
+        }
+      }
+    },
     
     "EditAssignment": {
       "description": "Edit node assignment",
@@ -430,5 +579,4 @@
     }
   }
 }
-
 

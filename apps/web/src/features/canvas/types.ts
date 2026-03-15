@@ -15,6 +15,29 @@ export type EditAssignment = {
   type?: "string" | "number" | "boolean" | "json";
 };
 
+export type LogLevel = "debug" | "info" | "warn" | "error";
+
+export type DateTimeOperation = "now" | "add" | "subtract" | "format";
+
+export type DateTimeUnit = "seconds" | "minutes" | "hours" | "days" | "weeks" | "months" | "years";
+
+export type FilterOperator = "==" | "!=" | ">" | "<" | ">=" | "<=" | "contains";
+
+export type FilterRule = {
+  field?: string;
+  operator?: FilterOperator;
+  value?: string;
+};
+
+export type SortDirection = "asc" | "desc" | "ascending" | "descending";
+export type SortValueType = "auto" | "text" | "number" | "date";
+
+export type SortRule = {
+  field?: string;
+  direction?: SortDirection;
+  type?: SortValueType;
+};
+
 /** A map defining the specific data for each kind of node. */
 export type NodeDataMap = {
   trigger: BaseData;
@@ -54,9 +77,39 @@ export type NodeDataMap = {
     unit?: "seconds" | "minutes" | "hours" | "days";
   };
 
+  log: BaseData & {
+    message?: string;
+    level?: LogLevel;
+  };
+
+  datetime: BaseData & {
+    operation?: DateTimeOperation;
+    date?: string;
+    amount?: number;
+    unit?: DateTimeUnit;
+    format?: string;
+    timezone?: string;
+  };
+
   edit: BaseData & {
     mode?: "assignments" | "keep_only";
     assignments?: EditAssignment[];
+  };
+
+  filter: BaseData & {
+    input_array?: string;
+    match_mode?: "all" | "any";
+    rules?: FilterRule[];
+  };
+
+  sort: BaseData & {
+    input_array?: string;
+    rules?: SortRule[];
+  };
+
+  limit: BaseData & {
+    input_array?: string;
+    count?: number | string;
   };
 
   split: BaseData & {
@@ -85,7 +138,12 @@ export type SmtpData = NodeDataMap["smtp"];
 export type AgentData = NodeDataMap["agent"];
 export type TriggerData = NodeDataMap["trigger"];
 export type WaitData = NodeDataMap["wait"];
+export type LogData = NodeDataMap["log"];
+export type DateTimeData = NodeDataMap["datetime"];
 export type EditData = NodeDataMap["edit"];
+export type FilterData = NodeDataMap["filter"];
+export type SortData = NodeDataMap["sort"];
+export type LimitData = NodeDataMap["limit"];
 export type SplitData = NodeDataMap["split"];
 export type AggregatorData = NodeDataMap["aggregator"];
 export type MergeData = NodeDataMap["merge"];

@@ -23,6 +23,7 @@ type VariableInputProps = {
   className?: string;
   nodeId: string;
   multiline?: boolean;
+  transformSelectedPath?: (path: string) => string;
 };
 
 function formatPillLabel(segment: Segment & { type: "variable" }): string {
@@ -267,6 +268,7 @@ export function VariableInput({
   className,
   nodeId,
   multiline = false,
+  transformSelectedPath,
 }: VariableInputProps) {
   const sources = useVariableTree(nodeId);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -287,7 +289,7 @@ export function VariableInput({
   const variableRefs = useMemo(() => parseVariableReferences(value), [value]);
 
   // Build label -> color map from upstream sources (handles renamed nodes)
-  const colorMap = buildColorMap(sources);
+  const colorMap = useMemo(() => buildColorMap(sources), [sources]);
 
   // Sync segments -> contentEditable HTML only for external changes.
   useEffect(() => {
@@ -321,10 +323,10 @@ export function VariableInput({
 
   const handlePickerSelect = useCallback(
     (path: string) => {
-      insertFromPicker(path);
+      insertFromPicker(transformSelectedPath ? transformSelectedPath(path) : path);
       setPickerOpen(false);
     },
-    [insertFromPicker],
+    [insertFromPicker, transformSelectedPath],
   );
 
   const togglePicker = useCallback((e: React.MouseEvent) => {
@@ -419,7 +421,9 @@ export function VariableInput({
         <VariableAutocomplete
           sources={sources}
           query={autocompleteQuery}
-          onSelect={insertVariable}
+          onSelect={(path) =>
+            insertVariable(transformSelectedPath ? transformSelectedPath(path) : path)
+          }
           onClose={() => setShowAutocomplete(false)}
           style={{ left: autocompleteLeft }}
         />
@@ -474,7 +478,7 @@ export function VariableInput({
 }
 .inline-variable-editable.empty-placeholder:empty::before {
   content: attr(data-placeholder);
-  color: hsl(var(--muted-foreground) / 0.6);
+  color: hsl(var(--muted-foreground) / 0.4);
   pointer-events: none;
 }
 `,

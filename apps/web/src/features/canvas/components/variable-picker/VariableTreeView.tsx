@@ -53,15 +53,20 @@ function TreeRow({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const hasChildren = node.children && node.children.length > 0;
-  const isLeaf = !hasChildren;
 
-  const handleClick = useCallback(() => {
-    if (isLeaf) {
-      onSelect(node.path);
-    } else {
+  const handleSelect = useCallback(() => {
+    onSelect(node.path);
+  }, [node.path, onSelect]);
+
+  const handleToggle = useCallback(
+    (e: React.MouseEvent | React.KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!hasChildren) return;
       setIsOpen((prev) => !prev);
-    }
-  }, [isLeaf, node.path, onSelect]);
+    },
+    [hasChildren],
+  );
 
   const handleCopy = useCallback(
     (e: React.MouseEvent) => {
@@ -77,21 +82,35 @@ function TreeRow({
       <div
         className={cn(
           "group flex items-center gap-1.5 rounded-sm px-1.5 py-1 text-xs transition-colors",
-          isLeaf ? "cursor-pointer hover:bg-accent/50" : "cursor-pointer hover:bg-muted/50",
+          !hasChildren ? "cursor-pointer hover:bg-accent/50" : "cursor-pointer hover:bg-muted/50",
         )}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
-        onClick={handleClick}
+        onClick={handleSelect}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            handleClick();
+            handleSelect();
           }
         }}
       >
         {/* Expand chevron */}
-        <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+        <button
+          type="button"
+          className={cn(
+            "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm",
+            hasChildren ? "hover:bg-muted/60" : "cursor-default",
+          )}
+          onClick={handleToggle}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              handleToggle(e);
+            }
+          }}
+          tabIndex={hasChildren ? 0 : -1}
+          aria-label={hasChildren ? (isOpen ? "Collapse" : "Expand") : undefined}
+        >
           {hasChildren ? (
             isOpen ? (
               <ChevronDown className="h-3 w-3 text-muted-foreground" />
@@ -101,7 +120,7 @@ function TreeRow({
           ) : (
             <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
           )}
-        </span>
+        </button>
 
         {/* Field name */}
         <span className="shrink-0 font-medium text-foreground">{node.key}</span>

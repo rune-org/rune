@@ -1,19 +1,24 @@
 import {
   Bot,
+  CalendarClock,
   Clock,
   Combine,
+  Filter,
   GitBranch,
   Globe,
   Layers,
+  ListOrdered,
+  Logs,
   Mail,
   Pencil,
   Play,
   Route,
   Split,
+  SquareDashedBottom,
   Wand2,
   type LucideIcon,
 } from "lucide-react";
-import type { NodeDataMap, NodeKind, SwitchData } from "../types";
+import type { FilterData, NodeDataMap, NodeKind, SortData, SwitchData } from "../types";
 
 export type NodeGroup = "triggers" | "flow" | "transform" | "http" | "email" | "agents";
 
@@ -177,6 +182,46 @@ export const NODE_REGISTRY: NodeRegistry = {
     hasDynamicOutputs: false,
     shortcutKey: "w",
   },
+  log: {
+    kind: "log",
+    label: "Log",
+    icon: Logs,
+    colorTheme: {
+      base: "--node-flow",
+      bg: "--node-flow-bg",
+      border: "--node-flow-border",
+    },
+    dimensions: { width: 220, height: 72 },
+    defaults: { label: "Log", message: "", level: "info" },
+    schema: { inputs: ["input"], outputs: ["message"] },
+    group: "flow",
+    isTrigger: false,
+    hasDynamicOutputs: false,
+    shortcutKey: "l",
+  },
+  datetime: {
+    kind: "datetime",
+    label: "Date & Time",
+    icon: CalendarClock,
+    colorTheme: {
+      base: "--node-transform",
+      bg: "--node-transform-bg",
+      border: "--node-transform-border",
+    },
+    dimensions: { width: 220, height: 80 },
+    defaults: {
+      label: "Date & Time",
+      operation: "now",
+      unit: "days",
+      format: "2006-01-02T15:04:05Z07:00",
+      timezone: "UTC",
+    },
+    schema: { inputs: ["input"], outputs: ["result"] },
+    group: "transform",
+    isTrigger: false,
+    hasDynamicOutputs: false,
+    shortcutKey: "d",
+  },
   edit: {
     kind: "edit",
     label: "Edit",
@@ -197,6 +242,64 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "e",
+  },
+  filter: {
+    kind: "filter",
+    label: "Filter",
+    icon: Filter,
+    colorTheme: {
+      base: "--node-transform",
+      bg: "--node-transform-bg",
+      border: "--node-transform-border",
+    },
+    dimensions: { width: 220, height: 80 },
+    defaults: {
+      label: "Filter",
+      match_mode: "all",
+      rules: [{ field: "", operator: "==", value: "" }],
+    },
+    schema: { inputs: ["items"], outputs: ["filtered"] },
+    group: "transform",
+    isTrigger: false,
+    hasDynamicOutputs: false,
+    shortcutKey: "f",
+  },
+  sort: {
+    kind: "sort",
+    label: "Sort",
+    icon: ListOrdered,
+    colorTheme: {
+      base: "--node-transform",
+      bg: "--node-transform-bg",
+      border: "--node-transform-border",
+    },
+    dimensions: { width: 220, height: 80 },
+    defaults: {
+      label: "Sort",
+      rules: [{ field: "", direction: "asc", type: "auto" }],
+    },
+    schema: { inputs: ["items"], outputs: ["sorted"] },
+    group: "transform",
+    isTrigger: false,
+    hasDynamicOutputs: false,
+    shortcutKey: "o",
+  },
+  limit: {
+    kind: "limit",
+    label: "Limit",
+    icon: SquareDashedBottom,
+    colorTheme: {
+      base: "--node-transform",
+      bg: "--node-transform-bg",
+      border: "--node-transform-border",
+    },
+    dimensions: { width: 220, height: 72 },
+    defaults: { label: "Limit", count: 10 },
+    schema: { inputs: ["items"], outputs: ["limited"] },
+    group: "transform",
+    isTrigger: false,
+    hasDynamicOutputs: false,
+    shortcutKey: "n",
   },
   split: {
     kind: "split",
@@ -294,6 +397,16 @@ export function getNodeDimensionsWithData(
   if (kind === "switch") {
     const ruleCount = (data as SwitchData | undefined)?.rules?.length ?? 0;
     return { width: base.width, height: 64 + (ruleCount + 1) * 64 };
+  }
+
+  if (kind === "filter") {
+    const ruleCount = (data as FilterData | undefined)?.rules?.length ?? 0;
+    return { width: base.width, height: Math.max(base.height, 72 + Math.min(ruleCount, 2) * 18) };
+  }
+
+  if (kind === "sort") {
+    const ruleCount = (data as SortData | undefined)?.rules?.length ?? 0;
+    return { width: base.width, height: Math.max(base.height, 72 + Math.min(ruleCount, 2) * 18) };
   }
 
   // Other nodes that expect dynamic resizing should be added as needed.

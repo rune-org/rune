@@ -185,6 +185,7 @@ func TestResolver_ResolveString(t *testing.T) {
 		"$node1": map[string]interface{}{
 			"name":  "Alice",
 			"count": 42,
+			"$json": []interface{}{"a", "b"},
 		},
 	}
 
@@ -198,6 +199,12 @@ func TestResolver_ResolveString(t *testing.T) {
 			name:    "single reference - returns actual type",
 			input:   "$node1.count",
 			want:    42,
+			wantErr: false,
+		},
+		{
+			name:    "single reference with nested dollar path returns actual type",
+			input:   "$node1.$json",
+			want:    []interface{}{"a", "b"},
 			wantErr: false,
 		},
 		{
@@ -248,7 +255,7 @@ func TestResolver_ResolveString(t *testing.T) {
 				return
 			}
 
-			if !tt.wantErr && got != tt.want {
+			if !tt.wantErr && !deepEqual(got, tt.want) {
 				t.Errorf("resolveString() = %v (%T), want %v (%T)", got, got, tt.want, tt.want)
 			}
 		})
