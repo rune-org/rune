@@ -1,4 +1,5 @@
 import {
+  bulkWorkflowOperationWorkflowsBulkPost,
   listWorkflowsWorkflowsGet,
   getWorkflowWorkflowsWorkflowIdGet,
   createWorkflowWorkflowsPost,
@@ -24,6 +25,7 @@ import type {
   WorkflowPublishVersion,
   WorkflowRestoreVersion,
   WorkflowRunRequest,
+  BulkWorkflowRequest,
   ListWorkflowsWorkflowsGetResponse,
   GetWorkflowWorkflowsWorkflowIdGetResponse,
   CreateWorkflowWorkflowsPostResponse,
@@ -39,6 +41,7 @@ import type {
   GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponse,
   PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponse,
   RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponse,
+  BulkWorkflowOperationWorkflowsBulkPostResponse,
 } from "@/client/types.gen";
 
 // Readable wrappers for workflow-related SDK functions
@@ -73,6 +76,9 @@ export const runWorkflow = (workflow_id: number, version_id?: number) =>
     path: { workflow_id },
     body: version_id != null ? ({ version_id } as WorkflowRunRequest) : null,
   });
+
+export const bulkWorkflowOperation = (payload: BulkWorkflowRequest) =>
+  bulkWorkflowOperationWorkflowsBulkPost({ body: payload });
 
 // --- Version API wrappers ---
 
@@ -156,6 +162,7 @@ export type UpdateWorkflowNameResponse = UpdateNameWorkflowsWorkflowIdNamePutRes
 export type UpdateWorkflowStatusResponse = UpdateStatusWorkflowsWorkflowIdStatusPutResponse;
 export type DeleteWorkflowResponse = DeleteWorkflowWorkflowsWorkflowIdDeleteResponse;
 export type RunWorkflowResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponse;
+export type BulkWorkflowOperationResponse = BulkWorkflowOperationWorkflowsBulkPostResponse;
 export type RequestExecutionAccessResponse =
   GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetResponse;
 export type RequestSpecificExecutionAccessResponse =

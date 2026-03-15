@@ -1,92 +1,32 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { Download, MoreHorizontal, Play, Search, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { useAppState } from "@/lib/state";
-import type { WorkflowSummary } from "@/lib/workflows";
 import { toast } from "@/components/ui/toast";
 import { useAuth } from "@/lib/auth";
 import {
   deleteWorkflow,
-  getWorkflowById,
-  listUserExecutions,
   runWorkflow,
   updateWorkflowName,
   updateWorkflowStatus,
 } from "@/lib/api/workflows";
-import type { ExecutionListItem as ApiExecutionListItem } from "@/client/types.gen";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  canExecuteWorkflow,
-  canDeleteWorkflow,
-  canShareWorkflow,
-  canRenameWorkflow,
-  canChangeWorkflowStatus,
-  canViewWorkflow,
-} from "@/lib/permissions";
+import { useAppState } from "@/lib/state";
+import type { WorkflowSummary } from "@/lib/workflows";
 import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog";
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { stripCredentialsFromWorkflowData } from "@/lib/workflow-dsl";
-import { formatRelativeTime, formatAbsoluteTime } from "@/lib/formatTime";
-
-function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
-  if (status === "active")
-    return (
-      <Badge className="bg-emerald-900/40 text-emerald-200" variant="secondary">
-        Active
-      </Badge>
-    );
-  return (
-    <Badge className="bg-amber-900/40 text-amber-200" variant="secondary">
-      Draft
-    </Badge>
-  );
-}
-
-function LastRunCell({ lastRun, loaded }: { lastRun?: ApiExecutionListItem; loaded: boolean }) {
-  if (!loaded) return "\u2014";
-  if (!lastRun) return "N/A";
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span>{formatRelativeTime(lastRun.created_at)}</span>
-      </TooltipTrigger>
-      <TooltipContent>{formatAbsoluteTime(lastRun.created_at)}</TooltipContent>
-    </Tooltip>
-  );
-}
-
-type StatFilter = "all" | "active" | "runs" | "draft" | "failed";
+import { WorkflowBulkActionsBar } from "@/components/workflows/table/WorkflowBulkActionsBar";
+import { WorkflowsDataTable } from "@/components/workflows/table/WorkflowsDataTable";
+import { WorkflowsTableFilters } from "@/components/workflows/table/WorkflowsTableFilters";
+import {
+  buildWorkflowExportFile,
+  bulkExportWorkflowDetails,
+  downloadWorkflowFile,
+} from "@/components/workflows/table/workflowExport";
+import { runWorkflowBulkOperation } from "@/components/workflows/table/workflowBulkOperations";
+import { DeleteWorkflowDialog } from "@/components/workflows/table/dialogs/DeleteWorkflowDialog";
+import { RenameWorkflowDialog } from "@/components/workflows/table/dialogs/RenameWorkflowDialog";
+import { BulkDeleteWorkflowsDialog } from "@/components/workflows/table/dialogs/BulkDeleteWorkflowsDialog";
+import { useWorkflowExecutionsLookup } from "@/components/workflows/table/hooks/useWorkflowExecutionsLookup";
+import { useWorkflowTableModel } from "@/components/workflows/table/hooks/useWorkflowTableModel";
 
 export function WorkflowsTable() {
   const {
@@ -97,51 +37,64 @@ export function WorkflowsTable() {
   const { state: authState } = useAuth();
   const isAdmin = authState.user?.role === "admin";
 
-  // HACK: The /workflows endpoint doesn't expose execution history yet,
-  // so we fetch from /executions (archivist) and join client-side.
-  const [executionItems, setExecutionItems] = useState<ApiExecutionListItem[]>([]);
-  const [executionsLoaded, setExecutionsLoaded] = useState(false);
+  const { executionItems, executionsLoaded, lastRunByWorkflow, refreshExecutions } =
+    useWorkflowExecutionsLookup();
 
-  const refreshExecutions = useCallback(async () => {
-    try {
-      const res = await listUserExecutions();
-      const items = res.data?.data;
-      if (items) {
-        setExecutionItems((prev) => {
-          if (prev.length === items.length && prev.every((e, i) => e.id === items[i].id))
-            return prev;
-          return items;
-        });
-      }
-    } catch {
-    } finally {
-      setExecutionsLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    void refreshExecutions();
-  }, [refreshExecutions]);
-
-  const lastRunByWorkflow = useMemo(() => {
-    const map = new Map<string, ApiExecutionListItem>();
-    for (const exec of executionItems) {
-      const key = String(exec.workflow_id);
-      const existing = map.get(key);
-      if (!existing || exec.created_at > existing.created_at) {
-        map.set(key, exec);
-      }
-    }
-    return map;
-  }, [executionItems]);
-
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<StatFilter>("all");
-  const [pendingWorkflowId, setPendingWorkflowId] = useState<string | null>(null);
+  const [pendingWorkflowIds, setPendingWorkflowIds] = useState<Set<string>>(new Set());
+  const [exportingWorkflowIds, setExportingWorkflowIds] = useState<Set<string>>(new Set());
   const [renameTarget, setRenameTarget] = useState<WorkflowSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<WorkflowSummary | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [shareTarget, setShareTarget] = useState<WorkflowSummary | null>(null);
-  const [exportingWorkflowId, setExportingWorkflowId] = useState<string | null>(null);
+
+  const {
+    query,
+    setQuery,
+    filter,
+    setFilter,
+    filtered,
+    stats,
+    selectedWorkflowIds,
+    selectedCount,
+    allFilteredSelected,
+    someFilteredSelected,
+    selectedRunnable,
+    selectedActivatable,
+    selectedDeactivatable,
+    selectedDeletable,
+    selectedExportable,
+    clearSelection,
+    handleSelectAllFiltered,
+    handleToggleSelected,
+    setSelectedWorkflowIds,
+  } = useWorkflowTableModel({
+    workflows,
+    isAdmin,
+    lastRunByWorkflow,
+    executionItems,
+  });
+
+  const markWorkflowsPending = useCallback((ids: string[], pending: boolean) => {
+    setPendingWorkflowIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => {
+        if (pending) next.add(id);
+        else next.delete(id);
+      });
+      return next;
+    });
+  }, []);
+
+  const markWorkflowsExporting = useCallback((ids: string[], exporting: boolean) => {
+    setExportingWorkflowIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => {
+        if (exporting) next.add(id);
+        else next.delete(id);
+      });
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (workflows.length === 0) void actions.init();
@@ -153,7 +106,7 @@ export function WorkflowsTable() {
       const workflowId = Number(workflow.id);
       if (!Number.isFinite(workflowId)) return;
 
-      setPendingWorkflowId(workflow.id);
+      markWorkflowsPending([workflow.id], true);
       try {
         await updateWorkflowStatus(workflowId, workflow.status !== "active");
         toast.success(workflow.status === "active" ? "Workflow deactivated" : "Workflow activated");
@@ -161,10 +114,10 @@ export function WorkflowsTable() {
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to update workflow status.");
       } finally {
-        setPendingWorkflowId(null);
+        markWorkflowsPending([workflow.id], false);
       }
     },
-    [actions],
+    [actions, markWorkflowsPending],
   );
 
   const beginDelete = useCallback((workflow: WorkflowSummary) => {
@@ -179,7 +132,7 @@ export function WorkflowsTable() {
       return;
     }
 
-    setPendingWorkflowId(deleteTarget.id);
+    markWorkflowsPending([deleteTarget.id], true);
     try {
       await deleteWorkflow(workflowId);
       toast.success("Workflow deleted");
@@ -188,16 +141,16 @@ export function WorkflowsTable() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to delete workflow.");
     } finally {
-      setPendingWorkflowId(null);
+      markWorkflowsPending([deleteTarget.id], false);
     }
-  }, [actions, deleteTarget]);
+  }, [actions, deleteTarget, markWorkflowsPending]);
 
   const handleRun = useCallback(
     async (workflow: WorkflowSummary) => {
       const workflowId = Number(workflow.id);
       if (!Number.isFinite(workflowId)) return;
 
-      setPendingWorkflowId(workflow.id);
+      markWorkflowsPending([workflow.id], true);
       try {
         await runWorkflow(workflowId);
         toast.success("Workflow successfully executed.");
@@ -207,52 +160,40 @@ export function WorkflowsTable() {
           error instanceof Error ? error.message : "Failed to queue workflow for execution.",
         );
       } finally {
-        setPendingWorkflowId(null);
+        markWorkflowsPending([workflow.id], false);
       }
     },
-    [refreshExecutions],
+    [markWorkflowsPending, refreshExecutions],
   );
 
-  const handleExport = useCallback(async (workflow: WorkflowSummary) => {
-    const workflowId = Number(workflow.id);
-    if (!Number.isFinite(workflowId)) return;
-
-    setExportingWorkflowId(workflow.id);
-    try {
-      const response = await getWorkflowById(workflowId);
-      if (response.error || !response.data?.data) {
-        toast.error("Failed to load workflow for export.");
-        return;
+  const handleExport = useCallback(
+    async (workflow: WorkflowSummary, options?: { silent?: boolean }) => {
+      const silent = options?.silent ?? false;
+      markWorkflowsExporting([workflow.id], true);
+      try {
+        const workflowId = Number(workflow.id);
+        if (!Number.isFinite(workflowId)) {
+          throw new Error("Invalid workflow ID");
+        }
+        const result = await bulkExportWorkflowDetails([workflowId]);
+        const detail = result.exported[0];
+        if (!detail) {
+          throw new Error("Workflow export was not returned by server");
+        }
+        const { blob, fileName } = buildWorkflowExportFile(workflow, detail);
+        downloadWorkflowFile(blob, fileName);
+        if (!silent) toast.success("Workflow exported");
+      } catch (error) {
+        if (!silent) {
+          toast.error(error instanceof Error ? error.message : "Failed to export workflow.");
+        }
+        throw error;
+      } finally {
+        markWorkflowsExporting([workflow.id], false);
       }
-      const detail = response.data.data;
-      const rawData = (detail.latest_version?.workflow_data ?? undefined) as
-        | Record<string, unknown>
-        | undefined;
-      const hasGraph = rawData && Array.isArray(rawData.nodes) && Array.isArray(rawData.edges);
-      if (!hasGraph) {
-        toast.error("Workflow has no graph data to export.");
-        return;
-      }
-      const { nodes, edges } = stripCredentialsFromWorkflowData(rawData);
-      const payload = { nodes, edges };
-      const json = JSON.stringify(payload, null, 2);
-      const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      const safeName = (workflow.name || "workflow").replace(/[^a-zA-Z0-9-_]/g, "_");
-      a.download = `workflow-${safeName}-${workflow.id}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Workflow exported");
-    } catch {
-      toast.error("Failed to export workflow.");
-    } finally {
-      setExportingWorkflowId(null);
-    }
-  }, []);
+    },
+    [markWorkflowsExporting],
+  );
 
   const handleRenameSubmit = useCallback(
     async (newName: string) => {
@@ -266,7 +207,7 @@ export function WorkflowsTable() {
         return;
       }
 
-      setPendingWorkflowId(renameTarget.id);
+      markWorkflowsPending([renameTarget.id], true);
       try {
         await updateWorkflowName(workflowId, trimmed);
         toast.success("Workflow renamed");
@@ -275,293 +216,224 @@ export function WorkflowsTable() {
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to rename workflow.");
       } finally {
-        setPendingWorkflowId(null);
+        markWorkflowsPending([renameTarget.id], false);
       }
     },
-    [actions, renameTarget],
+    [actions, markWorkflowsPending, renameTarget],
   );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let list = workflows;
-    switch (filter) {
-      case "active":
-        list = list.filter((w) => w.status === "active");
-        break;
-      case "draft":
-        list = list.filter((w) => w.status === "draft");
-        break;
-      case "failed":
-        list = list.filter((w) => lastRunByWorkflow.get(w.id)?.status === "failed");
-        break;
-      case "runs":
-        list = list.filter((w) => lastRunByWorkflow.has(w.id));
-        break;
-      default:
-        break;
+  const handleBulkExport = useCallback(async () => {
+    if (selectedExportable.length === 0) return;
+
+    const selectedById = new Map(selectedExportable.map((workflow) => [Number(workflow.id), workflow]));
+    const workflowIds = [...selectedById.keys()].filter(Number.isFinite);
+    if (workflowIds.length === 0) return;
+
+    markWorkflowsExporting(selectedExportable.map((workflow) => workflow.id), true);
+    try {
+      const result = await runWorkflowBulkOperation("export", workflowIds);
+
+      for (const detail of result.exported) {
+        const source = selectedById.get(detail.id);
+        if (!source) continue;
+        const { blob, fileName } = buildWorkflowExportFile(source, detail);
+        downloadWorkflowFile(blob, fileName);
+      }
+
+      if (result.failedCount === 0) {
+        toast.success(`Exported ${result.succeededCount} workflow${result.succeededCount === 1 ? "" : "s"}.`);
+      } else {
+        toast.error(
+          `Exported ${result.succeededCount} and skipped ${result.failedCount} workflow${result.failedCount === 1 ? "" : "s"}.`,
+        );
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Bulk export failed");
+    } finally {
+      markWorkflowsExporting(selectedExportable.map((workflow) => workflow.id), false);
     }
-    if (!q) return list;
-    return list.filter((w) => w.name.toLowerCase().includes(q));
-  }, [workflows, query, filter, lastRunByWorkflow]);
+  }, [markWorkflowsExporting, selectedExportable]);
 
-  const stats = useMemo(() => {
-    const active = workflows.filter((w) => w.status === "active").length;
-    const draft = workflows.filter((w) => w.status === "draft").length;
-    const failed = workflows.filter((w) => lastRunByWorkflow.get(w.id)?.status === "failed").length;
-    const runs = executionItems.length;
-    return { active, draft, failed, runs };
-  }, [workflows, lastRunByWorkflow, executionItems.length]);
+  const handleBulkRun = useCallback(async () => {
+    if (selectedRunnable.length === 0) return;
 
-  const isRowPending = useCallback((id: string) => pendingWorkflowId === id, [pendingWorkflowId]);
-  const isRowExporting = useCallback(
-    (id: string) => exportingWorkflowId === id,
-    [exportingWorkflowId],
+    const ids = selectedRunnable.map((workflow) => workflow.id);
+    markWorkflowsPending(ids, true);
+    try {
+      const workflowIds = selectedRunnable
+        .map((workflow) => Number(workflow.id))
+        .filter((workflowId) => Number.isFinite(workflowId));
+      const result = await runWorkflowBulkOperation("run", workflowIds);
+
+      if (result.succeededCount > 0) {
+        toast.success(
+          `Queued ${result.succeededCount} workflow${result.succeededCount > 1 ? "s" : ""} for execution.`,
+        );
+        void refreshExecutions();
+      }
+      if (result.failedCount > 0) {
+        toast.error(
+          `Failed to run ${result.failedCount} workflow${result.failedCount > 1 ? "s" : ""}.`,
+        );
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Bulk run failed");
+    } finally {
+      markWorkflowsPending(ids, false);
+    }
+  }, [markWorkflowsPending, refreshExecutions, selectedRunnable]);
+
+  const handleBulkStatusChange = useCallback(
+    async (target: "active" | "draft") => {
+      const candidates = target === "active" ? selectedActivatable : selectedDeactivatable;
+      if (candidates.length === 0) return;
+
+      const ids = candidates.map((workflow) => workflow.id);
+      markWorkflowsPending(ids, true);
+      try {
+        const workflowIds = candidates
+          .map((workflow) => Number(workflow.id))
+          .filter((workflowId) => Number.isFinite(workflowId));
+        const action = target === "active" ? "activate" : "deactivate";
+        const result = await runWorkflowBulkOperation(action, workflowIds);
+
+        if (result.succeededCount > 0) {
+          toast.success(
+            `${target === "active" ? "Activated" : "Deactivated"} ${result.succeededCount} workflow${result.succeededCount > 1 ? "s" : ""}.`,
+          );
+          await actions.refreshWorkflows();
+        }
+        if (result.failedCount > 0) {
+          toast.error(
+            `Failed to ${target === "active" ? "activate" : "deactivate"} ${result.failedCount} workflow${result.failedCount > 1 ? "s" : ""}.`,
+          );
+        }
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : `Bulk ${target === "active" ? "activate" : "deactivate"} failed`,
+        );
+      } finally {
+        markWorkflowsPending(ids, false);
+      }
+    },
+    [actions, markWorkflowsPending, selectedActivatable, selectedDeactivatable],
   );
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedDeletable.length === 0) return;
+
+    const ids = selectedDeletable.map((workflow) => workflow.id);
+    markWorkflowsPending(ids, true);
+    try {
+      const workflowIds = selectedDeletable
+        .map((workflow) => Number(workflow.id))
+        .filter((workflowId) => Number.isFinite(workflowId));
+      const result = await runWorkflowBulkOperation("delete", workflowIds);
+
+      if (result.succeededCount > 0) {
+        toast.success(
+          `Deleted ${result.succeededCount} workflow${result.succeededCount > 1 ? "s" : ""}.`,
+        );
+        setSelectedWorkflowIds((prev) => {
+          const next = new Set(prev);
+          result.succeededIds.forEach((id) => next.delete(String(id)));
+          return next;
+        });
+        await actions.refreshWorkflows();
+      }
+      if (result.failedCount > 0) {
+        toast.error(
+          `Failed to delete ${result.failedCount} workflow${result.failedCount > 1 ? "s" : ""}.`,
+        );
+      }
+      setBulkDeleteOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Bulk delete failed");
+    } finally {
+      markWorkflowsPending(ids, false);
+    }
+  }, [actions, markWorkflowsPending, selectedDeletable, setSelectedWorkflowIds]);
+
+  const isRowPending = useCallback((id: string) => pendingWorkflowIds.has(id), [pendingWorkflowIds]);
+  const isRowExporting = useCallback(
+    (id: string) => exportingWorkflowIds.has(id),
+    [exportingWorkflowIds],
+  );
+  const hasPendingWorkflowOps = pendingWorkflowIds.size > 0;
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6 text-sm">
-          <button
-            type="button"
-            onClick={() => setFilter((f) => (f === "active" ? "all" : "active"))}
-            aria-pressed={filter === "active"}
-            className={
-              filter === "active" ? "text-accent" : "text-muted-foreground hover:text-foreground"
-            }
-          >
-            <span className="font-semibold">{stats.active}</span> Active
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter((f) => (f === "runs" ? "all" : "runs"))}
-            aria-pressed={filter === "runs"}
-            className={
-              filter === "runs" ? "text-accent" : "text-muted-foreground hover:text-foreground"
-            }
-          >
-            <span className="font-semibold">{stats.runs}</span> Runs
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter((f) => (f === "draft" ? "all" : "draft"))}
-            aria-pressed={filter === "draft"}
-            className={
-              filter === "draft" ? "text-accent" : "text-muted-foreground hover:text-foreground"
-            }
-          >
-            <span className="font-semibold">{stats.draft}</span> Draft
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter((f) => (f === "failed" ? "all" : "failed"))}
-            aria-pressed={filter === "failed"}
-            className={
-              filter === "failed" ? "text-accent" : "text-muted-foreground hover:text-foreground"
-            }
-          >
-            <span className="font-semibold">{stats.failed}</span> Failed
-          </button>
-        </div>
-      </div>
+      <WorkflowsTableFilters
+        stats={stats}
+        filter={filter}
+        onFilterChange={setFilter}
+        query={query}
+        onQueryChange={setQuery}
+      />
 
-      <div className="relative">
-        <Input
-          placeholder="Search workflows..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="pl-10"
-        />
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      </div>
+      <WorkflowBulkActionsBar
+        selectedCount={selectedCount}
+        runnableCount={selectedRunnable.length}
+        activatableCount={selectedActivatable.length}
+        deactivatableCount={selectedDeactivatable.length}
+        exportableCount={selectedExportable.length}
+        deletableCount={selectedDeletable.length}
+        onRun={handleBulkRun}
+        onActivate={() => handleBulkStatusChange("active")}
+        onDeactivate={() => handleBulkStatusChange("draft")}
+        onExport={handleBulkExport}
+        onDelete={() => setBulkDeleteOpen(true)}
+        onClear={clearSelection}
+      />
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[8%]">ID</TableHead>
-            <TableHead className="w-[30%]">Name</TableHead>
-            <TableHead className="w-[17%]">Trigger Type</TableHead>
-            <TableHead className="w-[17%]">Status</TableHead>
-            <TableHead className="w-[15%]">Last Run</TableHead>
-            <TableHead className="w-[13%] text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filtered.map((w) => (
-            <TableRow key={w.id} data-loading={loading || isRowPending(w.id) ? "1" : undefined}>
-              <TableCell className="font-mono text-xs text-muted-foreground">{w.id}</TableCell>
-              <TableCell className="font-medium text-foreground">
-                <div className="flex items-center gap-2">
-                  <a
-                    href={`/create/app?workflow=${w.id}`}
-                    className="text-foreground underline-offset-4 hover:underline"
-                  >
-                    {w.name}
-                  </a>
-                  {/* TODO: Show version badge & unpublished dot once WorkflowListItem exposes latest_version_number and has_unpublished_changes */}
-                  <Badge variant={w.role === "owner" ? "secondary" : "outline"} className="text-xs">
-                    {w.role === "owner" ? "Owner" : "Shared"}
-                  </Badge>
-                </div>
-              </TableCell>
-              <TableCell className="text-muted-foreground">{w.triggerType}</TableCell>
-              <TableCell>
-                <StatusBadge status={w.status} />
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                <LastRunCell lastRun={lastRunByWorkflow.get(w.id)} loaded={executionsLoaded} />
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  {canExecuteWorkflow(w.role, isAdmin) && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 p-0"
-                          disabled={isRowPending(w.id)}
-                          onClick={() => handleRun(w)}
-                          aria-label={`Run ${w.name}`}
-                        >
-                          <Play className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Run workflow</TooltipContent>
-                    </Tooltip>
-                  )}
-                  {canViewWorkflow(w.role, isAdmin) && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 p-0"
-                          disabled={isRowExporting(w.id)}
-                          onClick={() => handleExport(w)}
-                          aria-label={`Export ${w.name} to JSON`}
-                        >
-                          <Download className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Export to JSON</TooltipContent>
-                    </Tooltip>
-                  )}
-                  {canDeleteWorkflow(w.role, isAdmin) && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 p-0 hover:text-destructive"
-                          disabled={isRowPending(w.id)}
-                          onClick={() => beginDelete(w)}
-                          aria-label={`Delete ${w.name}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Delete workflow</TooltipContent>
-                    </Tooltip>
-                  )}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                        aria-label={`More actions for ${w.name}`}
-                        disabled={isRowPending(w.id)}
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem asChild>
-                        <a href={`/create/app?workflow=${w.id}`}>Open in Canvas</a>
-                      </DropdownMenuItem>
-                      {canRenameWorkflow(w.role, isAdmin) && (
-                        <DropdownMenuItem
-                          onSelect={() => setRenameTarget(w)}
-                          disabled={isRowPending(w.id)}
-                        >
-                          Rename
-                        </DropdownMenuItem>
-                      )}
-                      {canChangeWorkflowStatus(w.role, isAdmin) && (
-                        <DropdownMenuItem
-                          onSelect={() => handleToggleActive(w)}
-                          disabled={isRowPending(w.id)}
-                        >
-                          {w.status === "active" ? "Deactivate" : "Activate"}
-                        </DropdownMenuItem>
-                      )}
-                      {canExecuteWorkflow(w.role, isAdmin) && (
-                        <DropdownMenuItem
-                          onSelect={() => handleRun(w)}
-                          disabled={isRowPending(w.id)}
-                        >
-                          Run
-                        </DropdownMenuItem>
-                      )}
-                      {canViewWorkflow(w.role, isAdmin) && (
-                        <DropdownMenuItem
-                          onSelect={() => handleExport(w)}
-                          disabled={isRowExporting(w.id)}
-                        >
-                          Export to JSON
-                        </DropdownMenuItem>
-                      )}
-                      {/* TODO: Add "Publish Latest Version" once WorkflowListItem exposes has_unpublished_changes */}
-                      {canShareWorkflow(w.role, isAdmin) && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onSelect={() => setShareTarget(w)}
-                            disabled={isRowPending(w.id)}
-                          >
-                            Share
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                      {canDeleteWorkflow(w.role, isAdmin) && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onSelect={() => beginDelete(w)}
-                            disabled={isRowPending(w.id)}
-                            className="text-red-400 focus:text-red-300 data-highlighted:bg-red-500/10 data-highlighted:text-red-200"
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-        <TableCaption>
-          {filtered.length === 0
-            ? loading
-              ? "Loading workflows..."
-              : "No workflows found."
-            : `${filtered.length} workflow${filtered.length > 1 ? "s" : ""} total.`}
-        </TableCaption>
-      </Table>
+      <WorkflowsDataTable
+        workflows={filtered}
+        loading={loading}
+        selectedWorkflowIds={selectedWorkflowIds}
+        allFilteredSelected={allFilteredSelected}
+        someFilteredSelected={someFilteredSelected}
+        onSelectAllFiltered={handleSelectAllFiltered}
+        onToggleSelected={handleToggleSelected}
+        isRowPending={isRowPending}
+        isRowExporting={isRowExporting}
+        isAdmin={isAdmin}
+        lastRunByWorkflow={lastRunByWorkflow}
+        executionsLoaded={executionsLoaded}
+        onRun={handleRun}
+        onExport={(workflow) => {
+          void handleExport(workflow);
+        }}
+        onDelete={beginDelete}
+        onRename={setRenameTarget}
+        onToggleActive={(workflow) => {
+          void handleToggleActive(workflow);
+        }}
+        onShare={setShareTarget}
+      />
+
       <RenameWorkflowDialog
         workflow={renameTarget}
         onClose={() => setRenameTarget(null)}
         onSubmit={handleRenameSubmit}
-        pending={pendingWorkflowId !== null}
+        pending={hasPendingWorkflowOps}
       />
       <DeleteWorkflowDialog
         workflow={deleteTarget}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
-        pending={pendingWorkflowId !== null}
+        pending={hasPendingWorkflowOps}
       />
+      <BulkDeleteWorkflowsDialog
+        open={bulkDeleteOpen}
+        onCancel={() => setBulkDeleteOpen(false)}
+        onConfirm={handleBulkDelete}
+        pending={hasPendingWorkflowOps}
+        selectedCount={selectedCount}
+        deletableCount={selectedDeletable.length}
+      />
+
       {shareTarget && (
         <ShareWorkflowDialog
           workflowId={shareTarget.id}
@@ -573,103 +445,5 @@ export function WorkflowsTable() {
         />
       )}
     </div>
-  );
-}
-
-type RenameWorkflowDialogProps = {
-  workflow: WorkflowSummary | null;
-  onClose: () => void;
-  onSubmit: (name: string) => void | Promise<void>;
-  pending: boolean;
-};
-
-function RenameWorkflowDialog({ workflow, onClose, onSubmit, pending }: RenameWorkflowDialogProps) {
-  const [name, setName] = useState(workflow?.name ?? "");
-
-  useEffect(() => {
-    setName(workflow?.name ?? "");
-  }, [workflow]);
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!workflow || pending) return;
-    await onSubmit(name);
-  };
-
-  return (
-    <Dialog
-      open={workflow !== null}
-      onOpenChange={(open) => {
-        if (!open && !pending) onClose();
-      }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Rename workflow</DialogTitle>
-          <DialogDescription>
-            Update the workflow name. This does not impact any executions.
-          </DialogDescription>
-        </DialogHeader>
-        <form className="grid gap-4" onSubmit={handleSubmit}>
-          <div className="grid gap-2">
-            <Label htmlFor="rename-workflow">Name</Label>
-            <Input
-              id="rename-workflow"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              disabled={pending}
-              required
-            />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={onClose} disabled={pending}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={pending || !name.trim()}>
-              {pending ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-type DeleteWorkflowDialogProps = {
-  workflow: WorkflowSummary | null;
-  onCancel: () => void;
-  onConfirm: () => void | Promise<void>;
-  pending: boolean;
-};
-
-function DeleteWorkflowDialog({
-  workflow,
-  onCancel,
-  onConfirm,
-  pending,
-}: DeleteWorkflowDialogProps) {
-  return (
-    <ConfirmationDialog
-      open={workflow !== null}
-      onOpenChange={(open) => {
-        if (!open && !pending) onCancel();
-      }}
-      title="Delete workflow"
-      description={
-        <>
-          This will permanently delete the workflow{" "}
-          <span className="font-semibold">{workflow?.name ?? "Untitled"}</span> and its
-          configuration. This action cannot be undone.
-        </>
-      }
-      cancelText="Cancel"
-      confirmText={pending ? "Deleting…" : "Delete"}
-      onConfirm={async () => {
-        await onConfirm();
-        return true;
-      }}
-      isDangerous
-      isLoading={pending}
-    />
   );
 }
