@@ -225,11 +225,16 @@ export function WorkflowsTable() {
   const handleBulkExport = useCallback(async () => {
     if (selectedExportable.length === 0) return;
 
-    const selectedById = new Map(selectedExportable.map((workflow) => [Number(workflow.id), workflow]));
+    const selectedById = new Map(
+      selectedExportable.map((workflow) => [Number(workflow.id), workflow]),
+    );
     const workflowIds = [...selectedById.keys()].filter(Number.isFinite);
     if (workflowIds.length === 0) return;
 
-    markWorkflowsExporting(selectedExportable.map((workflow) => workflow.id), true);
+    markWorkflowsExporting(
+      selectedExportable.map((workflow) => workflow.id),
+      true,
+    );
     try {
       const result = await runWorkflowBulkOperation("export", workflowIds);
 
@@ -241,7 +246,9 @@ export function WorkflowsTable() {
       }
 
       if (result.failedCount === 0) {
-        toast.success(`Exported ${result.succeededCount} workflow${result.succeededCount === 1 ? "" : "s"}.`);
+        toast.success(
+          `Exported ${result.succeededCount} workflow${result.succeededCount === 1 ? "" : "s"}.`,
+        );
       } else {
         toast.error(
           `Exported ${result.succeededCount} and skipped ${result.failedCount} workflow${result.failedCount === 1 ? "" : "s"}.`,
@@ -250,7 +257,10 @@ export function WorkflowsTable() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Bulk export failed");
     } finally {
-      markWorkflowsExporting(selectedExportable.map((workflow) => workflow.id), false);
+      markWorkflowsExporting(
+        selectedExportable.map((workflow) => workflow.id),
+        false,
+      );
     }
   }, [markWorkflowsExporting, selectedExportable]);
 
@@ -356,7 +366,10 @@ export function WorkflowsTable() {
     }
   }, [actions, markWorkflowsPending, selectedDeletable, setSelectedWorkflowIds]);
 
-  const isRowPending = useCallback((id: string) => pendingWorkflowIds.has(id), [pendingWorkflowIds]);
+  const isRowPending = useCallback(
+    (id: string) => pendingWorkflowIds.has(id),
+    [pendingWorkflowIds],
+  );
   const isRowExporting = useCallback(
     (id: string) => exportingWorkflowIds.has(id),
     [exportingWorkflowIds],

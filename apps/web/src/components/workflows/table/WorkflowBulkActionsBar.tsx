@@ -40,7 +40,13 @@ export function WorkflowBulkActionsBar({
           {selectedCount} workflow{selectedCount > 1 ? "s" : ""} selected
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onRun} disabled={runnableCount === 0}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onRun}
+            disabled={runnableCount === 0}
+          >
             <Play className="mr-1.5 h-4 w-4" aria-hidden="true" />
             Run ({runnableCount})
           </Button>

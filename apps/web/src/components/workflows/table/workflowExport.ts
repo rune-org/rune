@@ -5,7 +5,10 @@ import type { WorkflowSummary } from "@/lib/workflows";
 
 type ExportableWorkflow = Pick<WorkflowSummary, "id" | "name">;
 
-export function buildWorkflowExportFile(workflow: ExportableWorkflow, detail: WorkflowDetail): {
+export function buildWorkflowExportFile(
+  workflow: ExportableWorkflow,
+  detail: WorkflowDetail,
+): {
   blob: Blob;
   fileName: string;
 } {

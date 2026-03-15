@@ -52,7 +52,10 @@ export function useWorkflowTableModel({
     return list.filter((workflow) => workflow.name.toLowerCase().includes(normalizedQuery));
   }, [filter, lastRunByWorkflow, query, workflows]);
 
-  const filteredWorkflowIdSet = useMemo(() => new Set(filtered.map((workflow) => workflow.id)), [filtered]);
+  const filteredWorkflowIdSet = useMemo(
+    () => new Set(filtered.map((workflow) => workflow.id)),
+    [filtered],
+  );
 
   useEffect(() => {
     setSelectedWorkflowIds((prev) => {

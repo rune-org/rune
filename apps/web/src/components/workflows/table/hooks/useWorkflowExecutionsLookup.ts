@@ -13,7 +13,10 @@ export function useWorkflowExecutionsLookup() {
       const items = response.data?.data;
       if (items) {
         setExecutionItems((prev) => {
-          if (prev.length === items.length && prev.every((item, index) => item.id === items[index].id)) {
+          if (
+            prev.length === items.length &&
+            prev.every((item, index) => item.id === items[index].id)
+          ) {
             return prev;
           }
           return items;
