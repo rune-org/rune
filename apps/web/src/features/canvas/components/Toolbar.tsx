@@ -182,7 +182,10 @@ export const Toolbar = memo(function Toolbar({
           <Play className="h-4 w-4" /> Run
         </Btn>
       )}
-      <ExecutionHistoryPanel workflowId={workflowId ?? null} onExecutionUrlChange={onExecutionUrlChange} />
+      <ExecutionHistoryPanel
+        workflowId={workflowId ?? null}
+        onExecutionUrlChange={onExecutionUrlChange}
+      />
       {workflowId && onViewVersion && onRestore && (
         <VersionHistoryPanel
           workflowId={workflowId ?? null}

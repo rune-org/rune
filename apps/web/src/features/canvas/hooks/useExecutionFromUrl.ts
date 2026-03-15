@@ -67,7 +67,14 @@ export function useExecutionFromUrl(workflowId: number | null) {
     return () => {
       cancelled = true;
     };
-  }, [executionIdFromUrl, workflowId, state.executionId, state.isHistorical, dispatch, setExecutionParam]);
+  }, [
+    executionIdFromUrl,
+    workflowId,
+    state.executionId,
+    state.isHistorical,
+    dispatch,
+    setExecutionParam,
+  ]);
 
   // Strip ?execution= from URL when leaving historical mode (e.g. new live run, reset)
   useEffect(() => {

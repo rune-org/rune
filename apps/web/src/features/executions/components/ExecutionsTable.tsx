@@ -244,7 +244,9 @@ function ExecutionRow({
             </TooltipTrigger>
             <TooltipContent>{formatAbsoluteDate(execution.completedAt)}</TooltipContent>
           </Tooltip>
-        ) : "\u2014"}
+        ) : (
+          "\u2014"
+        )}
       </td>
     </tr>
   );

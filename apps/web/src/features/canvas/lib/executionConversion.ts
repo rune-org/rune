@@ -16,7 +16,9 @@ import type { Edge } from "@xyflow/react";
  * Extract a graph snapshot from an RTES execution document.
  * Converts the stored node definitions and edges back into React Flow format.
  */
-export function extractGraphSnapshot(doc: RtesExecutionDocument): WorkflowGraphSnapshot | undefined {
+export function extractGraphSnapshot(
+  doc: RtesExecutionDocument,
+): WorkflowGraphSnapshot | undefined {
   if (!doc.nodes || Object.keys(doc.nodes).length === 0) return undefined;
 
   let hasStoredPositions = false;

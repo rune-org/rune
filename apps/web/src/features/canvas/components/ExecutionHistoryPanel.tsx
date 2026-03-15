@@ -110,7 +110,10 @@ function ExecutionHistoryListItem({
 /**
  * Panel for browsing and loading past execution history from RTES.
  */
-export function ExecutionHistoryPanel({ workflowId, onExecutionUrlChange }: ExecutionHistoryPanelProps) {
+export function ExecutionHistoryPanel({
+  workflowId,
+  onExecutionUrlChange,
+}: ExecutionHistoryPanelProps) {
   const { state, dispatch } = useExecution();
   const [history, setHistory] = useState<ExecutionHistoryItem[]>([]);
   const [rtesDocuments, setRtesDocuments] = useState<Map<string, RtesExecutionDocument>>(new Map());
