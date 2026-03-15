@@ -131,6 +131,8 @@ export function WorkflowsDataTable({
                 >
                   {workflow.name}
                 </a>
+
+                {/* TODO: Show version badge & unpublished dot once WorkflowListItem exposes latest_version_number and has_unpublished_changes */}
                 <Badge
                   variant={workflow.role === "owner" ? "secondary" : "outline"}
                   className="text-xs"

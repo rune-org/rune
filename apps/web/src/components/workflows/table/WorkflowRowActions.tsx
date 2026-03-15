@@ -141,6 +141,7 @@ export function WorkflowRowActions({
               </DropdownMenuItem>
             </>
           )}
+          {/* TODO: Add "Publish Latest Version" once WorkflowListItem exposes has_unpublished_changes */}
           {canDeleteWorkflow(workflow.role, isAdmin) && (
             <>
               <DropdownMenuSeparator />

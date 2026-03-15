@@ -156,6 +156,8 @@ export function WorkflowsTable() {
   const { state: authState } = useAuth();
   const isAdmin = authState.user?.role === "admin";
 
+  // HACK: The /workflows endpoint doesn't expose execution history yet,
+  // so we fetch from /executions (archivist) and join client-side.
   const [executionItems, setExecutionItems] = useState<ApiExecutionListItem[]>([]);
   const [executionsLoaded, setExecutionsLoaded] = useState(false);
 
