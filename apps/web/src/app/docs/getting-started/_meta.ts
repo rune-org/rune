@@ -1,4 +1,4 @@
 export default {
-  index: 'Installation',
-  'quick-start': 'Quick Start',
+  index: "Installation",
+  "quick-start": "Quick Start",
 };

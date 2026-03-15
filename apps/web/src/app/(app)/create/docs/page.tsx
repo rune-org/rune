@@ -44,15 +44,13 @@ const docCards: DocCard[] = [
   },
   {
     title: "Smith AI",
-    description:
-      "Build workflows with natural language using the AI assistant.",
+    description: "Build workflows with natural language using the AI assistant.",
     image: "/icons/smith_logo_compact_white.svg",
     href: "/docs/guides/smith-ai",
   },
   {
     title: "Scryb AI",
-    description:
-      "Generate comprehensive documentation for any workflow with AI.",
+    description: "Generate comprehensive documentation for any workflow with AI.",
     image: "/icons/scryb_logo_compact_white.svg",
     href: "/docs/guides/scryb-ai",
   },

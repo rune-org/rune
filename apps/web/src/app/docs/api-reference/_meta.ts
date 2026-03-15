@@ -1,4 +1,4 @@
 export default {
-  'rest-api': 'REST API',
-  authentication: 'Authentication',
+  "rest-api": "REST API",
+  authentication: "Authentication",
 };
