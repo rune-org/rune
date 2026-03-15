@@ -66,6 +66,7 @@ type ToolbarProps = {
     snapshot: { nodes: CanvasNode[]; edges: Edge[]; versionNumber: number } | null,
   ) => void;
   viewingVersionNumber?: number | null;
+  onExecutionUrlChange?: (executionId: string | null) => void;
 };
 
 export const Toolbar = memo(function Toolbar({
@@ -97,6 +98,7 @@ export const Toolbar = memo(function Toolbar({
   onRunVersion,
   onViewVersion,
   viewingVersionNumber,
+  onExecutionUrlChange,
 }: ToolbarProps) {
   const isExecuting = executionStatus === "running" || isStartingExecution;
   const isRunDisabled = executeDisabled || readOnly;
@@ -180,7 +182,7 @@ export const Toolbar = memo(function Toolbar({
           <Play className="h-4 w-4" /> Run
         </Btn>
       )}
-      <ExecutionHistoryPanel workflowId={workflowId ?? null} />
+      <ExecutionHistoryPanel workflowId={workflowId ?? null} onExecutionUrlChange={onExecutionUrlChange} />
       {workflowId && onViewVersion && onRestore && (
         <VersionHistoryPanel
           workflowId={workflowId ?? null}
@@ -200,7 +202,7 @@ export const Toolbar = memo(function Toolbar({
       <Btn onClick={onSave} title="Save (Ctrl+S)" disabled={saveDisabled}>
         <Save className="h-4 w-4" /> Save
       </Btn>
-      {onPublish && hasUnpublishedChanges && !viewingVersionNumber && (
+      {onPublish && hasUnpublishedChanges && !viewingVersionNumber && !readOnly && (
         <div className="relative">
           <Btn onClick={onPublish} title="Publish version" disabled={publishDisabled}>
             <Send className="h-4 w-4" /> Publish
