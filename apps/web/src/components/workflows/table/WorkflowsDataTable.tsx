@@ -90,11 +90,11 @@ export function WorkflowsDataTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[4%]">
-            <div className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/35 shadow-sm">
+          <TableHead className="w-[4%] align-middle">
+            <div className="flex items-center justify-center">
               <Checkbox
                 aria-label="Select all visible workflows"
-                className="h-5 w-5 rounded-md border-2 border-foreground/35 data-[state=checked]:border-accent data-[state=checked]:bg-accent"
+                className="mx-auto"
                 checked={allFilteredSelected ? true : someFilteredSelected ? "indeterminate" : false}
                 onCheckedChange={onSelectAllFiltered}
               />
