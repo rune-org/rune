@@ -17,6 +17,7 @@ import { fetchWorkflowExecutions, type RtesExecutionDocument } from "@/lib/api/r
 import type { WorkflowExecutionStatus } from "../types/execution";
 import { rtesDocToExecutionState } from "../lib/executionConversion";
 import { cn } from "@/lib/cn";
+import { formatRelativeTime, formatAbsoluteTime } from "@/lib/formatTime";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -46,21 +47,6 @@ function getStatusIcon(status: WorkflowExecutionStatus) {
     default:
       return <Clock className="h-3.5 w-3.5 text-muted-foreground" />;
   }
-}
-
-function formatRelativeTime(date: string): string {
-  const now = new Date();
-  const then = new Date(date);
-  const diffMs = now.getTime() - then.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return then.toLocaleDateString();
 }
 
 function ExecutionHistoryListItem({
@@ -98,7 +84,7 @@ function ExecutionHistoryListItem({
             <TooltipTrigger asChild>
               <span>{formatRelativeTime(item.createdAt)}</span>
             </TooltipTrigger>
-            <TooltipContent>{new Date(item.createdAt).toLocaleString()}</TooltipContent>
+            <TooltipContent>{formatAbsoluteTime(item.createdAt)}</TooltipContent>
           </Tooltip>
         </div>
       </div>

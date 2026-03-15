@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { ExecutionListItem, ExecutionListStatus } from "../types";
 import { cn } from "@/lib/cn";
+import { formatRelativeTime, formatAbsoluteTime } from "@/lib/formatTime";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
 
@@ -82,25 +83,6 @@ function formatDuration(ms: number | undefined): string {
   const mins = Math.floor(ms / 60000);
   const secs = Math.round((ms % 60000) / 1000);
   return `${mins}m ${secs}s`;
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
-function formatAbsoluteDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString();
 }
 
 function getGroupAccentDot(executions: ExecutionListItem[]): string {
@@ -231,18 +213,18 @@ function ExecutionRow({
       <td className="px-4 py-3 text-xs text-muted-foreground">
         <Tooltip>
           <TooltipTrigger asChild>
-            <span>{formatDate(execution.startedAt)}</span>
+            <span>{formatRelativeTime(execution.startedAt)}</span>
           </TooltipTrigger>
-          <TooltipContent>{formatAbsoluteDate(execution.startedAt)}</TooltipContent>
+          <TooltipContent>{formatAbsoluteTime(execution.startedAt)}</TooltipContent>
         </Tooltip>
       </td>
       <td className="px-4 py-3 text-xs text-muted-foreground">
         {execution.completedAt ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span>{formatDate(execution.completedAt)}</span>
+              <span>{formatRelativeTime(execution.completedAt)}</span>
             </TooltipTrigger>
-            <TooltipContent>{formatAbsoluteDate(execution.completedAt)}</TooltipContent>
+            <TooltipContent>{formatAbsoluteTime(execution.completedAt)}</TooltipContent>
           </Tooltip>
         ) : (
           "\u2014"

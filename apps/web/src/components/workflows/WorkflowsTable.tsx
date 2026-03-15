@@ -57,21 +57,7 @@ import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { stripCredentialsFromWorkflowData } from "@/lib/workflow-dsl";
-
-function formatRelativeTime(iso: string | null): string {
-  if (!iso) return "N/A";
-  const date = new Date(iso);
-  const diffMs = Date.now() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
+import { formatRelativeTime, formatAbsoluteTime } from "@/lib/formatTime";
 
 function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
   if (status === "active")
@@ -194,23 +180,26 @@ export function WorkflowsTable() {
     }
   }, [actions, deleteTarget]);
 
-  const handleRun = useCallback(async (workflow: WorkflowSummary) => {
-    const workflowId = Number(workflow.id);
-    if (!Number.isFinite(workflowId)) return;
+  const handleRun = useCallback(
+    async (workflow: WorkflowSummary) => {
+      const workflowId = Number(workflow.id);
+      if (!Number.isFinite(workflowId)) return;
 
-    setPendingWorkflowId(workflow.id);
-    try {
-      await runWorkflow(workflowId);
-      toast.success("Workflow successfully executed.");
-      void refreshExecutions();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to queue workflow for execution.",
-      );
-    } finally {
-      setPendingWorkflowId(null);
-    }
-  }, [refreshExecutions]);
+      setPendingWorkflowId(workflow.id);
+      try {
+        await runWorkflow(workflowId);
+        toast.success("Workflow successfully executed.");
+        void refreshExecutions();
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to queue workflow for execution.",
+        );
+      } finally {
+        setPendingWorkflowId(null);
+      }
+    },
+    [refreshExecutions],
+  );
 
   const handleExport = useCallback(async (workflow: WorkflowSummary) => {
     const workflowId = Number(workflow.id);
@@ -417,9 +406,7 @@ export function WorkflowsTable() {
                       <TooltipTrigger asChild>
                         <span>{formatRelativeTime(lastRun.created_at)}</span>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        {new Date(lastRun.created_at).toLocaleString()}
-                      </TooltipContent>
+                      <TooltipContent>{formatAbsoluteTime(lastRun.created_at)}</TooltipContent>
                     </Tooltip>
                   );
                 })()}
