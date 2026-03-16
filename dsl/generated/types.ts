@@ -273,6 +273,34 @@ export function sanitizeEditAssignment(obj: EditAssignment): { valid: boolean; e
 
 // Node Parameter Types
 
+export interface ScheduledtriggerParameters {
+  // Scheduled workflow trigger with interval-based execution
+  amount: number;  // Quantity of time between executions
+  unit: "seconds" | "minutes" | "hours" | "days";  // Unit of time for the interval
+}
+
+export function sanitizeScheduledtriggerParameters(obj: ScheduledtriggerParameters): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.amount === undefined || obj.amount === null) {
+    errors.push("ScheduledtriggerParameters.amount is required");
+  }
+  if (obj.amount !== undefined && typeof obj.amount !== "number") {
+    errors.push("ScheduledtriggerParameters.amount must be a number");
+  }
+  if (obj.unit === undefined || obj.unit === null) {
+    errors.push("ScheduledtriggerParameters.unit is required");
+  }
+  if (obj.unit !== undefined && typeof obj.unit !== "string") {
+    errors.push("ScheduledtriggerParameters.unit must be a string");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
 export interface HttpParameters {
   // HTTP request node
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";  // HTTP method
@@ -677,6 +705,13 @@ export interface ManualTriggerNode extends BaseNode {
   credential_type: string[] | undefined;
 }
 
+export interface ScheduledTriggerNode extends BaseNode {
+  // Scheduled workflow trigger with interval-based execution
+  type: "ScheduledTrigger";
+  parameters: ScheduledtriggerParameters;
+  credential_type: string[] | undefined;
+}
+
 export interface HttpNode extends BaseNode {
   // HTTP request node
   type: "http";
@@ -784,4 +819,4 @@ export interface MergeNode extends BaseNode {
 
 // Union type for all nodes
 
-export type Node = ManualTriggerNode | HttpNode | SmtpNode | ConditionalNode | SwitchNode | LogNode | DatetimeNode | AgentNode | WaitNode | EditNode | FilterNode | SortNode | LimitNode | SplitNode | AggregatorNode | MergeNode;
+export type Node = ManualTriggerNode | ScheduledTriggerNode | HttpNode | SmtpNode | ConditionalNode | SwitchNode | LogNode | DatetimeNode | AgentNode | WaitNode | EditNode | FilterNode | SortNode | LimitNode | SplitNode | AggregatorNode | MergeNode;

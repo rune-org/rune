@@ -7,13 +7,22 @@ jobs:
     name: Generate API Client
     runs-on: ubuntu-latest
     steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.10.9"
+          version: "0.10.10"
           enable-cache: true
       
       - name: Set up Python
@@ -24,7 +33,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.31.0
+          version: 10.32.1
       
       - name: Install API dependencies
         run: |
@@ -41,8 +50,8 @@ jobs:
       
       - name: Create PR with client changes
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          git config --local user.email "268621759+rune-ci-bot[bot]@users.noreply.github.com"
+          git config --local user.name "rune-ci-bot[bot]"
           git add .
           if git diff --staged --quiet; then
             echo "No changes to commit"
@@ -57,4 +66,4 @@ jobs:
             --body "This PR was automatically generated to update the API client based on the latest OpenAPI schema." \
             --base main
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}

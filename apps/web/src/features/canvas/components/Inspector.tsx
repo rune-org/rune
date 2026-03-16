@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WaitInspector } from "./inspectors/WaitInspector";
 import { LogInspector } from "./inspectors/LogInspector";
 import { DateTimeInspector } from "./inspectors/DateTimeInspector";
+import { ScheduledTriggerInspector } from "./inspectors/ScheduledTriggerInspector";
 import { EditInspector } from "./inspectors/EditInspector";
 import { FilterInspector } from "./inspectors/FilterInspector";
 import { SortInspector } from "./inspectors/SortInspector";
@@ -62,6 +63,10 @@ function renderInspectorForm(
       return <LogInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "datetime":
       return <DateTimeInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "scheduledTrigger":
+      return (
+        <ScheduledTriggerInspector node={node} updateData={updateData} isExpanded={isExpanded} />
+      );
     case "edit":
       return <EditInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "filter":

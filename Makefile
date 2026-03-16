@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down api-dev-infra-up rtes-dev-infra-up test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test archivist-install archivist-dev up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down api-dev-infra-up rtes-dev-infra-up test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test archivist-install archivist-dev scheduler-install scheduler-dev up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
@@ -77,6 +77,10 @@ help:
 	@echo "  make archivist-install - Install archivist dependencies using uv"
 	@echo "  make archivist-dev     - Start archivist in dev mode"
 	@echo ""
+	@echo "Scheduler targets:"
+	@echo "  make scheduler-install - Install scheduler dependencies using uv"
+	@echo "  make scheduler-dev     - Start scheduler in dev mode"
+	@echo ""
 	@echo "DSL targets:"
 	@echo "  make dsl-generate   - Generate DSL type definitions (TypeScript, Python, Go)"
 	@echo "  make dsl-test       - Run DSL tests (Python, TypeScript, Go)"
@@ -115,7 +119,7 @@ help:
 # Installation targets
 # ======================
 
-install: web-install api-install worker-install archivist-install
+install: web-install api-install worker-install archivist-install scheduler-install
 	@echo "✓ All dependencies installed"
 
 web-install:
@@ -136,6 +140,11 @@ archivist-install:
 	cd services/archivist && uv sync
 	@echo "✓ Archivist dependencies installed"
 
+scheduler-install:
+	@echo "Installing scheduler dependencies with uv..."
+	cd services/scheduler && uv sync
+	@echo "✓ Scheduler dependencies installed"
+
 # ======================
 # Development targets
 # ======================
@@ -143,7 +152,7 @@ archivist-install:
 dev: api-dev-infra-up dev-infra-wait
 	@echo "Starting all services in development mode..."
 ifeq ($(DETECTED_OS),Windows)
-	@$(MAKE) -j5 web-dev api-dev worker-dev rtes-dev archivist-dev
+	@$(MAKE) -j6 web-dev api-dev worker-dev rtes-dev archivist-dev scheduler-dev
 else
 	go run github.com/DarthSim/hivemind@latest Procfile.dev
 endif
@@ -210,6 +219,10 @@ worker-dev:
 archivist-dev:
 	@echo "Starting archivist in development mode..."
 	cd services/archivist && uv run python -m src.main
+
+scheduler-dev:
+	@echo "Starting scheduler in development mode..."
+	cd services/scheduler && uv run python -m src.main
 
 # ======================
 # Build targets
@@ -363,6 +376,9 @@ logs-frontend:
 
 logs-archivist:
 	docker compose logs -f archivist
+
+logs-scheduler:
+	docker compose logs -f scheduler
 
 # ======================
 # Database targets

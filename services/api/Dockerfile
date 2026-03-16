@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:0.10.9 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.10.10 /uv /uvx /bin/
 
 # Set the working directory
 WORKDIR /app
@@ -37,6 +37,4 @@ EXPOSE 8000
 # Use the virtual environment
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Run migrations before starting the application
-ENTRYPOINT ["./entrypoint.sh"]
 CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]

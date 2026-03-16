@@ -121,3 +121,21 @@ class RedisConnectionError(HTTPException):
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=detail,
         )
+
+
+class InternalAPIKeyError(HTTPException):
+    """
+    Internal API Key Not Configured Exception (HTTP 503)
+
+    Raised when an internal API endpoint is accessed but the required
+    internal API key is not configured in the settings.
+
+    Args:
+        detail: Custom message explaining the missing API key
+    """
+
+    def __init__(self, detail: str = "Internal API key not configured"):
+        super().__init__(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+        )

@@ -9,6 +9,7 @@ import type {
   SwitchData,
   SwitchRule,
   SmtpData,
+  ScheduledTriggerData,
   WaitData,
   LogData,
   DateTimeData,
@@ -67,6 +68,8 @@ function toWorkerType(canvasType: string): string {
   switch (canvasType) {
     case "trigger":
       return "ManualTrigger";
+    case "scheduledTrigger":
+      return "ScheduledTrigger";
     case "if":
       return "conditional";
     case "switch":
@@ -244,6 +247,13 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (d.unit) params.unit = d.unit;
       if (typeof d.format === "string" && d.format.trim()) params.format = d.format;
       if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
+      return params;
+    }
+    case "scheduledTrigger": {
+      const d = (n.data || {}) as ScheduledTriggerData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.amount !== "undefined") params.amount = Number(d.amount);
+      if (typeof d.unit === "string") params.unit = d.unit;
       return params;
     }
     case "edit": {
@@ -436,6 +446,20 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
     };
     return dateTimeData;
   },
+  scheduledTrigger: (base, params) => {
+    const scheduledTriggerData: ScheduledTriggerData = {
+      ...base,
+      amount:
+        typeof params.amount === "number"
+          ? params.amount
+          : typeof params.amount === "string"
+            ? Number(params.amount)
+            : undefined,
+      unit:
+        typeof params.unit === "string" ? (params.unit as ScheduledTriggerData["unit"]) : undefined,
+    };
+    return scheduledTriggerData;
+  },
   edit: (base, params) => {
     const editData: EditData = {
       ...base,
@@ -578,7 +602,7 @@ export function canvasToWorkflowData(
     return {
       id: n.id,
       name: nodeName(n),
-      trigger: n.type === "trigger",
+      trigger: n.type === "trigger" || n.type === "scheduledTrigger",
       type: toWorkerType(n.type), // store canonical type to simplify future use
       parameters: toWorkerParameters(n, edges),
       output: {},
@@ -610,7 +634,13 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
     const [x, y] = (n.position ?? [100, 100]) as [number, number];
     // Map canonical type back to canvas palette names
     const canvasType =
-      n.type === "conditional" ? "if" : n.type === "ManualTrigger" ? "trigger" : n.type;
+      n.type === "conditional"
+        ? "if"
+        : n.type === "ManualTrigger"
+          ? "trigger"
+          : n.type === "ScheduledTrigger"
+            ? "scheduledTrigger"
+            : n.type;
     const credentials = n.credentials ? { ...n.credentials } : undefined;
     const baseData = {
       label: sanitizeNodeLabel(n.name, "Node"),

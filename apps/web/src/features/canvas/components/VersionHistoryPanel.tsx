@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "@/components/ui/toast";
 import { GitCommit, CheckCircle, Clock, Loader2, RotateCcw, Play } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { formatRelativeTime } from "@/lib/formatTime";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { workflows } from "@/lib/api";
@@ -21,21 +22,6 @@ interface VersionHistoryPanelProps {
   onRunVersion?: (versionId: number) => void;
   viewingVersionNumber?: number | null;
   disabled?: boolean;
-}
-
-function formatRelativeTime(date: string): string {
-  const now = new Date();
-  const then = new Date(date);
-  const diffMs = now.getTime() - then.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return then.toLocaleDateString();
 }
 
 export function VersionHistoryPanel({

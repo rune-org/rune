@@ -14,6 +14,7 @@ import {
   LayoutGrid,
   LogOut,
   Play,
+  Settings,
   User,
   Workflow,
   Users,
@@ -117,7 +118,7 @@ function NavLink({
         className={cn(
           "pointer-events-none select-none overflow-hidden whitespace-nowrap text-sm font-medium motion-safe:transition-[margin,max-width,opacity,transform] motion-safe:duration-200 motion-safe:ease-out",
           isExpanded
-            ? "ml-1.5 max-w-[12rem] translate-x-0 opacity-100"
+            ? "ml-1.5 max-w-48 translate-x-0 opacity-100"
             : "ml-0 max-w-0 -translate-x-1 opacity-0",
         )}
       >
@@ -177,7 +178,7 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
             className={cn(
               "pointer-events-none select-none overflow-hidden whitespace-nowrap text-sm font-medium motion-safe:transition-[margin,max-width,opacity,transform] motion-safe:duration-200 motion-safe:ease-out",
               isExpanded
-                ? "ml-1.5 max-w-[12rem] translate-x-0 opacity-100"
+                ? "ml-1.5 max-w-48 translate-x-0 opacity-100"
                 : "ml-0 max-w-0 -translate-x-1 opacity-0",
             )}
           >
@@ -211,8 +212,6 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
           </Link>
         </DropdownMenuItem>
 
-        {/* TODO: Implement settings page with wired backend functionality */}
-
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
@@ -232,8 +231,6 @@ export function AppSidebar() {
   const { state } = useAuth();
   const user = state.user;
   const isAdmin = user?.role === "admin";
-
-  const adminUsersItem: NavItem = { title: "Users", href: "/admin/users", icon: Users };
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
@@ -256,7 +253,7 @@ export function AppSidebar() {
   return (
     <aside
       className={cn(
-        "sticky top-0 z-20 hidden h-screen flex-shrink-0 flex-col overflow-visible border-r border-border/60 bg-background/95 backdrop-blur motion-safe:transition-[width] motion-safe:duration-300 motion-safe:ease-out lg:flex",
+        "sticky top-0 z-20 hidden h-screen shrink-0 flex-col overflow-visible border-r border-border/60 bg-background/95 backdrop-blur motion-safe:transition-[width] motion-safe:duration-300 motion-safe:ease-out lg:flex",
         isExpanded ? "w-60" : "w-20",
       )}
     >
@@ -307,8 +304,20 @@ export function AppSidebar() {
               <NavLink key={item.title} item={item} pathname={pathname} isExpanded={isExpanded} />
             ))}
 
+            {/* ADMIN-ONLY navigation links */}
             {isAdmin && (
-              <NavLink item={adminUsersItem} pathname={pathname} isExpanded={isExpanded} />
+              <>
+                <NavLink
+                  item={{ title: "Users", href: "/admin/users", icon: Users }}
+                  pathname={pathname}
+                  isExpanded={isExpanded}
+                />
+                <NavLink
+                  item={{ title: "Settings", href: "/admin", icon: Settings, exact: true }}
+                  pathname={pathname}
+                  isExpanded={isExpanded}
+                />
+              </>
             )}
           </nav>
 
