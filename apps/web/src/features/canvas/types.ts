@@ -19,6 +19,11 @@ export type EditAssignment = {
 export type NodeDataMap = {
   trigger: BaseData;
 
+  scheduledTrigger: BaseData & {
+    amount?: number;
+    unit?: "seconds" | "minutes" | "hours" | "days";
+  };
+
   agent: BaseData;
 
   if: BaseData & {
@@ -84,6 +89,7 @@ export type HttpData = NodeDataMap["http"];
 export type SmtpData = NodeDataMap["smtp"];
 export type AgentData = NodeDataMap["agent"];
 export type TriggerData = NodeDataMap["trigger"];
+export type ScheduledTriggerData = NodeDataMap["scheduledTrigger"];
 export type WaitData = NodeDataMap["wait"];
 export type EditData = NodeDataMap["edit"];
 export type SplitData = NodeDataMap["split"];

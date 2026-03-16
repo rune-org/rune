@@ -12,6 +12,7 @@ def test_import_generated_types():
         HttpParameters,
         Node,
     )
+
     assert Workflow is not None
     assert Edge is not None
     assert HttpNode is not None

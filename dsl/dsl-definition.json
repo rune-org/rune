@@ -54,7 +54,7 @@
           "type": "string",
           "required": true,
           "description": "Node type identifier",
-          "enum": ["ManualTrigger", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge"]
+          "enum": ["ManualTrigger", "ScheduledTrigger", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge"]
         },
         "parameters": {
           "type": "object",
@@ -152,7 +152,16 @@
       "credential_type": null,
       "parameters": {}
     },
-    
+
+    "ScheduledTrigger": {
+      "description": "Scheduled workflow trigger with interval-based execution",
+      "credential_type": null,
+      "parameters": {
+        "amount": { "type": "number", "required": true, "description": "Quantity of time between executions" },
+        "unit": { "type": "string", "required": true, "enum": ["seconds", "minutes", "hours", "days"], "description": "Unit of time for the interval" }
+      }
+    },
+
     "http": {
       "description": "HTTP request node",
       "credential_type": ["api_key", "oauth2", "basic_auth", "header", "token"],

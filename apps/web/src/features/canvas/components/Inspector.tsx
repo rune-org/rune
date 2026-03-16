@@ -17,6 +17,7 @@ import { SwitchInspector } from "./inspectors/SwitchInspector";
 import { RuntimeDataPanel } from "./inspectors/RuntimeDataPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WaitInspector } from "./inspectors/WaitInspector";
+import { ScheduledTriggerInspector } from "./inspectors/ScheduledTriggerInspector";
 import { EditInspector } from "./inspectors/EditInspector";
 import { SplitInspector } from "./inspectors/SplitInspector";
 import { MergeInspector } from "./inspectors/MergeInspector";
@@ -52,6 +53,10 @@ function renderInspectorForm(
       return <SmtpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "wait":
       return <WaitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "scheduledTrigger":
+      return (
+        <ScheduledTriggerInspector node={node} updateData={updateData} isExpanded={isExpanded} />
+      );
     case "edit":
       return <EditInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "split":

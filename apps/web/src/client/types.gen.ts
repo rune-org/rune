@@ -3804,3 +3804,39 @@ export type GenerateNewWorkflowSmithPostResponses = {
 };
 
 export type GenerateNewWorkflowSmithPostResponse = GenerateNewWorkflowSmithPostResponses[keyof GenerateNewWorkflowSmithPostResponses];
+
+export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostData = {
+    body?: never;
+    headers?: {
+        /**
+         * X-Internal-Key
+         */
+        'x-internal-key'?: string | null;
+    };
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/internal/workflows/{workflow_id}/run';
+};
+
+export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostError = RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostErrors[keyof RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostErrors];
+
+export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseStr;
+};
+
+export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponse = RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses[keyof RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses];
