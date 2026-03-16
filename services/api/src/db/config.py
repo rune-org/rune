@@ -87,7 +87,9 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 def _get_alembic_config() -> Config:
     config = Config(str(_ALEMBIC_INI_PATH))
-    config.set_main_option("script_location", str(_ALEMBIC_INI_PATH.parent / "migrations"))
+    config.set_main_option(
+        "script_location", str(_ALEMBIC_INI_PATH.parent / "migrations")
+    )
     # Avoid clobbering app loggers when Alembic runs inside the FastAPI process.
     config.attributes["configure_logger"] = False
     return config
@@ -158,8 +160,12 @@ async def init_db() -> None:
     if has_workflows_table:
         print()
         print("WARNING: Existing database detected without migration tracking!")
-        print("  This database may be in an inconsistent state for the current app version.")
-        print("  Recommended: reset the database and restore from a clean, compatible backup.")
+        print(
+            "  This database may be in an inconsistent state for the current app version."
+        )
+        print(
+            "  Recommended: reset the database and restore from a clean, compatible backup."
+        )
         print("  Fallback (use only if you understand the risks):")
         print("    This can hide schema drift and may cause runtime issues.")
         print("    To initialize migration tracking and apply pending migrations:")
