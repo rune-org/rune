@@ -50,8 +50,8 @@ jobs:
       
       - name: Create PR with client changes
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          git config --local user.email "${{ secrets.APP_ID }}+rune-ci-bot[bot]@users.noreply.github.com"
+          git config --local user.name "rune-ci-bot[bot]"
           git add .
           if git diff --staged --quiet; then
             echo "No changes to commit"
