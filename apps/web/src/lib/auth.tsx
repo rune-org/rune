@@ -54,8 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const initRef = useRef(false);
   const refreshTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const setLoading = (loading: boolean) =>
-    setState((s) => ({ ...s, loading, error: null }));
+  const setLoading = (loading: boolean) => setState((s) => ({ ...s, loading, error: null }));
   const setError = (message: string | null) => setState((s) => ({ ...s, error: message }));
   const setSsoOnly = (isSsoOnly: boolean) => setState((s) => ({ ...s, isSsoOnly }));
   const setUser = (user: AuthUser | null) => setState((s) => ({ ...s, user }));

@@ -68,8 +68,8 @@ export function SignInForm() {
         <div className="space-y-4 pt-2">
           <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
             <p className="text-xs text-blue-400 font-medium" role="alert">
-              Your account uses Single Sign-On (SSO). Please sign in through your organization&apos;s
-              identity provider.
+              Your account uses Single Sign-On (SSO). Please sign in through your
+              organization&apos;s identity provider.
             </p>
           </div>
           <Button
