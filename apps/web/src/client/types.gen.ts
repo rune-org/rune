@@ -64,6 +64,28 @@ export type ApiResponseAdminPasswordResetResponse = {
 };
 
 /**
+ * ApiResponse[BulkOperationResult]
+ */
+export type ApiResponseBulkOperationResult = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: BulkOperationResult;
+};
+
+/**
  * ApiResponse[CreateUserResponse]
  */
 export type ApiResponseCreateUserResponse = {
@@ -737,6 +759,95 @@ export type BodyAssertionConsumerServiceAuthSamlAcsPost = {
      * Relaystate
      */
     RelayState?: string;
+};
+
+/**
+ * BulkOperationResult
+ *
+ * Full result returned by the bulk-workflow endpoint.
+ */
+export type BulkOperationResult = {
+    /**
+     * Action
+     */
+    action: string;
+    /**
+     * Succeeded
+     */
+    succeeded: Array<number>;
+    /**
+     * Failed
+     */
+    failed: Array<BulkWorkflowFailure>;
+    summary: BulkOperationSummary;
+    /**
+     * Exported
+     */
+    exported?: Array<WorkflowDetail> | null;
+    /**
+     * Executions
+     */
+    executions?: {
+        [key: string]: string;
+    } | null;
+};
+
+/**
+ * BulkOperationSummary
+ *
+ * Aggregate counts for a completed bulk operation.
+ */
+export type BulkOperationSummary = {
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Succeeded
+     */
+    succeeded: number;
+    /**
+     * Failed
+     */
+    failed: number;
+};
+
+/**
+ * BulkWorkflowAction
+ *
+ * Actions that can be applied to multiple workflows at once.
+ */
+export type BulkWorkflowAction = 'delete' | 'activate' | 'deactivate' | 'export' | 'run';
+
+/**
+ * BulkWorkflowFailure
+ *
+ * A single workflow that could not be processed in a bulk operation.
+ */
+export type BulkWorkflowFailure = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Reason
+     */
+    reason: string;
+};
+
+/**
+ * BulkWorkflowRequest
+ *
+ * Request body for the bulk-workflow endpoint.
+ */
+export type BulkWorkflowRequest = {
+    /**
+     * Workflow Ids
+     *
+     * IDs of the workflows to operate on (1–100 items; duplicates are ignored).
+     */
+    workflow_ids: Array<number>;
+    action: BulkWorkflowAction;
 };
 
 /**
@@ -1837,7 +1948,7 @@ export type WorkflowRunRequest = {
     /**
      * Version Id
      *
-     * Specific workflow version to run. Defaults to the latest version.
+     * Specific workflow version to run. Defaults to the published version.
      */
     version_id?: number | null;
 };
@@ -2352,6 +2463,31 @@ export type CreateWorkflowWorkflowsPostResponses = {
 };
 
 export type CreateWorkflowWorkflowsPostResponse = CreateWorkflowWorkflowsPostResponses[keyof CreateWorkflowWorkflowsPostResponses];
+
+export type BulkWorkflowOperationWorkflowsBulkPostData = {
+    body: BulkWorkflowRequest;
+    path?: never;
+    query?: never;
+    url: '/workflows/bulk';
+};
+
+export type BulkWorkflowOperationWorkflowsBulkPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type BulkWorkflowOperationWorkflowsBulkPostError = BulkWorkflowOperationWorkflowsBulkPostErrors[keyof BulkWorkflowOperationWorkflowsBulkPostErrors];
+
+export type BulkWorkflowOperationWorkflowsBulkPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseBulkOperationResult;
+};
+
+export type BulkWorkflowOperationWorkflowsBulkPostResponse = BulkWorkflowOperationWorkflowsBulkPostResponses[keyof BulkWorkflowOperationWorkflowsBulkPostResponses];
 
 export type DeleteWorkflowWorkflowsWorkflowIdDeleteData = {
     body?: never;
