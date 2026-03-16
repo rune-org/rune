@@ -27,7 +27,9 @@ from src.core.config import get_settings
 config = context.config
 
 # Configure Python logging from alembic.ini unless explicitly disabled
-if config.config_file_name is not None and config.attributes.get("configure_logger", True):
+if config.config_file_name is not None and config.attributes.get(
+    "configure_logger", True
+):
     fileConfig(config.config_file_name)
 
 logger = logging.getLogger("alembic.env")
