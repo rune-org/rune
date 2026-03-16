@@ -7,6 +7,7 @@ import {
   initializeFirstAdminSetupInitializePost,
   checkSetupStatusSetupStatusGet,
   changeMyPasswordProfileMePasswordPost,
+  exchangeSsoCodeAuthSamlExchangePost,
 } from "@/client";
 
 import type {
@@ -41,6 +42,9 @@ export const changeMyPassword = (oldPassword: string, newPassword: string) =>
   changeMyPasswordProfileMePasswordPost({
     body: { old_password: oldPassword, new_password: newPassword },
   });
+
+export const samlExchange = (code: string) =>
+  exchangeSsoCodeAuthSamlExchangePost({ body: { code } });
 
 // Useful types to consume in app code
 export type MyProfileResponse = GetMyProfileProfileMeGetResponse;
