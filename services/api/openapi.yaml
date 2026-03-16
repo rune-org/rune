@@ -430,6 +430,45 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - OAuth2PasswordBearer: []
+  /workflows/bulk:
+    post:
+      tags:
+      - Workflows
+      summary: Bulk Workflow Operation
+      description: "Apply a single action to multiple workflows in one request.\n\n\
+        Each workflow is evaluated individually against the caller's per-workflow\n\
+        role, so a mixed response is expected when the user has different roles\n\
+        across the selected workflows.  The overall HTTP status is always 200;\nlook\
+        \ inside ``failed`` for per-item errors.\n\n**Actions and minimum required\
+        \ role:**\n\n| action     | required role          |\n|------------|------------------------|\n\
+        | delete     | OWNER                  |\n| activate   | OWNER or EDITOR  \
+        \      |\n| deactivate | OWNER or EDITOR        |\n| export     | OWNER, EDITOR,\
+        \ VIEWER  |\n| run        | OWNER or EDITOR        |\n\n**Failure reasons:**\n\
+        \n- `not_found`        \u2014 the workflow ID does not exist\n- `forbidden`\
+        \        \u2014 the caller lacks the required role\n- `invalid_workflow` \u2014\
+        \ workflow structure is invalid for execution (`run` only)"
+      operationId: bulk_workflow_operation_workflows_bulk_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkWorkflowRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_BulkOperationResult_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
   /workflows/{workflow_id}:
     get:
       tags:
@@ -2320,6 +2359,25 @@ components:
       required:
       - data
       title: ApiResponse[AdminPasswordResetResponse]
+    ApiResponse_BulkOperationResult_:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          $ref: '#/components/schemas/BulkOperationResult'
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[BulkOperationResult]
     ApiResponse_CreateUserResponse_:
       properties:
         success:
@@ -2914,6 +2972,106 @@ components:
       required:
       - SAMLResponse
       title: Body_assertion_consumer_service_auth_saml_acs_post
+    BulkOperationResult:
+      properties:
+        action:
+          type: string
+          title: Action
+        succeeded:
+          items:
+            type: integer
+          type: array
+          title: Succeeded
+        failed:
+          items:
+            $ref: '#/components/schemas/BulkWorkflowFailure'
+          type: array
+          title: Failed
+        summary:
+          $ref: '#/components/schemas/BulkOperationSummary'
+        exported:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/WorkflowDetail'
+            type: array
+          - type: 'null'
+          title: Exported
+        executions:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          title: Executions
+      type: object
+      required:
+      - action
+      - succeeded
+      - failed
+      - summary
+      title: BulkOperationResult
+      description: Full result returned by the bulk-workflow endpoint.
+    BulkOperationSummary:
+      properties:
+        total:
+          type: integer
+          title: Total
+        succeeded:
+          type: integer
+          title: Succeeded
+        failed:
+          type: integer
+          title: Failed
+      type: object
+      required:
+      - total
+      - succeeded
+      - failed
+      title: BulkOperationSummary
+      description: Aggregate counts for a completed bulk operation.
+    BulkWorkflowAction:
+      type: string
+      enum:
+      - delete
+      - activate
+      - deactivate
+      - export
+      - run
+      title: BulkWorkflowAction
+      description: Actions that can be applied to multiple workflows at once.
+    BulkWorkflowFailure:
+      properties:
+        id:
+          type: integer
+          title: Id
+        reason:
+          type: string
+          title: Reason
+      type: object
+      required:
+      - id
+      - reason
+      title: BulkWorkflowFailure
+      description: A single workflow that could not be processed in a bulk operation.
+    BulkWorkflowRequest:
+      properties:
+        workflow_ids:
+          items:
+            type: integer
+          type: array
+          maxItems: 100
+          minItems: 1
+          title: Workflow Ids
+          description: "IDs of the workflows to operate on (1\u2013100 items; duplicates\
+            \ are ignored)."
+        action:
+          $ref: '#/components/schemas/BulkWorkflowAction'
+      type: object
+      required:
+      - workflow_ids
+      - action
+      title: BulkWorkflowRequest
+      description: Request body for the bulk-workflow endpoint.
     ClearThreadResponse:
       properties:
         success:
@@ -4013,7 +4171,8 @@ components:
           - type: integer
           - type: 'null'
           title: Version Id
-          description: Specific workflow version to run. Defaults to the latest version.
+          description: Specific workflow version to run. Defaults to the published
+            version.
       type: object
       title: WorkflowRunRequest
     WorkflowShareRequest:
