@@ -10,6 +10,16 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useAuth } from "@/lib/auth";
 
+const ALLOWED_REDIRECTS = ["/create", "/create/app", "/profile", "/admin"] as const;
+
+function getValidatedRedirectTarget(
+  redirectParam: string | null,
+): (typeof ALLOWED_REDIRECTS)[number] {
+  const isAllowed = (p: string | null): p is (typeof ALLOWED_REDIRECTS)[number] =>
+    !!p && ALLOWED_REDIRECTS.includes(p as (typeof ALLOWED_REDIRECTS)[number]);
+  return isAllowed(redirectParam) ? redirectParam : "/create";
+}
+
 export function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -31,12 +41,16 @@ export function SignInForm() {
       // Redirect to /create - RequireAuth will handle redirecting to
       // /change-password if the user needs to change their password
       const redirectParam = searchParams.get("redirect");
-      const allowed = ["/create", "/create/app", "/profile", "/admin"] as const;
-      const isAllowed = (p: string | null): p is (typeof allowed)[number] =>
-        !!p && allowed.includes(p as (typeof allowed)[number]);
-      const target = isAllowed(redirectParam) ? redirectParam : "/create";
+      const target = getValidatedRedirectTarget(redirectParam);
       router.push(target);
     }
+  }
+
+  function handleSsoSignIn() {
+    const redirectParam = searchParams.get("redirect");
+    const target = getValidatedRedirectTarget(redirectParam);
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+    window.location.href = `${apiBaseUrl}/auth/saml/login?redirect=${encodeURIComponent(target)}`;
   }
 
   return (
@@ -76,11 +90,7 @@ export function SignInForm() {
             type="button"
             variant="outline"
             className="w-full h-11 rounded-full border-white/10 text-white hover:bg-white/5 font-medium transition-all"
-            onClick={() => {
-              const redirectParam = searchParams.get("redirect") || "/create";
-              const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-              window.location.href = `${apiBaseUrl}/auth/saml/login?redirect=${encodeURIComponent(redirectParam)}`;
-            }}
+            onClick={handleSsoSignIn}
           >
             Sign in with SSO
           </Button>
@@ -96,13 +106,23 @@ export function SignInForm() {
       ) : null}
 
       {!state.isSsoOnly && (
-        <Button
-          type="submit"
-          className="w-full h-11 rounded-full bg-white !text-black hover:bg-zinc-200 font-medium transition-all shadow-lg"
-          disabled={state.loading}
-        >
-          {state.loading ? "Signing in…" : "Sign in"}
-        </Button>
+        <div className="space-y-3">
+          <Button
+            type="submit"
+            className="w-full h-11 rounded-full bg-white !text-black hover:bg-zinc-200 font-medium transition-all shadow-lg"
+            disabled={state.loading}
+          >
+            {state.loading ? "Signing in…" : "Sign in"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-11 rounded-full border-white/10 text-white hover:bg-white/5 font-medium transition-all"
+            onClick={handleSsoSignIn}
+          >
+            Sign in with SSO
+          </Button>
+        </div>
       )}
     </form>
   );
