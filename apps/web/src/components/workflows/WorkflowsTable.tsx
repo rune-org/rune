@@ -8,12 +8,12 @@ import { useAuth } from "@/lib/auth";
 import {
   bulkWorkflowOperation,
   deleteWorkflow,
+  exportWorkflowsZip,
   listUserExecutions,
   runWorkflow,
   updateWorkflowName,
   updateWorkflowStatus,
 } from "@/lib/api/workflows";
-import { stripCredentialsFromWorkflowData } from "@/lib/workflow-dsl";
 import {
   canChangeWorkflowStatus,
   canDeleteWorkflow,
@@ -26,82 +26,22 @@ import type {
   BulkWorkflowAction,
   BulkWorkflowFailure,
   ExecutionListItem as ApiExecutionListItem,
-  WorkflowDetail,
 } from "@/client/types.gen";
 import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog";
 import { WorkflowBulkActionsBar } from "@/components/workflows/table/WorkflowBulkActionsBar";
 import { WorkflowsDialogs } from "@/components/workflows/table/WorkflowDialogs";
 import { WorkflowsDataTable } from "@/components/workflows/table/WorkflowsDataTable";
 import { WorkflowsTableFilters } from "@/components/workflows/table/WorkflowsTableFilters";
+import type { StatFilter } from "@/components/workflows/table/workflowTableTypes";
 
-type StatFilter = "all" | "active" | "runs" | "draft" | "failed";
-type ExportableWorkflow = Pick<WorkflowSummary, "id" | "name">;
+const BULK_OPERATION_LIMIT = 100;
 
 type BulkWorkflowResult = {
   succeededIds: number[];
   failed: BulkWorkflowFailure[];
   succeededCount: number;
   failedCount: number;
-  exported: WorkflowDetail[];
 };
-
-function buildWorkflowExportFile(
-  workflow: ExportableWorkflow,
-  detail: WorkflowDetail,
-): {
-  blob: Blob;
-  fileName: string;
-} {
-  const workflowId = Number(workflow.id);
-  if (!Number.isFinite(workflowId)) {
-    throw new Error("Invalid workflow ID");
-  }
-
-  const rawData = (detail.latest_version?.workflow_data ?? undefined) as
-    | Record<string, unknown>
-    | undefined;
-  const hasGraph = rawData && Array.isArray(rawData.nodes) && Array.isArray(rawData.edges);
-  if (!hasGraph) {
-    throw new Error("Workflow has no graph data to export");
-  }
-
-  const { nodes, edges } = stripCredentialsFromWorkflowData(rawData);
-  const payload = { nodes, edges };
-  const json = JSON.stringify(payload, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
-  const safeName = (workflow.name || "workflow").replace(/[^a-zA-Z0-9-_]/g, "_");
-
-  return {
-    blob,
-    fileName: `workflow-${safeName}-${workflow.id}.json`,
-  };
-}
-
-async function bulkExportWorkflowDetails(workflowIds: number[]) {
-  if (workflowIds.length === 0) {
-    return {
-      exported: [] as WorkflowDetail[],
-      failedCount: 0,
-      succeededCount: 0,
-    };
-  }
-
-  const response = await bulkWorkflowOperation({
-    action: "export",
-    workflow_ids: workflowIds,
-  });
-
-  if (response.error || !response.data?.data) {
-    throw new Error("Bulk export failed");
-  }
-
-  const result = response.data.data;
-  return {
-    exported: result.exported ?? [],
-    failedCount: result.summary.failed,
-    succeededCount: result.summary.succeeded,
-  };
-}
 
 function downloadWorkflowFile(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob);
@@ -124,7 +64,6 @@ async function runWorkflowBulkOperation(
       failed: [],
       succeededCount: 0,
       failedCount: 0,
-      exported: [],
     };
   }
 
@@ -143,8 +82,11 @@ async function runWorkflowBulkOperation(
     failed: result.failed,
     succeededCount: result.summary.succeeded,
     failedCount: result.summary.failed,
-    exported: result.exported ?? [],
   };
+}
+
+function toNumericWorkflowIds(ids: string[]): number[] {
+  return ids.map((id) => Number(id)).filter((id) => Number.isFinite(id));
 }
 
 export function WorkflowsTable() {
@@ -163,6 +105,7 @@ export function WorkflowsTable() {
 
   const [pendingWorkflowIds, setPendingWorkflowIds] = useState<Set<string>>(new Set());
   const [exportingWorkflowIds, setExportingWorkflowIds] = useState<Set<string>>(new Set());
+  const [bulkActionPending, setBulkActionPending] = useState(false);
   const [renameTarget, setRenameTarget] = useState<WorkflowSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<WorkflowSummary | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -300,7 +243,13 @@ export function WorkflowsTable() {
   const handleSelectAllFiltered = useCallback(
     (checked: CheckedState) => {
       if (checked === true) {
-        setSelectedWorkflowIds(new Set(filtered.map((workflow) => workflow.id)));
+        const selected = filtered.slice(0, BULK_OPERATION_LIMIT);
+        setSelectedWorkflowIds(new Set(selected.map((workflow) => workflow.id)));
+        if (filtered.length > BULK_OPERATION_LIMIT) {
+          toast.info(
+            `Bulk actions are limited to ${BULK_OPERATION_LIMIT} workflows. Selected the first ${BULK_OPERATION_LIMIT}.`,
+          );
+        }
         return;
       }
       setSelectedWorkflowIds(new Set());
@@ -310,6 +259,11 @@ export function WorkflowsTable() {
 
   const handleToggleSelected = useCallback((workflowId: string, checked: CheckedState) => {
     setSelectedWorkflowIds((prev) => {
+      if (checked === true && !prev.has(workflowId) && prev.size >= BULK_OPERATION_LIMIT) {
+        toast.error(`You can select up to ${BULK_OPERATION_LIMIT} workflows at once.`);
+        return prev;
+      }
+
       const next = new Set(prev);
       if (checked === true) next.add(workflowId);
       else next.delete(workflowId);
@@ -422,13 +376,8 @@ export function WorkflowsTable() {
         if (!Number.isFinite(workflowId)) {
           throw new Error("Invalid workflow ID");
         }
-        const result = await bulkExportWorkflowDetails([workflowId]);
-        const detail = result.exported[0];
-        if (!detail) {
-          throw new Error("Workflow export was not returned by server");
-        }
-        const { blob, fileName } = buildWorkflowExportFile(workflow, detail);
-        downloadWorkflowFile(blob, fileName);
+        const { blob, fileName } = await exportWorkflowsZip([workflowId]);
+        downloadWorkflowFile(blob, fileName || `workflow-${workflowId}.zip`);
         if (!silent) toast.success("Workflow exported");
       } catch (error) {
         if (!silent) {
@@ -470,56 +419,54 @@ export function WorkflowsTable() {
   );
 
   const handleBulkExport = useCallback(async () => {
-    if (selectedExportable.length === 0) return;
+    if (bulkActionPending || selectedCount === 0) return;
 
-    const selectedById = new Map(
-      selectedExportable.map((workflow) => [Number(workflow.id), workflow]),
-    );
-    const workflowIds = [...selectedById.keys()].filter(Number.isFinite);
+    const ids = [...selectedWorkflowIds];
+    const workflowIds = toNumericWorkflowIds(ids);
     if (workflowIds.length === 0) return;
+    if (workflowIds.length > BULK_OPERATION_LIMIT) {
+      toast.error(`You can export up to ${BULK_OPERATION_LIMIT} workflows at once.`);
+      return;
+    }
 
-    markWorkflowsExporting(
-      selectedExportable.map((workflow) => workflow.id),
-      true,
-    );
+    setBulkActionPending(true);
+    markWorkflowsExporting(ids, true);
     try {
-      const result = await runWorkflowBulkOperation("export", workflowIds);
-
-      for (const detail of result.exported) {
-        const source = selectedById.get(detail.id);
-        if (!source) continue;
-        const { blob, fileName } = buildWorkflowExportFile(source, detail);
-        downloadWorkflowFile(blob, fileName);
-      }
-
-      if (result.failedCount === 0) {
-        toast.success(
-          `Exported ${result.succeededCount} workflow${result.succeededCount === 1 ? "" : "s"}.`,
-        );
-      } else {
-        toast.error(
-          `Exported ${result.succeededCount} and skipped ${result.failedCount} workflow${result.failedCount === 1 ? "" : "s"}.`,
-        );
-      }
+      const { blob, fileName } = await exportWorkflowsZip(workflowIds);
+      downloadWorkflowFile(blob, fileName);
+      toast.success(
+        `Exported ${workflowIds.length} workflow${workflowIds.length === 1 ? "" : "s"} as ZIP.`,
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Bulk export failed");
     } finally {
-      markWorkflowsExporting(
-        selectedExportable.map((workflow) => workflow.id),
-        false,
-      );
+      markWorkflowsExporting(ids, false);
+      setBulkActionPending(false);
     }
-  }, [markWorkflowsExporting, selectedExportable]);
+  }, [
+    bulkActionPending,
+    markWorkflowsExporting,
+    selectedCount,
+    selectedWorkflowIds,
+  ]);
 
   const handleBulkRun = useCallback(async () => {
-    if (selectedRunnable.length === 0) return;
+    if (bulkActionPending || selectedCount === 0) return;
 
-    const ids = selectedRunnable.map((workflow) => workflow.id);
-    markWorkflowsPending(ids, true);
+    const ids = [...selectedWorkflowIds];
+    if (ids.length > BULK_OPERATION_LIMIT) {
+      toast.error(`You can run up to ${BULK_OPERATION_LIMIT} workflows at once.`);
+      return;
+    }
+
+    const runnableIds = new Set(selectedRunnable.map((workflow) => workflow.id));
+    const runnableIdsSelected = ids.filter((id) => runnableIds.has(id));
+    if (runnableIdsSelected.length === 0) return;
+
+    setBulkActionPending(true);
+    markWorkflowsPending(runnableIdsSelected, true);
     try {
-      const workflowIds = selectedRunnable
-        .map((workflow) => Number(workflow.id))
-        .filter((workflowId) => Number.isFinite(workflowId));
+      const workflowIds = toNumericWorkflowIds(runnableIdsSelected);
       const result = await runWorkflowBulkOperation("run", workflowIds);
 
       if (result.succeededCount > 0) {
@@ -536,21 +483,39 @@ export function WorkflowsTable() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Bulk run failed");
     } finally {
-      markWorkflowsPending(ids, false);
+      markWorkflowsPending(runnableIdsSelected, false);
+      setBulkActionPending(false);
     }
-  }, [markWorkflowsPending, refreshExecutions, selectedRunnable]);
+  }, [
+    bulkActionPending,
+    markWorkflowsPending,
+    refreshExecutions,
+    selectedCount,
+    selectedRunnable,
+    selectedWorkflowIds,
+  ]);
 
   const handleBulkStatusChange = useCallback(
     async (target: "active" | "draft") => {
-      const candidates = target === "active" ? selectedActivatable : selectedDeactivatable;
-      if (candidates.length === 0) return;
+      if (bulkActionPending || selectedCount === 0) return;
 
-      const ids = candidates.map((workflow) => workflow.id);
-      markWorkflowsPending(ids, true);
+      const ids = [...selectedWorkflowIds];
+      if (ids.length > BULK_OPERATION_LIMIT) {
+        toast.error(
+          `You can ${target === "active" ? "activate" : "deactivate"} up to ${BULK_OPERATION_LIMIT} workflows at once.`,
+        );
+        return;
+      }
+
+      const candidates = target === "active" ? selectedActivatable : selectedDeactivatable;
+      const candidateIds = new Set(candidates.map((workflow) => workflow.id));
+      const candidateSelection = ids.filter((id) => candidateIds.has(id));
+      if (candidateSelection.length === 0) return;
+
+      setBulkActionPending(true);
+      markWorkflowsPending(candidateSelection, true);
       try {
-        const workflowIds = candidates
-          .map((workflow) => Number(workflow.id))
-          .filter((workflowId) => Number.isFinite(workflowId));
+        const workflowIds = toNumericWorkflowIds(candidateSelection);
         const action = target === "active" ? "activate" : "deactivate";
         const result = await runWorkflowBulkOperation(action, workflowIds);
 
@@ -572,21 +537,38 @@ export function WorkflowsTable() {
             : `Bulk ${target === "active" ? "activate" : "deactivate"} failed`,
         );
       } finally {
-        markWorkflowsPending(ids, false);
+        markWorkflowsPending(candidateSelection, false);
+        setBulkActionPending(false);
       }
     },
-    [actions, markWorkflowsPending, selectedActivatable, selectedDeactivatable],
+    [
+      actions,
+      bulkActionPending,
+      markWorkflowsPending,
+      selectedCount,
+      selectedActivatable,
+      selectedDeactivatable,
+      selectedWorkflowIds,
+    ],
   );
 
   const handleBulkDelete = useCallback(async () => {
-    if (selectedDeletable.length === 0) return;
+    if (bulkActionPending || selectedCount === 0) return;
 
-    const ids = selectedDeletable.map((workflow) => workflow.id);
-    markWorkflowsPending(ids, true);
+    const ids = [...selectedWorkflowIds];
+    if (ids.length > BULK_OPERATION_LIMIT) {
+      toast.error(`You can delete up to ${BULK_OPERATION_LIMIT} workflows at once.`);
+      return;
+    }
+
+    const deletableIds = new Set(selectedDeletable.map((workflow) => workflow.id));
+    const deletableSelection = ids.filter((id) => deletableIds.has(id));
+    if (deletableSelection.length === 0) return;
+
+    setBulkActionPending(true);
+    markWorkflowsPending(deletableSelection, true);
     try {
-      const workflowIds = selectedDeletable
-        .map((workflow) => Number(workflow.id))
-        .filter((workflowId) => Number.isFinite(workflowId));
+      const workflowIds = toNumericWorkflowIds(deletableSelection);
       const result = await runWorkflowBulkOperation("delete", workflowIds);
 
       if (result.succeededCount > 0) {
@@ -609,9 +591,17 @@ export function WorkflowsTable() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Bulk delete failed");
     } finally {
-      markWorkflowsPending(ids, false);
+      markWorkflowsPending(deletableSelection, false);
+      setBulkActionPending(false);
     }
-  }, [actions, markWorkflowsPending, selectedDeletable, setSelectedWorkflowIds]);
+  }, [
+    actions,
+    bulkActionPending,
+    markWorkflowsPending,
+    selectedCount,
+    selectedDeletable,
+    selectedWorkflowIds,
+  ]);
 
   const isRowPending = useCallback(
     (id: string) => pendingWorkflowIds.has(id),
@@ -640,6 +630,7 @@ export function WorkflowsTable() {
         deactivatableCount={selectedDeactivatable.length}
         exportableCount={selectedExportable.length}
         deletableCount={selectedDeletable.length}
+        pending={bulkActionPending}
         onRun={handleBulkRun}
         onActivate={() => handleBulkStatusChange("active")}
         onDeactivate={() => handleBulkStatusChange("draft")}

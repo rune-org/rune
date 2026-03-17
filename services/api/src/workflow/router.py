@@ -77,10 +77,10 @@ async def bulk_workflow_operation(
     """
     Apply a single action to multiple workflows in one request.
 
-    Each workflow is evaluated individually against the caller's per-workflow
-    role, so a mixed response is expected when the user has different roles
-    across the selected workflows.  The overall HTTP status is always 200;
-    look inside ``failed`` for per-item errors.
+    Each workflow is evaluated individually against the caller's per-workflow role.
+
+    - `delete`, `activate`, `deactivate`, `run` return JSON summary payloads.
+    - `export` returns a ZIP archive (`application/zip`) of sanitized workflow JSONs.
 
     **Actions and minimum required role:**
 
@@ -138,25 +138,17 @@ async def bulk_workflow_operation(
         succeeded = [wf.id for wf in permitted_workflows]
 
     elif payload.action == BulkWorkflowAction.EXPORT:
-        succeeded = [wf.id for wf in permitted_workflows]
-        # Fetch latest versions for all workflows to build WorkflowDetail
-        exported_details = []
-        for wf in permitted_workflows:
-            latest_version = await service.get_latest_version_with_creator(wf)
-            exported_details.append(WorkflowDetail.from_workflow(wf, latest_version))
+        if not permitted_workflows:
+            raise NotFound(detail="No exportable workflows found")
 
-        result = BulkOperationResult(
-            action=payload.action.value,
-            succeeded=succeeded,
-            failed=failed,
-            summary=BulkOperationSummary(
-                total=len(payload.workflow_ids),
-                succeeded=len(succeeded),
-                failed=len(failed),
-            ),
-            exported=exported_details,
+        archive_bytes, file_name = await service.build_bulk_export_response(
+            payload.workflow_ids, permitted_workflows
         )
-        return ApiResponse(success=True, message="Bulk export completed", data=result)
+        return Response(
+            content=archive_bytes,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
+        )
 
     elif payload.action == BulkWorkflowAction.RUN:
         # Handle each workflow individually — each needs its own execution record,

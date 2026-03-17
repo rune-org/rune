@@ -80,6 +80,20 @@ export const runWorkflow = (workflow_id: number, version_id?: number) =>
 export const bulkWorkflowOperation = (payload: BulkWorkflowRequest) =>
   bulkWorkflowOperationWorkflowsBulkPost({ body: payload });
 
+export const exportWorkflowsZip = async (workflow_ids: number[]) => {
+  const response = await bulkWorkflowOperationWorkflowsBulkPost({
+    body: { action: "export", workflow_ids } as BulkWorkflowRequest,
+    parseAs: "blob",
+  });
+
+  const blob = response.data as unknown as Blob;
+  const disposition = response.response.headers.get("Content-Disposition") ?? "";
+  const filenameMatch = disposition.match(/filename="([^"]+)"/i);
+  const fileName = filenameMatch?.[1] || "workflows-export.zip";
+
+  return { blob, fileName };
+};
+
 // --- Version API wrappers ---
 
 export const listVersions = (workflow_id: number) =>

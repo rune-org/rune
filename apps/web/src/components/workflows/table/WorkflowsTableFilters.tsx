@@ -1,8 +1,7 @@
 import { Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
-
-type StatFilter = "all" | "active" | "runs" | "draft" | "failed";
+import type { StatFilter } from "@/components/workflows/table/workflowTableTypes";
 
 type WorkflowsTableFiltersProps = {
   stats: { active: number; runs: number; draft: number; failed: number };

@@ -1,6 +1,11 @@
 import copy
+import io
+import json
+import re
 import uuid
+import zipfile
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, delete, select
@@ -329,6 +334,103 @@ class WorkflowService:
     # ------------------------------------------------------------------
     # Bulk helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def sanitize_workflow_data_for_export(workflow_data: Any) -> dict[str, Any]:
+        """Return workflow_data safe for user download.
+
+        Removes credential references from node payloads so exports never
+        include secret-bearing fields.
+        """
+        if not isinstance(workflow_data, dict):
+            return {"nodes": [], "edges": []}
+
+        sanitized = copy.deepcopy(workflow_data)
+        nodes = sanitized.get("nodes")
+        edges = sanitized.get("edges")
+
+        if not isinstance(nodes, list):
+            nodes = []
+        if not isinstance(edges, list):
+            edges = []
+
+        sanitized_nodes: list[dict[str, Any]] = []
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+
+            cleaned = dict(node)
+            cleaned.pop("credentials", None)
+
+            data = cleaned.get("data")
+            if isinstance(data, dict):
+                cleaned_data = dict(data)
+                cleaned_data.pop("credential", None)
+                cleaned["data"] = cleaned_data
+
+            sanitized_nodes.append(cleaned)
+
+        return {
+            "nodes": sanitized_nodes,
+            "edges": edges,
+        }
+
+    @staticmethod
+    def build_export_file_name(workflow_id: int, workflow_name: str) -> str:
+        safe_name = re.sub(
+            r"[^A-Za-z0-9_-]", "_", (workflow_name or "workflow").strip()
+        )
+        safe_name = safe_name or "workflow"
+        return f"workflow-{safe_name}-{workflow_id}.json"
+
+    async def build_bulk_export_zip(self, workflows: list[Workflow]) -> bytes:
+        """Create a ZIP archive containing one sanitized JSON per workflow."""
+        if not workflows:
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED):
+                pass
+            return buffer.getvalue()
+
+        latest_version_ids = {
+            wf.latest_version_id for wf in workflows if wf.latest_version_id is not None
+        }
+        versions_by_id: dict[int, WorkflowVersion] = {}
+
+        if latest_version_ids:
+            stmt = select(WorkflowVersion).where(
+                col(WorkflowVersion.id).in_(latest_version_ids)
+            )
+            result = await self.db.exec(stmt)
+            versions_by_id = {version.id: version for version in result.all()}
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(
+            buffer, mode="w", compression=zipfile.ZIP_DEFLATED
+        ) as archive:
+            for workflow in workflows:
+                if workflow.latest_version_id is None:
+                    continue
+
+                version = versions_by_id.get(workflow.latest_version_id)
+                if version is None:
+                    continue
+
+                payload = self.sanitize_workflow_data_for_export(version.workflow_data)
+                file_name = self.build_export_file_name(workflow.id, workflow.name)
+                archive.writestr(file_name, json.dumps(payload, indent=2))
+
+        return buffer.getvalue()
+
+    async def build_bulk_export_response(
+        self,
+        workflow_ids: list[int],
+        workflows: list[Workflow],
+    ) -> tuple[bytes, str]:
+        """Build ZIP bytes and a safe filename for bulk export downloads."""
+        archive_bytes = await self.build_bulk_export_zip(workflows)
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        file_name = f"workflows-export-{timestamp}-{len(workflow_ids)}.zip"
+        return archive_bytes, file_name
 
     async def bulk_fetch_with_roles(
         self, user_id: int, workflow_ids: list[int]
