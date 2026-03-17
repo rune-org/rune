@@ -17,7 +17,7 @@ export function ClickConnectBridge() {
   useEffect(() => {
     if (!clickStartHandle) return;
 
-    const { nodeLookup, connectionMode, domNode, updateConnection, cancelConnection } =
+    const { nodeLookup, connectionMode, domNode, updateConnection, cancelConnection, transform } =
       store.getState();
 
     if (!domNode) return;
@@ -49,11 +49,23 @@ export function ClickConnectBridge() {
 
     type ConnectionUpdate = Parameters<typeof updateConnection>[0];
 
-    function makeUpdate(to: { x: number; y: number }, fromNode: typeof node): ConnectionUpdate {
-      const from = {
+    function getHandleCenter(fromNode: typeof node) {
+      return {
         x: (handle!.x ?? 0) + fromNode!.internals.positionAbsolute.x + (handle!.width ?? 1) / 2,
         y: (handle!.y ?? 0) + fromNode!.internals.positionAbsolute.y + (handle!.height ?? 1) / 2,
       };
+    }
+
+    function flowToDomPosition(position: { x: number; y: number }) {
+      const [tx, ty, zoom] = transform;
+      return {
+        x: position.x * zoom + tx,
+        y: position.y * zoom + ty,
+      };
+    }
+
+    function makeUpdate(to: { x: number; y: number }, fromNode: typeof node): ConnectionUpdate {
+      const from = getHandleCenter(fromNode);
       return {
         inProgress: true,
         isValid: null,
@@ -69,11 +81,7 @@ export function ClickConnectBridge() {
       } as ConnectionUpdate;
     }
 
-    const from = {
-      x: (handle.x ?? 0) + node.internals.positionAbsolute.x + (handle.width ?? 1) / 2,
-      y: (handle.y ?? 0) + node.internals.positionAbsolute.y + (handle.height ?? 1) / 2,
-    };
-    updateConnection(makeUpdate(from, node));
+    updateConnection(makeUpdate(flowToDomPosition(getHandleCenter(node)), node));
 
     let rafId = 0;
 
