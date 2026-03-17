@@ -1,4 +1,4 @@
-import type { NodeKind, EditData } from "../types";
+import type { EditData, NodeKind } from "../types";
 import type { VariableTreeNode } from "./variableSchema";
 
 /**
@@ -35,6 +35,27 @@ export function getStaticOutputSchema(
       return [
         { key: "success", path: "success", type: "boolean", source: "schema" },
         { key: "message_id", path: "message_id", type: "string", source: "schema" },
+      ];
+
+    case "log":
+      return [
+        { key: "message", path: "message", type: "string", source: "schema" },
+        { key: "level", path: "level", type: "string", source: "schema" },
+        { key: "logged_at", path: "logged_at", type: "string", source: "schema" },
+      ];
+
+    case "datetime":
+      return [
+        {
+          key: "result",
+          path: "result",
+          type: "string",
+          source: "schema",
+        },
+        { key: "formatted", path: "formatted", type: "string", source: "schema" },
+        { key: "unix", path: "unix", type: "number", source: "schema" },
+        { key: "timezone", path: "timezone", type: "string", source: "schema" },
+        { key: "operation", path: "operation", type: "string", source: "schema" },
       ];
 
     case "edit": {
@@ -103,6 +124,16 @@ export function getStaticOutputSchema(
           children: [],
         },
       ];
+
+    case "filter":
+    case "limit":
+      return [
+        { key: "count", path: "count", type: "number", source: "schema" },
+        { key: "original_count", path: "original_count", type: "number", source: "schema" },
+      ];
+
+    case "sort":
+      return [{ key: "count", path: "count", type: "number", source: "schema" }];
 
     case "aggregator":
       return [

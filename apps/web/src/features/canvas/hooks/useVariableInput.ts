@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useMemo } from "react";
 
 /** Regex matching Go resolver's $ notation: $nodeName or $nodeName.field.path */
-const VARIABLE_REGEX = /\$([a-zA-Z_][a-zA-Z0-9_-]*)(?:\.([a-zA-Z0-9_\[\]\.\-]+))?/g;
+const VARIABLE_REGEX = /\$([a-zA-Z_][a-zA-Z0-9_-]*)(?:\.([a-zA-Z0-9_\[\]\.\-$]+))?/g;
 
 export type VariableMatch = {
   full: string;

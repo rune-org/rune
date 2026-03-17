@@ -54,13 +54,13 @@ func TestHTTPSplitAggregateWorkflow(t *testing.T) {
 	workflowID := fmt.Sprintf("wf_http_split_%d", time.Now().UnixNano())
 	executionID := fmt.Sprintf("exec_http_split_%d", time.Now().UnixNano())
 
-	// Define workflow: Fetch Users -> Split -> Fetch Details -> Aggregate
+	// Define workflow: Fetch_Users -> Split -> Fetch_Details -> Aggregate
 	workflow := core.Workflow{
 		WorkflowID: workflowID,
 		Nodes: []core.Node{
 			{
 				ID:   "fetch_users",
-				Name: "Fetch Users",
+				Name: "Fetch_Users",
 				Type: "http",
 				Parameters: map[string]interface{}{
 					"url":    server.URL + "/users",
@@ -69,15 +69,15 @@ func TestHTTPSplitAggregateWorkflow(t *testing.T) {
 			},
 			{
 				ID:   "split_users",
-				Name: "Split Users",
+				Name: "Split_Users",
 				Type: "split",
 				Parameters: map[string]interface{}{
-					"input_array": "$Fetch Users.body",
+					"input_array": "$Fetch_Users.body",
 				},
 			},
 			{
 				ID:   "fetch_details",
-				Name: "Fetch Details",
+				Name: "Fetch_Details",
 				Type: "http",
 				Parameters: map[string]interface{}{
 					"url":    server.URL + "/users/$item.id",
@@ -86,7 +86,7 @@ func TestHTTPSplitAggregateWorkflow(t *testing.T) {
 			},
 			{
 				ID:   "aggregate_users",
-				Name: "Aggregate Users",
+				Name: "Aggregate_Users",
 				Type: "aggregator",
 				Parameters: map[string]interface{}{
 					"timeout": 30,
@@ -187,9 +187,9 @@ func TestHTTPSplitAggregateWorkflow(t *testing.T) {
 		}
 
 		// Verify aggregated results
-		aggOutput, ok := completion.FinalContext["$Aggregate Users"]
+		aggOutput, ok := completion.FinalContext["$Aggregate_Users"]
 		if !ok {
-			t.Fatalf("Final context missing $Aggregate Users output. Context keys: %v", getKeys(completion.FinalContext))
+			t.Fatalf("Final context missing $Aggregate_Users output. Context keys: %v", getKeys(completion.FinalContext))
 		}
 
 		aggregated, ok := aggOutput.([]interface{})
