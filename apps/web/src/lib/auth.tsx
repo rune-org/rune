@@ -27,6 +27,7 @@ type AuthState = {
   user: AuthUser | null;
   loading: boolean;
   error: string | null;
+  isSsoOnly: boolean;
 };
 
 type AuthContextValue = {
@@ -48,12 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: null,
     loading: true,
     error: null,
+    isSsoOnly: false,
   });
   const initRef = useRef(false);
   const refreshTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setLoading = (loading: boolean) => setState((s) => ({ ...s, loading, error: null }));
   const setError = (message: string | null) => setState((s) => ({ ...s, error: message }));
+  const setSsoOnly = (isSsoOnly: boolean) => setState((s) => ({ ...s, isSsoOnly }));
   const setUser = (user: AuthUser | null) => setState((s) => ({ ...s, user }));
 
   const storeRefreshToken = (token: string | null) => {
@@ -189,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => {
       setLoading(true);
       setError(null);
+      setSsoOnly(false);
       try {
         const response = await apiLogin(email, password);
         const payload = response.data?.data;
@@ -215,9 +219,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return true;
       } catch (error) {
         const errorMessage = getErrorMessage(error);
-        // Display error as toast notification
-        toast.error(errorMessage);
-        setError(errorMessage);
+
+        // Check for SSO-only account trigger (403 with specific message)
+        if (
+          errorMessage ===
+          "This account uses SSO. Please sign in via your organisation's identity provider."
+        ) {
+          setSsoOnly(true);
+        } else {
+          // Display error as toast notification for normal errors
+          toast.error(errorMessage);
+          setError(errorMessage);
+        }
         setLoading(false);
         return false;
       }
@@ -229,6 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (name: string, email: string, password: string) => {
       setLoading(true);
       setError(null);
+      setSsoOnly(false);
       try {
         await firstAdminSignup(name, email, password);
         // Auto-login after successful registration

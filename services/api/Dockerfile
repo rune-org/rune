@@ -37,6 +37,4 @@ EXPOSE 8000
 # Use the virtual environment
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Run migrations before starting the application
-ENTRYPOINT ["./entrypoint.sh"]
 CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]

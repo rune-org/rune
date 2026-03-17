@@ -38,7 +38,7 @@ export const BaseNode = memo(function BaseNode({
   return (
     <div
       className={cn(
-        "rune-node relative w-[220px] rounded-[var(--radius)] border-2 p-3 text-sm text-foreground shadow-sm transition-[border-color,box-shadow,background-color] duration-200",
+        "rune-node relative w-[220px] max-w-[220px] rounded-[var(--radius)] border-2 p-3 text-sm text-foreground shadow-sm transition-[border-color,box-shadow,background-color] duration-200",
         bgClassName,
         executionStatus !== "idle" && executionStatus,
         executionStatus === "running" && "animate-pulse-subtle",
@@ -58,9 +58,9 @@ export const BaseNode = memo(function BaseNode({
         )
       )}
 
-      <div className="flex items-center gap-2 font-medium">
-        {icon}
-        {label}
+      <div className="flex items-center gap-2 font-medium min-w-0">
+        <span className="shrink-0">{icon}</span>
+        <span className="truncate">{label}</span>
       </div>
 
       {children && <div className="mt-2 space-y-1">{children}</div>}

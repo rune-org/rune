@@ -18,6 +18,7 @@ import {
 import { nodeTypes } from "../nodes";
 import type { CanvasNode } from "../types";
 import { getMiniMapNodeColor, isValidNodeKind } from "../lib/nodeRegistry";
+import { ClickConnectBridge } from "./ClickConnectBridge";
 import { ExecutionStatusBar } from "./ExecutionStatusBar";
 import type { WsConnectionStatus } from "../hooks/useRtesWebSocket";
 
@@ -84,9 +85,11 @@ export const FlowViewport = memo(function FlowViewport({
       onNodeDragStop={onNodeDragStop}
       onInit={onInit}
       onPaneClick={onPaneClick}
+      connectOnClick={!readOnly}
       nodesDraggable={!readOnly}
       nodesConnectable={!readOnly}
     >
+      {!readOnly ? <ClickConnectBridge /> : null}
       <Background />
 
       <MiniMap
