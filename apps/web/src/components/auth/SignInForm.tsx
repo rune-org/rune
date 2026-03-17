@@ -12,7 +12,9 @@ import { useAuth } from "@/lib/auth";
 
 const ALLOWED_REDIRECTS = ["/create", "/create/app", "/profile", "/admin"] as const;
 
-function getValidatedRedirectTarget(redirectParam: string | null): (typeof ALLOWED_REDIRECTS)[number] {
+function getValidatedRedirectTarget(
+  redirectParam: string | null,
+): (typeof ALLOWED_REDIRECTS)[number] {
   const isAllowed = (p: string | null): p is (typeof ALLOWED_REDIRECTS)[number] =>
     !!p && ALLOWED_REDIRECTS.includes(p as (typeof ALLOWED_REDIRECTS)[number]);
   return isAllowed(redirectParam) ? redirectParam : "/create";
