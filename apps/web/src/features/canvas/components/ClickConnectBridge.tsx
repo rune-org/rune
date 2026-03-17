@@ -17,7 +17,8 @@ export function ClickConnectBridge() {
   useEffect(() => {
     if (!clickStartHandle) return;
 
-    const { nodeLookup, connectionMode, domNode, updateConnection, cancelConnection } = store.getState();
+    const { nodeLookup, connectionMode, domNode, updateConnection, cancelConnection } =
+      store.getState();
 
     if (!domNode) return;
 
@@ -32,7 +33,9 @@ export function ClickConnectBridge() {
             ...(node.internals.handleBounds?.target ?? []),
           ];
 
-    const handle = clickStartHandle.id ? bounds?.find((h) => h.id === clickStartHandle.id) : bounds?.[0];
+    const handle = clickStartHandle.id
+      ? bounds?.find((h) => h.id === clickStartHandle.id)
+      : bounds?.[0];
     if (!handle) return;
 
     const fromHandle = { ...handle, nodeId: clickStartHandle.nodeId, type: clickStartHandle.type };
