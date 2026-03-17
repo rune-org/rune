@@ -10,6 +10,14 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useAuth } from "@/lib/auth";
 
+const ALLOWED_REDIRECTS = ["/create", "/create/app", "/profile", "/admin"] as const;
+
+function getValidatedRedirectTarget(redirectParam: string | null): (typeof ALLOWED_REDIRECTS)[number] {
+  const isAllowed = (p: string | null): p is (typeof ALLOWED_REDIRECTS)[number] =>
+    !!p && ALLOWED_REDIRECTS.includes(p as (typeof ALLOWED_REDIRECTS)[number]);
+  return isAllowed(redirectParam) ? redirectParam : "/create";
+}
+
 export function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -31,20 +39,14 @@ export function SignInForm() {
       // Redirect to /create - RequireAuth will handle redirecting to
       // /change-password if the user needs to change their password
       const redirectParam = searchParams.get("redirect");
-      const allowed = ["/create", "/create/app", "/profile", "/admin"] as const;
-      const isAllowed = (p: string | null): p is (typeof allowed)[number] =>
-        !!p && allowed.includes(p as (typeof allowed)[number]);
-      const target = isAllowed(redirectParam) ? redirectParam : "/create";
+      const target = getValidatedRedirectTarget(redirectParam);
       router.push(target);
     }
   }
 
   function handleSsoSignIn() {
     const redirectParam = searchParams.get("redirect");
-    const allowed = ["/create", "/create/app", "/profile", "/admin"] as const;
-    const isAllowed = (p: string | null): p is (typeof allowed)[number] =>
-      !!p && allowed.includes(p as (typeof allowed)[number]);
-    const target = isAllowed(redirectParam) ? redirectParam : "/create";
+    const target = getValidatedRedirectTarget(redirectParam);
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
     window.location.href = `${apiBaseUrl}/auth/saml/login?redirect=${encodeURIComponent(target)}`;
   }
