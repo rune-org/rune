@@ -128,8 +128,8 @@ export function WorkflowsDialogs({
             {selectedCount - deletableCount > 0 && (
               <>
                 {selectedCount - deletableCount} selected workflow
-                {selectedCount - deletableCount === 1 ? " is" : "s are"} skipped because you do
-                not have delete permission. {" "}
+                {selectedCount - deletableCount === 1 ? " is" : "s are"} skipped because you do not
+                have delete permission.{" "}
               </>
             )}
             This action cannot be undone.

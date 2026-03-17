@@ -443,12 +443,7 @@ export function WorkflowsTable() {
       markWorkflowsExporting(ids, false);
       setBulkActionPending(false);
     }
-  }, [
-    bulkActionPending,
-    markWorkflowsExporting,
-    selectedCount,
-    selectedWorkflowIds,
-  ]);
+  }, [bulkActionPending, markWorkflowsExporting, selectedCount, selectedWorkflowIds]);
 
   const handleBulkRun = useCallback(async () => {
     if (bulkActionPending || selectedCount === 0) return;
