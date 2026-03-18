@@ -421,17 +421,6 @@ class WorkflowService:
 
         return buffer.getvalue()
 
-    async def build_bulk_export_response(
-        self,
-        workflow_ids: list[int],
-        workflows: list[Workflow],
-    ) -> tuple[bytes, str]:
-        """Build ZIP bytes and a safe filename for bulk export downloads."""
-        archive_bytes = await self.build_bulk_export_zip(workflows)
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        file_name = f"workflows-export-{timestamp}-{len(workflow_ids)}.zip"
-        return archive_bytes, file_name
-
     async def bulk_fetch_with_roles(
         self, user_id: int, workflow_ids: list[int]
     ) -> dict[int, tuple[Workflow, WorkflowRole | None]]:
@@ -484,12 +473,29 @@ class WorkflowService:
         await self.db.commit()
 
     async def bulk_set_status(self, workflows: list[Workflow], is_active: bool) -> None:
-        """Set ``is_active`` on many workflows in one commit."""
+        """Set status on many workflows, properly managing published_version_id and schedules.
+
+        Mirrors the single-workflow update_status logic:
+        - is_active=True: publishes latest version and syncs schedule
+        - is_active=False: clears published pointer and deletes schedule
+        """
         if not workflows:
             return
 
         for wf in workflows:
-            wf.is_active = is_active
+            if is_active:
+                # Activate: publish latest version and sync schedule
+                latest = await self.get_latest_version(wf)
+                if latest:
+                    wf.published_version_id = latest.id
+                    wf.is_active = True
+                    await self._upsert_schedule(wf.id, latest.workflow_data)
+                # Skip workflows with no versions (cannot be activated)
+            else:
+                # Deactivate: clear published pointer and delete schedule
+                wf.published_version_id = None
+                wf.is_active = False
+                await self._delete_schedule(wf.id)
 
         await self.db.commit()
 

@@ -87,12 +87,40 @@ export const exportWorkflowsZip = async (workflow_ids: number[]) => {
   });
 
   const blob = response.data as unknown as Blob;
-  const disposition = response.response.headers.get("Content-Disposition") ?? "";
-  const filenameMatch = disposition.match(/filename="([^"]+)"/i);
-  const fileName = filenameMatch?.[1] || "workflows-export.zip";
+  const fileName = "workflows-export.zip";
 
   return { blob, fileName };
 };
+
+export const exportSingleWorkflowJson = async (workflow_id: number) => {
+  const response = await getWorkflowWorkflowsWorkflowIdGet({ path: { workflow_id } });
+  if (!response.data?.data?.latest_version?.workflow_data) {
+    throw new Error("No workflow data available for export");
+  }
+
+  const workflowData = response.data.data.latest_version.workflow_data;
+  const sanitizedData = sanitizeWorkflowDataForExport(workflowData);
+  const jsonString = JSON.stringify(sanitizedData, null, 2);
+  const blob = new Blob([jsonString], { type: "application/json" });
+  const fileName = `workflow-${response.data.data.name}-${workflow_id}.json`;
+
+  return { blob, fileName };
+};
+
+function sanitizeWorkflowDataForExport(data: Record<string, unknown>): Record<string, unknown> {
+  const cloned = JSON.parse(JSON.stringify(data));
+  if (cloned.nodes && Array.isArray(cloned.nodes)) {
+    for (const node of cloned.nodes) {
+      if (node.credentials) {
+        delete node.credentials;
+      }
+      if (node.data?.credential) {
+        delete node.data.credential;
+      }
+    }
+  }
+  return cloned;
+}
 
 // --- Version API wrappers ---
 

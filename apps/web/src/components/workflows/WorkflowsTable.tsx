@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import {
   bulkWorkflowOperation,
   deleteWorkflow,
+  exportSingleWorkflowJson,
   exportWorkflowsZip,
   listUserExecutions,
   runWorkflow,
@@ -376,8 +377,9 @@ export function WorkflowsTable() {
         if (!Number.isFinite(workflowId)) {
           throw new Error("Invalid workflow ID");
         }
-        const { blob, fileName } = await exportWorkflowsZip([workflowId]);
-        downloadWorkflowFile(blob, fileName || `workflow-${workflowId}.zip`);
+        // Single workflow export: download plain JSON file
+        const { blob, fileName } = await exportSingleWorkflowJson(workflowId);
+        downloadWorkflowFile(blob, fileName);
         if (!silent) toast.success("Workflow exported");
       } catch (error) {
         if (!silent) {

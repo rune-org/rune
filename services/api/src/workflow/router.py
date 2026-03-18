@@ -141,18 +141,19 @@ async def bulk_workflow_operation(
         if not permitted_workflows:
             raise NotFound(detail="No exportable workflows found")
 
-        archive_bytes, file_name = await service.build_bulk_export_response(
-            payload.workflow_ids, permitted_workflows
-        )
+        archive_bytes = await service.build_bulk_export_zip(permitted_workflows)
         return Response(
             content=archive_bytes,
             media_type="application/zip",
-            headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
+            headers={
+                "Content-Disposition": 'attachment; filename="workflows-export.zip"'
+            },
         )
 
     elif payload.action == BulkWorkflowAction.RUN:
         # Handle each workflow individually — each needs its own execution record,
-        # token publish, and queue publish. Any may fail due to invalid structure.
+        # token publish, and queue publish. Any may fail due to invalid structure,
+        # missing published version, or other validation errors.
         for wf in permitted_workflows:
             try:
                 execution_id = await service.queue_workflow_execution(
@@ -163,7 +164,10 @@ async def bulk_workflow_operation(
                 )
                 succeeded.append(wf.id)
                 executions[wf.id] = execution_id
-            except ValueError:
+            except (ValueError, BadRequest, NotFound):
+                # ValueError: invalid workflow structure
+                # BadRequest: no published version or other validation failures
+                # NotFound: specified version doesn't exist (shouldn't happen in bulk, but safe to catch)
                 failed.append(BulkWorkflowFailure(id=wf.id, reason="invalid_workflow"))
 
     summary = BulkOperationSummary(
