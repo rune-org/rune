@@ -1,4 +1,5 @@
 import {
+  bulkWorkflowOperationWorkflowsBulkPost,
   listWorkflowsWorkflowsGet,
   getWorkflowWorkflowsWorkflowIdGet,
   createWorkflowWorkflowsPost,
@@ -24,6 +25,7 @@ import type {
   WorkflowPublishVersion,
   WorkflowRestoreVersion,
   WorkflowRunRequest,
+  BulkWorkflowRequest,
   ListWorkflowsWorkflowsGetResponse,
   GetWorkflowWorkflowsWorkflowIdGetResponse,
   CreateWorkflowWorkflowsPostResponse,
@@ -39,6 +41,7 @@ import type {
   GetWorkflowVersionWorkflowsWorkflowIdVersionsVersionIdGetResponse,
   PublishWorkflowVersionWorkflowsWorkflowIdPublishPostResponse,
   RestoreWorkflowVersionWorkflowsWorkflowIdRestoreVersionIdPostResponse,
+  BulkWorkflowOperationWorkflowsBulkPostResponse,
 } from "@/client/types.gen";
 
 // Readable wrappers for workflow-related SDK functions
@@ -73,6 +76,51 @@ export const runWorkflow = (workflow_id: number, version_id?: number) =>
     path: { workflow_id },
     body: version_id != null ? ({ version_id } as WorkflowRunRequest) : null,
   });
+
+export const bulkWorkflowOperation = (payload: BulkWorkflowRequest) =>
+  bulkWorkflowOperationWorkflowsBulkPost({ body: payload });
+
+export const exportWorkflowsZip = async (workflow_ids: number[]) => {
+  const response = await bulkWorkflowOperationWorkflowsBulkPost({
+    body: { action: "export", workflow_ids } as BulkWorkflowRequest,
+    parseAs: "blob",
+  });
+
+  const blob = response.data as unknown as Blob;
+  const fileName = "workflows-export.zip";
+
+  return { blob, fileName };
+};
+
+export const exportSingleWorkflowJson = async (workflow_id: number) => {
+  const response = await getWorkflowWorkflowsWorkflowIdGet({ path: { workflow_id } });
+  if (!response.data?.data?.latest_version?.workflow_data) {
+    throw new Error("No workflow data available for export");
+  }
+
+  const workflowData = response.data.data.latest_version.workflow_data;
+  const sanitizedData = sanitizeWorkflowDataForExport(workflowData);
+  const jsonString = JSON.stringify(sanitizedData, null, 2);
+  const blob = new Blob([jsonString], { type: "application/json" });
+  const fileName = `workflow-${response.data.data.name}-${workflow_id}.json`;
+
+  return { blob, fileName };
+};
+
+function sanitizeWorkflowDataForExport(data: Record<string, unknown>): Record<string, unknown> {
+  const cloned = JSON.parse(JSON.stringify(data));
+  if (cloned.nodes && Array.isArray(cloned.nodes)) {
+    for (const node of cloned.nodes) {
+      if (node.credentials) {
+        delete node.credentials;
+      }
+      if (node.data?.credential) {
+        delete node.data.credential;
+      }
+    }
+  }
+  return cloned;
+}
 
 // --- Version API wrappers ---
 
@@ -156,6 +204,7 @@ export type UpdateWorkflowNameResponse = UpdateNameWorkflowsWorkflowIdNamePutRes
 export type UpdateWorkflowStatusResponse = UpdateStatusWorkflowsWorkflowIdStatusPutResponse;
 export type DeleteWorkflowResponse = DeleteWorkflowWorkflowsWorkflowIdDeleteResponse;
 export type RunWorkflowResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponse;
+export type BulkWorkflowOperationResponse = BulkWorkflowOperationWorkflowsBulkPostResponse;
 export type RequestExecutionAccessResponse =
   GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetResponse;
 export type RequestSpecificExecutionAccessResponse =
