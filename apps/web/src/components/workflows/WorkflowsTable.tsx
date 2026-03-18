@@ -434,11 +434,16 @@ export function WorkflowsTable() {
     setBulkActionPending(true);
     markWorkflowsExporting(ids, true);
     try {
-      const { blob, fileName } = await exportWorkflowsZip(workflowIds);
-      downloadWorkflowFile(blob, fileName);
-      toast.success(
-        `Exported ${workflowIds.length} workflow${workflowIds.length === 1 ? "" : "s"} as ZIP.`,
-      );
+      // Route intelligently: single workflow → JSON, multiple → ZIP
+      if (workflowIds.length === 1) {
+        const { blob, fileName } = await exportSingleWorkflowJson(workflowIds[0]);
+        downloadWorkflowFile(blob, fileName);
+        toast.success("Workflow exported as JSON.");
+      } else {
+        const { blob, fileName } = await exportWorkflowsZip(workflowIds);
+        downloadWorkflowFile(blob, fileName);
+        toast.success(`Exported ${workflowIds.length} workflows as ZIP.`);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Bulk export failed");
     } finally {
