@@ -442,7 +442,7 @@ export function WorkflowsTable() {
       } else {
         const { blob, fileName } = await exportWorkflowsZip(workflowIds);
         downloadWorkflowFile(blob, fileName);
-        toast.success(`Exported ${workflowIds.length} workflows as ZIP.`);
+        toast.success(`Exported ${workflowIds.length} workflows.`);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Bulk export failed");
