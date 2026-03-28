@@ -50,7 +50,7 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
         with:
-          version: v2.11.3
+          version: v2.11.4
           working-directory: ./services/rune-worker
           args: --timeout=5m
 
