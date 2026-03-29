@@ -70,6 +70,22 @@
     "vitest": "^4.0.0"
   },
   "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "typescript-eslint>typescript": "^6.0.0",
+        "@typescript-eslint/parser>typescript": "^6.0.0",
+        "@typescript-eslint/eslint-plugin>typescript": "^6.0.0",
+        "@typescript-eslint/typescript-estree>typescript": "^6.0.0",
+        "@typescript-eslint/project-service>typescript": "^6.0.0",
+        "@typescript-eslint/tsconfig-utils>typescript": "^6.0.0",
+        "@typescript-eslint/type-utils>typescript": "^6.0.0",
+        "@typescript-eslint/utils>typescript": "^6.0.0",
+        "eslint-plugin-import>eslint": "^10.0.0",
+        "eslint-plugin-react-hooks>eslint": "^10.0.0",
+        "eslint-plugin-jsx-a11y>eslint": "^10.0.0",
+        "eslint-plugin-react>eslint": "^10.0.0"
+      }
+    },
     "overrides": {
       "tar": ">=7.5.3",
       "diff": ">=8.0.3",
