@@ -26,6 +26,12 @@ const eslintConfig = [
     },
   },
   {
+    files: ["src/test/**/*.{ts,tsx}"],
+    rules: {
+      "@next/next/no-img-element": "off",
+    },
+  },
+  {
     ignores: [
       "node_modules/**",
       ".next/**",
