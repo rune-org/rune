@@ -65,7 +65,7 @@
     "prettier": "^3.8.1",
     "shadcn": "^4.0.0",
     "tailwindcss": "^4",
-    "typescript": "^5",
+    "typescript": "^6.0.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.0.0"
   },
