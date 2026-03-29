@@ -20,8 +20,9 @@ export default defineConfig({
     clearMocks: true,
     restoreMocks: true,
     coverage: {
+      include: ["src/**/*.{ts,tsx}"],
       reporter: ["text", "lcov"],
-      exclude: ["src/client/**", "src/test/**"],
+      exclude: [".next/**", "src/client/**", "src/test/**", "**/*.test.{ts,tsx}"],
     },
   },
 });
