@@ -75,4 +75,13 @@ describe("SignInForm", () => {
 
     expect(locationMock.href).toBe("http://localhost:8000/auth/saml/login?redirect=%2Fadmin");
   });
+
+  it("disables the submit button and shows loading feedback while signing in", () => {
+    authMock.state.loading = true;
+
+    render(<SignInForm />);
+
+    expect(screen.getByRole("button", { name: "Signing in…" })).toBeDisabled();
+    expect(authMock.login).not.toHaveBeenCalled();
+  });
 });

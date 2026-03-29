@@ -19,6 +19,24 @@ function renderWithAuth(
 }
 
 describe("RequireAuth", () => {
+  it("shows a loading state while auth initialization is still in progress", () => {
+    const initialize = vi.fn().mockResolvedValue(undefined);
+
+    renderWithAuth({
+      state: { loading: true, user: null, error: null, isSsoOnly: false },
+      login: vi.fn(),
+      signUp: vi.fn(),
+      logout: vi.fn(),
+      refresh: vi.fn(),
+      initialize,
+      refetchProfile: vi.fn().mockResolvedValue(false),
+    });
+
+    expect(initialize).toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(screen.getByText("Checking authentication…")).toBeInTheDocument();
+  });
+
   it("redirects to sign-in when rendered outside the auth provider", () => {
     render(
       <RequireAuth>
