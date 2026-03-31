@@ -237,6 +237,14 @@ func shouldPropagateWorkingJSON(nodeType string) bool {
 func (e *Executor) handleSplitFanOut(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, nextNodes []string, items []any, baseContext map[string]interface{}) error {
 	slog.Info("handling split fan-out", "node_id", node.ID, "item_count", len(items))
 
+	const maxInt = int(^uint(0) >> 1)
+	if len(baseContext) == maxInt {
+		return fmt.Errorf("split fan-out base context too large")
+	}
+	if len(msg.LineageStack) == maxInt {
+		return fmt.Errorf("split fan-out lineage stack too large")
+	}
+
 	for i, item := range items {
 		// Create new context for this item
 		itemContext := make(map[string]interface{}, len(baseContext)+1)

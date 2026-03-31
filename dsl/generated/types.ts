@@ -549,7 +549,7 @@ export interface FilterParameters {
   // Keep only list items that match one or more rules
   input_array: any | undefined;  // Array to filter; defaults to the current working list
   match_mode: "all" | "any" | undefined;  // How multiple rules are combined
-  rules: FilterRule[];  // Rules used to decide which items to keep
+  rules: any[];  // Rules used to decide which items to keep
 }
 
 export function sanitizeFilterParameters(obj: FilterParameters): { valid: boolean; errors: string[] } {
@@ -571,7 +571,7 @@ export function sanitizeFilterParameters(obj: FilterParameters): { valid: boolea
 export interface SortParameters {
   // Order a list using one or more sort rules
   input_array: any | undefined;  // Array to sort; defaults to the current working list
-  rules: SortRule[];  // Ordered sort rules
+  rules: any[];  // Ordered sort rules
 }
 
 export function sanitizeSortParameters(obj: SortParameters): { valid: boolean; errors: string[] } {
