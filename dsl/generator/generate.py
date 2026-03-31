@@ -70,6 +70,12 @@ class DSLGenerator:
             return f"*{type_name}"
         return type_name
 
+    def _is_declared_type(self, type_name: str) -> bool:
+        """Return whether the type name is defined in the DSL schema."""
+        return type_name in self.dsl_data[
+            "core_structures"
+        ] or type_name in self.dsl_data.get("nested_types", {})
+
     def _to_go_field_name(self, name: str) -> str:
         """Convert snake_case to Go exported field name."""
         # Handle special case: 'type' is a reserved keyword in Go
@@ -90,43 +96,21 @@ class DSLGenerator:
         if field_type == "array":
             items_type = field_def.get("items_type", "any")
             if lang == "typescript":
-                # Map nested types properly
-                if items_type in [
-                    "Node",
-                    "Edge",
-                    "Credential",
-                    "ErrorHandling",
-                    "SwitchRule",
-                    "EditAssignment",
-                ]:
+                if self._is_declared_type(items_type):
                     type_name = f"{items_type}[]"
                 else:
                     type_name = (
                         f"{self._get_type_mapping(lang).get(items_type, 'any')}[]"
                     )
             elif lang == "python":
-                if items_type in [
-                    "Node",
-                    "Edge",
-                    "Credential",
-                    "ErrorHandling",
-                    "SwitchRule",
-                    "EditAssignment",
-                ]:
+                if self._is_declared_type(items_type):
                     type_name = f"list[{items_type}]"
                 else:
                     type_name = (
                         f"list[{self._get_type_mapping(lang).get(items_type, 'Any')}]"
                     )
             elif lang == "go":
-                if items_type in [
-                    "Node",
-                    "Edge",
-                    "Credential",
-                    "ErrorHandling",
-                    "SwitchRule",
-                    "EditAssignment",
-                ]:
+                if self._is_declared_type(items_type):
                     type_name = f"[]{items_type}"
                 else:
                     type_name = f"[]{self._get_type_mapping(lang).get(items_type, 'interface{}')}"
@@ -146,14 +130,7 @@ class DSLGenerator:
                 type_name = "string"
 
         # Handle nested types
-        if field_type in [
-            "Node",
-            "Edge",
-            "Credential",
-            "ErrorHandling",
-            "SwitchRule",
-            "EditAssignment",
-        ]:
+        if self._is_declared_type(field_type):
             type_name = field_type
 
         final_type = self._get_optional_syntax(lang, type_name, required)
