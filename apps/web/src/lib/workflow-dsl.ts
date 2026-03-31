@@ -334,6 +334,8 @@ type NodeHydrator = (
   params: Record<string, unknown>,
 ) => CanvasNode["data"];
 
+const identityNodeHydrator: NodeHydrator = (base) => base;
+
 const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
   http: (base, params) => {
     const httpData: HttpData = {
@@ -647,8 +649,9 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
       ...(credentials ? { credential: credentials } : {}),
     } as CanvasNode["data"];
     const params = (n.parameters ?? {}) as Record<string, unknown>;
-    const hydrateDataForNode =
-      nodeHydrators[canvasType as CanvasNode["type"]] ?? ((existing) => existing);
+    const hydrateDataForNode = Object.hasOwn(nodeHydrators, canvasType)
+      ? (nodeHydrators[canvasType as CanvasNode["type"]] ?? identityNodeHydrator)
+      : identityNodeHydrator;
     const dataForNode = hydrateDataForNode(baseData, params);
     return {
       id: n.id,
