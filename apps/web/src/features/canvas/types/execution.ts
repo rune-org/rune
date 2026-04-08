@@ -73,12 +73,19 @@ export interface ExecutionSnapshot {
  * RTES WebSocket message types.
  * These match the WsNodeUpdateDto from services/rtes/src/api/ws.rs
  */
+export interface RtesNodeError {
+  message: string;
+  code: string;
+  details?: unknown;
+}
+
 export interface RtesNodeUpdate {
   node_id?: string | null;
   status?: string | null;
   input?: unknown;
   params?: unknown;
   output?: unknown;
+  error?: RtesNodeError | null;
   lineage_hash?: string | null;
   lineage_stack?: RtesStackFrame[] | null;
   split_node_id?: string | null;
@@ -156,6 +163,9 @@ export function rtesUpdateToNodeData(update: RtesNodeUpdate): NodeExecutionData 
     input: update.input,
     output: update.output,
     parameters: update.params,
+    error: update.error
+      ? { message: update.error.message, code: update.error.code, details: update.error.details }
+      : undefined,
     lineageHash: update.lineage_hash ?? undefined,
     branchId: update.branch_id ?? undefined,
     itemIndex: update.item_index ?? undefined,
