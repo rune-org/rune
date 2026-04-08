@@ -77,7 +77,8 @@ function executionReducer(state: ExecutionState, action: ExecutionAction): Execu
         input: nodeData.input ?? existingNode?.input,
         output: nodeData.output ?? existingNode?.output,
         parameters: nodeData.parameters ?? existingNode?.parameters,
-        error: nodeData.status === "failed" ? (nodeData.error ?? existingNode?.error) : nodeData.error,
+        error:
+          nodeData.status === "failed" ? (nodeData.error ?? existingNode?.error) : nodeData.error,
         executedAt: new Date().toISOString(),
       });
 
@@ -109,7 +110,8 @@ function executionReducer(state: ExecutionState, action: ExecutionAction): Execu
           input: nodeData.input ?? existingNode?.input,
           output: nodeData.output ?? existingNode?.output,
           parameters: nodeData.parameters ?? existingNode?.parameters,
-          error: nodeData.status === "failed" ? (nodeData.error ?? existingNode?.error) : nodeData.error,
+          error:
+            nodeData.status === "failed" ? (nodeData.error ?? existingNode?.error) : nodeData.error,
           executedAt: new Date().toISOString(),
         });
       }
