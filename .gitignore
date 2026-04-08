@@ -74,3 +74,7 @@ nginx/ssl/
 .cursor/
 
 .claude
+
+# CLI
+rune-cli/rune.exe
+rune-cli/rune
