@@ -15,7 +15,7 @@ use tracing::{error, info, warn};
 
 use crate::{
     api::state::AppState,
-    domain::models::{NodeExecutionInstance, StackFrame, WorkerMessage},
+    domain::models::{NodeError, NodeExecutionInstance, StackFrame, WorkerMessage},
 };
 
 #[derive(Debug, Serialize, Clone, PartialEq)]
@@ -24,6 +24,7 @@ pub(crate) struct WsNodeUpdateDto {
     pub(crate) input:            Option<Value>,
     pub(crate) params:           Option<Value>,
     pub(crate) output:           Option<Value>,
+    pub(crate) error:            Option<NodeError>,
     pub(crate) status:           Option<String>,
     pub(crate) lineage_hash:     Option<String>,
     pub(crate) lineage_stack:    Option<Vec<StackFrame>>,
@@ -44,6 +45,7 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
                 input:            s.input.clone(),
                 params:           s.parameters.clone(),
                 output:           s.output.clone(),
+                error:            s.error.clone(),
                 status:           Some(s.status.clone()),
                 lineage_hash:     s.lineage_hash.clone(),
                 lineage_stack:    s.lineage_stack.clone(),
@@ -60,6 +62,7 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
                 input:            None,
                 params:           None,
                 output:           None,
+                error:            None,
                 status:           Some("completed".to_string()),
                 lineage_hash:     None,
                 lineage_stack:    None,
@@ -76,6 +79,7 @@ impl From<&WorkerMessage> for WsNodeUpdateDto {
                 input:            None,
                 params:           None,
                 output:           None,
+                error:            None,
                 status:           Some("unknown error".to_string()),
                 lineage_hash:     None,
                 lineage_stack:    None,
@@ -97,6 +101,7 @@ fn dto_from_execution_instance(node_id: String, exec: NodeExecutionInstance) -> 
         input:            exec.input,
         params:           exec.parameters,
         output:           exec.output,
+        error:            exec.error,
         status:           exec.status,
         lineage_hash:     exec.lineage_hash,
         lineage_stack:    exec.lineage_stack,
@@ -116,6 +121,7 @@ const fn dto_with_status(status: String) -> WsNodeUpdateDto {
         input:            None,
         params:           None,
         output:           None,
+        error:            None,
         status:           Some(status),
         lineage_hash:     None,
         lineage_stack:    None,
