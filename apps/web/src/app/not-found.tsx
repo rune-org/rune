@@ -29,7 +29,7 @@ export default function NotFound() {
             alt="Rune Stone"
             width={320}
             height={320}
-            className="size-80 animate-fade-in-delayed dark:invert drop-shadow-[0_0_25px_rgba(59,130,246,0.6)]"
+            className="size-80 animate-fade-in-delayed dark:invert dark:drop-shadow-[0_0_25px_rgba(59,130,246,0.6)]"
           />
         </EmptyMedia>
         <EmptyHeader className="gap-8">
