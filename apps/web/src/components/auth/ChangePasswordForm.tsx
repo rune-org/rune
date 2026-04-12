@@ -154,7 +154,12 @@ export function ChangePasswordForm({
             {form.formState.errors.newPassword.message}
           </p>
         ) : (
-          <p className={cn("text-xs mt-1", isDialog ? "text-muted-foreground" : "text-muted-foreground")}>
+          <p
+            className={cn(
+              "text-xs mt-1",
+              isDialog ? "text-muted-foreground" : "text-muted-foreground",
+            )}
+          >
             8+ characters, uppercase, lowercase, number, and special character
           </p>
         )}

@@ -200,7 +200,10 @@ export function ScrybInterface({
                         : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]",
                     )}
                   />
-                  <span id="scryb-panel-title" className="text-xs tracking-wide text-muted-foreground">
+                  <span
+                    id="scryb-panel-title"
+                    className="text-xs tracking-wide text-muted-foreground"
+                  >
                     {workflowId ? "Ready to Generate" : "Save Workflow First"}
                   </span>
                 </div>
@@ -378,13 +381,18 @@ export function ScrybInterface({
                       <div className="group flex items-center justify-between rounded-2xl border border-border/30 bg-muted/30 p-3 transition-colors hover:bg-muted/40">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50 ring-1 ring-border/40">
-                            <FileText className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                            <FileText
+                              className="h-5 w-5 text-muted-foreground"
+                              aria-hidden="true"
+                            />
                           </div>
                           <div className="flex flex-col items-start gap-0.5 font-sans">
                             <span className="text-sm text-foreground/90 group-hover:text-foreground">
                               workflow-docs.md
                             </span>
-                            <span className="text-xs text-muted-foreground/70">{fileSize} • Markdown</span>
+                            <span className="text-xs text-muted-foreground/70">
+                              {fileSize} • Markdown
+                            </span>
                           </div>
                         </div>
                         <button

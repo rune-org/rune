@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 
 import { Logo } from "@/components/shared/Logo";
-import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "next-themes";
@@ -221,11 +220,7 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
           onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
           className="flex items-center gap-2 cursor-pointer"
         >
-          {resolvedTheme === "dark" ? (
-            <Sun className="h-4 w-4" />
-          ) : (
-            <Moon className="h-4 w-4" />
-          )}
+          {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           <span>{resolvedTheme === "dark" ? "Light mode" : "Dark mode"}</span>
         </DropdownMenuItem>
 
@@ -337,10 +332,6 @@ export function AppSidebar() {
               </>
             )}
           </nav>
-
-          <div className={cn("flex items-center", isExpanded ? "px-3" : "justify-center")}>
-            <ThemeToggle />
-          </div>
 
           <ProfileDropdown isExpanded={isExpanded} />
         </div>
