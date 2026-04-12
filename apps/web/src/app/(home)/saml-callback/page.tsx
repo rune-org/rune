@@ -169,7 +169,7 @@ function SamlCallbackContent() {
     <AuthCard title="Signing you in…" description="Completing SSO authentication, please wait.">
       <div className="flex items-center justify-center py-6">
         <div
-          className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white"
+          className="size-8 animate-spin rounded-full border-2 border-foreground/20 border-t-foreground"
           role="status"
           aria-label="Authenticating"
         />
@@ -183,7 +183,7 @@ function LoadingFallback() {
     <AuthCard title="Signing you in…" description="Completing SSO authentication, please wait.">
       <div className="flex items-center justify-center py-6">
         <div
-          className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white"
+          className="size-8 animate-spin rounded-full border-2 border-foreground/20 border-t-foreground"
           role="status"
           aria-label="Authenticating"
         />

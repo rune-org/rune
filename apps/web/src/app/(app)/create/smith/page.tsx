@@ -125,7 +125,7 @@ export default function SmithQuickstartPage() {
               alt="Smith"
               width={180}
               height={45}
-              className="relative h-12 w-auto drop-shadow-[0_0_30px_rgba(99,102,241,0.5)]"
+              className="relative h-12 w-auto drop-shadow-[0_0_30px_rgba(99,102,241,0.5)] invert dark:invert-0"
               priority
             />
           </motion.div>

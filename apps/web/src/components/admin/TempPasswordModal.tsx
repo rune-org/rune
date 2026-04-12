@@ -32,7 +32,7 @@ export function TempPasswordModal({ open, onClose, email, password }: TempPasswo
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50"
+      className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center p-6 z-50"
       onClick={onClose}
     >
       <Card className="p-6 w-full max-w-md bg-background border" onClick={handleCardClick}>

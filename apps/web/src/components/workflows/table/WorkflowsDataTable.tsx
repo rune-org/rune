@@ -20,13 +20,13 @@ import { WorkflowRowActions } from "@/components/workflows/table/WorkflowRowActi
 function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
   if (status === "active") {
     return (
-      <Badge className="bg-emerald-900/40 text-emerald-200" variant="secondary">
+      <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200" variant="secondary">
         Active
       </Badge>
     );
   }
   return (
-    <Badge className="bg-amber-900/40 text-amber-200" variant="secondary">
+    <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200" variant="secondary">
       Draft
     </Badge>
   );

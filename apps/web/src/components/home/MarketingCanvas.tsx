@@ -58,7 +58,7 @@ const INITIAL_EDGES = [
     target: "if-1",
     type: "default",
     animated: true,
-    style: { stroke: "#52525b" },
+    style: { stroke: "var(--border)" },
   },
   {
     id: "edge-2",
@@ -68,12 +68,12 @@ const INITIAL_EDGES = [
     sourceHandle: "true",
     animated: true,
     label: "true",
-    labelStyle: { fill: "white", fontWeight: 600 },
+    labelStyle: { fill: "var(--foreground)", fontWeight: 600 },
     labelShowBg: true,
     labelBgStyle: { fill: "hsl(142 70% 45%)" },
     labelBgPadding: [2, 6] as [number, number],
     labelBgBorderRadius: 4,
-    style: { stroke: "#52525b" },
+    style: { stroke: "var(--border)" },
   },
   {
     id: "edge-3",
@@ -83,12 +83,12 @@ const INITIAL_EDGES = [
     sourceHandle: "false",
     animated: true,
     label: "false",
-    labelStyle: { fill: "white", fontWeight: 600 },
+    labelStyle: { fill: "var(--foreground)", fontWeight: 600 },
     labelShowBg: true,
     labelBgStyle: { fill: "hsl(0 70% 50%)" },
     labelBgPadding: [2, 6] as [number, number],
     labelBgBorderRadius: 4,
-    style: { stroke: "#52525b" },
+    style: { stroke: "var(--border)" },
   },
 ];
 
@@ -106,7 +106,7 @@ function MarketingCanvasContent() {
   };
 
   return (
-    <div className="w-full h-full relative bg-zinc/50 rounded-xl overflow-hidden border-1 border-white/10 shadow-2xl">
+    <div className="w-full h-full relative bg-card/50 rounded-xl overflow-hidden border border-border shadow-2xl">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -147,14 +147,14 @@ function MarketingCanvasContent() {
           variant="outline"
           size="sm"
           onClick={handleReset}
-          className="rounded-full border-white/10 bg-zinc-900/80 backdrop-blur hover:bg-zinc-800 transition-all"
+          className="rounded-full border-border bg-card/80 backdrop-blur hover:bg-muted transition-all"
         >
           <RotateCcw className="w-3 h-3 mr-2" />
           Reset
         </Button>
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none rounded-xl" />
+      <div className="absolute inset-0 bg-gradient-to-br from-foreground/5 to-transparent pointer-events-none rounded-xl" />
     </div>
   );
 }
