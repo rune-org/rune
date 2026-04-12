@@ -37,23 +37,23 @@
   --shadow-lg: 0 24px 48px hsl(220 20% 80% / 0.2);
 
   --node-trigger: hsl(220 70% 42%);
-  --node-trigger-bg: hsl(220 70% 42% / 0.1);
-  --node-trigger-border: hsl(220 70% 42% / 0.25);
+  --node-trigger-bg: hsl(220 70% 42% / 0.04);
+  --node-trigger-border: hsl(220 70% 42% / 0.55);
   --node-flow: hsl(45 95% 42%);
-  --node-flow-bg: hsl(45 95% 42% / 0.1);
-  --node-flow-border: hsl(45 95% 42% / 0.25);
+  --node-flow-bg: hsl(45 95% 42% / 0.04);
+  --node-flow-border: hsl(45 95% 42% / 0.55);
   --node-transform: hsl(330 80% 50%);
-  --node-transform-bg: hsl(330 80% 50% / 0.1);
-  --node-transform-border: hsl(330 80% 50% / 0.25);
+  --node-transform-bg: hsl(330 80% 50% / 0.04);
+  --node-transform-border: hsl(330 80% 50% / 0.55);
   --node-http: hsl(142 76% 36%);
-  --node-http-bg: hsl(142 76% 36% / 0.1);
-  --node-http-border: hsl(142 76% 36% / 0.25);
+  --node-http-bg: hsl(142 76% 36% / 0.04);
+  --node-http-border: hsl(142 76% 36% / 0.55);
   --node-email: hsl(25 95% 48%);
-  --node-email-bg: hsl(25 95% 48% / 0.1);
-  --node-email-border: hsl(25 95% 48% / 0.25);
+  --node-email-bg: hsl(25 95% 48% / 0.04);
+  --node-email-border: hsl(25 95% 48% / 0.55);
   --node-agent: hsl(189 85% 40%);
-  --node-agent-bg: hsl(189 85% 40% / 0.1);
-  --node-agent-border: hsl(189 85% 40% / 0.25);
+  --node-agent-bg: hsl(189 85% 40% / 0.04);
+  --node-agent-border: hsl(189 85% 40% / 0.55);
 
   --toast-success-bg: hsl(152 40% 96%);
   --toast-success-border: hsl(152 30% 82%);
