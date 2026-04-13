@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { Footer } from "@/components/layout/Footer";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { AdminVisibilityModal } from "@/components/auth/AdminVisibilityModal";
 
 interface AppShellProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ export function AppShell({ children }: AppShellProps) {
         </main>
         <Footer />
       </div>
+      <AdminVisibilityModal />
     </div>
   );
 }
