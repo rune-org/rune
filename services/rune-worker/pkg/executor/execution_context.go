@@ -72,16 +72,12 @@ func (e *Executor) filterUsedInputs(input map[string]any, usedKeys []string) map
 }
 
 // accumulateContext adds the node output to the accumulated context with $<node_name> key.
+// The full output map is always stored as-is so that path references like
+// $NodeName.field resolve uniformly regardless of how many fields the node returned
 func (e *Executor) accumulateContext(currentContext map[string]interface{}, nodeName string, output map[string]any) map[string]interface{} {
 	updated := make(map[string]interface{}, len(currentContext)+1)
 	for k, v := range currentContext {
 		updated[k] = v
-	}
-	if len(output) == 1 {
-		for _, v := range output {
-			updated[fmt.Sprintf("$%s", nodeName)] = v
-			return updated
-		}
 	}
 	updated[fmt.Sprintf("$%s", nodeName)] = output
 	return updated
