@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
@@ -10,7 +17,7 @@ const STORAGE_KEY_PREFIX = "admin_visibility_confirmed_";
 export function AdminVisibilityModal() {
   const [open, setOpen] = useState(false);
   const { state } = useAuth();
-  
+
   // Create a user-specific storage key
   const storageKey = state.user?.id ? `${STORAGE_KEY_PREFIX}${state.user.id}` : null;
 
