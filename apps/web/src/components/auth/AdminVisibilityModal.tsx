@@ -12,6 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
+// TODO: Move this flag to the backend (User model) in the future to avoid
+// the modal re-triggering if the user logs in from a different browser or device.
 const STORAGE_KEY_PREFIX = "admin_visibility_confirmed_";
 
 export function AdminVisibilityModal() {
