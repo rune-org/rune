@@ -41,8 +41,16 @@ export function AdminVisibilityModal() {
     setOpen(false);
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      handleConfirm();
+    } else {
+      setOpen(true);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Admin Visibility Notice</DialogTitle>
