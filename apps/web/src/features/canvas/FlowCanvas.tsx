@@ -287,7 +287,6 @@ function FlowCanvasInner({
     setNodes,
     setEdges,
     setSelectedNodeId,
-    containerRef,
   });
 
   const persistGraph = useCallback(() => {
