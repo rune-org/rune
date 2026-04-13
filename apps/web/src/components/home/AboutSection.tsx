@@ -12,9 +12,9 @@ export function AboutSection() {
           style={{ animationDuration: "4s" }}
         />
 
-        <div className="absolute w-32 h-32 bg-white/10 blur-[40px] rounded-full mix-blend-overlay" />
+        <div className="absolute w-32 h-32 bg-foreground/10 blur-[40px] rounded-full mix-blend-overlay" />
 
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_0%,transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(128,128,128,0.03)_0%,transparent_60%)]" />
       </div>
 
       <Container className="relative z-10">
@@ -25,7 +25,7 @@ export function AboutSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-s font-medium text-white/80 uppercase tracking-widest backdrop-blur-md shadow-xl"
+              className="inline-flex items-center justify-center rounded-full border border-border bg-muted/50 px-4 py-1.5 text-s font-medium text-foreground/80 uppercase tracking-widest backdrop-blur-md shadow-xl"
             >
               Our Mission
             </motion.div>
@@ -46,14 +46,14 @@ export function AboutSection() {
             </span>
           </motion.h2>
 
-          <div className="grid md:grid-cols-2 gap-12 md:gap-24 text-left md:px-8 pt-12 border-t border-white/5">
+          <div className="grid md:grid-cols-2 gap-12 md:gap-24 text-left md:px-8 pt-12 border-t border-border/30">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.3 }}
             >
-              <h3 className="text-lg font-semibold text-white mb-4">Empowering Builders</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Empowering Builders</h3>
               <p className="text-lg text-muted-foreground leading-relaxed">
                 Rune empowers product teams, operations, and developers to launch reliable workflows
                 without piecing together brittle scripts. We believe the tools you use should feel
@@ -67,7 +67,7 @@ export function AboutSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.4 }}
             >
-              <h3 className="text-lg font-semibold text-white mb-4">Built with Empathy</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Built with Empathy</h3>
               <p className="text-lg text-muted-foreground leading-relaxed">
                 We build for teams juggling rapid iteration and enterprise scale, pairing an
                 intuitive canvas with battle-tested infrastructure. It&apos;s automation designed

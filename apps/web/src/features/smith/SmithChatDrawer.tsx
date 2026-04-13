@@ -96,7 +96,7 @@ export function SmithChatDrawer({
               alt="Smith AI"
               width={160}
               height={48}
-              className="h-12 w-auto"
+              className="h-12 w-auto invert dark:invert-0"
               priority
             />
           </div>
@@ -146,7 +146,7 @@ export function SmithChatDrawer({
 
                   <div className="max-w-[85%] select-text" onPointerDown={handleMessagePointerDown}>
                     {msg.role === "tool_call" ? (
-                      <div className="relative rounded-xl rounded-bl-sm border border-amber-500/20 bg-amber-500/5 px-3 py-2 font-mono text-xs leading-relaxed text-amber-200/80 select-text">
+                      <div className="relative rounded-xl rounded-bl-sm border border-amber-500/20 bg-amber-500/5 px-3 py-2 font-mono text-xs leading-relaxed text-amber-700 dark:text-amber-200/80 select-text">
                         <span className="text-amber-500/60">→</span> {msg.toolName || "tool"}:{" "}
                         {msg.content}
                       </div>

@@ -49,6 +49,7 @@ export function SmithButton({
           width={30}
           height={30}
           priority
+          className="invert dark:invert-0"
         />
       </div>
     </button>

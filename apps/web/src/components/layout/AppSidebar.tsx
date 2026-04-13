@@ -13,8 +13,10 @@ import {
   Key,
   LayoutGrid,
   LogOut,
+  Moon,
   Play,
   Settings,
+  Sun,
   User,
   Workflow,
   Users,
@@ -23,6 +25,7 @@ import {
 import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/lib/auth";
+import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -140,6 +143,7 @@ function NavLink({
 function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
   const router = useRouter();
   const { state, logout } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
   const { user } = state;
 
   const initials = user?.name
@@ -210,6 +214,14 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
             <User className="h-4 w-4" />
             <span>Profile</span>
           </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          className="flex items-center gap-2 cursor-pointer"
+        >
+          {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          <span>{resolvedTheme === "dark" ? "Light mode" : "Dark mode"}</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />

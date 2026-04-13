@@ -115,7 +115,7 @@ export function ChangePasswordForm({
       noValidate
     >
       <div className="space-y-2">
-        <Label htmlFor="oldPassword" className={cn(!isDialog && "text-zinc-400")}>
+        <Label htmlFor="oldPassword" className={cn(!isDialog && "text-muted-foreground")}>
           Current Password
         </Label>
         <PasswordInput
@@ -123,20 +123,20 @@ export function ChangePasswordForm({
           placeholder="Enter your current password"
           className={cn(
             !isDialog &&
-              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11",
+              "bg-input/50 border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-0 rounded-xl h-11",
           )}
           {...form.register("oldPassword")}
           aria-invalid={!!form.formState.errors.oldPassword}
         />
         {form.formState.errors.oldPassword ? (
-          <p className={cn("text-xs mt-1", isDialog ? "text-destructive" : "text-red-400")}>
+          <p className={cn("text-xs mt-1", isDialog ? "text-destructive" : "text-destructive")}>
             {form.formState.errors.oldPassword.message}
           </p>
         ) : null}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="newPassword" className={cn(!isDialog && "text-zinc-400")}>
+        <Label htmlFor="newPassword" className={cn(!isDialog && "text-muted-foreground")}>
           New Password
         </Label>
         <PasswordInput
@@ -144,24 +144,29 @@ export function ChangePasswordForm({
           placeholder="Create a secure password"
           className={cn(
             !isDialog &&
-              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11",
+              "bg-input/50 border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-0 rounded-xl h-11",
           )}
           {...form.register("newPassword")}
           aria-invalid={!!form.formState.errors.newPassword}
         />
         {form.formState.errors.newPassword ? (
-          <p className={cn("text-xs mt-1", isDialog ? "text-destructive" : "text-red-400")}>
+          <p className={cn("text-xs mt-1", isDialog ? "text-destructive" : "text-destructive")}>
             {form.formState.errors.newPassword.message}
           </p>
         ) : (
-          <p className={cn("text-xs mt-1", isDialog ? "text-muted-foreground" : "text-zinc-500")}>
+          <p
+            className={cn(
+              "text-xs mt-1",
+              isDialog ? "text-muted-foreground" : "text-muted-foreground",
+            )}
+          >
             8+ characters, uppercase, lowercase, number, and special character
           </p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="confirmPassword" className={cn(!isDialog && "text-zinc-400")}>
+        <Label htmlFor="confirmPassword" className={cn(!isDialog && "text-muted-foreground")}>
           Confirm New Password
         </Label>
         <PasswordInput
@@ -169,13 +174,13 @@ export function ChangePasswordForm({
           placeholder="Confirm your new password"
           className={cn(
             !isDialog &&
-              "bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11",
+              "bg-input/50 border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-0 rounded-xl h-11",
           )}
           {...form.register("confirmPassword")}
           aria-invalid={!!form.formState.errors.confirmPassword}
         />
         {form.formState.errors.confirmPassword ? (
-          <p className={cn("text-xs mt-1", isDialog ? "text-destructive" : "text-red-400")}>
+          <p className={cn("text-xs mt-1", isDialog ? "text-destructive" : "text-destructive")}>
             {form.formState.errors.confirmPassword.message}
           </p>
         ) : null}
@@ -187,7 +192,7 @@ export function ChangePasswordForm({
             "rounded-lg p-3",
             isDialog
               ? "bg-destructive/10 text-destructive text-sm"
-              : "bg-red-500/10 border border-red-500/20",
+              : "bg-destructive/10 border border-destructive/20",
           )}
         >
           <p className={cn("font-medium", isDialog ? "" : "text-xs text-red-400")} role="alert">
@@ -210,7 +215,7 @@ export function ChangePasswordForm({
       ) : (
         <Button
           type="submit"
-          className="w-full h-11 rounded-full bg-white !text-black hover:bg-zinc-200 font-medium transition-all shadow-lg mt-2"
+          className="w-full h-11 rounded-full bg-foreground !text-background hover:bg-foreground/85 font-medium transition-all shadow-lg mt-2"
           disabled={isSubmitting}
         >
           {isSubmitting ? "Changing password..." : "Change password"}

@@ -15,7 +15,12 @@ interface LogoProps {
   priority?: boolean;
 }
 
-const assetByVariant: Record<LogoVariant, string> = {
+const lightAsset: Record<LogoVariant, string> = {
+  wordmark: "/icons/logo-white.svg",
+  glyph: "/icons/logo-compact.svg",
+};
+
+const darkAsset: Record<LogoVariant, string> = {
   wordmark: "/icons/logo-white.svg",
   glyph: "/icons/logo-compact-white.svg",
 };
@@ -27,21 +32,40 @@ export function Logo({
   wrapperClassName,
   priority,
 }: LogoProps) {
-  const src = assetByVariant[variant];
   const alt = variant === "glyph" ? "Rune compact logo" : "Rune logo";
   const width = variant === "glyph" ? 36 : 124;
   const height = variant === "glyph" ? 36 : 32;
 
-  const content = (
-    <Image
-      src={src}
-      alt={alt}
-      width={width}
-      height={height}
-      priority={priority}
-      className={cn("block h-auto w-auto", className)}
-    />
-  );
+  const content =
+    variant === "wordmark" ? (
+      <Image
+        src={darkAsset.wordmark}
+        alt={alt}
+        width={width}
+        height={height}
+        priority={priority}
+        className={cn("block h-auto w-auto invert dark:invert-0", className)}
+      />
+    ) : (
+      <>
+        <Image
+          src={lightAsset.glyph}
+          alt={alt}
+          width={width}
+          height={height}
+          priority={priority}
+          className={cn("block h-auto w-auto dark:hidden", className)}
+        />
+        <Image
+          src={darkAsset.glyph}
+          alt={alt}
+          width={width}
+          height={height}
+          priority={priority}
+          className={cn("hidden h-auto w-auto dark:block", className)}
+        />
+      </>
+    );
 
   if (!href) {
     return (
