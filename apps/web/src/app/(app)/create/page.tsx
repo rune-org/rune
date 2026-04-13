@@ -91,7 +91,13 @@ export default function CreatePage() {
             >
               <CardHeader className="text-center pb-6">
                 <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-2xl bg-primary/[6%] group-hover:bg-primary/[12%] dark:bg-primary/10 dark:group-hover:bg-primary/20 transition-colors">
-                  <Image src={option.icon} alt={option.title} width={80} height={80} className="brightness-[0.7] saturate-[2] dark:brightness-100 dark:saturate-100" />
+                  <Image
+                    src={option.icon}
+                    alt={option.title}
+                    width={80}
+                    height={80}
+                    className="brightness-[0.7] saturate-[2] dark:brightness-100 dark:saturate-100"
+                  />
                 </div>
                 <CardTitle className="text-xl">{option.title}</CardTitle>
                 <CardDescription className="text-sm whitespace-nowrap">
