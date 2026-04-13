@@ -196,7 +196,7 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 	nextNodes := e.determineNextNodes(&msg.WorkflowDefinition, node, output)
 
 	// Handle Split Node Fan-Out
-	if node.Type == "split" {
+	if node.Type == "split" && len(nextNodes) > 0 {
 		if items, ok := output["_split_items"].([]any); ok {
 			return e.handleSplitFanOut(ctx, msg, node, nextNodes, items, updatedContext)
 		}
