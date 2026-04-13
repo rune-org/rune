@@ -192,9 +192,14 @@ func TestHTTPSplitAggregateWorkflow(t *testing.T) {
 			t.Fatalf("Final context missing $Aggregate_Users output. Context keys: %v", getKeys(completion.FinalContext))
 		}
 
-		aggregated, ok := aggOutput.([]interface{})
+		aggMap, ok := aggOutput.(map[string]interface{})
 		if !ok {
-			t.Fatalf("Aggregate output missing 'aggregated' field: %v", aggOutput)
+			t.Fatalf("Expected $Aggregate_Users to be a map, got %T: %v", aggOutput, aggOutput)
+		}
+
+		aggregated, ok := aggMap["aggregated"].([]interface{})
+		if !ok {
+			t.Fatalf("Aggregate output missing 'aggregated' field: %v", aggMap)
 		}
 
 		if len(aggregated) != len(users) {
