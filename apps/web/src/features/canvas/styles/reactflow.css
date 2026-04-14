@@ -2,9 +2,58 @@
   background: var(--canvas-background);
 }
 
+/* =========================================
+   NOTEBOOK PAPER BACKGROUND (light mode only)
+   ========================================= */
+
+:root:not(.dark) .react-flow {
+  background:
+    /* Red margin line — 2px wide at left */
+    linear-gradient(
+      to right,
+      transparent 59px,
+      var(--paper-margin-color) 59px,
+      var(--paper-margin-color) 61px,
+      transparent 61px
+    ),
+    /* College-ruled lines — 24px spacing, 1.5px thick */
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 23px,
+      var(--paper-line-color) 23px,
+      var(--paper-line-color) 24.5px
+    ),
+    /* Warm sepia paper base */
+    hsl(36 40% 91%);
+}
+
+/* Paper grain overlay — coarser for visible paper tooth */
+:root:not(.dark) .react-flow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--pencil-texture-opacity);
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
+
+/* Hide React Flow's default dot grid — our paper lines replace it */
+:root:not(.dark) .react-flow__background {
+  display: none;
+}
+
 .react-flow__background {
   background: transparent;
 }
+
+/* =========================================
+   CONTROLS & MINIMAP
+   ========================================= */
 
 .react-flow__controls {
   background: var(--card) !important;
@@ -27,20 +76,116 @@
   color: var(--foreground);
 }
 
+/* =========================================
+   EDGES — base + light mode pencil
+   ========================================= */
+
 .react-flow__edge-path {
   stroke: var(--edge-color);
   stroke-width: 2px;
 }
+
+/* Light mode: thin graphite pencil lines */
+:root:not(.dark) .react-flow__edge-path {
+  stroke: hsl(20 8% 25%);
+  stroke-width: 1.8px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  marker-end: url(#hand-arrow);
+}
+
+/* Apply pencil wobble filter to edge SVG layer */
+:root:not(.dark) .react-flow__edges {
+  filter: url(#pencil-roughness-edges);
+}
+
+/* =========================================
+   NODES — bold artist sketchbook (light mode)
+   ========================================= */
+
+/* Vivid Prismacolor fills, graphite border, hatching, hard shadow, slight tilt */
+:root:not(.dark) .rune-node {
+  filter: url(#pencil-roughness);
+  border-width: 3px !important;
+  border-radius: 3px !important;
+
+  /* Hard offset under-shadow — hand-drawn, no blur */
+  box-shadow: 3px 4px 0px hsl(20 8% 12% / 0.28);
+
+  /* Diagonal hatching overlay simulating pencil strokes */
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      hsl(0 0% 0% / 0.055) 0px,
+      hsl(0 0% 0% / 0.055) 1px,
+      transparent 1px,
+      transparent 8px
+    );
+  background-size: 11px 11px;
+
+  /* Slight tilt from --node-rotation custom property set per node type */
+  transform: rotate(var(--node-rotation, 0deg));
+  transform-origin: center center;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* Per-node-type rotation — each node type has a fixed slight tilt */
+:root:not(.dark) .react-flow__node-trigger          .rune-node { --node-rotation: -1.2deg; }
+:root:not(.dark) .react-flow__node-scheduledTrigger .rune-node { --node-rotation: 0.8deg; }
+:root:not(.dark) .react-flow__node-http             .rune-node { --node-rotation: -0.7deg; }
+:root:not(.dark) .react-flow__node-smtp             .rune-node { --node-rotation: 1.1deg; }
+:root:not(.dark) .react-flow__node-if               .rune-node { --node-rotation: -1.5deg; }
+:root:not(.dark) .react-flow__node-switch           .rune-node { --node-rotation: 0.6deg; }
+:root:not(.dark) .react-flow__node-agent            .rune-node { --node-rotation: -0.9deg; }
+:root:not(.dark) .react-flow__node-edit             .rune-node { --node-rotation: 1.3deg; }
+:root:not(.dark) .react-flow__node-filter           .rune-node { --node-rotation: -0.5deg; }
+:root:not(.dark) .react-flow__node-log              .rune-node { --node-rotation: 1.0deg; }
+:root:not(.dark) .react-flow__node-wait             .rune-node { --node-rotation: -1.4deg; }
+:root:not(.dark) .react-flow__node-sort             .rune-node { --node-rotation: 0.7deg; }
+:root:not(.dark) .react-flow__node-limit            .rune-node { --node-rotation: -0.3deg; }
+:root:not(.dark) .react-flow__node-split            .rune-node { --node-rotation: 1.5deg; }
+:root:not(.dark) .react-flow__node-aggregator       .rune-node { --node-rotation: -1.1deg; }
+:root:not(.dark) .react-flow__node-merge            .rune-node { --node-rotation: 0.4deg; }
+:root:not(.dark) .react-flow__node-datetime         .rune-node { --node-rotation: -0.8deg; }
+
+/* =========================================
+   SELECTION
+   ========================================= */
 
 .react-flow__node.selected .rune-node {
   border-color: var(--ring) !important;
   box-shadow: 0 0 0 2px var(--ring);
 }
 
+/* Light mode selection: keep hard shadow, add ring */
+:root:not(.dark) .react-flow__node.selected .rune-node {
+  border-color: hsl(214 75% 48%) !important;
+  box-shadow:
+    3px 4px 0px hsl(20 8% 12% / 0.28),
+    0 0 0 2.5px hsl(214 75% 48% / 0.7);
+}
+
+/* =========================================
+   DRAG PERFORMANCE — strip all sketch effects
+   ========================================= */
+
 [data-canvas-dragging="true"] .rune-node {
   transition: none !important;
   animation: none !important;
-  box-shadow: none !important;
+  box-shadow: 2px 3px 0px hsl(20 8% 12% / 0.15) !important;
+  transform: none !important;
+  background-image: none !important;
+}
+
+:root:not(.dark) [data-canvas-dragging="true"] .rune-node {
+  filter: none !important;
+}
+
+:root:not(.dark) [data-canvas-dragging="true"] .react-flow__edges {
+  filter: none !important;
 }
 
 [data-canvas-dragging="true"] .react-flow__node.selected .rune-node {
@@ -54,6 +199,10 @@
 [data-canvas-dragging="true"] .react-flow__handle {
   transition: none !important;
 }
+
+/* =========================================
+   HANDLES
+   ========================================= */
 
 .react-flow__handle {
   transition: all 0.2s ease;
@@ -75,14 +224,12 @@
   z-index: 10;
 }
 
-/* =========================
-   Execution Status Animations
-   ========================= */
+/* =========================================
+   EXECUTION STATUS ANIMATIONS
+   ========================================= */
 
-/* Subtle pulse animation for running nodes */
 @keyframes pulse-subtle {
-  0%,
-  100% {
+  0%, 100% {
     box-shadow:
       0 4px 6px -1px rgba(59, 130, 246, 0.2),
       0 2px 4px -2px rgba(59, 130, 246, 0.1);
@@ -94,63 +241,88 @@
   }
 }
 
+/* Light mode: sketch-compatible pulse (ring-based, no blur bloom) */
+@keyframes pulse-sketch {
+  0%, 100% {
+    box-shadow:
+      3px 4px 0px hsl(20 8% 12% / 0.22),
+      0 0 0 2px hsl(214 75% 50% / 0.4);
+  }
+  50% {
+    box-shadow:
+      3px 4px 0px hsl(20 8% 12% / 0.22),
+      0 0 0 3.5px hsl(214 75% 50% / 0.65);
+  }
+}
+
 .animate-pulse-subtle {
   animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+:root:not(.dark) .rune-node.running.animate-pulse-subtle,
+:root:not(.dark) .animate-pulse-subtle {
+  animation: pulse-sketch 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* Running state */
 .rune-node.running {
-  border-color: rgb(59 130 246) !important; /* blue-500 */
+  border-color: rgb(59 130 246) !important;
   box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2);
+}
+
+:root:not(.dark) .rune-node.running {
+  box-shadow:
+    3px 4px 0px hsl(20 8% 12% / 0.2),
+    0 0 0 2px rgb(59 130 246 / 0.5);
+  background-image: none;
 }
 
 /* Success state */
 .rune-node.success {
-  border-color: rgb(34 197 94) !important; /* green-500 */
+  border-color: rgb(34 197 94) !important;
   transition:
     border-color 0.3s ease,
     box-shadow 0.3s ease;
 }
 
-/* Waiting state */
-.rune-node.waiting {
-  border-color: rgb(234 179 8) !important; /* yellow-500 */
+:root:not(.dark) .rune-node.success {
+  box-shadow: 3px 4px 0px hsl(20 8% 12% / 0.2);
+  background-image: none;
 }
 
-/* Failed state with shake animation */
+/* Waiting state */
+.rune-node.waiting {
+  border-color: rgb(234 179 8) !important;
+}
+
+:root:not(.dark) .rune-node.waiting {
+  background-image: none;
+}
+
+/* Failed state with shake */
 @keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  10%,
-  30%,
-  50%,
-  70%,
-  90% {
-    transform: translateX(-2px);
-  }
-  20%,
-  40%,
-  60%,
-  80% {
-    transform: translateX(2px);
-  }
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
 }
 
 .rune-node.failed {
   animation: shake 0.5s ease-in-out;
-  border-color: rgb(239 68 68) !important; /* red-500 */
+  border-color: rgb(239 68 68) !important;
 }
 
-/* Edge flow animation for active edges */
+:root:not(.dark) .rune-node.failed {
+  box-shadow: 3px 4px 0px hsl(20 8% 12% / 0.2);
+  background-image: none;
+}
+
+/* =========================================
+   EDGE FLOW ANIMATIONS
+   ========================================= */
+
 @keyframes edge-flow {
-  0% {
-    stroke-dashoffset: 24;
-  }
-  100% {
-    stroke-dashoffset: 0;
-  }
+  0% { stroke-dashoffset: 24; }
+  100% { stroke-dashoffset: 0; }
 }
 
 .react-flow__edge-path.animated {
@@ -158,7 +330,6 @@
   animation: edge-flow 0.5s linear infinite;
 }
 
-/* Active edge highlight */
 .react-flow__edge-path.active {
   stroke: var(--ring);
   stroke-width: 3px;

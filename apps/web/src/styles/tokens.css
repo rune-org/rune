@@ -1,24 +1,25 @@
 :root {
   color-scheme: light;
 
-  --background: hsl(0 0% 100%);
-  --canvas-background: hsl(220 14% 96%);
-  --foreground: hsl(222 47% 11%);
+  /* Warm paper palette */
+  --background: hsl(39 30% 96%);
+  --canvas-background: hsl(36 40% 91%);
+  --foreground: hsl(25 20% 18%);
 
-  --card: hsl(0 0% 100%);
+  --card: hsl(40 28% 95%);
   --card-foreground: var(--foreground);
 
-  --popover: hsl(0 0% 100%);
+  --popover: hsl(40 28% 95%);
   --popover-foreground: var(--foreground);
 
   --primary: hsl(220 70% 42%);
   --primary-foreground: hsl(0 0% 100%);
 
-  --secondary: hsl(220 14% 92%);
-  --secondary-foreground: hsl(222 47% 20%);
+  --secondary: hsl(38 20% 88%);
+  --secondary-foreground: hsl(25 20% 22%);
 
-  --muted: hsl(220 14% 92%);
-  --muted-foreground: hsl(215 20% 42%);
+  --muted: hsl(38 20% 88%);
+  --muted-foreground: hsl(30 12% 48%);
 
   --accent: hsl(215 65% 45%);
   --accent-foreground: hsl(0 0% 100%);
@@ -26,34 +27,42 @@
   --destructive: hsl(0 72% 42%);
   --destructive-foreground: hsl(0 0% 100%);
 
-  --border: hsl(220 13% 87%);
-  --edge-color: hsl(0 0% 40%);
-  --input: hsl(220 13% 87%);
+  --border: hsl(35 18% 80%);
+  --edge-color: hsl(25 12% 45%);
+  --input: hsl(35 18% 80%);
   --ring: hsl(220 70% 42%);
 
   --radius: 0.75rem;
 
-  --shadow-sm: 0 4px 16px hsl(220 20% 80% / 0.25);
-  --shadow-lg: 0 24px 48px hsl(220 20% 80% / 0.2);
+  --shadow-sm: 3px 4px 0px hsl(20 8% 12% / 0.22);
+  --shadow-lg: 5px 6px 0px hsl(20 8% 12% / 0.18);
 
-  --node-trigger: hsl(220 70% 42%);
-  --node-trigger-bg: hsl(220 70% 42% / 0.04);
-  --node-trigger-border: hsl(220 70% 42% / 0.55);
-  --node-flow: hsl(45 95% 42%);
-  --node-flow-bg: hsl(45 95% 42% / 0.04);
-  --node-flow-border: hsl(45 95% 42% / 0.55);
-  --node-transform: hsl(330 80% 50%);
-  --node-transform-bg: hsl(330 80% 50% / 0.04);
-  --node-transform-border: hsl(330 80% 50% / 0.55);
-  --node-http: hsl(142 76% 36%);
-  --node-http-bg: hsl(142 76% 36% / 0.04);
-  --node-http-border: hsl(142 76% 36% / 0.55);
-  --node-email: hsl(25 95% 48%);
-  --node-email-bg: hsl(25 95% 48% / 0.04);
-  --node-email-border: hsl(25 95% 48% / 0.55);
-  --node-agent: hsl(189 85% 40%);
-  --node-agent-bg: hsl(189 85% 40% / 0.04);
-  --node-agent-border: hsl(189 85% 40% / 0.55);
+  /* Prismacolor pencil palette — vivid, opaque fills, graphite outlines */
+  --node-graphite: hsl(20 8% 18% / 0.82);
+
+  --node-trigger: hsl(214 75% 48%);
+  --node-trigger-bg: hsl(214 75% 48% / 0.58);
+  --node-trigger-border: var(--node-graphite);
+  --node-flow: hsl(44 98% 52%);
+  --node-flow-bg: hsl(44 98% 52% / 0.62);
+  --node-flow-border: var(--node-graphite);
+  --node-transform: hsl(332 78% 54%);
+  --node-transform-bg: hsl(332 78% 54% / 0.56);
+  --node-transform-border: var(--node-graphite);
+  --node-http: hsl(143 62% 38%);
+  --node-http-bg: hsl(143 62% 38% / 0.58);
+  --node-http-border: var(--node-graphite);
+  --node-email: hsl(26 88% 52%);
+  --node-email-bg: hsl(26 88% 52% / 0.60);
+  --node-email-border: var(--node-graphite);
+  --node-agent: hsl(187 72% 44%);
+  --node-agent-bg: hsl(187 72% 44% / 0.58);
+  --node-agent-border: var(--node-graphite);
+
+  /* Notebook paper texture variables */
+  --paper-line-color: hsl(214 65% 55% / 0.45);
+  --paper-margin-color: hsl(0 68% 55% / 0.45);
+  --pencil-texture-opacity: 0.065;
 
   --toast-success-bg: hsl(152 40% 96%);
   --toast-success-border: hsl(152 30% 82%);
@@ -78,6 +87,11 @@
 
 .dark {
   color-scheme: dark;
+
+  /* Neutralize light-mode paper variables */
+  --paper-line-color: transparent;
+  --paper-margin-color: transparent;
+  --pencil-texture-opacity: 0;
 
   --background: hsl(220 40% 6%);
   --canvas-background: hsl(240, 33%, 4%);
