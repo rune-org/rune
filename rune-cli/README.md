@@ -1,249 +1,248 @@
-# RUNE CLI
+# RUNE Admin Console
 
-A professional command-line interface for the RUNE Workflow Automation Platform, built with Go and the Charm ecosystem (Bubble Tea, Lip Gloss, Bubbles).
+A powerful terminal user interface (TUI) for administering the RUNE Workflow Automation Platform. Built with Go and the Charm ecosystem for a beautiful, responsive terminal experience.
 
 ```
-╔══════════════════════════════════════════════════════════╗
-║                                                          ║
-║        ██████╗ ██╗   ██╗███╗   ██╗███████╗               ║
-║        ██╔══██╗██║   ██║████╗  ██║██╔════╝               ║
-║        ██████╔╝██║   ██║██╔██╗ ██║█████╗                 ║
-║        ██╔══██╗██║   ██║██║╚██╗██║██╔══╝                 ║
-║        ██║  ██║╚██████╔╝██║ ╚████║███████╗               ║
-║        ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝               ║
-║                                                          ║
-║      Workflow Automation Platform                        ║
-║                                                          ║
-╚══════════════════════════════════════════════════════════╝
+          ██████╗  ██╗   ██╗ ███╗   ██╗ ███████╗
+          ██╔══██╗ ██║   ██║ ████╗  ██║ ██╔════╝
+          ██████╔╝ ██║   ██║ ██╔██╗ ██║ █████╗
+          ██╔══██╗ ██║   ██║ ██║╚██╗██║ ██╔══╝
+          ██║  ╚██╗╚██████╔╝ ██║ ╚████║ ███████╗
+          ╚═╝   ╚═╝ ╚═════╝  ╚═╝  ╚═══╝ ╚══════╝
+
+             Workflow Automation Platform
 ```
 
-## Features
+## Overview
 
-- **Interactive TUI Mode**: Full-screen terminal interface with keyboard navigation
-- **Traditional CLI**: Scriptable commands for automation and CI/CD pipelines
-- **Dual Data Access**:
-  - HTTP API client (connects to FastAPI backend)
-  - Direct PostgreSQL access (admin/development mode)
-- **Beautiful Branding**: RUNE-themed colors, ASCII art logos, and styled output
+RUNE Admin Console is an administrative TUI application providing full control over your RUNE deployment:
+
+- **User Management** - View, activate/deactivate users, manage roles
+- **Workflow Management** - Monitor workflows, view status, trigger executions
+- **Execution Monitoring** - Track workflow executions in real-time
+- **Database Operations** - Direct database access for administration
+- **System Configuration** - Configure API endpoints, database connections, and more
 
 ## Prerequisites
 
 - Go 1.22 or later
 - Access to a running RUNE API server (default: `http://localhost:8000`)
-- PostgreSQL database (for direct DB access mode)
-
-## Installation
-
-### From Source
-
-```bash
-# Clone the repository
-git clone https://github.com/your-org/rune.git
-cd rune/rune-cli
-
-# Build the CLI
-make build
-
-# Or build manually
-go build -o rune ./cmd/rune
-```
-
-### Install to PATH
-
-```bash
-# Linux/macOS
-make install  # Installs to /usr/local/bin
-
-# Or manually
-sudo cp rune /usr/local/bin/
-```
+- PostgreSQL database (optional, for direct DB access mode)
 
 ## Quick Start
-
-```bash
-# Show help and available commands
-rune --help
-
-# Launch interactive TUI
-rune tui
-# Or just run without arguments (defaults to showing help)
-rune
-
-# Login to the API
-rune auth login
-
-# Check authentication status
-rune auth status
-
-# View current configuration
-rune config show
-```
-
-## Commands
-
-### Root Commands
-
-| Command   | Description                          |
-|-----------|--------------------------------------|
-| `version` | Show version information             |
-| `tui`     | Launch interactive TUI mode          |
-| `help`    | Help about any command               |
-
-### Authentication (`auth`)
-
-```bash
-rune auth login              # Login with email/password
-rune auth logout             # Clear stored credentials
-rune auth status             # Check if authenticated
-rune auth signup             # Create first admin account (setup only)
-```
-
-### Configuration (`config`)
-
-```bash
-rune config show             # Display current configuration
-rune config set-url <url>    # Set API server URL
-rune config set-db <dsn>     # Set database connection string
-rune config reset            # Reset to defaults
-```
-
-### Database Operations (`db`)
-
-Direct database access for development and administration.
-
-```bash
-rune db health               # Check database connectivity
-rune db tables               # List all database tables
-rune db reset                # Reset database (drops all data!)
-rune db truncate             # Truncate all tables
-rune db sql "SELECT ..."     # Execute raw SQL queries
-```
-
-**Warning**: Database commands bypass API authentication and should only be used in development or by administrators.
-
-### User Management (`users`)
-
-```bash
-rune users list              # List all users
-rune users get <id>          # Get user details
-rune users activate <id>     # Activate a user
-rune users deactivate <id>   # Deactivate a user
-```
-
-## Configuration
-
-Configuration is stored in `~/.config/rune/config.yaml`:
-
-```yaml
-api_url: http://localhost:8000
-timeout: 30
-database_url: ""
-color_enabled: true
-output_format: text
-docker_container: rune-db-1
-docker_network: rune_default
-```
-
-Credentials are stored separately in `~/.config/rune/credentials.json`:
-
-```json
-{
-  "access_token": "...",
-  "refresh_token": "...",
-  "token_type": "bearer",
-  "expires_at": "2024-01-01T00:00:00Z"
-}
-```
-
-## Environment Variables
-
-| Variable           | Description                    | Default                  |
-|--------------------|--------------------------------|--------------------------|
-| `RUNE_API_URL`     | API server URL                 | `http://localhost:8000`  |
-| `RUNE_DB_URL`      | PostgreSQL connection string   | (none)                   |
-| `RUNE_NO_COLOR`    | Disable colored output         | `false`                  |
-| `RUNE_OUTPUT`      | Output format (`text`/`json`)  | `text`                   |
-
-## Global Flags
-
-| Flag          | Description                |
-|---------------|----------------------------|
-| `--help, -h`  | Show help                  |
-| `--json, -j`  | Output in JSON format      |
-| `--verbose, -v` | Enable verbose output    |
-| `--no-color`  | Disable colored output     |
-
-## Interactive TUI
-
-Launch the TUI with `rune tui` for a full-screen interface:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  ╦═╗╦ ╦╔╗╔╔═╗                                               │
-│  ╠╦╝║ ║║║║║╣                                                │
-│  ╩╚═╚═╝╝╚╝╚═╝                                               │
-├─────────────┬───────────────────────────────────────────────┤
-│  Dashboard  │                                               │
-│  Workflows  │   Welcome to RUNE CLI!                        │
-│  Users      │                                               │
-│  Settings   │   Select an option from the sidebar           │
-│             │   to get started.                             │
-│             │                                               │
-├─────────────┴───────────────────────────────────────────────┤
-│  ↑/↓: Navigate  Enter: Select  q: Quit  ?: Help             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### TUI Keyboard Shortcuts
-
-| Key       | Action                     |
-|-----------|----------------------------|
-| `↑/k`     | Move up                    |
-| `↓/j`     | Move down                  |
-| `Enter`   | Select item                |
-| `Tab`     | Switch panels              |
-| `?`       | Show help                  |
-| `q`       | Quit                       |
-| `Ctrl+C`  | Force quit                 |
-
-## Development
-
-### Project Structure
-
-```
-rune-cli/
-├── cmd/rune/main.go              # Entry point
-├── go.mod                        # Go module definition
-├── Makefile                      # Build commands
-└── internal/
-    ├── theme/                    # RUNE branding and styles
-    │   ├── colors.go             # Color palette
-    │   ├── styles.go             # Lip Gloss styles
-    │   └── logo.go               # ASCII art logos
-    ├── config/                   # Configuration management
-    │   └── config.go
-    ├── models/                   # Data types
-    │   └── models.go
-    ├── api/                      # HTTP API client
-    │   ├── client.go             # Base client with auth
-    │   ├── users.go              # User endpoints
-    │   └── workflows.go          # Workflow endpoints
-    ├── db/                       # Direct PostgreSQL access
-    │   └── postgres.go
-    ├── cli/                      # Cobra commands
-    │   ├── root.go
-    │   ├── auth.go
-    │   ├── config.go
-    │   ├── db.go
-    │   └── users.go
-    └── app/                      # Bubble Tea TUI
-        └── app.go
-```
 
 ### Building
 
 ```bash
-# Build for current platform
+# Navigate to rune-cli directory
+cd rune-cli
+
+# Build the application
+go build -o rune ./cmd/rune
+
+# Or use Make
+make build
+```
+
+### Running
+
+```bash
+# Launch the TUI (default when running without arguments)
+./rune
+
+# Or explicitly
+./rune tui
+```
+
+### Installation
+
+```bash
+# Install to your GOBIN
+go install ./cmd/rune
+
+# Or manually copy to PATH
+# Linux/macOS:
+sudo cp rune /usr/local/bin/
+
+# Windows:
+# Copy rune.exe to a directory in your PATH
+```
+
+## TUI Navigation
+
+### Keyboard Shortcuts
+
+| Key          | Action                             |
+| ------------ | ---------------------------------- |
+| `↑/k`, `↓/j` | Navigate up/down                   |
+| `Tab`        | Switch between sidebar and content |
+| `Enter`      | Select/activate item               |
+| `Esc`        | Go back / Return to sidebar        |
+| `r` / `F5`   | Refresh data                       |
+| `?` / `F1`   | Show help                          |
+| `Ctrl+S`     | Save (in config screen)            |
+| `Ctrl+Q`     | Quit application                   |
+
+### Screens
+
+1. **Dashboard** - System overview with stats and status indicators
+2. **Users** - User management (admin only)
+3. **Workflows** - View and manage workflows
+4. **Executions** - Monitor workflow executions
+5. **Credentials** - Manage API keys and secrets
+6. **Templates** - Browse workflow templates
+7. **Database** - Direct database operations (admin only)
+8. **Config** - Application configuration
+9. **Help** - Keyboard shortcuts and documentation
+
+## Configuration
+
+Configuration is stored in your system's config directory:
+
+| Platform | Location                                         |
+| -------- | ------------------------------------------------ |
+| Linux    | `~/.config/rune/config.yaml`                     |
+| macOS    | `~/Library/Application Support/rune/config.yaml` |
+| Windows  | `%APPDATA%\rune\config.yaml`                     |
+
+### Configuration Options
+
+```yaml
+# API Settings
+api_url: http://localhost:8000
+timeout: 30
+
+# Database Settings (for direct access)
+database_url: postgres://user:pass@localhost:5432/rune
+
+# Docker Settings (for database commands)
+docker_container: rune-db-1
+docker_network: rune_default
+
+# UI Preferences
+color_enabled: true
+output_format: text
+```
+
+### Environment Variables
+
+All configuration options can be overridden via environment variables with the `RUNE_` prefix:
+
+| Variable            | Description                  |
+| ------------------- | ---------------------------- |
+| `RUNE_API_URL`      | API server URL               |
+| `RUNE_DATABASE_URL` | PostgreSQL connection string |
+| `RUNE_TIMEOUT`      | Request timeout in seconds   |
+
+## Authentication
+
+Credentials are stored separately for security:
+
+| Platform | Location                                              |
+| -------- | ----------------------------------------------------- |
+| Linux    | `~/.config/rune/credentials.json`                     |
+| macOS    | `~/Library/Application Support/rune/credentials.json` |
+| Windows  | `%APPDATA%\rune\credentials.json`                     |
+
+### CLI Authentication Commands
+
+While the TUI is the primary interface, CLI commands are available for scripting:
+
+```bash
+# Login to the API
+./rune auth login
+
+# Check authentication status
+./rune auth status
+
+# Logout
+./rune auth logout
+```
+
+## CLI Commands (for Scripting)
+
+The following commands are available for automation and scripting:
+
+### Authentication
+
+```bash
+./rune auth login              # Interactive login
+./rune auth logout             # Clear credentials
+./rune auth status             # Check auth status
+./rune auth signup             # Create first admin (setup only)
+```
+
+### Configuration
+
+```bash
+./rune config show             # Display configuration
+./rune config set-url <url>    # Set API URL
+./rune config set-db <dsn>     # Set database URL
+./rune config reset            # Reset to defaults
+```
+
+### Database (Admin)
+
+```bash
+./rune db health               # Check connectivity
+./rune db tables               # List tables
+./rune db reset                # Reset database (destructive!)
+./rune db truncate             # Truncate all tables
+./rune db sql "SELECT ..."     # Execute SQL
+```
+
+### Users (Admin)
+
+```bash
+./rune users list              # List all users
+./rune users get <id>          # Get user details
+./rune users activate <id>     # Activate user
+./rune users deactivate <id>   # Deactivate user
+```
+
+## Project Structure
+
+```
+rune-cli/
+├── cmd/rune/
+│   └── main.go                 # Entry point
+├── internal/
+│   ├── tui/                    # TUI application
+│   │   ├── tui.go              # Main TUI model and views
+│   │   └── components/         # Reusable UI components
+│   │       └── components.go   # Logo animation, tables, cards
+│   ├── theme/                  # Styling and branding
+│   │   ├── colors.go           # Color palette
+│   │   ├── styles.go           # Lip Gloss styles
+│   │   └── logo.go             # ASCII art logos
+│   ├── api/                    # HTTP API client
+│   │   ├── client.go           # Base client with auth
+│   │   ├── users.go            # User endpoints
+│   │   └── workflows.go        # Workflow endpoints
+│   ├── config/                 # Configuration management
+│   │   └── config.go
+│   ├── cli/                    # CLI commands (Cobra)
+│   │   ├── root.go             # Root command
+│   │   ├── auth.go             # Auth commands
+│   │   ├── config.go           # Config commands
+│   │   ├── db.go               # Database commands
+│   │   └── users.go            # User commands
+│   ├── db/                     # Direct PostgreSQL access
+│   │   └── postgres.go
+│   └── models/                 # Data types
+│       └── models.go
+├── go.mod
+├── go.sum
+├── Makefile
+└── README.md
+```
+
+## Development
+
+### Building
+
+```bash
+# Development build
 make build
 
 # Build with version info
@@ -252,93 +251,93 @@ make build VERSION=1.0.0
 # Build for all platforms
 make build-all
 
+# Run without building
+go run ./cmd/rune
+```
+
+### Testing
+
+```bash
 # Run tests
 make test
 
 # Run linter
 make lint
 
-# Clean build artifacts
-make clean
-```
-
-### Running in Development
-
-```bash
-# Run without building
-go run ./cmd/rune
-
-# Run with hot reload (requires air)
-air
+# Format code
+make fmt
 ```
 
 ### Dependencies
 
-- [Cobra](https://github.com/spf13/cobra) - CLI framework
-- [Viper](https://github.com/spf13/viper) - Configuration management
-- [Bubble Tea](https://github.com/charmbracelet/bubbletea) - TUI framework
-- [Bubbles](https://github.com/charmbracelet/bubbles) - TUI components
-- [Lip Gloss](https://github.com/charmbracelet/lipgloss) - Style definitions
-- [pgx](https://github.com/jackc/pgx) - PostgreSQL driver
-- [Resty](https://github.com/go-resty/resty) - HTTP client
+| Package                                                  | Purpose                          |
+| -------------------------------------------------------- | -------------------------------- |
+| [Bubble Tea](https://github.com/charmbracelet/bubbletea) | TUI framework (Elm architecture) |
+| [Lip Gloss](https://github.com/charmbracelet/lipgloss)   | Terminal styling                 |
+| [Bubbles](https://github.com/charmbracelet/bubbles)      | TUI components                   |
+| [Cobra](https://github.com/spf13/cobra)                  | CLI framework                    |
+| [Viper](https://github.com/spf13/viper)                  | Configuration                    |
+| [pgx](https://github.com/jackc/pgx)                      | PostgreSQL driver                |
+| [Resty](https://github.com/go-resty/resty)               | HTTP client                      |
 
 ## API Compatibility
 
-This CLI is designed to work with the RUNE FastAPI backend. Key endpoints used:
+The TUI connects to the RUNE FastAPI backend. Key endpoints:
 
-| Endpoint                | Method | Description              |
-|-------------------------|--------|--------------------------|
-| `/api/auth/login`       | POST   | User authentication      |
-| `/api/auth/refresh`     | POST   | Refresh access token     |
-| `/api/users/`           | GET    | List users               |
-| `/api/users/{id}`       | GET    | Get user details         |
-| `/api/workflows/`       | GET    | List workflows           |
-| `/api/workflows/{id}`   | GET    | Get workflow details     |
-| `/api/setup/status`     | GET    | Check setup status       |
+| Endpoint              | Method         | Description          |
+| --------------------- | -------------- | -------------------- |
+| `/api/auth/login`     | POST           | User authentication  |
+| `/api/auth/refresh`   | POST           | Refresh access token |
+| `/api/users/`         | GET            | List users           |
+| `/api/users/{id}`     | GET/PUT/DELETE | User operations      |
+| `/api/workflows/`     | GET            | List workflows       |
+| `/api/workflows/{id}` | GET            | Get workflow details |
+| `/api/executions/`    | GET            | List executions      |
+| `/api/credentials/`   | GET            | List credentials     |
+| `/api/templates/`     | GET            | List templates       |
 
 ## Troubleshooting
+
+### TUI not displaying correctly
+
+```bash
+# Ensure terminal supports 256 colors
+echo $TERM
+# Should be something like: xterm-256color
+
+# Try setting TERM
+export TERM=xterm-256color
+```
 
 ### Cannot connect to API
 
 ```bash
-# Check API URL configuration
-rune config show
+# Check current configuration
+./rune config show
+
+# Update API URL
+./rune config set-url http://your-api-server:8000
 
 # Test API connectivity
 curl http://localhost:8000/api/health
-
-# Update API URL
-rune config set-url http://your-api-server:8000
 ```
 
-### Authentication errors
+### Authentication issues
 
 ```bash
-# Clear stored credentials and re-login
-rune auth logout
-rune auth login
+# Clear credentials and re-authenticate
+./rune auth logout
+./rune auth login
 ```
 
 ### Database connection issues
 
 ```bash
 # Test database connectivity
-rune db health
+./rune db health
 
-# Set database URL
-rune config set-db "postgres://user:pass@localhost:5432/rune?sslmode=disable"
-```
-
-### Colors not displaying
-
-Some terminals don't support colors. Try:
-
-```bash
-# Disable colors
-rune --no-color <command>
-
-# Or set environment variable
-export RUNE_NO_COLOR=true
+# Update database URL
+./rune config set-db "postgres://user:pass@localhost:5432/rune?sslmode=disable"
 ```
 
 ## License
@@ -348,9 +347,9 @@ MIT License - see [LICENSE](../LICENSE) for details.
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-For major changes, please open an issue first to discuss the proposed changes.
+For major changes, please open an issue first to discuss what you would like to change.

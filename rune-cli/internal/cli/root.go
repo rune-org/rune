@@ -1,9 +1,8 @@
 /*
 Package cli provides the command-line interface for RUNE CLI.
 
-This package uses Cobra for command management and provides both
-interactive TUI mode (when run without arguments) and traditional
-CLI commands for scripting and automation.
+This package uses Cobra for command management. When run without arguments,
+it launches the interactive TUI. Commands are available for scripting and automation.
 
 Commands are organized into groups:
   - auth: Authentication (login, logout, status)
@@ -20,9 +19,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rune-org/rune-cli/internal/app"
 	"github.com/rune-org/rune-cli/internal/config"
 	"github.com/rune-org/rune-cli/internal/theme"
+	"github.com/rune-org/rune-cli/internal/tui"
 )
 
 var (
@@ -48,16 +47,22 @@ func SetVersionInfo(v, c, d string) {
 // rootCmd is the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "rune",
-	Short: "RUNE CLI - Workflow Automation Platform",
-	Long:  theme.WelcomeBanner() + theme.WelcomeMessage(),
+	Short: "RUNE - Workflow Automation Platform Admin Console",
+	Long: `RUNE Admin Console - A powerful terminal interface for managing
+the RUNE Workflow Automation Platform.
+
+Run without arguments to launch the interactive TUI, or use
+subcommands for scripted operations.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Load configuration
 		_, _ = config.Load()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		// If no subcommand is provided, show the welcome banner and help
-		fmt.Println(theme.WelcomeBanner())
-		fmt.Println(theme.WelcomeMessage())
+		// Launch TUI directly when no subcommand is provided
+		if err := tui.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
 	},
 }
 
@@ -93,13 +98,13 @@ var versionCmd = &cobra.Command{
 	},
 }
 
-// tuiCmd launches the interactive TUI mode
+// tuiCmd launches the interactive TUI mode (kept for backward compatibility)
 var tuiCmd = &cobra.Command{
 	Use:   "tui",
 	Short: "Launch interactive TUI mode",
 	Long:  "Start the full-screen interactive terminal user interface.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return app.Run()
+		return tui.Run()
 	},
 }
 

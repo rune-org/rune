@@ -76,5 +76,6 @@ nginx/ssl/
 .claude
 
 # CLI
-rune-cli/rune.exe
 rune-cli/rune
+rune-cli/rune.exe
+rune-cli/rune.exe~

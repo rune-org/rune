@@ -3,6 +3,7 @@ module github.com/rune-org/rune-cli
 go 1.22
 
 require (
+	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.26.4
 	github.com/charmbracelet/lipgloss v0.11.0
