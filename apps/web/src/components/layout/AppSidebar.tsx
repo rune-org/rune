@@ -25,7 +25,7 @@ import {
 import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/lib/auth";
-import { getInitials } from "@/lib/utils/initials";
+import { getInitials } from "@/lib/initials";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {

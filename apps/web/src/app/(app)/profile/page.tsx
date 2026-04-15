@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { updateMyProfile } from "@/lib/api/users";
-import { getInitials } from "@/lib/utils/initials";
+import { getInitials } from "@/lib/initials";
 import type { UserResponse } from "@/client/types.gen";
 import { Container } from "@/components/shared/Container";
 import { PageHeader } from "@/components/layout/PageHeader";
