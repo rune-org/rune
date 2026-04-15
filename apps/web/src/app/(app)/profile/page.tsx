@@ -59,8 +59,6 @@ export default function ProfilePage() {
     }
   }, [user]);
 
-
-
   const handleSaveName = async () => {
     // Validate with zod
     const result = nameSchema.safeParse({ name: fullName });
