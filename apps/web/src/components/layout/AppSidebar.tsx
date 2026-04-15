@@ -25,6 +25,7 @@ import {
 import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/lib/auth";
+import { getInitials } from "@/lib/utils/initials";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -146,15 +147,7 @@ function ProfileDropdown({ isExpanded }: { isExpanded: boolean }) {
   const { resolvedTheme, setTheme } = useTheme();
   const { user } = state;
 
-  const initials = user?.name
-    ? user.name
-        .split(" ")
-        .filter((n) => n.length > 0)
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "U";
+  const initials = getInitials(user?.name ?? "");
 
   const handleLogout = async () => {
     await logout();
