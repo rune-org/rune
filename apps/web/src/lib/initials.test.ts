@@ -26,15 +26,14 @@ describe("getInitials", () => {
     expect(getInitials("John   Doe")).toBe("JD");
   });
 
-  
   it("handles leading and trailing whitespace", () => {
     expect(getInitials("  John Doe  ")).toBe("JD");
   });
-  
+
   it("handles names with leading/trailing/multiple spaces", () => {
     expect(getInitials("  Alice   Bob  ")).toBe("AB");
   });
-  
+
   it("handles multiple spaces inside names", () => {
     expect(getInitials("John      Doe")).toBe("JD");
   });
@@ -68,5 +67,4 @@ describe("getInitials", () => {
     expect(getInitials("John-Doe")).toBe("J");
     expect(getInitials("John O'Connor")).toBe("JO");
   });
-
 });
