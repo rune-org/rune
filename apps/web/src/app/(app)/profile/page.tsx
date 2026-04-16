@@ -47,7 +47,7 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [dialogResetKey, setDialogResetKey] = useState(0);
-  const { state, logout } = useAuth();
+  const { state, logout, refetchProfile, refresh } = useAuth();
 
   const user = state.user as UserResponse | null;
   const roleLabel = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "User";
@@ -74,11 +74,15 @@ export default function ProfilePage() {
       await updateMyProfile({
         name: result.data.name,
       });
-
-      // Log out user after successful update
-      await logout();
+      // Refresh token to ensure JWT payload contains updated name
+      await refresh();
+      // Refetch profile to sync state across the app
+      await refetchProfile();
+      // Close edit mode
+      setEditingField(null);
     } catch (apiError) {
       setError(getErrorMessage(apiError));
+    } finally {
       setIsSaving(false);
     }
   };
@@ -98,11 +102,10 @@ export default function ProfilePage() {
       await updateMyProfile({
         email: result.data.email,
       });
-
-      // Log out user after successful update
       await logout();
     } catch (apiError) {
       setError(getErrorMessage(apiError));
+    } finally {
       setIsSaving(false);
     }
   };
@@ -197,9 +200,6 @@ export default function ProfilePage() {
                       autoFocus
                       disabled={isSaving}
                     />
-                    <p className="text-xs text-amber-500">
-                      Note: You will be logged out after updating your name.
-                    </p>
                     <div className="flex gap-2">
                       <Button onClick={handleSaveName} disabled={isSaving} size="sm">
                         {isSaving ? "Saving..." : "Save"}
