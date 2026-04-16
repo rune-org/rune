@@ -3,11 +3,11 @@ from fastapi import APIRouter, Depends
 from src.core.exceptions import BadRequest
 from src.core.responses import ApiResponse
 from src.db.models import Workflow
-from src.scryb.generator import DocumentationGenerator
+from src.scryb.dependencies import get_scryb_service
 from src.scryb.schemas import GenerateWorkflowDocsRequest, WorkflowDetailDocs
-from src.workflow.dependencies import get_workflow_service, get_workflow_with_permission
+from src.scryb.service import ScrybService
+from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
-from src.workflow.service import WorkflowService
 
 router = APIRouter(prefix="/scryb", tags=["Scryb"])
 
@@ -17,20 +17,11 @@ router = APIRouter(prefix="/scryb", tags=["Scryb"])
 async def generate_workflow_docs(
     style_request: GenerateWorkflowDocsRequest,
     workflow: Workflow = Depends(get_workflow_with_permission),
-    service: WorkflowService = Depends(get_workflow_service),
+    scryb_service: ScrybService = Depends(get_scryb_service),
 ):
     """Generate documentation for the specified workflow."""
-
-    workflow_data = await service.get_latest_workflow_data(workflow)
-    if workflow_data is None:
+    docs = await scryb_service.generate_docs(workflow, style_request)
+    if docs is None:
         raise BadRequest(detail="Workflow has no saved versions")
-
-    workflow_data["id"] = str(workflow.id)
-    workflow_data["name"] = workflow.name
-    workflow_data["description"] = workflow.description
-
-    # 2. Generate Documentation
-    generator = DocumentationGenerator()
-    docs = await generator.generate(workflow_data, style_request.target_audience)
 
     return ApiResponse(data=WorkflowDetailDocs(docs=docs))

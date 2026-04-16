@@ -6,13 +6,112 @@ from langchain_core.messages import ToolMessage
 from langgraph.types import Command
 
 from .nodes import (
-    ConditionalArgs,
+    AggregatorArgs,
+    CreateTodoPlanArgs,
+    DatetimeArgs,
+    EditArgs,
+    FilterArgs,
     HTTPArgs,
+    IfArgs,
+    LimitArgs,
+    LogArgs,
+    MergeArgs,
     SMTPArgs,
+    ScheduledTriggerArgs,
+    SortArgs,
+    SplitArgs,
     SwitchArgs,
     TriggerArgs,
+    UpdateNodeArgs,
+    UpdateTodoStatusArgs,
+    WaitArgs,
 )
 from .schemas import WorkflowEdge, WorkflowNode
+
+
+# ── Planning tools ───────────────────────────────────────────────────────────
+
+
+@tool(
+    args_schema=CreateTodoPlanArgs,
+    description="Create a planning checklist before building the workflow. Call this FIRST with an ordered list of steps. Replaces any existing plan.",
+)
+def create_todo_plan(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create an ordered todo plan and store it in agent state.
+
+    Args:
+        runtime: Runtime context (automatically injected, hidden from model).
+        **kwargs: Unpacked CreateTodoPlanArgs fields.
+
+    Returns:
+        Command to update state with the new todo list.
+    """
+    args = CreateTodoPlanArgs(**kwargs)
+    todos = [
+        {
+            "id": str(uuid.uuid4()),
+            "title": item.title,
+            "status": "pending",
+            **({"description": item.description} if item.description else {}),
+        }
+        for item in args.items
+    ]
+
+    tool_message = ToolMessage(
+        content=json.dumps({"plan_created": True, "todos": todos}),
+        tool_call_id=runtime.tool_call_id,
+    )
+
+    return Command(
+        update={
+            "todos": todos,
+            "messages": [tool_message],
+        }
+    )
+
+
+@tool(
+    args_schema=UpdateTodoStatusArgs,
+    description="Mark a todo item as done after completing it. Call this after finishing each step.",
+)
+def update_todo_status(runtime: ToolRuntime, **kwargs) -> Command:
+    """Update a todo item's status to 'done'.
+
+    Args:
+        runtime: Runtime context (automatically injected, hidden from model).
+        **kwargs: Unpacked UpdateTodoStatusArgs fields.
+
+    Returns:
+        Command to update state with the modified todo list.
+    """
+    args = UpdateTodoStatusArgs(**kwargs)
+    todos = runtime.state.get("todos", [])
+
+    updated = False
+    updated_todos = []
+    for todo in todos:
+        if todo["id"] == args.todo_id:
+            updated_todos.append({**todo, "status": "done"})
+            updated = True
+        else:
+            updated_todos.append(todo)
+
+    if updated:
+        matched = next(t for t in updated_todos if t["id"] == args.todo_id)
+        tool_message = ToolMessage(
+            content=json.dumps({"todo_id": args.todo_id, "status": "done", "title": matched["title"]}),
+            tool_call_id=runtime.tool_call_id,
+        )
+        return Command(update={"todos": updated_todos, "messages": [tool_message]})
+    else:
+        tool_message = ToolMessage(
+            content=json.dumps({"success": False, "message": f"Todo '{args.todo_id}' not found"}),
+            tool_call_id=runtime.tool_call_id,
+        )
+        return Command(update={"messages": [tool_message]})
+
+
+# ── Node creation helper ─────────────────────────────────────────────────────
 
 
 def _create_node_from_args(args, runtime: ToolRuntime) -> Command:
@@ -23,27 +122,16 @@ def _create_node_from_args(args, runtime: ToolRuntime) -> Command:
         exclude={"node_type", "name"}, exclude_none=True, by_alias=True
     )
 
-    # Parse JSON strings for HTTP node fields
-    if "headers" in params and isinstance(params["headers"], str):
-        try:
-            params["headers"] = json.loads(params["headers"])
-        except json.JSONDecodeError:
-            pass  # Keep as string if not valid JSON
-
-    if "query" in params and isinstance(params["query"], str):
-        try:
-            params["query"] = json.loads(params["query"])
-        except json.JSONDecodeError:
-            pass  # Keep as string if not valid JSON
-
-    if "body" in params and isinstance(params["body"], str):
-        try:
-            params["body"] = json.loads(params["body"])
-        except json.JSONDecodeError:
-            pass  # Keep as string if not valid JSON (could be plain text)
+    # Parse JSON strings into dicts/lists for any param that looks like JSON
+    for key, value in list(params.items()):
+        if isinstance(value, str) and value.strip().startswith(("{", "[")):
+            try:
+                params[key] = json.loads(value)
+            except json.JSONDecodeError:
+                pass  # Keep as string if not valid JSON
 
     node_id = str(uuid.uuid4())
-    is_trigger = node_type == "ManualTrigger"
+    is_trigger = node_type in ("trigger", "scheduledTrigger")
 
     node = WorkflowNode(
         id=node_id,
@@ -74,9 +162,12 @@ def _create_node_from_args(args, runtime: ToolRuntime) -> Command:
     )
 
 
+# ── Trigger node tools ───────────────────────────────────────────────────────
+
+
 @tool(
     args_schema=TriggerArgs,
-    description="Create a trigger node (workflow entry point). No parameters needed. Automatically adds to workflow state.",
+    description="Create a manual trigger node (workflow entry point). Every workflow needs exactly one trigger. Automatically adds to workflow state.",
 )
 def create_trigger_node(runtime: ToolRuntime, **kwargs) -> Command:
     """Create a trigger node and add it to the workflow state."""
@@ -85,8 +176,21 @@ def create_trigger_node(runtime: ToolRuntime, **kwargs) -> Command:
 
 
 @tool(
+    args_schema=ScheduledTriggerArgs,
+    description="Create a scheduled trigger node (runs on a recurring interval). Use instead of manual trigger for automated workflows. Params: amount (number), unit (seconds/minutes/hours/days).",
+)
+def create_scheduled_trigger_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a scheduled trigger node and add it to the workflow state."""
+    args = ScheduledTriggerArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+# ── Action node tools ────────────────────────────────────────────────────────
+
+
+@tool(
     args_schema=HTTPArgs,
-    description="Create an HTTP request node. Required: name. Optional: url, method, headers, query, body, timeout, retry, ignore_ssl. Automatically adds to workflow state.",
+    description="Create an HTTP request node. Required: name. Optional: url, method, headers (JSON string), query (JSON string), body (JSON string or text), timeout, retry, ignore_ssl.",
 )
 def create_http_node(runtime: ToolRuntime, **kwargs) -> Command:
     """Create an HTTP request node and add it to the workflow state."""
@@ -96,7 +200,7 @@ def create_http_node(runtime: ToolRuntime, **kwargs) -> Command:
 
 @tool(
     args_schema=SMTPArgs,
-    description="Create an SMTP/email node. Required: name. Optional: to, from, cc, bcc, subject, body. Automatically adds to workflow state.",
+    description="Create an SMTP/email node. Required: name. Optional: from, to, cc, bcc, subject, body. Supports $NodeName.field references in fields.",
 )
 def create_smtp_node(runtime: ToolRuntime, **kwargs) -> Command:
     """Create an SMTP email node and add it to the workflow state."""
@@ -105,18 +209,31 @@ def create_smtp_node(runtime: ToolRuntime, **kwargs) -> Command:
 
 
 @tool(
-    args_schema=ConditionalArgs,
-    description="Create a conditional (if/else) node. Required: name. Optional: expression (boolean expression to evaluate). Automatically adds to workflow state.",
+    args_schema=LogArgs,
+    description="Create a log/debug node. Required: name. Optional: message (supports $NodeName.field references), level (info/warn/error/debug).",
 )
-def create_conditional_node(runtime: ToolRuntime, **kwargs) -> Command:
-    """Create a conditional branch node and add it to the workflow state."""
-    args = ConditionalArgs(**kwargs)
+def create_log_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a log node and add it to the workflow state."""
+    args = LogArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+# ── Branching node tools ─────────────────────────────────────────────────────
+
+
+@tool(
+    args_schema=IfArgs,
+    description="Create an if/else (conditional) node with two output branches. Required: name. Optional: expression (e.g., '$FetchAPI.status == 200'). Connect with edge labels 'true' and 'false'.",
+)
+def create_if_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create an if/else conditional branch node and add it to the workflow state."""
+    args = IfArgs(**kwargs)
     return _create_node_from_args(args, runtime)
 
 
 @tool(
     args_schema=SwitchArgs,
-    description="Create a switch (multi-way branch) node. Required: name. Optional: rules (array of {value, operator, compare}). Automatically adds to workflow state.",
+    description="Create a switch (multi-way branch) node. Required: name. Optional: rules (array of {value, operator, compare}). Connect with edge labels 'case 1', 'case 2', ..., 'fallback'.",
 )
 def create_switch_node(runtime: ToolRuntime, **kwargs) -> Command:
     """Create a switch node and add it to the workflow state."""
@@ -125,54 +242,160 @@ def create_switch_node(runtime: ToolRuntime, **kwargs) -> Command:
 
 
 @tool(
-    description="Create an edge connecting two nodes. Automatically adds to workflow state. Returns JSON with edge_id and edge object."
+    args_schema=MergeArgs,
+    description="Create a merge node to rejoin multiple branches back into one path. Required: name. Optional: wait_mode (wait_for_all/wait_for_any), timeout (seconds).",
 )
-def create_edge(
-    runtime: ToolRuntime,
-    src_id: str,
-    dst_id: str,
-    id: str | None = None,
-    label: str | None = None,
-) -> Command:
-    """Create an edge connecting two nodes and add it to the workflow state.
+def create_merge_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a merge node and add it to the workflow state."""
+    args = MergeArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+# ── Data transformation node tools ───────────────────────────────────────────
+
+
+@tool(
+    args_schema=EditArgs,
+    description="Create an edit node to transform data by setting or filtering fields. Required: name. Optional: mode ('assignments' to set fields, 'keep_only' to filter), assignments (list of {name, value, type}).",
+)
+def create_edit_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create an edit/transform node and add it to the workflow state."""
+    args = EditArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+@tool(
+    args_schema=FilterArgs,
+    description="Create a filter node to keep only matching items from an array. Required: name. Optional: input_array (e.g., '$FetchUsers.body.users'), match_mode (all/any), rules (list of {field, operator, value}).",
+)
+def create_filter_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a filter node and add it to the workflow state."""
+    args = FilterArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+@tool(
+    args_schema=SortArgs,
+    description="Create a sort node to reorder items in an array. Required: name. Optional: input_array, rules (list of {field, direction: asc/desc, type: auto/text/number/date}).",
+)
+def create_sort_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a sort node and add it to the workflow state."""
+    args = SortArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+@tool(
+    args_schema=LimitArgs,
+    description="Create a limit node to take only the first N items from an array. Required: name. Optional: input_array, count.",
+)
+def create_limit_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a limit node and add it to the workflow state."""
+    args = LimitArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+# ── Iteration node tools ─────────────────────────────────────────────────────
+
+
+@tool(
+    args_schema=SplitArgs,
+    description="Create a split node to iterate over an array, processing each item individually. Inside the split body, use $item to reference the current element. Required: name. Optional: array_field (e.g., '$FetchUsers.body.users').",
+)
+def create_split_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a split/iterate node and add it to the workflow state."""
+    args = SplitArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+@tool(
+    args_schema=AggregatorArgs,
+    description="Create an aggregator node to collect all items back into an array after a split. Always pair with a split node. Required: name. No other parameters.",
+)
+def create_aggregator_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create an aggregator node and add it to the workflow state."""
+    args = AggregatorArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+# ── Timing node tools ────────────────────────────────────────────────────────
+
+
+@tool(
+    args_schema=WaitArgs,
+    description="Create a wait/delay node to pause workflow execution. Required: name. Optional: amount (number), unit (seconds/minutes/hours/days).",
+)
+def create_wait_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a wait/delay node and add it to the workflow state."""
+    args = WaitArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+@tool(
+    args_schema=DatetimeArgs,
+    description="Create a datetime node for date/time operations. Required: name. Optional: operation (now/add/subtract/format), date, amount, unit, format, timezone.",
+)
+def create_datetime_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a datetime node and add it to the workflow state."""
+    args = DatetimeArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+# ── Node management tools ────────────────────────────────────────────────────
+
+
+@tool(
+    args_schema=UpdateNodeArgs,
+    description="Update an existing node's name and/or parameters. Parameters are merged (not replaced) with existing ones. Use this to modify nodes after creation without losing edges.",
+)
+def update_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Update an existing node's name and/or parameters.
 
     Args:
         runtime: Runtime context (automatically injected, hidden from model).
-        src_id: Source node ID (required).
-        dst_id: Destination node ID (required).
-        id: Edge ID. If not provided, a UUID will be generated.
-        label: Optional edge label. For conditional nodes, use 'true' or 'false'.
+        **kwargs: Unpacked UpdateNodeArgs fields.
 
     Returns:
-        Command to update state with the new edge.
+        Command to update state with the modified node.
     """
-    edge_id = id or str(uuid.uuid4())
-    edge = WorkflowEdge(
-        id=edge_id,
-        src=src_id,
-        dst=dst_id,
-        label=label,
-    )
+    args = UpdateNodeArgs(**kwargs)
+    workflow_nodes = runtime.state.get("workflow_nodes", [])
 
-    edge_dict = edge.model_dump(exclude_none=True)
+    updated_node = None
+    updated_nodes = []
+    for node in workflow_nodes:
+        if node["id"] == args.node_id:
+            updated = {**node}
+            if args.name is not None:
+                updated["name"] = args.name
+            if args.parameters is not None:
+                existing_params = updated.get("parameters", {})
+                updated["parameters"] = {**existing_params, **args.parameters}
+            updated_node = updated
+            updated_nodes.append(updated)
+        else:
+            updated_nodes.append(node)
 
-    # Get current edges from state and append new edge
-    workflow_edges = runtime.state.get("workflow_edges", [])
-    updated_edges = workflow_edges + [edge_dict]
-
-    # Create ToolMessage with the result
-    tool_message = ToolMessage(
-        content=json.dumps({"edge_id": edge_id, "edge": edge_dict}),
-        tool_call_id=runtime.tool_call_id,
-    )
-
-    # Return Command to update state with messages
-    return Command(
-        update={
-            "workflow_edges": updated_edges,
-            "messages": [tool_message],
-        },
-    )
+    if updated_node:
+        tool_message = ToolMessage(
+            content=json.dumps({"success": True, "node": updated_node}),
+            tool_call_id=runtime.tool_call_id,
+        )
+        return Command(
+            update={
+                "workflow_nodes": updated_nodes,
+                "messages": [tool_message],
+            },
+        )
+    else:
+        tool_message = ToolMessage(
+            content=json.dumps(
+                {"success": False, "message": f"Node with ID '{args.node_id}' not found"}
+            ),
+            tool_call_id=runtime.tool_call_id,
+        )
+        return Command(
+            update={"messages": [tool_message]},
+        )
 
 
 @tool(
@@ -233,6 +456,60 @@ def delete_node(
         )
 
 
+# ── Edge tools ───────────────────────────────────────────────────────────────
+
+
+@tool(
+    description="Create an edge connecting two nodes. Automatically adds to workflow state. Returns JSON with edge_id and edge object."
+)
+def create_edge(
+    runtime: ToolRuntime,
+    src_id: str,
+    dst_id: str,
+    id: str | None = None,
+    label: str | None = None,
+) -> Command:
+    """Create an edge connecting two nodes and add it to the workflow state.
+
+    Args:
+        runtime: Runtime context (automatically injected, hidden from model).
+        src_id: Source node ID (required).
+        dst_id: Destination node ID (required).
+        id: Edge ID. If not provided, a UUID will be generated.
+        label: Optional edge label. For if nodes use 'true'/'false'. For switch nodes use 'case 1', 'case 2', ..., 'fallback'.
+
+    Returns:
+        Command to update state with the new edge.
+    """
+    edge_id = id or str(uuid.uuid4())
+    edge = WorkflowEdge(
+        id=edge_id,
+        src=src_id,
+        dst=dst_id,
+        label=label,
+    )
+
+    edge_dict = edge.model_dump(exclude_none=True)
+
+    # Get current edges from state and append new edge
+    workflow_edges = runtime.state.get("workflow_edges", [])
+    updated_edges = workflow_edges + [edge_dict]
+
+    # Create ToolMessage with the result
+    tool_message = ToolMessage(
+        content=json.dumps({"edge_id": edge_id, "edge": edge_dict}),
+        tool_call_id=runtime.tool_call_id,
+    )
+
+    # Return Command to update state with messages
+    return Command(
+        update={
+            "workflow_edges": updated_edges,
+            "messages": [tool_message],
+        },
+    )
+
+
 @tool(
     description="Delete an edge from the workflow by its ID. Use this to fix incorrect connections or remove unwanted edges."
 )
@@ -291,6 +568,9 @@ def delete_edge(
         )
 
 
+# ── Discovery tools ──────────────────────────────────────────────────────────
+
+
 @tool(
     description="List all nodes currently in the workflow. Use this to see what has been created."
 )
@@ -331,15 +611,42 @@ def list_workflow_edges(
     )
 
 
+# ── Tool registry ────────────────────────────────────────────────────────────
+
+
 SMITH_TOOLS = [
+    # Planning
+    create_todo_plan,
+    update_todo_status,
+    # Triggers
     create_trigger_node,
+    create_scheduled_trigger_node,
+    # Actions
     create_http_node,
     create_smtp_node,
-    create_conditional_node,
+    create_log_node,
+    # Branching
+    create_if_node,
     create_switch_node,
+    create_merge_node,
+    # Data transformation
+    create_edit_node,
+    create_filter_node,
+    create_sort_node,
+    create_limit_node,
+    # Iteration
+    create_split_node,
+    create_aggregator_node,
+    # Timing
+    create_wait_node,
+    create_datetime_node,
+    # Node management
+    update_node,
+    # Connectivity
     create_edge,
     delete_node,
     delete_edge,
+    # Discovery
     list_workflow_nodes,
     list_workflow_edges,
 ]

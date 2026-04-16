@@ -254,6 +254,7 @@ function FlowCanvasInner({
     setSmithShowTrace,
     smithJustFinished,
     handleSmithSend,
+    smithTodos,
   } = useSmith({
     workflowId,
     readOnly: isViewingSnapshot,
@@ -666,6 +667,7 @@ function FlowCanvasInner({
           isSending={smithSending}
           showTrace={smithShowTrace}
           onToggleTrace={setSmithShowTrace}
+          todos={smithTodos}
         />
 
         {renameDialog && (

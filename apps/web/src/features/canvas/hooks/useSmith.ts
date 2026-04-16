@@ -6,6 +6,7 @@ import { sanitizeGraph } from "../lib/graphIO";
 import { applyAutoLayout } from "../lib/autoLayout";
 import { workflowDataToCanvas } from "@/lib/workflow-dsl";
 import { smith } from "@/lib/api";
+import type { TodoItem } from "@/lib/api/smith";
 import { toast } from "@/components/ui/toast";
 
 export type UseSmithOptions = {
@@ -27,6 +28,7 @@ export function useSmith(opts: UseSmithOptions) {
   const [smithShowTrace, setSmithShowTrace] = useState(true);
   const [smithJustFinished, setSmithJustFinished] = useState(false);
   const [pendingSmithPrompt, setPendingSmithPrompt] = useState<string | null>(null);
+  const [smithTodos, setSmithTodos] = useState<TodoItem[]>([]);
 
   const smithSendingRef = useRef(false);
   const smithShowTraceRef = useRef(true);
@@ -94,6 +96,7 @@ export function useSmith(opts: UseSmithOptions) {
       const userMessage: SmithChatMessage = { role: "user", content: trimmed };
       setSmithMessages((prev) => [...prev, userMessage]);
       setSmithInput("");
+      setSmithTodos([]);
       setSmithSending(true);
 
       // If reasoning mode is on, close the drawer to let user watch the canvas
@@ -133,6 +136,9 @@ export function useSmith(opts: UseSmithOptions) {
               } catch (_err) {
                 toast.error("Failed to apply Smith's workflow changes");
               }
+              if (sseEvent.todos) {
+                setSmithTodos(sseEvent.todos);
+              }
               break;
 
             case "error":
@@ -144,14 +150,17 @@ export function useSmith(opts: UseSmithOptions) {
               break;
 
             case "tool_call":
-              setSmithMessages((prev) => [
-                ...prev,
-                {
-                  role: "tool_call" as const,
-                  content: sseEvent.arguments || "{}",
-                  toolName: sseEvent.name,
-                },
-              ]);
+              // Filter out todo tool calls -- the plan panel shows these
+              if (sseEvent.name !== "create_todo_plan" && sseEvent.name !== "update_todo_status") {
+                setSmithMessages((prev) => [
+                  ...prev,
+                  {
+                    role: "tool_call" as const,
+                    content: sseEvent.arguments || "{}",
+                    toolName: sseEvent.name,
+                  },
+                ]);
+              }
               break;
           }
         }
@@ -240,5 +249,6 @@ export function useSmith(opts: UseSmithOptions) {
     setSmithShowTrace,
     smithJustFinished,
     handleSmithSend,
+    smithTodos,
   };
 }

@@ -14,6 +14,7 @@ class SmithAgentState(AgentState):
     workflow_nodes: NotRequired[list[dict]]
     workflow_edges: NotRequired[list[dict]]
     current_workflow_id: NotRequired[str]
+    todos: NotRequired[list[dict]]
 
 
 def create_smith_model() -> ChatGoogleGenerativeAI:

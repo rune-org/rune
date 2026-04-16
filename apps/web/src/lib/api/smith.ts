@@ -1,6 +1,13 @@
 import { generateNewWorkflowSmithPost } from "@/client";
 import type { GenerateWorkflowRequest } from "@/client/types.gen";
 
+export interface TodoItem {
+  id: string;
+  title: string;
+  status: "pending" | "in_progress" | "done";
+  description?: string;
+}
+
 export type SmithSSEEvent =
   | { type: "stream_start" }
   | { type: "token"; content: string }
@@ -11,6 +18,7 @@ export type SmithSSEEvent =
       type: "workflow_state";
       workflow_nodes: WorkflowNode[];
       workflow_edges: WorkflowEdge[];
+      todos?: TodoItem[];
     }
   | { type: "error"; message: string; trace?: string }
   | { type: "stream_end" };

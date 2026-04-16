@@ -70,7 +70,8 @@ class Settings(BaseSettings):
     google_api_key: str | None = None
 
     # Scryb Documentation Settings
-    scryb_model: str = "gemini/gemini-2.5-flash-lite"
+    scryb_model: str = "google_genai/gemini-2.5-flash-lite"
+    scryb_temperature: float = 0.3
 
     # SAML SSO Settings
     # The public-facing base URL of the API (used to build ACS / metadata URLs).

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/cn";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
+import { SmithTodoPanel } from "./SmithTodoPanel";
+import type { TodoItem } from "@/lib/api/smith";
 
 export type SmithChatMessage = {
   role: "user" | "smith" | "tool_call";
@@ -27,6 +29,7 @@ type Props = {
   isSending: boolean;
   showTrace?: boolean;
   onToggleTrace?: (next: boolean) => void;
+  todos?: TodoItem[];
 };
 
 export function SmithChatDrawer({
@@ -39,6 +42,7 @@ export function SmithChatDrawer({
   isSending,
   showTrace = false,
   onToggleTrace,
+  todos = [],
 }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -103,6 +107,10 @@ export function SmithChatDrawer({
           <SheetTitle className="sr-only">Smith AI</SheetTitle>
           <p className="text-xs font-medium text-muted-foreground/80">Workflow Architect</p>
         </div>
+
+        {todos.length > 0 && (
+          <SmithTodoPanel todos={todos} isSending={isSending} />
+        )}
 
         <div className="relative flex-1 overflow-y-auto p-4 scrollbar-none">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-500/5 via-transparent to-transparent opacity-50 pointer-events-none" />

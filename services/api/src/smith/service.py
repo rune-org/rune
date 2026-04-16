@@ -10,6 +10,27 @@ from langgraph.graph.state import CompiledStateGraph
 
 logger = logging.getLogger(__name__)
 
+# Map legacy DSL type names to canvas type names so the agent always sees
+# consistent naming when working with existing workflows.
+_DSL_TO_CANVAS_TYPE = {
+    "ManualTrigger": "trigger",
+    "ScheduledTrigger": "scheduledTrigger",
+    "conditional": "if",
+}
+
+
+def _normalize_node_types(nodes: list[dict]) -> list[dict]:
+    """Convert DSL type names to canvas type names for agent state consistency."""
+    normalized = []
+    for node in nodes:
+        node_type = node.get("type", "")
+        if node_type in _DSL_TO_CANVAS_TYPE:
+            node = {**node, "type": _DSL_TO_CANVAS_TYPE[node_type]}
+        if node["type"] in ("trigger", "scheduledTrigger"):
+            node = {**node, "trigger": True}
+        normalized.append(node)
+    return normalized
+
 
 class SmithAgentService:
     """
@@ -81,10 +102,13 @@ class SmithAgentService:
         yield _format_sse({"type": "stream_start"})
 
         # Initialize workflow state with existing data or empty arrays
+        # Normalize legacy DSL type names so the agent sees consistent canvas types
+        normalized_nodes = _normalize_node_types(existing_nodes) if existing_nodes else []
         input_messages = {
             "messages": [HumanMessage(content=message)],
-            "workflow_nodes": existing_nodes if existing_nodes is not None else [],
+            "workflow_nodes": normalized_nodes,
             "workflow_edges": existing_edges if existing_edges is not None else [],
+            "todos": [],
         }
 
         try:
@@ -147,6 +171,7 @@ class SmithAgentService:
                     current_state = await self._agent.aget_state(config)
                     workflow_nodes = current_state.values.get("workflow_nodes", [])
                     workflow_edges = current_state.values.get("workflow_edges", [])
+                    todos = current_state.values.get("todos", [])
 
                     # Send workflow structure to update UI after each event
                     yield _format_sse(
@@ -154,6 +179,7 @@ class SmithAgentService:
                             "type": "workflow_state",
                             "workflow_nodes": workflow_nodes,
                             "workflow_edges": workflow_edges,
+                            "todos": todos,
                         }
                     )
 
