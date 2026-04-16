@@ -1557,6 +1557,10 @@ export type TemplateSummary = {
      * Is Public
      */
     is_public: boolean;
+    /**
+     * Created By
+     */
+    created_by?: number | null;
 };
 
 /**
