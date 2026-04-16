@@ -47,7 +47,7 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [dialogResetKey, setDialogResetKey] = useState(0);
-  const { state, logout, refetchProfile } = useAuth();
+  const { state, logout, refetchProfile, refresh } = useAuth();
 
   const user = state.user as UserResponse | null;
   const roleLabel = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "User";
@@ -74,13 +74,15 @@ export default function ProfilePage() {
       await updateMyProfile({
         name: result.data.name,
       });
+      // Refresh token to ensure JWT payload contains updated name
+      await refresh();
       // Refetch profile to sync state across the app
       await refetchProfile();
       // Close edit mode
       setEditingField(null);
-      setIsSaving(false);
     } catch (apiError) {
       setError(getErrorMessage(apiError));
+    } finally {
       setIsSaving(false);
     }
   };
@@ -103,6 +105,7 @@ export default function ProfilePage() {
       await logout();
     } catch (apiError) {
       setError(getErrorMessage(apiError));
+    } finally {
       setIsSaving(false);
     }
   };
