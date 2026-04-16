@@ -120,15 +120,16 @@ Specification for lightweight list-shaping nodes:
 
 ---
 
-### [RFC-009-datetime-node.md](./RFC-009-datetime-node.md)
+### [RFC-009-datetime-nodes.md](./RFC-009-datetime-nodes.md)
 **Status**: Implemented  
 **Created**: 2026-03-11  
-**Title**: Date & Time Node (`datetime`)
+**Title**: Date & Time Node Family (`dateTimeNow`, `dateTimeAdd`, `dateTimeSubtract`, `dateTimeFormat`, `dateTimeParse`)
 
-Specification for simple date/time utilities in workflows:
+Specification for the typed date/time node family:
 - Current time generation
 - Add/subtract operations
 - Timezone-aware formatting
+- Decomposition into structured components
 
 ---
 
