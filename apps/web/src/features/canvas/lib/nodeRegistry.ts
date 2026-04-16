@@ -326,7 +326,7 @@ export const NODE_REGISTRY: NodeRegistry = {
       label: "Parse Date/Time",
       timezone: "UTC",
     },
-    schema: { inputs: ["input"], outputs: ["components"] },
+    schema: { inputs: ["input"], outputs: ["output"] },
     group: "datetime",
     isTrigger: false,
     hasDynamicOutputs: false,
