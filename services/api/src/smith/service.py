@@ -1,11 +1,14 @@
 import json
-import traceback
+import logging
 import uuid
 from typing import AsyncGenerator
 
 from langchain_core.messages import AIMessageChunk, HumanMessage, ToolMessage
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph.state import CompiledStateGraph
+
+
+logger = logging.getLogger(__name__)
 
 
 class SmithAgentService:
@@ -112,11 +115,11 @@ class SmithAgentService:
                                                 "call_id": call["id"],
                                             }
                                         )
-                                    except json.JSONDecodeError as err:
+                                    except json.JSONDecodeError:
                                         yield _format_sse(
                                             {
                                                 "type": "error",
-                                                "message": f"Invalid tool args: {str(err)}",
+                                                "message": "Failed to process tool arguments.",
                                             }
                                         )
 
@@ -154,11 +157,12 @@ class SmithAgentService:
                         }
                     )
 
-                except Exception as parse_err:
+                except Exception:
+                    logger.exception("Failed to process Smith stream event")
                     yield _format_sse(
                         {
                             "type": "warning",
-                            "message": f"Parse error: {str(parse_err)}",
+                            "message": "Failed to process part of the Smith stream.",
                         }
                     )
                     continue
@@ -166,12 +170,11 @@ class SmithAgentService:
             # End event after streaming is complete
             yield _format_sse({"type": "stream_end"})
 
-        except Exception as err:
-            trace = traceback.format_exc()
-            print(f"Smith Agent Error:\n{trace}")
+        except Exception:
+            logger.exception("Smith stream failed")
             yield _format_sse(
                 {
                     "type": "error",
-                    "message": f"Stream error: {str(err)}",
+                    "message": "An internal error occurred while streaming the workflow.",
                 }
             )

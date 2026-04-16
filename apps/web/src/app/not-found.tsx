@@ -29,7 +29,7 @@ export default function NotFound() {
             alt="Rune Stone"
             width={320}
             height={320}
-            className="size-80 animate-fade-in-delayed invert drop-shadow-[0_0_25px_rgba(59,130,246,0.6)]"
+            className="size-80 animate-fade-in-delayed dark:invert dark:drop-shadow-[0_0_25px_rgba(59,130,246,0.6)]"
           />
         </EmptyMedia>
         <EmptyHeader className="gap-8">
@@ -50,7 +50,7 @@ export default function NotFound() {
             asChild
             variant="outline"
             size="lg"
-            className="h-14 min-w-[260px] border-blue-500/30 bg-slate-950/30 text-base font-bold uppercase tracking-[0.2em] text-blue-100 shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)] backdrop-blur-md transition-all duration-500 hover:border-blue-400/50 hover:bg-blue-900/20 hover:text-white hover:shadow-[0_0_50px_-10px_rgba(59,130,246,0.5)]"
+            className="h-14 min-w-[260px] border-primary/30 bg-muted/50 text-base font-bold uppercase tracking-[0.2em] text-primary backdrop-blur-md transition-all duration-500 hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
           >
             <Link href="/">Return to Rune</Link>
           </Button>

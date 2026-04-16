@@ -436,11 +436,11 @@ paths:
       - Workflows
       summary: Bulk Workflow Operation
       description: "Apply a single action to multiple workflows in one request.\n\n\
-        Each workflow is evaluated individually against the caller's per-workflow\n\
-        role, so a mixed response is expected when the user has different roles\n\
-        across the selected workflows.  The overall HTTP status is always 200;\nlook\
-        \ inside ``failed`` for per-item errors.\n\n**Actions and minimum required\
-        \ role:**\n\n| action     | required role          |\n|------------|------------------------|\n\
+        Each workflow is evaluated individually against the caller's per-workflow\
+        \ role.\n\n- `delete`, `activate`, `deactivate`, `run` return JSON summary\
+        \ payloads.\n- `export` returns a ZIP archive (`application/zip`) of sanitized\
+        \ workflow JSONs.\n\n**Actions and minimum required role:**\n\n| action  \
+        \   | required role          |\n|------------|------------------------|\n\
         | delete     | OWNER                  |\n| activate   | OWNER or EDITOR  \
         \      |\n| deactivate | OWNER or EDITOR        |\n| export     | OWNER, EDITOR,\
         \ VIEWER  |\n| run        | OWNER or EDITOR        |\n\n**Failure reasons:**\n\

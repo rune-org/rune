@@ -60,60 +60,60 @@ export function AuthForm() {
   return (
     <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-zinc-400">
+        <Label htmlFor="name" className="text-muted-foreground">
           Name
         </Label>
         <Input
           id="name"
           placeholder="Jane Doe"
-          className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11"
+          className="bg-input/50 border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-0 rounded-xl h-11"
           {...form.register("name")}
           aria-invalid={!!form.formState.errors.name}
         />
         {form.formState.errors.name ? (
-          <p className="text-xs text-red-400 mt-1">{form.formState.errors.name.message}</p>
+          <p className="text-xs text-destructive mt-1">{form.formState.errors.name.message}</p>
         ) : (
-          <p className="text-xs text-zinc-500 mt-1">3-40 characters</p>
+          <p className="text-xs text-muted-foreground mt-1">3-40 characters</p>
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-zinc-400">
+        <Label htmlFor="email" className="text-muted-foreground">
           Email
         </Label>
         <Input
           id="email"
           type="email"
           placeholder="you@company.com"
-          className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11"
+          className="bg-input/50 border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-0 rounded-xl h-11"
           {...form.register("email")}
           aria-invalid={!!form.formState.errors.email}
         />
         {form.formState.errors.email ? (
-          <p className="text-xs text-red-400 mt-1">{form.formState.errors.email.message}</p>
+          <p className="text-xs text-destructive mt-1">{form.formState.errors.email.message}</p>
         ) : null}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-zinc-400">
+        <Label htmlFor="password" className="text-muted-foreground">
           Password
         </Label>
         <PasswordInput
           id="password"
           placeholder="Create a secure password"
-          className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-white/20 focus:ring-0 rounded-xl h-11"
+          className="bg-input/50 border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-0 rounded-xl h-11"
           {...form.register("password")}
           aria-invalid={!!form.formState.errors.password}
         />
         {form.formState.errors.password ? (
-          <p className="text-xs text-red-400 mt-1">{form.formState.errors.password.message}</p>
+          <p className="text-xs text-destructive mt-1">{form.formState.errors.password.message}</p>
         ) : (
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             8+ characters, uppercase, lowercase, number, and special character
           </p>
         )}
       </div>
       {state.error ? (
-        <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3">
-          <p className="text-xs text-red-400 font-medium" role="alert">
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+          <p className="text-xs text-destructive font-medium" role="alert">
             {state.error}
           </p>
         </div>
@@ -121,7 +121,7 @@ export function AuthForm() {
 
       <Button
         type="submit"
-        className="w-full h-11 rounded-full bg-white !text-black hover:bg-zinc-200 font-medium transition-all shadow-lg mt-2"
+        className="w-full h-11 rounded-full bg-foreground !text-background hover:bg-foreground/85 font-medium transition-all shadow-lg mt-2"
         disabled={isPending || state.loading}
       >
         {isPending ? "Creating account..." : "Create account"}

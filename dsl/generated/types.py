@@ -10,10 +10,8 @@ from pydantic import BaseModel, Field
 
 # Core Structures
 
-
 class Workflow(BaseModel):
     """Root workflow structure"""
-
     workflow_id: str  # Unique identifier for the workflow definition
     execution_id: str  # Unique identifier for this specific execution instance
     nodes: list[Node]  # Array of node definitions
@@ -38,10 +36,8 @@ class Workflow(BaseModel):
 
         return len(errors) == 0, errors
 
-
 class Edge(BaseModel):
     """Connection between two nodes"""
-
     id: str  # Unique identifier for the edge
     src: str  # Source node ID
     dst: str  # Destination node ID
@@ -65,15 +61,11 @@ class Edge(BaseModel):
 
         return len(errors) == 0, errors
 
-
 class Credential(BaseModel):
     """Credential object with sensitive values"""
-
     id: str  # Unique credential identifier
     name: str  # Human-readable credential name
-    type_: Literal[
-        "api_key", "oauth2", "basic_auth", "header", "token", "custom", "smtp"
-    ] = Field(alias="type")  # Credential type identifier
+    type_: Literal["api_key", "oauth2", "basic_auth", "header", "token", "custom", "smtp"] = Field(alias="type")  # Credential type identifier
     values: dict[str, Any]  # Type-specific credential values (actual secrets)
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -97,16 +89,10 @@ class Credential(BaseModel):
 
         return len(errors) == 0, errors
 
-
 class ErrorHandling(BaseModel):
     """Error handling configuration"""
-
-    type_: Literal["halt", "ignore", "branch"] = Field(
-        alias="type"
-    )  # Error handling strategy
-    error_edge: Optional[
-        str
-    ]  # Edge ID to follow on error (required if type is 'branch')
+    type_: Literal["halt", "ignore", "branch"] = Field(alias="type")  # Error handling strategy
+    error_edge: Optional[str]  # Edge ID to follow on error (required if type is 'branch')
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -121,17 +107,12 @@ class ErrorHandling(BaseModel):
 
         return len(errors) == 0, errors
 
-
 # Nested Types
-
 
 class SwitchRule(BaseModel):
     """Switch rule definition"""
-
     value: str  # Value to compare (supports template variables)
-    operator: Literal[
-        "==", "!=", ">", "<", ">=", "<=", "contains"
-    ]  # Comparison operator
+    operator: Literal["==", "!=", ">", "<", ">=", "<=", "contains"]  # Comparison operator
     compare: str  # Value to compare against
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -201,12 +182,9 @@ class SortRule(BaseModel):
 
 class EditAssignment(BaseModel):
     """Edit node assignment"""
-
     name: str  # The key to set (supports dot-notation for nested objects)
     value: str  # The value to assign (supports dynamic expressions)
-    type_: Optional[Literal["string", "number", "boolean", "json"]] = Field(
-        alias="type"
-    )  # Target type casting
+    type_: Optional[Literal["string", "number", "boolean", "json"]] = Field(alias="type")  # Target type casting
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -225,17 +203,12 @@ class EditAssignment(BaseModel):
 
         return len(errors) == 0, errors
 
-
 # Node Parameter Types
-
 
 class ScheduledtriggerParameters(BaseModel):
     """Scheduled workflow trigger with interval-based execution"""
-
     amount: float  # Quantity of time between executions
-    unit: Literal[
-        "seconds", "minutes", "hours", "days"
-    ]  # Unit of time for the interval
+    unit: Literal["seconds", "minutes", "hours", "days"]  # Unit of time for the interval
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -252,10 +225,8 @@ class ScheduledtriggerParameters(BaseModel):
 
         return len(errors) == 0, errors
 
-
 class HttpParameters(BaseModel):
     """HTTP request node"""
-
     method: Literal["GET", "POST", "PUT", "DELETE", "PATCH"]  # HTTP method
     url: str  # Target URL (supports template variables)
     body: Optional[Any]  # Request body (JSON)
@@ -264,9 +235,7 @@ class HttpParameters(BaseModel):
     retry: Optional[str]  # Number of retry attempts
     retry_delay: Optional[str]  # Delay between retries in seconds
     timeout: Optional[str]  # Request timeout in seconds
-    raise_on_status: Optional[
-        str
-    ]  # Comma-separated status code patterns to treat as errors
+    raise_on_status: Optional[str]  # Comma-separated status code patterns to treat as errors
     ignore_ssl: Optional[bool]  # Whether to ignore SSL certificate validation
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -287,19 +256,15 @@ class HttpParameters(BaseModel):
             errors.append("HttpParameters.retry_delay must be a string")
         if self.timeout is not None and not isinstance(self.timeout, str):
             errors.append("HttpParameters.timeout must be a string")
-        if self.raise_on_status is not None and not isinstance(
-            self.raise_on_status, str
-        ):
+        if self.raise_on_status is not None and not isinstance(self.raise_on_status, str):
             errors.append("HttpParameters.raise_on_status must be a string")
         if self.ignore_ssl is not None and not isinstance(self.ignore_ssl, bool):
             errors.append("HttpParameters.ignore_ssl must be a boolean")
 
         return len(errors) == 0, errors
 
-
 class SmtpParameters(BaseModel):
     """Send email via SMTP"""
-
     subject: str  # Email subject line
     body: str  # Email body content (plain text or HTML)
     to: list[str]  # Primary recipient email addresses
@@ -328,10 +293,8 @@ class SmtpParameters(BaseModel):
 
         return len(errors) == 0, errors
 
-
 class ConditionalParameters(BaseModel):
     """If/else branching based on boolean expression"""
-
     expression: str  # Boolean expression to evaluate (supports template variables)
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -345,10 +308,8 @@ class ConditionalParameters(BaseModel):
 
         return len(errors) == 0, errors
 
-
 class SwitchParameters(BaseModel):
     """Multi-way branching based on multiple rules"""
-
     rules: list[SwitchRule]  # Array of switch rules
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -360,10 +321,8 @@ class SwitchParameters(BaseModel):
 
         return len(errors) == 0, errors
 
-
 class LogParameters(BaseModel):
     """Log information during workflow execution"""
-
     message: str  # Message to log (supports context variables)
     level: Optional[Literal["debug", "info", "warn", "error"]]  # Log level
 
@@ -412,7 +371,6 @@ class DatetimeParameters(BaseModel):
 
 class WaitParameters(BaseModel):
     """Wait for a specified duration"""
-
     amount: float  # Quantity of time
     unit: Literal["seconds", "minutes", "hours", "days"]  # Unit of time
 
@@ -431,10 +389,8 @@ class WaitParameters(BaseModel):
 
         return len(errors) == 0, errors
 
-
 class EditParameters(BaseModel):
     """Data transformation node"""
-
     mode: Optional[Literal["assignments", "keep_only"]]  # Transformation mode
     assignments: Optional[list[EditAssignment]]  # List of field operations
 
@@ -496,10 +452,7 @@ class LimitParameters(BaseModel):
 
 class SplitParameters(BaseModel):
     """Split array into individual items (Fan-Out)"""
-
-    input_array: (
-        str  # Dynamic reference to the array (e.g., {{ $node.Http.body.users }})
-    )
+    input_array: str  # Dynamic reference to the array (e.g., {{ $node.Http.body.users }})
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -512,10 +465,8 @@ class SplitParameters(BaseModel):
 
         return len(errors) == 0, errors
 
-
 class MergeParameters(BaseModel):
     """Merge multiple execution branches"""
-
     wait_mode: Optional[Literal["wait_for_all", "wait_for_any"]]  # Synchronization mode
     timeout: Optional[float]  # Safety timeout in seconds
 
@@ -530,21 +481,16 @@ class MergeParameters(BaseModel):
 
         return len(errors) == 0, errors
 
-
 # Base Node Class
-
 
 class BaseNode(BaseModel):
     """Base node class with common fields."""
-
     id: str  # Unique identifier for the node within the workflow
     name: str  # Human-readable node name
     trigger: bool  # Whether this node initiates workflow execution
     output: dict[str, Any]  # Placeholder for execution output (empty in definition)
     error: Optional[ErrorHandling]  # Error handling configuration
-    credential_type: Optional[
-        list[str]
-    ]  # List of allowed credential types for this node (for UI filtering)
+    credential_type: Optional[list[str]]  # List of allowed credential types for this node (for UI filtering)
     credentials: Optional[Credential]  # Complete credential object with values
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -568,13 +514,10 @@ class BaseNode(BaseModel):
 
         return len(errors) == 0, errors
 
-
 # Specific Node Classes
-
 
 class ManualTriggerNode(BaseNode):
     """Manual workflow trigger"""
-
     type_: Literal["ManualTrigger"] = Field(default="ManualTrigger", alias="type")
     parameters: dict[str, Any]
     credential_type: Optional[list[str]] = None
@@ -591,16 +534,12 @@ class ManualTriggerNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"ManualTriggerNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"ManualTriggerNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
-
 class ScheduledTriggerNode(BaseNode):
     """Scheduled workflow trigger with interval-based execution"""
-
     type_: Literal["ScheduledTrigger"] = Field(default="ScheduledTrigger", alias="type")
     parameters: ScheduledtriggerParameters
     credential_type: Optional[list[str]] = None
@@ -623,25 +562,15 @@ class ScheduledTriggerNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"ScheduledTriggerNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"ScheduledTriggerNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
-
 class HttpNode(BaseNode):
     """HTTP request node"""
-
     type_: Literal["http"] = Field(default="http", alias="type")
     parameters: HttpParameters
-    credential_type: Optional[list[str]] = [
-        "api_key",
-        "oauth2",
-        "basic_auth",
-        "header",
-        "token",
-    ]
+    credential_type: Optional[list[str]] = ["api_key", "oauth2", "basic_auth", "header", "token"]
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the node including parameters."""
@@ -661,16 +590,12 @@ class HttpNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"HttpNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"HttpNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
-
 class SmtpNode(BaseNode):
     """Send email via SMTP"""
-
     type_: Literal["smtp"] = Field(default="smtp", alias="type")
     parameters: SmtpParameters
     credential_type: Optional[list[str]] = ["smtp"]
@@ -693,16 +618,12 @@ class SmtpNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"SmtpNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"SmtpNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
-
 class ConditionalNode(BaseNode):
     """If/else branching based on boolean expression"""
-
     type_: Literal["conditional"] = Field(default="conditional", alias="type")
     parameters: ConditionalParameters
     credential_type: Optional[list[str]] = None
@@ -725,16 +646,12 @@ class ConditionalNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"ConditionalNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"ConditionalNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
-
 class SwitchNode(BaseNode):
     """Multi-way branching based on multiple rules"""
-
     type_: Literal["switch"] = Field(default="switch", alias="type")
     parameters: SwitchParameters
     credential_type: Optional[list[str]] = None
@@ -757,16 +674,12 @@ class SwitchNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"SwitchNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"SwitchNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
-
 class LogNode(BaseNode):
     """Log information during workflow execution"""
-
     type_: Literal["log"] = Field(default="log", alias="type")
     parameters: LogParameters
     credential_type: Optional[list[str]] = None
@@ -789,9 +702,7 @@ class LogNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"LogNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"LogNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
@@ -825,7 +736,6 @@ class DatetimeNode(BaseNode):
 
 class AgentNode(BaseNode):
     """AI agent node"""
-
     type_: Literal["agent"] = Field(default="agent", alias="type")
     parameters: dict[str, Any]
     credential_type: Optional[list[str]] = None
@@ -842,16 +752,12 @@ class AgentNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"AgentNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"AgentNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
-
 class WaitNode(BaseNode):
     """Wait for a specified duration"""
-
     type_: Literal["wait"] = Field(default="wait", alias="type")
     parameters: WaitParameters
     credential_type: Optional[list[str]] = None
@@ -874,16 +780,12 @@ class WaitNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"WaitNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"WaitNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
-
 class EditNode(BaseNode):
     """Data transformation node"""
-
     type_: Literal["edit"] = Field(default="edit", alias="type")
     parameters: EditParameters
     credential_type: Optional[list[str]] = None
@@ -906,9 +808,7 @@ class EditNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"EditNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"EditNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
@@ -998,7 +898,6 @@ class LimitNode(BaseNode):
 
 class SplitNode(BaseNode):
     """Split array into individual items (Fan-Out)"""
-
     type_: Literal["split"] = Field(default="split", alias="type")
     parameters: SplitParameters
     credential_type: Optional[list[str]] = None
@@ -1021,16 +920,12 @@ class SplitNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"SplitNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"SplitNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
-
 class AggregatorNode(BaseNode):
     """Aggregate items back into array (Gather)"""
-
     type_: Literal["aggregator"] = Field(default="aggregator", alias="type")
     parameters: dict[str, Any]
     credential_type: Optional[list[str]] = None
@@ -1047,16 +942,12 @@ class AggregatorNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"AggregatorNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"AggregatorNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
-
 class MergeNode(BaseNode):
     """Merge multiple execution branches"""
-
     type_: Literal["merge"] = Field(default="merge", alias="type")
     parameters: MergeParameters
     credential_type: Optional[list[str]] = None
@@ -1079,31 +970,10 @@ class MergeNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(
-                    f"MergeNode.credentials.type must be one of {self.credential_type}"
-                )
+                errors.append(f"MergeNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
-
 # Union type for all nodes
 
-Node = Union[
-    ManualTriggerNode,
-    ScheduledTriggerNode,
-    HttpNode,
-    SmtpNode,
-    ConditionalNode,
-    SwitchNode,
-    LogNode,
-    DatetimeNode,
-    AgentNode,
-    WaitNode,
-    EditNode,
-    FilterNode,
-    SortNode,
-    LimitNode,
-    SplitNode,
-    AggregatorNode,
-    MergeNode,
-]
+Node = Union[ManualTriggerNode, ScheduledTriggerNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, DatetimeNode, AgentNode, WaitNode, EditNode, FilterNode, SortNode, LimitNode, SplitNode, AggregatorNode, MergeNode]

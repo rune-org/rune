@@ -77,10 +77,10 @@ async def bulk_workflow_operation(
     """
     Apply a single action to multiple workflows in one request.
 
-    Each workflow is evaluated individually against the caller's per-workflow
-    role, so a mixed response is expected when the user has different roles
-    across the selected workflows.  The overall HTTP status is always 200;
-    look inside ``failed`` for per-item errors.
+    Each workflow is evaluated individually against the caller's per-workflow role.
+
+    - `delete`, `activate`, `deactivate`, `run` return JSON summary payloads.
+    - `export` returns a ZIP archive (`application/zip`) of sanitized workflow JSONs.
 
     **Actions and minimum required role:**
 
@@ -138,29 +138,22 @@ async def bulk_workflow_operation(
         succeeded = [wf.id for wf in permitted_workflows]
 
     elif payload.action == BulkWorkflowAction.EXPORT:
-        succeeded = [wf.id for wf in permitted_workflows]
-        # Fetch latest versions for all workflows to build WorkflowDetail
-        exported_details = []
-        for wf in permitted_workflows:
-            latest_version = await service.get_latest_version_with_creator(wf)
-            exported_details.append(WorkflowDetail.from_workflow(wf, latest_version))
+        if not permitted_workflows:
+            raise NotFound(detail="No exportable workflows found")
 
-        result = BulkOperationResult(
-            action=payload.action.value,
-            succeeded=succeeded,
-            failed=failed,
-            summary=BulkOperationSummary(
-                total=len(payload.workflow_ids),
-                succeeded=len(succeeded),
-                failed=len(failed),
-            ),
-            exported=exported_details,
+        archive_bytes = await service.build_bulk_export_zip(permitted_workflows)
+        return Response(
+            content=archive_bytes,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": 'attachment; filename="workflows-export.zip"'
+            },
         )
-        return ApiResponse(success=True, message="Bulk export completed", data=result)
 
     elif payload.action == BulkWorkflowAction.RUN:
         # Handle each workflow individually — each needs its own execution record,
-        # token publish, and queue publish. Any may fail due to invalid structure.
+        # token publish, and queue publish. Any may fail due to invalid structure,
+        # missing published version, or other validation errors.
         for wf in permitted_workflows:
             try:
                 execution_id = await service.queue_workflow_execution(
@@ -171,7 +164,10 @@ async def bulk_workflow_operation(
                 )
                 succeeded.append(wf.id)
                 executions[wf.id] = execution_id
-            except ValueError:
+            except (ValueError, BadRequest, NotFound):
+                # ValueError: invalid workflow structure
+                # BadRequest: no published version or other validation failures
+                # NotFound: specified version doesn't exist (shouldn't happen in bulk, but safe to catch)
                 failed.append(BulkWorkflowFailure(id=wf.id, reason="invalid_workflow"))
 
     summary = BulkOperationSummary(

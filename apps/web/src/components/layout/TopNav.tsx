@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/shared/Container";
 import { Logo } from "@/components/shared/Logo";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { cn } from "@/lib/cn";
 import { siteConfig } from "@/lib/site";
 import { useAuth } from "@/lib/auth";
@@ -49,6 +50,7 @@ export function TopNav() {
           })}
         </nav>
         <div className="flex flex-1 items-center justify-end gap-5">
+          <ThemeToggle className="relative top-[2px]" />
           {mounted && !state.user && showSignUp && (
             <Link
               href="/sign-up"

@@ -7,7 +7,7 @@ Each test class focuses on a single concern:
 - TestBulkDelete           — `delete` action permission matrix
 - TestBulkActivate         — `activate` action permission matrix
 - TestBulkDeactivate       — `deactivate` action permission matrix
-- TestBulkExport           — `export` action permission matrix + response shape
+- TestBulkExport           — `export` returns ZIP behavior + sanitization
 - TestBulkRun              — `run` action permission matrix + invalid-workflow edge case
 - TestBulkAdminOverride    — admins bypass all role restrictions
 - TestBulkPartialSuccess   — mixed IDs produce partial succeeded/failed lists
@@ -16,6 +16,9 @@ Each test class focuses on a single concern:
 
 import pytest
 import pytest_asyncio
+import io
+import json
+import zipfile
 from src.db.models import User, Workflow, WorkflowRole, WorkflowUser, WorkflowVersion
 
 # ---------------------------------------------------------------------------
@@ -31,6 +34,39 @@ MINIMAL_WORKFLOW_DATA = {
             "data": {"label": "Start"},
         },
         {"id": "node-2", "type": "action", "data": {"label": "Action"}},
+    ],
+    "edges": [{"id": "edge-1", "src": "node-1", "dst": "node-2"}],
+}
+
+WORKFLOW_DATA_WITH_CREDENTIALS = {
+    "nodes": [
+        {
+            "id": "node-1",
+            "type": "trigger",
+            "trigger": True,
+            "data": {"label": "Start"},
+        },
+        {
+            "id": "node-2",
+            "type": "action",
+            "data": {
+                "label": "Action",
+                "credential": {
+                    "id": "99",
+                    "type": "smtp",
+                    "name": "SMTP Primary",
+                },
+            },
+            "credentials": {
+                "id": "99",
+                "type": "smtp",
+                "name": "SMTP Primary",
+                "values": {
+                    "username": "user@example.com",
+                    "password": "very-secret",
+                },
+            },
+        },
     ],
     "edges": [{"id": "edge-1", "src": "node-1", "dst": "node-2"}],
 }
@@ -175,6 +211,21 @@ async def invalid_structure_workflow(test_db, test_user):
     return wf
 
 
+@pytest_asyncio.fixture
+async def owned_workflow_with_credentials(test_db, test_user):
+    wf = await _make_workflow(
+        test_db,
+        "Owned With Credentials",
+        workflow_data=WORKFLOW_DATA_WITH_CREDENTIALS,
+        user=test_user,
+        published=True,
+    )
+    await _grant(test_db, wf, test_user, WorkflowRole.OWNER, granted_by=test_user)
+    await test_db.commit()
+    await test_db.refresh(wf)
+    return wf
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -182,6 +233,15 @@ async def invalid_structure_workflow(test_db, test_user):
 
 def _bulk(action: str, *ids: int) -> dict:
     return {"workflow_ids": list(ids), "action": action}
+
+
+def _read_zip_json_entries(content: bytes) -> dict[str, dict]:
+    with zipfile.ZipFile(io.BytesIO(content), mode="r") as archive:
+        entries: dict[str, dict] = {}
+        for name in archive.namelist():
+            with archive.open(name) as file_handle:
+                entries[name] = json.loads(file_handle.read().decode("utf-8"))
+        return entries
 
 
 # ---------------------------------------------------------------------------
@@ -515,8 +575,7 @@ class TestBulkExport:
             "/workflows/bulk", json=_bulk("export", owned_workflow_a.id)
         )
         assert response.status_code == 200
-        data = response.json()["data"]
-        assert owned_workflow_a.id in data["succeeded"]
+        assert response.headers["content-type"].startswith("application/zip")
 
     @pytest.mark.asyncio
     async def test_editor_can_export(self, authenticated_client, editor_workflow):
@@ -524,7 +583,7 @@ class TestBulkExport:
             "/workflows/bulk", json=_bulk("export", editor_workflow.id)
         )
         assert response.status_code == 200
-        assert editor_workflow.id in response.json()["data"]["succeeded"]
+        assert response.headers["content-type"].startswith("application/zip")
 
     @pytest.mark.asyncio
     async def test_viewer_can_export(self, authenticated_client, viewer_workflow):
@@ -533,9 +592,7 @@ class TestBulkExport:
             "/workflows/bulk", json=_bulk("export", viewer_workflow.id)
         )
         assert response.status_code == 200
-        data = response.json()["data"]
-        assert viewer_workflow.id in data["succeeded"]
-        assert data["failed"] == []
+        assert response.headers["content-type"].startswith("application/zip")
 
     @pytest.mark.asyncio
     async def test_no_access_excluded_from_export(
@@ -544,39 +601,22 @@ class TestBulkExport:
         response = await authenticated_client.post(
             "/workflows/bulk", json=_bulk("export", inaccessible_workflow.id)
         )
-        assert response.status_code == 200
-        data = response.json()["data"]
-        assert data["succeeded"] == []
-        assert data["failed"][0]["reason"] == "forbidden"
+        assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_export_populates_exported_field(
+    async def test_export_returns_zip_archive(
         self, authenticated_client, owned_workflow_a
     ):
-        """The `exported` list must contain full WorkflowDetail objects."""
         response = await authenticated_client.post(
             "/workflows/bulk", json=_bulk("export", owned_workflow_a.id)
         )
-        data = response.json()["data"]
-        assert data["exported"] is not None
-        assert len(data["exported"]) == 1
-        exported_wf = data["exported"][0]
-        assert exported_wf["id"] == owned_workflow_a.id
-        assert "latest_version" in exported_wf
-        assert exported_wf["latest_version"] is not None
-        assert "workflow_data" in exported_wf["latest_version"]
-        assert "name" in exported_wf
-
-    @pytest.mark.asyncio
-    async def test_export_absent_for_non_export_actions(
-        self, authenticated_client, owned_workflow_a
-    ):
-        """For non-export actions the `exported` field must be null."""
-        response = await authenticated_client.post(
-            "/workflows/bulk", json=_bulk("activate", owned_workflow_a.id)
-        )
-        data = response.json()["data"]
-        assert data.get("exported") is None
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("application/zip")
+        entries = _read_zip_json_entries(response.content)
+        assert len(entries) == 1
+        payload = next(iter(entries.values()))
+        assert "nodes" in payload
+        assert "edges" in payload
 
     @pytest.mark.asyncio
     async def test_export_multiple_workflows(
@@ -586,10 +626,52 @@ class TestBulkExport:
             "/workflows/bulk",
             json=_bulk("export", owned_workflow_a.id, owned_workflow_b.id),
         )
-        data = response.json()["data"]
-        assert len(data["exported"]) == 2
-        exported_ids = {e["id"] for e in data["exported"]}
-        assert exported_ids == {owned_workflow_a.id, owned_workflow_b.id}
+        assert response.status_code == 200
+        entries = _read_zip_json_entries(response.content)
+        assert len(entries) == 2
+
+    @pytest.mark.asyncio
+    async def test_export_response_is_sanitized(
+        self, authenticated_client, owned_workflow_with_credentials
+    ):
+        response = await authenticated_client.post(
+            "/workflows/bulk", json=_bulk("export", owned_workflow_with_credentials.id)
+        )
+        entries = _read_zip_json_entries(response.content)
+        payload = next(iter(entries.values()))
+        nodes = payload["nodes"]
+        action_node = next(n for n in nodes if n["id"] == "node-2")
+        assert "credentials" not in action_node
+        assert "credential" not in action_node.get("data", {})
+
+    @pytest.mark.asyncio
+    async def test_export_rejects_more_than_100_ids(self, authenticated_client):
+        response = await authenticated_client.post(
+            "/workflows/bulk",
+            json={"workflow_ids": list(range(1, 102)), "action": "export"},
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_export_ignores_inaccessible_workflows(
+        self, authenticated_client, owned_workflow_a, inaccessible_workflow
+    ):
+        response = await authenticated_client.post(
+            "/workflows/bulk",
+            json=_bulk("export", owned_workflow_a.id, inaccessible_workflow.id),
+        )
+        assert response.status_code == 200
+        entries = _read_zip_json_entries(response.content)
+        assert len(entries) == 1
+
+    @pytest.mark.asyncio
+    async def test_export_fails_when_none_are_exportable(
+        self, authenticated_client, inaccessible_workflow
+    ):
+        response = await authenticated_client.post(
+            "/workflows/bulk", json=_bulk("export", inaccessible_workflow.id)
+        )
+        assert response.status_code == 404
 
 
 # ---------------------------------------------------------------------------
@@ -718,9 +800,7 @@ class TestBulkAdminOverride:
             "/workflows/bulk", json=_bulk("export", inaccessible_workflow.id)
         )
         assert response.status_code == 200
-        data = response.json()["data"]
-        assert inaccessible_workflow.id in data["succeeded"]
-        assert data["exported"] is not None
+        assert response.headers["content-type"].startswith("application/zip")
 
 
 # ---------------------------------------------------------------------------
@@ -768,18 +848,14 @@ class TestBulkPartialSuccess:
     async def test_export_mixed_viewer_and_inaccessible(
         self, authenticated_client, viewer_workflow, inaccessible_workflow
     ):
-        """Viewer-role workflow is exported; inaccessible one is forbidden."""
+        """Viewer-role workflow is exported; inaccessible one is skipped."""
         response = await authenticated_client.post(
             "/workflows/bulk",
             json=_bulk("export", viewer_workflow.id, inaccessible_workflow.id),
         )
         assert response.status_code == 200
-        data = response.json()["data"]
-        assert viewer_workflow.id in data["succeeded"]
-        forbidden = next(
-            f for f in data["failed"] if f["id"] == inaccessible_workflow.id
-        )
-        assert forbidden["reason"] == "forbidden"
+        entries = _read_zip_json_entries(response.content)
+        assert len(entries) == 1
 
     @pytest.mark.asyncio
     async def test_activate_mixed_owner_viewer_missing(
@@ -812,7 +888,7 @@ class TestBulkResponseStructure:
         self, authenticated_client, owned_workflow_a
     ):
         """Only `run` action includes executions dict; others have None."""
-        for action in ("delete", "activate", "deactivate", "export"):
+        for action in ("delete", "activate", "deactivate"):
             response = await authenticated_client.post(
                 "/workflows/bulk", json=_bulk(action, owned_workflow_a.id)
             )
@@ -824,6 +900,16 @@ class TestBulkResponseStructure:
             )
             if action == "delete":
                 break  # Workflow is deleted, can't test others on same fixture
+
+    @pytest.mark.asyncio
+    async def test_export_returns_zip_not_json(
+        self, authenticated_client, owned_workflow_a
+    ):
+        response = await authenticated_client.post(
+            "/workflows/bulk", json=_bulk("export", owned_workflow_a.id)
+        )
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("application/zip")
 
     @pytest.mark.asyncio
     async def test_response_contains_top_level_fields(
@@ -861,7 +947,7 @@ class TestBulkResponseStructure:
     async def test_action_field_reflects_requested_action(
         self, authenticated_client, owned_workflow_a
     ):
-        for action in ("delete", "activate", "deactivate", "export"):
+        for action in ("delete", "activate", "deactivate"):
             # Re-create workflow for each iteration since delete removes it
             if action == "delete":
                 response = await authenticated_client.post(
@@ -885,13 +971,6 @@ class TestBulkResponseStructure:
             "/workflows/bulk", json=_bulk("deactivate", owned_workflow_a.id)
         )
         assert response.json()["data"]["action"] == "deactivate"
-
-    @pytest.mark.asyncio
-    async def test_action_field_export(self, authenticated_client, owned_workflow_a):
-        response = await authenticated_client.post(
-            "/workflows/bulk", json=_bulk("export", owned_workflow_a.id)
-        )
-        assert response.json()["data"]["action"] == "export"
 
     @pytest.mark.asyncio
     async def test_failed_items_contain_id_and_reason(

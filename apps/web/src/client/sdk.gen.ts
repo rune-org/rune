@@ -216,10 +216,10 @@ export const createWorkflowWorkflowsPost = <ThrowOnError extends boolean = false
  *
  * Apply a single action to multiple workflows in one request.
  *
- * Each workflow is evaluated individually against the caller's per-workflow
- * role, so a mixed response is expected when the user has different roles
- * across the selected workflows.  The overall HTTP status is always 200;
- * look inside ``failed`` for per-item errors.
+ * Each workflow is evaluated individually against the caller's per-workflow role.
+ *
+ * - `delete`, `activate`, `deactivate`, `run` return JSON summary payloads.
+ * - `export` returns a ZIP archive (`application/zip`) of sanitized workflow JSONs.
  *
  * **Actions and minimum required role:**
  *
