@@ -268,7 +268,10 @@ export function AddCredentialDialog({
 
           <div className="flex flex-col gap-4 py-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">
+                Name
+                <span className="text-destructive"> *</span>
+              </Label>
               <Input
                 id="name"
                 placeholder="My API Credential"
