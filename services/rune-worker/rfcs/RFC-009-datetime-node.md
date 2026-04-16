@@ -1,118 +1,169 @@
-# RFC-009: Date & Time Node (`datetime`)
+# RFC-009: Date & Time Node Family (`dateTimeNow`, `dateTimeAdd`, `dateTimeSubtract`, `dateTimeFormat`, `dateTimeParse`)
 
 **Author:** Shehab
 **Status:** Implemented
 **Created:** 2026-03-11
+**Updated:** 2026-04-16
 **Depends On:** RFC-001, RFC-002
 
 ## 1. Abstract
 
-This RFC defines the `datetime` node, a lightweight utility node for creating, shifting, and formatting date/time values inside workflows.
+This RFC defines the date and time family: five typed worker nodes that cover common date/time generation, shifting, formatting, and decomposition inside workflows.
 
-The v1 node supports four operations:
+The family consists of:
 
-- `now`
-- `add`
-- `subtract`
-- `format`
+- `dateTimeNow`: current time in a chosen timezone
+- `dateTimeAdd`: shift a date/time forward by a duration
+- `dateTimeSubtract`: shift a date/time backward by a duration
+- `dateTimeFormat`: render a date/time using a chosen layout and timezone
+- `dateTimeParse`: decompose a date/time into structured components
+
+The family supersedes the original mode-switching `datetime` node defined in the first revision of this RFC.
 
 ## 2. Motivation
 
 Workflows often need simple date/time handling without custom code, such as:
 
+- "current time in `America/New_York`"
 - "3 days from now"
 - "subtract 2 weeks from this deadline"
 - "format this timestamp for a message or API"
+- "extract the weekday from this timestamp"
 
-The goal is to support these common cases without introducing a large scheduling or calendar subsystem.
+A single mode-switching node forced every inspector field to be conditionally rendered and made the parameter schema lie about which fields were required. Splitting the family into five typed nodes lets each node advertise exactly the parameters it needs, keeps the inspector linear, and makes the worker implementation a small switch-free function per node.
 
 ## 3. DSL Shape
 
+All five nodes share two optional parameters:
+
+- `timezone` (optional): IANA timezone used for parsing naive inputs and for the output; default `UTC`
+- `format` (optional, where applicable): output format string (Go time layout); default `2006-01-02T15:04:05Z07:00`
+
+### `dateTimeNow`
+
+Parameters: `timezone`, `format`.
+
+### `dateTimeAdd`
+
 Parameters:
 
-- `operation` (required): `now`, `add`, `subtract`, `format`
-- `date` (optional): input date/time string; required for `add`, `subtract`, and `format`
-- `amount` (optional): amount to shift; required for `add` and `subtract`
+- `date` (optional): input date or timestamp; defaults to the current time when empty
+- `amount` (required): number of units to add
 - `unit` (optional): `seconds`, `minutes`, `hours`, `days`, `weeks`, `months`, `years`; default `days`
-- `format` (optional): output format string; default RFC3339-compatible format
-- `timezone` (optional): timezone used for parsing and formatting; default `UTC`
+- `timezone`, `format`
+
+### `dateTimeSubtract`
+
+Same shape as `dateTimeAdd`; `amount` is subtracted from the base time.
+
+### `dateTimeFormat`
+
+Parameters:
+
+- `date` (required): input date or timestamp to format
+- `timezone`, `format`
+
+### `dateTimeParse`
+
+Parameters:
+
+- `date` (required): input date or timestamp to decompose
+- `timezone`
 
 ## 4. Execution Model
 
-The node is stateless and purely functional:
+Every node in the family is stateless and purely functional:
 
 1. Resolve configured parameters.
-2. Load the requested timezone.
-3. Determine the base time:
-   - current time for `now`
-   - parsed input date for `add`, `subtract`, and `format`
-4. Apply time shifting if needed.
+2. Load the requested timezone via the shared `datetimeops.LoadLocation` helper.
+3. Determine the base time (current time, or parsed input).
+4. Apply the node-specific operation (no-op, add/subtract offset, format, decompose).
 5. Return a structured output map.
+
+Parsing is centralized in `datetimeops.ParseDateInLocation`, which always calls `time.ParseInLocation` so that naive inputs are interpreted in the caller-supplied location and explicit offsets in the input are honored by the standard library. Add and Subtract pass their own configured output `format` as an extra layout so that the formatted result of one datetime node can be piped into another (see §7).
 
 No Redis coordination, branch handling, or executor special cases are required.
 
 ## 5. Output Contract
 
-The node returns:
+`dateTimeNow`, `dateTimeAdd`, `dateTimeSubtract`, and `dateTimeFormat` return:
 
-- `result`: formatted output string
-- `formatted`: same formatted output string
+- `result`: formatted output string (using the configured layout)
+- `iso`: same instant rendered as RFC3339 for machine consumers
 - `unix`: Unix timestamp in seconds for the computed instant
 - `timezone`: resolved timezone name
-- `operation`: executed operation name
 
-Returning both formatted output and Unix time makes it easier to validate both display formatting and the underlying instant.
+`dateTimeParse` returns:
+
+- `unix`, `iso`, `timezone` (as above)
+- `year`, `month`, `day`, `hour`, `minute`, `second`: integer components
+- `weekday`: weekday name (e.g. `Sunday`)
+
+Returning both a formatted string and the underlying instant makes it easy to validate display formatting and the computed instant in the same step.
 
 ## 6. Validation Rules
 
-- invalid timezone must fail
-- unsupported operation must fail
-- `date` is required for `add`, `subtract`, and `format`
-- `amount` is required for `add` and `subtract`
-- unparseable date strings must fail
+Per node:
 
-The node should reject invalid input rather than silently returning unchanged or misleading values.
+- All nodes: invalid timezone must fail.
+- `dateTimeAdd`, `dateTimeSubtract`: `amount` is required; unsupported `unit` must fail.
+- `dateTimeFormat`, `dateTimeParse`: `date` is required.
+- Unparseable date strings must fail.
+
+The family rejects invalid input rather than silently returning unchanged or misleading values.
 
 ## 7. Supported Input Formats
 
-The node accepts a practical set of common formats, including:
+`datetimeops.ParseDateInLocation` accepts the shared `listops.CommonTimeFormats` list, including:
 
 - RFC3339 / RFC3339Nano
 - `2006-01-02 15:04:05`
 - `2006-01-02 15:04`
 - `2006-01-02`
 - common RFC822 / RFC1123 variants
+- minute-precision RFC1123 variants (no seconds), so the format presets emitted by the inspector round-trip when one datetime node is piped into another (see issue #525)
 
-This keeps the node useful while still keeping the parser predictable.
+Add and Subtract additionally pass their configured output `format` as an extra layout, so user-defined custom layouts also round-trip when chained.
 
 ## 8. Design Decisions
 
-### Keep v1 intentionally narrow
+### Typed family instead of a mode-switching node
 
-This node is not meant to be a full calendar engine. It only covers simple date/time generation, shifting, and formatting.
+Splitting the original `datetime` node into five typed nodes removes runtime branching on an `operation` parameter, lets each node advertise exactly the parameters it needs, and keeps the inspector form linear instead of a tree of conditional fields. It also makes the palette discoverable: users see "Add Date/Time" and "Format Date/Time" by name in the canvas library.
+
+### Shared `datetimeops` package
+
+All parsing, location loading, and offset application live in a single helper package so that each node body stays small and the family stays consistent (one parser, one DST policy, one location-loading error message).
 
 ### Use explicit timezone handling
 
-Formatting and parsing should happen in the requested timezone so that outputs match user expectations when building reminders, messages, and exports.
+Formatting and parsing happen in the requested timezone so that outputs match user expectations when building reminders, messages, and exports. Naive inputs are always interpreted in the caller-supplied location.
 
 ### Test with fixed clocks
 
-The worker implementation should inject a test clock for `now` to keep unit tests deterministic.
+Each node that depends on the wall clock injects a `now func() time.Time` field so that unit tests are deterministic.
 
 ## 9. Testing Strategy
 
-Tests should cover:
+Tests cover:
 
-- fixed `now` output
-- add and subtract with multiple units
-- timezone-aware formatting
-- invalid timezone handling
-- missing `date` / `amount`
-- bad input parsing
+- fixed `now` output in UTC and in a non-UTC timezone
+- add and subtract across all supported units
+- DST-crossing adds in `America/New_York`
+- naive inputs interpreted in the configured timezone
+- explicit offsets honored on input
+- chained round-trip through a custom RFC1123 layout (issue #525 regression)
+- invalid timezone, missing `date`, missing `amount`, and unparseable date strings
+- shared `datetimeops` helpers tested directly
 
 ## 10. Acceptance Criteria
 
-- worker executes `datetime` with the four supported operations
-- invalid inputs fail clearly
-- realistic unit tests cover timezone and formatting behavior
+- worker registers and executes each node in the family
+- invalid inputs fail clearly per the rules in §6
+- realistic unit tests cover timezone, formatting, and DST behavior
+- chained datetime nodes round-trip through the inspector's format presets
 - full worker test suite passes
+
+## 11. Migration Notes
+
+The original `datetime` node type is removed from the worker registry and from the DSL `type` enum. The five typed nodes are not drop-in replacements at the DSL level: a workflow using `{ "type": "datetime", "parameters": { "operation": "add", ... } }` will fail DSL sanitization and worker dispatch. Because the original node had not yet seen meaningful adoption, no automatic migration ships with this change.
