@@ -12,9 +12,9 @@ export default async function DocsLayout({ children }: { children: React.ReactNo
     <Layout
       pageMap={pageMap}
       docsRepositoryBase="https://github.com/rune-org/rune"
-      editLink={<a href="/not-found">Edit this page</a>}
+      editLink={"Edit this page"}
       feedback={{
-        content: <a href="/not-found">Question? Give us feedback →</a>,
+        content: "Question? Give us feedback",
         labels: "feedback",
       }}
     >

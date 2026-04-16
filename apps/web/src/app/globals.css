@@ -126,6 +126,12 @@
     background-color: hsl(222 47% 11% / 0.62);
     color: hsl(0 0% 100%);
   }
+
+  /* Hide the external link icons in Nextra */
+  nav.nextra-toc a svg,
+  .nextra-sidebar-footer a svg {
+    display: none !important;
+  }
 }
 
 @utility animate-fade-in {
