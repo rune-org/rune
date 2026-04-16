@@ -12,7 +12,11 @@ import type {
   ScheduledTriggerData,
   WaitData,
   LogData,
-  DateTimeData,
+  DateTimeNowData,
+  DateTimeAddData,
+  DateTimeSubtractData,
+  DateTimeFormatData,
+  DateTimeParseData,
   EditData,
   FilterData,
   FilterRule,
@@ -84,8 +88,16 @@ function toWorkerType(canvasType: string): string {
       return "wait";
     case "log":
       return "log";
-    case "datetime":
-      return "datetime";
+    case "dateTimeNow":
+      return "dateTimeNow";
+    case "dateTimeAdd":
+      return "dateTimeAdd";
+    case "dateTimeSubtract":
+      return "dateTimeSubtract";
+    case "dateTimeFormat":
+      return "dateTimeFormat";
+    case "dateTimeParse":
+      return "dateTimeParse";
     case "edit":
       return "edit";
     case "filter":
@@ -238,14 +250,45 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (d.level) params.level = d.level;
       return params;
     }
-    case "datetime": {
-      const d = (n.data || {}) as DateTimeData;
+    case "dateTimeNow": {
+      const d = (n.data || {}) as DateTimeNowData;
       const params: Record<string, unknown> = {};
-      if (d.operation) params.operation = d.operation;
+      if (typeof d.format === "string" && d.format.trim()) params.format = d.format;
+      if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
+      return params;
+    }
+    case "dateTimeAdd": {
+      const d = (n.data || {}) as DateTimeAddData;
+      const params: Record<string, unknown> = {};
       if (typeof d.date === "string" && d.date.trim()) params.date = d.date;
       if (typeof d.amount !== "undefined") params.amount = Number(d.amount);
       if (d.unit) params.unit = d.unit;
       if (typeof d.format === "string" && d.format.trim()) params.format = d.format;
+      if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
+      return params;
+    }
+    case "dateTimeSubtract": {
+      const d = (n.data || {}) as DateTimeSubtractData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.date === "string" && d.date.trim()) params.date = d.date;
+      if (typeof d.amount !== "undefined") params.amount = Number(d.amount);
+      if (d.unit) params.unit = d.unit;
+      if (typeof d.format === "string" && d.format.trim()) params.format = d.format;
+      if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
+      return params;
+    }
+    case "dateTimeFormat": {
+      const d = (n.data || {}) as DateTimeFormatData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.date === "string" && d.date.trim()) params.date = d.date;
+      if (typeof d.format === "string" && d.format.trim()) params.format = d.format;
+      if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
+      return params;
+    }
+    case "dateTimeParse": {
+      const d = (n.data || {}) as DateTimeParseData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.date === "string" && d.date.trim()) params.date = d.date;
       if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
       return params;
     }
@@ -428,13 +471,17 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
     };
     return logData;
   },
-  datetime: (base, params) => {
-    const dateTimeData: DateTimeData = {
+  dateTimeNow: (base, params) => {
+    const data: DateTimeNowData = {
       ...base,
-      operation:
-        typeof params.operation === "string"
-          ? (params.operation as DateTimeData["operation"])
-          : undefined,
+      format: typeof params.format === "string" ? params.format : undefined,
+      timezone: typeof params.timezone === "string" ? params.timezone : undefined,
+    };
+    return data;
+  },
+  dateTimeAdd: (base, params) => {
+    const data: DateTimeAddData = {
+      ...base,
       date: typeof params.date === "string" ? params.date : undefined,
       amount:
         typeof params.amount === "number"
@@ -442,11 +489,45 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
           : typeof params.amount === "string"
             ? Number(params.amount)
             : undefined,
-      unit: typeof params.unit === "string" ? (params.unit as DateTimeData["unit"]) : undefined,
+      unit: typeof params.unit === "string" ? (params.unit as DateTimeAddData["unit"]) : undefined,
       format: typeof params.format === "string" ? params.format : undefined,
       timezone: typeof params.timezone === "string" ? params.timezone : undefined,
     };
-    return dateTimeData;
+    return data;
+  },
+  dateTimeSubtract: (base, params) => {
+    const data: DateTimeSubtractData = {
+      ...base,
+      date: typeof params.date === "string" ? params.date : undefined,
+      amount:
+        typeof params.amount === "number"
+          ? params.amount
+          : typeof params.amount === "string"
+            ? Number(params.amount)
+            : undefined,
+      unit:
+        typeof params.unit === "string" ? (params.unit as DateTimeSubtractData["unit"]) : undefined,
+      format: typeof params.format === "string" ? params.format : undefined,
+      timezone: typeof params.timezone === "string" ? params.timezone : undefined,
+    };
+    return data;
+  },
+  dateTimeFormat: (base, params) => {
+    const data: DateTimeFormatData = {
+      ...base,
+      date: typeof params.date === "string" ? params.date : undefined,
+      format: typeof params.format === "string" ? params.format : undefined,
+      timezone: typeof params.timezone === "string" ? params.timezone : undefined,
+    };
+    return data;
+  },
+  dateTimeParse: (base, params) => {
+    const data: DateTimeParseData = {
+      ...base,
+      date: typeof params.date === "string" ? params.date : undefined,
+      timezone: typeof params.timezone === "string" ? params.timezone : undefined,
+    };
+    return data;
   },
   scheduledTrigger: (base, params) => {
     const scheduledTriggerData: ScheduledTriggerData = {

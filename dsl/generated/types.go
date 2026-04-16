@@ -340,21 +340,79 @@ func (n *LogParameters) Sanitize() (bool, []string) {
   return len(errors) == 0, errors
 }
 
-type DatetimeParameters struct {
-  // Create, shift, or format date and time values
-  Operation string `json:"operation"`  // Date and time operation
-  Date *string `json:"date"`  // Input date or timestamp to format or adjust
-  Amount *float64 `json:"amount"`  // Amount of time to add or subtract
-  Unit *string `json:"unit"`  // Unit of time for add and subtract
-  Format *string `json:"format"`  // Output format string
-  Timezone *string `json:"timezone"`  // Timezone used for parsing and formatting
+type DatetimenowParameters struct {
+  // Get the current date and time in a given timezone
+  Timezone *string `json:"timezone"`  // IANA timezone used for the output
+  Format *string `json:"format"`  // Output format string (Go time layout)
 }
 
-func (n *DatetimeParameters) Sanitize() (bool, []string) {
+func (n *DatetimenowParameters) Sanitize() (bool, []string) {
   var errors []string
 
-  if n.Operation == "" {
-    errors = append(errors, "DatetimeParameters.operation is required")
+
+  return len(errors) == 0, errors
+}
+
+type DatetimeaddParameters struct {
+  // Add a duration to a date or timestamp
+  Date *string `json:"date"`  // Input date or timestamp; defaults to now when empty
+  Amount float64 `json:"amount"`  // Amount of time to add
+  Unit *string `json:"unit"`  // Unit of time
+  Timezone *string `json:"timezone"`  // IANA timezone used for parsing naive inputs and for the output
+  Format *string `json:"format"`  // Output format string (Go time layout)
+}
+
+func (n *DatetimeaddParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+
+  return len(errors) == 0, errors
+}
+
+type DatetimesubtractParameters struct {
+  // Subtract a duration from a date or timestamp
+  Date *string `json:"date"`  // Input date or timestamp; defaults to now when empty
+  Amount float64 `json:"amount"`  // Amount of time to subtract
+  Unit *string `json:"unit"`  // Unit of time
+  Timezone *string `json:"timezone"`  // IANA timezone used for parsing naive inputs and for the output
+  Format *string `json:"format"`  // Output format string (Go time layout)
+}
+
+func (n *DatetimesubtractParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+
+  return len(errors) == 0, errors
+}
+
+type DatetimeformatParameters struct {
+  // Format a date or timestamp in a chosen timezone
+  Date string `json:"date"`  // Input date or timestamp to format
+  Timezone *string `json:"timezone"`  // IANA timezone used for parsing naive inputs and for the output
+  Format *string `json:"format"`  // Output format string (Go time layout)
+}
+
+func (n *DatetimeformatParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Date == "" {
+    errors = append(errors, "DatetimeformatParameters.date is required")
+  }
+
+  return len(errors) == 0, errors
+}
+
+type DatetimeparseParameters struct {
+  // Parse a date or timestamp into structured components
+  Date string `json:"date"`  // Input date or timestamp to parse
+  Timezone *string `json:"timezone"`  // IANA timezone used for parsing naive inputs and for the structured output
+}
+
+func (n *DatetimeparseParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Date == "" {
+    errors = append(errors, "DatetimeparseParameters.date is required")
   }
 
   return len(errors) == 0, errors
@@ -472,7 +530,11 @@ var SMTP_CREDENTIAL_TYPE []string = []string{"smtp"}
 var CONDITIONAL_CREDENTIAL_TYPE []string = nil
 var SWITCH_CREDENTIAL_TYPE []string = nil
 var LOG_CREDENTIAL_TYPE []string = nil
-var DATETIME_CREDENTIAL_TYPE []string = nil
+var DATETIMENOW_CREDENTIAL_TYPE []string = nil
+var DATETIMEADD_CREDENTIAL_TYPE []string = nil
+var DATETIMESUBTRACT_CREDENTIAL_TYPE []string = nil
+var DATETIMEFORMAT_CREDENTIAL_TYPE []string = nil
+var DATETIMEPARSE_CREDENTIAL_TYPE []string = nil
 var AGENT_CREDENTIAL_TYPE []string = nil
 var WAIT_CREDENTIAL_TYPE []string = nil
 var EDIT_CREDENTIAL_TYPE []string = nil

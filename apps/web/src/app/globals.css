@@ -34,6 +34,9 @@
   --color-node-transform: var(--node-transform);
   --color-node-transform-bg: var(--node-transform-bg);
   --color-node-transform-border: var(--node-transform-border);
+  --color-node-datetime: var(--node-datetime);
+  --color-node-datetime-bg: var(--node-datetime-bg);
+  --color-node-datetime-border: var(--node-datetime-border);
   --color-node-http: var(--node-http);
   --color-node-http-bg: var(--node-http-bg);
   --color-node-http-border: var(--node-http-border);

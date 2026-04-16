@@ -7,7 +7,11 @@ import (
 	// Import all node packages to trigger their init() functions
 	_ "rune-worker/pkg/nodes/custom/aggregator"
 	_ "rune-worker/pkg/nodes/custom/conditional"
-	_ "rune-worker/pkg/nodes/custom/datetime"
+	_ "rune-worker/pkg/nodes/custom/datetime_add"
+	_ "rune-worker/pkg/nodes/custom/datetime_format"
+	_ "rune-worker/pkg/nodes/custom/datetime_now"
+	_ "rune-worker/pkg/nodes/custom/datetime_parse"
+	_ "rune-worker/pkg/nodes/custom/datetime_subtract"
 	_ "rune-worker/pkg/nodes/custom/edit"
 	_ "rune-worker/pkg/nodes/custom/filter"
 	_ "rune-worker/pkg/nodes/custom/http"
