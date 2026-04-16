@@ -1,8 +1,14 @@
 import copy
+import io
+import json
+import re
 import uuid
+import zipfile
+from datetime import datetime
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import delete, select
+from sqlmodel import col, delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.exceptions import BadRequest, Forbidden, NotFound
@@ -10,12 +16,21 @@ from src.credentials.encryption import get_encryptor
 from src.db.models import (
     Execution,
     ExecutionStatus,
+    ScheduledWorkflow,
     User,
     Workflow,
     WorkflowCredential,
     WorkflowRole,
     WorkflowUser,
     WorkflowVersion,
+)
+
+
+from src.workflow.constants import (
+    SCHEDULED_TRIGGER_TYPE,
+    SCHEDULED_TRIGGER_PARAM_AMOUNT,
+    SCHEDULED_TRIGGER_PARAM_UNIT,
+    SCHEDULED_TRIGGER_UNIT_MULTIPLIERS,
 )
 
 
@@ -114,9 +129,11 @@ class WorkflowService:
                 raise BadRequest(detail="Workflow has no saved versions")
             locked_workflow.published_version_id = latest.id
             locked_workflow.is_active = True
+            await self._upsert_schedule(locked_workflow.id, latest.workflow_data)
         else:
             locked_workflow.published_version_id = None
             locked_workflow.is_active = False
+            await self._delete_schedule(locked_workflow.id)
 
         await self.db.commit()
         await self.db.refresh(locked_workflow)
@@ -182,6 +199,7 @@ class WorkflowService:
 
         locked_workflow.published_version_id = version.id
         locked_workflow.is_active = True
+        await self._upsert_schedule(locked_workflow.id, version.workflow_data)
         await self.db.commit()
         await self.db.refresh(locked_workflow)
         return locked_workflow
@@ -299,11 +317,14 @@ class WorkflowService:
         if workflow_id is None:
             raise NotFound(detail="Workflow not found")
 
-        stmt = delete(Execution).where(Execution.__table__.c.workflow_id == workflow_id)
+        stmt = delete(Execution).where(Execution.workflow_id == workflow_id)
         await self.db.exec(stmt)
 
-        stmt = delete(WorkflowUser).where(
-            WorkflowUser.__table__.c.workflow_id == workflow_id
+        stmt = delete(WorkflowUser).where(WorkflowUser.workflow_id == workflow_id)
+        await self.db.exec(stmt)
+
+        stmt = delete(ScheduledWorkflow).where(
+            ScheduledWorkflow.workflow_id == workflow_id
         )
         await self.db.exec(stmt)
 
@@ -313,6 +334,92 @@ class WorkflowService:
     # ------------------------------------------------------------------
     # Bulk helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def sanitize_workflow_data_for_export(workflow_data: Any) -> dict[str, Any]:
+        """Return workflow_data safe for user download.
+
+        Removes credential references from node payloads so exports never
+        include secret-bearing fields.
+        """
+        if not isinstance(workflow_data, dict):
+            return {"nodes": [], "edges": []}
+
+        sanitized = copy.deepcopy(workflow_data)
+        nodes = sanitized.get("nodes")
+        edges = sanitized.get("edges")
+
+        if not isinstance(nodes, list):
+            nodes = []
+        if not isinstance(edges, list):
+            edges = []
+
+        sanitized_nodes: list[dict[str, Any]] = []
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+
+            cleaned = dict(node)
+            cleaned.pop("credentials", None)
+
+            data = cleaned.get("data")
+            if isinstance(data, dict):
+                cleaned_data = dict(data)
+                cleaned_data.pop("credential", None)
+                cleaned["data"] = cleaned_data
+
+            sanitized_nodes.append(cleaned)
+
+        return {
+            "nodes": sanitized_nodes,
+            "edges": edges,
+        }
+
+    @staticmethod
+    def build_export_file_name(workflow_id: int, workflow_name: str) -> str:
+        safe_name = re.sub(
+            r"[^A-Za-z0-9_-]", "_", (workflow_name or "workflow").strip()
+        )
+        safe_name = safe_name or "workflow"
+        return f"workflow-{safe_name}-{workflow_id}.json"
+
+    async def build_bulk_export_zip(self, workflows: list[Workflow]) -> bytes:
+        """Create a ZIP archive containing one sanitized JSON per workflow."""
+        if not workflows:
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED):
+                pass
+            return buffer.getvalue()
+
+        latest_version_ids = {
+            wf.latest_version_id for wf in workflows if wf.latest_version_id is not None
+        }
+        versions_by_id: dict[int, WorkflowVersion] = {}
+
+        if latest_version_ids:
+            stmt = select(WorkflowVersion).where(
+                col(WorkflowVersion.id).in_(latest_version_ids)
+            )
+            result = await self.db.exec(stmt)
+            versions_by_id = {version.id: version for version in result.all()}
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(
+            buffer, mode="w", compression=zipfile.ZIP_DEFLATED
+        ) as archive:
+            for workflow in workflows:
+                if workflow.latest_version_id is None:
+                    continue
+
+                version = versions_by_id.get(workflow.latest_version_id)
+                if version is None:
+                    continue
+
+                payload = self.sanitize_workflow_data_for_export(version.workflow_data)
+                file_name = self.build_export_file_name(workflow.id, workflow.name)
+                archive.writestr(file_name, json.dumps(payload, indent=2))
+
+        return buffer.getvalue()
 
     async def bulk_fetch_with_roles(
         self, user_id: int, workflow_ids: list[int]
@@ -324,7 +431,7 @@ class WorkflowService:
         database.  The role value is ``None`` when the user has no
         ``WorkflowUser`` entry (i.e. no access at all).
         """
-        wf_stmt = select(Workflow).where(Workflow.id.in_(workflow_ids))
+        wf_stmt = select(Workflow).where(col(Workflow.id).in_(workflow_ids))
         wf_result = await self.db.exec(wf_stmt)
         workflows: dict[int, Workflow] = {wf.id: wf for wf in wf_result.all()}
 
@@ -333,7 +440,7 @@ class WorkflowService:
 
         role_stmt = select(WorkflowUser.workflow_id, WorkflowUser.role).where(
             WorkflowUser.user_id == user_id,
-            WorkflowUser.workflow_id.in_(list(workflows.keys())),
+            col(WorkflowUser.workflow_id).in_(list(workflows.keys())),
         )
         role_result = await self.db.exec(role_stmt)
         roles: dict[int, WorkflowRole] = {
@@ -350,11 +457,14 @@ class WorkflowService:
         workflow_ids = [wf.id for wf in workflows]
 
         await self.db.exec(
-            delete(Execution).where(Execution.__table__.c.workflow_id.in_(workflow_ids))
+            delete(Execution).where(col(Execution.workflow_id).in_(workflow_ids))
         )
         await self.db.exec(
-            delete(WorkflowUser).where(
-                WorkflowUser.__table__.c.workflow_id.in_(workflow_ids)
+            delete(WorkflowUser).where(col(WorkflowUser.workflow_id).in_(workflow_ids))
+        )
+        await self.db.exec(
+            delete(ScheduledWorkflow).where(
+                col(ScheduledWorkflow.workflow_id).in_(workflow_ids)
             )
         )
         for wf in workflows:
@@ -363,21 +473,38 @@ class WorkflowService:
         await self.db.commit()
 
     async def bulk_set_status(self, workflows: list[Workflow], is_active: bool) -> None:
-        """Set ``is_active`` on many workflows in one commit."""
+        """Set status on many workflows, properly managing published_version_id and schedules.
+
+        Mirrors the single-workflow update_status logic:
+        - is_active=True: publishes latest version and syncs schedule
+        - is_active=False: clears published pointer and deletes schedule
+        """
         if not workflows:
             return
 
         for wf in workflows:
-            wf.is_active = is_active
+            if is_active:
+                # Activate: publish latest version and sync schedule
+                latest = await self.get_latest_version(wf)
+                if latest:
+                    wf.published_version_id = latest.id
+                    wf.is_active = True
+                    await self._upsert_schedule(wf.id, latest.workflow_data)
+                # Skip workflows with no versions (cannot be activated)
+            else:
+                # Deactivate: clear published pointer and delete schedule
+                wf.published_version_id = None
+                wf.is_active = False
+                await self._delete_schedule(wf.id)
 
         await self.db.commit()
 
     async def queue_workflow_execution(
         self,
         workflow: Workflow,
-        user_id: int,
+        user_id: int | None,
         queue_service,
-        token_service,
+        token_service=None,
         version_id: int | None = None,
     ) -> str:
         """Queue a workflow for execution and return the execution_id.
@@ -386,12 +513,12 @@ class WorkflowService:
         - Resolving the correct version to run (published or specific version)
         - Resolving credentials in workflow data
         - Creating execution record in database
-        - Publishing execution token for real-time updates
+        - Publishing execution token for real-time updates (only if user_id and token_service provided)
         - Publishing workflow run message to RabbitMQ
 
         Args:
             workflow: The workflow to execute
-            user_id: ID of the user triggering execution
+            user_id: ID of the user triggering execution (None for scheduler-triggered executions)
             queue_service: WorkflowQueueService for publishing run messages
             token_service: ExecutionTokenService for publishing tokens
             version_id: Optional specific version to run; defaults to published version
@@ -424,12 +551,13 @@ class WorkflowService:
         self.db.add(execution)
         await self.db.commit()
 
-        # Publish execution token for RTES authentication (with specific execution_id)
-        await token_service.publish_execution_token(
-            workflow_id=workflow.id,
-            user_id=user_id,
-            execution_id=execution_id,
-        )
+        # Publish execution token for RTES authentication (only for user-triggered executions)
+        if token_service is not None:
+            await token_service.publish_execution_token(
+                workflow_id=workflow.id,
+                user_id=user_id,
+                execution_id=execution_id,
+            )
 
         # Publish workflow run message to queue with resolved credentials
         # This may raise ValueError if workflow structure is invalid
@@ -500,6 +628,80 @@ class WorkflowService:
                     }
 
         return resolved_data
+
+    # ------------------------------------------------------------------
+    # Schedule sync helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _compute_interval_seconds(parameters: dict) -> int:
+        """Convert {amount, unit} parameters to total seconds."""
+        amount = parameters.get(SCHEDULED_TRIGGER_PARAM_AMOUNT)
+        unit = parameters.get(SCHEDULED_TRIGGER_PARAM_UNIT)
+        if amount is None or unit is None:
+            raise ValueError(
+                f"{SCHEDULED_TRIGGER_TYPE} requires "
+                f"'{SCHEDULED_TRIGGER_PARAM_AMOUNT}' and '{SCHEDULED_TRIGGER_PARAM_UNIT}' parameters"
+            )
+        if unit not in SCHEDULED_TRIGGER_UNIT_MULTIPLIERS:
+            raise ValueError(
+                f"{SCHEDULED_TRIGGER_TYPE} '{SCHEDULED_TRIGGER_PARAM_UNIT}' must be one of "
+                f"{list(SCHEDULED_TRIGGER_UNIT_MULTIPLIERS)}, got '{unit}'"
+            )
+        return int(amount * SCHEDULED_TRIGGER_UNIT_MULTIPLIERS[unit])
+
+    @staticmethod
+    def _find_scheduled_trigger(workflow_data: dict) -> dict | None:
+        """Return the ScheduledTrigger node dict, or None if absent."""
+        for node in workflow_data.get("nodes", []):
+            if node.get("type") == SCHEDULED_TRIGGER_TYPE:
+                return node
+        return None
+
+    async def _delete_schedule(self, workflow_id: int) -> None:
+        """Remove the scheduled_workflows row if it exists."""
+        stmt = select(ScheduledWorkflow).where(
+            ScheduledWorkflow.workflow_id == workflow_id
+        )
+        result = await self.db.exec(stmt)
+        existing = result.first()
+        if existing is not None:
+            await self.db.delete(existing)
+
+    async def _upsert_schedule(self, workflow_id: int, workflow_data: dict) -> None:
+        """Create or update the scheduled_workflows row from workflow data.
+
+        If the workflow has no ScheduledTrigger node, removes the row instead.
+        Only resets next_run_at when the interval changes.
+        """
+        trigger_node = self._find_scheduled_trigger(workflow_data)
+
+        if trigger_node is None:
+            await self._delete_schedule(workflow_id)
+            return
+
+        interval_seconds = self._compute_interval_seconds(
+            trigger_node.get("parameters", {})
+        )
+
+        stmt = select(ScheduledWorkflow).where(
+            ScheduledWorkflow.workflow_id == workflow_id
+        )
+        result = await self.db.exec(stmt)
+        existing = result.first()
+
+        if existing is None:
+            self.db.add(
+                ScheduledWorkflow(
+                    workflow_id=workflow_id,
+                    interval_seconds=interval_seconds,
+                    next_run_at=datetime.now(),
+                )
+            )
+        else:
+            if existing.interval_seconds != interval_seconds:
+                existing.interval_seconds = interval_seconds
+                existing.next_run_at = datetime.now()
 
     async def _lock_workflow(self, workflow_id: int) -> Workflow:
         statement = select(Workflow).where(Workflow.id == workflow_id).with_for_update()

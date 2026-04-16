@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Container } from "@/components/shared/Container";
 import { Logo } from "@/components/shared/Logo";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { siteConfig } from "@/lib/site";
 
 const socialIconMap: Record<string, string> = {
@@ -70,8 +71,9 @@ export function Footer() {
             ))}
           </div>
         </div>
-        <div className="border-t border-border/60 pt-6 text-center text-sm text-muted-foreground">
-          {siteConfig.legal}
+        <div className="flex items-center justify-between border-t border-border/60 pt-6 text-sm text-muted-foreground">
+          <span>{siteConfig.legal}</span>
+          <ThemeToggle />
         </div>
       </Container>
     </footer>

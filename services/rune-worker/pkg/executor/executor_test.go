@@ -182,6 +182,48 @@ func TestExecutor_EditNodeUpdatesJson(t *testing.T) {
 	}
 }
 
+func TestExecutor_FilterNodeUpdatesJson(t *testing.T) {
+	pub := NewMockPublisher()
+	reg := nodes.NewRegistry()
+
+	reg.Register("filter", func(execCtx plugin.ExecutionContext) plugin.Node {
+		return &MockNode{output: map[string]any{"$json": []any{"a", "b"}, "count": 2}}
+	})
+
+	exec := NewExecutor(reg, pub, nil)
+
+	workflow := core.Workflow{
+		Nodes: []core.Node{{ID: "filter1", Name: "Filter", Type: "filter", Parameters: map[string]any{}}},
+	}
+
+	msg := &messages.NodeExecutionMessage{
+		WorkflowID:         "wf_filter",
+		ExecutionID:        "exec_filter",
+		CurrentNode:        "filter1",
+		WorkflowDefinition: workflow,
+		AccumulatedContext: map[string]any{"$json": []any{"x", "a", "b"}},
+	}
+
+	if err := exec.Execute(context.Background(), msg); err != nil {
+		t.Fatalf("execute error: %v", err)
+	}
+
+	completionMsgs := pub.GetPublishedMessages("workflow.completion")
+	if len(completionMsgs) != 1 {
+		t.Fatalf("expected completion message, got %d", len(completionMsgs))
+	}
+
+	var completion messages.CompletionMessage
+	_ = json.Unmarshal(completionMsgs[0], &completion)
+	jsonCtx, ok := completion.FinalContext["$json"].([]any)
+	if !ok {
+		t.Fatalf("$json not found in final context")
+	}
+	if len(jsonCtx) != 2 {
+		t.Fatalf("unexpected $json length: %+v", jsonCtx)
+	}
+}
+
 func TestExecutor_WorkflowCompletion(t *testing.T) {
 	// Setup mock publisher and registry
 	pub := NewMockPublisher()

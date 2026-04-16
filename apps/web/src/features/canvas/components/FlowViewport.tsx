@@ -14,10 +14,12 @@ import {
   type OnSelectionChangeParams,
   type ReactFlowProps,
   type ReactFlowInstance,
+  PanOnScrollMode,
 } from "@xyflow/react";
 import { nodeTypes } from "../nodes";
 import type { CanvasNode } from "../types";
 import { getMiniMapNodeColor, isValidNodeKind } from "../lib/nodeRegistry";
+import { ClickConnectBridge } from "./ClickConnectBridge";
 import { ExecutionStatusBar } from "./ExecutionStatusBar";
 import type { WsConnectionStatus } from "../hooks/useRtesWebSocket";
 
@@ -84,9 +86,15 @@ export const FlowViewport = memo(function FlowViewport({
       onNodeDragStop={onNodeDragStop}
       onInit={onInit}
       onPaneClick={onPaneClick}
+      panOnScroll
+      panOnScrollMode={PanOnScrollMode.Free}
+      zoomOnScroll={false}
+      zoomOnPinch
+      connectOnClick={!readOnly}
       nodesDraggable={!readOnly}
       nodesConnectable={!readOnly}
     >
+      {!readOnly ? <ClickConnectBridge /> : null}
       <Background />
 
       <MiniMap

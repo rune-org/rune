@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { updateMyProfile } from "@/lib/api/users";
+import { getInitials } from "@/lib/initials";
 import type { UserResponse } from "@/client/types.gen";
 import { Container } from "@/components/shared/Container";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -57,22 +58,6 @@ export default function ProfilePage() {
       setEmail(user.email ?? "");
     }
   }, [user]);
-
-  /**
-   * Returns the initials of a given name.
-   * - If the name is empty or does not contain any valid characters, returns "U".
-   * - For names with multiple words, takes the first character of each word, joins them, and returns the first two uppercase letters.
-   * - Special characters and whitespace are included as initials if present in the name.
-   * @param name The full name string.
-   * @returns The initials (up to 2 uppercase letters), or "U" if not available.
-   */
-  const getInitials = (name: string) =>
-    name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) || "U";
 
   const handleSaveName = async () => {
     // Validate with zod

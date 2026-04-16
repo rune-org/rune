@@ -42,6 +42,7 @@ import { useConnectionValidation } from "./hooks/useConnectionValidation";
 import { useGraphClipboard } from "./hooks/useGraphClipboard";
 import { useRafNodeDrag } from "./hooks/useRafNodeDrag";
 import { useSmith } from "./hooks/useSmith";
+import { useExecutionFromUrl } from "./hooks/useExecutionFromUrl";
 import { ExecutionProvider, useExecution } from "./context/ExecutionContext";
 import { GraphProvider } from "./context/GraphContext";
 import { SmithChatDrawer } from "@/features/smith/SmithChatDrawer";
@@ -177,6 +178,8 @@ function FlowCanvasInner({
 
   useExecutionEdgeSync(executionState, setEdges);
 
+  const { setExecutionParam } = useExecutionFromUrl(workflowId);
+
   // Historical snapshot detection
   const { state: ctxExecutionState } = useExecution();
   const isViewingExecutionSnapshot =
@@ -284,7 +287,6 @@ function FlowCanvasInner({
     setNodes,
     setEdges,
     setSelectedNodeId,
-    containerRef,
   });
 
   const persistGraph = useCallback(() => {
@@ -570,6 +572,7 @@ function FlowCanvasInner({
               onRunVersion={onRunVersion}
               onViewVersion={handleViewVersion}
               viewingVersionNumber={versionSnapshot?.versionNumber}
+              onExecutionUrlChange={setExecutionParam}
             />
             <SmithButton
               onClick={openSmith}

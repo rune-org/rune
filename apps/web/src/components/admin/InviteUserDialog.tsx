@@ -69,7 +69,7 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-40"
+      className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center p-6 z-40"
       onClick={handleBackdropClick}
     >
       <Card className="p-6 w-full max-w-md bg-background border" onClick={handleCardClick}>

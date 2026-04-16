@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useMemo } from "react";
 
 /** Regex matching Go resolver's $ notation: $nodeName or $nodeName.field.path */
-const VARIABLE_REGEX = /\$([a-zA-Z_][a-zA-Z0-9_-]*)(?:\.([a-zA-Z0-9_\[\]\.\-]+))?/g;
+const VARIABLE_REGEX = /\$([a-zA-Z_][a-zA-Z0-9_-]*)(?:\.([a-zA-Z0-9_\[\]\.\-$]+))?/g;
 
 export type VariableMatch = {
   full: string;
@@ -13,10 +13,14 @@ export type VariableMatch = {
   end: number;
 };
 
-const ZERO_WIDTH_CHAR_REGEX = /[\u200B\uFEFF]/g;
+// Strip zero-width markers and non-breaking spaces. Chrome injects NBSP around
+// contenteditable="false" pill elements as a rendering artifact; users never
+// type these intentionally, so we drop them entirely instead of converting to
+// regular spaces (which would leak leading/trailing whitespace into node data).
+const RAW_TEXT_STRIP_REGEX = /[\u200B\uFEFF\u00A0]/g;
 
 function normalizeRawText(text: string): string {
-  return text.replace(ZERO_WIDTH_CHAR_REGEX, "").replace(/\u00A0/g, " ");
+  return text.replace(RAW_TEXT_STRIP_REGEX, "");
 }
 
 function isBlockElement(node: Node): node is HTMLElement {
@@ -44,12 +48,15 @@ function blockPrefixLength(child: Node, childIndex: number): number {
   return childIndex > 0 && isBlockElement(child) ? 1 : 0;
 }
 
+function isStrippedChar(ch: string): boolean {
+  return ch === "\u200B" || ch === "\uFEFF" || ch === "\u00A0";
+}
+
 function rawLengthOfTextPrefix(text: string, endOffset: number): number {
   const safeEnd = Math.max(0, Math.min(endOffset, text.length));
   let length = 0;
   for (let i = 0; i < safeEnd; i++) {
-    const ch = text[i];
-    if (ch === "\u200B" || ch === "\uFEFF") continue;
+    if (isStrippedChar(text[i])) continue;
     length += 1;
   }
   return length;
@@ -61,8 +68,7 @@ function domOffsetFromRawTextOffset(text: string, rawOffset: number): number {
 
   let seen = 0;
   for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === "\u200B" || ch === "\uFEFF") continue;
+    if (isStrippedChar(text[i])) continue;
     seen += 1;
     if (seen >= target) {
       return i + 1;

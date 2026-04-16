@@ -175,6 +175,70 @@ export function sanitizeSwitchRule(obj: SwitchRule): { valid: boolean; errors: s
   };
 }
 
+export interface FilterRule {
+  // Filter rule definition
+  field: string;  // Field path on each list item
+  operator: "==" | "!=" | ">" | "<" | ">=" | "<=" | "contains";  // Comparison operator
+  value: any;  // Value to compare against
+}
+
+export function sanitizeFilterRule(obj: FilterRule): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.field === undefined || obj.field === null) {
+    errors.push("FilterRule.field is required");
+  }
+  if (obj.field !== undefined && typeof obj.field !== "string") {
+    errors.push("FilterRule.field must be a string");
+  }
+  if (obj.operator === undefined || obj.operator === null) {
+    errors.push("FilterRule.operator is required");
+  }
+  if (obj.operator !== undefined && typeof obj.operator !== "string") {
+    errors.push("FilterRule.operator must be a string");
+  }
+  if (obj.value === undefined || obj.value === null) {
+    errors.push("FilterRule.value is required");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+export interface SortRule {
+  // Sort rule definition
+  field: string;  // Field path to sort by
+  direction: "asc" | "desc" | "ascending" | "descending";  // Sort direction
+  type: "auto" | "text" | "number" | "date" | undefined;  // Value type used for sorting
+}
+
+export function sanitizeSortRule(obj: SortRule): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.field === undefined || obj.field === null) {
+    errors.push("SortRule.field is required");
+  }
+  if (obj.field !== undefined && typeof obj.field !== "string") {
+    errors.push("SortRule.field must be a string");
+  }
+  if (obj.direction === undefined || obj.direction === null) {
+    errors.push("SortRule.direction is required");
+  }
+  if (obj.direction !== undefined && typeof obj.direction !== "string") {
+    errors.push("SortRule.direction must be a string");
+  }
+  if (obj.type !== undefined && typeof obj.type !== "string") {
+    errors.push("SortRule.type must be a string");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
 export interface EditAssignment {
   // Edit node assignment
   name: string;  // The key to set (supports dot-notation for nested objects)
@@ -208,6 +272,34 @@ export function sanitizeEditAssignment(obj: EditAssignment): { valid: boolean; e
 }
 
 // Node Parameter Types
+
+export interface ScheduledtriggerParameters {
+  // Scheduled workflow trigger with interval-based execution
+  amount: number;  // Quantity of time between executions
+  unit: "seconds" | "minutes" | "hours" | "days";  // Unit of time for the interval
+}
+
+export function sanitizeScheduledtriggerParameters(obj: ScheduledtriggerParameters): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.amount === undefined || obj.amount === null) {
+    errors.push("ScheduledtriggerParameters.amount is required");
+  }
+  if (obj.amount !== undefined && typeof obj.amount !== "number") {
+    errors.push("ScheduledtriggerParameters.amount must be a number");
+  }
+  if (obj.unit === undefined || obj.unit === null) {
+    errors.push("ScheduledtriggerParameters.unit is required");
+  }
+  if (obj.unit !== undefined && typeof obj.unit !== "string") {
+    errors.push("ScheduledtriggerParameters.unit must be a string");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
 
 export interface HttpParameters {
   // HTTP request node
@@ -365,6 +457,47 @@ export function sanitizeLogParameters(obj: LogParameters): { valid: boolean; err
   };
 }
 
+export interface DatetimeParameters {
+  // Create, shift, or format date and time values
+  operation: "now" | "add" | "subtract" | "format";  // Date and time operation
+  date: string | undefined;  // Input date or timestamp to format or adjust
+  amount: number | undefined;  // Amount of time to add or subtract
+  unit: "seconds" | "minutes" | "hours" | "days" | "weeks" | "months" | "years" | undefined;  // Unit of time for add and subtract
+  format: string | undefined;  // Output format string
+  timezone: string | undefined;  // Timezone used for parsing and formatting
+}
+
+export function sanitizeDatetimeParameters(obj: DatetimeParameters): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.operation === undefined || obj.operation === null) {
+    errors.push("DatetimeParameters.operation is required");
+  }
+  if (obj.operation !== undefined && typeof obj.operation !== "string") {
+    errors.push("DatetimeParameters.operation must be a string");
+  }
+  if (obj.date !== undefined && typeof obj.date !== "string") {
+    errors.push("DatetimeParameters.date must be a string");
+  }
+  if (obj.amount !== undefined && typeof obj.amount !== "number") {
+    errors.push("DatetimeParameters.amount must be a number");
+  }
+  if (obj.unit !== undefined && typeof obj.unit !== "string") {
+    errors.push("DatetimeParameters.unit must be a string");
+  }
+  if (obj.format !== undefined && typeof obj.format !== "string") {
+    errors.push("DatetimeParameters.format must be a string");
+  }
+  if (obj.timezone !== undefined && typeof obj.timezone !== "string") {
+    errors.push("DatetimeParameters.timezone must be a string");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
 export interface WaitParameters {
   // Wait for a specified duration
   amount: number;  // Quantity of time
@@ -404,6 +537,70 @@ export function sanitizeEditParameters(obj: EditParameters): { valid: boolean; e
 
   if (obj.mode !== undefined && typeof obj.mode !== "string") {
     errors.push("EditParameters.mode must be a string");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+export interface FilterParameters {
+  // Keep only list items that match one or more rules
+  input_array: any | undefined;  // Array to filter; defaults to the current working list
+  match_mode: "all" | "any" | undefined;  // How multiple rules are combined
+  rules: FilterRule[];  // Rules used to decide which items to keep
+}
+
+export function sanitizeFilterParameters(obj: FilterParameters): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.match_mode !== undefined && typeof obj.match_mode !== "string") {
+    errors.push("FilterParameters.match_mode must be a string");
+  }
+  if (obj.rules === undefined || obj.rules === null) {
+    errors.push("FilterParameters.rules is required");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+export interface SortParameters {
+  // Order a list using one or more sort rules
+  input_array: any | undefined;  // Array to sort; defaults to the current working list
+  rules: SortRule[];  // Ordered sort rules
+}
+
+export function sanitizeSortParameters(obj: SortParameters): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.rules === undefined || obj.rules === null) {
+    errors.push("SortParameters.rules is required");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+export interface LimitParameters {
+  // Keep only the first items from a list
+  input_array: any | undefined;  // Array to limit; defaults to the current working list
+  count: number;  // Number of items to keep
+}
+
+export function sanitizeLimitParameters(obj: LimitParameters): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.count === undefined || obj.count === null) {
+    errors.push("LimitParameters.count is required");
+  }
+  if (obj.count !== undefined && typeof obj.count !== "number") {
+    errors.push("LimitParameters.count must be a number");
   }
 
   return {
@@ -508,6 +705,13 @@ export interface ManualTriggerNode extends BaseNode {
   credential_type: string[] | undefined;
 }
 
+export interface ScheduledTriggerNode extends BaseNode {
+  // Scheduled workflow trigger with interval-based execution
+  type: "ScheduledTrigger";
+  parameters: ScheduledtriggerParameters;
+  credential_type: string[] | undefined;
+}
+
 export interface HttpNode extends BaseNode {
   // HTTP request node
   type: "http";
@@ -543,6 +747,13 @@ export interface LogNode extends BaseNode {
   credential_type: string[] | undefined;
 }
 
+export interface DatetimeNode extends BaseNode {
+  // Create, shift, or format date and time values
+  type: "datetime";
+  parameters: DatetimeParameters;
+  credential_type: string[] | undefined;
+}
+
 export interface AgentNode extends BaseNode {
   // AI agent node
   type: "agent";
@@ -561,6 +772,27 @@ export interface EditNode extends BaseNode {
   // Data transformation node
   type: "edit";
   parameters: EditParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface FilterNode extends BaseNode {
+  // Keep only list items that match one or more rules
+  type: "filter";
+  parameters: FilterParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface SortNode extends BaseNode {
+  // Order a list using one or more sort rules
+  type: "sort";
+  parameters: SortParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface LimitNode extends BaseNode {
+  // Keep only the first items from a list
+  type: "limit";
+  parameters: LimitParameters;
   credential_type: string[] | undefined;
 }
 
@@ -587,4 +819,4 @@ export interface MergeNode extends BaseNode {
 
 // Union type for all nodes
 
-export type Node = ManualTriggerNode | HttpNode | SmtpNode | ConditionalNode | SwitchNode | LogNode | AgentNode | WaitNode | EditNode | SplitNode | AggregatorNode | MergeNode;
+export type Node = ManualTriggerNode | ScheduledTriggerNode | HttpNode | SmtpNode | ConditionalNode | SwitchNode | LogNode | DatetimeNode | AgentNode | WaitNode | EditNode | FilterNode | SortNode | LimitNode | SplitNode | AggregatorNode | MergeNode;

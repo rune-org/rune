@@ -30,7 +30,7 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="py-18 relative overflow-hidden bg-gradient-to-b from-zinc-950/30 to-transparent backdrop-blur-lg"
+      className="py-18 relative overflow-hidden bg-gradient-to-b from-muted/30 to-transparent backdrop-blur-lg"
       style={{
         maskImage: "linear-gradient(to bottom, black 90%, transparent 100%)",
         WebkitMaskImage: "linear-gradient(to bottom, black 90%, transparent 100%)",
@@ -65,10 +65,10 @@ export function HowItWorks() {
                 transition={{ delay: index * 0.2 }}
                 className="relative z-10 flex flex-col items-center text-center group"
               >
-                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-sm font-medium text-foreground shadow-xl transition-all group-hover:border-white/30 group-hover:scale-110">
+                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card text-sm font-medium text-foreground shadow-xl transition-all group-hover:border-border/80 group-hover:scale-110">
                   {step.id}
                 </div>
-                <h3 className="text-xl font-medium mb-3 text-foreground group-hover:text-white transition-colors">
+                <h3 className="text-xl font-medium mb-3 text-foreground transition-colors">
                   {step.title}
                 </h3>
                 <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">

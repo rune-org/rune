@@ -144,13 +144,13 @@ export function ScrybInterface({
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
             className={cn(
-              "w-[360px] origin-bottom-right overflow-hidden rounded-3xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl",
+              "w-[360px] origin-bottom-right overflow-hidden rounded-3xl border border-border/40 shadow-lg backdrop-blur-2xl",
               playfair.variable,
             )}
             style={{ fontFamily: "var(--font-playfair)" }}
           >
             {/* Background Layers */}
-            <div className="absolute inset-0 bg-zinc-950/80 z-0" />
+            <div className="absolute inset-0 bg-background/80 z-0" />
             <div
               className="absolute inset-0 z-0 opacity-[0.03] mix-blend-overlay pointer-events-none"
               style={{
@@ -189,7 +189,7 @@ export function ScrybInterface({
             />
 
             <div className="relative z-10">
-              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3 font-sans">
+              <div className="flex items-center justify-between border-b border-border/30 px-5 py-3 font-sans">
                 <div className="flex items-center gap-2" role="status" aria-live="polite">
                   <div
                     aria-hidden="true"
@@ -200,7 +200,10 @@ export function ScrybInterface({
                         : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]",
                     )}
                   />
-                  <span id="scryb-panel-title" className="text-xs tracking-wide text-zinc-400">
+                  <span
+                    id="scryb-panel-title"
+                    className="text-xs tracking-wide text-muted-foreground"
+                  >
                     {workflowId ? "Ready to Generate" : "Save Workflow First"}
                   </span>
                 </div>
@@ -215,10 +218,10 @@ export function ScrybInterface({
                           ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
                           : viewState === "error"
                             ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
-                            : "bg-zinc-600",
+                            : "bg-muted-foreground/50",
                     )}
                   />
-                  <span className="text-[10px] uppercase tracking-wider text-zinc-500">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
                     {viewState === "generating"
                       ? "Processing"
                       : viewState === "success"
@@ -241,10 +244,10 @@ export function ScrybInterface({
                       className="space-y-6"
                     >
                       <div className="space-y-2">
-                        <h3 className="text-2xl tracking-tight text-white">
+                        <h3 className="text-2xl tracking-tight text-foreground">
                           <em>Generate Documentation</em>
                         </h3>
-                        <p className="text-sm leading-relaxed text-zinc-400">
+                        <p className="text-sm leading-relaxed text-muted-foreground">
                           Transform your current workflow into comprehensive documentation with one
                           click.
                         </p>
@@ -252,7 +255,7 @@ export function ScrybInterface({
 
                       {/* Target Audience Selector */}
                       <div className="space-y-2 mt-1 mb-4">
-                        <label className="block font-sans text-xs tracking-wide text-zinc-500 -mt-2.5 mb-4">
+                        <label className="block font-sans text-xs tracking-wide text-muted-foreground/70 -mt-2.5 mb-4">
                           Target Audience
                         </label>
                         <div className="flex gap-2">
@@ -262,8 +265,8 @@ export function ScrybInterface({
                             className={cn(
                               "flex-1 rounded-xl border px-3 py-2 text-xs transition-all",
                               targetAudience === "Technical Developer"
-                                ? "border-white/20 bg-white/5 backdrop-blur-md text-zinc-100 shadow-sm"
-                                : "border-white/[0.05] bg-transparent text-zinc-500 hover:bg-white/[0.05]",
+                                ? "border-border bg-white/5 backdrop-blur-md text-foreground shadow-sm"
+                                : "border-border/20 bg-transparent text-muted-foreground/70 hover:bg-muted/40",
                             )}
                             style={{
                               fontFamily: "ui-sans-serif, system-ui, sans-serif",
@@ -278,8 +281,8 @@ export function ScrybInterface({
                             className={cn(
                               "flex-1 rounded-xl border px-3 py-2 text-xs transition-all",
                               targetAudience === "Executive Summary"
-                                ? "border-white/20 bg-white/5 backdrop-blur-md text-zinc-100 shadow-sm"
-                                : "border-white/[0.05] bg-transparent text-zinc-500 hover:bg-white/[0.05]",
+                                ? "border-border bg-white/5 backdrop-blur-md text-foreground shadow-sm"
+                                : "border-border/20 bg-transparent text-muted-foreground/70 hover:bg-muted/40",
                             )}
                             style={{
                               fontFamily: "ui-sans-serif, system-ui, sans-serif",
@@ -291,19 +294,19 @@ export function ScrybInterface({
                         </div>
                       </div>
 
-                      <div className="relative rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4">
+                      <div className="relative rounded-2xl border border-border/30 bg-muted/30 p-4">
                         <Lightbulb
                           className="absolute left-3 top-4 h-4.5 w-4.5 text-amber-500/60"
                           aria-hidden="true"
                         />
-                        <p className="pl-5 font-sans text-xs italic leading-relaxed text-zinc-400">
+                        <p className="pl-5 font-sans text-xs italic leading-relaxed text-muted-foreground">
                           {hint}
                         </p>
                       </div>
 
                       <Button
                         variant="outline"
-                        className="group h-11 w-full rounded-2xl border-white/[0.1] bg-white/[0.05] text-zinc-200 transition-all hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-white active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="group h-11 w-full rounded-2xl border-border/60 bg-muted/40 text-foreground/90 transition-all hover:border-border/80 hover:bg-muted/60 hover:text-foreground active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleGenerate}
                         disabled={viewState === "generating" || !workflowId}
                       >
@@ -341,15 +344,15 @@ export function ScrybInterface({
                         <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 ring-1 ring-red-500/20">
                           <AlertCircle className="h-7 w-7 text-red-400" aria-hidden="true" />
                         </div>
-                        <h3 className="text-xl text-zinc-100">Generation Failed</h3>
-                        <p className="pt-2.5 text-sm text-zinc-500">
+                        <h3 className="text-xl text-foreground">Generation Failed</h3>
+                        <p className="pt-2.5 text-sm text-muted-foreground/70">
                           {errorMessage || "An error occurred while generating documentation."}
                         </p>
                       </div>
 
                       <Button
                         variant="outline"
-                        className="h-11 w-full gap-2 rounded-2xl border-white/[0.1] bg-white/[0.05] text-zinc-300 hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-zinc-100"
+                        className="h-11 w-full gap-2 rounded-2xl border-border/60 bg-muted/40 text-foreground/80 hover:border-border/80 hover:bg-muted/60 hover:text-foreground"
                         onClick={resetView}
                       >
                         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -369,28 +372,33 @@ export function ScrybInterface({
                         <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/20">
                           <Check className="h-7 w-7 text-emerald-400" aria-hidden="true" />
                         </div>
-                        <h3 className="text-xl text-zinc-100">Ready to Download</h3>
-                        <p className="pt-2.5 text-sm text-zinc-500">
+                        <h3 className="text-xl text-foreground">Ready to Download</h3>
+                        <p className="pt-2.5 text-sm text-muted-foreground/70">
                           Your documentation has been successfully generated.
                         </p>
                       </div>
 
-                      <div className="group flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.05]">
+                      <div className="group flex items-center justify-between rounded-2xl border border-border/30 bg-muted/30 p-3 transition-colors hover:bg-muted/40">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] ring-1 ring-white/[0.08]">
-                            <FileText className="h-5 w-5 text-zinc-400" aria-hidden="true" />
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50 ring-1 ring-border/40">
+                            <FileText
+                              className="h-5 w-5 text-muted-foreground"
+                              aria-hidden="true"
+                            />
                           </div>
                           <div className="flex flex-col items-start gap-0.5 font-sans">
-                            <span className="text-sm text-zinc-200 group-hover:text-white">
+                            <span className="text-sm text-foreground/90 group-hover:text-foreground">
                               workflow-docs.md
                             </span>
-                            <span className="text-xs text-zinc-500">{fileSize} • Markdown</span>
+                            <span className="text-xs text-muted-foreground/70">
+                              {fileSize} • Markdown
+                            </span>
                           </div>
                         </div>
                         <button
                           type="button"
                           aria-label="Download documentation"
-                          className="p-2 text-zinc-500 transition-colors hover:text-zinc-200"
+                          className="p-2 text-muted-foreground/70 transition-colors hover:text-foreground/90"
                           onClick={handleDownload}
                         >
                           <Download className="h-5 w-5" aria-hidden="true" />
@@ -400,7 +408,7 @@ export function ScrybInterface({
                       <div className="flex gap-3 font-sans">
                         <Button
                           variant="outline"
-                          className="flex-1 gap-2 rounded-2xl border-0 bg-white/[0.05] text-zinc-300 hover:bg-white/[0.08] hover:text-zinc-100"
+                          className="flex-1 gap-2 rounded-2xl border-0 bg-muted/40 text-foreground/80 hover:bg-muted/60 hover:text-foreground"
                           onClick={resetView}
                         >
                           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -408,17 +416,7 @@ export function ScrybInterface({
                         </Button>
                         <button
                           type="button"
-                          className="flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm transition-colors"
-                          style={{
-                            backgroundColor: "rgba(255,255,255,0.9)",
-                            color: "#18181b",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "rgba(255,255,255,1)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.9)";
-                          }}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-foreground/90 px-4 py-2 text-sm text-background transition-colors hover:bg-foreground"
                           onClick={() => setReportViewerOpen(true)}
                         >
                           <Eye className="h-4 w-4" aria-hidden="true" />
@@ -460,7 +458,7 @@ export function ScrybInterface({
         className={cn(
           "group relative flex cursor-pointer items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
           isOpen
-            ? "h-14 w-[360px] justify-between rounded-2xl border border-white/[0.08] bg-black/40 px-5 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-2xl"
+            ? "h-14 w-[360px] justify-between rounded-2xl border border-border/40 bg-background/60 px-5 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-2xl"
             : "h-20 w-20",
         )}
       >
@@ -479,17 +477,17 @@ export function ScrybInterface({
                   alt="Scryb"
                   width={90}
                   height={28}
-                  className="h-7 w-auto shrink-0 translate-y-[2.5px] opacity-90"
+                  className="h-7 w-auto shrink-0 translate-y-[2.5px] opacity-90 invert dark:invert-0"
                 />
-                <div className="h-5 w-px shrink-0 bg-white/10" />
-                <span className="text-[10px] font-medium leading-none tracking-widest text-zinc-500">
+                <div className="h-5 w-px shrink-0 bg-border" />
+                <span className="text-[10px] font-medium leading-none tracking-widest text-muted-foreground/70">
                   DOCUMENTATION
                 </span>
               </div>
 
               <div
                 aria-hidden="true"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] text-zinc-500 transition-all hover:bg-white/[0.1] hover:text-zinc-200"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-muted/50 text-muted-foreground/70 transition-all hover:bg-muted/70 hover:text-foreground/90"
               >
                 <X className="h-4 w-4" />
               </div>
@@ -510,7 +508,7 @@ export function ScrybInterface({
                   alt="Scryb AI"
                   width={56}
                   height={56}
-                  className="h-14 w-14 opacity-90 transition-all duration-300 group-hover:opacity-100"
+                  className="h-14 w-14 opacity-90 transition-all duration-300 group-hover:opacity-100 invert dark:invert-0"
                 />
               </div>
             </motion.div>
