@@ -15,10 +15,13 @@ import { toast } from "@/components/ui/toast";
 import type { CanvasNode, NodeKind } from "./types";
 import {
   scanVariableReferences,
+  scanReferencesToDeleted,
   replaceVariableReferences,
+  clearVariableReferences,
   type ScanResult,
 } from "./lib/variableRefUpdate";
 import { RenameRefDialog, type RenameChoice } from "./components/RenameRefDialog";
+import { DeleteRefDialog, type DeleteChoice } from "./components/DeleteRefDialog";
 import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
@@ -112,6 +115,12 @@ function FlowCanvasInner({
     newName: string;
     nodeId: string;
     nodeType: NodeKind;
+    scanResult: ScanResult;
+  } | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    nodeIds: Set<string>;
+    edgeIds: Set<string>;
+    nodeNames: string[];
     scanResult: ScanResult;
   } | null>(null);
 
@@ -340,14 +349,68 @@ function FlowCanvasInner({
     }
   }, [redo, setNodes, setEdges]);
 
+  const performDelete = useCallback(
+    (nodeIds: Set<string>, edgeIds: Set<string>, clearRefs: boolean) => {
+      pushHistory();
+      setNodes((ns) => {
+        let next = ns.filter((n) => !nodeIds.has(n.id));
+        if (clearRefs) {
+          const deletedNames = new Set<string>();
+          for (const n of ns) {
+            if (nodeIds.has(n.id) && n.data.label) deletedNames.add(n.data.label);
+          }
+          next = clearVariableReferences(next, deletedNames);
+        }
+        return next;
+      });
+      setEdges((es) =>
+        es.filter(
+          (ed) => !edgeIds.has(ed.id) && !nodeIds.has(ed.source) && !nodeIds.has(ed.target),
+        ),
+      );
+    },
+    [pushHistory, setNodes, setEdges],
+  );
+
+  const requestDelete = useCallback(
+    (nodeIds: Set<string>, edgeIds: Set<string>) => {
+      if (nodeIds.size === 0 && edgeIds.size === 0) return;
+      if (nodeIds.size === 0) {
+        performDelete(nodeIds, edgeIds, false);
+        return;
+      }
+      const scan = scanReferencesToDeleted(nodesRef.current, nodeIds);
+      if (scan.totalRefs === 0) {
+        performDelete(nodeIds, edgeIds, false);
+        return;
+      }
+      const nodeNames = nodesRef.current
+        .filter((n) => nodeIds.has(n.id))
+        .map((n) => n.data.label || n.id.slice(0, 6));
+      setDeleteDialog({ nodeIds, edgeIds, nodeNames, scanResult: scan });
+    },
+    [performDelete],
+  );
+
+  const handleDeleteChoice = useCallback(
+    (choice: DeleteChoice) => {
+      if (!deleteDialog) return;
+      const { nodeIds, edgeIds } = deleteDialog;
+      setDeleteDialog(null);
+      if (choice === "cancel") return;
+      performDelete(nodeIds, edgeIds, choice === "clear");
+    },
+    [deleteDialog, performDelete],
+  );
+
   const deleteSelectedElements = useCallback(() => {
-    pushHistory();
     const selectedNodeIds = new Set(nodesRef.current.filter((n) => n.selected).map((n) => n.id));
-    setNodes((ns) => ns.filter((n) => !selectedNodeIds.has(n.id)));
-    setEdges((es) =>
-      es.filter((e) => !selectedNodeIds.has(e.source) && !selectedNodeIds.has(e.target)),
-    );
-  }, [pushHistory, setNodes, setEdges]);
+    if (selectedNodeIds.size === 0 && selectedNodeId) {
+      selectedNodeIds.add(selectedNodeId);
+    }
+    const selectedEdgeIds = new Set(edgesRef.current.filter((e) => e.selected).map((e) => e.id));
+    requestDelete(selectedNodeIds, selectedEdgeIds);
+  }, [selectedNodeId, requestDelete]);
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) || null,
@@ -480,11 +543,8 @@ function FlowCanvasInner({
 
   useCanvasShortcuts({
     nodes,
-    edges,
     readOnly: isViewingSnapshot,
-    selectedNodeId,
     setNodes,
-    setEdges,
     onDelete: deleteSelectedElements,
     onSave: () => {
       void persistGraph();
@@ -496,7 +556,6 @@ function FlowCanvasInner({
       void copySelection();
     },
     onSelectAll: (firstId) => setSelectedNodeId(firstId),
-    onPushHistory: pushHistory,
     shortcutsRef,
     onNodeShortcut: (kind) => {
       pushHistory();
@@ -675,6 +734,15 @@ function FlowCanvasInner({
             newName={renameDialog.newName}
             scanResult={renameDialog.scanResult}
             onChoice={handleRenameChoice}
+          />
+        )}
+
+        {deleteDialog && (
+          <DeleteRefDialog
+            open={true}
+            nodeNames={deleteDialog.nodeNames}
+            scanResult={deleteDialog.scanResult}
+            onChoice={handleDeleteChoice}
           />
         )}
       </div>
