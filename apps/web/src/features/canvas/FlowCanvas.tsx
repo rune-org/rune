@@ -121,6 +121,7 @@ function FlowCanvasInner({
     nodeIds: Set<string>;
     edgeIds: Set<string>;
     nodeNames: string[];
+    orphanedNames: Set<string>;
     scanResult: ScanResult;
   } | null>(null);
 
@@ -350,18 +351,11 @@ function FlowCanvasInner({
   }, [redo, setNodes, setEdges]);
 
   const performDelete = useCallback(
-    (nodeIds: Set<string>, edgeIds: Set<string>, clearRefs: boolean) => {
+    (nodeIds: Set<string>, edgeIds: Set<string>, clearNames?: Set<string>) => {
       pushHistory();
       setNodes((ns) => {
-        let next = ns.filter((n) => !nodeIds.has(n.id));
-        if (clearRefs) {
-          const deletedNames = new Set<string>();
-          for (const n of ns) {
-            if (nodeIds.has(n.id) && n.data.label) deletedNames.add(n.data.label);
-          }
-          next = clearVariableReferences(next, deletedNames);
-        }
-        return next;
+        const next = ns.filter((n) => !nodeIds.has(n.id));
+        return clearNames && clearNames.size > 0 ? clearVariableReferences(next, clearNames) : next;
       });
       setEdges((es) =>
         es.filter(
@@ -376,18 +370,19 @@ function FlowCanvasInner({
     (nodeIds: Set<string>, edgeIds: Set<string>) => {
       if (nodeIds.size === 0 && edgeIds.size === 0) return;
       if (nodeIds.size === 0) {
-        performDelete(nodeIds, edgeIds, false);
+        performDelete(nodeIds, edgeIds);
         return;
       }
       const scan = scanReferencesToDeleted(nodesRef.current, nodeIds);
       if (scan.totalRefs === 0) {
-        performDelete(nodeIds, edgeIds, false);
+        performDelete(nodeIds, edgeIds);
         return;
       }
+      const { orphanedNames, ...scanResult } = scan;
       const nodeNames = nodesRef.current
         .filter((n) => nodeIds.has(n.id))
         .map((n) => n.data.label || n.id.slice(0, 6));
-      setDeleteDialog({ nodeIds, edgeIds, nodeNames, scanResult: scan });
+      setDeleteDialog({ nodeIds, edgeIds, nodeNames, orphanedNames, scanResult });
     },
     [performDelete],
   );
@@ -395,10 +390,10 @@ function FlowCanvasInner({
   const handleDeleteChoice = useCallback(
     (choice: DeleteChoice) => {
       if (!deleteDialog) return;
-      const { nodeIds, edgeIds } = deleteDialog;
+      const { nodeIds, edgeIds, orphanedNames } = deleteDialog;
       setDeleteDialog(null);
       if (choice === "cancel") return;
-      performDelete(nodeIds, edgeIds, choice === "clear");
+      performDelete(nodeIds, edgeIds, choice === "clear" ? orphanedNames : undefined);
     },
     [deleteDialog, performDelete],
   );
