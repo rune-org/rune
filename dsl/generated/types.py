@@ -339,33 +339,112 @@ class LogParameters(BaseModel):
 
         return len(errors) == 0, errors
 
-class DatetimeParameters(BaseModel):
-    """Create, shift, or format date and time values"""
-    operation: Literal["now", "add", "subtract", "format"]  # Date and time operation
-    date: Optional[str]  # Input date or timestamp to format or adjust
-    amount: Optional[float]  # Amount of time to add or subtract
-    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]]  # Unit of time for add and subtract
-    format: Optional[str]  # Output format string
-    timezone: Optional[str]  # Timezone used for parsing and formatting
+class DatetimenowParameters(BaseModel):
+    """Get the current date and time in a given timezone"""
+    timezone: Optional[str]  # IANA timezone used for the output
+    format: Optional[str]  # Output format string (Go time layout)
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
         errors: list[str] = []
 
-        if self.operation is None:
-            errors.append("DatetimeParameters.operation is required")
-        if self.operation is not None and not isinstance(self.operation, str):
-            errors.append("DatetimeParameters.operation must be a string")
-        if self.date is not None and not isinstance(self.date, str):
-            errors.append("DatetimeParameters.date must be a string")
-        if self.amount is not None and not isinstance(self.amount, (int, float)):
-            errors.append("DatetimeParameters.amount must be a number")
-        if self.unit is not None and not isinstance(self.unit, str):
-            errors.append("DatetimeParameters.unit must be a string")
-        if self.format is not None and not isinstance(self.format, str):
-            errors.append("DatetimeParameters.format must be a string")
         if self.timezone is not None and not isinstance(self.timezone, str):
-            errors.append("DatetimeParameters.timezone must be a string")
+            errors.append("DatetimenowParameters.timezone must be a string")
+        if self.format is not None and not isinstance(self.format, str):
+            errors.append("DatetimenowParameters.format must be a string")
+
+        return len(errors) == 0, errors
+
+class DatetimeaddParameters(BaseModel):
+    """Add a duration to a date or timestamp"""
+    date: Optional[str]  # Input date or timestamp; defaults to now when empty
+    amount: float  # Amount of time to add
+    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]]  # Unit of time
+    timezone: Optional[str]  # IANA timezone used for parsing naive inputs and for the output
+    format: Optional[str]  # Output format string (Go time layout)
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.date is not None and not isinstance(self.date, str):
+            errors.append("DatetimeaddParameters.date must be a string")
+        if self.amount is None:
+            errors.append("DatetimeaddParameters.amount is required")
+        if self.amount is not None and not isinstance(self.amount, (int, float)):
+            errors.append("DatetimeaddParameters.amount must be a number")
+        if self.unit is not None and not isinstance(self.unit, str):
+            errors.append("DatetimeaddParameters.unit must be a string")
+        if self.timezone is not None and not isinstance(self.timezone, str):
+            errors.append("DatetimeaddParameters.timezone must be a string")
+        if self.format is not None and not isinstance(self.format, str):
+            errors.append("DatetimeaddParameters.format must be a string")
+
+        return len(errors) == 0, errors
+
+class DatetimesubtractParameters(BaseModel):
+    """Subtract a duration from a date or timestamp"""
+    date: Optional[str]  # Input date or timestamp; defaults to now when empty
+    amount: float  # Amount of time to subtract
+    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]]  # Unit of time
+    timezone: Optional[str]  # IANA timezone used for parsing naive inputs and for the output
+    format: Optional[str]  # Output format string (Go time layout)
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.date is not None and not isinstance(self.date, str):
+            errors.append("DatetimesubtractParameters.date must be a string")
+        if self.amount is None:
+            errors.append("DatetimesubtractParameters.amount is required")
+        if self.amount is not None and not isinstance(self.amount, (int, float)):
+            errors.append("DatetimesubtractParameters.amount must be a number")
+        if self.unit is not None and not isinstance(self.unit, str):
+            errors.append("DatetimesubtractParameters.unit must be a string")
+        if self.timezone is not None and not isinstance(self.timezone, str):
+            errors.append("DatetimesubtractParameters.timezone must be a string")
+        if self.format is not None and not isinstance(self.format, str):
+            errors.append("DatetimesubtractParameters.format must be a string")
+
+        return len(errors) == 0, errors
+
+class DatetimeformatParameters(BaseModel):
+    """Format a date or timestamp in a chosen timezone"""
+    date: str  # Input date or timestamp to format
+    timezone: Optional[str]  # IANA timezone used for parsing naive inputs and for the output
+    format: Optional[str]  # Output format string (Go time layout)
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.date is None:
+            errors.append("DatetimeformatParameters.date is required")
+        if self.date is not None and not isinstance(self.date, str):
+            errors.append("DatetimeformatParameters.date must be a string")
+        if self.timezone is not None and not isinstance(self.timezone, str):
+            errors.append("DatetimeformatParameters.timezone must be a string")
+        if self.format is not None and not isinstance(self.format, str):
+            errors.append("DatetimeformatParameters.format must be a string")
+
+        return len(errors) == 0, errors
+
+class DatetimeparseParameters(BaseModel):
+    """Parse a date or timestamp into structured components"""
+    date: str  # Input date or timestamp to parse
+    timezone: Optional[str]  # IANA timezone used for parsing naive inputs and for the structured output
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.date is None:
+            errors.append("DatetimeparseParameters.date is required")
+        if self.date is not None and not isinstance(self.date, str):
+            errors.append("DatetimeparseParameters.date must be a string")
+        if self.timezone is not None and not isinstance(self.timezone, str):
+            errors.append("DatetimeparseParameters.timezone must be a string")
 
         return len(errors) == 0, errors
 
@@ -706,10 +785,10 @@ class LogNode(BaseNode):
 
         return len(errors) == 0, errors
 
-class DatetimeNode(BaseNode):
-    """Create, shift, or format date and time values"""
-    type_: Literal["datetime"] = Field(default="datetime", alias="type")
-    parameters: DatetimeParameters
+class DatetimenowNode(BaseNode):
+    """Get the current date and time in a given timezone"""
+    type_: Literal["dateTimeNow"] = Field(default="dateTimeNow", alias="type")
+    parameters: DatetimenowParameters
     credential_type: Optional[list[str]] = None
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -730,7 +809,119 @@ class DatetimeNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(f"DatetimeNode.credentials.type must be one of {self.credential_type}")
+                errors.append(f"DatetimenowNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class DatetimeaddNode(BaseNode):
+    """Add a duration to a date or timestamp"""
+    type_: Literal["dateTimeAdd"] = Field(default="dateTimeAdd", alias="type")
+    parameters: DatetimeaddParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"DatetimeaddNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class DatetimesubtractNode(BaseNode):
+    """Subtract a duration from a date or timestamp"""
+    type_: Literal["dateTimeSubtract"] = Field(default="dateTimeSubtract", alias="type")
+    parameters: DatetimesubtractParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"DatetimesubtractNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class DatetimeformatNode(BaseNode):
+    """Format a date or timestamp in a chosen timezone"""
+    type_: Literal["dateTimeFormat"] = Field(default="dateTimeFormat", alias="type")
+    parameters: DatetimeformatParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"DatetimeformatNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class DatetimeparseNode(BaseNode):
+    """Parse a date or timestamp into structured components"""
+    type_: Literal["dateTimeParse"] = Field(default="dateTimeParse", alias="type")
+    parameters: DatetimeparseParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"DatetimeparseNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
@@ -976,4 +1167,4 @@ class MergeNode(BaseNode):
 
 # Union type for all nodes
 
-Node = Union[ManualTriggerNode, ScheduledTriggerNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, DatetimeNode, AgentNode, WaitNode, EditNode, FilterNode, SortNode, LimitNode, SplitNode, AggregatorNode, MergeNode]
+Node = Union[ManualTriggerNode, ScheduledTriggerNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, DatetimenowNode, DatetimeaddNode, DatetimesubtractNode, DatetimeformatNode, DatetimeparseNode, AgentNode, WaitNode, EditNode, FilterNode, SortNode, LimitNode, SplitNode, AggregatorNode, MergeNode]

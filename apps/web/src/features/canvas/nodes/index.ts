@@ -8,7 +8,11 @@ import { HttpNode } from "./HttpNode";
 import { SmtpNode } from "./SmtpNode";
 import { WaitNode } from "./WaitNode";
 import { LogNode } from "./LogNode";
-import { DateTimeNode } from "./DateTimeNode";
+import { DateTimeNowNode } from "./DateTimeNowNode";
+import { DateTimeAddNode } from "./DateTimeAddNode";
+import { DateTimeSubtractNode } from "./DateTimeSubtractNode";
+import { DateTimeFormatNode } from "./DateTimeFormatNode";
+import { DateTimeParseNode } from "./DateTimeParseNode";
 import { EditNode } from "./EditNode";
 import { FilterNode } from "./FilterNode";
 import { SortNode } from "./SortNode";
@@ -27,7 +31,11 @@ export const nodeTypes: NodeTypes = {
   smtp: SmtpNode,
   wait: WaitNode,
   log: LogNode,
-  datetime: DateTimeNode,
+  dateTimeNow: DateTimeNowNode,
+  dateTimeAdd: DateTimeAddNode,
+  dateTimeSubtract: DateTimeSubtractNode,
+  dateTimeFormat: DateTimeFormatNode,
+  dateTimeParse: DateTimeParseNode,
   edit: EditNode,
   filter: FilterNode,
   sort: SortNode,

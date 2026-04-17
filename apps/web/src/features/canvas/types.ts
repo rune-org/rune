@@ -17,8 +17,6 @@ export type EditAssignment = {
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
-export type DateTimeOperation = "now" | "add" | "subtract" | "format";
-
 export type DateTimeUnit = "seconds" | "minutes" | "hours" | "days" | "weeks" | "months" | "years";
 
 export type FilterOperator = "==" | "!=" | ">" | "<" | ">=" | "<=" | "contains";
@@ -87,12 +85,35 @@ export type NodeDataMap = {
     level?: LogLevel;
   };
 
-  datetime: BaseData & {
-    operation?: DateTimeOperation;
+  dateTimeNow: BaseData & {
+    timezone?: string;
+    format?: string;
+  };
+
+  dateTimeAdd: BaseData & {
     date?: string;
     amount?: number;
     unit?: DateTimeUnit;
+    timezone?: string;
     format?: string;
+  };
+
+  dateTimeSubtract: BaseData & {
+    date?: string;
+    amount?: number;
+    unit?: DateTimeUnit;
+    timezone?: string;
+    format?: string;
+  };
+
+  dateTimeFormat: BaseData & {
+    date?: string;
+    timezone?: string;
+    format?: string;
+  };
+
+  dateTimeParse: BaseData & {
+    date?: string;
     timezone?: string;
   };
 
@@ -145,7 +166,11 @@ export type TriggerData = NodeDataMap["trigger"];
 export type ScheduledTriggerData = NodeDataMap["scheduledTrigger"];
 export type WaitData = NodeDataMap["wait"];
 export type LogData = NodeDataMap["log"];
-export type DateTimeData = NodeDataMap["datetime"];
+export type DateTimeNowData = NodeDataMap["dateTimeNow"];
+export type DateTimeAddData = NodeDataMap["dateTimeAdd"];
+export type DateTimeSubtractData = NodeDataMap["dateTimeSubtract"];
+export type DateTimeFormatData = NodeDataMap["dateTimeFormat"];
+export type DateTimeParseData = NodeDataMap["dateTimeParse"];
 export type EditData = NodeDataMap["edit"];
 export type FilterData = NodeDataMap["filter"];
 export type SortData = NodeDataMap["sort"];
