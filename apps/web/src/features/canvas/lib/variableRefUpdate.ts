@@ -78,24 +78,45 @@ function scanVariableReferencesTo(
   };
 }
 
+export type DeleteScanResult = ScanResult & { orphanedNames: Set<string> };
+
 /**
- * Scan non-deleted nodes for variable references pointing at any of the nodes
- * about to be deleted. Returns an empty result if no deleted node has a label.
+ * Collect labels carried by deleted nodes that no remaining node still holds.
+ * Duplicate labels remain valid while any surviving node continues to carry
+ * them, so only orphaned labels warrant a stale-reference warning or cleanup.
+ */
+function collectOrphanedLabels(allNodes: CanvasNode[], deletedNodeIds: Set<string>): Set<string> {
+  const survivingLabels = new Set<string>();
+  for (const node of allNodes) {
+    if (!deletedNodeIds.has(node.id) && node.data.label) {
+      survivingLabels.add(node.data.label);
+    }
+  }
+  const orphaned = new Set<string>();
+  for (const node of allNodes) {
+    const label = node.data.label;
+    if (deletedNodeIds.has(node.id) && label && !survivingLabels.has(label)) {
+      orphaned.add(label);
+    }
+  }
+  return orphaned;
+}
+
+/**
+ * Scan non-deleted nodes for variable references pointing at labels that will
+ * no longer resolve after the deletion. Duplicate-labeled survivors keep their
+ * references valid and are excluded from the result.
  */
 export function scanReferencesToDeleted(
   allNodes: CanvasNode[],
   deletedNodeIds: Set<string>,
-): ScanResult {
-  const deletedNames = new Set<string>();
-  for (const node of allNodes) {
-    if (deletedNodeIds.has(node.id) && node.data.label) {
-      deletedNames.add(node.data.label);
-    }
+): DeleteScanResult {
+  const orphanedNames = collectOrphanedLabels(allNodes, deletedNodeIds);
+  if (orphanedNames.size === 0) {
+    return { totalRefs: 0, affectedNodes: [], references: [], orphanedNames };
   }
-  if (deletedNames.size === 0) {
-    return { totalRefs: 0, affectedNodes: [], references: [] };
-  }
-  return scanVariableReferencesTo(allNodes, deletedNames, deletedNodeIds);
+  const scan = scanVariableReferencesTo(allNodes, orphanedNames, deletedNodeIds);
+  return { ...scan, orphanedNames };
 }
 
 /** Recursively walk a node-data value, applying `transformString` to every string. */
