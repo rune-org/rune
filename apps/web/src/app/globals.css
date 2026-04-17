@@ -113,7 +113,7 @@
   }
 
   /* Hide the # anchor links on Nextra doc headings (keep IDs for TOC sidebar) */
-  .subheading-anchor {
+  .nextra-content .subheading-anchor {
     display: none !important;
   }
 
@@ -127,9 +127,9 @@
     color: hsl(0 0% 100%);
   }
 
-  /* Hide the external link icons in Nextra */
-  nav.nextra-toc a svg,
-  .nextra-sidebar-footer a svg {
+  /* Hide ONLY the external link icons (arrows) in Nextra */
+  nav.nextra-toc a[target="_blank"] svg,
+  .nextra-sidebar-footer a[target="_blank"] svg {
     display: none !important;
   }
 }
