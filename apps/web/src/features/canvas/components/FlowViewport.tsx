@@ -93,6 +93,7 @@ export const FlowViewport = memo(function FlowViewport({
       connectOnClick={!readOnly}
       nodesDraggable={!readOnly}
       nodesConnectable={!readOnly}
+      deleteKeyCode={null}
     >
       {!readOnly ? <ClickConnectBridge /> : null}
       <Background />
