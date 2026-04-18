@@ -7,7 +7,7 @@ export function DocsNavbar() {
   return (
     <nav className="flex items-center justify-between w-full h-16 px-6 bg-background/80 backdrop-blur-md border-b border-border/40">
       <div className="flex items-center gap-6">
-        <Logo variant="glyph" href="/create/docs" className="h-6 w-6" />
+        <Logo variant="glyph" href="/" className="h-6 w-6" />
       </div>
 
       <div className="flex-1" />
