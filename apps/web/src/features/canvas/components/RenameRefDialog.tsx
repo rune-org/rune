@@ -10,6 +10,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { plural } from "@/lib/plural";
 import type { ScanResult } from "../lib/variableRefUpdate";
 
 export type RenameChoice = "update" | "skip" | "cancel";
@@ -21,10 +22,6 @@ type RenameRefDialogProps = {
   scanResult: ScanResult;
   onChoice: (choice: RenameChoice) => void;
 };
-
-function plural(count: number, word: string): string {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
-}
 
 export function RenameRefDialog({
   open,

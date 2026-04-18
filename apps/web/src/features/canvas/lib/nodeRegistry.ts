@@ -1,6 +1,10 @@
 import {
   Bot,
   CalendarClock,
+  CalendarCog,
+  CalendarMinus,
+  CalendarPlus,
+  CalendarSearch,
   Clock,
   Combine,
   Filter,
@@ -20,7 +24,14 @@ import {
 } from "lucide-react";
 import type { FilterData, NodeDataMap, NodeKind, SortData, SwitchData } from "../types";
 
-export type NodeGroup = "triggers" | "flow" | "transform" | "http" | "email" | "agents";
+export type NodeGroup =
+  | "triggers"
+  | "flow"
+  | "transform"
+  | "datetime"
+  | "http"
+  | "email"
+  | "agents";
 
 export type NodeColorTheme = {
   /** base color (e.g., "--node-http") */
@@ -216,28 +227,109 @@ export const NODE_REGISTRY: NodeRegistry = {
     hasDynamicOutputs: false,
     shortcutKey: "l",
   },
-  datetime: {
-    kind: "datetime",
-    label: "Date & Time",
+  dateTimeNow: {
+    kind: "dateTimeNow",
+    label: "Current Date/Time",
     icon: CalendarClock,
     colorTheme: {
-      base: "--node-transform",
-      bg: "--node-transform-bg",
-      border: "--node-transform-border",
+      base: "--node-datetime",
+      bg: "--node-datetime-bg",
+      border: "--node-datetime-border",
     },
     dimensions: { width: 220, height: 80 },
     defaults: {
-      label: "Date & Time",
-      operation: "now",
+      label: "Current Date/Time",
+      format: "2006-01-02T15:04:05Z07:00",
+      timezone: "UTC",
+    },
+    schema: { inputs: ["input"], outputs: ["result"] },
+    group: "datetime",
+    isTrigger: false,
+    hasDynamicOutputs: false,
+    shortcutKey: "d",
+  },
+  dateTimeAdd: {
+    kind: "dateTimeAdd",
+    label: "Add Date/Time",
+    icon: CalendarPlus,
+    colorTheme: {
+      base: "--node-datetime",
+      bg: "--node-datetime-bg",
+      border: "--node-datetime-border",
+    },
+    dimensions: { width: 220, height: 80 },
+    defaults: {
+      label: "Add Date/Time",
+      amount: 1,
       unit: "days",
       format: "2006-01-02T15:04:05Z07:00",
       timezone: "UTC",
     },
     schema: { inputs: ["input"], outputs: ["result"] },
-    group: "transform",
+    group: "datetime",
     isTrigger: false,
     hasDynamicOutputs: false,
-    shortcutKey: "d",
+  },
+  dateTimeSubtract: {
+    kind: "dateTimeSubtract",
+    label: "Subtract Date/Time",
+    icon: CalendarMinus,
+    colorTheme: {
+      base: "--node-datetime",
+      bg: "--node-datetime-bg",
+      border: "--node-datetime-border",
+    },
+    dimensions: { width: 220, height: 80 },
+    defaults: {
+      label: "Subtract Date/Time",
+      amount: 1,
+      unit: "days",
+      format: "2006-01-02T15:04:05Z07:00",
+      timezone: "UTC",
+    },
+    schema: { inputs: ["input"], outputs: ["result"] },
+    group: "datetime",
+    isTrigger: false,
+    hasDynamicOutputs: false,
+  },
+  dateTimeFormat: {
+    kind: "dateTimeFormat",
+    label: "Format Date/Time",
+    icon: CalendarCog,
+    colorTheme: {
+      base: "--node-datetime",
+      bg: "--node-datetime-bg",
+      border: "--node-datetime-border",
+    },
+    dimensions: { width: 220, height: 80 },
+    defaults: {
+      label: "Format Date/Time",
+      format: "2006-01-02T15:04:05Z07:00",
+      timezone: "UTC",
+    },
+    schema: { inputs: ["input"], outputs: ["result"] },
+    group: "datetime",
+    isTrigger: false,
+    hasDynamicOutputs: false,
+  },
+  dateTimeParse: {
+    kind: "dateTimeParse",
+    label: "Parse Date/Time",
+    icon: CalendarSearch,
+    colorTheme: {
+      base: "--node-datetime",
+      bg: "--node-datetime-bg",
+      border: "--node-datetime-border",
+    },
+    dimensions: { width: 220, height: 80 },
+    defaults: {
+      label: "Parse Date/Time",
+      timezone: "UTC",
+    },
+    schema: { inputs: ["input"], outputs: ["output"] },
+    group: "datetime",
+    isTrigger: false,
+    hasDynamicOutputs: false,
   },
   edit: {
     kind: "edit",
@@ -481,6 +573,7 @@ const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
   http: { label: "HTTP", icon: Globe, colorClass: "bg-node-http" },
   flow: { label: "Control Flow", icon: Route, colorClass: "bg-node-flow" },
   transform: { label: "Data Transform", icon: Wand2, colorClass: "bg-node-transform" },
+  datetime: { label: "Date & Time", icon: CalendarClock, colorClass: "bg-node-datetime" },
   email: { label: "Email", icon: Mail, colorClass: "bg-node-email" },
   agents: { label: "Agents", icon: Bot, colorClass: "bg-node-agent" },
 };

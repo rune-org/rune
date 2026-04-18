@@ -414,6 +414,14 @@ var CommonTimeFormats = []string{
 	"2006-01-02",
 	time.RFC1123Z,
 	time.RFC1123,
+	// Minute-precision RFC1123 variants (no seconds) — the format presets
+	// offered by the datetime inspector emit these, so the parser must
+	// accept them when a datetime node's result is piped into another.
+	"Mon, 02 Jan 2006 15:04 MST",
+	"Mon, 02 Jan 2006 15:04 -0700",
+	"02 Jan 2006 15:04 MST",
+	"02 Jan 2006 15:04 -0700",
+	"02 Jan 2006",
 	time.RFC822Z,
 	time.RFC822,
 }
