@@ -7,15 +7,7 @@ export function DocsNavbar() {
   return (
     <nav className="flex items-center justify-between w-full h-16 px-6 bg-background/80 backdrop-blur-md border-b border-border/40">
       <div className="flex items-center gap-6">
-        <Logo variant="glyph" href="/create/docs" className="h-8 w-8" />
-        <div className="h-4 w-px bg-border/60" />
-        <Link
-          href="/create/docs"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
-        >
-          <span className="hidden sm:inline">Back to Rune</span>
-          <span className="sm:hidden">Exit</span>
-        </Link>
+        <Logo variant="glyph" href="/create/docs" className="h-6 w-6" />
       </div>
 
       <div className="flex-1" />
