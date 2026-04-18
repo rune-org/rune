@@ -13,37 +13,33 @@ import {
 import { plural } from "@/lib/plural";
 import type { ScanResult } from "../lib/variableRefUpdate";
 
-export type RenameChoice = "update" | "skip" | "cancel";
+export type DeleteChoice = "delete" | "clear" | "cancel";
 
-type RenameRefDialogProps = {
+type DeleteRefDialogProps = {
   open: boolean;
-  oldName: string;
-  newName: string;
+  nodeNames: string[];
   scanResult: ScanResult;
-  onChoice: (choice: RenameChoice) => void;
+  onChoice: (choice: DeleteChoice) => void;
 };
 
-export function RenameRefDialog({
-  open,
-  oldName,
-  newName,
-  scanResult,
-  onChoice,
-}: RenameRefDialogProps) {
+const nameListFormat = new Intl.ListFormat("en", { type: "conjunction" });
+
+export function DeleteRefDialog({ open, nodeNames, scanResult, onChoice }: DeleteRefDialogProps) {
   function handleOpenChange(isOpen: boolean): void {
     if (!isOpen) onChoice("cancel");
   }
+
+  const nodeWord = nodeNames.length === 1 ? "node" : "nodes";
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent className="sm:max-w-lg">
         <AlertDialogHeader>
-          <AlertDialogTitle>Update variable references?</AlertDialogTitle>
+          <AlertDialogTitle>Delete referenced {nodeWord}?</AlertDialogTitle>
           <AlertDialogDescription className="wrap-break-word">
-            Renaming <strong className="break-all">{oldName}</strong> to{" "}
-            <strong className="break-all">{newName}</strong> will affect{" "}
-            <strong>{plural(scanResult.totalRefs, "reference")}</strong> in{" "}
-            <strong>{plural(scanResult.affectedNodes.length, "node")}</strong>.
+            Deleting <strong className="break-all">{nameListFormat.format(nodeNames)}</strong> will
+            leave <strong>{plural(scanResult.totalRefs, "stale reference")}</strong> in{" "}
+            <strong>{plural(scanResult.affectedNodes.length, "other node")}</strong>.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-row items-center gap-2 sm:justify-between">
@@ -53,12 +49,15 @@ export function RenameRefDialog({
           <div className="flex items-center gap-2">
             <AlertDialogAction
               className="border border-input bg-background text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground"
-              onClick={() => onChoice("skip")}
+              onClick={() => onChoice("delete")}
             >
-              Skip
+              Delete anyway
             </AlertDialogAction>
-            <AlertDialogAction onClick={() => onChoice("update")}>
-              Update references
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => onChoice("clear")}
+            >
+              Delete and clear references
             </AlertDialogAction>
           </div>
         </AlertDialogFooter>

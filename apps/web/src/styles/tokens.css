@@ -45,6 +45,9 @@
   --node-transform: hsl(330 80% 50%);
   --node-transform-bg: hsl(330 80% 50% / 0.04);
   --node-transform-border: hsl(330 80% 50% / 0.55);
+  --node-datetime: hsl(268 72% 52%);
+  --node-datetime-bg: hsl(268 72% 52% / 0.12);
+  --node-datetime-border: hsl(268 72% 52% / 0.6);
   --node-http: hsl(142 76% 36%);
   --node-http-bg: hsl(142 76% 36% / 0.04);
   --node-http-border: hsl(142 76% 36% / 0.55);
@@ -122,6 +125,9 @@
   --node-transform: hsl(330 80% 60%);
   --node-transform-bg: hsl(330 80% 60% / 0.18);
   --node-transform-border: hsl(330 80% 60% / 0.35);
+  --node-datetime: hsl(268 80% 70%);
+  --node-datetime-bg: hsl(268 80% 70% / 0.15);
+  --node-datetime-border: hsl(268 80% 70% / 0.5);
   --node-http: hsl(142 76% 56%);
   --node-http-bg: hsl(142 76% 56% / 0.18);
   --node-http-border: hsl(142 76% 56% / 0.35);
