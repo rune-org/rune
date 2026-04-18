@@ -134,6 +134,42 @@
   }
 }
 
+/* --- Nextra Docs Customizations --- */
+
+/* Sidebar Footer (Theme Switcher) */
+.nextra-sidebar-footer {
+  position: sticky !important;
+  bottom: 0 !important;
+  background-color: var(--background) !important;
+  z-index: 20 !important;
+  border-top: 1px solid var(--border) !important;
+  padding: 1rem 1.25rem !important;
+}
+
+/* Breathing room in content area */
+article {
+  padding-top: 2rem !important;
+  padding-bottom: 4rem !important;
+}
+
+/* Breadcrumb spacing */
+.nextra-breadcrumb {
+  margin-bottom: 2rem !important;
+  opacity: 0.8;
+}
+
+/* Documentation title styling */
+article h1 {
+  margin-top: 0.5rem !important;
+  margin-bottom: 2.5rem !important;
+  font-size: 2.5rem !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* --- End Nextra Docs Customizations --- */
+
 @utility animate-fade-in {
   animation: fadeIn 1s ease-out forwards;
 }
