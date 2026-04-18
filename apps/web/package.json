@@ -30,12 +30,11 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.0.7",
+    "@dagrejs/dagre": "^1.1.4",
     "@theguild/remark-mermaid": "^0.3.0",
-    "@types/dagre": "^0.7.53",
     "@xyflow/react": "^12.8.6",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
-    "dagre": "^0.8.5",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.24",
     "lucide-react": "^1.0.0",
@@ -94,7 +93,10 @@
       "body-parser": ">=2.2.1",
       "js-yaml": ">=4.1.1",
       "minimatch": ">=10.2.1",
-      "picomatch": "4.0.4"
+      "picomatch": "4.0.4",
+      "vite": ">=7.3.2",
+      "hono": ">=4.12.14",
+      "@hono/node-server": ">=1.19.14"
     }
   }
 }

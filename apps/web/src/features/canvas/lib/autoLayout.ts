@@ -1,4 +1,4 @@
-import dagre from "dagre";
+import dagre from "@dagrejs/dagre";
 import type { Edge } from "@xyflow/react";
 import type { CanvasNode } from "../types";
 import { getNodeDimensionsWithData } from "./nodeRegistry";

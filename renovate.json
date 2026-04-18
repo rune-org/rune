@@ -34,7 +34,7 @@
       "enabled": false
     },
     {
-      "matchManagers": ["pip_requirements", "pip-compile", "pipenv", "poetry", "pep621", "pip_setup", "setup-cfg"],
+      "matchManagers": ["pipenv", "poetry", "pip_setup", "setup-cfg"],
       "enabled": false
     },
     {
