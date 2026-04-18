@@ -31,6 +31,16 @@ type HTTPNode struct {
 	timeout       time.Duration
 	raiseOnStatus string
 	ignoreSSL     bool
+
+	// OAuth2 client_credentials config, populated from the attached credential.
+	// When oauth2Enabled is true, Execute fetches a fresh access token on every
+	// run and injects it as an Authorization: Bearer header.
+	oauth2Enabled      bool
+	oauth2TokenURL     string
+	oauth2ClientID     string
+	oauth2ClientSecret string
+	oauth2Scope        string
+	oauth2AuthMethod   string
 }
 
 // NewHTTPNode creates a new HTTPNode instance from execution context parameters.
@@ -103,6 +113,16 @@ func NewHTTPNode(execCtx plugin.ExecutionContext) *HTTPNode {
 						node.headers[field] = value
 					}
 				}
+			case "oauth2":
+				// Stash config here — token is fetched at Execute time so the
+				// exchange honors the same context/timeout as the outbound call
+				// and so errors can propagate as node failures.
+				node.oauth2Enabled = true
+				node.oauth2TokenURL, _ = creds["token_url"].(string)
+				node.oauth2ClientID, _ = creds["client_id"].(string)
+				node.oauth2ClientSecret, _ = creds["client_secret"].(string)
+				node.oauth2Scope, _ = creds["scope"].(string)
+				node.oauth2AuthMethod, _ = creds["client_auth_method"].(string)
 			}
 		}
 	}
@@ -157,6 +177,27 @@ func NewHTTPNode(execCtx plugin.ExecutionContext) *HTTPNode {
 func (n *HTTPNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) (map[string]any, error) {
 	if n.url == "" {
 		return nil, fmt.Errorf("url parameter is required")
+	}
+
+	// OAuth2 client_credentials: fetch a fresh access token per request.
+	// No caching, no refresh, no expiry check — by design.
+	if n.oauth2Enabled {
+		if _, exists := n.headers["Authorization"]; !exists {
+			token, err := fetchClientCredentialsToken(
+				ctx,
+				n.oauth2TokenURL,
+				n.oauth2ClientID,
+				n.oauth2ClientSecret,
+				n.oauth2Scope,
+				n.oauth2AuthMethod,
+				n.retry,
+				n.retryDelay,
+			)
+			if err != nil {
+				return nil, err
+			}
+			n.headers["Authorization"] = "Bearer " + token
+		}
 	}
 
 	var lastErr error

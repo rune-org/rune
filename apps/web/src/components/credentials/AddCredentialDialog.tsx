@@ -43,9 +43,10 @@ const CREDENTIAL_FIELDS: Record<
   Array<{
     key: string;
     label: string;
-    type: "text" | "password" | "textarea" | "number";
+    type: "text" | "password" | "textarea" | "number" | "select";
     placeholder?: string;
     required?: boolean;
+    options?: Array<{ value: string; label: string }>;
   }>
 > = {
   api_key: [
@@ -65,6 +66,13 @@ const CREDENTIAL_FIELDS: Record<
   ],
   oauth2: [
     {
+      key: "token_url",
+      label: "Token URL",
+      type: "text",
+      placeholder: "https://oauth.example.com/token",
+      required: true,
+    },
+    {
       key: "client_id",
       label: "Client ID",
       type: "text",
@@ -77,16 +85,20 @@ const CREDENTIAL_FIELDS: Record<
       required: true,
     },
     {
-      key: "auth_url",
-      label: "Authorization URL",
+      key: "scope",
+      label: "Scope (optional)",
       type: "text",
-      placeholder: "https://oauth.example.com/authorize",
+      placeholder: "read:users write:orders",
     },
     {
-      key: "token_url",
-      label: "Token URL",
-      type: "text",
-      placeholder: "https://oauth.example.com/token",
+      key: "client_auth_method",
+      label: "Client Authentication",
+      type: "select",
+      required: true,
+      options: [
+        { value: "basic", label: "Send as Basic Auth header" },
+        { value: "body", label: "Send in request body" },
+      ],
     },
   ],
   basic_auth: [
@@ -166,6 +178,17 @@ const CREDENTIAL_FIELDS: Record<
   ],
 };
 
+// Seed defaults for select fields so submit validation sees a value.
+function getInitialDataForType(type: CredentialType): Record<string, string> {
+  const initial: Record<string, string> = {};
+  for (const field of CREDENTIAL_FIELDS[type]) {
+    if (field.type === "select" && field.options && field.options.length > 0) {
+      initial[field.key] = field.options[0].value;
+    }
+  }
+  return initial;
+}
+
 export function AddCredentialDialog({
   onAdd,
   open: controlledOpen,
@@ -181,7 +204,9 @@ export function AddCredentialDialog({
   };
   const [name, setName] = useState("");
   const [credentialType, setCredentialType] = useState<CredentialType>("api_key");
-  const [credentialData, setCredentialData] = useState<Record<string, string>>({});
+  const [credentialData, setCredentialData] = useState<Record<string, string>>(() =>
+    getInitialDataForType("api_key"),
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset form when dialog opens in controlled mode
@@ -189,7 +214,7 @@ export function AddCredentialDialog({
     if (open && controlledOpen !== undefined) {
       setName("");
       setCredentialType("api_key");
-      setCredentialData({});
+      setCredentialData(getInitialDataForType("api_key"));
     }
   }, [open, controlledOpen]);
 
@@ -228,7 +253,7 @@ export function AddCredentialDialog({
       // Reset form on success
       setName("");
       setCredentialType("api_key");
-      setCredentialData({});
+      setCredentialData(getInitialDataForType("api_key"));
       setOpen(false);
     } catch (_error) {
       toast.error("Failed to create credential");
@@ -238,8 +263,9 @@ export function AddCredentialDialog({
   };
 
   const handleTypeChange = (value: string) => {
-    setCredentialType(value as CredentialType);
-    setCredentialData({});
+    const nextType = value as CredentialType;
+    setCredentialType(nextType);
+    setCredentialData(getInitialDataForType(nextType));
   };
 
   const updateField = (key: string, value: string) => {
@@ -315,6 +341,22 @@ export function AddCredentialDialog({
                         required={field.required}
                         rows={4}
                       />
+                    ) : field.type === "select" ? (
+                      <Select
+                        value={credentialData[field.key] || ""}
+                        onValueChange={(value) => updateField(field.key, value)}
+                      >
+                        <SelectTrigger id={field.key}>
+                          <SelectValue placeholder={field.placeholder} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {field.options?.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     ) : (
                       <Input
                         id={field.key}
