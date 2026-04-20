@@ -109,41 +109,76 @@ export function KeyValueVariableEditor({
     updateEntries((prev) => prev.map((e) => (e.id === id ? { ...e, key } : e)));
   };
 
+  const commitKey = (id: string) => {
+    updateEntries((prev) =>
+      prev.map((e) => (e.id === id && e.key !== e.key.trim() ? { ...e, key: e.key.trim() } : e)),
+    );
+  };
+
   const updateValue = (id: string, value: string) => {
     updateEntries((prev) => prev.map((e) => (e.id === id ? { ...e, value } : e)));
   };
+
+  const rowIssues = new Map<string, string>();
+  const seenKeys = new Set<string>();
+  for (const entry of entries) {
+    const trimmed = entry.key.trim();
+    if (!trimmed) {
+      if (entry.value) rowIssues.set(entry.id, "Key is required — this row will not be sent.");
+      continue;
+    }
+    if (seenKeys.has(trimmed)) {
+      rowIssues.set(
+        entry.id,
+        `Duplicate key "${trimmed}" — only the last row with this key will be sent.`,
+      );
+    } else {
+      seenKeys.add(trimmed);
+    }
+  }
 
   return (
     <div className="mt-2 space-y-2">
       {entries.length > 0 ? (
         <div className="space-y-1.5">
-          {entries.map((entry) => (
-            <div key={entry.id} className="flex items-start gap-1.5">
-              <input
-                className="w-1/3 shrink-0 rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-xs"
-                value={entry.key}
-                onChange={(e) => updateKey(entry.id, e.target.value)}
-                placeholder={keyPlaceholder}
-                spellCheck={false}
-              />
-              <div className="min-w-0 flex-1">
-                <VariableInput
-                  value={entry.value}
-                  onChange={(v) => updateValue(entry.id, v)}
-                  nodeId={nodeId}
-                  placeholder={valuePlaceholder}
+          {entries.map((entry) => {
+            const issue = rowIssues.get(entry.id);
+            return (
+              <div key={entry.id} className="flex items-start gap-1.5">
+                <input
+                  className={
+                    issue
+                      ? "w-1/3 shrink-0 rounded-[calc(var(--radius)-0.25rem)] border border-destructive/60 bg-destructive/5 px-2 py-1 text-xs"
+                      : "w-1/3 shrink-0 rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-xs"
+                  }
+                  value={entry.key}
+                  onChange={(e) => updateKey(entry.id, e.target.value)}
+                  onBlur={() => commitKey(entry.id)}
+                  placeholder={keyPlaceholder}
+                  aria-label={keyPlaceholder}
+                  aria-invalid={issue ? true : undefined}
+                  title={issue}
+                  spellCheck={false}
                 />
+                <div className="min-w-0 flex-1">
+                  <VariableInput
+                    value={entry.value}
+                    onChange={(v) => updateValue(entry.id, v)}
+                    nodeId={nodeId}
+                    placeholder={valuePlaceholder}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeEntry(entry.id)}
+                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
+                  aria-label="Remove entry"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => removeEntry(entry.id)}
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
-                aria-label="Remove entry"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="rounded-[calc(var(--radius)-0.3rem)] border border-dashed border-border/60 bg-muted/20 px-2 py-1.5 text-[11px] text-muted-foreground">
