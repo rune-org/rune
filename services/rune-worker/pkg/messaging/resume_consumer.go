@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"rune-worker/pkg/core"
 	"rune-worker/pkg/dsl"
@@ -105,6 +106,15 @@ func (c *ResumeConsumer) handleResume(ctx context.Context, payload []byte) error
 		return queue.NonRetryable(fmt.Errorf("wait node %s not found in workflow", msg.CurrentNode))
 	}
 
+	// Publish success status for wait node
+	if err := c.publishWaitSuccessStatus(ctx, msg, &node); err != nil {
+		slog.Error("failed to publish wait success status",
+			"error", err,
+			"workflow_id", msg.WorkflowID,
+			"execution_id", msg.ExecutionID,
+			"node_id", node.ID)
+	}
+
 	// Determine next nodes after the wait node
 	nextNodes := c.determineNextNodes(&msg.WorkflowDefinition, &node)
 
@@ -152,6 +162,38 @@ func (c *ResumeConsumer) handleResume(ctx context.Context, payload []byte) error
 	}
 
 	return nil
+}
+
+// publishWaitSuccessStatus emits a success NodeStatusMessage
+// for the resumed wait node.
+func (c *ResumeConsumer) publishWaitSuccessStatus(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node) error {
+	statusMsg := &messages.NodeStatusMessage{
+		WorkflowID:  msg.WorkflowID,
+		ExecutionID: msg.ExecutionID,
+		NodeID:      node.ID,
+		NodeName:    node.Name,
+		Status:      messages.StatusSuccess,
+		ExecutedAt:  time.Now(),
+		DurationMs:  0,
+	}
+
+	if len(msg.LineageStack) > 0 {
+		statusMsg.LineageStack = append(statusMsg.LineageStack, msg.LineageStack...)
+		top := msg.LineageStack[len(msg.LineageStack)-1]
+		statusMsg.BranchID = top.BranchID
+		statusMsg.SplitNodeID = top.SplitNodeID
+		itemIndex := top.ItemIndex
+		totalItems := top.TotalItems
+		statusMsg.ItemIndex = &itemIndex
+		statusMsg.TotalItems = &totalItems
+	}
+
+	payload, err := statusMsg.Encode()
+	if err != nil {
+		return fmt.Errorf("encode wait success status: %w", err)
+	}
+
+	return c.publisher.Publish(ctx, queue.QueueWorkflowNodeStatus, payload)
 }
 
 // determineNextNodes finds nodes connected after the wait node.
