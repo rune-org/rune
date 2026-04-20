@@ -21,14 +21,16 @@ func makeResumeMessage() *messages.NodeExecutionMessage {
 			WorkflowID:  "wf-resume",
 			ExecutionID: "exec-resume",
 			Nodes: []core.Node{
-				{ID: "wait-1", Name: "Wait", Type: "wait", Parameters: map[string]any{}},
+				{ID: "wait-1", Name: "Wait", Type: "wait", Parameters: map[string]any{"amount": 2, "unit": "minutes"}},
 				{ID: "next-1", Name: "Next", Type: "conditional", Parameters: map[string]any{"expression": "true"}},
 			},
 			Edges: []core.Edge{
 				{ID: "edge-1", Src: "wait-1", Dst: "next-1"},
 			},
 		},
-		AccumulatedContext: map[string]any{"$wait": map[string]any{"resume_at": 123}},
+		AccumulatedContext: map[string]any{
+			"$Wait": map[string]any{"resume_at": int64(123), "timer_id": "timer-1"},
+		},
 		LineageStack: []messages.StackFrame{
 			{SplitNodeID: "split-1", BranchID: "branch-1", ItemIndex: 0, TotalItems: 2},
 		},
@@ -103,6 +105,15 @@ func TestResumeConsumerHandleResume_PublishesNextNode(t *testing.T) {
 	}
 	if statusMsg.BranchID != "branch-1" {
 		t.Fatalf("expected lineage branch id to be propagated, got %s", statusMsg.BranchID)
+	}
+	if statusMsg.Output["timer_id"] != "timer-1" {
+		t.Fatalf("expected wait output to be preserved on success status, got %v", statusMsg.Output)
+	}
+	if amount, _ := statusMsg.Parameters["amount"].(float64); amount != 2 {
+		t.Fatalf("expected resolved amount=2, got %v", statusMsg.Parameters["amount"])
+	}
+	if unit, _ := statusMsg.Parameters["unit"].(string); unit != "minutes" {
+		t.Fatalf("expected resolved unit=minutes, got %v", statusMsg.Parameters["unit"])
 	}
 }
 

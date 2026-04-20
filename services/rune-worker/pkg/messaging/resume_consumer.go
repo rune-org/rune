@@ -14,6 +14,7 @@ import (
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
 	"rune-worker/pkg/registry"
+	"rune-worker/pkg/resolver"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -164,15 +165,22 @@ func (c *ResumeConsumer) handleResume(ctx context.Context, payload []byte) error
 	return nil
 }
 
-// publishWaitSuccessStatus emits a success NodeStatusMessage
-// for the resumed wait node.
+// publishWaitSuccessStatus emits a success NodeStatusMessage for the resumed
+// wait node. The output (resume_at, timer_id) and resolved parameters are
+// carried forward from the suspend-time snapshot so that persisted execution
+// history retains the original runtime data after the status transitions.
 func (c *ResumeConsumer) publishWaitSuccessStatus(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node) error {
+	output := extractWaitOutput(msg.AccumulatedContext, node.Name)
+	params := resolveWaitParameters(node, msg.AccumulatedContext)
+
 	statusMsg := &messages.NodeStatusMessage{
 		WorkflowID:  msg.WorkflowID,
 		ExecutionID: msg.ExecutionID,
 		NodeID:      node.ID,
 		NodeName:    node.Name,
 		Status:      messages.StatusSuccess,
+		Parameters:  params,
+		Output:      output,
 		ExecutedAt:  time.Now(),
 		DurationMs:  0,
 	}
@@ -194,6 +202,37 @@ func (c *ResumeConsumer) publishWaitSuccessStatus(ctx context.Context, msg *mess
 	}
 
 	return c.publisher.Publish(ctx, queue.QueueWorkflowNodeStatus, payload)
+}
+
+// extractWaitOutput returns the wait node's original output
+// ({resume_at, timer_id}) which the wait node stashed in the accumulated
+// context under $<node_name> before suspending.
+func extractWaitOutput(accumulated map[string]any, nodeName string) map[string]any {
+	if accumulated == nil || nodeName == "" {
+		return nil
+	}
+	raw, ok := accumulated["$"+nodeName]
+	if !ok {
+		return nil
+	}
+	output, ok := raw.(map[string]any)
+	if !ok {
+		return nil
+	}
+	return output
+}
+
+// resolveWaitParameters resolves the wait node's parameter references against
+// the accumulated context, matching what was emitted on the waiting status.
+func resolveWaitParameters(node *core.Node, accumulated map[string]any) map[string]any {
+	if len(node.Parameters) == 0 || accumulated == nil {
+		return node.Parameters
+	}
+	resolved, err := resolver.NewResolver(accumulated).ResolveParameters(node.Parameters)
+	if err != nil {
+		return node.Parameters
+	}
+	return resolved
 }
 
 // determineNextNodes finds nodes connected after the wait node.
