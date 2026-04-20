@@ -2,6 +2,8 @@ import type { Node } from "@xyflow/react";
 import type { HttpData, NodeDataMap } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
 import { JsonField } from "../JsonField";
+import { KeyValueVariableEditor } from "../KeyValueVariableEditor";
+import { VariableInput } from "../variable-picker/VariableInput";
 import { CredentialSelector } from "@/components/shared/CredentialSelector";
 import type { CredentialRef } from "@/lib/credentials";
 import {
@@ -90,16 +92,16 @@ export function HttpInspector({ node, updateData, isExpanded }: HttpInspectorPro
       </div>
       <div className="space-y-2">
         <label className="block text-xs text-muted-foreground">URL</label>
-        <input
-          className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
+        <VariableInput
           value={node.data.url ?? ""}
-          onChange={(e) =>
+          onChange={(v) =>
             updateHttpData((d) => ({
               ...d,
-              url: e.target.value,
+              url: v,
             }))
           }
           placeholder="https://api.example.com/path"
+          nodeId={node.id}
         />
         {isExpanded && (
           <div className="text-xs text-muted-foreground/70">
@@ -111,10 +113,8 @@ export function HttpInspector({ node, updateData, isExpanded }: HttpInspectorPro
         className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
         open={isExpanded}
       >
-        <summary className="cursor-pointer text-xs text-muted-foreground">
-          Headers (JSON object)
-        </summary>
-        <JsonField
+        <summary className="cursor-pointer text-xs text-muted-foreground">Headers</summary>
+        <KeyValueVariableEditor
           value={node.data.headers}
           onChange={(obj) =>
             updateHttpData((d) => ({
@@ -122,6 +122,11 @@ export function HttpInspector({ node, updateData, isExpanded }: HttpInspectorPro
               headers: obj,
             }))
           }
+          nodeId={node.id}
+          keyPlaceholder="Header name"
+          valuePlaceholder="Header value"
+          addLabel="Add header"
+          emptyLabel="No headers defined."
         />
         {isExpanded && (
           <div className="mt-1 text-xs text-muted-foreground/70">
@@ -133,10 +138,8 @@ export function HttpInspector({ node, updateData, isExpanded }: HttpInspectorPro
         className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2"
         open={isExpanded}
       >
-        <summary className="cursor-pointer text-xs text-muted-foreground">
-          Query Params (JSON object)
-        </summary>
-        <JsonField
+        <summary className="cursor-pointer text-xs text-muted-foreground">Query Params</summary>
+        <KeyValueVariableEditor
           value={node.data.query}
           onChange={(obj) =>
             updateHttpData((d) => ({
@@ -144,6 +147,11 @@ export function HttpInspector({ node, updateData, isExpanded }: HttpInspectorPro
               query: obj,
             }))
           }
+          nodeId={node.id}
+          keyPlaceholder="Param name"
+          valuePlaceholder="Param value"
+          addLabel="Add param"
+          emptyLabel="No query params defined."
         />
         {isExpanded && (
           <div className="mt-1 text-xs text-muted-foreground/70">
