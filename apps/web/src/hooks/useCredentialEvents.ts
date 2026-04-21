@@ -45,8 +45,12 @@ export function useCredentialEvents() {
               );
             }
           },
-          onSseError: (err: any) => {
-            if (err?.name === "AbortError" || abortController.signal.aborted) return;
+          onSseError: (err: unknown) => {
+            if (
+              (err instanceof Error && err.name === "AbortError") ||
+              abortController.signal.aborted
+            )
+              return;
             console.error("Credential SSE Error:", err);
           },
         });
@@ -55,8 +59,11 @@ export function useCredentialEvents() {
         for await (const _ of stream) {
           // just consume
         }
-      } catch (err: any) {
-        if (!abortController.signal.aborted && err?.name !== "AbortError") {
+      } catch (err: unknown) {
+        if (
+          !abortController.signal.aborted &&
+          !(err instanceof Error && err.name === "AbortError")
+        ) {
           console.error("Credential SSE failed:", err);
         }
       }

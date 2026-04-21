@@ -135,21 +135,23 @@ async def credential_events(
 
     async def event_generator():
         from src.db.redis import get_redis_client
-        
+
         redis = get_redis_client()
         pubsub = redis.pubsub()
         await pubsub.subscribe("credential_events")
-        
+
         try:
             while True:
                 if await request.is_disconnected():
                     break
-                    
-                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+
+                message = await pubsub.get_message(
+                    ignore_subscribe_messages=True, timeout=1.0
+                )
                 if message is not None:
                     data = message["data"].decode("utf-8")
                     yield f"data: {data}\n\n"
-                    
+
                 await asyncio.sleep(0.1)
         finally:
             await pubsub.unsubscribe("credential_events")
