@@ -1,5 +1,8 @@
+import json
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from src.db.redis import get_redis_client
+
 
 from src.core.exceptions import AlreadyExists, NotFound
 from src.credentials.encryption import get_encryptor
@@ -177,6 +180,13 @@ class CredentialService:
 
         await self.session.delete(credential)
         await self.session.commit()
+
+        # Publish event
+        redis = get_redis_client()
+        await redis.publish(
+            "credential_events",
+            json.dumps({"action": "deleted", "credential_id": credential_id}),
+        )
 
     async def list_credentials(self, user: User) -> list[WorkflowCredential]:
         """
