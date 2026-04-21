@@ -11,6 +11,8 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { useAuth } from "@/lib/auth";
 
 const ALLOWED_REDIRECTS = ["/create", "/create/app", "/profile", "/admin"] as const;
+const SESSION_EXPIRED_REASON = "session-expired";
+const SESSION_EXPIRED_MESSAGE = "Session expired, please log in again.";
 
 function getValidatedRedirectTarget(
   redirectParam: string | null,
@@ -24,6 +26,7 @@ export function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { state, login } = useAuth();
+  const isSessionExpired = searchParams.get("reason") === SESSION_EXPIRED_REASON;
   const { register, handleSubmit, setValue } = useForm<{
     email: string;
     password: string;
@@ -55,6 +58,14 @@ export function SignInForm() {
 
   return (
     <form className="space-y-5" noValidate onSubmit={handleSubmit(onSubmit)}>
+      {isSessionExpired ? (
+        <div className="rounded-lg bg-amber-500/10 border border-amber-500/25 p-3">
+          <p className="text-xs font-medium text-amber-300" role="status">
+            {SESSION_EXPIRED_MESSAGE}
+          </p>
+        </div>
+      ) : null}
+
       <div className="space-y-2">
         <Label htmlFor="email" className="text-muted-foreground">
           Email
