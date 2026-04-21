@@ -62,6 +62,23 @@ describe("setupClientInterceptors", () => {
     mocks.refreshAccessToken.mockClear();
   });
 
+  it("does not redirect anonymous users on 401 when no session evidence exists", async () => {
+    const interceptor = await installInterceptor();
+    const response = new Response("{}", { status: 401 });
+
+    const result = await interceptor(response, {
+      url: "/profile/me",
+      headers: new Headers(),
+      method: "GET",
+    });
+
+    expect(result).toBe(response);
+    expect(mocks.refreshAccessToken).not.toHaveBeenCalled();
+    expect(locationMock.assign).not.toHaveBeenCalled();
+    expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
+    expect(localStorage.getItem(ACCESS_EXP_KEY)).toBeNull();
+  });
+
   it("redirects to sign-in when session is invalid and no refresh token exists", async () => {
     localStorage.setItem(ACCESS_EXP_KEY, "123");
 

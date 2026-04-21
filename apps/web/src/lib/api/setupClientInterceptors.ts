@@ -19,6 +19,14 @@ function getRefreshToken(): string | null {
   }
 }
 
+function hasSessionEvidence(): boolean {
+  try {
+    return Boolean(localStorage.getItem(ACCESS_EXP_KEY));
+  } catch {
+    return false;
+  }
+}
+
 function clearAuthAndRedirect() {
   try {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
@@ -71,7 +79,12 @@ export function setupClientInterceptors() {
     try {
       const token = getRefreshToken();
       if (!token) {
-        clearAuthAndRedirect();
+        // Anonymous users can legitimately get 401 on startup profile probes.
+        // Only treat missing token as expired session when we have evidence
+        // that a prior authenticated session existed in this browser.
+        if (hasSessionEvidence()) {
+          clearAuthAndRedirect();
+        }
         return response;
       }
 
