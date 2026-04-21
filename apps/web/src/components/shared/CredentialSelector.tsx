@@ -15,6 +15,7 @@ import { AddCredentialDialog } from "@/components/credentials/AddCredentialDialo
 import { toast } from "@/components/ui/toast";
 import type { CredentialResponseDropDown, CredentialType } from "@/client/types.gen";
 import type { CredentialRef } from "@/lib/credentials";
+import { CREDENTIAL_CHANGED_EVENT } from "@/hooks/useCredentialEvents";
 
 interface CredentialSelectorProps {
   credentialType: CredentialType | CredentialType[];
@@ -60,6 +61,16 @@ export function CredentialSelector({
 
   useEffect(() => {
     void fetchCredentials();
+
+    // Listen for rt credential changes
+    const handleCredentialChange = () => {
+      void fetchCredentials();
+    };
+    window.addEventListener(CREDENTIAL_CHANGED_EVENT, handleCredentialChange);
+
+    return () => {
+      window.removeEventListener(CREDENTIAL_CHANGED_EVENT, handleCredentialChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [credentialType]);
 
@@ -137,6 +148,11 @@ export function CredentialSelector({
   };
 
   const selectedValue = value?.id ?? "none";
+  const isMissing = !!(
+    value?.id &&
+    value.id !== "none" &&
+    !credentials.some((c) => c.id.toString() === value.id)
+  );
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -154,8 +170,21 @@ export function CredentialSelector({
         </button>
       </div>
 
-      <Select value={selectedValue} onValueChange={handleValueChange} disabled={isLoading}>
-        <SelectTrigger className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 text-sm">
+      <Select
+        value={selectedValue}
+        onValueChange={handleValueChange}
+        disabled={isLoading}
+        onOpenChange={(open) => {
+          if (open) {
+            void fetchCredentials();
+          }
+        }}
+      >
+        <SelectTrigger
+          className={`w-full rounded-[calc(var(--radius)-0.25rem)] border bg-muted/30 text-sm ${
+            isMissing ? "border-destructive/50 text-destructive" : "border-input"
+          }`}
+        >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -172,6 +201,14 @@ export function CredentialSelector({
               {cred.name}
             </SelectItem>
           ))}
+          {isMissing && (
+            <SelectItem value={value!.id}>
+              <span className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-3 w-3" />
+                {value?.name} (Missing)
+              </span>
+            </SelectItem>
+          )}
           <SelectItem value="create-new">
             <span className="text-primary">+ Create New Credential</span>
           </SelectItem>
@@ -184,14 +221,17 @@ export function CredentialSelector({
         onAdd={handleCreateCredential}
       />
 
-      {error && (
+      {(error || isMissing) && (
         <div className="flex items-center gap-1.5 text-xs text-destructive">
           <AlertCircle className="h-3 w-3" />
-          <span>{error}</span>
+          <span>
+            {error ||
+              "This credential no longer exists. Please select a new one to run the workflow."}
+          </span>
         </div>
       )}
 
-      {showHelp && (
+      {showHelp && !isMissing && (
         <div className="text-xs text-muted-foreground/70">
           Select an SMTP credential to use for sending emails
         </div>
