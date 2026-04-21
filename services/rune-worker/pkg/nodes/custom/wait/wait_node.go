@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"rune-worker/pkg/core"
 	"rune-worker/pkg/messages"
 	"rune-worker/pkg/nodes"
 	"rune-worker/plugin"
@@ -36,6 +37,18 @@ func (n *WaitNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 	}
 
 	resumeAt := time.Now().Add(convertToDuration(amount, unit)).UTC()
+	timerID := uuid.NewString()
+
+	output := map[string]any{
+		"resume_at": resumeAt.UnixMilli(),
+		"timer_id":  timerID,
+	}
+
+	// Accumulate the wait output into the frozen context under $<node_name>, so
+	// the resume consumer can hydrate the final success status with the same
+	// runtime data that was emitted on the waiting status. Without this, the
+	// persisted execution snapshot would lose resume_at/timer_id after resume.
+	accumulated := accumulateWaitOutput(execCtx.Input, execCtx.Workflow, execCtx.NodeID, output)
 
 	// Freeze current execution message
 	frozen := messages.NodeExecutionMessage{
@@ -45,7 +58,7 @@ func (n *WaitNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 		ExecutionID:        execCtx.ExecutionID,
 		CurrentNode:        execCtx.NodeID,
 		WorkflowDefinition: execCtx.Workflow,
-		AccumulatedContext: execCtx.Input,
+		AccumulatedContext: accumulated,
 		LineageStack:       execCtx.LineageStack,
 		FromNode:           execCtx.FromNode,
 		IsWorkerInitiated:  true,
@@ -56,8 +69,6 @@ func (n *WaitNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 		return nil, fmt.Errorf("encode frozen state: %w", err)
 	}
 
-	timerID := uuid.NewString()
-
 	// Atomic pipeline: store payload and schedule timer
 	pipe := redisClient.TxPipeline()
 	pipe.HSet(ctx, "scheduler:payloads", timerID, payload)
@@ -66,11 +77,21 @@ func (n *WaitNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext)
 		return nil, fmt.Errorf("schedule wait timer: %w", err)
 	}
 
-	// Emit waiting status
-	return map[string]any{
-		"resume_at": resumeAt.UnixMilli(),
-		"timer_id":  timerID,
-	}, nil
+	return output, nil
+}
+
+func accumulateWaitOutput(input map[string]any, workflow core.Workflow, nodeID string, output map[string]any) map[string]any {
+	accumulated := make(map[string]any, len(input)+1)
+	for k, v := range input {
+		accumulated[k] = v
+	}
+
+	node, found := workflow.GetNodeByID(nodeID)
+	if !found || node.Name == "" {
+		return accumulated
+	}
+	accumulated["$"+node.Name] = output
+	return accumulated
 }
 
 func parseInterval(params map[string]any) (int, string, error) {
