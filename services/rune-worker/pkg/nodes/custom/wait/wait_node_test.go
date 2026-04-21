@@ -361,3 +361,48 @@ func TestWaitNode_FrozenStateIncludesContext(t *testing.T) {
 		t.Errorf("Timer score mismatch: got %v, want %v", int64(score), resumeAt)
 	}
 }
+
+func TestAccumulateWaitOutput(t *testing.T) {
+	t.Parallel()
+
+	workflow := core.Workflow{
+		Nodes: []core.Node{
+			{ID: "wait-1", Name: "Wait Node", Type: "wait"},
+		},
+	}
+	input := map[string]any{"$http_node": map[string]any{"status": 200}}
+	output := map[string]any{"resume_at": int64(999), "timer_id": "t-abc"}
+
+	accumulated := accumulateWaitOutput(input, workflow, "wait-1", output)
+
+	if accumulated["$http_node"] == nil {
+		t.Fatalf("expected existing context entries to be preserved")
+	}
+	got, ok := accumulated["$Wait Node"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected $Wait Node key, got %v", accumulated["$Wait Node"])
+	}
+	if got["resume_at"] != int64(999) || got["timer_id"] != "t-abc" {
+		t.Fatalf("expected output to be accumulated under $<node_name>, got %v", got)
+	}
+
+	// Input map must not be mutated.
+	if _, exists := input["$Wait Node"]; exists {
+		t.Fatalf("expected input map to remain unmutated")
+	}
+}
+
+func TestAccumulateWaitOutput_UnknownNode(t *testing.T) {
+	t.Parallel()
+
+	accumulated := accumulateWaitOutput(
+		map[string]any{"foo": "bar"},
+		core.Workflow{},
+		"missing",
+		map[string]any{"resume_at": int64(1)},
+	)
+
+	if len(accumulated) != 1 || accumulated["foo"] != "bar" {
+		t.Fatalf("expected only existing context when node lookup fails, got %v", accumulated)
+	}
+}
