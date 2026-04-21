@@ -3476,6 +3476,20 @@ export type ListCredentialsDropdownCredentialsDropdownGetResponses = {
 
 export type ListCredentialsDropdownCredentialsDropdownGetResponse = ListCredentialsDropdownCredentialsDropdownGetResponses[keyof ListCredentialsDropdownCredentialsDropdownGetResponses];
 
+export type CredentialEventsCredentialsEventsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/credentials/events';
+};
+
+export type CredentialEventsCredentialsEventsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
 export type DeleteCredentialCredentialsCredentialIdDeleteData = {
     body?: never;
     path: {
