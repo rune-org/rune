@@ -90,3 +90,11 @@ class CredentialResponseDropDown(BaseModel):
     id: int
     name: str
     credential_type: CredentialType
+
+
+class CredentialUsage(BaseModel):
+    """Schema for reporting workflow usage of a credential."""
+
+    id: int
+    name: str
+    owner_name: str

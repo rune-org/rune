@@ -20,6 +20,7 @@ from src.db.models import (
     User,
     Workflow,
     WorkflowCredential,
+    WorkflowCredentialLink,
     WorkflowRole,
     WorkflowUser,
     WorkflowVersion,
@@ -187,6 +188,10 @@ class WorkflowService:
 
         locked_workflow.latest_version_id = version.id
         locked_workflow.is_active = locked_workflow.published_version_id is not None
+
+        # Sync credential links for usage tracking
+        await self._sync_credential_links(locked_workflow.id, workflow_data)
+
         await self.db.commit()
         await self.db.refresh(version)
         return version
@@ -231,6 +236,10 @@ class WorkflowService:
 
         locked_workflow.latest_version_id = version.id
         locked_workflow.is_active = locked_workflow.published_version_id is not None
+
+        # Sync credential links for usage tracking
+        await self._sync_credential_links(locked_workflow.id, version.workflow_data)
+
         await self.db.commit()
         await self.db.refresh(version)
         return version
@@ -730,3 +739,60 @@ class WorkflowService:
 
         normalized = message.strip()
         return normalized or None
+
+    async def _sync_credential_links(
+        self, workflow_id: int, workflow_data: dict
+    ) -> None:
+        """Update WorkflowCredentialLink entries for a workflow.
+
+        Parses workflow_data to find all referenced credential IDs and ensures
+        the link table matches this set for usage tracking.
+        """
+        # Extract unique credential IDs from workflow nodes
+        credential_ids: set[int] = set()
+        nodes = workflow_data.get("nodes", [])
+        for node in nodes:
+            if "credentials" in node and isinstance(node["credentials"], dict):
+                cred_ref = node["credentials"]
+                if "id" in cred_ref:
+                    try:
+                        credential_ids.add(int(cred_ref["id"]))
+                    except (ValueError, TypeError):
+                        continue
+
+        # Remove existing links that are no longer in the workflow
+        # If credential_ids is empty, we remove all links for this workflow
+        if not credential_ids:
+            delete_stmt = delete(WorkflowCredentialLink).where(
+                WorkflowCredentialLink.workflow_id == workflow_id
+            )
+        else:
+            delete_stmt = delete(WorkflowCredentialLink).where(
+                WorkflowCredentialLink.workflow_id == workflow_id,
+                col(WorkflowCredentialLink.credential_id).notin_(list(credential_ids)),
+            )
+        await self.db.exec(delete_stmt)
+
+        # Add new links that don't exist yet
+        if credential_ids:
+            # Verify that these credentials actually exist in the database
+            # to avoid IntegrityErrors from dangling references in workflow JSON
+            valid_stmt = select(WorkflowCredential.id).where(
+                col(WorkflowCredential.id).in_(list(credential_ids))
+            )
+            valid_res = await self.db.exec(valid_stmt)
+            valid_credential_ids = set(valid_res.all())
+
+            # Find existing link IDs for this workflow to avoid duplicates
+            existing_stmt = select(WorkflowCredentialLink.credential_id).where(
+                WorkflowCredentialLink.workflow_id == workflow_id
+            )
+            existing_res = await self.db.exec(existing_stmt)
+            existing_ids = set(existing_res.all())
+
+            new_ids = valid_credential_ids - existing_ids
+            for cred_id in new_ids:
+                link = WorkflowCredentialLink(
+                    workflow_id=workflow_id, credential_id=cred_id
+                )
+                self.db.add(link)
