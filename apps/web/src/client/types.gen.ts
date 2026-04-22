@@ -604,6 +604,30 @@ export type ApiResponseListCredentialShareInfo = {
 };
 
 /**
+ * ApiResponse[list[CredentialUsage]]
+ */
+export type ApiResponseListCredentialUsage = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<CredentialUsage>;
+};
+
+/**
  * ApiResponse[list[ExecutionListItem]]
  */
 export type ApiResponseListExecutionListItem = {
@@ -1057,6 +1081,22 @@ export type CredentialUpdate = {
     credential_data?: {
         [key: string]: unknown;
     } | null;
+};
+
+/**
+ * CredentialUsage
+ *
+ * Schema for reporting workflow usage of a credential.
+ */
+export type CredentialUsage = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
 };
 
 /**
@@ -3565,6 +3605,36 @@ export type UpdateCredentialCredentialsCredentialIdPatchResponses = {
 };
 
 export type UpdateCredentialCredentialsCredentialIdPatchResponse = UpdateCredentialCredentialsCredentialIdPatchResponses[keyof UpdateCredentialCredentialsCredentialIdPatchResponses];
+
+export type GetCredentialUsageCredentialsCredentialIdUsageGetData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    query?: never;
+    url: '/credentials/{credential_id}/usage';
+};
+
+export type GetCredentialUsageCredentialsCredentialIdUsageGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetCredentialUsageCredentialsCredentialIdUsageGetError = GetCredentialUsageCredentialsCredentialIdUsageGetErrors[keyof GetCredentialUsageCredentialsCredentialIdUsageGetErrors];
+
+export type GetCredentialUsageCredentialsCredentialIdUsageGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListCredentialUsage;
+};
+
+export type GetCredentialUsageCredentialsCredentialIdUsageGetResponse = GetCredentialUsageCredentialsCredentialIdUsageGetResponses[keyof GetCredentialUsageCredentialsCredentialIdUsageGetResponses];
 
 export type ShareCredentialCredentialsCredentialIdSharePostData = {
     body: CredentialShare;

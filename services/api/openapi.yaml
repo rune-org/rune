@@ -1808,6 +1808,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /credentials/{credential_id}/usage:
+    get:
+      tags:
+      - credentials
+      summary: Get workflows using this credential
+      description: 'Get a list of workflows that are currently using this credential.
+
+
+        This is used to warn the user before deleting a credential that is
+
+        actively referenced in one or more workflows.'
+      operationId: get_credential_usage_credentials__credential_id__usage_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: credential_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Credential Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_list_CredentialUsage__'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /credentials/{credential_id}/share:
     post:
       tags:
@@ -2865,6 +2899,28 @@ components:
       required:
       - data
       title: ApiResponse[list[CredentialShareInfo]]
+    ApiResponse_list_CredentialUsage__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/CredentialUsage'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[list[CredentialUsage]]
     ApiResponse_list_ExecutionListItem__:
       properties:
         success:
@@ -3313,6 +3369,20 @@ components:
       type: object
       title: CredentialUpdate
       description: Schema for updating a credential.
+    CredentialUsage:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+      type: object
+      required:
+      - id
+      - name
+      title: CredentialUsage
+      description: Schema for reporting workflow usage of a credential.
     ExecutionListItem:
       properties:
         id:
