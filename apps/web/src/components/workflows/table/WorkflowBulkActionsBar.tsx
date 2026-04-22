@@ -1,4 +1,4 @@
-import { Download, Play, Trash2 } from "lucide-react";
+import { Download, Play, Trash2, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ export function WorkflowBulkActionsBar({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.18, ease: "easeOut" }}
-          className="rounded-md border border-accent/35 bg-accent/10 p-3"
+          className="rounded-lg border border-border/70 bg-card/60 p-3 shadow-sm"
           aria-live="polite"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -53,7 +53,7 @@ export function WorkflowBulkActionsBar({
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={onRun}
                 disabled={pending || runnableCount === 0}
@@ -100,6 +100,7 @@ export function WorkflowBulkActionsBar({
                 Delete ({deletableCount})
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={onClear} disabled={pending}>
+                <X className="mr-1.5 h-4 w-4" aria-hidden="true" />
                 Clear
               </Button>
             </div>

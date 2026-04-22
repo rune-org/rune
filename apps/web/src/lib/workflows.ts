@@ -16,6 +16,10 @@ export type WorkflowSummary = {
   id: string;
   name: string;
   /**
+   * Workflow description.
+   */
+  description?: string | null;
+  /**
    * Derived status – treated as active when `is_active` is true, otherwise draft.
    */
   status: "active" | "draft";
@@ -65,6 +69,7 @@ export function listItemToWorkflowSummary(item: WorkflowListItem): WorkflowSumma
     ...defaultWorkflowSummary,
     id: String(item.id),
     name: item.name,
+    description: item.description,
     status: item.is_active ? "active" : "draft",
     role: item.role,
   };
