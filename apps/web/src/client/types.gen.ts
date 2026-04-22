@@ -1852,6 +1852,10 @@ export type WorkflowListItem = {
      */
     is_active: boolean;
     role: WorkflowRole;
+    /**
+     * Owner Name
+     */
+    owner_name: string;
 };
 
 /**

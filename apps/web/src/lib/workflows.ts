@@ -40,6 +40,10 @@ export type WorkflowSummary = {
    */
   role: WorkflowRole;
   /**
+   * Original creator's name.
+   */
+  ownerName: string;
+  /**
    * Latest version number (if versioning is active).
    */
   latestVersion?: number;
@@ -58,6 +62,7 @@ export const defaultWorkflowSummary: WorkflowSummary = {
   lastRunStatus: "n/a",
   runs: 0,
   role: "owner",
+  ownerName: "Me",
 };
 
 export function listItemToWorkflowSummary(item: WorkflowListItem): WorkflowSummary {
@@ -67,6 +72,7 @@ export function listItemToWorkflowSummary(item: WorkflowListItem): WorkflowSumma
     name: item.name,
     status: item.is_active ? "active" : "draft",
     role: item.role,
+    ownerName: item.owner_name,
   };
 }
 
