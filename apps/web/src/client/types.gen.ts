@@ -1097,6 +1097,10 @@ export type CredentialUsage = {
      * Name
      */
     name: string;
+    /**
+     * Owner Name
+     */
+    owner_name: string;
 };
 
 /**
