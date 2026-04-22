@@ -141,7 +141,9 @@ export function WorkflowsDataTable({
                     }
                   />
                 </TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">{workflow.id}</TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {workflow.id}
+                </TableCell>
                 <TableCell className="font-medium text-foreground">
                   <div className="flex min-w-0 items-center gap-2">
                     <a

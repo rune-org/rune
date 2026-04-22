@@ -100,13 +100,7 @@ export function WorkflowBulkActionsBar({
                 <Trash2 className="mr-1.5 h-4 w-4" aria-hidden="true" />
                 Delete ({deletableCount})
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onClear}
-                disabled={pending}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={onClear} disabled={pending}>
                 <X className="mr-1.5 h-4 w-4" aria-hidden="true" />
                 Clear
               </Button>
