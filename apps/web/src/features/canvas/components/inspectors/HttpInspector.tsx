@@ -1,5 +1,5 @@
 import type { Node } from "@xyflow/react";
-import type { HttpData, NodeDataMap } from "../../types";
+import { HTTP_METHODS, isHttpMethod, type HttpData } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
 import { JsonField } from "../JsonField";
 import { KeyValueVariableEditor } from "../KeyValueVariableEditor";
@@ -56,18 +56,19 @@ export function HttpInspector({ node, updateData, isExpanded }: HttpInspectorPro
           <label className="block text-xs text-muted-foreground">Method</label>
           <Select
             value={node.data.method ?? "GET"}
-            onValueChange={(value) =>
+            onValueChange={(value) => {
+              if (!isHttpMethod(value)) return;
               updateHttpData((d) => ({
                 ...d,
-                method: value as NodeDataMap["http"]["method"],
-              }))
-            }
+                method: value,
+              }));
+            }}
           >
             <SelectTrigger className="h-8 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {["GET", "POST", "PUT", "PATCH", "DELETE"].map((m) => (
+              {HTTP_METHODS.map((m) => (
                 <SelectItem key={m} value={m}>
                   {m}
                 </SelectItem>
@@ -188,11 +189,11 @@ export function HttpInspector({ node, updateData, isExpanded }: HttpInspectorPro
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
-              checked={node.data.ignoreSSL ?? false}
+              checked={node.data.ignore_ssl ?? false}
               onChange={(e) =>
                 updateHttpData((d) => ({
                   ...d,
-                  ignoreSSL: e.target.checked,
+                  ignore_ssl: e.target.checked,
                 }))
               }
             />
@@ -206,18 +207,57 @@ export function HttpInspector({ node, updateData, isExpanded }: HttpInspectorPro
           <label className="block">Retries</label>
           <input
             type="number"
+            min={0}
             className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1"
-            value={node.data.retries ?? 0}
+            value={node.data.retry ?? 0}
             onChange={(e) =>
               updateHttpData((d) => ({
                 ...d,
-                retries: Number(e.target.value),
+                retry: Number(e.target.value),
               }))
             }
           />
           {isExpanded && (
             <div className="text-xs text-muted-foreground/70">
-              Number of retry attempts on failure
+              Number of retry attempts after transport errors or raise-on-status matches
+            </div>
+          )}
+          <label className="block">Retry delay (s)</label>
+          <input
+            type="number"
+            min={0}
+            className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1"
+            value={node.data.retry_delay ?? 0}
+            onChange={(e) =>
+              updateHttpData((d) => ({
+                ...d,
+                retry_delay: Number(e.target.value),
+              }))
+            }
+          />
+          {isExpanded && (
+            <div className="text-xs text-muted-foreground/70">
+              Seconds to wait between retry attempts
+            </div>
+          )}
+          <label className="block">Raise on status</label>
+          <input
+            type="text"
+            className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 font-mono text-[11px]"
+            value={node.data.raise_on_status ?? ""}
+            onChange={(e) => {
+              const v = e.target.value;
+              updateHttpData((d) => ({
+                ...d,
+                raise_on_status: v.trim() === "" ? undefined : v,
+              }));
+            }}
+            placeholder="e.g. 4xx, 5xx, 403"
+          />
+          {isExpanded && (
+            <div className="text-xs text-muted-foreground/70">
+              Comma-separated patterns or codes. Keep it empty to not treat responses as failures by
+              status.
             </div>
           )}
         </div>

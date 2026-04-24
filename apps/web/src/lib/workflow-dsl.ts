@@ -2,30 +2,31 @@
 
 import type { Edge as RFEdge } from "@xyflow/react";
 import type { CSSProperties } from "react";
-import type {
-  CanvasNode,
-  HttpData,
-  IfData,
-  SwitchData,
-  SwitchRule,
-  SmtpData,
-  ScheduledTriggerData,
-  WaitData,
-  LogData,
-  DateTimeNowData,
-  DateTimeAddData,
-  DateTimeSubtractData,
-  DateTimeFormatData,
-  DateTimeParseData,
-  EditData,
-  FilterData,
-  FilterRule,
-  SortData,
-  SortRule,
-  LimitData,
-  SplitData,
-  AggregatorData,
-  MergeData,
+import {
+  isHttpMethod,
+  type CanvasNode,
+  type HttpData,
+  type IfData,
+  type SwitchData,
+  type SwitchRule,
+  type SmtpData,
+  type ScheduledTriggerData,
+  type WaitData,
+  type LogData,
+  type DateTimeNowData,
+  type DateTimeAddData,
+  type DateTimeSubtractData,
+  type DateTimeFormatData,
+  type DateTimeParseData,
+  type EditData,
+  type FilterData,
+  type FilterRule,
+  type SortData,
+  type SortRule,
+  type LimitData,
+  type SplitData,
+  type AggregatorData,
+  type MergeData,
 } from "@/features/canvas/types";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
 import type { CredentialRef } from "@/lib/credentials";
@@ -149,7 +150,14 @@ function emailArrayToString(value: unknown): string | undefined {
 function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unknown> {
   switch (n.type) {
     case "http": {
-      const d = (n.data || {}) as HttpData;
+      /** Pre–snake_case canvas fields (still serialize if present). */
+      type LegacyHttpCanvas = {
+        retries?: number;
+        retryDelay?: number;
+        raiseOnStatus?: string;
+        ignoreSSL?: boolean;
+      };
+      const d = (n.data || {}) as HttpData & LegacyHttpCanvas;
       const params: Record<string, unknown> = {};
       if (d.method) params.method = String(d.method).toUpperCase();
       if (d.url) params.url = String(d.url);
@@ -157,8 +165,34 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (d.query && typeof d.query === "object") params.query = d.query;
       if (typeof d.body !== "undefined") params.body = d.body as unknown;
       if (typeof d.timeout !== "undefined") params.timeout = String(d.timeout);
-      if (typeof d.retries !== "undefined") params.retry = String(d.retries);
-      if (typeof d.ignoreSSL !== "undefined") params.ignore_ssl = !!d.ignoreSSL;
+      const retryCount =
+        typeof d.retry === "number" && !Number.isNaN(d.retry)
+          ? d.retry
+          : typeof d.retries === "number" && !Number.isNaN(d.retries)
+            ? d.retries
+            : undefined;
+      if (typeof retryCount !== "undefined") params.retry = String(retryCount);
+      const delay =
+        typeof d.retry_delay === "number" && !Number.isNaN(d.retry_delay)
+          ? d.retry_delay
+          : typeof d.retryDelay === "number" && !Number.isNaN(d.retryDelay)
+            ? d.retryDelay
+            : undefined;
+      if (typeof delay !== "undefined") params.retry_delay = String(delay);
+      const raise =
+        typeof d.raise_on_status === "string" && d.raise_on_status.trim()
+          ? d.raise_on_status.trim()
+          : typeof d.raiseOnStatus === "string" && d.raiseOnStatus.trim()
+            ? d.raiseOnStatus.trim()
+            : undefined;
+      if (raise) params.raise_on_status = raise;
+      const ignoreSsl =
+        typeof d.ignore_ssl === "boolean"
+          ? d.ignore_ssl
+          : typeof d.ignoreSSL === "boolean"
+            ? d.ignoreSSL
+            : undefined;
+      if (typeof ignoreSsl !== "undefined") params.ignore_ssl = ignoreSsl;
       return params;
     }
     case "if": {
@@ -381,12 +415,78 @@ const identityNodeHydrator: NodeHydrator = (base) => base;
 
 const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
   http: (base, params) => {
+    type LegacyCanvas = {
+      retries?: unknown;
+      raiseOnStatus?: unknown;
+      retryDelay?: unknown;
+      ignoreSSL?: unknown;
+    };
+    const {
+      retries: _legacyRetries,
+      raiseOnStatus: _legacyRaiseCamel,
+      retryDelay: _legacyDelayCamel,
+      ignoreSSL: _legacyIgnoreCamel,
+      ...restBase
+    } = base as HttpData & LegacyCanvas;
+
+    const methodUpper = typeof params.method === "string" ? params.method.toUpperCase() : "";
+    const methodFromWire = isHttpMethod(methodUpper) ? methodUpper : undefined;
+
+    const retryFromParams =
+      typeof params.retry === "number"
+        ? params.retry
+        : typeof params.retry === "string"
+          ? Number(params.retry)
+          : undefined;
+    const retryFromLegacy =
+      typeof _legacyRetries === "number"
+        ? _legacyRetries
+        : typeof _legacyRetries === "string"
+          ? Number(_legacyRetries)
+          : undefined;
+    const retryNum = Number.isFinite(retryFromParams)
+      ? retryFromParams
+      : Number.isFinite(retryFromLegacy)
+        ? retryFromLegacy
+        : undefined;
+
+    const delayFromParams =
+      typeof params.retry_delay === "number"
+        ? params.retry_delay
+        : typeof params.retry_delay === "string"
+          ? Number(params.retry_delay)
+          : undefined;
+    const delayFromLegacyCamel =
+      typeof _legacyDelayCamel === "number"
+        ? _legacyDelayCamel
+        : typeof _legacyDelayCamel === "string"
+          ? Number(_legacyDelayCamel)
+          : undefined;
+    const delayNum = Number.isFinite(delayFromParams)
+      ? delayFromParams
+      : Number.isFinite(delayFromLegacyCamel)
+        ? delayFromLegacyCamel
+        : undefined;
+
+    const raiseFromParams =
+      typeof params.raise_on_status === "string" ? params.raise_on_status.trim() : "";
+    const raiseFromLegacyCamel =
+      typeof _legacyRaiseCamel === "string" ? String(_legacyRaiseCamel).trim() : "";
+    const raise_on_status = raiseFromParams || raiseFromLegacyCamel || undefined;
+
+    const ignoreFromParams = typeof params.ignore_ssl === "boolean" ? params.ignore_ssl : undefined;
+    const ignoreFromLegacyCamel =
+      typeof _legacyIgnoreCamel === "boolean" ? _legacyIgnoreCamel : undefined;
+    const ignore_ssl =
+      typeof ignoreFromParams === "boolean"
+        ? ignoreFromParams
+        : typeof ignoreFromLegacyCamel === "boolean"
+          ? ignoreFromLegacyCamel
+          : undefined;
+
     const httpData: HttpData = {
-      ...base,
-      method:
-        typeof params.method === "string"
-          ? (params.method.toUpperCase() as HttpData["method"])
-          : undefined,
+      ...restBase,
+      method: methodFromWire,
       url: typeof params.url === "string" ? params.url : undefined,
       headers:
         params.headers && typeof params.headers === "object"
@@ -403,13 +503,10 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
           : typeof params.timeout === "string"
             ? Number(params.timeout)
             : undefined,
-      retries:
-        typeof params.retry === "number"
-          ? params.retry
-          : typeof params.retry === "string"
-            ? Number(params.retry)
-            : undefined,
-      ignoreSSL: typeof params.ignore_ssl === "boolean" ? params.ignore_ssl : undefined,
+      retry: Number.isFinite(retryNum) ? retryNum : undefined,
+      retry_delay: Number.isFinite(delayNum) ? delayNum : undefined,
+      raise_on_status: raise_on_status || undefined,
+      ignore_ssl,
     };
     return httpData;
   },
