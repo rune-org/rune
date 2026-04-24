@@ -1,4 +1,5 @@
-import type { CheckedState } from "@radix-ui/react-checkbox";
+﻿import type { CheckedState } from "@radix-ui/react-checkbox";
+import { Fragment } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CircleHelp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatAbsoluteTime, formatRelativeTime } from "@/lib/formatTime";
 import type { WorkflowSummary } from "@/lib/workflows";
@@ -28,6 +30,7 @@ function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
       </Badge>
     );
   }
+
   return (
     <Badge
       className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
@@ -41,6 +44,7 @@ function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
 function LastRunCell({ lastRun, loaded }: { lastRun?: ApiExecutionListItem; loaded: boolean }) {
   if (!loaded) return "\u2014";
   if (!lastRun) return "N/A";
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -93,7 +97,7 @@ export function WorkflowsDataTable({
   onShare,
 }: WorkflowsDataTableProps) {
   return (
-    <Table>
+    <Table className="table-fixed">
       <TableHeader>
         <TableRow>
           <TableHead className="w-[4%] align-middle">
@@ -108,70 +112,121 @@ export function WorkflowsDataTable({
               />
             </div>
           </TableHead>
-          <TableHead className="w-[7%]">ID</TableHead>
-          <TableHead className="w-[27%]">Name</TableHead>
-          <TableHead className="w-[17%]">Trigger Type</TableHead>
-          <TableHead className="w-[17%]">Status</TableHead>
-          <TableHead className="w-[15%]">Last Run</TableHead>
-          <TableHead className="w-[13%] text-right">Actions</TableHead>
+          <TableHead className="w-[6%]">ID</TableHead>
+          <TableHead className="w-[20%]">Name</TableHead>
+          <TableHead className="w-[25%]">Description</TableHead>
+          <TableHead className="w-[12%]">Trigger Type</TableHead>
+          <TableHead className="w-[11%]">Status</TableHead>
+          <TableHead className="w-[11%]">Last Run</TableHead>
+          <TableHead className="w-[11%] text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {workflows.map((workflow) => (
-          <TableRow
-            key={workflow.id}
-            data-state={selectedWorkflowIds.has(workflow.id) ? "selected" : undefined}
-            data-loading={loading || isRowPending(workflow.id) ? "1" : undefined}
-          >
-            <TableCell>
-              <Checkbox
-                aria-label={`Select ${workflow.name}`}
-                checked={selectedWorkflowIds.has(workflow.id)}
-                onCheckedChange={(checked: CheckedState) => onToggleSelected(workflow.id, checked)}
-              />
-            </TableCell>
-            <TableCell className="font-mono text-xs text-muted-foreground">{workflow.id}</TableCell>
-            <TableCell className="font-medium text-foreground">
-              <div className="flex items-center gap-2">
-                <a
-                  href={`/create/app?workflow=${workflow.id}`}
-                  className="text-foreground underline-offset-4 hover:underline"
-                >
-                  {workflow.name}
-                </a>
+        {workflows.map((workflow) => {
+          const isSelected = selectedWorkflowIds.has(workflow.id);
+          const description = workflow.description?.trim();
 
-                {/* TODO: Show version badge & unpublished dot once WorkflowListItem exposes latest_version_number and has_unpublished_changes */}
-                <Badge
-                  variant={workflow.role === "owner" ? "secondary" : "outline"}
-                  className="text-xs"
-                >
-                  {workflow.role === "owner" ? "Owner" : "Shared"}
-                </Badge>
-              </div>
-            </TableCell>
-            <TableCell className="text-muted-foreground">{workflow.triggerType}</TableCell>
-            <TableCell>
-              <StatusBadge status={workflow.status} />
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              <LastRunCell lastRun={lastRunByWorkflow.get(workflow.id)} loaded={executionsLoaded} />
-            </TableCell>
-            <TableCell className="text-right">
-              <WorkflowRowActions
-                workflow={workflow}
-                isAdmin={isAdmin}
-                isPending={isRowPending(workflow.id)}
-                isExporting={isRowExporting(workflow.id)}
-                onRun={onRun}
-                onExport={onExport}
-                onDelete={onDelete}
-                onRename={onRename}
-                onToggleActive={onToggleActive}
-                onShare={onShare}
-              />
-            </TableCell>
-          </TableRow>
-        ))}
+          return (
+            <Fragment key={workflow.id}>
+              <TableRow
+                data-state={isSelected ? "selected" : undefined}
+                data-loading={loading || isRowPending(workflow.id) ? "1" : undefined}
+              >
+                <TableCell>
+                  <Checkbox
+                    aria-label={`Select ${workflow.name}`}
+                    checked={isSelected}
+                    onCheckedChange={(checked: CheckedState) =>
+                      onToggleSelected(workflow.id, checked)
+                    }
+                  />
+                </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {workflow.id}
+                </TableCell>
+                <TableCell className="font-medium text-foreground">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <a
+                      href={`/create/app?workflow=${workflow.id}`}
+                      className="min-w-0 flex-1 truncate text-foreground underline-offset-4 hover:underline"
+                    >
+                      {workflow.name}
+                    </a>
+
+                    <Badge
+                      variant={workflow.role === "owner" ? "secondary" : "outline"}
+                      className="shrink-0 text-xs"
+                    >
+                      {workflow.role === "owner" ? "Owner" : "Shared"}
+                    </Badge>
+                  </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {description ? (
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span className="min-w-0 flex-1 truncate">{description}</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            aria-label={`Show full description for ${workflow.name}`}
+                          >
+                            <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-lg whitespace-pre-wrap wrap-break-word text-left leading-relaxed">
+                          {description}
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  ) : (
+                    <span className="italic text-muted-foreground/80">No description</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-muted-foreground">{workflow.triggerType}</TableCell>
+                <TableCell>
+                  <StatusBadge status={workflow.status} />
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  <LastRunCell
+                    lastRun={lastRunByWorkflow.get(workflow.id)}
+                    loaded={executionsLoaded}
+                  />
+                </TableCell>
+                <TableCell className="text-right">
+                  <WorkflowRowActions
+                    workflow={workflow}
+                    isAdmin={isAdmin}
+                    isPending={isRowPending(workflow.id)}
+                    isExporting={isRowExporting(workflow.id)}
+                    onRun={onRun}
+                    onExport={onExport}
+                    onDelete={onDelete}
+                    onRename={onRename}
+                    onToggleActive={onToggleActive}
+                    onShare={onShare}
+                  />
+                </TableCell>
+              </TableRow>
+
+              {isSelected ? (
+                <TableRow className="bg-muted/20">
+                  <TableCell />
+                  <TableCell colSpan={7} className="py-3">
+                    <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <CircleHelp className="h-3.5 w-3.5" aria-hidden="true" />
+                      Description
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap wrap-break-word text-sm text-muted-foreground">
+                      {description || "No description provided."}
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </Fragment>
+          );
+        })}
       </TableBody>
       <TableCaption>
         {workflows.length === 0
