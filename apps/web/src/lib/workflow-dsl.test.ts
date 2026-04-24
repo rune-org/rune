@@ -81,6 +81,8 @@ describe("workflow DSL helpers", () => {
           type: "ScheduledTrigger",
           parameters: { amount: 10, unit: "minutes" },
           output: {},
+          error: undefined,
+          credential_type: undefined,
           position: [120, 240],
         },
         {
@@ -91,8 +93,11 @@ describe("workflow DSL helpers", () => {
           parameters: { to: ["a@example.com", "b@example.com"] },
           credentials: credential,
           output: {},
+          error: undefined,
+          credential_type: undefined,
           position: [300, 240],
         },
+
       ],
       edges: [
         { id: "true-edge", src: "scheduled-1", dst: "smtp-1", label: "true" },
@@ -124,9 +129,22 @@ describe("workflow DSL helpers", () => {
   it("strips credential references from workflow data exports", () => {
     expect(
       stripCredentialsFromWorkflowData({
-        nodes: [{ id: "1", credentials: { id: "cred-1" }, name: "Node 1" }],
-        edges: [{ id: "edge-1" }],
+        nodes: [
+          {
+            id: "1",
+            credentials: { id: "cred-1" },
+            name: "Node 1",
+            trigger: false,
+            type: "log",
+            parameters: {},
+            output: {},
+            error: undefined,
+            credential_type: undefined,
+          } as any,
+        ],
+        edges: [{ id: "edge-1", src: "1", dst: "2" } as any],
       }),
+
     ).toEqual({
       nodes: [{ id: "1", name: "Node 1" }],
       edges: [{ id: "edge-1" }],
