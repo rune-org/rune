@@ -1,7 +1,7 @@
 // Auto-generated DSL type definitions
 // DO NOT EDIT - Generated from dsl/dsl-definition.json
 
-package dsl
+package dsl_generated
 
 // Core Structures
 

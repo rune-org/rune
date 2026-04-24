@@ -19,3 +19,10 @@ const (
 	OperatorGTE = "gte" // Greater than or equal
 	OperatorLTE = "lte" // Less than or equal
 )
+
+// Constants for error handling
+const (
+	ErrorHandlingHalt   = "halt"
+	ErrorHandlingIgnore = "ignore"
+	ErrorHandlingBranch = "branch"
+)

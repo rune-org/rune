@@ -19,5 +19,8 @@ require (
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
+	github.com/rune-org/rune/dsl/generated v0.0.0-20260422133216-0d6a9cc5fb20 // indirect
 	golang.org/x/text v0.6.0 // indirect
 )
+
+replace github.com/rune-org/rune/dsl/generated => ../../dsl/generated
