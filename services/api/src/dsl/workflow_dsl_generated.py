@@ -1,3 +1,4 @@
+# fmt: off
 """Auto-generated DSL type definitions.
 
 DO NOT EDIT - Generated from dsl/dsl-definition.json

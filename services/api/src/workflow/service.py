@@ -165,7 +165,6 @@ class WorkflowService:
 
         locked_workflow = await self._lock_workflow(workflow.id)
 
-
         current_latest = await self.get_latest_version(locked_workflow)
 
         if current_latest is None:
