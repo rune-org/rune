@@ -46,7 +46,6 @@ export function extractGraphSnapshot(
       credential_type: undefined,
       position,
     } as WorkflowNode);
-
   }
 
   const workflowEdges: WorkflowEdge[] = (doc.edges ?? []).map((e) => ({

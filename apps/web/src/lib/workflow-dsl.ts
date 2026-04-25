@@ -27,7 +27,7 @@ import type {
   AggregatorData,
   MergeData,
 } from "@/features/canvas/types";
-import * as DSL from './workflow_dsl_generated';
+import * as DSL from "./workflow_dsl_generated";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
 
 import type { CredentialRef } from "@/lib/credentials";
@@ -49,7 +49,6 @@ export type WorkflowNode = Omit<DSL.BaseNode, "credentials"> & {
 export type WorkflowEdge = DSL.Edge & {
   label?: string;
 };
-
 
 export class MissingNodeCredentialsError extends Error {
   constructor(public readonly nodes: Array<{ id: string; type: string }>) {
@@ -129,7 +128,6 @@ function emailStringToArray(value: string | undefined): string[] | undefined {
     .filter((e) => e.length > 0);
   return emails.length > 0 ? emails : undefined;
 }
-
 
 // Helper to convert array or single string back to comma-separated string for UI
 function emailArrayToString(value: unknown): string | undefined {
@@ -691,7 +689,6 @@ export function canvasToWorkflowData(
       credentials: credential,
     } as WorkflowNode;
   });
-
 
   const blueprintEdges: WorkflowEdge[] = edges.map((e) => ({
     id: e.id,

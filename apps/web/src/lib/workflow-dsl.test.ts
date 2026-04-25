@@ -99,7 +99,6 @@ describe("workflow DSL helpers", () => {
           credential_type: undefined,
           position: [300, 240],
         },
-
       ],
       edges: [
         { id: "true-edge", src: "scheduled-1", dst: "smtp-1", label: "true" },
@@ -146,7 +145,6 @@ describe("workflow DSL helpers", () => {
         ],
         edges: [{ id: "edge-1", src: "1", dst: "2" } as WorkflowEdge],
       }),
-
     ).toEqual({
       nodes: [
         {
