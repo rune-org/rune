@@ -865,9 +865,6 @@ export const updateCredentialCredentialsCredentialIdPatch = <ThrowOnError extend
  * Get workflows using this credential
  *
  * Get a list of workflows that are currently using this credential.
- *
- * This is used to warn the user before deleting a credential that is
- * actively referenced in one or more workflows.
  */
 export const getCredentialUsageCredentialsCredentialIdUsageGet = <ThrowOnError extends boolean = false>(options: Options<GetCredentialUsageCredentialsCredentialIdUsageGetData, ThrowOnError>) => (options.client ?? client).get<GetCredentialUsageCredentialsCredentialIdUsageGetResponses, GetCredentialUsageCredentialsCredentialIdUsageGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

@@ -5,6 +5,7 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { credentials as credentialsAPI } from "@/lib/api";
 import { extractApiErrorMessage } from "@/lib/api/error";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import type { CredentialUsage } from "@/client";
 
 interface DeleteCredentialDialogProps {
   open: boolean;
@@ -21,7 +22,7 @@ export function DeleteCredentialDialog({
   credentialName,
   onConfirm,
 }: DeleteCredentialDialogProps) {
-  const [usage, setUsage] = useState<{ id: number; name: string; owner_name: string }[]>([]);
+  const [usage, setUsage] = useState<CredentialUsage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
