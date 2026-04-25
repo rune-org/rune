@@ -22,10 +22,10 @@ func (n *Workflow) Sanitize() (bool, []string) {
   if n.ExecutionID == "" {
     errors = append(errors, "Workflow.execution_id is required")
   }
-  if n.Nodes == nil || len(n.Nodes) == 0 {
+  if len(n.Nodes) == 0 {
     errors = append(errors, "Workflow.nodes is required")
   }
-  if n.Edges == nil || len(n.Edges) == 0 {
+  if len(n.Edges) == 0 {
     errors = append(errors, "Workflow.edges is required")
   }
 
@@ -344,7 +344,7 @@ func (n *SmtpParameters) Sanitize() (bool, []string) {
   if n.Body == "" {
     errors = append(errors, "SmtpParameters.body is required")
   }
-  if n.To == nil || len(n.To) == 0 {
+  if len(n.To) == 0 {
     errors = append(errors, "SmtpParameters.to is required")
   }
   if n.From == "" {
@@ -377,7 +377,7 @@ type SwitchParameters struct {
 func (n *SwitchParameters) Sanitize() (bool, []string) {
   var errors []string
 
-  if n.Rules == nil || len(n.Rules) == 0 {
+  if len(n.Rules) == 0 {
     errors = append(errors, "SwitchParameters.rules is required")
   }
 
@@ -517,7 +517,7 @@ type FilterParameters struct {
 func (n *FilterParameters) Sanitize() (bool, []string) {
   var errors []string
 
-  if n.Rules == nil || len(n.Rules) == 0 {
+  if len(n.Rules) == 0 {
     errors = append(errors, "FilterParameters.rules is required")
   }
 
@@ -533,7 +533,7 @@ type SortParameters struct {
 func (n *SortParameters) Sanitize() (bool, []string) {
   var errors []string
 
-  if n.Rules == nil || len(n.Rules) == 0 {
+  if len(n.Rules) == 0 {
     errors = append(errors, "SortParameters.rules is required")
   }
 

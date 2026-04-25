@@ -407,7 +407,15 @@ class DSLGenerator:
                         pass
                     elif field_type == "array":
                         lines.append(
-                            f"  if n.{go_field} == nil || len(n.{go_field}) == 0 {{"
+                            f"  if len(n.{go_field}) == 0 {{"
+                        )
+                        lines.append(
+                            f'    errors = append(errors, "{class_name}.{field_name} is required")'
+                        )
+                        lines.append("  }")
+                    elif field_type == "object":
+                        lines.append(
+                            f"  if n.{go_field} == nil {{"
                         )
                         lines.append(
                             f'    errors = append(errors, "{class_name}.{field_name} is required")'
@@ -438,6 +446,7 @@ class DSLGenerator:
     def generate_typescript(self) -> str:
         """Generate TypeScript definitions."""
         lines = [
+            "/* eslint-disable */",
             "// Auto-generated DSL type definitions",
             "// DO NOT EDIT - Generated from dsl/dsl-definition.json",
             "",
@@ -585,6 +594,7 @@ class DSLGenerator:
     def generate_python(self) -> str:
         """Generate Python definitions."""
         lines = [
+            "# fmt: off",
             '"""Auto-generated DSL type definitions.',
             "",
             "DO NOT EDIT - Generated from dsl/dsl-definition.json",
@@ -915,6 +925,8 @@ class DSLGenerator:
         # Also copy to web app
         web_ts_path = Path("apps/web/src/lib/workflow_dsl_generated.ts")
         if Path("apps/web").exists():
+            # Ensure directory exists
+            web_ts_path.parent.mkdir(parents=True, exist_ok=True)
             with open(web_ts_path, "w") as f:
                 f.write(ts_content)
             print(f"[SUCCESS] Propagated to {web_ts_path}")
@@ -929,6 +941,8 @@ class DSLGenerator:
         # Also copy to API service
         api_py_path = Path("services/api/src/dsl/workflow_dsl_generated.py")
         if Path("services/api").exists():
+            # Ensure directory exists
+            api_py_path.parent.mkdir(parents=True, exist_ok=True)
             with open(api_py_path, "w") as f:
                 f.write(py_content)
             print(f"[SUCCESS] Propagated to {api_py_path}")
