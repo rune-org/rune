@@ -1813,12 +1813,7 @@ paths:
       tags:
       - credentials
       summary: Get workflows using this credential
-      description: 'Get a list of workflows that are currently using this credential.
-
-
-        This is used to warn the user before deleting a credential that is
-
-        actively referenced in one or more workflows.'
+      description: Get a list of workflows that are currently using this credential.
       operationId: get_credential_usage_credentials__credential_id__usage_get
       security:
       - OAuth2PasswordBearer: []
@@ -3377,10 +3372,14 @@ components:
         name:
           type: string
           title: Name
+        owner_name:
+          type: string
+          title: Owner Name
       type: object
       required:
       - id
       - name
+      - owner_name
       title: CredentialUsage
       description: Schema for reporting workflow usage of a credential.
     ExecutionListItem:
