@@ -7,6 +7,8 @@ import {
   MissingNodeCredentialsError,
   stripCredentialsFromWorkflowData,
   workflowDataToCanvas,
+  WorkflowEdge,
+  WorkflowNode,
 } from "./workflow-dsl";
 
 function createNode<T extends NodeKind>(
@@ -140,14 +142,25 @@ describe("workflow DSL helpers", () => {
             output: {},
             error: undefined,
             credential_type: undefined,
-          } as any,
+          } as WorkflowNode,
         ],
-        edges: [{ id: "edge-1", src: "1", dst: "2" } as any],
+        edges: [{ id: "edge-1", src: "1", dst: "2" } as WorkflowEdge],
       }),
 
     ).toEqual({
-      nodes: [{ id: "1", name: "Node 1" }],
-      edges: [{ id: "edge-1" }],
+      nodes: [
+        {
+          id: "1",
+          name: "Node 1",
+          trigger: false,
+          type: "log",
+          parameters: {},
+          output: {},
+          error: undefined,
+          credential_type: undefined,
+        },
+      ],
+      edges: [{ id: "edge-1", src: "1", dst: "2" }],
     });
   });
 });
