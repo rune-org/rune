@@ -1,9 +1,25 @@
 import pytest
 from httpx import AsyncClient
 
+from src.oauth.authorize_extras import extra_authorize_query_params
 from src.oauth.credential_patch import merge_oauth2_credential_patch
 from src.oauth.credential_tokens import oauth2_worker_public_values
 from src.oauth.state import encode_oauth_state
+
+
+def test_extra_authorize_params_google():
+    url = "https://accounts.google.com/o/oauth2/v2/auth"
+    assert extra_authorize_query_params(url) == {
+        "access_type": "offline",
+        "prompt": "consent",
+    }
+
+
+def test_extra_authorize_params_non_google_empty():
+    assert (
+        extra_authorize_query_params("https://login.microsoftonline.com/common/oauth2/v2.0/authorize")
+        == {}
+    )
 
 
 def test_merge_oauth2_clears_tokens_when_scope_changes():

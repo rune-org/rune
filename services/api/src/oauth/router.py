@@ -11,6 +11,7 @@ from src.credentials.encryption import get_encryptor
 from src.credentials.permissions import CredentialPermissionService
 from src.db.config import get_db
 from src.db.models import CredentialType, User, WorkflowCredential
+from src.oauth.authorize_extras import extra_authorize_query_params
 from src.oauth.credential_tokens import merge_authorization_code_tokens
 from src.oauth.state import decode_oauth_state, encode_oauth_state
 from src.oauth.token_exchange import OAuthTokenHttpError, post_oauth_token_form
@@ -86,6 +87,9 @@ async def oauth_authorize(
     scope = data.get("scope")
     if scope:
         qparams["scope"] = str(scope)
+
+    for key, value in extra_authorize_query_params(str(auth_url)).items():
+        qparams.setdefault(key, value)
 
     location = _merge_authorize_query_params(str(auth_url), qparams)
     return RedirectResponse(url=location, status_code=302)
