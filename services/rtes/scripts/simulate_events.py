@@ -39,7 +39,7 @@ def publish_token(channel, execution_id, workflow_id, user_id):
         "exp": int(time.time()) + 36000,
         "user_id": user_id,
     }
-    channel.queue_declare(queue="execution.token")
+    channel.queue_declare(queue="execution.token", durable=True)
     channel.basic_publish(
         exchange="", routing_key="execution.token", body=json.dumps(token)
     )
@@ -157,7 +157,7 @@ def publish_status(channel, execution_id, node_id, node_name, status, output=Non
         "lineage_stack": [],
         "used_inputs": None,
     }
-    channel.queue_declare(queue="workflow.node.status")
+    channel.queue_declare(queue="workflow.node.status", durable=True)
     channel.basic_publish(
         exchange="", routing_key="workflow.node.status", body=json.dumps(status_event)
     )
@@ -175,7 +175,7 @@ def publish_execution(channel, execution_id, workflow_id):
         "from_node": None,
         "is_worker_initiated": True,
     }
-    channel.queue_declare(queue="workflow.worker.initiated")
+    channel.queue_declare(queue="workflow.worker.initiated", durable=True)
     channel.basic_publish(
         exchange="",
         routing_key="workflow.worker.initiated",
@@ -194,7 +194,7 @@ def publish_completion(channel, execution_id):
         "total_duration_ms": 500,
         "failure_reason": None,
     }
-    channel.queue_declare(queue="workflow.completion")
+    channel.queue_declare(queue="workflow.completion", durable=True)
     channel.basic_publish(
         exchange="",
         routing_key="workflow.completion",
@@ -248,7 +248,7 @@ def publish_split_agg_execution(channel, execution_id, workflow_id):
         "from_node": None,
         "is_worker_initiated": True,
     }
-    channel.queue_declare(queue="workflow.worker.initiated")
+    channel.queue_declare(queue="workflow.worker.initiated", durable=True)
     channel.basic_publish(
         exchange="",
         routing_key="workflow.worker.initiated",
@@ -291,7 +291,7 @@ def publish_split_item_status(
         "lineage_hash": None,
         "used_inputs": {"items": [item_index]},
     }
-    channel.queue_declare(queue="workflow.node.status")
+    channel.queue_declare(queue="workflow.node.status", durable=True)
     channel.basic_publish(
         exchange="", routing_key="workflow.node.status", body=json.dumps(status_event)
     )
@@ -322,7 +322,7 @@ def publish_aggregator_status(
         "lineage_hash": None,
         "used_inputs": None,
     }
-    channel.queue_declare(queue="workflow.node.status")
+    channel.queue_declare(queue="workflow.node.status", durable=True)
     channel.basic_publish(
         exchange="", routing_key="workflow.node.status", body=json.dumps(status_event)
     )
@@ -338,7 +338,7 @@ def publish_split_agg_completion(channel, execution_id, workflow_id):
         "total_duration_ms": 500,
         "failure_reason": None,
     }
-    channel.queue_declare(queue="workflow.completion")
+    channel.queue_declare(queue="workflow.completion", durable=True)
     channel.basic_publish(
         exchange="",
         routing_key="workflow.completion",
