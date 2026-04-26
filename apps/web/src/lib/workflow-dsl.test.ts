@@ -132,4 +132,99 @@ describe("workflow DSL helpers", () => {
       edges: [{ id: "edge-1" }],
     });
   });
+
+  it("serializes http canvas fields to worker snake_case parameters", () => {
+    const httpNode = createNode("http-1", "http", {
+      label: "API",
+      method: "PATCH",
+      url: "https://example.com/orders",
+      timeout: 45,
+      retry: 2,
+      retry_delay: 3,
+      raise_on_status: "4xx,5xx",
+      ignore_ssl: true,
+    });
+    const { nodes } = canvasToWorkflowData([httpNode], []);
+    const def = nodes.find((n) => n.id === "http-1");
+    expect(def?.type).toBe("http");
+    expect(def?.parameters).toMatchObject({
+      method: "PATCH",
+      url: "https://example.com/orders",
+      timeout: "45",
+      retry: "2",
+      retry_delay: "3",
+      raise_on_status: "4xx,5xx",
+      ignore_ssl: true,
+    });
+  });
+
+  it("rehydrates http parameters from stored workflow_data", () => {
+    const { nodes } = workflowDataToCanvas({
+      nodes: [
+        {
+          id: "http-1",
+          name: "API",
+          trigger: false,
+          type: "http",
+          parameters: {
+            method: "PATCH",
+            url: "https://example.com",
+            timeout: "45",
+            retry: "2",
+            retry_delay: "3",
+            raise_on_status: "403,5xx",
+            ignore_ssl: false,
+          },
+          output: {},
+          position: [10, 20],
+        },
+      ],
+      edges: [],
+    });
+    const http = nodes.find((n) => n.id === "http-1");
+    expect(http?.type).toBe("http");
+    expect(http?.data).toMatchObject({
+      method: "PATCH",
+      url: "https://example.com",
+      timeout: 45,
+      retry: 2,
+      retry_delay: 3,
+      raise_on_status: "403,5xx",
+      ignore_ssl: false,
+    });
+  });
+
+  it("treats blank raise_on_status as absent on the wire", () => {
+    const httpNode = createNode("http-1", "http", {
+      label: "API",
+      method: "GET",
+      url: "https://example.com",
+      raise_on_status: "   ",
+    });
+    const { nodes } = canvasToWorkflowData([httpNode], []);
+    expect(nodes[0].parameters.raise_on_status).toBeUndefined();
+  });
+
+  it("serializes legacy canvas retries field as retry", () => {
+    const httpNode = createNode("http-1", "http", {
+      label: "API",
+      method: "GET",
+      url: "https://example.com",
+    });
+    (httpNode.data as Record<string, unknown>)["retries"] = 4;
+    const { nodes } = canvasToWorkflowData([httpNode], []);
+    expect(nodes[0].parameters.retry).toBe("4");
+  });
+
+  it("prefers retry over legacy retries when both present", () => {
+    const httpNode = createNode("http-1", "http", {
+      label: "API",
+      method: "GET",
+      url: "https://example.com",
+      retry: 1,
+    });
+    (httpNode.data as Record<string, unknown>)["retries"] = 9;
+    const { nodes } = canvasToWorkflowData([httpNode], []);
+    expect(nodes[0].parameters.retry).toBe("1");
+  });
 });
