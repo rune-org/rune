@@ -54,7 +54,7 @@
           "type": "string",
           "required": true,
           "description": "Node type identifier",
-          "enum": ["ManualTrigger", "ScheduledTrigger", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge", "datetime", "filter", "sort", "limit"]
+          "enum": ["ManualTrigger", "ScheduledTrigger", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge", "dateTimeNow", "dateTimeAdd", "dateTimeSubtract", "dateTimeFormat", "dateTimeParse", "filter", "sort", "limit"]
         },
         "parameters": {
           "type": "object",
@@ -308,44 +308,134 @@
       }
     },
 
-    "datetime": {
-      "description": "Create, shift, or format date and time values",
+    "dateTimeNow": {
+      "description": "Get the current date and time in a given timezone",
       "credential_type": null,
       "parameters": {
-        "operation": {
-          "type": "string",
-          "required": true,
-          "description": "Date and time operation",
-          "enum": ["now", "add", "subtract", "format"],
-          "default": "now"
-        },
-        "date": {
+        "timezone": {
           "type": "string",
           "required": false,
-          "description": "Input date or timestamp to format or adjust"
-        },
-        "amount": {
-          "type": "number",
-          "required": false,
-          "description": "Amount of time to add or subtract"
-        },
-        "unit": {
-          "type": "string",
-          "required": false,
-          "description": "Unit of time for add and subtract",
-          "enum": ["seconds", "minutes", "hours", "days", "weeks", "months", "years"],
-          "default": "days"
+          "description": "IANA timezone used for the output",
+          "default": "UTC"
         },
         "format": {
           "type": "string",
           "required": false,
-          "description": "Output format string",
+          "description": "Output format string (Go time layout)",
           "default": "2006-01-02T15:04:05Z07:00"
+        }
+      }
+    },
+
+    "dateTimeAdd": {
+      "description": "Add a duration to a date or timestamp",
+      "credential_type": null,
+      "parameters": {
+        "date": {
+          "type": "string",
+          "required": false,
+          "description": "Input date or timestamp; defaults to now when empty"
+        },
+        "amount": {
+          "type": "number",
+          "required": true,
+          "description": "Amount of time to add"
+        },
+        "unit": {
+          "type": "string",
+          "required": false,
+          "description": "Unit of time",
+          "enum": ["seconds", "minutes", "hours", "days", "weeks", "months", "years"],
+          "default": "days"
         },
         "timezone": {
           "type": "string",
           "required": false,
-          "description": "Timezone used for parsing and formatting",
+          "description": "IANA timezone used for parsing naive inputs and for the output",
+          "default": "UTC"
+        },
+        "format": {
+          "type": "string",
+          "required": false,
+          "description": "Output format string (Go time layout)",
+          "default": "2006-01-02T15:04:05Z07:00"
+        }
+      }
+    },
+
+    "dateTimeSubtract": {
+      "description": "Subtract a duration from a date or timestamp",
+      "credential_type": null,
+      "parameters": {
+        "date": {
+          "type": "string",
+          "required": false,
+          "description": "Input date or timestamp; defaults to now when empty"
+        },
+        "amount": {
+          "type": "number",
+          "required": true,
+          "description": "Amount of time to subtract"
+        },
+        "unit": {
+          "type": "string",
+          "required": false,
+          "description": "Unit of time",
+          "enum": ["seconds", "minutes", "hours", "days", "weeks", "months", "years"],
+          "default": "days"
+        },
+        "timezone": {
+          "type": "string",
+          "required": false,
+          "description": "IANA timezone used for parsing naive inputs and for the output",
+          "default": "UTC"
+        },
+        "format": {
+          "type": "string",
+          "required": false,
+          "description": "Output format string (Go time layout)",
+          "default": "2006-01-02T15:04:05Z07:00"
+        }
+      }
+    },
+
+    "dateTimeFormat": {
+      "description": "Format a date or timestamp in a chosen timezone",
+      "credential_type": null,
+      "parameters": {
+        "date": {
+          "type": "string",
+          "required": true,
+          "description": "Input date or timestamp to format"
+        },
+        "timezone": {
+          "type": "string",
+          "required": false,
+          "description": "IANA timezone used for parsing naive inputs and for the output",
+          "default": "UTC"
+        },
+        "format": {
+          "type": "string",
+          "required": false,
+          "description": "Output format string (Go time layout)",
+          "default": "2006-01-02T15:04:05Z07:00"
+        }
+      }
+    },
+
+    "dateTimeParse": {
+      "description": "Parse a date or timestamp into structured components",
+      "credential_type": null,
+      "parameters": {
+        "date": {
+          "type": "string",
+          "required": true,
+          "description": "Input date or timestamp to parse"
+        },
+        "timezone": {
+          "type": "string",
+          "required": false,
+          "description": "IANA timezone used for parsing naive inputs and for the structured output",
           "default": "UTC"
         }
       }

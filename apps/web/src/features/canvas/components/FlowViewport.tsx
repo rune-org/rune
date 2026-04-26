@@ -14,7 +14,6 @@ import {
   type OnSelectionChangeParams,
   type ReactFlowProps,
   type ReactFlowInstance,
-  PanOnScrollMode,
 } from "@xyflow/react";
 import { nodeTypes } from "../nodes";
 import type { CanvasNode } from "../types";
@@ -86,13 +85,10 @@ export const FlowViewport = memo(function FlowViewport({
       onNodeDragStop={onNodeDragStop}
       onInit={onInit}
       onPaneClick={onPaneClick}
-      panOnScroll
-      panOnScrollMode={PanOnScrollMode.Free}
-      zoomOnScroll={false}
-      zoomOnPinch
       connectOnClick={!readOnly}
       nodesDraggable={!readOnly}
       nodesConnectable={!readOnly}
+      deleteKeyCode={null}
     >
       {!readOnly ? <ClickConnectBridge /> : null}
       <Background />

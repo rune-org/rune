@@ -34,6 +34,9 @@
   --color-node-transform: var(--node-transform);
   --color-node-transform-bg: var(--node-transform-bg);
   --color-node-transform-border: var(--node-transform-border);
+  --color-node-datetime: var(--node-datetime);
+  --color-node-datetime-bg: var(--node-datetime-bg);
+  --color-node-datetime-border: var(--node-datetime-border);
   --color-node-http: var(--node-http);
   --color-node-http-bg: var(--node-http-bg);
   --color-node-http-border: var(--node-http-border);
@@ -112,6 +115,11 @@
     color: var(--foreground);
   }
 
+  /* Hide the # anchor links on Nextra doc headings (keep IDs for TOC sidebar) */
+  .nextra-content .subheading-anchor {
+    display: none !important;
+  }
+
   .smith-user-bubble::selection {
     background-color: hsl(222 47% 11% / 0.62);
     color: hsl(0 0% 100%);
@@ -121,7 +129,49 @@
     background-color: hsl(222 47% 11% / 0.62);
     color: hsl(0 0% 100%);
   }
+
+  /* Hide ONLY the external link icons (arrows) in Nextra */
+  nav.nextra-toc a[target="_blank"] svg,
+  .nextra-sidebar-footer a[target="_blank"] svg {
+    display: none !important;
+  }
 }
+
+/* --- Nextra Docs Customizations --- */
+
+/* Sidebar Footer (Theme Switcher) */
+.nextra-sidebar-footer {
+  position: sticky !important;
+  bottom: 0 !important;
+  background-color: var(--background) !important;
+  z-index: 20 !important;
+  border-top: 1px solid var(--border) !important;
+  padding: 1rem 1.25rem !important;
+}
+
+/* Breathing room in content area */
+article {
+  padding-top: 2rem !important;
+  padding-bottom: 4rem !important;
+}
+
+/* Breadcrumb spacing */
+.nextra-breadcrumb {
+  margin-bottom: 2rem !important;
+  opacity: 0.8;
+}
+
+/* Documentation title styling */
+article h1 {
+  margin-top: 0.5rem !important;
+  margin-bottom: 2.5rem !important;
+  font-size: 2.5rem !important;
+  line-height: 1.2 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* --- End Nextra Docs Customizations --- */
 
 @utility animate-fade-in {
   animation: fadeIn 1s ease-out forwards;
@@ -137,6 +187,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

@@ -13,14 +13,10 @@ export type VariableMatch = {
   end: number;
 };
 
-// Strip zero-width markers and non-breaking spaces. Chrome injects NBSP around
-// contenteditable="false" pill elements as a rendering artifact; users never
-// type these intentionally, so we drop them entirely instead of converting to
-// regular spaces (which would leak leading/trailing whitespace into node data).
-const RAW_TEXT_STRIP_REGEX = /[\u200B\uFEFF\u00A0]/g;
+const ZERO_WIDTH_STRIP_REGEX = /[\u200B\uFEFF]/g;
 
 function normalizeRawText(text: string): string {
-  return text.replace(RAW_TEXT_STRIP_REGEX, "");
+  return text.replace(ZERO_WIDTH_STRIP_REGEX, "").replace(/\u00A0/g, " ");
 }
 
 function isBlockElement(node: Node): node is HTMLElement {
@@ -49,7 +45,7 @@ function blockPrefixLength(child: Node, childIndex: number): number {
 }
 
 function isStrippedChar(ch: string): boolean {
-  return ch === "\u200B" || ch === "\uFEFF" || ch === "\u00A0";
+  return ch === "\u200B" || ch === "\uFEFF";
 }
 
 function rawLengthOfTextPrefix(text: string, endOffset: number): number {

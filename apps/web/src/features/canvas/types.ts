@@ -17,8 +17,6 @@ export type EditAssignment = {
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
-export type DateTimeOperation = "now" | "add" | "subtract" | "format";
-
 export type DateTimeUnit = "seconds" | "minutes" | "hours" | "days" | "weeks" | "months" | "years";
 
 export type FilterOperator = "==" | "!=" | ">" | "<" | ">=" | "<=" | "contains";
@@ -37,6 +35,15 @@ export type SortRule = {
   direction?: SortDirection;
   type?: SortValueType;
 };
+
+/** Canonical list of HTTP methods for canvas + worker `http` node (includes PATCH). */
+export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+
+export type HttpMethod = (typeof HTTP_METHODS)[number];
+
+export function isHttpMethod(value: string): value is HttpMethod {
+  return (HTTP_METHODS as readonly string[]).includes(value);
+}
 
 /** A map defining the specific data for each kind of node. */
 export type NodeDataMap = {
@@ -58,14 +65,24 @@ export type NodeDataMap = {
   };
 
   http: BaseData & {
-    method?: "GET" | "POST" | "PUT" | "DELETE";
+    method?: HttpMethod;
     url?: string;
     headers?: Record<string, unknown>;
     query?: Record<string, unknown>;
     body?: unknown;
+    /** Request timeout in seconds (serialized as string on the wire). */
     timeout?: number;
-    retries?: number;
-    ignoreSSL?: boolean;
+    /** Retry count after failure (stored as string in `workflow_data.parameters.retry`). */
+    retry?: number;
+    /** Delay between retries in seconds (`parameters.retry_delay`). */
+    retry_delay?: number;
+    /**
+     * Comma-separated status patterns to treat as errors (e.g. `4xx,5xx`, `403`).
+     * Omitted from saved `parameters` when empty.
+     */
+    raise_on_status?: string;
+    /** Maps to `parameters.ignore_ssl`. */
+    ignore_ssl?: boolean;
   };
 
   smtp: BaseData & {
@@ -87,12 +104,35 @@ export type NodeDataMap = {
     level?: LogLevel;
   };
 
-  datetime: BaseData & {
-    operation?: DateTimeOperation;
+  dateTimeNow: BaseData & {
+    timezone?: string;
+    format?: string;
+  };
+
+  dateTimeAdd: BaseData & {
     date?: string;
     amount?: number;
     unit?: DateTimeUnit;
+    timezone?: string;
     format?: string;
+  };
+
+  dateTimeSubtract: BaseData & {
+    date?: string;
+    amount?: number;
+    unit?: DateTimeUnit;
+    timezone?: string;
+    format?: string;
+  };
+
+  dateTimeFormat: BaseData & {
+    date?: string;
+    timezone?: string;
+    format?: string;
+  };
+
+  dateTimeParse: BaseData & {
+    date?: string;
     timezone?: string;
   };
 
@@ -145,7 +185,11 @@ export type TriggerData = NodeDataMap["trigger"];
 export type ScheduledTriggerData = NodeDataMap["scheduledTrigger"];
 export type WaitData = NodeDataMap["wait"];
 export type LogData = NodeDataMap["log"];
-export type DateTimeData = NodeDataMap["datetime"];
+export type DateTimeNowData = NodeDataMap["dateTimeNow"];
+export type DateTimeAddData = NodeDataMap["dateTimeAdd"];
+export type DateTimeSubtractData = NodeDataMap["dateTimeSubtract"];
+export type DateTimeFormatData = NodeDataMap["dateTimeFormat"];
+export type DateTimeParseData = NodeDataMap["dateTimeParse"];
 export type EditData = NodeDataMap["edit"];
 export type FilterData = NodeDataMap["filter"];
 export type SortData = NodeDataMap["sort"];
