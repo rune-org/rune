@@ -101,7 +101,7 @@ pub async fn start_token_consumer(
     let _queue = channel
         .queue_declare(
             queue_name,
-            declare_options(cfg.rabbitmq_queue_durable),
+            declare_options(true),
             FieldTable::default(),
         )
         .await?;
