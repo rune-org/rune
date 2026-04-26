@@ -17,7 +17,9 @@ def test_extra_authorize_params_google():
 
 def test_extra_authorize_params_non_google_empty():
     assert (
-        extra_authorize_query_params("https://login.microsoftonline.com/common/oauth2/v2.0/authorize")
+        extra_authorize_query_params(
+            "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
+        )
         == {}
     )
 
