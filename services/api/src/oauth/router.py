@@ -34,7 +34,14 @@ def _append_query(url: str, extra: dict[str, str]) -> str:
         q[k] = v
     new_query = urlencode(q)
     return urlunparse(
-        (parts.scheme, parts.netloc, parts.path, parts.params, new_query, parts.fragment)
+        (
+            parts.scheme,
+            parts.netloc,
+            parts.path,
+            parts.params,
+            new_query,
+            parts.fragment,
+        )
     )
 
 
@@ -46,7 +53,14 @@ def _merge_authorize_query_params(auth_url: str, params: dict[str, str]) -> str:
             existing[k] = v
     new_query = urlencode(existing)
     return urlunparse(
-        (parts.scheme, parts.netloc, parts.path, parts.params, new_query, parts.fragment)
+        (
+            parts.scheme,
+            parts.netloc,
+            parts.path,
+            parts.params,
+            new_query,
+            parts.fragment,
+        )
     )
 
 

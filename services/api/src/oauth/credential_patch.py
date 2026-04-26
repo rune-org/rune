@@ -12,7 +12,9 @@ def merge_oauth2_credential_patch(
     """
     merged: dict[str, Any] = {**existing}
     consent_invalidated = False
-    allowed = frozenset({"client_id", "auth_url", "token_url", "scope", "client_secret"})
+    allowed = frozenset(
+        {"client_id", "auth_url", "token_url", "scope", "client_secret"}
+    )
 
     for key, value in patch.items():
         if key not in allowed:

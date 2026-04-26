@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+
 def merge_authorization_code_tokens(
     existing: dict[str, Any], token_response: dict[str, Any]
 ) -> dict[str, Any]:

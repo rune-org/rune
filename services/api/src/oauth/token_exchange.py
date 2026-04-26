@@ -38,5 +38,7 @@ async def post_oauth_token_form(url: str, form: dict[str, str]) -> dict[str, Any
         ) from e
 
     if not isinstance(data, dict):
-        raise OAuthTokenHttpError(response.status_code, f"Unexpected JSON: {text[:500]}")
+        raise OAuthTokenHttpError(
+            response.status_code, f"Unexpected JSON: {text[:500]}"
+        )
     return data
