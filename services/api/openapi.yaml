@@ -4008,6 +4008,11 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc
@@ -4117,6 +4122,11 @@ components:
         name:
           type: string
           title: Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
         is_active:
           type: boolean
           title: Is Active
