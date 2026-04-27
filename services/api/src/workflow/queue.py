@@ -21,6 +21,9 @@ def get_first_executable_node_ids(workflow_data: dict) -> list[str]:
         raise ValueError("Workflow must have exactly one trigger node")
 
     trigger_node_id = trigger_nodes[0].get("id")
+    if not trigger_node_id:
+        raise ValueError("Trigger node must have an id")
+
     first_nodes = [
         edge.get("dst")
         for edge in edges
@@ -31,6 +34,11 @@ def get_first_executable_node_ids(workflow_data: dict) -> list[str]:
         raise ValueError(NO_ACTION_NODES_MESSAGE)
 
     return first_nodes
+
+
+def validate_workflow_can_run(workflow_data: dict) -> None:
+    """Raise ValueError if a workflow cannot be queued for execution."""
+    get_first_executable_node_ids(workflow_data)
 
 
 class WorkflowQueueService(BaseQueuePublisher):

@@ -32,7 +32,7 @@ from src.workflow.constants import (
     SCHEDULED_TRIGGER_PARAM_UNIT,
     SCHEDULED_TRIGGER_UNIT_MULTIPLIERS,
 )
-from src.workflow.queue import get_first_executable_node_ids
+from src.workflow.queue import validate_workflow_can_run
 
 
 class WorkflowVersionConflictError(Exception):
@@ -540,7 +540,7 @@ class WorkflowService:
             version.workflow_data
         )
 
-        get_first_executable_node_ids(resolved_workflow_data)
+        validate_workflow_can_run(resolved_workflow_data)
 
         # Generate a unique execution ID
         execution_id = str(uuid.uuid4())

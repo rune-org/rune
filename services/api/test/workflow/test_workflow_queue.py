@@ -1,5 +1,7 @@
 """Unit tests for workflow queue start-node validation."""
 
+import re
+
 import pytest
 
 from src.workflow.queue import (
@@ -9,7 +11,7 @@ from src.workflow.queue import (
 
 
 def test_trigger_only_workflow_is_rejected():
-    with pytest.raises(ValueError, match=NO_ACTION_NODES_MESSAGE):
+    with pytest.raises(ValueError, match=re.escape(NO_ACTION_NODES_MESSAGE)):
         get_first_executable_node_ids(
             {
                 "nodes": [{"id": "trigger", "type": "trigger", "trigger": True}],
