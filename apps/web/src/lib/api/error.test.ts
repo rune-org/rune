@@ -7,14 +7,12 @@ describe("extractApiErrorMessage", () => {
     expect(extractApiErrorMessage({ message: "Nope" })).toBe("Nope");
   });
 
-  it("falls back for non-object values", () => {
-    expect(extractApiErrorMessage("bad")).toBe("An unexpected error occurred. Please try again.");
+  it("returns non-empty string errors as-is", () => {
+    expect(extractApiErrorMessage("bad")).toBe("bad");
     expect(extractApiErrorMessage(null, "Custom fallback")).toBe("Custom fallback");
   });
 
-  it("falls back when the object has no message field", () => {
-    expect(extractApiErrorMessage({ detail: "Ignored" })).toBe(
-      "An unexpected error occurred. Please try again.",
-    );
+  it("returns detail when message is absent (e.g. raw FastAPI shape)", () => {
+    expect(extractApiErrorMessage({ detail: "Not found" })).toBe("Not found");
   });
 });

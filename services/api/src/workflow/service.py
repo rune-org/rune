@@ -14,6 +14,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.core.exceptions import BadRequest, Forbidden, NotFound
 from src.credentials.encryption import get_encryptor
 from src.db.models import (
+    CredentialType,
     Execution,
     ExecutionStatus,
     ScheduledWorkflow,
@@ -24,6 +25,8 @@ from src.db.models import (
     WorkflowUser,
     WorkflowVersion,
 )
+from src.oauth.credential_tokens import oauth2_worker_public_values
+from src.oauth.refresh import ensure_oauth2_access_token
 
 
 from src.workflow.constants import (
@@ -590,6 +593,7 @@ class WorkflowService:
 
         Raises:
             NotFound: If a referenced credential doesn't exist.
+            BadRequest: If an OAuth2 credential is not connected or cannot be refreshed.
         """
         resolved_data = copy.deepcopy(workflow_data)
         nodes = resolved_data.get("nodes", [])
@@ -622,12 +626,20 @@ class WorkflowService:
                         credential.credential_data
                     )
 
+                    if credential.credential_type == CredentialType.OAUTH2:
+                        decrypted_data = await ensure_oauth2_access_token(
+                            self.db, credential, self.encryptor
+                        )
+                        values = oauth2_worker_public_values(decrypted_data)
+                    else:
+                        values = decrypted_data
+
                     # Replace the credentials reference with resolved values.
                     node["credentials"] = {
                         "id": str(credential.id),
                         "name": credential.name,
                         "type": credential.credential_type.value,
-                        "values": decrypted_data,
+                        "values": values,
                     }
 
         return resolved_data

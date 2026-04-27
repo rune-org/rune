@@ -421,3 +421,38 @@ func TestHTTPNode_MixedPatterns(t *testing.T) {
 		}
 	}
 }
+
+func TestHTTPNode_OAuth2BearerHeader(t *testing.T) {
+	server := httptest.NewServer(nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		auth := r.Header.Get("Authorization")
+		if auth != "Bearer tok123" {
+			t.Errorf("Authorization = %q, want Bearer tok123", auth)
+		}
+		w.WriteHeader(nethttp.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer server.Close()
+
+	execCtx := plugin.ExecutionContext{
+		ExecutionID: "test-exec-oauth2",
+		WorkflowID:  "test-workflow-oauth2",
+		NodeID:      "http-node-oauth2",
+		Type:        "http",
+		Parameters: map[string]any{
+			"method": "GET",
+			"url":    server.URL,
+		},
+		Input: map[string]any{},
+	}
+	execCtx.SetCredentials(map[string]any{
+		"type":         "oauth2",
+		"access_token": "tok123",
+		"token_type":   "Bearer",
+	})
+
+	node := NewHTTPNode(execCtx)
+	_, err := node.Execute(context.Background(), execCtx)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+}
