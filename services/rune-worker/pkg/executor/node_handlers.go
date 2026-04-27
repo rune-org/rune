@@ -198,6 +198,14 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 	// Handle Split Node Fan-Out
 	if node.Type == "split" && len(nextNodes) > 0 {
 		if items, ok := output["_split_items"].([]any); ok {
+			if len(items) == 0 {
+				slog.Info("split fan-out has no items; completing workflow",
+					"workflow_id", msg.WorkflowID,
+					"execution_id", msg.ExecutionID,
+					"node_id", node.ID,
+				)
+				return e.publishCompletion(ctx, msg, messages.CompletionStatusCompleted, startTime, updatedContext)
+			}
 			return e.handleSplitFanOut(ctx, msg, node, nextNodes, items, updatedContext)
 		}
 	}
