@@ -135,11 +135,14 @@ async def client(
     """
     # Import here to avoid circular imports
     from src.queue.rabbitmq import get_rabbitmq
+    from sqlmodel.ext.asyncio.session import AsyncSession as SQLModelAsyncSession
     from sqlalchemy.ext.asyncio import async_sessionmaker
 
-    # Create async session maker for the test engine
+    # Create async session maker using SQLModel's AsyncSession for compatibility
+    # with .exec() calls throughout the codebase
     async_session_maker = async_sessionmaker(
         test_engine,
+        class_=SQLModelAsyncSession,
         expire_on_commit=False,
         autoflush=False,
     )
