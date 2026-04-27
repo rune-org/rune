@@ -122,19 +122,32 @@ async def test_rabbitmq(test_settings: Settings) -> AsyncGenerator:
 
 @pytest_asyncio.fixture(scope="function")
 async def client(
-    test_db: AsyncSession,
+    test_engine,
     test_redis: Redis,
     test_rabbitmq,
 ) -> AsyncGenerator[AsyncClient, None]:
     """
     Create an async HTTP client for testing API endpoints.
     Overrides database, Redis, and RabbitMQ dependencies with test instances.
+
+    Note: Each request gets its own session within a transaction to support
+    concurrent requests without SQLAlchemy re-entrancy errors.
     """
     # Import here to avoid circular imports
     from src.queue.rabbitmq import get_rabbitmq
+    from sqlalchemy.ext.asyncio import async_sessionmaker
 
-    async def override_get_db():
-        yield test_db
+    # Create async session maker for the test engine
+    async_session_maker = async_sessionmaker(
+        test_engine,
+        expire_on_commit=False,
+        autoflush=False,
+    )
+
+    async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
+        """Create a fresh session for each request."""
+        async with async_session_maker() as session:
+            yield session
 
     async def override_get_redis():
         yield test_redis
