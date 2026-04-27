@@ -1,4 +1,3 @@
-"""API endpoint tests for workflow versioning."""
 """Core API behavior tests for workflow execution and versioning.
 
 These tests verify REAL USER INTERACTIONS:
@@ -16,7 +15,7 @@ import json
 import pytest
 from sqlmodel import select
 
-from src.db.models import Execution, Workflow, WorkflowVersion
+from src.db.models import Execution, Workflow
 from src.workflow.queue import NO_ACTION_NODES_MESSAGE
 
 

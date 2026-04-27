@@ -6,6 +6,8 @@ Tests verify that users can only perform allowed operations based on their role:
 - VIEWER: Read-only access
 """
 
+import pytest_asyncio
+
 import pytest
 from src.db.models import WorkflowRole, WorkflowUser
 
@@ -121,7 +123,7 @@ class TestWorkflowPermissions:
 class TestEditorPermissions:
     """Test EDITOR role permissions."""
 
-    @pytest_asyncio.fixture
+    @pytest_asyncio.fixture()
     async def editor_user(self, test_db):
         """Create a user with EDITOR role on sample_workflow."""
         from argon2 import PasswordHasher
@@ -139,7 +141,7 @@ class TestEditorPermissions:
         await test_db.refresh(user)
         return user
 
-    @pytest_asyncio.fixture
+    @pytest_asyncio.fixture()
     async def workflow_with_editor(self, test_db, sample_workflow, editor_user, test_user):
         """Grant EDITOR access to editor_user on sample_workflow."""
         permission = WorkflowUser(
@@ -152,7 +154,7 @@ class TestEditorPermissions:
         await test_db.commit()
         return sample_workflow
 
-    @pytest_asyncio.fixture
+    @pytest_asyncio.fixture()
     async def editor_client(self, client, editor_user):
         """Create authenticated client for editor."""
         response = await client.post(

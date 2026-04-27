@@ -110,7 +110,7 @@ class TestWorkflowEdgeCases:
         )
 
         # Create v2 with different structure
-        v2_response = await authenticated_client.post(
+        await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/versions",
             json={
                 "base_version_id": v1_id,

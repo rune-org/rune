@@ -106,10 +106,6 @@ class TestConcurrentOperations:
         self, authenticated_client, sample_workflow
     ):
         """Publishing and running concurrently doesn't cause issues."""
-        # Get latest version
-        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
-        base_version = detail.json()["data"]["latest_version"]["id"]
-
         # Concurrent: publish and attempt to run (run should fail since not current version)
         tasks = [
             authenticated_client.put(
@@ -136,8 +132,6 @@ class TestRaceConditions:
         self, authenticated_client, client, test_user, test_db
     ):
         """Accessing workflow while being deleted handles gracefully."""
-        from src.workflow.service import WorkflowService
-
         # Create two workflows
         workflow1_response = await authenticated_client.post(
             "/workflows/",

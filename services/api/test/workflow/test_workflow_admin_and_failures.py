@@ -8,8 +8,9 @@ Tests verify:
 - Execution status tracking through failures
 """
 
+import pytest_asyncio
+
 import pytest
-from src.db.models import WorkflowRole, WorkflowUser, ExecutionStatus
 
 
 class TestAdminRolePermissions:
@@ -152,7 +153,7 @@ class TestAdminRolePermissions:
 class TestExecutionTimeoutScenarios:
     """Test workflow execution with timeout scenarios."""
 
-    @pytest_asyncio.fixture
+    @pytest_asyncio.fixture()
     async def workflow_with_timeout_config(self, authenticated_client, test_db, test_user):
         """Create a workflow with timeout configuration."""
         # Create workflow
@@ -267,7 +268,7 @@ class TestExecutionTimeoutScenarios:
 class TestPartialExecutionFailures:
     """Test workflow execution with partial failures and error handling."""
 
-    @pytest_asyncio.fixture
+    @pytest_asyncio.fixture()
     async def workflow_with_multiple_nodes(self, authenticated_client, test_user):
         """Create workflow with multiple action nodes for testing partial failures."""
         create_response = await authenticated_client.post(
@@ -371,7 +372,7 @@ class TestPartialExecutionFailures:
         response = await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/run"
         )
-        execution_id = response.json()["data"]
+        assert response.status_code == 200
 
         # Get executions list (if endpoint exists)
         list_response = await authenticated_client.get(

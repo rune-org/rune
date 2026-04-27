@@ -12,7 +12,7 @@ Unlike unit tests of the service layer, these test the API contract:
 import pytest
 from sqlmodel import select
 
-from src.db.models import Workflow, WorkflowVersion
+from src.db.models import WorkflowVersion
 
 
 class TestWorkflowPersistenceThroughAPI:
