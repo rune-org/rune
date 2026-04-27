@@ -324,7 +324,7 @@ async def revoke_credential_access(
     """
     credential = await service.get_credential(credential_id, current_user)
 
-    await permission_service.revoke_credential_access(credential, user_id, current_user)
+    await service.revoke_credential_access(credential, user_id, current_user)
 
 
 @router.get(

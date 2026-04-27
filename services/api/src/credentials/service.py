@@ -24,6 +24,14 @@ class CredentialService:
         self.encryptor = get_encryptor()
         self.permission_service = CredentialPermissionService(session)
 
+    async def _publish_event(self, action: str, credential_id: int, user_id: int | None = None) -> None:
+        """Publish a credential event to Redis."""
+        redis = get_redis_client()
+        data = {"action": action, "credential_id": credential_id}
+        if user_id:
+            data["user_id"] = user_id
+        await redis.publish("credential_events", json.dumps(data))
+
     async def create_credential(
         self, credential_data: CredentialCreate, user: User
     ) -> WorkflowCredential:
@@ -182,11 +190,19 @@ class CredentialService:
         await self.session.commit()
 
         # Publish event
-        redis = get_redis_client()
-        await redis.publish(
-            "credential_events",
-            json.dumps({"action": "deleted", "credential_id": credential_id}),
+        await self._publish_event("deleted", credential_id)
+
+
+    async def revoke_credential_access(
+        self, credential: WorkflowCredential, target_user_id: int, user: User
+    ) -> None:
+        """
+        Revoke credential access and publish event.
+        """
+        await self.permission_service.revoke_credential_access(
+            credential, target_user_id, user
         )
+        await self._publish_event("revoked", credential.id, target_user_id)
 
     async def list_credentials(self, user: User) -> list[WorkflowCredential]:
         """

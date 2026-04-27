@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createSseClient } from "@/client/core/serverSentEvents.gen";
 import { client } from "@/client/client.gen";
 
 // Create a custom event name
@@ -23,20 +22,10 @@ export function useCredentialEvents() {
 
     const connect = async () => {
       try {
-        const baseUrl = client.getConfig().baseUrl;
-        // Construct the full URL to the events endpoint
-        const url = `${baseUrl}/credentials/events`;
-
-        const { stream } = createSseClient({
-          url,
+        const { stream } = await client.sse.get({
+          url: "/credentials/events",
           signal: abortController.signal,
-          // Need to include credentials to send the httpOnly access token cookie
-          credentials: "omit", // Wait, fetch API might need 'include' for cookies
-          onRequest: async (reqUrl, init) => {
-            // Include cookies
-            init.credentials = "include";
-            return new Request(reqUrl, init);
-          },
+          credentials: "include",
           onSseEvent: (event) => {
             if (event.data) {
               // Dispatch event to window
