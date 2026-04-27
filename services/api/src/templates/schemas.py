@@ -13,6 +13,7 @@ class TemplateSummary(BaseModel):
     category: str
     usage_count: int
     is_public: bool
+    created_by: Optional[int] = None
 
 
 class TemplateDetail(BaseModel):

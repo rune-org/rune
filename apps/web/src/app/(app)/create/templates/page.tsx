@@ -11,10 +11,25 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { listTemplates } from "@/lib/api/templates";
 import type { TemplateSummary } from "@/client/types.gen";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/lib/auth";
+import { deleteTemplate } from "@/lib/api/templates";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 function TemplatesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { state: authState } = useAuth();
+  const user = authState.user;
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,6 +60,25 @@ function TemplatesPageInner() {
   const handleUseTemplate = async (templateId: number) => {
     // Navigate to canvas with template ID in URL
     router.push(`/create/app?templateId=${templateId}`);
+  };
+
+  const handleDeleteTemplate = async (templateId: number) => {
+    try {
+      const response = await deleteTemplate(templateId);
+      if (!response.error) {
+        toast.success("Template deleted successfully");
+        setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+      } else {
+        const errorData = response.error as { message?: string; detail?: string | unknown[] };
+        const errorMessage =
+          errorData?.message ||
+          (typeof errorData?.detail === "string" ? errorData.detail : null) ||
+          "Failed to delete template";
+        toast.error(errorMessage);
+      }
+    } catch (_error) {
+      toast.error("An error occurred while deleting the template");
+    }
   };
 
   // Group templates by category
@@ -126,13 +160,46 @@ function TemplatesPageInner() {
                   <CardDescription className="mb-4 text-sm">{template.description}</CardDescription>
                   <div className="mt-auto flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Create from template</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleUseTemplate(template.id)}
-                    >
-                      Use
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {user && (user.id === template.created_by || user.role === "admin") && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this template? This action cannot be
+                                undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDeleteTemplate(template.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUseTemplate(template.id)}
+                      >
+                        Use
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -187,13 +254,46 @@ function TemplatesPageInner() {
                   <CardDescription className="mb-4 text-sm">{template.description}</CardDescription>
                   <div className="mt-auto flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Create from template</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleUseTemplate(template.id)}
-                    >
-                      Use
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {user && (user.id === template.created_by || user.role === "admin") && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this template? This action cannot be
+                                undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDeleteTemplate(template.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUseTemplate(template.id)}
+                      >
+                        Use
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
