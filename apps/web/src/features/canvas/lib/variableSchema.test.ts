@@ -48,4 +48,30 @@ describe("jsonToVariableTree", () => {
     expect(posts?.type).toBe("array");
     expect(posts?.children).toEqual([]);
   });
+
+  it("keeps deeply nested fields reachable", () => {
+    const tree = jsonToVariableTree(
+      {
+        one: {
+          two: {
+            three: {
+              four: {
+                five: {
+                  six: {
+                    value: "reachable",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "$Deep",
+    );
+
+    const valueNode =
+      tree[0].children?.[0].children?.[0].children?.[0].children?.[0].children?.[0].children?.[0];
+
+    expect(valueNode?.path).toBe("$Deep.one.two.three.four.five.six.value");
+  });
 });

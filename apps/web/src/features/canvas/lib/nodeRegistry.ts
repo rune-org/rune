@@ -166,7 +166,6 @@ export const NODE_REGISTRY: NodeRegistry = {
     defaults: {
       label: "HTTP",
       method: "GET",
-      url: "https://api.example.com",
       raise_on_status: "4xx,5xx",
       retry: 0,
       retry_delay: 0,
@@ -190,8 +189,6 @@ export const NODE_REGISTRY: NodeRegistry = {
     dimensions: { width: 220, height: 80 },
     defaults: {
       label: "SMTP",
-      from: "sender@example.com",
-      to: "recipient@example.com",
       subject: "",
       body: "",
     },
@@ -352,7 +349,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     defaults: {
       label: "Edit",
       mode: "assignments",
-      assignments: [{ name: "newField", value: "", type: "string" }],
+      assignments: [{ name: "", value: "", type: "string" }],
     },
     schema: { inputs: ["input"], outputs: ["output"] },
     group: "transform",
