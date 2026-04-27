@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useRef, useMemo } from "react";
 
-/** Regex matching Go resolver's $ notation: $nodeName or $nodeName.field.path */
-const VARIABLE_REGEX = /\$([a-zA-Z_][a-zA-Z0-9_-]*)(?:\.([a-zA-Z0-9_\[\]\.\-$]+))?/g;
+/** Regex matching Go resolver's $ notation: $nodeName, $nodeName.field, or $json[0].field. */
+const VARIABLE_REGEX =
+  /\$([a-zA-Z_][a-zA-Z0-9_-]*)((?:\.[a-zA-Z0-9_\[\]\.\-$]+|\[\d+\][a-zA-Z0-9_\[\]\.\-$]*)?)/g;
 
 export type VariableMatch = {
   full: string;
@@ -372,10 +373,13 @@ export function parseVariableReferences(value: string): VariableMatch[] {
   while ((match = VARIABLE_REGEX.exec(value)) !== null) {
     // Skip escaped: \$ means literal $, don't treat as variable
     if (match.index > 0 && value[match.index - 1] === "\\") continue;
+    const rawFieldPath = match[2] || undefined;
+    const fieldPath = rawFieldPath?.startsWith(".") ? rawFieldPath.slice(1) : rawFieldPath;
+
     matches.push({
       full: match[0],
       nodeName: match[1],
-      fieldPath: match[2],
+      fieldPath,
       start: match.index,
       end: match.index + match[0].length,
     });

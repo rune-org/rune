@@ -2,6 +2,7 @@ import type { Node } from "@xyflow/react";
 import type { SplitData } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
 import { VariableInput } from "../variable-picker/VariableInput";
+import { toArraySelection } from "../../utils/listFieldPaths";
 
 type SplitInspectorProps = {
   node: Node<SplitData>;
@@ -22,6 +23,7 @@ export function SplitInspector({ node, updateData, isExpanded }: SplitInspectorP
         onChange={(v) => updateSplitData((d) => ({ ...d, array_field: v }))}
         placeholder="$json.items"
         nodeId={node.id}
+        transformSelectedPath={toArraySelection}
       />
       <div className="text-xs text-muted-foreground">Path to the array field to iterate over.</div>
       {isExpanded && (
