@@ -1,4 +1,5 @@
 """Unit tests for workflow queue start-node validation."""
+
 import pytest
 
 from src.workflow.queue import (
