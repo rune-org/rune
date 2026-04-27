@@ -19,7 +19,9 @@ class TestWorkflowEdgeCases:
         assert response.json()["success"] is False
 
     @pytest.mark.asyncio
-    async def test_blank_name_rejected_with_validation_error(self, authenticated_client):
+    async def test_blank_name_rejected_with_validation_error(
+        self, authenticated_client
+    ):
         """Whitespace-only workflow name rejected (422 validation error)."""
         response = await authenticated_client.post(
             "/workflows/",
@@ -248,4 +250,3 @@ class TestWorkflowEdgeCases:
             f"/workflows/{sample_workflow.id}/run"
         )
         assert response.status_code == 200
-

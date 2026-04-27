@@ -64,9 +64,7 @@ class TestWorkflowPermissions:
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_viewer_can_read_workflow(
-        self, viewer_client, workflow_with_viewer
-    ):
+    async def test_viewer_can_read_workflow(self, viewer_client, workflow_with_viewer):
         """VIEWER can read workflow details (200 OK)."""
         response = await viewer_client.get(f"/workflows/{workflow_with_viewer.id}")
         assert response.status_code == 200
@@ -93,9 +91,7 @@ class TestWorkflowPermissions:
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_owner_can_edit_workflow(
-        self, authenticated_client, sample_workflow
-    ):
+    async def test_owner_can_edit_workflow(self, authenticated_client, sample_workflow):
         """OWNER can update workflow details (200 OK)."""
         response = await authenticated_client.put(
             f"/workflows/{sample_workflow.id}/name",
@@ -142,7 +138,9 @@ class TestEditorPermissions:
         return user
 
     @pytest_asyncio.fixture()
-    async def workflow_with_editor(self, test_db, sample_workflow, editor_user, test_user):
+    async def workflow_with_editor(
+        self, test_db, sample_workflow, editor_user, test_user
+    ):
         """Grant EDITOR access to editor_user on sample_workflow."""
         permission = WorkflowUser(
             workflow_id=sample_workflow.id,
@@ -165,9 +163,7 @@ class TestEditorPermissions:
         return client
 
     @pytest.mark.asyncio
-    async def test_editor_can_edit_workflow(
-        self, editor_client, workflow_with_editor
-    ):
+    async def test_editor_can_edit_workflow(self, editor_client, workflow_with_editor):
         """EDITOR can update workflow details."""
         response = await editor_client.put(
             f"/workflows/{workflow_with_editor.id}/name",
@@ -176,9 +172,7 @@ class TestEditorPermissions:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_editor_can_create_version(
-        self, editor_client, workflow_with_editor
-    ):
+    async def test_editor_can_create_version(self, editor_client, workflow_with_editor):
         """EDITOR can create new versions."""
         response = await editor_client.post(
             f"/workflows/{workflow_with_editor.id}/versions",
@@ -215,7 +209,7 @@ class TestCrossUserIsolation:
         """User should not see workflows they don't have access to."""
         # Assuming there's a list endpoint
         response = await authenticated_client.get("/workflows/")
-        
+
         if response.status_code == 200:
             workflow_ids = [w["id"] for w in response.json().get("data", [])]
             assert sample_workflow.id in workflow_ids  # Should see their own
@@ -226,11 +220,9 @@ class TestCrossUserIsolation:
     ):
         """After owner deletes workflow, no other user can access it."""
         workflow_id = sample_workflow.id
-        
+
         # Owner deletes
-        delete_response = await authenticated_client.delete(
-            f"/workflows/{workflow_id}"
-        )
+        delete_response = await authenticated_client.delete(f"/workflows/{workflow_id}")
         assert delete_response.status_code == 204
 
         # Other user tries to access (should be 404 or 403)

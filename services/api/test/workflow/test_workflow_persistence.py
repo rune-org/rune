@@ -176,4 +176,3 @@ class TestWorkflowPersistenceThroughAPI:
         # Verify through API
         detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
         assert detail.json()["data"]["name"] == new_name
-

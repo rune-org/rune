@@ -105,12 +105,14 @@ class TestAdminRolePermissions:
         assert get_response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_admin_can_share_any_workflow(self, admin_client, sample_workflow, test_user, test_db):
+    async def test_admin_can_share_any_workflow(
+        self, admin_client, sample_workflow, test_user, test_db
+    ):
         """ADMIN can share workflows they don't own (if share endpoint exists)."""
         # This test is placeholder - assumes a share/permission endpoint exists
         # Verify admin bypasses ownership checks on permission operations
         workflow_id = sample_workflow.id
-        
+
         # Admin should be able to view permission details
         response = await admin_client.get(f"/workflows/{workflow_id}")
         assert response.status_code == 200
@@ -130,7 +132,10 @@ class TestAdminRolePermissions:
         # Bulk delete should work (admin bypasses permission check)
         response = await admin_client.post(
             "/workflows/bulk",
-            json={"action": "delete", "workflow_ids": [sample_workflow.id, workflow_id]},
+            json={
+                "action": "delete",
+                "workflow_ids": [sample_workflow.id, workflow_id],
+            },
         )
 
         if response.status_code == 200:
@@ -154,7 +159,9 @@ class TestExecutionTimeoutScenarios:
     """Test workflow execution with timeout scenarios."""
 
     @pytest_asyncio.fixture()
-    async def workflow_with_timeout_config(self, authenticated_client, test_db, test_user):
+    async def workflow_with_timeout_config(
+        self, authenticated_client, test_db, test_user
+    ):
         """Create a workflow with timeout configuration."""
         # Create workflow
         create_response = await authenticated_client.post(

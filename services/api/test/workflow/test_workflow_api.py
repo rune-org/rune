@@ -104,7 +104,6 @@ class TestWorkflowVersionMetadata:
         assert "nodes" in data["workflow_data"]
 
 
-
 class TestWorkflowExecution:
     """Test workflow execution and queue message publishing."""
 
@@ -273,9 +272,7 @@ class TestWorkflowPublishing:
     """Test workflow publishing behavior."""
 
     @pytest.mark.asyncio
-    async def test_cannot_publish_workflow_without_versions(
-        self, authenticated_client
-    ):
+    async def test_cannot_publish_workflow_without_versions(self, authenticated_client):
         """Publishing workflow shell (no versions) returns 400."""
         create_response = await authenticated_client.post(
             "/workflows/",
@@ -292,7 +289,7 @@ class TestWorkflowPublishing:
 
 class TestWorkflowAuthorization:
     """Test authorization checks on workflow operations.
-    
+
     Note: Comprehensive permission tests are in test_workflow_permissions.py
     These tests focus on API-observable behavior like cross-user access prevention.
     """
@@ -338,4 +335,3 @@ class TestWorkflowDeletion:
         # Verify database record removed
         result = await test_db.exec(select(Workflow).where(Workflow.id == workflow_id))
         assert result.first() is None
-

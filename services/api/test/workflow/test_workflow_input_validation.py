@@ -342,7 +342,9 @@ class TestInvalidPayloads:
     """Test rejection of malformed request bodies."""
 
     @pytest.mark.asyncio
-    async def test_create_workflow_with_invalid_json_rejected(self, authenticated_client):
+    async def test_create_workflow_with_invalid_json_rejected(
+        self, authenticated_client
+    ):
         """Invalid JSON body returns 400/422."""
         response = await authenticated_client.post(
             "/workflows/",

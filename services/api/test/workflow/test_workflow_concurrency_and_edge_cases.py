@@ -31,13 +31,13 @@ class TestConcurrentOperations:
             )
             for i in range(5)
         ]
-        
+
         responses = await asyncio.gather(*tasks)
-        
+
         # All should succeed
         for response in responses:
             assert response.status_code == 201
-        
+
         # All should have different IDs
         ids = [r.json()["data"]["id"] for r in responses]
         assert len(ids) == len(set(ids))  # All unique
@@ -51,13 +51,13 @@ class TestConcurrentOperations:
             authenticated_client.get(f"/workflows/{sample_workflow.id}")
             for _ in range(10)
         ]
-        
+
         responses = await asyncio.gather(*tasks)
-        
+
         # All should succeed
         for response in responses:
             assert response.status_code == 200
-        
+
         # All should return same workflow ID
         ids = [r.json()["data"]["id"] for r in responses]
         assert all(id_ == sample_workflow.id for id_ in ids)
@@ -93,9 +93,9 @@ class TestConcurrentOperations:
             )
             for i in range(2)
         ]
-        
+
         responses = await asyncio.gather(*tasks)
-        
+
         # One should succeed (201), one should conflict (409)
         status_codes = sorted([r.status_code for r in responses])
         assert 201 in status_codes  # At least one succeeded
@@ -114,12 +114,12 @@ class TestConcurrentOperations:
             ),
             authenticated_client.post(f"/workflows/{sample_workflow.id}/run"),
         ]
-        
+
         responses = await asyncio.gather(*tasks)
-        
+
         # Publish should succeed
         assert responses[0].status_code == 200
-        
+
         # Run might succeed or fail depending on timing, but shouldn't cause 500 error
         assert responses[1].status_code != 500
 
@@ -158,9 +158,7 @@ class TestRaceConditions:
         assert read_response.status_code in [200, 404]
 
     @pytest.mark.asyncio
-    async def test_unpublish_while_running(
-        self, authenticated_client, sample_workflow
-    ):
+    async def test_unpublish_while_running(self, authenticated_client, sample_workflow):
         """Unpublishing while running workflow doesn't cause issues."""
         # Publish first
         await authenticated_client.put(
@@ -176,9 +174,9 @@ class TestRaceConditions:
             ),
             authenticated_client.post(f"/workflows/{sample_workflow.id}/run"),
         ]
-        
+
         responses = await asyncio.gather(*tasks)
-        
+
         # Both operations should complete without 500 error
         assert all(r.status_code != 500 for r in responses)
 
@@ -356,9 +354,7 @@ class TestBulkOperations:
             assert result["summary"]["failed"] >= 0
 
     @pytest.mark.asyncio
-    async def test_bulk_delete_removes_all_specified(
-        self, authenticated_client
-    ):
+    async def test_bulk_delete_removes_all_specified(self, authenticated_client):
         """Bulk delete removes all specified workflows."""
         # Create 3 workflows
         ids = []

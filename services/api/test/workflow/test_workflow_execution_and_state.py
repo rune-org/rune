@@ -19,9 +19,7 @@ class TestWorkflowExecution:
         self, viewer_client, workflow_with_viewer
     ):
         """VIEWER should get 403 when trying to run workflow."""
-        response = await viewer_client.post(
-            f"/workflows/{workflow_with_viewer.id}/run"
-        )
+        response = await viewer_client.post(f"/workflows/{workflow_with_viewer.id}/run")
         assert response.status_code == 403
 
     @pytest.mark.asyncio
