@@ -24,7 +24,9 @@ class CredentialService:
         self.encryptor = get_encryptor()
         self.permission_service = CredentialPermissionService(session)
 
-    async def _publish_event(self, action: str, credential_id: int, user_id: int | None = None) -> None:
+    async def _publish_event(
+        self, action: str, credential_id: int, user_id: int | None = None
+    ) -> None:
         """Publish a credential event to Redis."""
         redis = get_redis_client()
         data = {"action": action, "credential_id": credential_id}
@@ -191,7 +193,6 @@ class CredentialService:
 
         # Publish event
         await self._publish_event("deleted", credential_id)
-
 
     async def revoke_credential_access(
         self, credential: WorkflowCredential, target_user_id: int, user: User
