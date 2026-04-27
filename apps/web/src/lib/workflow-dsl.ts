@@ -28,7 +28,9 @@ import {
   type AggregatorData,
   type MergeData,
 } from "@/features/canvas/types";
+import * as DSL from "./workflow_dsl_generated";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
+
 import type { CredentialRef } from "@/lib/credentials";
 import {
   switchFallbackHandleId,
@@ -38,23 +40,16 @@ import {
 } from "@/features/canvas/utils/switchHandles";
 import { sanitizeNodeLabel } from "@/features/canvas/utils/nodeLabels";
 
-export interface WorkflowNode<Params = Record<string, unknown>> {
-  id: string;
-  name: string;
-  trigger: boolean;
-  type: string;
-  parameters: Params;
-  credentials?: CredentialRef;
-  output: Record<string, unknown>;
+export type WorkflowNode = Omit<DSL.BaseNode, "credentials"> & {
   position?: [number, number];
-}
+  credentials?: CredentialRef;
+  type: string;
+  parameters: Record<string, unknown>;
+};
 
-export interface WorkflowEdge {
-  id: string;
-  src: string;
-  dst: string;
+export type WorkflowEdge = DSL.Edge & {
   label?: string;
-}
+};
 
 export class MissingNodeCredentialsError extends Error {
   constructor(public readonly nodes: Array<{ id: string; type: string }>) {
@@ -126,14 +121,13 @@ function nodeName(n: CanvasNode): string {
 }
 
 // Helper to convert comma-separated email string to array
-function emailStringToArray(value: string | undefined): string[] | string | undefined {
+function emailStringToArray(value: string | undefined): string[] | undefined {
   if (!value || !value.trim()) return undefined;
   const emails = value
     .split(",")
     .map((e) => e.trim())
     .filter((e) => e.length > 0);
-  // Return single string if only one email, array if multiple
-  return emails.length === 1 ? emails[0] : emails.length > 1 ? emails : undefined;
+  return emails.length > 0 ? emails : undefined;
 }
 
 // Helper to convert array or single string back to comma-separated string for UI
@@ -786,9 +780,11 @@ export function canvasToWorkflowData(
       type: toWorkerType(n.type), // store canonical type to simplify future use
       parameters: toWorkerParameters(n, edges),
       output: {},
+      error: undefined,
+      credential_type: undefined,
       position: [n.position.x, n.position.y],
       credentials: credential,
-    };
+    } as WorkflowNode;
   });
 
   const blueprintEdges: WorkflowEdge[] = edges.map((e) => ({

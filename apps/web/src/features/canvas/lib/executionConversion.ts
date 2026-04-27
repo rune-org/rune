@@ -42,8 +42,10 @@ export function extractGraphSnapshot(
       trigger,
       parameters: (extra.parameters as Record<string, unknown>) ?? {},
       output: (extra.output as Record<string, unknown>) ?? {},
+      error: undefined,
+      credential_type: undefined,
       position,
-    });
+    } as WorkflowNode);
   }
 
   const workflowEdges: WorkflowEdge[] = (doc.edges ?? []).map((e) => ({
