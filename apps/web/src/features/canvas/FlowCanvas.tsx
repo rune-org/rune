@@ -49,6 +49,7 @@ import { useExecutionFromUrl } from "./hooks/useExecutionFromUrl";
 import { ExecutionProvider, useExecution } from "./context/ExecutionContext";
 import { GraphProvider } from "./context/GraphContext";
 import { SmithChatDrawer } from "@/features/smith/SmithChatDrawer";
+import { useCredentialEvents } from "@/hooks/useCredentialEvents";
 
 type FlowCanvasProps = {
   externalNodes?: CanvasNode[];
@@ -132,6 +133,9 @@ function FlowCanvasInner({
   } | null>(null);
 
   const [saveVersionDialogOpen, setSaveVersionDialogOpen] = useState(false);
+
+  // Connect for instant updates on shared/deleted credentials
+  useCredentialEvents();
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(null);
