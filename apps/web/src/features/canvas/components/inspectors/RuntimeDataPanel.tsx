@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Clock,
   AlertCircle,
@@ -11,16 +11,28 @@ import {
   Copy,
 } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { useNodeExecution } from "../../context/ExecutionContext";
-import type { NodeExecutionStatus, NodeExecutionData } from "../../types/execution";
+import { useNodeExecution, useNodeExecutions } from "../../context/ExecutionContext";
+import {
+  nodeExecutionInstanceKey,
+  type NodeExecutionStatus,
+  type NodeExecutionData,
+} from "../../types/execution";
+import type { NodeKind } from "../../types";
 import { cn } from "@/lib/cn";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { JsonTreeViewer } from "../json-tree/JsonTreeViewer";
 
 interface RuntimeDataPanelProps {
   nodeId: string;
   nodeLabel?: string;
+  nodeType?: NodeKind;
 }
 
 function StatusBadge({ status, durationMs }: { status: NodeExecutionStatus; durationMs?: number }) {
@@ -203,8 +215,58 @@ function ErrorDisplay({ error }: { error: NodeExecutionData["error"] }) {
   );
 }
 
-export function RuntimeDataPanel({ nodeId, nodeLabel }: RuntimeDataPanelProps) {
+function executionOptionLabel(execution: NodeExecutionData, fallbackIndex: number): string {
+  if (execution.itemIndex !== undefined) {
+    const itemNumber = execution.itemIndex + 1;
+    return execution.totalItems !== undefined
+      ? `Item ${itemNumber} of ${execution.totalItems}`
+      : `Item ${itemNumber}`;
+  }
+  if (execution.branchId) return `Branch ${fallbackIndex + 1}`;
+  return `Run ${fallbackIndex + 1}`;
+}
+
+function sortNodeExecutions(executions: NodeExecutionData[]): NodeExecutionData[] {
+  return [...executions].sort((a, b) => {
+    if (a.itemIndex !== undefined && b.itemIndex !== undefined) {
+      return a.itemIndex - b.itemIndex;
+    }
+    if (a.itemIndex !== undefined) return -1;
+    if (b.itemIndex !== undefined) return 1;
+    return nodeExecutionInstanceKey(a).localeCompare(nodeExecutionInstanceKey(b));
+  });
+}
+
+export function RuntimeDataPanel({ nodeId, nodeLabel, nodeType }: RuntimeDataPanelProps) {
   const nodeExecution = useNodeExecution(nodeId);
+  const nodeExecutions = useNodeExecutions(nodeId);
+  const sortedExecutions = useMemo(() => sortNodeExecutions(nodeExecutions), [nodeExecutions]);
+  const [selectedExecutionKey, setSelectedExecutionKey] = useState<string | null>(null);
+  const showExecutionSelector = nodeType !== "aggregator" && sortedExecutions.length > 1;
+
+  useEffect(() => {
+    if (sortedExecutions.length === 0) {
+      setSelectedExecutionKey(null);
+      return;
+    }
+
+    setSelectedExecutionKey((current) => {
+      if (
+        current &&
+        sortedExecutions.some((execution) => nodeExecutionInstanceKey(execution) === current)
+      ) {
+        return current;
+      }
+      return nodeExecutionInstanceKey(sortedExecutions[0]);
+    });
+  }, [sortedExecutions]);
+
+  const selectedExecution =
+    (showExecutionSelector
+      ? sortedExecutions.find(
+          (execution) => nodeExecutionInstanceKey(execution) === selectedExecutionKey,
+        )
+      : undefined) ?? nodeExecution;
 
   if (!nodeExecution || nodeExecution.status === "idle") {
     return (
@@ -219,18 +281,44 @@ export function RuntimeDataPanel({ nodeId, nodeLabel }: RuntimeDataPanelProps) {
 
   return (
     <div className="space-y-4">
-      <StatusBadge status={nodeExecution.status} durationMs={nodeExecution.durationMs} />
+      <StatusBadge
+        status={selectedExecution?.status ?? nodeExecution.status}
+        durationMs={selectedExecution?.durationMs ?? nodeExecution.durationMs}
+      />
 
-      <JsonSection label="Input" data={nodeExecution.input} nodeLabel={nodeLabel} />
-      <JsonSection label="Parameters" data={nodeExecution.parameters} nodeLabel={nodeLabel} />
-      <JsonSection label="Output" data={nodeExecution.output} nodeLabel={nodeLabel} />
+      {showExecutionSelector && (
+        <div className="rounded-md border border-border/50 bg-muted/20 p-2">
+          <label className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Split iteration
+          </label>
+          <Select value={selectedExecutionKey ?? ""} onValueChange={setSelectedExecutionKey}>
+            <SelectTrigger className="mt-1 h-8 rounded border-border/70 bg-background/80 px-2 py-1 text-xs">
+              <SelectValue placeholder="Select iteration" />
+            </SelectTrigger>
+            <SelectContent>
+              {sortedExecutions.map((execution, index) => {
+                const key = nodeExecutionInstanceKey(execution);
+                return (
+                  <SelectItem key={key} value={key} className="text-xs">
+                    {executionOptionLabel(execution, index)}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
-      <ErrorDisplay error={nodeExecution.error} />
+      <JsonSection label="Input" data={selectedExecution?.input} nodeLabel={nodeLabel} />
+      <JsonSection label="Parameters" data={selectedExecution?.parameters} nodeLabel={nodeLabel} />
+      <JsonSection label="Output" data={selectedExecution?.output} nodeLabel={nodeLabel} />
 
-      {nodeExecution.executedAt && (
+      <ErrorDisplay error={selectedExecution?.error ?? nodeExecution.error} />
+
+      {(selectedExecution?.executedAt ?? nodeExecution.executedAt) && (
         <div className="border-t border-border pt-3 text-xs text-muted-foreground">
           <span className="font-medium">Executed:</span>{" "}
-          {new Date(nodeExecution.executedAt).toLocaleString()}
+          {new Date(selectedExecution?.executedAt ?? nodeExecution.executedAt!).toLocaleString()}
         </div>
       )}
     </div>

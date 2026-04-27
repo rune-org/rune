@@ -6,6 +6,7 @@ import type {
   WorkflowGraphSnapshot,
 } from "../types/execution";
 import { parseNodeStatus } from "../types/execution";
+import type { RtesNodeExecutionInstance } from "@/lib/api/rtes";
 import { workflowDataToCanvas, type WorkflowNode, type WorkflowEdge } from "@/lib/workflow-dsl";
 import { sanitizeGraph } from "./graphIO";
 import { applyAutoLayout } from "./autoLayout";
@@ -80,26 +81,57 @@ export function extractGraphSnapshot(
   };
 }
 
+function rtesInstanceToNodeExecution(
+  nodeId: string,
+  instance: RtesNodeExecutionInstance,
+  lineageHash?: string,
+): NodeExecutionData {
+  return {
+    nodeId,
+    status: parseNodeStatus(instance.status),
+    input: instance.input,
+    output: instance.output,
+    parameters: instance.parameters,
+    error: instance.error
+      ? {
+          message: instance.error.message,
+          code: instance.error.code,
+          details: instance.error.details,
+        }
+      : undefined,
+    executedAt: instance.executed_at,
+    durationMs: instance.duration_ms,
+    lineageHash: instance.lineage_hash ?? lineageHash,
+    splitNodeId: instance.split_node_id ?? undefined,
+    branchId: instance.branch_id ?? undefined,
+    itemIndex: instance.item_index ?? undefined,
+    totalItems: instance.total_items ?? undefined,
+  };
+}
+
 /**
  * Convert RTES ExecutionDocument to frontend ExecutionState
  */
 export function rtesDocToExecutionState(doc: RtesExecutionDocument): ExecutionState {
   const nodesMap = new Map<string, NodeExecutionData>();
+  const nodeExecutionsMap = new Map<string, NodeExecutionData[]>();
 
   // Convert nodes from RTES format
   for (const [nodeId, hydratedNode] of Object.entries(doc.nodes)) {
+    const lineageExecutions = Object.entries(hydratedNode.lineages ?? {}).map(
+      ([lineageHash, instance]) => rtesInstanceToNodeExecution(nodeId, instance, lineageHash),
+    );
+    if (lineageExecutions.length > 0) {
+      nodeExecutionsMap.set(nodeId, lineageExecutions);
+    }
+
     const latest = hydratedNode.latest;
     if (latest) {
-      nodesMap.set(nodeId, {
-        nodeId,
-        status: parseNodeStatus(latest.status),
-        output: latest.output,
-        error: latest.error
-          ? { message: latest.error.message, code: latest.error.code }
-          : undefined,
-        executedAt: latest.executed_at,
-        durationMs: latest.duration_ms,
-      });
+      const latestExecution = rtesInstanceToNodeExecution(nodeId, latest);
+      nodesMap.set(nodeId, latestExecution);
+      if (lineageExecutions.length === 0) {
+        nodeExecutionsMap.set(nodeId, [latestExecution]);
+      }
     }
   }
 
@@ -110,6 +142,7 @@ export function rtesDocToExecutionState(doc: RtesExecutionDocument): ExecutionSt
     workflowId: parseInt(doc.workflow_id, 10),
     status: (doc.status as WorkflowExecutionStatus) || "idle",
     nodes: nodesMap,
+    nodeExecutions: nodeExecutionsMap,
     startedAt: doc.created_at,
     isHistorical: true,
     graphSnapshot,

@@ -18,6 +18,7 @@ import {
   rtesUpdateToNodeData,
   isCompletionMessage,
   parseWorkflowStatus,
+  isSameNodeExecutionInstance,
 } from "../types/execution";
 
 // Action types for the reducer
@@ -34,6 +35,48 @@ type ExecutionAction =
   | { type: "RESET" }
   | { type: "LOAD_STATE"; state: ExecutionState };
 
+function mergeNodeExecution(
+  existing: NodeExecutionData | undefined,
+  nodeData: NodeExecutionData,
+): NodeExecutionData {
+  return {
+    ...existing,
+    ...nodeData,
+    input: nodeData.input ?? existing?.input,
+    output: nodeData.output ?? existing?.output,
+    parameters: nodeData.parameters ?? existing?.parameters,
+    error: nodeData.status === "failed" ? (nodeData.error ?? existing?.error) : nodeData.error,
+    lineageHash: nodeData.lineageHash ?? existing?.lineageHash,
+    lineageStack: nodeData.lineageStack ?? existing?.lineageStack,
+    splitNodeId: nodeData.splitNodeId ?? existing?.splitNodeId,
+    branchId: nodeData.branchId ?? existing?.branchId,
+    itemIndex: nodeData.itemIndex ?? existing?.itemIndex,
+    totalItems: nodeData.totalItems ?? existing?.totalItems,
+    executedAt: nodeData.executedAt ?? new Date().toISOString(),
+  };
+}
+
+function upsertNodeExecutionInstance(
+  executions: Map<string, NodeExecutionData[]>,
+  nodeData: NodeExecutionData,
+): Map<string, NodeExecutionData[]> {
+  const nextExecutions = new Map(executions);
+  const existingInstances = nextExecutions.get(nodeData.nodeId) ?? [];
+  const existingIndex = existingInstances.findIndex((instance) =>
+    isSameNodeExecutionInstance(instance, nodeData),
+  );
+
+  const nextInstances = [...existingInstances];
+  if (existingIndex >= 0) {
+    nextInstances[existingIndex] = mergeNodeExecution(nextInstances[existingIndex], nodeData);
+  } else {
+    nextInstances.push(mergeNodeExecution(undefined, nodeData));
+  }
+
+  nextExecutions.set(nodeData.nodeId, nextInstances);
+  return nextExecutions;
+}
+
 /**
  * Reducer for execution state management.
  */
@@ -47,6 +90,7 @@ function executionReducer(state: ExecutionState, action: ExecutionAction): Execu
         status: "running",
         startedAt: new Date().toISOString(),
         nodes: new Map(),
+        nodeExecutions: new Map(),
         isHistorical: false,
       };
     }
@@ -69,27 +113,21 @@ function executionReducer(state: ExecutionState, action: ExecutionAction): Execu
 
       const newNodes = new Map(state.nodes);
       const existingNode = newNodes.get(nodeData.nodeId);
+      const mergedNode = mergeNodeExecution(existingNode, nodeData);
 
       // Merge with existing data (preserve previous input/output if not provided)
-      newNodes.set(nodeData.nodeId, {
-        ...existingNode,
-        ...nodeData,
-        input: nodeData.input ?? existingNode?.input,
-        output: nodeData.output ?? existingNode?.output,
-        parameters: nodeData.parameters ?? existingNode?.parameters,
-        error:
-          nodeData.status === "failed" ? (nodeData.error ?? existingNode?.error) : nodeData.error,
-        executedAt: new Date().toISOString(),
-      });
+      newNodes.set(nodeData.nodeId, mergedNode);
 
       return {
         ...state,
         nodes: newNodes,
+        nodeExecutions: upsertNodeExecutionInstance(state.nodeExecutions, nodeData),
       };
     }
 
     case "BATCH_NODE_UPDATE": {
       const newNodes = new Map(state.nodes);
+      let newNodeExecutions = state.nodeExecutions;
       let newStatus = state.status;
       let completedAt = state.completedAt;
 
@@ -104,21 +142,14 @@ function executionReducer(state: ExecutionState, action: ExecutionAction): Execu
         if (!nodeData) continue;
 
         const existingNode = newNodes.get(nodeData.nodeId);
-        newNodes.set(nodeData.nodeId, {
-          ...existingNode,
-          ...nodeData,
-          input: nodeData.input ?? existingNode?.input,
-          output: nodeData.output ?? existingNode?.output,
-          parameters: nodeData.parameters ?? existingNode?.parameters,
-          error:
-            nodeData.status === "failed" ? (nodeData.error ?? existingNode?.error) : nodeData.error,
-          executedAt: new Date().toISOString(),
-        });
+        newNodes.set(nodeData.nodeId, mergeNodeExecution(existingNode, nodeData));
+        newNodeExecutions = upsertNodeExecutionInstance(newNodeExecutions, nodeData);
       }
 
       return {
         ...state,
         nodes: newNodes,
+        nodeExecutions: newNodeExecutions,
         status: newStatus,
         completedAt,
       };
@@ -149,6 +180,7 @@ function executionReducer(state: ExecutionState, action: ExecutionAction): Execu
     case "LOAD_STATE": {
       return {
         ...action.state,
+        nodeExecutions: action.state.nodeExecutions ?? new Map(),
         isHistorical: true,
       };
     }
@@ -164,6 +196,7 @@ interface ExecutionContextValue {
   dispatch: Dispatch<ExecutionAction>;
   // Convenience methods
   getNodeExecution: (nodeId: string) => NodeExecutionData | undefined;
+  getNodeExecutions: (nodeId: string) => NodeExecutionData[];
   isNodeRunning: (nodeId: string) => boolean;
   isNodeCompleted: (nodeId: string) => boolean;
   isNodeFailed: (nodeId: string) => boolean;
@@ -179,6 +212,10 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(executionReducer, initialExecutionState);
 
   const getNodeExecution = useCallback((nodeId: string) => state.nodes.get(nodeId), [state.nodes]);
+  const getNodeExecutions = useCallback(
+    (nodeId: string) => state.nodeExecutions.get(nodeId) ?? [],
+    [state.nodeExecutions],
+  );
 
   const isNodeRunning = useCallback(
     (nodeId: string) => state.nodes.get(nodeId)?.status === "running",
@@ -202,12 +239,21 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
       state,
       dispatch,
       getNodeExecution,
+      getNodeExecutions,
       isNodeRunning,
       isNodeCompleted,
       isNodeFailed,
       isExecutionActive,
     }),
-    [state, getNodeExecution, isNodeRunning, isNodeCompleted, isNodeFailed, isExecutionActive],
+    [
+      state,
+      getNodeExecution,
+      getNodeExecutions,
+      isNodeRunning,
+      isNodeCompleted,
+      isNodeFailed,
+      isExecutionActive,
+    ],
   );
 
   return <ExecutionContext.Provider value={value}>{children}</ExecutionContext.Provider>;
@@ -241,6 +287,12 @@ export function useNodeExecution(nodeId: string): NodeExecutionData | undefined 
   const context = useContext(ExecutionContext);
   if (!context) return undefined;
   return context.getNodeExecution(nodeId);
+}
+
+export function useNodeExecutions(nodeId: string): NodeExecutionData[] {
+  const context = useContext(ExecutionContext);
+  if (!context) return [];
+  return context.getNodeExecutions(nodeId);
 }
 
 /**
