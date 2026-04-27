@@ -84,9 +84,7 @@ describe("graphIO", () => {
     ]);
   });
 
-  it(
-    "test_stringify_graph_strips_sensitive_and_execution_only_fields_without_mutating_input",
-    () => {
+  it("test_stringify_graph_strips_sensitive_and_execution_only_fields_without_mutating_input", () => {
     const graph = {
       nodes: [
         {
@@ -146,8 +144,7 @@ describe("graphIO", () => {
         },
       ],
     });
-    },
-  );
+  });
 
   it("test_try_parse_graph_from_text_rejects_malformed_payloads", () => {
     expect(tryParseGraphFromText("not json")).toBeNull();
