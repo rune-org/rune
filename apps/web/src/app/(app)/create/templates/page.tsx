@@ -69,7 +69,7 @@ function TemplatesPageInner() {
         toast.success("Template deleted successfully");
         setTemplates((prev) => prev.filter((t) => t.id !== templateId));
       } else {
-        const errorData = response.error as any;
+        const errorData = response.error as { message?: string; detail?: string | unknown[] };
         const errorMessage = errorData?.message || 
                            (typeof errorData?.detail === 'string' ? errorData.detail : null) || 
                            "Failed to delete template";

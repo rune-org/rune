@@ -98,7 +98,7 @@ async def test_delete_own_template_allowed(
 ):
     """Should allow user to delete their own template."""
     template_id = sample_private_template.id
-    await template_service.delete_template(template_id, test_user.id)
+    await template_service.delete_template(template_id, test_user)
 
     # Verify deleted
     statement = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
@@ -113,7 +113,7 @@ async def test_delete_other_users_template_raises_forbidden(
     """Should deny deletion of other users' templates."""
     with pytest.raises(Forbidden):
         await template_service.delete_template(
-            other_user_private_template.id, test_user.id
+            other_user_private_template.id, test_user
         )
 
 
@@ -214,7 +214,7 @@ async def test_delete_nonexistent_template_raises_not_found(
 ):
     """Should raise NotFound when deleting non-existent template."""
     with pytest.raises(NotFound):
-        await template_service.delete_template(99999, test_user.id)
+        await template_service.delete_template(99999, test_user)
 
 
 # ============================================================================
