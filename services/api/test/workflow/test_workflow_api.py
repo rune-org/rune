@@ -5,7 +5,8 @@ import json
 import pytest
 from sqlmodel import select
 
-from src.db.models import Workflow, WorkflowVersion
+from src.db.models import Execution, Workflow, WorkflowVersion
+from src.workflow.queue import NO_ACTION_NODES_MESSAGE
 
 
 class TestWorkflowShellAPI:
@@ -279,6 +280,39 @@ class TestWorkflowRunAPI:
 
         response = await authenticated_client.post(f"/workflows/{workflow_id}/run")
         assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_run_trigger_only_workflow_returns_400_without_execution(
+        self, authenticated_client, workflow_service, test_db, test_user
+    ):
+        workflow = await workflow_service.create(
+            user_id=test_user.id,
+            name="Trigger Only",
+            description="",
+        )
+        version = await workflow_service.create_version(
+            workflow=workflow,
+            user_id=test_user.id,
+            workflow_data={
+                "nodes": [{"id": "trigger", "type": "trigger", "trigger": True}],
+                "edges": [],
+            },
+            base_version_id=None,
+            message="Initial trigger-only version",
+        )
+        await workflow_service.publish_version(workflow, version.id)
+
+        response = await authenticated_client.post(f"/workflows/{workflow.id}/run")
+
+        assert response.status_code == 400
+        assert response.json()["message"] == NO_ACTION_NODES_MESSAGE
+
+        executions = (
+            await test_db.exec(
+                select(Execution).where(Execution.workflow_id == workflow.id)
+            )
+        ).all()
+        assert executions == []
 
 
 class TestWorkflowStatusAPI:
