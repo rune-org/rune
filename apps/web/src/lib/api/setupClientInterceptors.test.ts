@@ -167,4 +167,22 @@ describe("setupClientInterceptors", () => {
 
     expect(locationMock.assign).not.toHaveBeenCalled();
   });
+
+  it("does not retry or refresh a request that is already marked as retried", async () => {
+    localStorage.setItem(REFRESH_TOKEN_KEY, "refresh-token");
+
+    const interceptor = await installInterceptor();
+    const response = new Response("{}", { status: 401 });
+
+    const result = await interceptor(response, {
+      url: "/workflows/",
+      headers: new Headers({ "x-retried": "1" }),
+      method: "GET",
+    });
+
+    expect(result).toBe(response);
+    expect(mocks.refreshAccessToken).not.toHaveBeenCalled();
+    expect(mocks.request).not.toHaveBeenCalled();
+    expect(locationMock.assign).not.toHaveBeenCalled();
+  });
 });

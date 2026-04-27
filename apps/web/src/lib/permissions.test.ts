@@ -12,24 +12,43 @@ import {
 } from "./permissions";
 
 describe("workflow permissions", () => {
-  it.each<[WorkflowRole, boolean, boolean, boolean, boolean, boolean, boolean]>([
-    ["owner", true, true, true, true, true, true],
-    ["editor", true, true, true, false, false, true],
-    ["viewer", true, false, false, false, false, false],
-  ])(
-    "applies the expected permissions for %s",
-    (role, view, edit, execute, del, share, renameAndStatus) => {
-      expect(canViewWorkflow(role)).toBe(view);
-      expect(canEditWorkflow(role)).toBe(edit);
-      expect(canExecuteWorkflow(role)).toBe(execute);
-      expect(canDeleteWorkflow(role)).toBe(del);
-      expect(canShareWorkflow(role)).toBe(share);
-      expect(canRenameWorkflow(role)).toBe(renameAndStatus);
-      expect(canChangeWorkflowStatus(role)).toBe(renameAndStatus);
-    },
-  );
+  it("test_viewer_can_view_but_cannot_change_or_run_workflow", () => {
+    const role: WorkflowRole = "viewer";
 
-  it("grants every permission to admins regardless of workflow role", () => {
+    expect(canViewWorkflow(role)).toBe(true);
+    expect(canEditWorkflow(role)).toBe(false);
+    expect(canExecuteWorkflow(role)).toBe(false);
+    expect(canDeleteWorkflow(role)).toBe(false);
+    expect(canShareWorkflow(role)).toBe(false);
+    expect(canRenameWorkflow(role)).toBe(false);
+    expect(canChangeWorkflowStatus(role)).toBe(false);
+  });
+
+  it("test_editor_can_edit_and_run_but_cannot_delete_or_share", () => {
+    const role: WorkflowRole = "editor";
+
+    expect(canViewWorkflow(role)).toBe(true);
+    expect(canEditWorkflow(role)).toBe(true);
+    expect(canExecuteWorkflow(role)).toBe(true);
+    expect(canDeleteWorkflow(role)).toBe(false);
+    expect(canShareWorkflow(role)).toBe(false);
+    expect(canRenameWorkflow(role)).toBe(true);
+    expect(canChangeWorkflowStatus(role)).toBe(true);
+  });
+
+  it("test_owner_has_full_workflow_management_permissions", () => {
+    const role: WorkflowRole = "owner";
+
+    expect(canViewWorkflow(role)).toBe(true);
+    expect(canEditWorkflow(role)).toBe(true);
+    expect(canExecuteWorkflow(role)).toBe(true);
+    expect(canDeleteWorkflow(role)).toBe(true);
+    expect(canShareWorkflow(role)).toBe(true);
+    expect(canRenameWorkflow(role)).toBe(true);
+    expect(canChangeWorkflowStatus(role)).toBe(true);
+  });
+
+  it("test_admin_override_grants_permissions_even_with_viewer_workflow_role", () => {
     expect(canViewWorkflow("viewer", true)).toBe(true);
     expect(canEditWorkflow("viewer", true)).toBe(true);
     expect(canExecuteWorkflow("viewer", true)).toBe(true);

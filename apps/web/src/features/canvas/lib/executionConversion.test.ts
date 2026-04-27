@@ -25,7 +25,7 @@ describe("executionConversion", () => {
     applyAutoLayoutMock.mockReset();
   });
 
-  it("returns undefined when no graph nodes exist", () => {
+  it("test_extract_graph_snapshot_returns_undefined_when_execution_has_no_nodes", () => {
     expect(
       extractGraphSnapshot({
         execution_id: "exec-1",
@@ -35,7 +35,7 @@ describe("executionConversion", () => {
     ).toBeUndefined();
   });
 
-  it("returns sanitized graph snapshots without auto-layout when positions are stored", () => {
+  it("test_extract_graph_snapshot_uses_stored_positions_without_applying_auto_layout", () => {
     const sanitized = {
       nodes: [{ id: "trigger-1", position: { x: 10, y: 20 }, type: "trigger", data: {} }],
       edges: [],
@@ -62,7 +62,7 @@ describe("executionConversion", () => {
     expect(applyAutoLayoutMock).not.toHaveBeenCalled();
   });
 
-  it("auto-layouts snapshots when execution nodes have no stored positions", () => {
+  it("test_extract_graph_snapshot_auto_layouts_when_positions_are_missing", () => {
     const sanitized = {
       nodes: [
         { id: "a", position: { x: 0, y: 0 }, type: "trigger", data: {} },
@@ -100,7 +100,7 @@ describe("executionConversion", () => {
     expect(result).toEqual(layouted);
   });
 
-  it("maps RTES execution documents into frontend execution state", () => {
+  it("test_rtes_doc_to_execution_state_maps_outputs_errors_and_statuses", () => {
     const sanitized = {
       nodes: [{ id: "a", position: { x: 0, y: 0 }, type: "trigger", data: {} }],
       edges: [],
@@ -140,6 +140,37 @@ describe("executionConversion", () => {
       error: { message: "boom", code: "ERR" },
       executedAt: "2026-03-29T12:00:01Z",
       durationMs: 150,
+    });
+  });
+
+  it("test_rtes_doc_to_execution_state_ignores_nodes_without_latest_execution_instance", () => {
+    workflowDataToCanvasMock.mockReturnValue({
+      nodes: [{ id: "a", position: { x: 0, y: 0 }, type: "trigger", data: {} }],
+      edges: [],
+    });
+    sanitizeGraphMock.mockReturnValue({
+      nodes: [{ id: "a", position: { x: 0, y: 0 }, type: "trigger", data: {} }],
+      edges: [],
+    });
+
+    const state = rtesDocToExecutionState({
+      execution_id: "exec-43",
+      workflow_id: "9",
+      status: "running",
+      created_at: "2026-03-29T12:00:00Z",
+      nodes: {
+        a: {
+          position: [0, 0],
+        },
+      },
+      edges: [],
+    });
+
+    expect(state.nodes.size).toBe(0);
+    expect(state.status).toBe("running");
+    expect(state.graphSnapshot).toEqual({
+      nodes: [{ id: "a", position: { x: 0, y: 0 }, type: "trigger", data: {} }],
+      edges: [],
     });
   });
 });
