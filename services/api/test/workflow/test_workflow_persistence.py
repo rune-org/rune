@@ -1,4 +1,13 @@
-"""Service-level persistence tests for workflow versioning."""
+"""API-level tests verifying workflow state persistence.
+
+These tests verify that API changes result in correct database state persistence,
+from a user's perspective (what they observe through API responses).
+
+Unlike unit tests of the service layer, these test the API contract:
+- When I publish a workflow through the API, is it actually published?
+- When I create a version, does the version number increment correctly?
+- Does the published_version_id persist across requests?
+"""
 
 import pytest
 from sqlmodel import select
@@ -6,65 +15,165 @@ from sqlmodel import select
 from src.db.models import Workflow, WorkflowVersion
 
 
-class TestWorkflowVersionPersistence:
+class TestWorkflowPersistenceThroughAPI:
+    """Test that API operations persist correct state."""
+
     @pytest.mark.asyncio
-    async def test_create_shell_persists_without_versions(
-        self, workflow_service, test_user, test_db
+    async def test_published_workflow_state_persists_across_requests(
+        self, authenticated_client, sample_workflow, test_db
     ):
-        workflow = await workflow_service.create(
-            user_id=test_user.id,
-            name="Shell",
-            description="No versions yet",
+        """Published version stays published when fetching workflow again."""
+        # Publish through API
+        detail1 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        version_id = detail1.json()["data"]["latest_version"]["id"]
+
+        await authenticated_client.put(
+            f"/workflows/{sample_workflow.id}/status",
+            json={"is_active": True},
         )
 
-        result = await test_db.exec(select(Workflow).where(Workflow.id == workflow.id))
-        persisted = result.first()
-
-        assert persisted.latest_version_id is None
-        assert persisted.published_version_id is None
-        assert persisted.is_active is False
-
-    @pytest.mark.asyncio
-    async def test_publish_persists_pointer_and_active_flag(
-        self, workflow_service, sample_workflow, test_db
-    ):
-        latest = await workflow_service.get_latest_version(sample_workflow)
-        await workflow_service.publish_version(sample_workflow, latest.id)
-
-        await test_db.refresh(sample_workflow)
-        assert sample_workflow.published_version_id == latest.id
-        assert sample_workflow.is_active is True
+        # Fetch again - published state should persist
+        detail2 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        data = detail2.json()["data"]
+        assert data["is_active"] is True
+        assert data["published_version_id"] == version_id
 
     @pytest.mark.asyncio
-    async def test_update_status_false_clears_published_pointer(
-        self, workflow_service, sample_workflow, test_db
+    async def test_version_number_increments_correctly_through_api(
+        self, authenticated_client, sample_workflow
     ):
-        latest = await workflow_service.get_latest_version(sample_workflow)
-        await workflow_service.publish_version(sample_workflow, latest.id)
+        """Creating versions through API increments version number."""
+        # Get first version
+        detail1 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        v1 = detail1.json()["data"]["latest_version"]
+        assert v1["version"] == 1
 
-        await workflow_service.update_status(sample_workflow, False)
-
-        await test_db.refresh(sample_workflow)
-        assert sample_workflow.published_version_id is None
-        assert sample_workflow.is_active is False
-
-    @pytest.mark.asyncio
-    async def test_restore_creates_new_row_with_copied_workflow_data(
-        self, workflow_service, sample_workflow, test_user, test_db
-    ):
-        latest = await workflow_service.get_latest_version(sample_workflow)
-        restored = await workflow_service.restore_version(
-            workflow=sample_workflow,
-            source_version_id=latest.id,
-            user_id=test_user.id,
-            message=None,
+        # Create second version
+        await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": v1["id"],
+                "workflow_data": {
+                    "nodes": [
+                        {
+                            "id": "trigger",
+                            "type": "trigger",
+                            "trigger": True,
+                            "data": {"label": "Modified"},
+                        }
+                    ],
+                    "edges": [],
+                },
+                "message": "v2",
+            },
         )
 
+        # Fetch - version number should increment
+        detail2 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        v2 = detail2.json()["data"]["latest_version"]
+        assert v2["version"] == 2
+
+        # Create third version
+        await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": v2["id"],
+                "workflow_data": {
+                    "nodes": [
+                        {
+                            "id": "trigger",
+                            "type": "trigger",
+                            "trigger": True,
+                            "data": {"label": "Modified again"},
+                        }
+                    ],
+                    "edges": [],
+                },
+                "message": "v3",
+            },
+        )
+
+        detail3 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        v3 = detail3.json()["data"]["latest_version"]
+        assert v3["version"] == 3
+
+    @pytest.mark.asyncio
+    async def test_unpublished_workflow_clears_published_id(
+        self, authenticated_client, sample_workflow
+    ):
+        """Unpublishing workflow clears published_version_id in database."""
+        # Publish
+        detail1 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        version_id = detail1.json()["data"]["latest_version"]["id"]
+
+        await authenticated_client.put(
+            f"/workflows/{sample_workflow.id}/status",
+            json={"is_active": True},
+        )
+
+        # Verify it's published
+        detail2 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        assert detail2.json()["data"]["published_version_id"] == version_id
+
+        # Unpublish
+        await authenticated_client.put(
+            f"/workflows/{sample_workflow.id}/status",
+            json={"is_active": False},
+        )
+
+        # Verify published_id cleared
+        detail3 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        assert detail3.json()["data"]["published_version_id"] is None
+        assert detail3.json()["data"]["is_active"] is False
+
+    @pytest.mark.asyncio
+    async def test_restored_version_creates_new_database_record(
+        self, authenticated_client, sample_workflow, test_db
+    ):
+        """Restoring version creates new version record with incremented version number."""
+        # Get original version
+        detail1 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        v1_id = detail1.json()["data"]["latest_version"]["id"]
+
+        # Restore it
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/restore/{v1_id}",
+            json={"message": "Restored from v1"},
+        )
+        assert response.status_code == 201
+
+        # Verify new record with incremented version
+        restored = response.json()["data"]
+        assert restored["version"] == 2
+        assert restored["id"] != v1_id  # Different record
+        assert restored["message"] == "Restored from v1"
+
+        # Verify in database
         result = await test_db.exec(
-            select(WorkflowVersion).where(WorkflowVersion.id == restored.id)
+            select(WorkflowVersion).where(WorkflowVersion.id == restored["id"])
         )
         persisted = result.first()
+        assert persisted is not None
+        assert persisted.version == 2
 
-        assert persisted.id != latest.id
-        assert persisted.version == latest.version + 1
-        assert persisted.workflow_data == latest.workflow_data
+    @pytest.mark.asyncio
+    async def test_workflow_name_update_persists(
+        self, authenticated_client, sample_workflow, test_db
+    ):
+        """Updating workflow name through API persists to database."""
+        new_name = "Renamed Workflow"
+
+        # Update name
+        await authenticated_client.put(
+            f"/workflows/{sample_workflow.id}/name",
+            json={"name": new_name},
+        )
+
+        # Verify persisted in DB
+        await test_db.refresh(sample_workflow)
+        assert sample_workflow.name == new_name
+
+        # Verify through API
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        assert detail.json()["data"]["name"] == new_name
+
