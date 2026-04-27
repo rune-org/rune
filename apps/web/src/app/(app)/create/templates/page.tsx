@@ -61,7 +61,7 @@ function TemplatesPageInner() {
     // Navigate to canvas with template ID in URL
     router.push(`/create/app?templateId=${templateId}`);
   };
-  
+
   const handleDeleteTemplate = async (templateId: number) => {
     try {
       const response = await deleteTemplate(templateId);
@@ -70,9 +70,10 @@ function TemplatesPageInner() {
         setTemplates((prev) => prev.filter((t) => t.id !== templateId));
       } else {
         const errorData = response.error as { message?: string; detail?: string | unknown[] };
-        const errorMessage = errorData?.message || 
-                           (typeof errorData?.detail === 'string' ? errorData.detail : null) || 
-                           "Failed to delete template";
+        const errorMessage =
+          errorData?.message ||
+          (typeof errorData?.detail === "string" ? errorData.detail : null) ||
+          "Failed to delete template";
         toast.error(errorMessage);
       }
     } catch (_error) {
@@ -160,7 +161,7 @@ function TemplatesPageInner() {
                   <div className="mt-auto flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Create from template</span>
                     <div className="flex items-center gap-2">
-                       {user && (user.id === template.created_by || user.role === "admin") && (
+                      {user && (user.id === template.created_by || user.role === "admin") && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
@@ -254,7 +255,7 @@ function TemplatesPageInner() {
                   <div className="mt-auto flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Create from template</span>
                     <div className="flex items-center gap-2">
-                       {user && (user.id === template.created_by || user.role === "admin") && (
+                      {user && (user.id === template.created_by || user.role === "admin") && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
