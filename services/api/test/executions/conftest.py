@@ -1,5 +1,5 @@
 import pytest_asyncio
-from argon2 import PasswordHasher
+from src.core.password import hash_password
 
 from src.db.models import (
     Execution,
@@ -16,10 +16,9 @@ from src.workflow.service import WorkflowService
 @pytest_asyncio.fixture(scope="function")
 async def other_user(test_db):
     """Create a second test user without any workflow access."""
-    ph = PasswordHasher()
     user = User(
         email="other@example.com",
-        hashed_password=ph.hash("otherpassword123"),
+        hashed_password=hash_password("otherpassword123"),
         name="Other User",
         role=UserRole.USER,
     )
@@ -32,10 +31,9 @@ async def other_user(test_db):
 @pytest_asyncio.fixture(scope="function")
 async def viewer_user(test_db):
     """Create a user who will be given VIEWER role on workflows."""
-    ph = PasswordHasher()
     user = User(
         email="viewer@example.com",
-        hashed_password=ph.hash("viewerpassword123"),
+        hashed_password=hash_password("viewerpassword123"),
         name="Viewer User",
         role=UserRole.USER,
     )
