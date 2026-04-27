@@ -7,13 +7,11 @@
  * Adding a new section = one entry in SETTINGS_NAV + one case in renderContent().
  */
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Settings, Shield, Bell, Info, ChevronRight } from "lucide-react";
 
 import { Container } from "@/components/shared/Container";
 import { SAMLConfigTab } from "@/components/admin/SAMLConfigTab";
-import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/cn";
 
 // Navigation definition — extend this array to add more settings sections
@@ -120,28 +118,7 @@ function renderContent(section: SectionId) {
 // ---------------------------------------------------------------------------
 
 export default function AdminSettingsPage() {
-  const router = useRouter();
-  const { state } = useAuth();
-  const currentUser = state.user;
-
   const [activeSection, setActiveSection] = useState<SectionId>("general");
-
-  // Guard: redirect non-admins
-  // TODO(admin): move this role check into admin/layout.tsx to avoid duplication and redirect flash.
-  useEffect(() => {
-    if (currentUser && currentUser.role !== "admin") {
-      router.replace("/create");
-    }
-  }, [currentUser, router]);
-
-  if (!currentUser) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
-        Loading…
-      </div>
-    );
-  }
-  if (currentUser.role !== "admin") return null;
 
   const active = SETTINGS_NAV.find((s) => s.id === activeSection)!;
 
