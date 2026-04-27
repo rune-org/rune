@@ -6,7 +6,7 @@ from aio_pika import connect_robust
 from argon2 import PasswordHasher
 from httpx import ASGITransport, AsyncClient
 from redis.asyncio import Redis
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.app import app
@@ -178,7 +178,18 @@ async def test_user(test_db: AsyncSession):
     """
     Create a test user in the database.
     Returns the user object for use in tests.
+
+    Idempotent: if user already exists, returns existing user instead of creating duplicate.
     """
+    # Check if user already exists
+    stmt = select(User).where(User.email == "test@example.com")
+    result = await test_db.exec(stmt)
+    existing_user = result.first()
+
+    if existing_user:
+        return existing_user
+
+    # Create new user if doesn't exist
     ph = PasswordHasher()
     user = User(
         email="test@example.com",
@@ -198,7 +209,18 @@ async def test_admin(test_db: AsyncSession):
     """
     Create a test admin user in the database.
     Returns the admin user object for use in tests.
+
+    Idempotent: if user already exists, returns existing user instead of creating duplicate.
     """
+    # Check if admin user already exists
+    stmt = select(User).where(User.email == "admin@example.com")
+    result = await test_db.exec(stmt)
+    existing_admin = result.first()
+
+    if existing_admin:
+        return existing_admin
+
+    # Create new admin if doesn't exist
     ph = PasswordHasher()
     admin = User(
         email="admin@example.com",
