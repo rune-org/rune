@@ -32,6 +32,7 @@ from src.workflow.constants import (
     SCHEDULED_TRIGGER_PARAM_UNIT,
     SCHEDULED_TRIGGER_UNIT_MULTIPLIERS,
 )
+from src.workflow.queue import validate_workflow_can_run
 
 
 class WorkflowVersionConflictError(Exception):
@@ -538,6 +539,8 @@ class WorkflowService:
         resolved_workflow_data = await self.resolve_workflow_credentials(
             version.workflow_data
         )
+
+        validate_workflow_can_run(resolved_workflow_data)
 
         # Generate a unique execution ID
         execution_id = str(uuid.uuid4())

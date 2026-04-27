@@ -57,7 +57,7 @@ export function EditInspector({ node, updateData, isExpanded }: EditInspectorPro
   };
 
   const addAssignment = () => {
-    updateAssignments((as) => [...as, { name: "newField", value: "", type: "string" }]);
+    updateAssignments((as) => [...as, { name: "", value: "", type: "string" }]);
   };
 
   const removeAssignment = (idx: number) => {
