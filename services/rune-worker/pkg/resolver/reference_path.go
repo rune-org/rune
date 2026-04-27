@@ -30,9 +30,7 @@ func ResolveReferenceValue(
 	if separatorIndex >= 0 {
 		rootName = path[:separatorIndex]
 		remainingPath = path[separatorIndex:]
-		if strings.HasPrefix(remainingPath, ".") {
-			remainingPath = strings.TrimPrefix(remainingPath, ".")
-		}
+		remainingPath = strings.TrimPrefix(remainingPath, ".")
 	}
 	if rootName == "" {
 		return nil, "", fmt.Errorf("invalid reference: missing root key")
