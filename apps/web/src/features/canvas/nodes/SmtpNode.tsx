@@ -5,19 +5,11 @@ import { type Node, type NodeProps } from "@xyflow/react";
 import { Mail, Key, AlertCircle } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { SmtpData } from "../types";
-
-const LEGACY_SMTP_EXAMPLES = new Set([
-  "sender@example.com",
-  "recipient@example.com",
-  "cc@example.com",
-  "bcc@example.com",
-  "Email subject line",
-  "Email message body",
-]);
+import { LEGACY_SMTP_PLACEHOLDER_VALUES } from "@/lib/workflow-dsl";
 
 function hasConfiguredValue(value: string | undefined): value is string {
   const trimmed = value?.trim();
-  return !!trimmed && !LEGACY_SMTP_EXAMPLES.has(trimmed);
+  return !!trimmed && !LEGACY_SMTP_PLACEHOLDER_VALUES.has(trimmed);
 }
 
 export const SmtpNode = memo(function SmtpNode({ id, data }: NodeProps<Node<SmtpData>>) {

@@ -17,6 +17,7 @@ vi.mock("./autoLayout", () => ({
 }));
 
 import { extractGraphSnapshot, rtesDocToExecutionState } from "./executionConversion";
+import { nodeExecutionInstanceKey } from "../types/execution";
 
 describe("executionConversion", () => {
   beforeEach(() => {
@@ -209,5 +210,43 @@ describe("executionConversion", () => {
       { item: 0 },
       { item: 1 },
     ]);
+  });
+
+  it("produces the same instance key for historical and live split executions", () => {
+    const sanitized = {
+      nodes: [{ id: "log-1", position: { x: 0, y: 0 }, type: "log", data: {} }],
+      edges: [],
+    };
+
+    workflowDataToCanvasMock.mockReturnValue(sanitized);
+    sanitizeGraphMock.mockReturnValue(sanitized);
+
+    const state = rtesDocToExecutionState({
+      execution_id: "exec-42",
+      workflow_id: "12",
+      status: "completed",
+      nodes: {
+        "log-1": {
+          position: [0, 0],
+          latest: { status: "completed", output: { item: 2 } },
+          lineages: {
+            branch2: {
+              status: "completed",
+              output: { item: 2 },
+              split_node_id: "split-1",
+              branch_id: "exec_split_2",
+              item_index: 2,
+              total_items: 3,
+            },
+          },
+        },
+      },
+      edges: [],
+    });
+
+    const historicalExecution = state.nodeExecutions.get("log-1")?.[0];
+    expect(historicalExecution).toBeDefined();
+    // Must match the key a live WebSocket update with lineage_stack would produce
+    expect(nodeExecutionInstanceKey(historicalExecution!)).toBe("stack:split-1:2");
   });
 });

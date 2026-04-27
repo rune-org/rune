@@ -5,6 +5,7 @@ import { CredentialSelector } from "@/components/shared/CredentialSelector";
 import type { CredentialRef } from "@/lib/credentials";
 import { VariableInput } from "../variable-picker/VariableInput";
 import { VariableTextarea } from "../variable-picker/VariableTextarea";
+import { LEGACY_SMTP_PLACEHOLDER_VALUES } from "@/lib/workflow-dsl";
 
 type SmtpInspectorProps = {
   node: Node<SmtpData>;
@@ -12,18 +13,9 @@ type SmtpInspectorProps = {
   isExpanded: boolean;
 };
 
-const LEGACY_SMTP_EXAMPLES = new Set([
-  "sender@example.com",
-  "recipient@example.com",
-  "cc@example.com",
-  "bcc@example.com",
-  "Email subject line",
-  "Email message body",
-]);
-
 function editableSmtpValue(value: string | undefined): string {
   const trimmed = value?.trim();
-  if (!trimmed || LEGACY_SMTP_EXAMPLES.has(trimmed)) return "";
+  if (!trimmed || LEGACY_SMTP_PLACEHOLDER_VALUES.has(trimmed)) return "";
   return value ?? "";
 }
 

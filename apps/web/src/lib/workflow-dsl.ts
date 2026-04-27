@@ -127,7 +127,7 @@ function nodeName(n: CanvasNode): string {
 
 // Helper to convert comma-separated email string to array
 function emailStringToArray(value: string | undefined): string[] | string | undefined {
-  if (isLegacyPlaceholderValue(value)) return undefined;
+  if (isLegacySmtpPlaceholder(value)) return undefined;
   if (!value || !value.trim()) return undefined;
   const emails = value
     .split(",")
@@ -147,7 +147,7 @@ function emailArrayToString(value: unknown): string | undefined {
   return undefined;
 }
 
-const LEGACY_PLACEHOLDER_VALUES = new Set([
+export const LEGACY_SMTP_PLACEHOLDER_VALUES = new Set([
   "sender@example.com",
   "recipient@example.com",
   "cc@example.com",
@@ -156,8 +156,8 @@ const LEGACY_PLACEHOLDER_VALUES = new Set([
   "Email message body",
 ]);
 
-function isLegacyPlaceholderValue(value: unknown): boolean {
-  return typeof value === "string" && LEGACY_PLACEHOLDER_VALUES.has(value.trim());
+export function isLegacySmtpPlaceholder(value: unknown): boolean {
+  return typeof value === "string" && LEGACY_SMTP_PLACEHOLDER_VALUES.has(value.trim());
 }
 
 // Build parameter objects for supported node types
@@ -276,12 +276,12 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
     case "smtp": {
       const d = (n.data || {}) as SmtpData;
       const params: Record<string, unknown> = {};
-      if (d.from && !isLegacyPlaceholderValue(d.from)) params.from = String(d.from);
+      if (d.from && !isLegacySmtpPlaceholder(d.from)) params.from = String(d.from);
       if (d.to) params.to = emailStringToArray(d.to);
       if (d.cc) params.cc = emailStringToArray(d.cc);
       if (d.bcc) params.bcc = emailStringToArray(d.bcc);
-      if (d.subject && !isLegacyPlaceholderValue(d.subject)) params.subject = String(d.subject);
-      if (d.body && !isLegacyPlaceholderValue(d.body)) params.body = String(d.body);
+      if (d.subject && !isLegacySmtpPlaceholder(d.subject)) params.subject = String(d.subject);
+      if (d.body && !isLegacySmtpPlaceholder(d.body)) params.body = String(d.body);
       return params;
     }
     case "wait": {

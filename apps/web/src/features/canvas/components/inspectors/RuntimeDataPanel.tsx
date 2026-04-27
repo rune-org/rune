@@ -261,12 +261,15 @@ export function RuntimeDataPanel({ nodeId, nodeLabel, nodeType }: RuntimeDataPan
     });
   }, [sortedExecutions]);
 
-  const selectedExecution =
-    (showExecutionSelector
-      ? sortedExecutions.find(
-          (execution) => nodeExecutionInstanceKey(execution) === selectedExecutionKey,
-        )
-      : undefined) ?? nodeExecution;
+  const selectedSplitExecution = showExecutionSelector
+    ? (sortedExecutions.find(
+        (execution) => nodeExecutionInstanceKey(execution) === selectedExecutionKey,
+      ) ?? sortedExecutions[0])
+    : undefined;
+  const selectedExecution = selectedSplitExecution ?? nodeExecution;
+  const displayedError = selectedSplitExecution
+    ? selectedSplitExecution.error
+    : nodeExecution?.error;
 
   if (!nodeExecution || nodeExecution.status === "idle") {
     return (
@@ -313,7 +316,7 @@ export function RuntimeDataPanel({ nodeId, nodeLabel, nodeType }: RuntimeDataPan
       <JsonSection label="Parameters" data={selectedExecution?.parameters} nodeLabel={nodeLabel} />
       <JsonSection label="Output" data={selectedExecution?.output} nodeLabel={nodeLabel} />
 
-      <ErrorDisplay error={selectedExecution?.error ?? nodeExecution.error} />
+      <ErrorDisplay error={displayedError} />
 
       {(selectedExecution?.executedAt ?? nodeExecution.executedAt) && (
         <div className="border-t border-border pt-3 text-xs text-muted-foreground">

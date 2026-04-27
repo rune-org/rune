@@ -86,6 +86,25 @@ function rtesInstanceToNodeExecution(
   instance: RtesNodeExecutionInstance,
   lineageHash?: string,
 ): NodeExecutionData {
+  const splitNodeId = instance.split_node_id ?? undefined;
+  const itemIndex = instance.item_index ?? undefined;
+
+  // Synthesize lineageStack from flat fields so historical executions produce
+  // the same "stack:" instance key as live RTES WebSocket updates.
+  // Without this, live item 3 of split-1 maps to "stack:split-1:3" while the
+  // same item loaded from history maps to "split:split-1:item:3".
+  const lineageStack =
+    splitNodeId !== undefined && itemIndex !== undefined
+      ? [
+          {
+            split_node_id: splitNodeId,
+            branch_id: instance.branch_id ?? "",
+            item_index: itemIndex,
+            total_items: instance.total_items ?? 0,
+          },
+        ]
+      : undefined;
+
   return {
     nodeId,
     status: parseNodeStatus(instance.status),
@@ -102,9 +121,10 @@ function rtesInstanceToNodeExecution(
     executedAt: instance.executed_at,
     durationMs: instance.duration_ms,
     lineageHash: instance.lineage_hash ?? lineageHash,
-    splitNodeId: instance.split_node_id ?? undefined,
+    lineageStack,
+    splitNodeId,
     branchId: instance.branch_id ?? undefined,
-    itemIndex: instance.item_index ?? undefined,
+    itemIndex,
     totalItems: instance.total_items ?? undefined,
   };
 }
