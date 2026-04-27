@@ -67,6 +67,9 @@ class DSLGenerator:
         elif lang == "python":
             return f"Optional[{type_name}]"
         elif lang == "go":
+            # Slices and maps are already reference types in Go, don't make them pointers
+            if type_name.startswith("[]") or type_name.startswith("map["):
+                return type_name
             return f"*{type_name}"
         return type_name
 
@@ -81,8 +84,31 @@ class DSLGenerator:
         # Handle special case: 'type' is a reserved keyword in Go
         if name == "type":
             return "Type"
+
+        # List of common Go abbreviations that should be all-caps
+        abbreviations = {
+            "id": "ID",
+            "url": "URL",
+            "http": "HTTP",
+            "ssl": "SSL",
+            "smtp": "SMTP",
+            "cc": "CC",
+            "bcc": "BCC",
+            "iana": "IANA",
+            "utc": "UTC",
+            "json": "JSON",
+        }
+
         parts = name.split("_")
-        return "".join(word.capitalize() for word in parts)
+        converted_parts = []
+        for word in parts:
+            if word.lower() in abbreviations:
+                converted_parts.append(abbreviations[word.lower()])
+            else:
+                converted_parts.append(word.capitalize())
+
+        return "".join(converted_parts)
+
 
     def _generate_field(
         self, lang: str, field_name: str, field_def: Dict[str, Any]
@@ -178,8 +204,12 @@ class DSLGenerator:
             if field_name in reserved_keywords:
                 python_field_name = f"{field_name}_"
                 # Use Pydantic Field with alias to map back to original JSON field name
-                return f'    {python_field_name}: {final_type} = Field(alias="{field_name}"){comment}'
-            return f"    {python_field_name}: {final_type}{comment}"
+                default_clause = "" if required else ", default=None"
+                return f'    {python_field_name}: {final_type} = Field(alias="{field_name}"{default_clause}){comment}'
+            
+            default_clause = "" if required else " = None"
+            return f"    {python_field_name}: {final_type}{default_clause}{comment}"
+
         elif lang == "go":
             comment = f"  // {description}" if description else ""
             json_tag = f'`json:"{field_name}"`'
@@ -203,6 +233,7 @@ class DSLGenerator:
             lines.append("}")
         elif lang == "python":
             lines.append(f"class {class_name}(BaseModel):")
+            lines.append('    model_config = ConfigDict(extra="allow")')
             if description:
                 lines.append(f'    """{description}"""')
             for field_name, field_def in fields.items():
@@ -376,7 +407,15 @@ class DSLGenerator:
                         pass
                     elif field_type == "array":
                         lines.append(
-                            f"  if n.{go_field} == nil || len(n.{go_field}) == 0 {{"
+                            f"  if len(n.{go_field}) == 0 {{"
+                        )
+                        lines.append(
+                            f'    errors = append(errors, "{class_name}.{field_name} is required")'
+                        )
+                        lines.append("  }")
+                    elif field_type == "object":
+                        lines.append(
+                            f"  if n.{go_field} == nil {{"
                         )
                         lines.append(
                             f'    errors = append(errors, "{class_name}.{field_name} is required")'
@@ -407,6 +446,7 @@ class DSLGenerator:
     def generate_typescript(self) -> str:
         """Generate TypeScript definitions."""
         lines = [
+            "/* eslint-disable */",
             "// Auto-generated DSL type definitions",
             "// DO NOT EDIT - Generated from dsl/dsl-definition.json",
             "",
@@ -554,6 +594,7 @@ class DSLGenerator:
     def generate_python(self) -> str:
         """Generate Python definitions."""
         lines = [
+            "# fmt: off",
             '"""Auto-generated DSL type definitions.',
             "",
             "DO NOT EDIT - Generated from dsl/dsl-definition.json",
@@ -562,7 +603,7 @@ class DSLGenerator:
             "from __future__ import annotations",
             "",
             "from typing import Any, Optional, Literal, Union",
-            "from pydantic import BaseModel, Field",
+            "from pydantic import BaseModel, Field, ConfigDict",
             "",
             "# Core Structures",
             "",
@@ -635,6 +676,7 @@ class DSLGenerator:
             "credentials": node_def["fields"]["credentials"],
         }
         lines.append("class BaseNode(BaseModel):")
+        lines.append('    model_config = ConfigDict(extra="allow")')
         lines.append('    """Base node class with common fields."""')
         for field_name, field_def in base_fields.items():
             lines.append(self._generate_field("python", field_name, field_def))
@@ -675,6 +717,7 @@ class DSLGenerator:
 
             # Generate class
             lines.append(f"class {class_name}(BaseNode):")
+            lines.append('    model_config = ConfigDict(extra="allow")')
             lines.append(f'    """{node_def.get("description", "")}"""')
             lines.append(
                 f'    type_: {type_literal} = Field(default="{node_type}", alias="type")'
@@ -727,13 +770,14 @@ class DSLGenerator:
 
         return "\n".join(lines)
 
-    def generate_go(self) -> str:
-        """Generate Go definitions."""
+
+    def generate_go(self, package_name="dsl"):
+        """Generate Go type definitions."""
         lines = [
             "// Auto-generated DSL type definitions",
-            "// DO NOT EDIT - Generated from dsl/dsl-definition.json",
+            f"// DO NOT EDIT - Generated from dsl/dsl-definition.json",
             "",
-            "package dsl",
+            f"package {package_name}",
             "",
             "// Core Structures",
             "",
@@ -747,6 +791,77 @@ class DSLGenerator:
             lines.append("")
             lines.append(self._generate_sanitization_method("go", struct_name, fields))
             lines.append("")
+            
+            if struct_name == "Workflow":
+                lines.extend([
+                    "func (w *Workflow) GetNodeByID(id string) (Node, bool) {",
+                    "  for _, node := range w.Nodes {",
+                    "    if node.ID == id {",
+                    "      return node, true",
+                    "    }",
+                    "  }",
+                    "  return Node{}, false",
+                    "}",
+                    "",
+                    "func (w *Workflow) GetEdgeByID(id string) (Edge, bool) {",
+                    "  for _, edge := range w.Edges {",
+                    "    if edge.ID == id {",
+                    "      return edge, true",
+                    "    }",
+                    "  }",
+                    "  return Edge{}, false",
+                    "}",
+                    "",
+                    "func (w *Workflow) GetTriggerNodes() []Node {",
+                    "  var triggers []Node",
+                    "  for _, node := range w.Nodes {",
+                    "    if node.Trigger {",
+                    "      triggers = append(triggers, node)",
+                    "    }",
+                    "  }",
+                    "  return triggers",
+                    "}",
+                    "",
+                    "func (w *Workflow) GetOutgoingEdges(nodeID string) []Edge {",
+                    "  var edges []Edge",
+                    "  for _, edge := range w.Edges {",
+                    "    if edge.Src == nodeID {",
+                    "      edges = append(edges, edge)",
+                    "    }",
+                    "  }",
+                    "  return edges",
+                    "}",
+                    "",
+                    "func (w *Workflow) GetIncomingEdges(nodeID string) []Edge {",
+                    "  var edges []Edge",
+                    "  for _, edge := range w.Edges {",
+                    "    if edge.Dst == nodeID {",
+                    "      edges = append(edges, edge)",
+                    "    }",
+                    "  }",
+                    "  return edges",
+                    "}",
+                    "",
+                    "func (w *Workflow) GetIncomingNodeIDs(nodeID string) []string {",
+                    "  edges := w.GetIncomingEdges(nodeID)",
+                    "  nodeIDs := make([]string, 0, len(edges))",
+                    "  for _, edge := range edges {",
+                    "    nodeIDs = append(nodeIDs, edge.Src)",
+                    "  }",
+                    "  return nodeIDs",
+                    "}",
+                    "",
+                    "func (w *Workflow) GetOutgoingNodeIDs(nodeID string) []string {",
+                    "  edges := w.GetOutgoingEdges(nodeID)",
+                    "  nodeIDs := make([]string, 0, len(edges))",
+                    "  for _, edge := range edges {",
+                    "    nodeIDs = append(nodeIDs, edge.Dst)",
+                    "  }",
+                    "  return nodeIDs",
+                    "}",
+                    ""
+                ])
+
 
         # Generate nested types
         if "nested_types" in self.dsl_data:
@@ -806,26 +921,64 @@ class DSLGenerator:
         ts_content = self.generate_typescript()
         with open(self.output_dir / "types.ts", "w") as f:
             f.write(ts_content)
-        print(f"✓ Generated {self.output_dir / 'types.ts'}")
+        
+        # Also copy to web app
+        web_ts_path = Path("apps/web/src/lib/workflow_dsl_generated.ts")
+        if Path("apps/web").exists():
+            # Ensure directory exists
+            web_ts_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(web_ts_path, "w") as f:
+                f.write(ts_content)
+            print(f"[SUCCESS] Propagated to {web_ts_path}")
+            
+        print(f"[SUCCESS] Generated {self.output_dir / 'types.ts'}")
 
         # Generate Python
         py_content = self.generate_python()
         with open(self.output_dir / "types.py", "w") as f:
             f.write(py_content)
-        print(f"✓ Generated {self.output_dir / 'types.py'}")
+            
+        # Also copy to API service
+        api_py_path = Path("services/api/src/dsl/workflow_dsl_generated.py")
+        if Path("services/api").exists():
+            # Ensure directory exists
+            api_py_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(api_py_path, "w") as f:
+                f.write(py_content)
+            print(f"[SUCCESS] Propagated to {api_py_path}")
+            
+        print(f"[SUCCESS] Generated {self.output_dir / 'types.py'}")
 
         # Generate Go
         go_content = self.generate_go()
         with open(self.output_dir / "types.go", "w") as f:
             f.write(go_content)
-        print(f"✓ Generated {self.output_dir / 'types.go'}")
+            
+        # Also copy to Worker service
+        worker_go_path = Path("services/rune-worker/pkg/dsl_generated/workflow_dsl_generated.go")
+        if Path("services/rune-worker").exists():
+            worker_go_content = self.generate_go(package_name="dsl_generated")
+            # Ensure directory exists
+            worker_go_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(worker_go_path, "w") as f:
+                f.write(worker_go_content)
+            print(f"[SUCCESS] Propagated to {worker_go_path} (package dsl_generated)")
+
+
+
+            
+        print(f"[SUCCESS] Generated {self.output_dir / 'types.go'}")
+
+
+
 
 
 def main():
     """Main entry point."""
     generator = DSLGenerator("dsl/dsl-definition.json")
     generator.generate_all()
-    print("\n✓ All files generated successfully!")
+    print("\n[SUCCESS] All files generated successfully!")
+
 
 
 if __name__ == "__main__":

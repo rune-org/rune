@@ -36,14 +36,9 @@ func (e *Executor) determineNextNodes(wf *core.Workflow, currentNode *core.Node,
 
 // getOutgoingEdges returns all edges originating from the given node.
 func (e *Executor) getOutgoingEdges(wf *core.Workflow, nodeID string) []core.Edge {
-	edges := make([]core.Edge, 0)
-	for _, edge := range wf.Edges {
-		if edge.Src == nodeID {
-			edges = append(edges, edge)
-		}
-	}
-	return edges
+	return wf.GetOutgoingEdges(nodeID)
 }
+
 
 // handleConditionalNode evaluates a conditional node and returns the appropriate next node.
 func (e *Executor) handleConditionalNode(node *core.Node, output map[string]any, wf *core.Workflow) []string {

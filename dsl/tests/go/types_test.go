@@ -9,7 +9,7 @@ import (
 
 func TestWorkflow_Sanitize_Valid(t *testing.T) {
 	node := dsl.Node{
-		Id:         "node_1",
+		ID:         "node_1",
 		Name:       "Fetch API",
 		Trigger:    false,
 		Type:       "http",
@@ -17,13 +17,13 @@ func TestWorkflow_Sanitize_Valid(t *testing.T) {
 		Output:     map[string]interface{}{},
 	}
 	edge := dsl.Edge{
-		Id:  "edge_1",
+		ID:  "edge_1",
 		Src: "node_1",
 		Dst: "node_2",
 	}
 	workflow := dsl.Workflow{
-		WorkflowId:  "wf_1",
-		ExecutionId: "exec_1",
+		WorkflowID:  "wf_1",
+		ExecutionID: "exec_1",
 		Nodes:       []dsl.Node{node},
 		Edges:       []dsl.Edge{edge},
 	}
@@ -38,7 +38,7 @@ func TestWorkflow_Sanitize_Valid(t *testing.T) {
 }
 
 func TestEdge_Sanitize_Valid(t *testing.T) {
-	edge := dsl.Edge{Id: "e1", Src: "n1", Dst: "n2"}
+	edge := dsl.Edge{ID: "e1", Src: "n1", Dst: "n2"}
 	ok, errors := edge.Sanitize()
 	if !ok {
 		t.Fatalf("expected valid edge, got errors: %v", errors)
@@ -50,7 +50,7 @@ func TestEdge_Sanitize_Valid(t *testing.T) {
 
 func TestNode_Sanitize_Valid(t *testing.T) {
 	node := dsl.Node{
-		Id:         "n1",
+		ID:         "n1",
 		Name:       "HTTP node",
 		Trigger:    false,
 		Type:       "http",
@@ -68,8 +68,8 @@ func TestNode_Sanitize_Valid(t *testing.T) {
 
 func TestWorkflow_Sanitize_Invalid(t *testing.T) {
 	workflow := dsl.Workflow{
-		WorkflowId:  "", // invalid: empty
-		ExecutionId: "exec_1",
+		WorkflowID:  "", // invalid: empty
+		ExecutionID: "exec_1",
 		Nodes:       []dsl.Node{},
 		Edges:       []dsl.Edge{},
 	}
