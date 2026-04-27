@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 from fastapi import status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, StrictBool, field_validator
 
 from src.core.responses import ApiResponse
 from src.db.models import User, Workflow, WorkflowRole, WorkflowVersion
@@ -59,7 +59,7 @@ class WorkflowUpdateName(BaseModel):
 
 
 class WorkflowUpdateStatus(BaseModel):
-    is_active: bool
+    is_active: StrictBool
 
 
 class WorkflowVersionCreator(BaseModel):
@@ -165,6 +165,53 @@ class WorkflowCreateVersion(BaseModel):
         ..., description="Workflow definition to save"
     )
     message: Optional[str] = Field(default=None, description="Revision message")
+
+    @field_validator("workflow_data")
+    @classmethod
+    def _validate_workflow_data(cls, v: dict[str, Any]) -> dict[str, Any]:
+        """Validate workflow data structure.
+
+        Ensures required fields and basic structure are present.
+        """
+        if not isinstance(v, dict):
+            raise ValueError("workflow_data must be an object")
+
+        if not v:
+            raise ValueError("workflow_data cannot be empty")
+
+        # Check for required fields
+        if "nodes" not in v:
+            raise ValueError("workflow_data must contain 'nodes' field")
+        if "edges" not in v:
+            raise ValueError("workflow_data must contain 'edges' field")
+
+        nodes = v.get("nodes")
+        if not isinstance(nodes, list):
+            raise ValueError("'nodes' must be an array")
+        if not nodes:
+            raise ValueError("'nodes' array cannot be empty")
+
+        edges = v.get("edges")
+        if not isinstance(edges, list):
+            raise ValueError("'edges' must be an array")
+
+        # Validate each node has an id
+        for i, node in enumerate(nodes):
+            if not isinstance(node, dict):
+                raise ValueError(f"Node at index {i} must be an object")
+            if "id" not in node:
+                raise ValueError(f"Node at index {i} must have 'id' field")
+            if not node["id"]:
+                raise ValueError(f"Node at index {i} has empty 'id'")
+
+        # Validate trigger node exists
+        trigger_nodes = [node for node in nodes if node.get("trigger", False)]
+        if not trigger_nodes:
+            raise ValueError("Workflow must have at least one trigger node")
+        if len(trigger_nodes) > 1:
+            raise ValueError("Workflow must have exactly one trigger node")
+
+        return v
 
 
 class WorkflowPublishVersion(BaseModel):
