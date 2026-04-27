@@ -47,7 +47,7 @@ function inferType(value: unknown): VariableTreeNode["type"] {
 export function jsonToVariableTree(
   data: unknown,
   parentPath: string,
-  maxDepth = 5,
+  maxDepth = 50,
   currentDepth = 0,
 ): VariableTreeNode[] {
   if (currentDepth >= maxDepth) return [];

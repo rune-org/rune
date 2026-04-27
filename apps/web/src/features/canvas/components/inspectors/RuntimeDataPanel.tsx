@@ -87,7 +87,8 @@ function JsonSection({
   data: unknown;
   nodeLabel?: string;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(label === "Output");
+  const [viewMode, setViewMode] = useState<"tree" | "json">("tree");
 
   const jsonString = useMemo(() => {
     if (data === undefined || data === null) return "";
@@ -127,18 +128,52 @@ function JsonSection({
           )}
         </CollapsibleTrigger>
         {isOpen && (
-          <button
-            onClick={handleCopy}
-            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-            title="Copy to clipboard"
-          >
-            <Copy className="h-3 w-3" />
-          </button>
+          <div className="flex items-center gap-1">
+            <div className="flex overflow-hidden rounded border border-border/60">
+              <button
+                type="button"
+                onClick={() => setViewMode("tree")}
+                className={cn(
+                  "px-1.5 py-0.5 text-[10px] transition-colors",
+                  viewMode === "tree"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Tree
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("json")}
+                className={cn(
+                  "border-l border-border/60 px-1.5 py-0.5 text-[10px] transition-colors",
+                  viewMode === "json"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                JSON
+              </button>
+            </div>
+            <button
+              onClick={handleCopy}
+              className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+              title="Copy to clipboard"
+            >
+              <Copy className="h-3 w-3" />
+            </button>
+          </div>
         )}
       </div>
       <CollapsibleContent>
-        <div className="max-h-64 overflow-auto rounded-md bg-muted/30 p-2">
-          <JsonTreeViewer data={data} rootPath={rootPath} defaultExpandDepth={2} />
+        <div className="max-h-96 overflow-auto rounded-md border border-border/40 bg-muted/30 p-2">
+          {viewMode === "tree" ? (
+            <JsonTreeViewer data={data} rootPath={rootPath} defaultExpandDepth={2} maxDepth={50} />
+          ) : (
+            <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-foreground">
+              {jsonString}
+            </pre>
+          )}
         </div>
       </CollapsibleContent>
     </Collapsible>

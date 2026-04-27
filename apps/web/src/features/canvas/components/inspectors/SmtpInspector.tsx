@@ -12,6 +12,21 @@ type SmtpInspectorProps = {
   isExpanded: boolean;
 };
 
+const LEGACY_SMTP_EXAMPLES = new Set([
+  "sender@example.com",
+  "recipient@example.com",
+  "cc@example.com",
+  "bcc@example.com",
+  "Email subject line",
+  "Email message body",
+]);
+
+function editableSmtpValue(value: string | undefined): string {
+  const trimmed = value?.trim();
+  if (!trimmed || LEGACY_SMTP_EXAMPLES.has(trimmed)) return "";
+  return value ?? "";
+}
+
 export function SmtpInspector({ node, updateData, isExpanded }: SmtpInspectorProps) {
   const updateSmtpData = (updater: (data: SmtpData) => SmtpData) => {
     updateData(node.id, "smtp", updater);
@@ -36,32 +51,32 @@ export function SmtpInspector({ node, updateData, isExpanded }: SmtpInspectorPro
       />
 
       <label className="block text-xs text-muted-foreground">From</label>
-      <input
-        className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
-        value={node.data.from ?? ""}
-        onChange={(e) =>
+      <VariableInput
+        value={editableSmtpValue(node.data.from)}
+        onChange={(v) =>
           updateSmtpData((d) => ({
             ...d,
-            from: e.target.value,
+            from: v,
           }))
         }
         placeholder="sender@example.com"
+        nodeId={node.id}
       />
       {isExpanded && (
         <div className="text-xs text-muted-foreground/70">Email address of the sender</div>
       )}
 
       <label className="block text-xs text-muted-foreground">To</label>
-      <input
-        className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
-        value={node.data.to ?? ""}
-        onChange={(e) =>
+      <VariableInput
+        value={editableSmtpValue(node.data.to)}
+        onChange={(v) =>
           updateSmtpData((d) => ({
             ...d,
-            to: e.target.value,
+            to: v,
           }))
         }
         placeholder="recipient@example.com"
+        nodeId={node.id}
       />
       {isExpanded && (
         <div className="text-xs text-muted-foreground/70">
@@ -70,16 +85,16 @@ export function SmtpInspector({ node, updateData, isExpanded }: SmtpInspectorPro
       )}
 
       <label className="block text-xs text-muted-foreground">CC</label>
-      <input
-        className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
-        value={node.data.cc ?? ""}
-        onChange={(e) =>
+      <VariableInput
+        value={editableSmtpValue(node.data.cc)}
+        onChange={(v) =>
           updateSmtpData((d) => ({
             ...d,
-            cc: e.target.value,
+            cc: v,
           }))
         }
         placeholder="cc@example.com"
+        nodeId={node.id}
       />
       {isExpanded && (
         <div className="text-xs text-muted-foreground/70">
@@ -88,16 +103,16 @@ export function SmtpInspector({ node, updateData, isExpanded }: SmtpInspectorPro
       )}
 
       <label className="block text-xs text-muted-foreground">BCC</label>
-      <input
-        className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
-        value={node.data.bcc ?? ""}
-        onChange={(e) =>
+      <VariableInput
+        value={editableSmtpValue(node.data.bcc)}
+        onChange={(v) =>
           updateSmtpData((d) => ({
             ...d,
-            bcc: e.target.value,
+            bcc: v,
           }))
         }
         placeholder="bcc@example.com"
+        nodeId={node.id}
       />
       {isExpanded && (
         <div className="text-xs text-muted-foreground/70">
@@ -107,7 +122,7 @@ export function SmtpInspector({ node, updateData, isExpanded }: SmtpInspectorPro
 
       <label className="block text-xs text-muted-foreground">Subject</label>
       <VariableInput
-        value={node.data.subject ?? ""}
+        value={editableSmtpValue(node.data.subject)}
         onChange={(v) =>
           updateSmtpData((d) => ({
             ...d,
@@ -123,7 +138,7 @@ export function SmtpInspector({ node, updateData, isExpanded }: SmtpInspectorPro
 
       <label className="block text-xs text-muted-foreground">Body</label>
       <VariableTextarea
-        value={node.data.body ?? ""}
+        value={editableSmtpValue(node.data.body)}
         onChange={(v) =>
           updateSmtpData((d) => ({
             ...d,
