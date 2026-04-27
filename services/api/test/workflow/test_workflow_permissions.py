@@ -9,7 +9,8 @@ Tests verify that users can only perform allowed operations based on their role:
 import pytest_asyncio
 
 import pytest
-from src.db.models import WorkflowRole, WorkflowUser
+from src.core.password import hash_password
+from src.db.models import User, UserRole, WorkflowRole, WorkflowUser
 
 
 class TestWorkflowPermissions:
@@ -121,14 +122,13 @@ class TestEditorPermissions:
 
     @pytest_asyncio.fixture()
     async def editor_user(self, test_db):
-        """Create a user with EDITOR role on sample_workflow."""
-        from argon2 import PasswordHasher
-        from src.db.models import User, UserRole
+        """Create a user with EDITOR role on sample_workflow.
 
-        ph = PasswordHasher()
+        Uses the app's hash_password() function to ensure password compatibility with login.
+        """
         user = User(
             email="editor@example.com",
-            hashed_password=ph.hash("editorpassword123"),
+            hashed_password=hash_password("editorpassword123"),
             name="Editor User",
             role=UserRole.USER,
         )
