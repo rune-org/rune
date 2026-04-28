@@ -219,7 +219,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return true;
       } catch (error) {
-        const errorMessage = extractApiErrorMessage(error, "Authentication failed. Please try again.");
+        const errorMessage = extractApiErrorMessage(
+          error,
+          "Authentication failed. Please try again.",
+        );
 
         // Check for SSO-only account trigger (403 with specific message)
         if (
