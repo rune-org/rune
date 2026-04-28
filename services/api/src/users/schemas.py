@@ -1,23 +1,23 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
-from src.core.validators import validate_password_strength
 from src.db.models import UserRole
+from src.core.field_types import UserDisplayName, UserEmail, UserPassword
 
 
 class UserCreate(BaseModel):
-    name: str = Field(..., min_length=3, max_length=40)
-    email: EmailStr
+    name: UserDisplayName
+    email: UserEmail
     role: UserRole = Field(
         default=UserRole.USER, description="User role: 'user' or 'admin'"
     )
 
 
 class AdminUserUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=3, max_length=40)
-    email: Optional[EmailStr] = None
+    name: Optional[UserDisplayName] = None
+    email: Optional[UserEmail] = None
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
 
@@ -29,8 +29,8 @@ class UserStatusUpdate(BaseModel):
 
 
 class ProfileUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=3, max_length=40)
-    email: Optional[EmailStr] = None
+    name: Optional[UserDisplayName] = None
+    email: Optional[UserEmail] = None
 
 
 class AdminPasswordResetResponse(BaseModel):
@@ -41,25 +41,16 @@ class AdminPasswordResetResponse(BaseModel):
 
 
 class UserPasswordChange(BaseModel):
-    old_password: str = Field(..., description="Current password for verification")
-    new_password: str = Field(..., min_length=8, description="New password")
-
-    @field_validator("new_password")
-    @classmethod
-    def validate_new_password(cls, v: str) -> str:
-        """Validate password strength according to security requirements."""
-        is_valid, error_message = validate_password_strength(v)
-        if not is_valid:
-            raise ValueError(error_message)
-        return v
+    old_password: UserPassword = Field(..., description="Current password for verification")
+    new_password: UserPassword = Field(..., description="New password")
 
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    name: str
-    email: EmailStr
+    name: UserDisplayName
+    email: UserEmail
     role: UserRole
     is_active: bool = Field(..., description="Account active status")
     created_at: datetime = Field(..., description="Account creation timestamp")
@@ -83,6 +74,6 @@ class UserBasicInfo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    name: str
-    email: EmailStr
+    name: UserDisplayName
+    email: UserEmail
     role: UserRole
