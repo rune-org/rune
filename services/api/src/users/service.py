@@ -88,10 +88,13 @@ class UserService:
         Raises:
             AlreadyExists: If email is already registered
         """
-        # Validate email uniqueness and normalize it
+        # Normalize email and validate uniqueness
         validated_email = await self._validate_email_uniqueness(
             user_data.email
         )
+        
+        # Normalize name and validate length
+        validated_name = normalize_and_validate_name(user_data.name)
 
         temp_password = generate_temporary_password()
         hashed_password = hash_password(temp_password)
