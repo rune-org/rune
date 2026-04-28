@@ -254,7 +254,7 @@ class TestWorkflowSharing:
         """Owner can grant EDITOR access to another user."""
         response = await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/share",
-            json={"user_id": other_user.id, "role": "EDITOR"},
+            json={"user_id": other_user.id, "role": "editor"},
         )
         assert response.status_code == 200
 
@@ -287,7 +287,7 @@ class TestWorkflowSharing:
         """Sharing with a user ID that doesn't exist returns 404."""
         response = await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/share",
-            json={"user_id": 999999, "role": "VIEWER"},
+            json={"user_id": 999999, "role": "viewer"},
         )
         assert response.status_code == 404
 
@@ -299,7 +299,7 @@ class TestWorkflowSharing:
         # Grant access first
         await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/share",
-            json={"user_id": other_user.id, "role": "VIEWER"},
+            json={"user_id": other_user.id, "role": "viewer"},
         )
 
         # Revoke it
@@ -346,13 +346,13 @@ class TestWorkflowSharing:
         # Grant VIEWER first
         await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/share",
-            json={"user_id": other_user.id, "role": "VIEWER"},
+            json={"user_id": other_user.id, "role": "viewer"},
         )
 
         # Upgrade to EDITOR
         response = await authenticated_client.patch(
             f"/workflows/{sample_workflow.id}/permissions/{other_user.id}",
-            json={"role": "EDITOR"},
+            json={"role": "editor"},
         )
         assert response.status_code == 200
 
