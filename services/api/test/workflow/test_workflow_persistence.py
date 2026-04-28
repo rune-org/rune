@@ -12,7 +12,7 @@ Unlike unit tests of the service layer, these test the API contract:
 import pytest
 from sqlmodel import select
 
-from src.db.models import WorkflowVersion
+from src.db.models import Workflow, WorkflowVersion
 
 
 class TestWorkflowPersistenceThroughAPI:
@@ -162,17 +162,20 @@ class TestWorkflowPersistenceThroughAPI:
     ):
         """Updating workflow name through API persists to database."""
         new_name = "Renamed Workflow"
+        workflow_id = sample_workflow.id
 
         # Update name
         await authenticated_client.put(
-            f"/workflows/{sample_workflow.id}/name",
+            f"/workflows/{workflow_id}/name",
             json={"name": new_name},
         )
 
         # Verify persisted in DB
-        await test_db.refresh(sample_workflow)
-        assert sample_workflow.name == new_name
+        result = await test_db.exec(select(Workflow).where(Workflow.id == workflow_id))
+        persisted = result.first()
+        assert persisted is not None
+        assert persisted.name == new_name
 
         # Verify through API
-        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        detail = await authenticated_client.get(f"/workflows/{workflow_id}")
         assert detail.json()["data"]["name"] == new_name

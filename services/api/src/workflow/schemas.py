@@ -195,7 +195,8 @@ class WorkflowCreateVersion(BaseModel):
         if not isinstance(edges, list):
             raise ValueError("'edges' must be an array")
 
-        # Validate each node has an id
+        # Validate each node has required fields and check for duplicate IDs
+        seen_ids: set[str] = set()
         for i, node in enumerate(nodes):
             if not isinstance(node, dict):
                 raise ValueError(f"Node at index {i} must be an object")
@@ -203,6 +204,11 @@ class WorkflowCreateVersion(BaseModel):
                 raise ValueError(f"Node at index {i} must have 'id' field")
             if not node["id"]:
                 raise ValueError(f"Node at index {i} has empty 'id'")
+            if node["id"] in seen_ids:
+                raise ValueError(f"Duplicate node id '{node['id']}'")
+            seen_ids.add(node["id"])
+            if "type" not in node:
+                raise ValueError(f"Node at index {i} must have 'type' field")
 
         # Validate trigger node exists
         trigger_nodes = [node for node in nodes if node.get("trigger", False)]

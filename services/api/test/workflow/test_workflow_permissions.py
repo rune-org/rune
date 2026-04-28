@@ -177,7 +177,7 @@ class TestEditorPermissions:
         response = await editor_client.post(
             f"/workflows/{workflow_with_editor.id}/versions",
             json={
-                "base_version_id": None,
+                "base_version_id": workflow_with_editor.latest_version_id,
                 "workflow_data": {
                     "nodes": [{"id": "node-1", "type": "trigger", "trigger": True}],
                     "edges": [],

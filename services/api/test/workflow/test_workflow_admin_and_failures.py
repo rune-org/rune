@@ -58,7 +58,7 @@ class TestAdminRolePermissions:
         response = await admin_client.post(
             f"/workflows/{sample_workflow.id}/versions",
             json={
-                "base_version_id": None,
+                "base_version_id": sample_workflow.latest_version_id,
                 "workflow_data": {
                     "nodes": [
                         {

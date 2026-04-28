@@ -1,7 +1,9 @@
 """Workflow test-specific fixtures."""
 
 import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 
+from src.app import app
 from src.core.password import hash_password
 from src.db.models import User, UserRole, WorkflowRole, WorkflowUser
 
@@ -41,33 +43,44 @@ async def workflow_with_viewer(test_db, sample_workflow, viewer_user, test_user)
 
 @pytest_asyncio.fixture(scope="function")
 async def viewer_client(client, viewer_user):
-    """Create an authenticated HTTP client for viewer user.
-
-    Raises assertion error if login fails, preventing silent cascading failures.
+    """Create a separate authenticated HTTP client for viewer user.
     """
-    response = await client.post(
-        "/auth/login",
-        json={"email": "viewer@example.com", "password": "viewerpassword123"},
-    )
-    assert response.status_code == 200, (
-        f"Viewer login failed: {response.status_code} {response.text}"
-    )
-    return client
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        response = await c.post(
+            "/auth/login",
+            json={"email": "viewer@example.com", "password": "viewerpassword123"},
+        )
+        assert response.status_code == 200, (
+            f"Viewer login failed: {response.status_code} {response.text}"
+        )
+        yield c
 
 
 @pytest_asyncio.fixture(scope="function")
-async def other_client(client):
-    """Create an authenticated HTTP client for other user (no workflow access).
+async def other_user(test_db):
+    """Create a second test user with no workflow access."""
+    user = User(
+        email="other@example.com",
+        hashed_password=hash_password("otherpassword123"),
+        name="Other User",
+        role=UserRole.USER,
+    )
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
+    return user
 
-    Requires the other_user fixture from fixtures.py (imported from conftest).
-    Uses the app's hash_password() for login compatibility.
+
+@pytest_asyncio.fixture(scope="function")
+async def other_client(client, other_user):
+    """Create a separate authenticated HTTP client for other user (no workflow access).
     """
-    # Note: other_user is imported via fixtures.py
-    response = await client.post(
-        "/auth/login",
-        json={"email": "other@example.com", "password": "otherpassword123"},
-    )
-    assert response.status_code == 200, (
-        f"Other user login failed: {response.status_code} {response.text}"
-    )
-    return client
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        response = await c.post(
+            "/auth/login",
+            json={"email": "other@example.com", "password": "otherpassword123"},
+        )
+        assert response.status_code == 200, (
+            f"Other user login failed: {response.status_code} {response.text}"
+        )
+        yield c

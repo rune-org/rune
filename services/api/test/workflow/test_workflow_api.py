@@ -305,7 +305,7 @@ class TestWorkflowAuthorization:
             description="",
         )
 
-        response = await other_client.get(f"/workflows/{other_workflow.id}")
+        response = await authenticated_client.get(f"/workflows/{other_workflow.id}")
         assert response.status_code == 403
 
 

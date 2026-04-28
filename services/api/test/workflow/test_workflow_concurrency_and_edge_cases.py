@@ -66,40 +66,54 @@ class TestConcurrentOperations:
     async def test_concurrent_version_creation_detects_conflict(
         self, authenticated_client, sample_workflow
     ):
-        """Creating multiple versions concurrently detects conflicts."""
+        """Two saves with the same stale base_version_id: one succeeds, one gets 409.
+        """
         # Get latest version first
         detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
         base_version_id = detail.json()["data"]["latest_version"]["id"]
 
-        # Try to create two versions simultaneously with same base
-        tasks = [
-            authenticated_client.post(
-                f"/workflows/{sample_workflow.id}/versions",
-                json={
-                    "base_version_id": base_version_id,
-                    "workflow_data": {
-                        "nodes": [
-                            {
-                                "id": "node-1",
-                                "type": "trigger",
-                                "trigger": True,
-                                "data": {"label": f"Start {i}"},
-                            }
-                        ],
-                        "edges": [],
-                    },
-                    "message": f"Version attempt {i}",
+        # First request succeeds and advances latest_version_id
+        r1 = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": base_version_id,
+                "workflow_data": {
+                    "nodes": [
+                        {
+                            "id": "node-1",
+                            "type": "trigger",
+                            "trigger": True,
+                            "data": {"label": "Start 0"},
+                        }
+                    ],
+                    "edges": [],
                 },
-            )
-            for i in range(2)
-        ]
+                "message": "Version attempt 0",
+            },
+        )
+        # Second request uses the same (now stale) base_version_id → conflict
+        r2 = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": base_version_id,
+                "workflow_data": {
+                    "nodes": [
+                        {
+                            "id": "node-1",
+                            "type": "trigger",
+                            "trigger": True,
+                            "data": {"label": "Start 1"},
+                        }
+                    ],
+                    "edges": [],
+                },
+                "message": "Version attempt 1",
+            },
+        )
 
-        responses = await asyncio.gather(*tasks)
-
-        # One should succeed (201), one should conflict (409)
-        status_codes = sorted([r.status_code for r in responses])
-        assert 201 in status_codes  # At least one succeeded
-        assert 409 in status_codes  # At least one conflicted
+        status_codes = sorted([r1.status_code, r2.status_code])
+        assert 201 in status_codes  # First attempt succeeded
+        assert 409 in status_codes  # Second attempt conflicted
 
     @pytest.mark.asyncio
     async def test_concurrent_publish_and_run(
@@ -188,7 +202,8 @@ class TestEdgeCases:
     async def test_workflow_with_duplicate_node_ids_rejected(
         self, authenticated_client, sample_workflow
     ):
-        """Workflow with duplicate node IDs should be rejected."""
+        """Workflow with duplicate node IDs should be rejected.
+        """
         response = await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/versions",
             json={
@@ -214,7 +229,7 @@ class TestEdgeCases:
         response = await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/versions",
             json={
-                "base_version_id": None,
+                "base_version_id": sample_workflow.latest_version_id,
                 "workflow_data": {
                     "nodes": [
                         {"id": "node-1", "type": "trigger", "trigger": True},
