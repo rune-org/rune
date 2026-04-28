@@ -2,7 +2,10 @@
 
 ## Overview
 
-The MCP bridge connects `rune-worker` to external MCP servers, auto-discovers their tools at startup, and registers each tool as a workflow node. Workflows can mix MCP nodes from different providers in the same execution.
+The MCP bridge connects `rune-worker` to external MCP servers. Each integration
+**explicitly declares** which tools it wraps via `ToolDef` entries. Tools are
+registered as workflow nodes at startup — **no runtime auto-discovery**.
+MCP connections are established **lazily** on first workflow execution.
 
 ## Architecture
 
@@ -14,9 +17,9 @@ graph TB
         MGR[Manager]
 
         subgraph Integrations["pkg/mcp/integrations"]
-            GS[google/sheets]
-            GM[google/gmail]
-            OL[microsoft/outlook]
+            GS["google/sheets<br/>(4 tools)"]
+            GM["google/gmail<br/>(4 tools)"]
+            OL["microsoft/outlook<br/>(3 tools)"]
         end
 
         subgraph Bridge["pkg/mcp"]
@@ -27,71 +30,73 @@ graph TB
     end
 
     subgraph Servers["External MCP Servers"]
-        S1["Google Sheets MCP\n:3100"]
-        S2["Gmail MCP\n:3200"]
-        S3["Outlook MCP\n:3300"]
+        S1["Google Sheets MCP<br/>:3100"]
+        S2["Gmail MCP<br/>:3200"]
+        S3["Outlook MCP<br/>:3300"]
     end
 
-    GS -->|init: RegisterIntegration| INT
-    GM -->|init: RegisterIntegration| INT
-    OL -->|init: RegisterIntegration| INT
+    GS -->|"init: RegisterIntegration<br/>(with ToolDefs)"| INT
+    GM -->|"init: RegisterIntegration<br/>(with ToolDefs)"| INT
+    OL -->|"init: RegisterIntegration<br/>(with ToolDefs)"| INT
 
-    INT -->|configs| MGR
-    MGR -->|Connect + Discover| PRV
+    INT -->|"RegisterAllTools<br/>(static, no MCP needed)"| REG
+    MGR -->|"lazy GetOrConnect"| PRV
     PRV -->|JSON-RPC| S1
     PRV -->|JSON-RPC| S2
     PRV -->|JSON-RPC| S3
 
-    MGR -->|Register tools| REG
     EXE -->|Create MCPNode| NOD
-    NOD -->|CallTool| PRV
+    NOD -->|"GetOrConnect + CallTool"| MGR
 ```
 
-## Startup Flow
+## Startup Flow (No MCP Connections)
 
 ```mermaid
 sequenceDiagram
     participant main as main.go
-    participant reg as init_registry
+    participant init as init_registry
     participant int as integrations/*
-    participant mgr as Manager
-    participant prv as Provider
-    participant srv as MCP Server
+    participant fn as RegisterAllTools
+    participant reg as Registry
 
-    reg->>int: blank import triggers init()
-    int->>int: RegisterIntegration(config)
-    main->>mgr: NewManager()
-    mgr->>int: RegisteredIntegrations()
-    mgr->>mgr: create Provider per config
+    init->>int: blank import triggers init()
+    int->>int: RegisterIntegration(config + ToolDefs)
 
-    main->>mgr: ConnectAll(ctx)
-    par concurrent
-        mgr->>prv: ConnectHTTP(url)
-        prv->>srv: initialize (JSON-RPC)
-        srv-->>prv: server info + capabilities
-    end
-
-    main->>mgr: RegisterTools(ctx, registry)
-    mgr->>prv: DiscoverTools(ctx)
-    prv->>srv: tools/list
-    srv-->>prv: Tool[]
-    mgr->>reg: Register("mcp.provider.tool", factory)
+    main->>init: InitializeRegistry()
+    init->>fn: RegisterAllTools(registry, manager)
+    fn->>int: RegisteredIntegrations()
+    note over fn: Iterates ToolDefs statically
+    fn->>reg: Register("mcp.gmail.send_email", factory)
+    fn->>reg: Register("mcp.gmail.read_email", factory)
+    fn->>reg: Register("mcp.google_sheets.read_range", factory)
+    note over fn: ... all explicitly declared tools
+    init-->>main: (registry, mcpManager)
+    note over main: No MCP connections opened yet!
 ```
 
-## Runtime Execution
+## Runtime Execution (Lazy Connection)
 
 ```mermaid
 sequenceDiagram
     participant exe as Executor
     participant reg as Registry
     participant node as MCPNode
+    participant mgr as Manager
     participant prv as Provider
     participant srv as MCP Server
 
-    exe->>reg: Create("mcp.google_sheets.write_cell", execCtx)
+    exe->>reg: Create("mcp.gmail.send_email", execCtx)
     reg-->>exe: MCPNode
     exe->>node: Execute(ctx, execCtx)
-    node->>prv: CallTool("write_cell", args)
+    node->>mgr: GetOrConnect(ctx, "gmail")
+    alt First call to this provider
+        mgr->>prv: NewProvider + ConnectHTTP
+        prv->>srv: initialize (JSON-RPC)
+        srv-->>prv: server info
+    else Already connected
+        mgr-->>node: cached Provider
+    end
+    node->>prv: CallTool("send_email", args)
     prv->>srv: tools/call (JSON-RPC)
     srv-->>prv: CallToolResult
     prv-->>node: result
@@ -103,22 +108,29 @@ sequenceDiagram
 
 ```
 pkg/mcp/
-├── integration.go                     # IntegrationConfig, RegisterIntegration(), NodeRegistry
+├── integration.go                     # IntegrationConfig, ToolDef, RegisterAllTools
 ├── provider.go                        # MCP client wrapper: connect, discover, call
-├── manager.go                         # Pool of providers, concurrent connect, tool registration
+├── manager.go                         # Lazy connection manager (GetOrConnect)
 ├── node.go                            # MCPNode implementing plugin.Node
-├── bridge_test.go                     # 10 integration tests with in-memory MCP server
+├── bridge_test.go                     # Integration tests with in-memory MCP server
 └── integrations/
     ├── google/
-    │   ├── sheets/sheets.go           # Google Sheets → http://google-sheets-mcp:3100/mcp
-    │   └── gmail/gmail.go             # Gmail → http://gmail-mcp:3200/mcp
+    │   ├── sheets/sheets.go           # 4 tools: read_range, write_range, append_row, create_spreadsheet
+    │   └── gmail/gmail.go             # 4 tools: send_email, read_email, search_emails, list_labels
     └── microsoft/
-        └── outlook/outlook.go         # Outlook → http://outlook-mcp:3300/mcp
+        └── outlook/outlook.go         # 3 tools: send_email, read_email, list_inbox
 ```
 
 ## How to Add an Integration
 
-1. Create the package:
+### Step 1: Discover tools from the MCP server (dev time only)
+
+```bash
+# Start the MCP server locally and inspect its tools
+# This is a one-time dev step, NOT done at runtime
+```
+
+### Step 2: Create the integration package with explicit ToolDefs
 
 ```go
 // pkg/mcp/integrations/slack/slack.go
@@ -130,21 +142,45 @@ func init() {
     mcp.RegisterIntegration(mcp.IntegrationConfig{
         Name: "slack",
         URL:  "http://slack-mcp:3400/mcp",
+        Tools: []mcp.ToolDef{
+            {
+                MCPName:     "send_message",
+                Description: "Send a message to a Slack channel",
+            },
+            {
+                MCPName:     "list_channels",
+                Description: "List all Slack channels",
+            },
+            // Only wrap the tools you want to expose to users!
+            // If the MCP server has 50 tools, you might only wrap 5.
+        },
     })
 }
 ```
 
-2. Add the import in `pkg/registry/init_registry.go`:
+### Step 3: Add the import
+
+In `pkg/registry/init_registry.go`:
 
 ```go
 _ "rune-worker/pkg/mcp/integrations/slack"
 ```
 
-3. Deploy the Slack MCP server. All tools are auto-discovered and registered as `mcp.slack.*` nodes.
+### Step 4: Custom node names (optional)
+
+Use `NodeName` to override the default naming:
+
+```go
+{
+    MCPName:     "send_message_v2",  // actual tool name on MCP server
+    NodeName:    "send_message",     // becomes mcp.slack.send_message
+    Description: "Send a message to a Slack channel",
+},
+```
 
 ## Multi-Provider Workflow
 
-A single workflow can use nodes from different MCP servers. Each node holds a reference to its provider, and connections are managed by the shared Manager. Credentials are passed as tool arguments — the MCP server handles auth per-request.
+A single workflow can use nodes from different MCP servers:
 
 ```json
 {
@@ -172,25 +208,16 @@ A single workflow can use nodes from different MCP servers. Each node holds a re
 
 ## Connection Lifecycle
 
-- **Startup**: Manager connects to all registered MCP servers concurrently. Partial failures are tolerated — if Gmail MCP is down, Sheets and Outlook still work.
-- **Runtime**: Connections are shared across workflow executions. Each `CallTool` is an independent JSON-RPC request over the persistent session.
-- **Shutdown**: `defer mcpManager.DisconnectAll()` in main.go closes all sessions on `SIGTERM`.
+- **Startup**: No MCP connections. Tools registered statically from ToolDefs.
+- **First execution**: `GetOrConnect` lazily connects to the MCP server when a workflow first uses a tool from that provider.
+- **Subsequent executions**: Reuses the cached connection.
+- **Shutdown**: `defer mcpManager.DisconnectAll()` in main.go closes all active sessions.
 
-## SDK Coverage
+## Key Design Decisions
 
-We use the `github.com/modelcontextprotocol/go-sdk/mcp` package. Here's what we use vs. what's available:
-
-| Feature | Used | Purpose |
-|---------|------|---------|
-| `Client` + `ClientSession` | ✅ | Session management |
-| `StreamableClientTransport` | ✅ | HTTP transport to remote servers |
-| `CallTool` / `CallToolParams` | ✅ | Tool execution |
-| `Tools()` iterator | ✅ | Tool discovery |
-| `TextContent` | ✅ | Result parsing |
-| `NewInMemoryTransports` | ✅ | Testing |
-| `Server` + `AddTool` | ✅ | Test server |
-| Resources / Prompts / Sampling | ❌ | Not needed for tool-based integrations |
-| OAuth / Auth handlers | ❌ | Deferred to auth team |
+1. **No auto-discovery**: Tools must be explicitly declared in Go. This ensures the DSL generator knows all available tools at build time, and users only see curated tools.
+2. **Lazy connections**: MCP servers don't need to be running at worker startup. Connection failures are scoped to the specific workflow execution, not the entire worker.
+3. **Custom naming via NodeName**: The raw MCP tool name can differ from the workflow node name, allowing clean DSL types even when upstream APIs change.
 
 ## How to Test
 
@@ -198,30 +225,23 @@ We use the `github.com/modelcontextprotocol/go-sdk/mcp` package. Here's what we 
 # Run MCP bridge tests (in-memory server, no external deps)
 go test ./pkg/mcp/... -v
 
+# Run registry tests (verifies MCP tools are statically registered)
+go test ./pkg/registry/... -v
+
 # Run all tests
 go test ./... -count=1
 ```
 
-The tests spin up a real MCP server in-memory with `echo` and `add` tools, then verify the full pipeline: connect → discover → call → extract → MCPNode.Execute.
+## SDK Coverage
 
-## How to Run
-
-1. Ensure MCP servers are running at the URLs defined in each integration package.
-2. Start the worker:
-
-```bash
-go run ./cmd/worker
-```
-
-3. The worker logs show which providers connected and how many tools were registered:
-
-```
-INFO mcp provider connected   provider=google_sheets server=sheets-server
-INFO discovered mcp tools      provider=google_sheets count=30
-INFO mcp provider connected   provider=outlook server=outlook-server
-INFO discovered mcp tools      provider=outlook count=15
-INFO mcp tools registered      count=45
-INFO mcp integrations ready    tools=45 total_nodes=65
-```
-
-4. Workflows can now use `mcp.google_sheets.*` and `mcp.outlook.*` nodes.
+| Feature | Used | Purpose |
+|---------|------|---------|
+| `Client` + `ClientSession` | ✅ | Session management |
+| `StreamableClientTransport` | ✅ | HTTP transport to remote servers |
+| `CallTool` / `CallToolParams` | ✅ | Tool execution |
+| `Tools()` iterator | ✅ | Tool discovery (dev-time only) |
+| `TextContent` | ✅ | Result parsing |
+| `NewInMemoryTransports` | ✅ | Testing |
+| `Server` + `AddTool` | ✅ | Test server |
+| Resources / Prompts / Sampling | ❌ | Not needed for tool-based integrations |
+| OAuth / Auth handlers | ❌ | Deferred to auth team |

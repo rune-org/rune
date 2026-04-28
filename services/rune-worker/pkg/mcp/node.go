@@ -10,6 +10,7 @@ import (
 )
 
 // MCPNode wraps a remote MCP tool call as a workflow node.
+// The MCP connection is established lazily on first Execute().
 type MCPNode struct {
 	manager      *Manager
 	providerName string
@@ -47,7 +48,7 @@ func NewMCPNode(manager *Manager, provider, tool string, execCtx plugin.Executio
 	return n
 }
 
-// Execute calls the remote MCP tool and returns the result.
+// Execute connects to the MCP server on-demand and calls the wrapped tool.
 func (n *MCPNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) (map[string]any, error) {
 	slog.Info("mcp call",
 		"provider", n.providerName,
@@ -55,12 +56,11 @@ func (n *MCPNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) 
 		"node_id", execCtx.NodeID,
 	)
 
-	p := n.manager.GetProvider(n.providerName)
-	if p == nil {
-		return nil, fmt.Errorf("mcp provider %q not found", n.providerName)
-	}
-	if !p.IsConnected() {
-		return nil, fmt.Errorf("mcp provider %q not connected", n.providerName)
+	// Lazy connect — opens the MCP session if this is the first call
+	// to this provider in the current worker lifecycle.
+	p, err := n.manager.GetOrConnect(ctx, n.providerName)
+	if err != nil {
+		return nil, fmt.Errorf("mcp provider %q: %w", n.providerName, err)
 	}
 
 	callCtx, cancel := context.WithTimeout(ctx, n.timeout)

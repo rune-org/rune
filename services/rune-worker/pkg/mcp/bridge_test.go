@@ -180,7 +180,10 @@ func TestMCPNodeExecute(t *testing.T) {
 	}
 	defer p.Disconnect()
 
-	m := &Manager{providers: map[string]*Provider{"test": p}}
+	m := &Manager{
+		providers: map[string]*Provider{"test": p},
+		configs:   map[string]IntegrationConfig{},
+	}
 
 	execCtx := plugin.ExecutionContext{
 		NodeID:     "node_1",
@@ -210,7 +213,10 @@ func TestMCPNodeExecuteJSON(t *testing.T) {
 	}
 	defer p.Disconnect()
 
-	m := &Manager{providers: map[string]*Provider{"test": p}}
+	m := &Manager{
+		providers: map[string]*Provider{"test": p},
+		configs:   map[string]IntegrationConfig{},
+	}
 
 	execCtx := plugin.ExecutionContext{
 		NodeID: "node_2",
@@ -238,26 +244,22 @@ func TestMCPNodeExecuteJSON(t *testing.T) {
 	}
 }
 
-func TestManagerRegisterTools(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func TestRegisterAllTools(t *testing.T) {
 	ResetIntegrations()
 	defer ResetIntegrations()
-	RegisterIntegration(IntegrationConfig{Name: "test", URL: "http://test:3000/mcp"})
 
-	transport := startTestServer(t, ctx)
+	RegisterIntegration(IntegrationConfig{
+		Name: "test",
+		URL:  "http://test:3000/mcp",
+		Tools: []ToolDef{
+			{MCPName: "echo", Description: "echo tool"},
+			{MCPName: "add", Description: "add tool"},
+		},
+	})
 
-	p := NewProvider("test")
-	if err := p.Connect(ctx, transport); err != nil {
-		t.Fatalf("connect: %v", err)
-	}
-	defer p.Disconnect()
-
-	m := &Manager{providers: map[string]*Provider{"test": p}}
-
+	m := NewManager()
 	reg := &testRegistry{types: map[string]bool{}}
-	count := m.RegisterTools(ctx, reg)
+	count := RegisterAllTools(reg, m)
 
 	if count != 2 {
 		t.Fatalf("expected 2 registered tools, got %d", count)
@@ -270,9 +272,43 @@ func TestManagerRegisterTools(t *testing.T) {
 	}
 }
 
+func TestToolDefCustomNodeName(t *testing.T) {
+	ResetIntegrations()
+	defer ResetIntegrations()
+
+	RegisterIntegration(IntegrationConfig{
+		Name: "test",
+		URL:  "http://test:3000/mcp",
+		Tools: []ToolDef{
+			{MCPName: "send_email_v2", NodeName: "send_email", Description: "send email"},
+		},
+	})
+
+	m := NewManager()
+	reg := &testRegistry{types: map[string]bool{}}
+	count := RegisterAllTools(reg, m)
+
+	if count != 1 {
+		t.Fatalf("expected 1 registered tool, got %d", count)
+	}
+	if !reg.types["mcp.test.send_email"] {
+		t.Error("expected mcp.test.send_email to be registered (custom NodeName)")
+	}
+	if reg.types["mcp.test.send_email_v2"] {
+		t.Error("should NOT register under raw MCPName when NodeName is set")
+	}
+}
+
 func TestNodeType(t *testing.T) {
 	cfg := IntegrationConfig{Name: "google_sheets", URL: "http://test:3000/mcp"}
-	if got := cfg.NodeType("write_cell"); got != "mcp.google_sheets.write_cell" {
+
+	tool := ToolDef{MCPName: "write_cell"}
+	if got := cfg.NodeType(tool); got != "mcp.google_sheets.write_cell" {
+		t.Errorf("got %q", got)
+	}
+
+	toolAliased := ToolDef{MCPName: "write_cell_v2", NodeName: "write_cell"}
+	if got := cfg.NodeType(toolAliased); got != "mcp.google_sheets.write_cell" {
 		t.Errorf("got %q", got)
 	}
 }
@@ -281,8 +317,20 @@ func TestIntegrationRegistry(t *testing.T) {
 	ResetIntegrations()
 	defer ResetIntegrations()
 
-	RegisterIntegration(IntegrationConfig{Name: "a", URL: "http://a:3000/mcp"})
-	RegisterIntegration(IntegrationConfig{Name: "b", URL: "http://b:3000/mcp"})
+	RegisterIntegration(IntegrationConfig{
+		Name: "a",
+		URL:  "http://a:3000/mcp",
+		Tools: []ToolDef{
+			{MCPName: "tool1"},
+		},
+	})
+	RegisterIntegration(IntegrationConfig{
+		Name: "b",
+		URL:  "http://b:3000/mcp",
+		Tools: []ToolDef{
+			{MCPName: "tool2"},
+		},
+	})
 
 	list := RegisteredIntegrations()
 	if len(list) != 2 {

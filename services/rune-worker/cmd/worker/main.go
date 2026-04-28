@@ -9,7 +9,6 @@ import (
 	"syscall"
 	_ "time/tzdata" // embed IANA tzdata
 
-	runemcp "rune-worker/pkg/mcp"
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
@@ -64,23 +63,13 @@ func main() {
 	}
 	slog.Info("connected to redis")
 
-	// Initialize node registry with built-in nodes
-	// All nodes that have init() functions will be auto-registered
-	nodeRegistry := registry.InitializeRegistry()
+	// Initialize node registry with built-in nodes and MCP tools.
+	// MCP tools are registered statically from ToolDef declarations.
+	// MCP connections happen lazily at workflow execution time.
+	nodeRegistry, mcpManager := registry.InitializeRegistry()
+	defer mcpManager.DisconnectAll()
 	slog.Info("node registry initialized",
 		"registered_nodes", len(nodeRegistry.GetAllTypes()))
-
-	// Initialize MCP integrations
-	mcpManager := runemcp.NewManager()
-	if mcpManager.ProviderCount() > 0 {
-		mcpManager.ConnectAll(context.Background())
-		toolCount := mcpManager.RegisterTools(context.Background(), nodeRegistry)
-		slog.Info("mcp integrations ready",
-			"tools", toolCount,
-			"total_nodes", len(nodeRegistry.GetAllTypes()),
-		)
-		defer mcpManager.DisconnectAll()
-	}
 
 	// Create workflow consumer
 	consumer, err := messaging.NewWorkflowConsumer(cfg, redisClient)
