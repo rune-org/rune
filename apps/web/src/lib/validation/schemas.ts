@@ -27,5 +27,12 @@ export const profileEmailSchema = z.object({
   email: userEmailField,
 });
 
+export const inviteUserSchema = z.object({
+  name: userDisplayNameField,
+  email: userEmailField,
+  role: z.enum(["admin", "user"]),
+});
+
 export type SignUpFormValues = z.infer<typeof signUpSchema>;
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+export type InviteUserFormValues = z.infer<typeof inviteUserSchema>;
