@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { updateMyProfile } from "@/lib/api/users";
 import { getInitials } from "@/lib/initials";
@@ -23,25 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
-
-// Zod schemas for validation
-/** Matches emoji / pictographs and regional-indicator symbols (e.g. flag pairs). */
-const EMOJI_OR_PICTOGRAPH = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u;
-
-const nameSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(3, "Name must be at least 3 characters")
-    .max(40, "Name must be 40 characters or less")
-    .refine((s: string) => !EMOJI_OR_PICTOGRAPH.test(s), {
-      message: "Name cannot contain emoji or regional-indicator symbols",
-    }),
-});
-
-const emailSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
-});
+import { profileEmailSchema, profileNameSchema } from "@/lib/validation";
 
 type EditingField = "name" | "email" | null;
 
@@ -51,7 +32,7 @@ export default function ProfilePage() {
   const [editingField, setEditingField] = useState<EditingField>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isPasswordDialogOpen, setIsPassworsdDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [dialogResetKey, setDialogResetKey] = useState(0);
   const { state, logout, refetchProfile, refresh } = useAuth();
 
@@ -67,7 +48,7 @@ export default function ProfilePage() {
 
   const handleSaveName = async () => {
     // Validate with zod
-    const result = nameSchema.safeParse({ name: fullName });
+    const result = profileNameSchema.safeParse({ name: fullName });
     if (!result.success) {
       setError(result.error.issues[0].message);
       return;
@@ -95,7 +76,7 @@ export default function ProfilePage() {
 
   const handleSaveEmail = async () => {
     // Validate with zod
-    const result = emailSchema.safeParse({ email });
+    const result = profileEmailSchema.safeParse({ email: email });
     if (!result.success) {
       setError(result.error.issues[0].message);
       return;
