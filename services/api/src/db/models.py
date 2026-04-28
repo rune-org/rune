@@ -7,6 +7,8 @@ from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
 
+from src.core.datetime import UTCDateTime, utc_now
+
 
 class UserRole(str, Enum):
     """User role enumeration."""
@@ -54,10 +56,15 @@ class AuthProvider(str, Enum):
 class TimestampModel(SQLModel):
     """Base model with created_at and updated_at timestamps."""
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_type=UTCDateTime(),
+        sa_column_kwargs={"nullable": False},
+    )
     updated_at: datetime = Field(
-        default_factory=datetime.now,
-        sa_column_kwargs={"onupdate": datetime.now},
+        default_factory=utc_now,
+        sa_type=UTCDateTime(),
+        sa_column_kwargs={"nullable": False, "onupdate": utc_now},
     )
 
 
@@ -150,7 +157,10 @@ class User(TimestampModel, table=True):
         default=None, foreign_key="samlconfiguration.id"
     )
     is_active: bool = Field(default=True)
-    last_login_at: Optional[datetime] = None
+    last_login_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(UTCDateTime(), nullable=True),
+    )
     must_change_password: bool = Field(
         default=False,
         description="Flag indicating user must change their password",
@@ -250,7 +260,10 @@ class WorkflowVersion(SQLModel, table=True):
         default=None,
         description="User-provided message describing the saved revision",
     )
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(UTCDateTime(), nullable=False),
+    )
 
 
 class WorkflowUser(TimestampModel, table=True):
@@ -414,7 +427,10 @@ class ScheduledWorkflow(TimestampModel, table=True):
         unique=True,
     )
     interval_seconds: int
-    next_run_at: datetime = Field(default_factory=datetime.now)
+    next_run_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(UTCDateTime(), nullable=False),
+    )
 
     workflow: "Workflow" = Relationship(back_populates="schedule")
 
@@ -430,7 +446,10 @@ class Execution(TimestampModel, table=True):
             SQLAlchemyEnum(ExecutionStatus, name="execution_status", native_enum=True),
         ),
     )
-    completed_at: Optional[datetime] = Field(default=None)
+    completed_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(UTCDateTime(), nullable=True),
+    )
     total_duration_ms: Optional[int] = Field(default=None)
     failure_reason: Optional[str] = Field(default=None)
 

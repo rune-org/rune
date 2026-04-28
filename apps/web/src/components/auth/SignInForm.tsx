@@ -52,8 +52,6 @@ export function SignInForm() {
           const target = getValidatedRedirectTarget(redirectParam);
           router.push(target);
           toast.success("Signed in successfully");
-        } else {
-          toast.error("Failed to sign in");
         }
       });
     });
