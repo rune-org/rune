@@ -243,7 +243,7 @@ class TestWorkflowSharing:
         """Owner can grant VIEWER access to another user."""
         response = await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/share",
-            json={"user_id": other_user.id, "role": "VIEWER"},
+            json={"user_id": other_user.id, "role": "viewer"},
         )
         assert response.status_code == 200
 
