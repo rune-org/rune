@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.auth.saml.schemas import SAMLAttributes
+from src.core.datetime import utc_now
 from src.db.models import AuthProvider, SAMLConfiguration, User, UserRole
 
 
@@ -25,7 +24,7 @@ class SAMLProvisioningService:
 
         In all cases ``last_login_at`` is refreshed.
         """
-        now = datetime.now()
+        now = utc_now()
 
         # ------------------------------------------------------------------
         # 1. Primary lookup: NameID + config
