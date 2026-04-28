@@ -164,6 +164,15 @@ const CREDENTIAL_FIELDS: Record<
       required: true,
     },
   ],
+  gemini_api_key: [
+    {
+      key: "api_key",
+      label: "Gemini API Key",
+      type: "password",
+      placeholder: "AIza...",
+      required: true,
+    },
+  ],
 };
 
 export function AddCredentialDialog({

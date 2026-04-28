@@ -31,6 +31,7 @@ import { SortInspector } from "./inspectors/SortInspector";
 import { LimitInspector } from "./inspectors/LimitInspector";
 import { SplitInspector } from "./inspectors/SplitInspector";
 import { MergeInspector } from "./inspectors/MergeInspector";
+import { AgentInspector } from "./inspectors/AgentInspector";
 import { toast } from "@/components/ui/toast";
 import { Activity } from "lucide-react";
 
@@ -95,6 +96,8 @@ function renderInspectorForm(
       return <SplitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "merge":
       return <MergeInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "agent":
+      return <AgentInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     default:
       return null;
   }

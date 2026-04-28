@@ -3285,6 +3285,7 @@ components:
       - token
       - custom
       - smtp
+      - gemini_api_key
       title: CredentialType
       description: Credential type enumeration.
     CredentialUpdate:
