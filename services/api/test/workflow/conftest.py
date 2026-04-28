@@ -43,9 +43,10 @@ async def workflow_with_viewer(test_db, sample_workflow, viewer_user, test_user)
 
 @pytest_asyncio.fixture(scope="function")
 async def viewer_client(client, viewer_user):
-    """Create a separate authenticated HTTP client for viewer user.
-    """
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+    """Create a separate authenticated HTTP client for viewer user."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as c:
         response = await c.post(
             "/auth/login",
             json={"email": "viewer@example.com", "password": "viewerpassword123"},
@@ -73,9 +74,10 @@ async def other_user(test_db):
 
 @pytest_asyncio.fixture(scope="function")
 async def other_client(client, other_user):
-    """Create a separate authenticated HTTP client for other user (no workflow access).
-    """
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+    """Create a separate authenticated HTTP client for other user (no workflow access)."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as c:
         response = await c.post(
             "/auth/login",
             json={"email": "other@example.com", "password": "otherpassword123"},

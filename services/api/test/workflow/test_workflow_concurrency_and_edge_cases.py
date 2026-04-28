@@ -66,8 +66,7 @@ class TestConcurrentOperations:
     async def test_concurrent_version_creation_detects_conflict(
         self, authenticated_client, sample_workflow
     ):
-        """Two saves with the same stale base_version_id: one succeeds, one gets 409.
-        """
+        """Two saves with the same stale base_version_id: one succeeds, one gets 409."""
         # Get latest version first
         detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
         base_version_id = detail.json()["data"]["latest_version"]["id"]
@@ -202,8 +201,7 @@ class TestEdgeCases:
     async def test_workflow_with_duplicate_node_ids_rejected(
         self, authenticated_client, sample_workflow
     ):
-        """Workflow with duplicate node IDs should be rejected.
-        """
+        """Workflow with duplicate node IDs should be rejected."""
         response = await authenticated_client.post(
             f"/workflows/{sample_workflow.id}/versions",
             json={
