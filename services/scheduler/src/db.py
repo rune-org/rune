@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from src.config import log
 
@@ -25,7 +25,7 @@ UPDATE_NEXT_RUN = """
 
 async def poll(conn, api_client) -> None:
     """Single poll iteration: fetch due schedules and process them."""
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
     async with conn.transaction():
         rows = await conn.fetch(FETCH_DUE_SCHEDULES, now)
