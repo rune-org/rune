@@ -14,6 +14,7 @@ class UserService:
 
     async def _validate_email_uniqueness(
         self, new_email: str, current_email: str = ""
+        self, new_email: str, current_email: str = ""
     ) -> str:
         """
         Helper to validate email uniqueness and normalize it.
@@ -89,12 +90,10 @@ class UserService:
             AlreadyExists: If email is already registered
         """
         # Normalize email and validate uniqueness
-        validated_email = await self._validate_email_uniqueness(
-            user_data.email
-        )
-        
-        # Normalize name and validate length
-        validated_name = normalize_and_validate_name(user_data.name)
+        validated_email = await self._validate_email_uniqueness(user_data.email)
+
+        # # Normalize name and validate length
+        #  = normalize_and_validate_name(user_data.name)
 
         temp_password = generate_temporary_password()
         hashed_password = hash_password(temp_password)
@@ -102,7 +101,7 @@ class UserService:
 
         user = User(
             name=user_data.name,
-            email=normalized_email,
+            email=validated_email,
             hashed_password=hashed_password,
             role=user_data.role,
             must_change_password=must_change,
