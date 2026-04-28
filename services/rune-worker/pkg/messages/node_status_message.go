@@ -135,7 +135,7 @@ func NewRunningStatus(workflowID, executionID, nodeID, nodeName string) *NodeSta
 		NodeID:      nodeID,
 		NodeName:    nodeName,
 		Status:      StatusRunning,
-		ExecutedAt:  time.Now(),
+		ExecutedAt:  time.Now().UTC(),
 		DurationMs:  0,
 	}
 }
@@ -149,7 +149,7 @@ func NewSuccessStatus(workflowID, executionID, nodeID, nodeName string, output m
 		NodeName:    nodeName,
 		Status:      StatusSuccess,
 		Output:      output,
-		ExecutedAt:  time.Now(),
+		ExecutedAt:  time.Now().UTC(),
 		DurationMs:  durationMs,
 	}
 }
@@ -163,7 +163,7 @@ func NewFailedStatus(workflowID, executionID, nodeID, nodeName string, err *Node
 		NodeName:    nodeName,
 		Status:      StatusFailed,
 		Error:       err,
-		ExecutedAt:  time.Now(),
+		ExecutedAt:  time.Now().UTC(),
 		DurationMs:  durationMs,
 	}
 }

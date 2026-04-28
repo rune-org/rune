@@ -21,7 +21,7 @@ func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecuti
 		Status:           messages.StatusWaiting,
 		Parameters:       params,
 		Output:           output,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
@@ -63,7 +63,7 @@ func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.
 		},
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 	}
 
@@ -97,7 +97,7 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 		},
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 	}
 
@@ -154,7 +154,7 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 		Status:           messages.StatusSuccess,
 		Parameters:       params,
 		Output:           output,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
