@@ -231,17 +231,3 @@ go test ./pkg/registry/... -v
 # Run all tests
 go test ./... -count=1
 ```
-
-## SDK Coverage
-
-| Feature | Used | Purpose |
-|---------|------|---------|
-| `Client` + `ClientSession` | ✅ | Session management |
-| `StreamableClientTransport` | ✅ | HTTP transport to remote servers |
-| `CallTool` / `CallToolParams` | ✅ | Tool execution |
-| `Tools()` iterator | ✅ | Tool discovery (dev-time only) |
-| `TextContent` | ✅ | Result parsing |
-| `NewInMemoryTransports` | ✅ | Testing |
-| `Server` + `AddTool` | ✅ | Test server |
-| Resources / Prompts / Sampling | ❌ | Not needed for tool-based integrations |
-| OAuth / Auth handlers | ❌ | Deferred to auth team |
