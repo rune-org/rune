@@ -89,10 +89,8 @@ class UserService:
             AlreadyExists: If email is already registered
         """
         # Normalize email and validate uniqueness
-        validated_email = await self._validate_email_uniqueness(
-            user_data.email
-        )
-        
+        validated_email = await self._validate_email_uniqueness(user_data.email)
+
         # # Normalize name and validate length
         #  = normalize_and_validate_name(user_data.name)
 

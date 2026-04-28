@@ -46,8 +46,8 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
         form.reset({ name: "", email: "", role: "user" });
         toast.success("User invited successfully");
       }
-    } catch (error) {
-      toast.error("Failed to invite user")
+    } catch (_error) {
+      toast.error("Failed to invite user");
     } finally {
       setIsSubmitting(false);
     }
