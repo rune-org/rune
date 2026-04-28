@@ -9,6 +9,7 @@ import (
 	"syscall"
 	_ "time/tzdata" // embed IANA tzdata
 
+	runemcp "rune-worker/pkg/mcp"
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
 	"rune-worker/pkg/platform/queue"
@@ -68,6 +69,18 @@ func main() {
 	nodeRegistry := registry.InitializeRegistry()
 	slog.Info("node registry initialized",
 		"registered_nodes", len(nodeRegistry.GetAllTypes()))
+
+	// Initialize MCP integrations
+	mcpManager := runemcp.NewManager()
+	if mcpManager.ProviderCount() > 0 {
+		mcpManager.ConnectAll(context.Background())
+		toolCount := mcpManager.RegisterTools(context.Background(), nodeRegistry)
+		slog.Info("mcp integrations ready",
+			"tools", toolCount,
+			"total_nodes", len(nodeRegistry.GetAllTypes()),
+		)
+		defer mcpManager.DisconnectAll()
+	}
 
 	// Create workflow consumer
 	consumer, err := messaging.NewWorkflowConsumer(cfg, redisClient)

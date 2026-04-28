@@ -23,6 +23,11 @@ import (
 	_ "rune-worker/pkg/nodes/custom/split"
 	_ "rune-worker/pkg/nodes/custom/switch"
 	_ "rune-worker/pkg/nodes/custom/wait"
+
+	// MCP integrations
+	_ "rune-worker/pkg/mcp/integrations/google/gmail"
+	_ "rune-worker/pkg/mcp/integrations/google/sheets"
+	_ "rune-worker/pkg/mcp/integrations/microsoft/outlook"
 )
 
 // InitializeRegistry creates and populates the node registry with all available node types.
