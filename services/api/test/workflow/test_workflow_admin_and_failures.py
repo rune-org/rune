@@ -105,19 +105,6 @@ class TestAdminRolePermissions:
         assert get_response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_admin_can_share_any_workflow(
-        self, admin_client, sample_workflow, test_user, test_db
-    ):
-        """ADMIN can share workflows they don't own (if share endpoint exists)."""
-        # This test is placeholder - assumes a share/permission endpoint exists
-        # Verify admin bypasses ownership checks on permission operations
-        workflow_id = sample_workflow.id
-
-        # Admin should be able to view permission details
-        response = await admin_client.get(f"/workflows/{workflow_id}")
-        assert response.status_code == 200
-
-    @pytest.mark.asyncio
     async def test_admin_bulk_operations_bypass_permissions(
         self, admin_client, sample_workflow, test_user
     ):
@@ -138,10 +125,10 @@ class TestAdminRolePermissions:
             },
         )
 
-        if response.status_code == 200:
-            result = response.json()["data"]
-            # Both should be deleted
-            assert result["summary"]["succeeded"] >= 1
+        assert response.status_code == 200
+        result = response.json()["data"]
+        assert result["summary"]["succeeded"] == 2
+        assert result["summary"]["failed"] == 0
 
     @pytest.mark.asyncio
     async def test_non_admin_still_cannot_edit_others_workflow(
@@ -221,26 +208,6 @@ class TestExecutionTimeoutScenarios:
         assert response.status_code == 200
         execution_id = response.json()["data"]
         assert isinstance(execution_id, str)
-
-    @pytest.mark.asyncio
-    async def test_run_workflow_with_node_timeout_returns_timeout_error(
-        self, authenticated_client, sample_workflow
-    ):
-        """Running workflow where node times out should report timeout error."""
-        # Publish
-        await authenticated_client.put(
-            f"/workflows/{sample_workflow.id}/status",
-            json={"is_active": True},
-        )
-
-        # Run - this queues for execution
-        response = await authenticated_client.post(
-            f"/workflows/{sample_workflow.id}/run"
-        )
-        assert response.status_code == 200
-
-        # Note: Actual timeout would occur during worker execution
-        # API level test verifies request doesn't timeout (200 response)
 
     @pytest.mark.asyncio
     async def test_concurrent_runs_with_timeouts_handled(
@@ -366,68 +333,19 @@ class TestPartialExecutionFailures:
         assert len(set(execution_ids)) == 3
 
     @pytest.mark.asyncio
-    async def test_partial_failure_status_reflects_in_execution_list(
-        self, authenticated_client, sample_workflow, test_db
-    ):
-        """Execution list endpoint shows failed status for partial failures."""
-        # Publish and run
-        await authenticated_client.put(
-            f"/workflows/{sample_workflow.id}/status",
-            json={"is_active": True},
-        )
-
-        response = await authenticated_client.post(
-            f"/workflows/{sample_workflow.id}/run"
-        )
-        assert response.status_code == 200
-
-        # Get executions list (if endpoint exists)
-        list_response = await authenticated_client.get(
-            f"/executions/workflows/{sample_workflow.id}"
-        )
-
-        # Should be accessible
-        assert list_response.status_code in [200, 404]  # Vary by implementation
-
-    @pytest.mark.asyncio
-    async def test_continue_on_error_true_allows_next_node_execution(
-        self, authenticated_client, workflow_with_multiple_nodes
-    ):
-        """Nodes with continue_on_error=true queue even when previous node fails."""
-        response = await authenticated_client.post(
-            f"/workflows/{workflow_with_multiple_nodes}/run"
-        )
-        # Should queue successfully (workflow structure is valid)
-        assert response.status_code == 200
-
-    @pytest.mark.asyncio
-    async def test_continue_on_error_false_stops_at_next_failure(
-        self, authenticated_client, workflow_with_multiple_nodes
-    ):
-        """Nodes with continue_on_error=false cause execution to stop on failure."""
-        # Should still queue - the behavior plays out during execution
-        response = await authenticated_client.post(
-            f"/workflows/{workflow_with_multiple_nodes}/run"
-        )
-        assert response.status_code == 200
-
-    @pytest.mark.asyncio
     async def test_unpublished_workflow_returns_error_not_execution(
-        self, authenticated_client, workflow_with_multiple_nodes, test_db
+        self, authenticated_client, workflow_with_multiple_nodes
     ):
         """Unpublished workflow cannot be executed even with multiple nodes."""
-        # Get workflow ID
         wf_id = workflow_with_multiple_nodes
 
-        # Unpublish it
         await authenticated_client.put(
             f"/workflows/{wf_id}/status",
             json={"is_active": False},
         )
 
-        # Try to run - should get 400 not 200
         response = await authenticated_client.post(f"/workflows/{wf_id}/run")
-        assert response.status_code in [400, 422]
+        assert response.status_code == 400
 
 
 class TestExecutionErrorHandling:

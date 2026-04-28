@@ -338,6 +338,46 @@ class TestNotFoundErrors:
         assert response.status_code == 404
 
 
+class TestWorkflowEdgeValidation:
+    """Test edge-level validation in workflow_data."""
+
+    @pytest.mark.asyncio
+    async def test_edge_referencing_nonexistent_src_node_rejected(
+        self, authenticated_client, sample_workflow
+    ):
+        """Edge whose src does not match any node ID must be rejected."""
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": None,
+                "workflow_data": {
+                    "nodes": [{"id": "node-1", "type": "trigger", "trigger": True}],
+                    "edges": [{"id": "e1", "src": "ghost", "dst": "node-1"}],
+                },
+                "message": "dangling src",
+            },
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_edge_referencing_nonexistent_dst_node_rejected(
+        self, authenticated_client, sample_workflow
+    ):
+        """Edge whose dst does not match any node ID must be rejected."""
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": None,
+                "workflow_data": {
+                    "nodes": [{"id": "node-1", "type": "trigger", "trigger": True}],
+                    "edges": [{"id": "e1", "src": "node-1", "dst": "ghost"}],
+                },
+                "message": "dangling dst",
+            },
+        )
+        assert response.status_code == 422
+
+
 class TestInvalidPayloads:
     """Test rejection of malformed request bodies."""
 

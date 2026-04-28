@@ -243,8 +243,7 @@ class TestEdgeCases:
                 "message": "Self-referencing edge",
             },
         )
-        # Should handle gracefully (could succeed or fail depending on system design)
-        assert response.status_code in [201, 400, 422]
+        assert response.status_code in [400, 422]
 
     @pytest.mark.asyncio
     async def test_publish_workflow_without_any_versions_fails(
@@ -319,13 +318,12 @@ class TestEdgeCases:
             json={"message": "Rolled back to version 1"},
         )
 
-        # Should create new version (v3), not modify v1
-        if restore_response.status_code == 201:
-            # Get workflow to check latest version number
-            detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
-            latest = detail.json()["data"]["latest_version"]
-            # Latest version should have higher version number than initial
-            assert latest["version"] >= 3
+        assert restore_response.status_code == 201
+
+        # Restore created v3 (v1 initial, v2 modified, v3 restored copy of v1)
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        latest = detail.json()["data"]["latest_version"]
+        assert latest["version"] == 3
 
 
 class TestBulkOperations:
@@ -358,13 +356,12 @@ class TestBulkOperations:
             },
         )
 
-        # Should allow partial success
-        if response.status_code == 200:
-            result = response.json()["data"]
-            assert result["summary"]["total"] == 2
-            # At least one should succeed, one should fail
-            assert result["summary"]["succeeded"] >= 1
-            assert result["summary"]["failed"] >= 0
+        assert response.status_code == 200
+        result = response.json()["data"]
+        # published workflow runs, unpublished one has no published version
+        assert result["summary"]["total"] == 2
+        assert result["summary"]["succeeded"] == 1
+        assert result["summary"]["failed"] == 1
 
     @pytest.mark.asyncio
     async def test_bulk_delete_removes_all_specified(self, authenticated_client):
@@ -384,13 +381,11 @@ class TestBulkOperations:
             json={"action": "delete", "workflow_ids": ids},
         )
 
-        if response.status_code == 200:
-            result = response.json()["data"]
-            # All should succeed
-            assert result["summary"]["succeeded"] == 3
-            assert result["summary"]["failed"] == 0
+        assert response.status_code == 200
+        result = response.json()["data"]
+        assert result["summary"]["succeeded"] == 3
+        assert result["summary"]["failed"] == 0
 
-            # Verify they're deleted
-            for wf_id in ids:
-                get_response = await authenticated_client.get(f"/workflows/{wf_id}")
-                assert get_response.status_code == 404
+        for wf_id in ids:
+            get_response = await authenticated_client.get(f"/workflows/{wf_id}")
+            assert get_response.status_code == 404

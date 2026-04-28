@@ -206,13 +206,16 @@ class TestCrossUserIsolation:
     async def test_user_cannot_list_other_user_workflows(
         self, authenticated_client, other_client, sample_workflow
     ):
-        """User should not see workflows they don't have access to."""
-        # Assuming there's a list endpoint
-        response = await authenticated_client.get("/workflows/")
+        """Owner sees their own workflow; other user does not."""
+        owner_response = await authenticated_client.get("/workflows/")
+        assert owner_response.status_code == 200
+        owner_ids = [w["id"] for w in owner_response.json()["data"]]
+        assert sample_workflow.id in owner_ids
 
-        if response.status_code == 200:
-            workflow_ids = [w["id"] for w in response.json().get("data", [])]
-            assert sample_workflow.id in workflow_ids  # Should see their own
+        other_response = await other_client.get("/workflows/")
+        assert other_response.status_code == 200
+        other_ids = [w["id"] for w in other_response.json()["data"]]
+        assert sample_workflow.id not in other_ids
 
     @pytest.mark.asyncio
     async def test_user_cannot_access_deleted_workflow_from_other_user(
@@ -225,6 +228,141 @@ class TestCrossUserIsolation:
         delete_response = await authenticated_client.delete(f"/workflows/{workflow_id}")
         assert delete_response.status_code == 204
 
-        # Other user tries to access (should be 404 or 403)
+        # Deleted workflow is gone — should be 404, not 403
         access_response = await other_client.get(f"/workflows/{workflow_id}")
-        assert access_response.status_code in [403, 404]
+        assert access_response.status_code == 404
+
+
+class TestWorkflowSharing:
+    """Test the workflow sharing API endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_owner_can_share_workflow_with_viewer_role(
+        self, authenticated_client, sample_workflow, other_user
+    ):
+        """Owner can grant VIEWER access to another user."""
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/share",
+            json={"user_id": other_user.id, "role": "VIEWER"},
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_owner_can_share_workflow_with_editor_role(
+        self, authenticated_client, sample_workflow, other_user
+    ):
+        """Owner can grant EDITOR access to another user."""
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/share",
+            json={"user_id": other_user.id, "role": "EDITOR"},
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_owner_cannot_grant_owner_role_via_share(
+        self, authenticated_client, sample_workflow, other_user
+    ):
+        """OWNER role cannot be granted through the share endpoint."""
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/share",
+            json={"user_id": other_user.id, "role": "OWNER"},
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_viewer_cannot_share_workflow(
+        self, viewer_client, workflow_with_viewer
+    ):
+        """VIEWER cannot share a workflow."""
+        response = await viewer_client.post(
+            f"/workflows/{workflow_with_viewer.id}/share",
+            json={"user_id": 999, "role": "VIEWER"},
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_share_with_nonexistent_user_returns_error(
+        self, authenticated_client, sample_workflow
+    ):
+        """Sharing with a user ID that doesn't exist returns 404."""
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/share",
+            json={"user_id": 999999, "role": "VIEWER"},
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_owner_can_revoke_access(
+        self, authenticated_client, sample_workflow, other_user, test_db
+    ):
+        """Owner can revoke a user's access to their workflow."""
+        # Grant access first
+        await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/share",
+            json={"user_id": other_user.id, "role": "VIEWER"},
+        )
+
+        # Revoke it
+        response = await authenticated_client.delete(
+            f"/workflows/{sample_workflow.id}/share/{other_user.id}"
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_owner_cannot_revoke_their_own_access(
+        self, authenticated_client, sample_workflow, test_user
+    ):
+        """Owner cannot revoke their own access."""
+        response = await authenticated_client.delete(
+            f"/workflows/{sample_workflow.id}/share/{test_user.id}"
+        )
+        assert response.status_code in [400, 403]
+
+    @pytest.mark.asyncio
+    async def test_viewer_can_list_workflow_permissions(
+        self, viewer_client, workflow_with_viewer
+    ):
+        """Any user with access can list who has permissions on a workflow."""
+        response = await viewer_client.get(
+            f"/workflows/{workflow_with_viewer.id}/permissions"
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_user_without_access_cannot_list_permissions(
+        self, other_client, sample_workflow
+    ):
+        """User with no access cannot list permissions."""
+        response = await other_client.get(
+            f"/workflows/{sample_workflow.id}/permissions"
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_owner_can_update_user_role(
+        self, authenticated_client, sample_workflow, other_user, test_db
+    ):
+        """Owner can change a user's role from VIEWER to EDITOR."""
+        # Grant VIEWER first
+        await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/share",
+            json={"user_id": other_user.id, "role": "VIEWER"},
+        )
+
+        # Upgrade to EDITOR
+        response = await authenticated_client.patch(
+            f"/workflows/{sample_workflow.id}/permissions/{other_user.id}",
+            json={"role": "EDITOR"},
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_viewer_cannot_update_roles(
+        self, viewer_client, workflow_with_viewer, other_user
+    ):
+        """VIEWER cannot update user roles."""
+        response = await viewer_client.patch(
+            f"/workflows/{workflow_with_viewer.id}/permissions/{other_user.id}",
+            json={"role": "EDITOR"},
+        )
+        assert response.status_code == 403
