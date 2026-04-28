@@ -12,7 +12,7 @@ from src.app import app
 from src.core.config import Settings, get_settings
 from src.core.password import hash_password
 from src.db.config import create_database_engine, get_db
-from src.db.models import User, UserRole
+from src.db.models import AuthProvider, User, UserRole
 from src.db.redis import get_redis
 
 
@@ -188,6 +188,13 @@ async def test_user(test_db: AsyncSession):
     existing_user = result.first()
 
     if existing_user:
+        existing_user.hashed_password = hash_password("testpassword123")
+        existing_user.auth_provider = AuthProvider.LOCAL
+        existing_user.is_active = True
+        existing_user.must_change_password = False
+        test_db.add(existing_user)
+        await test_db.commit()
+        await test_db.refresh(existing_user)
         return existing_user
 
     # Create new user if doesn't exist
@@ -220,6 +227,13 @@ async def test_admin(test_db: AsyncSession):
     existing_admin = result.first()
 
     if existing_admin:
+        existing_admin.hashed_password = hash_password("adminpassword123")
+        existing_admin.auth_provider = AuthProvider.LOCAL
+        existing_admin.is_active = True
+        existing_admin.must_change_password = False
+        test_db.add(existing_admin)
+        await test_db.commit()
+        await test_db.refresh(existing_admin)
         return existing_admin
 
     # Create new admin if doesn't exist
