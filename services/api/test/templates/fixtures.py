@@ -1,8 +1,7 @@
 """Template test fixtures."""
 
 import pytest_asyncio
-
-from src.core.password import hash_password
+from argon2 import PasswordHasher
 
 from src.db.models import User, UserRole, WorkflowTemplate
 from src.templates.service import TemplateService
@@ -17,9 +16,10 @@ async def template_service(test_db):
 @pytest_asyncio.fixture(scope="function")
 async def other_user(test_db):
     """Create a second test user in the database."""
+    ph = PasswordHasher()
     user = User(
         email="other@example.com",
-        hashed_password=hash_password("otherpassword123"),
+        hashed_password=ph.hash("otherpassword123"),
         name="Other User",
         role=UserRole.USER,
     )

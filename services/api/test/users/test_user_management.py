@@ -1,6 +1,5 @@
 import pytest
-
-from src.core.password import hash_password
+from argon2 import PasswordHasher
 from sqlmodel import select
 
 from src.db.models import User
@@ -466,16 +465,18 @@ async def test_admin_update_user_not_found(admin_client):
 @pytest.mark.asyncio
 async def test_admin_update_user_email_duplicate(admin_client, test_db):
     """Cannot update user to email already taken by another (409)"""
+    ph = PasswordHasher()
+
     # Create two users
     user1 = User(
         email="user1@example.com",
-        hashed_password=hash_password("pass123"),
+        hashed_password=ph.hash("pass123"),
         name="User 1",
         role="user",
     )
     user2 = User(
         email="user2@example.com",
-        hashed_password=hash_password("pass123"),
+        hashed_password=ph.hash("pass123"),
         name="User 2",
         role="user",
     )
@@ -515,9 +516,10 @@ async def test_admin_update_user_validation_invalid_email(admin_client, test_use
 async def test_admin_delete_user_success(admin_client, test_db):
     """Admin can delete user (204)"""
     # Create a user to delete
+    ph = PasswordHasher()
     user = User(
         email="todelete@example.com",
-        hashed_password=hash_password("deletepass123"),
+        hashed_password=ph.hash("deletepass123"),
         name="ToDelete",
         role="user",
     )
@@ -562,16 +564,18 @@ async def test_admin_update_user_email_to_existing_case_insensitive(
     admin_client, test_db
 ):
     """Updating a user's email to another user's email with different case should return 409"""
+    ph = PasswordHasher()
+
     # Create two users with similar emails differing only by case
     user_lower = User(
         email="x@gmail.com",
-        hashed_password=hash_password("pass12345"),
+        hashed_password=ph.hash("pass12345"),
         name="Lower",
         role="user",
     )
     user_upper = User(
         email="m@gmail.com",
-        hashed_password=hash_password("pass12345"),
+        hashed_password=ph.hash("pass12345"),
         name="Upper",
         role="user",
     )
@@ -596,10 +600,12 @@ async def test_admin_update_user_email_to_existing_case_insensitive(
 @pytest.mark.asyncio
 async def test_admin_update_user_email_when_user_deleted_race(admin_client, test_db):
     """Simulate update where target user gets deleted between read and write resulting in 404 or 409 depending on implementation."""
+    ph = PasswordHasher()
+
     # Create a user to be updated
     victim = User(
         email="victim@example.com",
-        hashed_password=hash_password("pass12345"),
+        hashed_password=ph.hash("pass12345"),
         name="Victim",
         role="user",
     )
@@ -647,10 +653,12 @@ async def test_admin_update_user_email_conflict_with_deleted_account(
     admin_client, test_db
 ):
     """If an email exists on a soft-deleted account, creating/updating should conflict or be rejected depending on policy; assert consistent error code and message."""
+    ph = PasswordHasher()
+
     # Create a user and simulate soft-delete by setting is_active=False
     soft = User(
         email="soft@example.com",
-        hashed_password=hash_password("pass12345"),
+        hashed_password=ph.hash("pass12345"),
         name="Soft",
         role="user",
         is_active=False,
@@ -661,7 +669,7 @@ async def test_admin_update_user_email_conflict_with_deleted_account(
     # Create another user to be updated
     other = User(
         email="other@example.com",
-        hashed_password=hash_password("pass12345"),
+        hashed_password=ph.hash("pass12345"),
         name="Other",
         role="user",
     )
