@@ -2,7 +2,8 @@ import asyncio
 from datetime import datetime
 
 import pytest
-from argon2 import PasswordHasher
+
+from src.core.password import hash_password
 
 from src.db.models import User
 
@@ -161,10 +162,9 @@ async def test_update_profile_email_to_same_email(authenticated_client, test_use
 async def test_update_profile_email_duplicate(authenticated_client, test_db):
     """Email already taken by another user should return 409"""
     # Create another user with specific email
-    ph = PasswordHasher()
     other_user = User(
         email="other@example.com",
-        hashed_password=ph.hash("otherpass123"),
+        hashed_password=hash_password("otherpass123"),
         name="Other User",
         role="user",
     )
@@ -188,10 +188,9 @@ async def test_update_profile_email_duplicate_different_case(
 ):
     """Email duplicate check comparison (different case may not be enforced)"""
     # Create another user
-    ph = PasswordHasher()
     other_user = User(
         email="CaseSensitive@example.com",
-        hashed_password=ph.hash("otherpass123"),
+        hashed_password=hash_password("otherpass123"),
         name="Other User",
         role="user",
     )

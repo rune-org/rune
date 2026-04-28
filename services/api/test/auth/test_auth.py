@@ -8,6 +8,7 @@ from httpx import AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.config import get_settings
+from src.core.password import hash_password
 from src.db.models import User
 
 # LOGIN TESTS
@@ -603,16 +604,12 @@ async def test_special_characters_in_password(
     client: AsyncClient, test_db: AsyncSession
 ):
     """Test login with special characters in password."""
-    from argon2 import PasswordHasher
-
     from src.db.models import User, UserRole
-
-    ph = PasswordHasher()
     special_password = "P@ssw0rd!#$%^&*()"
 
     special_user = User(
         email="special@example.com",
-        hashed_password=ph.hash(special_password),
+        hashed_password=hash_password(special_password),
         name="Special User",
         role=UserRole.USER,
     )
@@ -634,16 +631,12 @@ async def test_unicode_characters_in_credentials(
     client: AsyncClient, test_db: AsyncSession
 ):
     """Test login with Unicode characters."""
-    from argon2 import PasswordHasher
-
     from src.db.models import User, UserRole
-
-    ph = PasswordHasher()
     unicode_password = "パスワード123!@#"
 
     unicode_user = User(
         email="unicode@example.com",
-        hashed_password=ph.hash(unicode_password),
+        hashed_password=hash_password(unicode_password),
         name="Unicode User 日本語",
         role=UserRole.USER,
     )
