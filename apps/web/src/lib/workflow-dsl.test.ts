@@ -35,6 +35,23 @@ describe("workflow DSL helpers", () => {
     expect(() => canvasToWorkflowData([smtpNode], [])).toThrow(MissingNodeCredentialsError);
   });
 
+  it("does not serialize legacy SMTP placeholder values", () => {
+    const smtpNode = createNode("smtp-1", "smtp", {
+      label: "Send Email",
+      credential: { id: "cred-1", name: "SMTP", type: "smtp" },
+      from: "sender@example.com",
+      to: "recipient@example.com",
+      cc: "cc@example.com",
+      bcc: "bcc@example.com",
+      subject: "Email subject line",
+      body: "Email message body",
+    });
+
+    const { nodes } = canvasToWorkflowData([smtpNode], []);
+
+    expect(nodes[0].parameters).toEqual({});
+  });
+
   it("converts switch routes and sanitizes node names", () => {
     const switchNode = createNode("switch-1", "switch", {
       label: "123 Bad Label",
