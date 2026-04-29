@@ -218,6 +218,38 @@ func TestExtractResultPlainText(t *testing.T) {
 	}
 }
 
+func TestExtractResultScalarJSONStringUnparsed(t *testing.T) {
+	// Valid JSON as a scalar string must not become float64/bool/null in "data".
+	result := &mcp.CallToolResult{
+		Content: []mcp.Content{
+			&mcp.TextContent{Text: `"123"`},
+		},
+	}
+
+	out := ExtractResult(result)
+	data, ok := out["data"].(string)
+	if !ok || data != `"123"` {
+		t.Fatalf("expected string data %q, got %v (%T)", `"123"`, out["data"], out["data"])
+	}
+}
+
+func TestExtractResultJSONArrayParsed(t *testing.T) {
+	result := &mcp.CallToolResult{
+		Content: []mcp.Content{
+			&mcp.TextContent{Text: `[1,2,3]`},
+		},
+	}
+
+	out := ExtractResult(result)
+	arr, ok := out["data"].([]any)
+	if !ok {
+		t.Fatalf("expected []any data, got %T", out["data"])
+	}
+	if len(arr) != 3 {
+		t.Fatalf("expected 3 elements, got %d", len(arr))
+	}
+}
+
 func TestMCPNodeExecute(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

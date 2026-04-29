@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -158,12 +159,19 @@ func ExtractResult(result *mcp.CallToolResult) map[string]any {
 	case 0:
 		// nothing
 	case 1:
-		out["text"] = texts[0]
-		var parsed any
-		if json.Unmarshal([]byte(texts[0]), &parsed) == nil {
-			out["data"] = parsed
+		text := strings.TrimSpace(texts[0])
+		out["text"] = text
+		// Only parse as JSON when it looks like an object or array. Scalar JSON
+		// (e.g. "123", "true") stays a string so downstream nodes see stable types.
+		if len(text) > 0 && (text[0] == '{' || text[0] == '[') {
+			var parsed any
+			if json.Unmarshal([]byte(text), &parsed) == nil {
+				out["data"] = parsed
+			} else {
+				out["data"] = text
+			}
 		} else {
-			out["data"] = texts[0]
+			out["data"] = text
 		}
 	default:
 		out["text"] = texts
