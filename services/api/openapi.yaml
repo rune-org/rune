@@ -1167,6 +1167,20 @@ paths:
       description: Retrieve minimal information for all users. This endpoint backs
         the sharing UI by providing a directory of users.
       operationId: list_users_for_sharing_users_directory_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+          - type: 'null'
+          description: Search by name or email
+          title: Q
+        description: Search by name or email
       responses:
         '200':
           description: Successful Response
@@ -1174,8 +1188,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_UserBasicInfo__'
-      security:
-      - OAuth2PasswordBearer: []
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /users/:
     get:
       tags:

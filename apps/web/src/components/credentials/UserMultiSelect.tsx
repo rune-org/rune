@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import type { UserBasicInfo } from "@/client/types.gen";
@@ -11,6 +11,8 @@ interface UserMultiSelectProps {
   selectedUserIds: number[];
   onSelect: (userId: number) => void;
   onRemove: (userId: number) => void;
+  onSearch: (query: string) => void;
+  isSearching?: boolean;
   disabled?: boolean;
 }
 
@@ -19,20 +21,30 @@ export function UserMultiSelect({
   selectedUserIds,
   onSelect,
   onRemove,
+  onSearch,
+  isSearching = false,
   disabled,
 }: UserMultiSelectProps) {
   const [inputValue, setInputValue] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const wrapperRef = React.useRef<HTMLDivElement>(null);
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedUsers = users.filter((u) => selectedUserIds.includes(u.id));
-  const availableUsers = users.filter(
-    (u) =>
-      !selectedUserIds.includes(u.id) &&
-      (u.name?.toLowerCase().includes(inputValue.toLowerCase()) ||
-        u.email?.toLowerCase().includes(inputValue.toLowerCase())),
-  );
+  // exclude already-selected users from the dropdown
+  const availableUsers = users.filter((u) => !selectedUserIds.includes(u.id));
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+    setOpen(true);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      onSearch(value);
+    }, 200);
+  };
 
   const handleUnselect = (userId: number) => {
     onRemove(userId);
@@ -63,6 +75,13 @@ export function UserMultiSelect({
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Cleanup debounce on unmount
+  React.useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
 
@@ -98,48 +117,51 @@ export function UserMultiSelect({
         <input
           ref={inputRef}
           value={inputValue}
-          onChange={(e) => {
-            setInputValue(e.target.value);
-            setOpen(true);
-          }}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => setOpen(true)}
-          placeholder={selectedUsers.length === 0 ? "Add people, groups, etc..." : ""}
+          placeholder={selectedUsers.length === 0 ? "Search by name or email..." : ""}
           className="ml-1 flex-1 bg-transparent outline-none placeholder:text-muted-foreground min-w-[120px]"
           disabled={disabled}
         />
+        {isSearching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
       </div>
 
-      {open && availableUsers.length > 0 && (
-        <div className="absolute top-full z-50 mt-2 w-full overflow-hidden rounded-[calc(var(--radius)-0.125rem)] border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95">
-          <div className="max-h-[200px] overflow-y-auto p-1">
-            {availableUsers.map((user) => (
-              <div
-                key={user.id}
-                className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onClick={() => {
-                  onSelect(user.id);
-                  setInputValue("");
-                  inputRef.current?.focus();
-                }}
-              >
-                <div className="flex flex-col">
-                  <span>{user.name}</span>
-                  <span className="text-xs text-muted-foreground">{user.email}</span>
-                </div>
+      {open && (
+        <>
+          {availableUsers.length > 0 && (
+            <div className="absolute top-full z-50 mt-2 w-full overflow-hidden rounded-[calc(var(--radius)-0.125rem)] border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95">
+              <div className="max-h-[200px] overflow-y-auto p-1">
+                {availableUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={() => {
+                      onSelect(user.id);
+                      setInputValue("");
+                      onSearch("");
+                      inputRef.current?.focus();
+                    }}
+                  >
+                    <div className="flex flex-col">
+                      <span>{user.name}</span>
+                      <span className="text-xs text-muted-foreground">{user.email}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {open && availableUsers.length === 0 && inputValue && (
-        <div className="absolute top-full z-50 mt-2 w-full rounded-[calc(var(--radius)-0.125rem)] border bg-popover p-2 text-sm text-muted-foreground shadow-lg">
-          No users found.
-        </div>
+            </div>
+          )}
+          {!isSearching && availableUsers.length === 0 && inputValue && (
+            <div className="absolute top-full z-50 mt-2 w-full rounded-[calc(var(--radius)-0.125rem)] border bg-popover p-2 text-sm text-muted-foreground shadow-lg">
+              No users found.
+            </div>
+          )}
+        </>
       )}
     </div>
   );

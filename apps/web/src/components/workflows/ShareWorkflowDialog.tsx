@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { X, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +29,7 @@ import {
   type WorkflowPermission,
 } from "@/lib/api/permissions";
 import type { WorkflowRole } from "@/lib/permissions";
-import { listUsersForSharingUsersDirectoryGet } from "@/client/sdk.gen";
+import { listUsersForSharing } from "@/lib/api/users";
 import type { UserBasicInfo } from "@/client/types.gen";
 
 interface ShareWorkflowDialogProps {
@@ -50,20 +50,51 @@ export function ShareWorkflowDialog({
   const [permissions, setPermissions] = useState<WorkflowPermission[]>([]);
   const [availableUsers, setAvailableUsers] = useState<UserBasicInfo[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userToRevoke, setUserToRevoke] = useState<{ id: number; name: string } | null>(null);
+  const searchWrapperRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const permissionsRef = useRef<WorkflowPermission[]>([]);
 
   // Check if selected user is an admin
   const selectedUser = availableUsers.find((u) => u.id === parseInt(selectedUserId || "0"));
   const isSelectedUserAdmin = selectedUser?.role === "admin";
 
-  // Load permissions and available users when dialog opens
+  // Load permissions when dialog opens; reset search state
   useEffect(() => {
     if (open) {
       void loadPermissions();
-      void loadAvailableUsers();
+      setAvailableUsers([]);
+      setSearchQuery("");
+      setSelectedUserId("");
+      setSelectedRole("viewer");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, workflowId]);
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  // Keep latest permissions for debounced search filtering.
+  useEffect(() => {
+    permissionsRef.current = permissions;
+  }, [permissions]);
 
   const loadPermissions = async () => {
     try {
@@ -77,13 +108,33 @@ export function ShareWorkflowDialog({
     }
   };
 
-  const loadAvailableUsers = async () => {
+  const handleSearch = useCallback(async (query: string) => {
+    setIsSearching(true);
     try {
-      const response = await listUsersForSharingUsersDirectoryGet();
-      setAvailableUsers(response.data?.data ?? []);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load users");
+      const res = await listUsersForSharing(query || undefined);
+      // Exclude users who already have permissions
+      const existing = new Set(permissionsRef.current.map((p) => p.user_id));
+      setAvailableUsers((res.data?.data ?? []).filter((u) => !existing.has(u.id)));
+    } catch {
+    } finally {
+      setIsSearching(false);
     }
+  }, []);
+
+  const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setDropdownOpen(true);
+    setSelectedUserId("");
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => void handleSearch(value), 300);
+  };
+
+  const handleSelectUser = (user: UserBasicInfo) => {
+    setSelectedUserId(String(user.id));
+    setSearchQuery(`${user.name} (${user.email})`);
+    setDropdownOpen(false);
   };
 
   const handleAddUser = async () => {
@@ -99,6 +150,8 @@ export function ShareWorkflowDialog({
       await shareWorkflow(workflowId, parseInt(selectedUserId), roleToUse);
       toast.success(`Workflow shared with ${roleToUse} access`);
       setSelectedUserId("");
+      setSearchQuery("");
+      setAvailableUsers([]);
       setSelectedRole("viewer");
       await loadPermissions();
     } catch (error) {
@@ -152,25 +205,56 @@ export function ShareWorkflowDialog({
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Add People</h3>
             <div className="flex gap-2">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="user-select" className="sr-only">
-                  Select User
+              <div className="flex-1 space-y-2" ref={searchWrapperRef}>
+                <Label htmlFor="user-search" className="sr-only">
+                  Search User
                 </Label>
-                <Select value={selectedUserId} onValueChange={setSelectedUserId} disabled={loading}>
-                  <SelectTrigger id="user-select">
-                    <SelectValue placeholder="Select a user..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableUsers
-                      .filter((user) => !permissions.some((p) => p.user_id === user.id))
-                      .map((user) => (
-                        <SelectItem key={user.id} value={String(user.id)}>
-                          {user.name} ({user.email})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <input
+                    id="user-search"
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchInput}
+                    onFocus={() => {
+                      if (searchQuery) setDropdownOpen(true);
+                    }}
+                    placeholder="Search by name or email..."
+                    disabled={loading}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-8"
+                    autoComplete="off"
+                  />
+                  {isSearching && (
+                    <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                  {dropdownOpen && availableUsers.length > 0 && (
+                    <div className="absolute top-full z-50 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95">
+                      <div className="max-h-[180px] overflow-y-auto p-1">
+                        {availableUsers.map((user) => (
+                          <div
+                            key={user.id}
+                            className="flex cursor-pointer select-none flex-col rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleSelectUser(user)}
+                          >
+                            <span>{user.name}</span>
+                            <span className="text-xs text-muted-foreground">{user.email}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {dropdownOpen &&
+                    !isSearching &&
+                    availableUsers.length === 0 &&
+                    searchQuery &&
+                    !selectedUserId && (
+                      <div className="absolute top-full z-50 mt-1 w-full rounded-md border bg-popover p-2 text-sm text-muted-foreground shadow-lg">
+                        No users found.
+                      </div>
+                    )}
+                </div>
               </div>
+
               {!isSelectedUserAdmin && (
                 <Select
                   value={selectedRole}
@@ -217,8 +301,7 @@ export function ShareWorkflowDialog({
               <div className="space-y-2">
                 {permissions.map((perm) => {
                   // Check if this shared user is an admin
-                  const sharedUser = availableUsers.find((u) => u.id === perm.user_id);
-                  const isSharedUserAdmin = sharedUser?.role === "admin";
+                  const isSharedUserAdmin = perm.user_role === "admin";
 
                   return (
                     <div
