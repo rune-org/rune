@@ -27,7 +27,9 @@ func startTestServer(t *testing.T, ctx context.Context) mcp.Transport {
 		func(_ context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			var args map[string]any
 			if req.Params.Arguments != nil {
-				json.Unmarshal(req.Params.Arguments, &args)
+				if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
+					return nil, err
+				}
 			}
 			msg, _ := args["message"].(string)
 			return &mcp.CallToolResult{
@@ -44,7 +46,9 @@ func startTestServer(t *testing.T, ctx context.Context) mcp.Transport {
 		},
 		func(_ context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			var args map[string]any
-			json.Unmarshal(req.Params.Arguments, &args)
+			if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
+				return nil, err
+			}
 			a, _ := args["a"].(float64)
 			b, _ := args["b"].(float64)
 			result, _ := json.Marshal(map[string]float64{"sum": a + b})
