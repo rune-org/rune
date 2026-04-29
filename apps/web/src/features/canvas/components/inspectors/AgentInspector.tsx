@@ -160,9 +160,7 @@ export function AgentInspector({ node, updateData, isExpanded }: AgentInspectorP
           <CredentialSelector
             credentialType={MODEL_CREDENTIAL_TYPES_BY_PROVIDER[model.provider]}
             value={data.credential}
-            onChange={(credential: CredentialRef | null) =>
-              update((d) => ({ ...d, credential }))
-            }
+            onChange={(credential: CredentialRef | null) => update((d) => ({ ...d, credential }))}
             label="API Key"
             placeholder="Select API key credential"
             showHelp={isExpanded}
@@ -234,7 +232,10 @@ function MessagesSection({
         {messages.map((msg, idx) => (
           <div key={idx} className="space-y-1 rounded border border-border/40 p-2">
             <div className="flex items-center gap-2">
-              <Select value={msg.role} onValueChange={(v) => update(idx, { role: v as AgentMessage["role"] })}>
+              <Select
+                value={msg.role}
+                onValueChange={(v) => update(idx, { role: v as AgentMessage["role"] })}
+              >
                 <SelectTrigger className="h-7 w-24 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -334,11 +335,7 @@ function ToolsSection({
               </button>
             </summary>
             <div className="border-t border-border/40 p-2">
-              <HttpToolConfig
-                tool={tool}
-                onChange={(next) => update(idx, next)}
-                nodeId={nodeId}
-              />
+              <HttpToolConfig tool={tool} onChange={(next) => update(idx, next)} nodeId={nodeId} />
             </div>
           </details>
         ))}
@@ -374,7 +371,12 @@ function McpSection({
   const add = () =>
     onChange([
       ...servers,
-      { name: `server_${servers.length + 1}`, transport: "streamable_http", url: "", credential: null },
+      {
+        name: `server_${servers.length + 1}`,
+        transport: "streamable_http",
+        url: "",
+        credential: null,
+      },
     ]);
 
   return (

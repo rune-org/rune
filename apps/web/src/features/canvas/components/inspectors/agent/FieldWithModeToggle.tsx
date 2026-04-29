@@ -91,10 +91,19 @@ type AgentSlotProps = {
   type: AgentFieldType;
   required: boolean;
   allowedTypes: readonly AgentFieldType[];
-  onChange: (patch: Partial<{ description: string; type: AgentFieldType; required: boolean }>) => void;
+  onChange: (
+    patch: Partial<{ description: string; type: AgentFieldType; required: boolean }>,
+  ) => void;
 };
 
-function AgentSlot({ nodeId, description, type, required, allowedTypes, onChange }: AgentSlotProps) {
+function AgentSlot({
+  nodeId,
+  description,
+  type,
+  required,
+  allowedTypes,
+  onChange,
+}: AgentSlotProps) {
   return (
     <div className="space-y-1 rounded border border-dashed border-border/60 bg-muted/10 p-2">
       <label className="block text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -108,7 +117,9 @@ function AgentSlot({ nodeId, description, type, required, allowedTypes, onChange
       />
       <div className="grid grid-cols-2 gap-2 pt-1">
         <div>
-          <label className="block text-[10px] uppercase tracking-wide text-muted-foreground">Type</label>
+          <label className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+            Type
+          </label>
           <Select value={type} onValueChange={(v) => onChange({ type: v as AgentFieldType })}>
             <SelectTrigger className="h-7 text-xs">
               <SelectValue />

@@ -112,7 +112,12 @@ export const NODE_REGISTRY: NodeRegistry = {
     dimensions: { width: 220, height: 80 },
     defaults: {
       label: "Agent",
-      model: { provider: "gemini", name: "gemini-3.1-flash-lite-preview", backend: "ai_studio", temperature: 0.2 },
+      model: {
+        provider: "gemini",
+        name: "gemini-3.1-flash-lite-preview",
+        backend: "ai_studio",
+        temperature: 0.2,
+      },
       system_prompt: "",
       messages: [],
       tools: [],

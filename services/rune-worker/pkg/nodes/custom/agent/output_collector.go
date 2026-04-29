@@ -8,14 +8,14 @@ import (
 // outputCollector folds runner events into the agent node's output map:
 // { messages, final_response, tool_calls, model, usage }.
 type outputCollector struct {
-	model       string
-	messages    []map[string]any
-	toolCalls   []map[string]any
-	toolByID    map[string]int // index into toolCalls
-	finalText   string
-	promptTok   int32
-	respTok     int32
-	totalTok    int32
+	model     string
+	messages  []map[string]any
+	toolCalls []map[string]any
+	toolByID  map[string]int // index into toolCalls
+	finalText string
+	promptTok int32
+	respTok   int32
+	totalTok  int32
 }
 
 func newOutputCollector(modelName string) *outputCollector {

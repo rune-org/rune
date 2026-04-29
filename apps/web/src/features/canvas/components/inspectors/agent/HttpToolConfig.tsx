@@ -199,13 +199,19 @@ type KVListProps = {
   allowedAgentTypes?: ReadonlyArray<"string" | "number" | "boolean" | "object">;
 };
 
-function KVList({ title, items, onChange, nodeId, keyPlaceholder, allowedAgentTypes }: KVListProps) {
+function KVList({
+  title,
+  items,
+  onChange,
+  nodeId,
+  keyPlaceholder,
+  allowedAgentTypes,
+}: KVListProps) {
   const update = (idx: number, patch: Partial<AgentKVField>) => {
     onChange(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   };
   const remove = (idx: number) => onChange(items.filter((_, i) => i !== idx));
-  const add = () =>
-    onChange([...items, { key: "", value: { mode: "fixed", value: "" } }]);
+  const add = () => onChange([...items, { key: "", value: { mode: "fixed", value: "" } }]);
 
   return (
     <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">

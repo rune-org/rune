@@ -569,7 +569,9 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
       ...base,
       model: (params.model as AgentData["model"]) ?? undefined,
       system_prompt: typeof params.system_prompt === "string" ? params.system_prompt : undefined,
-      messages: Array.isArray(params.messages) ? (params.messages as AgentData["messages"]) : undefined,
+      messages: Array.isArray(params.messages)
+        ? (params.messages as AgentData["messages"])
+        : undefined,
       tools: Array.isArray(params.tools) ? (params.tools as AgentData["tools"]) : undefined,
       mcp_servers: Array.isArray(params.mcp_servers)
         ? (params.mcp_servers as AgentData["mcp_servers"])

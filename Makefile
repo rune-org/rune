@@ -300,7 +300,7 @@ worker-lint:
 
 worker-format:
 	@echo "Formatting worker code..."
-	cd services/rune-worker && go fmt ./...
+	cd services/rune-worker && gofmt -w .
 
 format: web-format api-format worker-format
 	@echo "✓ Code formatting complete"

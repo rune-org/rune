@@ -13,7 +13,7 @@ import (
 //   - "header":          {"field": "X-Foo", "value": "bar"}        -> X-Foo: bar
 //   - "token":           {"token": "..."}                          -> Authorization: Bearer <token>
 //   - "api_key":         {"key": "X-API-Key", "value": "..."} OR   -> X-API-Key: <value>
-//                        {"value": "..."}                          -> Authorization: Bearer <value>
+//     {"value": "..."}                          -> Authorization: Bearer <value>
 //
 // Existing headers are not overwritten — explicit user-provided values win.
 func ApplyCredential(headers map[string]string, cred map[string]any) {
