@@ -7,6 +7,10 @@ The MCP bridge connects `rune-worker` to external MCP servers. Each integration
 registered as workflow nodes at startup — **no runtime auto-discovery**.
 MCP connections are established **lazily** on first workflow execution.
 
+### Optional: live tool listing (not used for the DSL)
+
+[`Provider.DiscoverTools`](./provider.go) and [`Provider.Tools`](./provider.go) let you query a **connected** MCP server and cache its tool list (for example in tests or ad-hoc inspection). That is **separate** from workflow registration: the DSL and executor only know about tools that appear as explicit [`ToolDef`](./integration.go) entries and are registered via [`RegisterAllTools`](./integration.go) at startup. We do **not** auto-register discovered server tools as workflow node types.
+
 ## Architecture
 
 ```mermaid

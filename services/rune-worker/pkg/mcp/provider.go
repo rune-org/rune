@@ -40,6 +40,7 @@ func (p *Provider) Connect(ctx context.Context, transport mcp.Transport) error {
 
 	p.mu.Lock()
 	p.session = session
+	p.closed = false
 	p.mu.Unlock()
 
 	info := session.InitializeResult()
@@ -61,13 +62,13 @@ func (p *Provider) ConnectHTTP(ctx context.Context, url string) error {
 
 // DiscoverTools queries the MCP server for available tools and caches them.
 func (p *Provider) DiscoverTools(ctx context.Context) ([]*mcp.Tool, error) {
+	if !p.IsConnected() {
+		return nil, fmt.Errorf("provider %s: not connected", p.name)
+	}
+
 	p.mu.RLock()
 	session := p.session
 	p.mu.RUnlock()
-
-	if session == nil {
-		return nil, fmt.Errorf("provider %s: not connected", p.name)
-	}
 
 	var tools []*mcp.Tool
 	for tool, err := range session.Tools(ctx, nil) {
@@ -94,13 +95,13 @@ func (p *Provider) Tools() []*mcp.Tool {
 
 // CallTool invokes a tool on the remote MCP server.
 func (p *Provider) CallTool(ctx context.Context, toolName string, args map[string]any) (*mcp.CallToolResult, error) {
+	if !p.IsConnected() {
+		return nil, fmt.Errorf("provider %s: not connected", p.name)
+	}
+
 	p.mu.RLock()
 	session := p.session
 	p.mu.RUnlock()
-
-	if session == nil {
-		return nil, fmt.Errorf("provider %s: not connected", p.name)
-	}
 
 	params := &mcp.CallToolParams{
 		Name:      toolName,
@@ -114,14 +115,16 @@ func (p *Provider) Disconnect() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if p.closed || p.session == nil {
+	if p.session == nil {
 		return
 	}
-	p.closed = true
 
 	if err := p.session.Close(); err != nil {
 		slog.Warn("error closing mcp session", "provider", p.name, "error", err)
 	}
+	p.session = nil
+	p.tools = nil
+	p.closed = true
 }
 
 // IsConnected reports whether the provider has an active session.

@@ -37,11 +37,7 @@ func NewManager() *Manager {
 // by MCPNode during workflow execution.
 func (m *Manager) GetOrConnect(ctx context.Context, name string) (*Provider, error) {
 	// Fast path: already connected
-	m.mu.RLock()
-	p, exists := m.providers[name]
-	m.mu.RUnlock()
-
-	if exists && p.IsConnected() {
+	if p := m.GetProvider(name); p != nil && p.IsConnected() {
 		return p, nil
 	}
 
@@ -49,8 +45,8 @@ func (m *Manager) GetOrConnect(ctx context.Context, name string) (*Provider, err
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Double-check after acquiring write lock
-	if p, exists := m.providers[name]; exists && p.IsConnected() {
+	// Double-check after acquiring write lock (do not call GetProvider here — RLock while holding Lock deadlocks)
+	if p := m.getProviderLocked(name); p != nil && p.IsConnected() {
 		return p, nil
 	}
 
@@ -59,7 +55,7 @@ func (m *Manager) GetOrConnect(ctx context.Context, name string) (*Provider, err
 		return nil, fmt.Errorf("mcp integration %q not configured", name)
 	}
 
-	p = NewProvider(name)
+	p := NewProvider(name)
 	if err := p.ConnectHTTP(ctx, cfg.URL); err != nil {
 		return nil, fmt.Errorf("mcp connect %s: %w", name, err)
 	}
@@ -69,18 +65,30 @@ func (m *Manager) GetOrConnect(ctx context.Context, name string) (*Provider, err
 	return p, nil
 }
 
-// GetProvider returns a provider by name (nil if not yet connected).
+// GetProvider returns the cached provider for name, or nil if none has been stored yet.
+// The provider may be disconnected; use (*Provider).IsConnected to check.
 func (m *Manager) GetProvider(name string) *Provider {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.providers[name]
 }
 
-// ProviderCount returns the number of currently connected providers.
+// getProviderLocked returns m.providers[name]; m.mu must be held.
+func (m *Manager) getProviderLocked(name string) *Provider {
+	return m.providers[name]
+}
+
+// ProviderCount returns how many cached providers currently have an active session.
 func (m *Manager) ProviderCount() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	return len(m.providers)
+	n := 0
+	for _, p := range m.providers {
+		if p.IsConnected() {
+			n++
+		}
+	}
+	return n
 }
 
 // DisconnectAll closes all active MCP sessions.

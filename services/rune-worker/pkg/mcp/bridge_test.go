@@ -139,6 +139,52 @@ func TestProviderCallTool(t *testing.T) {
 	}
 }
 
+func TestProviderDisconnectReconnect(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	transport := startTestServer(t, ctx)
+
+	p := NewProvider("test")
+	if err := p.Connect(ctx, transport); err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	if !p.IsConnected() {
+		t.Fatal("expected connected")
+	}
+
+	p.Disconnect()
+	if p.IsConnected() {
+		t.Fatal("expected disconnected")
+	}
+	if _, err := p.CallTool(ctx, "echo", map[string]any{"message": "x"}); err == nil {
+		t.Fatal("expected CallTool error after disconnect")
+	}
+
+	// In-memory transport is dead after disconnect; use a fresh server/transport
+	// to assert the same *Provider can connect again (closed reset, new session).
+	transport2 := startTestServer(t, ctx)
+	if err := p.Connect(ctx, transport2); err != nil {
+		t.Fatalf("reconnect: %v", err)
+	}
+	defer p.Disconnect()
+
+	if !p.IsConnected() {
+		t.Fatal("expected connected after reconnect")
+	}
+	result, err := p.CallTool(ctx, "echo", map[string]any{"message": "again"})
+	if err != nil {
+		t.Fatalf("call after reconnect: %v", err)
+	}
+	if len(result.Content) == 0 {
+		t.Fatal("empty result")
+	}
+	tc, ok := result.Content[0].(*mcp.TextContent)
+	if !ok || tc.Text != "again" {
+		t.Fatalf("expected again, got %#v", result.Content[0])
+	}
+}
+
 func TestExtractResultJSON(t *testing.T) {
 	result := &mcp.CallToolResult{
 		Content: []mcp.Content{

@@ -9,7 +9,6 @@ func init() {
 		Tools: []mcp.ToolDef{
 			{
 				MCPName:     "send_email",
-				NodeName:    "send_email",
 				Description: "Send an email via Microsoft Outlook",
 			},
 			{
