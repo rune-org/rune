@@ -57,7 +57,7 @@ export default function SignInPage() {
               New to Rune?{" "}
               <Link
                 href="/sign-up"
-                className="text-white hover:underline underline-offset-4 transition-all"
+                className="text-foreground font-medium hover:underline underline-offset-4 transition-all"
               >
                 Create an account
               </Link>

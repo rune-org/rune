@@ -64,24 +64,24 @@ export const getCredentialTypeLabel = (type: CredentialType): string => {
  */
 export const CREDENTIAL_TYPE_BADGE_STYLES: Record<CredentialType, { className: string }> = {
   api_key: {
-    className: "bg-blue-900/40 text-blue-200",
+    className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200",
   },
   oauth2: {
-    className: "bg-purple-900/40 text-purple-200",
+    className: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200",
   },
   basic_auth: {
-    className: "bg-green-900/40 text-green-200",
+    className: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200",
   },
   token: {
-    className: "bg-amber-900/40 text-amber-200",
+    className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200",
   },
   smtp: {
-    className: "bg-cyan-900/40 text-cyan-200",
+    className: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200",
   },
   header: {
-    className: "bg-pink-900/40 text-pink-200",
+    className: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-200",
   },
   custom: {
-    className: "bg-slate-800 text-slate-200",
+    className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
   },
 };

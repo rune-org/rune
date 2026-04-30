@@ -50,9 +50,16 @@ def test_generated_files_contain_expected_symbols():
     assert "Edge" in ts_content
     assert "HttpNode" in ts_content
     assert "sanitizeWorkflow" in ts_content
+    assert "rules: FilterRule[];" in ts_content
+    assert "rules: SortRule[];" in ts_content
 
     go_content = types_go.read_text()
     assert "Workflow" in go_content
     assert "Node" in go_content
     assert "Edge" in go_content
     assert "func (n *Workflow) Sanitize()" in go_content
+    assert "Rules []FilterRule" in go_content
+    assert "Rules []SortRule" in go_content
+
+    assert "rules: list[FilterRule]" in py_content
+    assert "rules: list[SortRule]" in py_content

@@ -148,7 +148,7 @@ export function WorkflowRowActions({
               <DropdownMenuItem
                 onSelect={() => onDelete(workflow)}
                 disabled={isPending}
-                className="text-red-400 focus:text-red-300 data-highlighted:bg-red-500/10 data-highlighted:text-red-200"
+                className="text-red-600 focus:text-red-700 data-highlighted:bg-red-100 data-highlighted:text-red-700 dark:text-red-400 dark:focus:text-red-300 dark:data-highlighted:bg-red-500/10 dark:data-highlighted:text-red-200"
               >
                 Delete
               </DropdownMenuItem>

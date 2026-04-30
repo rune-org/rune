@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
+import { AppProviders } from "@/components/providers/ClientProviders";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 
 interface AppLayoutProps {
@@ -9,8 +10,10 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   return (
-    <RequireAuth>
-      <AppShell>{children}</AppShell>
-    </RequireAuth>
+    <AppProviders>
+      <RequireAuth>
+        <AppShell>{children}</AppShell>
+      </RequireAuth>
+    </AppProviders>
   );
 }

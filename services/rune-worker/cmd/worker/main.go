@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	_ "time/tzdata" // embed IANA tzdata
 
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"
@@ -62,9 +63,11 @@ func main() {
 	}
 	slog.Info("connected to redis")
 
-	// Initialize node registry with built-in nodes
-	// All nodes that have init() functions will be auto-registered
-	nodeRegistry := registry.InitializeRegistry()
+	// Initialize node registry with built-in nodes and MCP tools.
+	// MCP tools are registered statically from ToolDef declarations.
+	// MCP connections happen lazily at workflow execution time.
+	nodeRegistry, mcpManager := registry.InitializeRegistry()
+	defer mcpManager.DisconnectAll()
 	slog.Info("node registry initialized",
 		"registered_nodes", len(nodeRegistry.GetAllTypes()))
 

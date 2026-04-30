@@ -1,10 +1,11 @@
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import jwt
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.config import get_settings
+from src.core.datetime import utc_now
 from src.core.exceptions import InvalidTokenError, TokenExpiredError
 from src.db.models import User
 
@@ -21,12 +22,12 @@ async def create_access_token(user: User, db: "AsyncSession" = None) -> str:
 
     # Update last_login_at if db session is available
     if db is not None:
-        user.last_login_at = datetime.now()
+        user.last_login_at = utc_now()
         db.add(user)
         await db.commit()
         await db.refresh(user)
 
-    now = datetime.now(timezone.utc)
+    now = utc_now()
     expires_delta = timedelta(minutes=settings.access_token_expire_minutes)
     expire = now + expires_delta
 

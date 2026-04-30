@@ -4,13 +4,13 @@ import json
 import re
 import uuid
 import zipfile
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from src.core.datetime import utc_now
 from src.core.exceptions import BadRequest, Forbidden, NotFound
 from src.credentials.encryption import get_encryptor
 from src.db.models import (
@@ -32,6 +32,7 @@ from src.workflow.constants import (
     SCHEDULED_TRIGGER_PARAM_UNIT,
     SCHEDULED_TRIGGER_UNIT_MULTIPLIERS,
 )
+from src.workflow.queue import validate_workflow_can_run
 
 
 class WorkflowVersionConflictError(Exception):
@@ -539,6 +540,8 @@ class WorkflowService:
             version.workflow_data
         )
 
+        validate_workflow_can_run(resolved_workflow_data)
+
         # Generate a unique execution ID
         execution_id = str(uuid.uuid4())
 
@@ -695,13 +698,13 @@ class WorkflowService:
                 ScheduledWorkflow(
                     workflow_id=workflow_id,
                     interval_seconds=interval_seconds,
-                    next_run_at=datetime.now(),
+                    next_run_at=utc_now(),
                 )
             )
         else:
             if existing.interval_seconds != interval_seconds:
                 existing.interval_seconds = interval_seconds
-                existing.next_run_at = datetime.now()
+                existing.next_run_at = utc_now()
 
     async def _lock_workflow(self, workflow_id: int) -> Workflow:
         statement = select(Workflow).where(Workflow.id == workflow_id).with_for_update()

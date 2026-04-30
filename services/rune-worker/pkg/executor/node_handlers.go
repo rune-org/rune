@@ -21,7 +21,7 @@ func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecuti
 		Status:           messages.StatusWaiting,
 		Parameters:       params,
 		Output:           output,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
@@ -63,7 +63,7 @@ func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.
 		},
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 	}
 
@@ -97,7 +97,7 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 		},
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 	}
 
@@ -154,7 +154,7 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 		Status:           messages.StatusSuccess,
 		Parameters:       params,
 		Output:           output,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
@@ -196,8 +196,16 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 	nextNodes := e.determineNextNodes(&msg.WorkflowDefinition, node, output)
 
 	// Handle Split Node Fan-Out
-	if node.Type == "split" {
+	if node.Type == "split" && len(nextNodes) > 0 {
 		if items, ok := output["_split_items"].([]any); ok {
+			if len(items) == 0 {
+				slog.Info("split fan-out has no items; completing workflow",
+					"workflow_id", msg.WorkflowID,
+					"execution_id", msg.ExecutionID,
+					"node_id", node.ID,
+				)
+				return e.publishCompletion(ctx, msg, messages.CompletionStatusCompleted, startTime, updatedContext)
+			}
 			return e.handleSplitFanOut(ctx, msg, node, nextNodes, items, updatedContext)
 		}
 	}
@@ -236,6 +244,14 @@ func shouldPropagateWorkingJSON(nodeType string) bool {
 // handleSplitFanOut iterates over items and publishes messages for each.
 func (e *Executor) handleSplitFanOut(ctx context.Context, msg *messages.NodeExecutionMessage, node *core.Node, nextNodes []string, items []any, baseContext map[string]interface{}) error {
 	slog.Info("handling split fan-out", "node_id", node.ID, "item_count", len(items))
+
+	const maxInt = int(^uint(0) >> 1)
+	if len(baseContext) == maxInt {
+		return fmt.Errorf("split fan-out base context too large")
+	}
+	if len(msg.LineageStack) == maxInt {
+		return fmt.Errorf("split fan-out lineage stack too large")
+	}
 
 	for i, item := range items {
 		// Create new context for this item

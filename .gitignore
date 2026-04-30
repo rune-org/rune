@@ -51,9 +51,8 @@ __pycache__
 myenv
 venv
 
-# golang
-services/rune-worker/main
-services/rune-worker/go.sum
+# go builds
+/services/rune-worker/worker
 
 # nginx
 nginx/ssl/

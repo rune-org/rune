@@ -38,7 +38,7 @@ export function Hero() {
           <div className="absolute inset-0 bg-primary/20 blur-[80px] rounded-full scale-150 pointer-events-none" />
 
           <div className="relative w-32 h-32 md:w-40 md:h-40 drop-shadow-[0_0_40px_rgba(255,255,255,0.3)]">
-            <Image src={runeLogo} alt="Rune Logo" fill priority />
+            <Image src={runeLogo} alt="Rune Logo" fill priority className="invert dark:invert-0" />
           </div>
         </motion.div>
 
@@ -75,7 +75,7 @@ export function Hero() {
           <Button
             asChild
             size="lg"
-            className="h-14 px-8 text-base rounded-full bg-white !text-black hover:bg-gray-200 border-0 shadow-[0_0_30px_-10px_rgba(255,255,255,0.3)] transition-all"
+            className="h-14 px-8 text-base rounded-full bg-foreground !text-background hover:bg-foreground/85 border-0 shadow-lg transition-all"
           >
             <Link href="/docs">
               <BookOpenText className="mr-2 h-4 w-4" /> Read the Docs

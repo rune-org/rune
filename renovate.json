@@ -6,6 +6,8 @@
   ],
   "enabled": true,
 
+  "minimumReleaseAge": "7 days",
+
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
     "enabled": true,
@@ -32,7 +34,7 @@
       "enabled": false
     },
     {
-      "matchManagers": ["pip_requirements", "pip-compile", "pipenv", "poetry", "pep621", "pip_setup", "setup-cfg"],
+      "matchManagers": ["pipenv", "poetry", "pip_setup", "setup-cfg"],
       "enabled": false
     },
     {
@@ -42,6 +44,12 @@
     {
       "matchManagers": ["cargo"],
       "enabled": false
+    },
+    {
+      "matchDepNames": ["pnpm/action-setup"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false,
+      "description": "Pin pnpm/action-setup to v5. v6's npm-bootstrap + self-update install path drifts from the requested pnpm version and breaks web CI with ERR_PNPM_LOCKFILE_CONFIG_MISMATCH."
     },
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],

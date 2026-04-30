@@ -18,7 +18,6 @@ export type UseGraphClipboardOptions = {
   setNodes: React.Dispatch<React.SetStateAction<CanvasNode[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
   setSelectedNodeId: (id: string | null) => void;
-  containerRef: React.RefObject<HTMLDivElement | null>;
 };
 
 function notifyPasteShortcut() {
@@ -35,7 +34,6 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
     setNodes,
     setEdges,
     setSelectedNodeId,
-    containerRef,
   } = opts;
 
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
@@ -311,10 +309,9 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
       setEdges(parsed.edges as Edge[]);
       toast.success("Imported workflow from clipboard");
     };
-    const el = containerRef.current ?? window;
-    el.addEventListener("paste", handler as EventListener);
-    return () => el.removeEventListener("paste", handler as EventListener);
-  }, [readOnly, pushHistory, setEdges, setNodes, setSelectedNodeId, containerRef]);
+    window.addEventListener("paste", handler);
+    return () => window.removeEventListener("paste", handler);
+  }, [readOnly, pushHistory, setEdges, setNodes, setSelectedNodeId]);
 
   return {
     copySelection,
