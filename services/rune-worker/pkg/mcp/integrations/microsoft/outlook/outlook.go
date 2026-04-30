@@ -1,12 +1,11 @@
-package microsoft
+package outlook
 
 import "rune-worker/pkg/mcp"
 
 func init() {
 	mcp.RegisterIntegration(mcp.IntegrationConfig{
-		Provider: "microsoft",
-		Service:  "outlook",
-		URL:      "http://outlook-mcp:3300/mcp",
+		Name: "outlook",
+		URL:  "http://outlook-mcp:3300/mcp",
 		Tools: []mcp.ToolDef{
 			{
 				MCPName:     "send_email",

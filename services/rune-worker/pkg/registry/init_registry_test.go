@@ -66,11 +66,11 @@ func TestInitializeRegistryIncludesMCPTools(t *testing.T) {
 
 	// These should be registered from the explicit ToolDef declarations
 	expectedMCP := []string{
-		"mcp.google.gmail.send_email",
-		"mcp.google.gmail.read_email",
-		"mcp.google.sheets.read_range",
-		"mcp.google.sheets.append_row",
-		"mcp.microsoft.outlook.send_email",
+		"mcp.gmail.send_email",
+		"mcp.gmail.read_email",
+		"mcp.google_sheets.read_range",
+		"mcp.google_sheets.append_row",
+		"mcp.outlook.send_email",
 	}
 
 	for _, expected := range expectedMCP {
@@ -78,5 +78,4 @@ func TestInitializeRegistryIncludesMCPTools(t *testing.T) {
 			t.Errorf("expected MCP tool %q to be registered, got types: %v", expected, types)
 		}
 	}
-
 }

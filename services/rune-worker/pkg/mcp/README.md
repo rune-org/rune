@@ -21,8 +21,9 @@ graph TB
         MGR[Manager]
 
         subgraph Integrations["pkg/mcp/integrations"]
-            G["google<br/>gmail + sheets"]
-            MS["microsoft<br/>outlook"]
+            GS["google/sheets<br/>(4 tools)"]
+            GM["google/gmail<br/>(4 tools)"]
+            OL["microsoft/outlook<br/>(3 tools)"]
         end
 
         subgraph Bridge["pkg/mcp"]
@@ -38,8 +39,9 @@ graph TB
         S3["Outlook MCP<br/>:3300"]
     end
 
-    G -->|"init: RegisterIntegration<br/>(with ToolDefs)"| INT
-    MS -->|"init: RegisterIntegration<br/>(with ToolDefs)"| INT
+    GS -->|"init: RegisterIntegration<br/>(with ToolDefs)"| INT
+    GM -->|"init: RegisterIntegration<br/>(with ToolDefs)"| INT
+    OL -->|"init: RegisterIntegration<br/>(with ToolDefs)"| INT
 
     INT -->|"RegisterAllTools<br/>(static, no MCP needed)"| REG
     MGR -->|"lazy GetOrConnect"| PRV
@@ -68,9 +70,9 @@ sequenceDiagram
     init->>fn: RegisterAllTools(registry, manager)
     fn->>int: RegisteredIntegrations()
     note over fn: Iterates ToolDefs statically
-    fn->>reg: Register("mcp.google.gmail.send_email", factory)
-    fn->>reg: Register("mcp.google.gmail.read_email", factory)
-    fn->>reg: Register("mcp.google.sheets.read_range", factory)
+    fn->>reg: Register("mcp.gmail.send_email", factory)
+    fn->>reg: Register("mcp.gmail.read_email", factory)
+    fn->>reg: Register("mcp.google_sheets.read_range", factory)
     note over fn: ... all explicitly declared tools
     init-->>main: (registry, mcpManager)
     note over main: No MCP connections opened yet!
@@ -87,11 +89,11 @@ sequenceDiagram
     participant prv as Provider
     participant srv as MCP Server
 
-    exe->>reg: Create("mcp.google.gmail.send_email", execCtx)
+    exe->>reg: Create("mcp.gmail.send_email", execCtx)
     reg-->>exe: MCPNode
     exe->>node: Execute(ctx, execCtx)
-    node->>mgr: GetOrConnect(ctx, "google.gmail")
-    alt First call to this integration
+    node->>mgr: GetOrConnect(ctx, "gmail")
+    alt First call to this provider
         mgr->>prv: NewProvider + ConnectHTTP
         prv->>srv: initialize (JSON-RPC)
         srv-->>prv: server info
@@ -117,10 +119,10 @@ pkg/mcp/
 ├── bridge_test.go                     # Integration tests with in-memory MCP server
 └── integrations/
     ├── google/
-    │   ├── sheets.go                  # 4 tools: read_range, write_range, append_row, create_spreadsheet
-    │   └── gmail.go                   # 4 tools: send_email, read_email, search_emails, list_labels
+    │   ├── sheets/sheets.go           # 4 tools: read_range, write_range, append_row, create_spreadsheet
+    │   └── gmail/gmail.go             # 4 tools: send_email, read_email, search_emails, list_labels
     └── microsoft/
-        └── outlook.go                 # 3 tools: send_email, read_email, list_inbox
+        └── outlook/outlook.go         # 3 tools: send_email, read_email, list_inbox
 ```
 
 ## How to Add an Integration
@@ -132,21 +134,18 @@ pkg/mcp/
 # This is a one-time dev step, NOT done at runtime
 ```
 
-### Step 2: Create the integration file with explicit ToolDefs
-
-Each provider gets one directory and one Go package. All services for that provider live as separate `.go` files inside it.
+### Step 2: Create the integration package with explicit ToolDefs
 
 ```go
-// pkg/mcp/integrations/slack/messages.go
+// pkg/mcp/integrations/slack/slack.go
 package slack
 
 import "rune-worker/pkg/mcp"
 
 func init() {
     mcp.RegisterIntegration(mcp.IntegrationConfig{
-        Provider: "slack",
-        Service:  "messages",
-        URL:      "http://slack-mcp:3400/mcp",
+        Name: "slack",
+        URL:  "http://slack-mcp:3400/mcp",
         Tools: []mcp.ToolDef{
             {
                 MCPName:     "send_message",
@@ -163,38 +162,13 @@ func init() {
 }
 ```
 
-To add a second service under the same provider, create another file in the same package — no new import needed:
+### Step 3: Add the import
 
-```go
-// pkg/mcp/integrations/slack/channels.go
-package slack
-
-import "rune-worker/pkg/mcp"
-
-func init() {
-    mcp.RegisterIntegration(mcp.IntegrationConfig{
-        Provider: "slack",
-        Service:  "channels",
-        URL:      "http://slack-channels-mcp:3401/mcp",
-        Tools: []mcp.ToolDef{
-            {
-                MCPName:     "create_channel",
-                Description: "Create a new Slack channel",
-            },
-        },
-    })
-}
-```
-
-### Step 3: Add the import (new providers only)
-
-In `pkg/registry/init_registry.go`, add a blank import for the provider package. One import covers all services in that package:
+In `pkg/registry/init_registry.go`:
 
 ```go
 _ "rune-worker/pkg/mcp/integrations/slack"
 ```
-
-If you're adding a service to an existing provider (e.g., a new file under `integrations/google/`), the import is already present — skip this step.
 
 ### Step 4: Custom node names (optional)
 
@@ -203,7 +177,7 @@ Use `NodeName` to override the default naming:
 ```go
 {
     MCPName:     "send_message_v2",  // actual tool name on MCP server
-    NodeName:    "send_message",     // becomes mcp.slack.messages.send_message
+    NodeName:    "send_message",     // becomes mcp.slack.send_message
     Description: "Send a message to a Slack channel",
 },
 ```
@@ -217,7 +191,7 @@ A single workflow can use nodes from different MCP servers:
   "nodes": [
     {
       "id": "1",
-      "type": "mcp.google.sheets.read_range",
+      "type": "mcp.google_sheets.read_range",
       "parameters": {
         "spreadsheet_id": "abc123",
         "range": "Sheet1!A1:B10"
@@ -225,7 +199,7 @@ A single workflow can use nodes from different MCP servers:
     },
     {
       "id": "2",
-      "type": "mcp.microsoft.outlook.send_email",
+      "type": "mcp.outlook.send_email",
       "parameters": {
         "to": "team@company.com",
         "subject": "Report",
@@ -239,7 +213,7 @@ A single workflow can use nodes from different MCP servers:
 ## Connection Lifecycle
 
 - **Startup**: No MCP connections. Tools registered statically from ToolDefs.
-- **First execution**: `GetOrConnect` lazily connects to the MCP server when a workflow first uses a tool from that provider/service integration.
+- **First execution**: `GetOrConnect` lazily connects to the MCP server when a workflow first uses a tool from that provider.
 - **Subsequent executions**: Reuses the cached connection.
 - **Shutdown**: `defer mcpManager.DisconnectAll()` in main.go closes all active sessions.
 
@@ -247,8 +221,7 @@ A single workflow can use nodes from different MCP servers:
 
 1. **No auto-discovery**: Tools must be explicitly declared in Go. This ensures the DSL generator knows all available tools at build time, and users only see curated tools.
 2. **Lazy connections**: MCP servers don't need to be running at worker startup. Connection failures are scoped to the specific workflow execution, not the entire worker.
-3. **Provider-qualified node types**: Workflow node types use `mcp.<provider>.<service>.<tool>` to avoid collisions between providers with similarly named services.
-4. **Custom naming via NodeName**: The raw MCP tool name can differ from the workflow node name, allowing clean DSL types even when upstream APIs change.
+3. **Custom naming via NodeName**: The raw MCP tool name can differ from the workflow node name, allowing clean DSL types even when upstream APIs change.
 
 ## How to Test
 

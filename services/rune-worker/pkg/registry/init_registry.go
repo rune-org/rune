@@ -5,7 +5,6 @@ import (
 
 	"rune-worker/pkg/mcp"
 	"rune-worker/pkg/nodes"
-
 	// Import all node packages to trigger their init() functions
 	_ "rune-worker/pkg/nodes/custom/aggregator"
 	_ "rune-worker/pkg/nodes/custom/conditional"
@@ -27,9 +26,10 @@ import (
 	_ "rune-worker/pkg/nodes/custom/wait"
 
 	// MCP integrations — blank imports trigger init() which registers
-	// the integration configs including their tools.
-	_ "rune-worker/pkg/mcp/integrations/google"
-	_ "rune-worker/pkg/mcp/integrations/microsoft"
+	// the integration configs with their explicitly declared tools.
+	_ "rune-worker/pkg/mcp/integrations/google/gmail"
+	_ "rune-worker/pkg/mcp/integrations/google/sheets"
+	_ "rune-worker/pkg/mcp/integrations/microsoft/outlook"
 )
 
 // InitializeRegistry creates and populates the node registry with all available node types.

@@ -1,12 +1,11 @@
-package google
+package sheets
 
 import "rune-worker/pkg/mcp"
 
 func init() {
 	mcp.RegisterIntegration(mcp.IntegrationConfig{
-		Provider: "google",
-		Service:  "sheets",
-		URL:      "http://google-sheets-mcp:3100/mcp",
+		Name: "google_sheets",
+		URL:  "http://google-sheets-mcp:3100/mcp",
 		Tools: []mcp.ToolDef{
 			{
 				MCPName:     "read_range",

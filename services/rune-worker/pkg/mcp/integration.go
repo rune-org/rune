@@ -16,7 +16,7 @@ type ToolDef struct {
 	MCPName string
 
 	// NodeName is the custom workflow node suffix (e.g. "send_email").
-	// The full node type becomes "mcp.<provider>.<service>.<NodeName>".
+	// The full node type becomes "mcp.<integration>.<NodeName>".
 	// If empty, MCPName is used.
 	NodeName string
 
@@ -35,10 +35,9 @@ func (t ToolDef) FullNodeName() string {
 // IntegrationConfig defines a single MCP-backed integration with
 // explicitly declared tools.
 type IntegrationConfig struct {
-	Provider string    // provider id, used in node namespace (e.g. "google")
-	Service  string    // service id, used in node namespace (e.g. "gmail")
-	URL      string    // MCP server endpoint (e.g. "http://gmail-mcp:3200/mcp")
-	Tools    []ToolDef // explicitly wrapped tools
+	Name  string    // unique id, used as node namespace (e.g. "gmail")
+	URL   string    // MCP server endpoint (e.g. "http://gmail-mcp:3200/mcp")
+	Tools []ToolDef // explicitly wrapped tools
 }
 
 // NodeRegistry is satisfied by nodes.Registry.
@@ -48,12 +47,7 @@ type NodeRegistry interface {
 
 // NodeType returns the full node type for a tool in this integration.
 func (c IntegrationConfig) NodeType(toolDef ToolDef) string {
-	return fmt.Sprintf("mcp.%s.%s.%s", c.Provider, c.Service, toolDef.FullNodeName())
-}
-
-// Key returns the unique runtime key for this integration.
-func (c IntegrationConfig) Key() string {
-	return fmt.Sprintf("%s.%s", c.Provider, c.Service)
+	return fmt.Sprintf("mcp.%s.%s", c.Name, toolDef.FullNodeName())
 }
 
 var (
@@ -88,11 +82,11 @@ func RegisterAllTools(registry NodeRegistry, mgr *Manager) int {
 	for _, cfg := range configs {
 		for _, tool := range cfg.Tools {
 			nodeType := cfg.NodeType(tool)
-			integrationKey := cfg.Key()
+			providerName := cfg.Name
 			mcpToolName := tool.MCPName
 
 			registry.Register(nodeType, func(execCtx plugin.ExecutionContext) plugin.Node {
-				return NewMCPNode(mgr, integrationKey, mcpToolName, execCtx)
+				return NewMCPNode(mgr, providerName, mcpToolName, execCtx)
 			})
 			total++
 		}
