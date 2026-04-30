@@ -437,6 +437,7 @@ export function Inspector({
                     <RuntimeDataPanel
                       nodeId={selectedNode.id}
                       nodeLabel={selectedNode.data.label}
+                      nodeType={selectedNode.type}
                     />
                   </div>
                 </TabsContent>

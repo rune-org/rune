@@ -76,3 +76,25 @@ func TestResolveReferenceValue_DirectLookupFallback(t *testing.T) {
 		t.Fatalf("expected fallback value, got %v", value)
 	}
 }
+
+func TestResolveReferenceValue_RootArrayIndex(t *testing.T) {
+	t.Parallel()
+
+	ctx := map[string]interface{}{
+		"$json": []interface{}{
+			map[string]interface{}{"id": float64(1), "title": "first"},
+			map[string]interface{}{"id": float64(2), "title": "second"},
+		},
+	}
+
+	value, key, err := ResolveReferenceValue(ctx, "$json[1].title", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if key != "$json" {
+		t.Fatalf("expected root key $json, got %s", key)
+	}
+	if value != "second" {
+		t.Fatalf("expected second, got %v", value)
+	}
+}

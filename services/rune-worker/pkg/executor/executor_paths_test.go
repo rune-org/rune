@@ -131,6 +131,63 @@ func TestExecutorHandleSplitFanOutPublishesPerItemAndNode(t *testing.T) {
 	}
 }
 
+func TestExecutorExecuteSplitWithEmptyItemsCompletes(t *testing.T) {
+	t.Parallel()
+
+	pub := NewMockPublisher()
+	reg := nodes.NewRegistry()
+	reg.Register("split", func(execCtx plugin.ExecutionContext) plugin.Node {
+		return &MockNode{
+			output: map[string]any{"_split_items": []any{}},
+		}
+	})
+
+	exec := NewExecutor(reg, pub, nil)
+	msg := &messages.NodeExecutionMessage{
+		WorkflowID:        "wf-empty-split",
+		WorkflowVersion:   2,
+		WorkflowVersionID: 12,
+		ExecutionID:       "exec-empty-split",
+		CurrentNode:       "split-1",
+		WorkflowDefinition: core.Workflow{
+			WorkflowID:  "wf-empty-split",
+			ExecutionID: "exec-empty-split",
+			Nodes: []core.Node{
+				{ID: "split-1", Name: "Split", Type: "split", Parameters: map[string]any{}},
+				{ID: "next-1", Name: "Next", Type: "mock", Parameters: map[string]any{}},
+			},
+			Edges: []core.Edge{
+				{ID: "edge-1", Src: "split-1", Dst: "next-1"},
+			},
+		},
+		AccumulatedContext: map[string]any{"$trigger": "ok"},
+	}
+
+	if err := exec.Execute(context.Background(), msg); err != nil {
+		t.Fatalf("execute failed: %v", err)
+	}
+
+	if got := pub.GetPublishedCount("workflow.execution"); got != 0 {
+		t.Fatalf("expected no downstream execution messages for empty split, got %d", got)
+	}
+
+	completionMsgs := pub.GetPublishedMessages("workflow.completion")
+	if len(completionMsgs) != 1 {
+		t.Fatalf("expected 1 completion message, got %d", len(completionMsgs))
+	}
+
+	completion, err := messages.DecodeCompletionMessage(completionMsgs[0])
+	if err != nil {
+		t.Fatalf("decode completion message failed: %v", err)
+	}
+	if completion.Status != messages.CompletionStatusCompleted {
+		t.Fatalf("expected completed status, got %s", completion.Status)
+	}
+	if completion.FinalContext["$trigger"] != "ok" {
+		t.Fatalf("expected final context to preserve trigger data")
+	}
+}
+
 func TestExecutorDetermineNextNodesConditionalAndSwitch(t *testing.T) {
 	t.Parallel()
 

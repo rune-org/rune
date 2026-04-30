@@ -5,6 +5,7 @@ export type VariableTreeNode = {
   path: string;
   type: "string" | "number" | "boolean" | "object" | "array" | "unknown";
   sampleValue?: unknown;
+  arrayLength?: number;
   children?: VariableTreeNode[];
   source: "schema" | "execution";
 };
@@ -18,6 +19,7 @@ export type VariableSource = {
 };
 
 const MAX_KEYS = 50;
+const MAX_ARRAY_PREVIEW_ITEMS = 10;
 
 function inferType(value: unknown): VariableTreeNode["type"] {
   if (value === null || value === undefined) return "unknown";
@@ -38,45 +40,40 @@ function inferType(value: unknown): VariableTreeNode["type"] {
 
 /**
  * Walks arbitrary JSON into a tree of VariableTreeNodes.
- * Arrays: inspects [0] for element structure.
+ * Arrays: exposes a small concrete preview and stores length for indexed lookup in the picker.
  * Objects: caps at MAX_KEYS keys.
  * Primitives: leaf nodes with type/sample value.
  */
 export function jsonToVariableTree(
   data: unknown,
   parentPath: string,
-  maxDepth = 5,
+  maxDepth = 50,
   currentDepth = 0,
 ): VariableTreeNode[] {
   if (currentDepth >= maxDepth) return [];
   if (data === null || data === undefined) return [];
 
   if (Array.isArray(data)) {
-    const firstItem = data[0];
-    if (firstItem === undefined) {
-      return [
-        {
-          key: "[0]",
-          path: `${parentPath}[0]`,
-          type: "unknown",
-          source: "execution",
-        },
-      ];
-    }
-    // Inspect the first element to infer array element structure
-    const elementType = inferType(firstItem);
-    if (elementType === "object" && typeof firstItem === "object" && firstItem !== null) {
-      return jsonToVariableTree(firstItem, `${parentPath}[0]`, maxDepth, currentDepth + 1);
-    }
-    return [
-      {
-        key: "[0]",
-        path: `${parentPath}[0]`,
-        type: elementType,
-        sampleValue: firstItem,
+    return data.slice(0, MAX_ARRAY_PREVIEW_ITEMS).map((item, index) => {
+      const itemPath = `${parentPath}[${index}]`;
+      const itemType = inferType(item);
+      const node: VariableTreeNode = {
+        key: `[${index}]`,
+        path: itemPath,
+        type: itemType,
+        arrayLength: Array.isArray(item) ? item.length : undefined,
         source: "execution",
-      },
-    ];
+      };
+
+      if ((itemType === "object" || itemType === "array") && item !== null) {
+        const children = jsonToVariableTree(item, itemPath, maxDepth, currentDepth + 1);
+        if (children.length > 0) node.children = children;
+      } else {
+        node.sampleValue = item;
+      }
+
+      return node;
+    });
   }
 
   if (typeof data === "object") {
@@ -92,6 +89,7 @@ export function jsonToVariableTree(
           key,
           path: fullPath,
           type: valueType,
+          arrayLength: Array.isArray(value) ? value.length : undefined,
           source: "execution" as const,
           children: jsonToVariableTree(value, fullPath, maxDepth, currentDepth + 1),
         };
