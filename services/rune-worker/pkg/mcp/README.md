@@ -132,7 +132,9 @@ pkg/mcp/
 # This is a one-time dev step, NOT done at runtime
 ```
 
-### Step 2: Create the integration package with explicit ToolDefs
+### Step 2: Create the integration file with explicit ToolDefs
+
+Each provider gets one directory and one Go package. All services for that provider live as separate `.go` files inside it.
 
 ```go
 // pkg/mcp/integrations/slack/messages.go
@@ -161,13 +163,38 @@ func init() {
 }
 ```
 
-### Step 3: Add the import
+To add a second service under the same provider, create another file in the same package — no new import needed:
 
-In `pkg/registry/init_registry.go`:
+```go
+// pkg/mcp/integrations/slack/channels.go
+package slack
+
+import "rune-worker/pkg/mcp"
+
+func init() {
+    mcp.RegisterIntegration(mcp.IntegrationConfig{
+        Provider: "slack",
+        Service:  "channels",
+        URL:      "http://slack-channels-mcp:3401/mcp",
+        Tools: []mcp.ToolDef{
+            {
+                MCPName:     "create_channel",
+                Description: "Create a new Slack channel",
+            },
+        },
+    })
+}
+```
+
+### Step 3: Add the import (new providers only)
+
+In `pkg/registry/init_registry.go`, add a blank import for the provider package. One import covers all services in that package:
 
 ```go
 _ "rune-worker/pkg/mcp/integrations/slack"
 ```
+
+If you're adding a service to an existing provider (e.g., a new file under `integrations/google/`), the import is already present — skip this step.
 
 ### Step 4: Custom node names (optional)
 
