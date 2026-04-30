@@ -1,11 +1,12 @@
-package gmail
+package google
 
 import "rune-worker/pkg/mcp"
 
 func init() {
 	mcp.RegisterIntegration(mcp.IntegrationConfig{
-		Name: "gmail",
-		URL:  "http://gmail-mcp:3200/mcp",
+		Provider: "google",
+		Service:  "gmail",
+		URL:      "http://gmail-mcp:3200/mcp",
 		Tools: []mcp.ToolDef{
 			{
 				MCPName:     "send_email",
