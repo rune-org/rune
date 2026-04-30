@@ -71,7 +71,7 @@ func TestProviderConnect(t *testing.T) {
 
 	transport := startTestServer(t, ctx)
 
-	p := NewProvider("test")
+	p := NewProvider("test.provider")
 	if err := p.Connect(ctx, transport); err != nil {
 		t.Fatalf("connect: %v", err)
 	}
@@ -263,17 +263,17 @@ func TestMCPNodeExecute(t *testing.T) {
 	defer p.Disconnect()
 
 	m := &Manager{
-		providers: map[string]*Provider{"test": p},
+		providers: map[string]*Provider{"test.provider": p},
 		configs:   map[string]IntegrationConfig{},
 	}
 
 	execCtx := plugin.ExecutionContext{
 		NodeID:     "node_1",
-		Type:       "mcp.test.echo",
+		Type:       "mcp.test.provider.echo",
 		Parameters: map[string]interface{}{"message": "world"},
 	}
 
-	node := NewMCPNode(m, "test", "echo", execCtx)
+	node := NewMCPNode(m, "test.provider", "echo", execCtx)
 	out, err := node.Execute(ctx, execCtx)
 	if err != nil {
 		t.Fatalf("execute: %v", err)
@@ -289,20 +289,20 @@ func TestMCPNodeExecuteJSON(t *testing.T) {
 
 	transport := startTestServer(t, ctx)
 
-	p := NewProvider("test")
+	p := NewProvider("test.provider")
 	if err := p.Connect(ctx, transport); err != nil {
 		t.Fatalf("connect: %v", err)
 	}
 	defer p.Disconnect()
 
 	m := &Manager{
-		providers: map[string]*Provider{"test": p},
+		providers: map[string]*Provider{"test.provider": p},
 		configs:   map[string]IntegrationConfig{},
 	}
 
 	execCtx := plugin.ExecutionContext{
 		NodeID: "node_2",
-		Type:   "mcp.test.add",
+		Type:   "mcp.test.provider.add",
 		Parameters: map[string]interface{}{
 			"arguments": map[string]interface{}{
 				"a": 10.0,
@@ -311,7 +311,7 @@ func TestMCPNodeExecuteJSON(t *testing.T) {
 		},
 	}
 
-	node := NewMCPNode(m, "test", "add", execCtx)
+	node := NewMCPNode(m, "test.provider", "add", execCtx)
 	out, err := node.Execute(ctx, execCtx)
 	if err != nil {
 		t.Fatalf("execute: %v", err)
@@ -331,8 +331,9 @@ func TestRegisterAllTools(t *testing.T) {
 	defer ResetIntegrations()
 
 	RegisterIntegration(IntegrationConfig{
-		Name: "test",
-		URL:  "http://test:3000/mcp",
+		Provider: "test",
+		Service:  "provider",
+		URL:      "http://test:3000/mcp",
 		Tools: []ToolDef{
 			{MCPName: "echo", Description: "echo tool"},
 			{MCPName: "add", Description: "add tool"},
@@ -346,11 +347,11 @@ func TestRegisterAllTools(t *testing.T) {
 	if count != 2 {
 		t.Fatalf("expected 2 registered tools, got %d", count)
 	}
-	if !reg.types["mcp.test.echo"] {
-		t.Error("expected mcp.test.echo to be registered")
+	if !reg.types["mcp.test.provider.echo"] {
+		t.Error("expected mcp.test.provider.echo to be registered")
 	}
-	if !reg.types["mcp.test.add"] {
-		t.Error("expected mcp.test.add to be registered")
+	if !reg.types["mcp.test.provider.add"] {
+		t.Error("expected mcp.test.provider.add to be registered")
 	}
 }
 
@@ -359,8 +360,9 @@ func TestToolDefCustomNodeName(t *testing.T) {
 	defer ResetIntegrations()
 
 	RegisterIntegration(IntegrationConfig{
-		Name: "test",
-		URL:  "http://test:3000/mcp",
+		Provider: "test",
+		Service:  "provider",
+		URL:      "http://test:3000/mcp",
 		Tools: []ToolDef{
 			{MCPName: "send_email_v2", NodeName: "send_email", Description: "send email"},
 		},
@@ -373,24 +375,28 @@ func TestToolDefCustomNodeName(t *testing.T) {
 	if count != 1 {
 		t.Fatalf("expected 1 registered tool, got %d", count)
 	}
-	if !reg.types["mcp.test.send_email"] {
-		t.Error("expected mcp.test.send_email to be registered (custom NodeName)")
+	if !reg.types["mcp.test.provider.send_email"] {
+		t.Error("expected mcp.test.provider.send_email to be registered (custom NodeName)")
 	}
-	if reg.types["mcp.test.send_email_v2"] {
+	if reg.types["mcp.test.provider.send_email_v2"] {
 		t.Error("should NOT register under raw MCPName when NodeName is set")
 	}
 }
 
 func TestNodeType(t *testing.T) {
-	cfg := IntegrationConfig{Name: "google_sheets", URL: "http://test:3000/mcp"}
+	cfg := IntegrationConfig{Provider: "google", Service: "sheets", URL: "http://test:3000/mcp"}
 
 	tool := ToolDef{MCPName: "write_cell"}
-	if got := cfg.NodeType(tool); got != "mcp.google_sheets.write_cell" {
+	if got := cfg.NodeType(tool); got != "mcp.google.sheets.write_cell" {
 		t.Errorf("got %q", got)
 	}
 
 	toolAliased := ToolDef{MCPName: "write_cell_v2", NodeName: "write_cell"}
-	if got := cfg.NodeType(toolAliased); got != "mcp.google_sheets.write_cell" {
+	if got := cfg.NodeType(toolAliased); got != "mcp.google.sheets.write_cell" {
+		t.Errorf("got %q", got)
+	}
+
+	if got := cfg.Key(); got != "google.sheets" {
 		t.Errorf("got %q", got)
 	}
 }
@@ -400,15 +406,17 @@ func TestIntegrationRegistry(t *testing.T) {
 	defer ResetIntegrations()
 
 	RegisterIntegration(IntegrationConfig{
-		Name: "a",
-		URL:  "http://a:3000/mcp",
+		Provider: "provider_a",
+		Service:  "a",
+		URL:      "http://a:3000/mcp",
 		Tools: []ToolDef{
 			{MCPName: "tool1"},
 		},
 	})
 	RegisterIntegration(IntegrationConfig{
-		Name: "b",
-		URL:  "http://b:3000/mcp",
+		Provider: "provider_b",
+		Service:  "b",
+		URL:      "http://b:3000/mcp",
 		Tools: []ToolDef{
 			{MCPName: "tool2"},
 		},
@@ -418,7 +426,7 @@ func TestIntegrationRegistry(t *testing.T) {
 	if len(list) != 2 {
 		t.Fatalf("expected 2, got %d", len(list))
 	}
-	if list[0].Name != "a" || list[1].Name != "b" {
+	if list[0].Key() != "provider_a.a" || list[1].Key() != "provider_b.b" {
 		t.Errorf("unexpected names: %v", list)
 	}
 }

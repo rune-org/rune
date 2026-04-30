@@ -26,7 +26,7 @@ func NewManager() *Manager {
 	}
 	for _, cfg := range configs {
 		if cfg.URL != "" {
-			m.configs[cfg.Name] = cfg
+			m.configs[cfg.Key()] = cfg
 		}
 	}
 	return m
@@ -35,9 +35,9 @@ func NewManager() *Manager {
 // GetOrConnect returns an existing connected provider, or lazily connects
 // to the MCP server on first use. This is the primary entry point used
 // by MCPNode during workflow execution.
-func (m *Manager) GetOrConnect(ctx context.Context, name string) (*Provider, error) {
+func (m *Manager) GetOrConnect(ctx context.Context, key string) (*Provider, error) {
 	// Fast path: already connected
-	if p := m.GetProvider(name); p != nil && p.IsConnected() {
+	if p := m.GetProvider(key); p != nil && p.IsConnected() {
 		return p, nil
 	}
 
@@ -46,22 +46,22 @@ func (m *Manager) GetOrConnect(ctx context.Context, name string) (*Provider, err
 	defer m.mu.Unlock()
 
 	// Double-check after acquiring write lock (do not call GetProvider here — RLock while holding Lock deadlocks)
-	if p := m.getProviderLocked(name); p != nil && p.IsConnected() {
+	if p := m.getProviderLocked(key); p != nil && p.IsConnected() {
 		return p, nil
 	}
 
-	cfg, ok := m.configs[name]
+	cfg, ok := m.configs[key]
 	if !ok {
-		return nil, fmt.Errorf("mcp integration %q not configured", name)
+		return nil, fmt.Errorf("mcp integration %q not configured", key)
 	}
 
-	p := NewProvider(name)
+	p := NewProvider(key)
 	if err := p.ConnectHTTP(ctx, cfg.URL); err != nil {
-		return nil, fmt.Errorf("mcp connect %s: %w", name, err)
+		return nil, fmt.Errorf("mcp connect %s: %w", key, err)
 	}
 
-	m.providers[name] = p
-	slog.Info("mcp provider connected on-demand", "provider", name)
+	m.providers[key] = p
+	slog.Info("mcp provider connected on-demand", "integration", key)
 	return p, nil
 }
 
