@@ -7,6 +7,9 @@ import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
 
 let installed = false;
 let refreshPromise: Promise<void> | null = null;
+let redirectingToSignIn = false;
+
+const SESSION_EXPIRED_REASON = "session-expired";
 
 function getRefreshToken(): string | null {
   try {
@@ -16,16 +19,30 @@ function getRefreshToken(): string | null {
   }
 }
 
+function hasSessionEvidence(): boolean {
+  try {
+    return Boolean(localStorage.getItem(ACCESS_EXP_KEY));
+  } catch {
+    return false;
+  }
+}
+
 function clearAuthAndRedirect() {
   try {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(ACCESS_EXP_KEY);
   } catch {}
+
   if (typeof window !== "undefined") {
     // Avoid infinite navigation during Next.js transitions
     const to = "/sign-in";
-    if (window.location.pathname !== to) {
-      window.location.assign(to);
+    if (window.location.pathname !== to && !redirectingToSignIn) {
+      redirectingToSignIn = true;
+      const params = new URLSearchParams({ reason: SESSION_EXPIRED_REASON });
+      if (window.location.pathname) {
+        params.set("redirect", window.location.pathname);
+      }
+      window.location.assign(`${to}?${params.toString()}`);
     }
   }
 }
@@ -60,11 +77,17 @@ export function setupClientInterceptors() {
     }
 
     try {
-      // If there is no refresh token stored, don't attempt refresh or redirect.
       const token = getRefreshToken();
       if (!token) {
+        // Anonymous users can legitimately get 401 on startup profile probes.
+        // Only treat missing token as expired session when we have evidence
+        // that a prior authenticated session existed in this browser.
+        if (hasSessionEvidence()) {
+          clearAuthAndRedirect();
+        }
         return response;
       }
+
       await ensureRefreshed();
     } catch {
       clearAuthAndRedirect();

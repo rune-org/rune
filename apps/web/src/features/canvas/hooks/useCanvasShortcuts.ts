@@ -2,22 +2,17 @@
 
 import { useEffect, useRef } from "react";
 import type { CanvasNode, NodeKind } from "../types";
-import type { Edge } from "@xyflow/react";
 
 type CanvasShortcutsProps = {
   nodes: CanvasNode[];
-  edges: Edge[];
   readOnly?: boolean;
-  selectedNodeId: string | null;
   setNodes: (updater: (nodes: CanvasNode[]) => CanvasNode[] | CanvasNode[]) => void;
-  setEdges: (updater: (edges: Edge[]) => Edge[] | Edge[]) => void;
   onSave: () => void;
   onSaveWithMessage?: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onCopy?: () => void;
   onSelectAll?: (firstId: string | null) => void;
-  onPushHistory: () => void;
   onDelete: () => void;
   shortcutsRef?: React.RefObject<Record<string, NodeKind>>;
   onNodeShortcut?: (kind: NodeKind) => void;
@@ -33,20 +28,8 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const {
-        nodes,
-        edges,
-        readOnly,
-        selectedNodeId,
-        setNodes,
-        setEdges,
-        onSave,
-        onUndo,
-        onRedo,
-        onCopy,
-        onSelectAll,
-        onPushHistory,
-      } = latestPropsRef.current;
+      const { nodes, readOnly, setNodes, onSave, onUndo, onRedo, onCopy, onSelectAll, onDelete } =
+        latestPropsRef.current;
 
       const target = e.target as Element | null;
 
@@ -61,32 +44,12 @@ export function useCanvasShortcuts(opts: CanvasShortcutsProps) {
 
       if (isEditable) return;
 
-      // delete selected node(s)/edge(s)
       if (e.key === "Delete" || e.key === "Backspace") {
         if (readOnly) {
           e.preventDefault();
           return;
         }
-
-        const selectedNodeIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
-        const selectedEdgeIds = new Set(edges.filter((e) => e.selected).map((e) => e.id));
-
-        if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0 && selectedNodeId) {
-          selectedNodeIds.add(selectedNodeId);
-        }
-
-        if (selectedNodeIds.size > 0 || selectedEdgeIds.size > 0) {
-          onPushHistory();
-          setNodes((ns) => ns.filter((n) => !selectedNodeIds.has(n.id)));
-          setEdges((es) =>
-            es.filter(
-              (ed) =>
-                !selectedEdgeIds.has(ed.id) &&
-                !selectedNodeIds.has(ed.source) &&
-                !selectedNodeIds.has(ed.target),
-            ),
-          );
-        }
+        onDelete();
         return;
       }
 

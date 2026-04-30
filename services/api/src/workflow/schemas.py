@@ -13,6 +13,7 @@ from src.db.models import User, Workflow, WorkflowRole, WorkflowVersion
 class WorkflowListItem(BaseModel):
     id: int
     name: str
+    description: Optional[str] = Field(default=None)
     is_active: bool
     role: WorkflowRole
     owner_name: str

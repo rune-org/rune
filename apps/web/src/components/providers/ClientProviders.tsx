@@ -1,25 +1,30 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect } from "react";
+
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppStateProvider } from "@/lib/state";
 import { AuthProvider } from "@/lib/auth";
-import { useEffect } from "react";
 import { setupClientInterceptors } from "@/lib/api/setupClientInterceptors";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
-export function ClientProviders({ children }: { children: ReactNode }) {
+export function RootProviders({ children }: { children: ReactNode }) {
+  return (
+    <ThemeProvider>
+      <TooltipProvider>{children}</TooltipProvider>
+    </ThemeProvider>
+  );
+}
+
+export function AppProviders({ children }: { children: ReactNode }) {
   useEffect(() => {
     setupClientInterceptors();
   }, []);
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppStateProvider>
-          <TooltipProvider>{children}</TooltipProvider>
-        </AppStateProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <AppStateProvider>{children}</AppStateProvider>
+    </AuthProvider>
   );
 }

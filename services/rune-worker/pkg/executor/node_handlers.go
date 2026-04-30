@@ -21,7 +21,7 @@ func (e *Executor) handleWaitNode(ctx context.Context, msg *messages.NodeExecuti
 		Status:           messages.StatusWaiting,
 		Parameters:       params,
 		Output:           output,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
@@ -63,7 +63,7 @@ func (e *Executor) handleNodeCreationFailure(ctx context.Context, msg *messages.
 		},
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 	}
 
@@ -97,7 +97,7 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 		},
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 	}
 
@@ -154,7 +154,7 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 		Status:           messages.StatusSuccess,
 		Parameters:       params,
 		Output:           output,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       duration.Milliseconds(),
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
@@ -198,6 +198,14 @@ func (e *Executor) handleNodeSuccess(ctx context.Context, msg *messages.NodeExec
 	// Handle Split Node Fan-Out
 	if node.Type == "split" && len(nextNodes) > 0 {
 		if items, ok := output["_split_items"].([]any); ok {
+			if len(items) == 0 {
+				slog.Info("split fan-out has no items; completing workflow",
+					"workflow_id", msg.WorkflowID,
+					"execution_id", msg.ExecutionID,
+					"node_id", node.ID,
+				)
+				return e.publishCompletion(ctx, msg, messages.CompletionStatusCompleted, startTime, updatedContext)
+			}
 			return e.handleSplitFanOut(ctx, msg, node, nextNodes, items, updatedContext)
 		}
 	}

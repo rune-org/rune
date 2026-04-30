@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useRef, useMemo } from "react";
 
-/** Regex matching Go resolver's $ notation: $nodeName or $nodeName.field.path */
-const VARIABLE_REGEX = /\$([a-zA-Z_][a-zA-Z0-9_-]*)(?:\.([a-zA-Z0-9_\[\]\.\-$]+))?/g;
+/** Regex matching Go resolver's $ notation: $nodeName, $nodeName.field, or $json[0].field. */
+const VARIABLE_REGEX =
+  /\$([a-zA-Z_][a-zA-Z0-9_-]*)((?:\.[a-zA-Z0-9_\[\]\.\-$]+|\[\d+\][a-zA-Z0-9_\[\]\.\-$]*)?)/g;
 
 export type VariableMatch = {
   full: string;
@@ -13,14 +14,10 @@ export type VariableMatch = {
   end: number;
 };
 
-// Strip zero-width markers and non-breaking spaces. Chrome injects NBSP around
-// contenteditable="false" pill elements as a rendering artifact; users never
-// type these intentionally, so we drop them entirely instead of converting to
-// regular spaces (which would leak leading/trailing whitespace into node data).
-const RAW_TEXT_STRIP_REGEX = /[\u200B\uFEFF\u00A0]/g;
+const ZERO_WIDTH_STRIP_REGEX = /[\u200B\uFEFF]/g;
 
 function normalizeRawText(text: string): string {
-  return text.replace(RAW_TEXT_STRIP_REGEX, "");
+  return text.replace(ZERO_WIDTH_STRIP_REGEX, "").replace(/\u00A0/g, " ");
 }
 
 function isBlockElement(node: Node): node is HTMLElement {
@@ -49,7 +46,7 @@ function blockPrefixLength(child: Node, childIndex: number): number {
 }
 
 function isStrippedChar(ch: string): boolean {
-  return ch === "\u200B" || ch === "\uFEFF" || ch === "\u00A0";
+  return ch === "\u200B" || ch === "\uFEFF";
 }
 
 function rawLengthOfTextPrefix(text: string, endOffset: number): number {
@@ -376,10 +373,13 @@ export function parseVariableReferences(value: string): VariableMatch[] {
   while ((match = VARIABLE_REGEX.exec(value)) !== null) {
     // Skip escaped: \$ means literal $, don't treat as variable
     if (match.index > 0 && value[match.index - 1] === "\\") continue;
+    const rawFieldPath = match[2] || undefined;
+    const fieldPath = rawFieldPath?.startsWith(".") ? rawFieldPath.slice(1) : rawFieldPath;
+
     matches.push({
       full: match[0],
       nodeName: match[1],
-      fieldPath: match[2],
+      fieldPath,
       start: match.index,
       end: match.index + match[0].length,
     });
@@ -464,11 +464,22 @@ export function useVariableInput({ value, onChange }: UseVariableInputOptions) {
   const [cursorPosition, setCursorPosition] = useState(0);
   const [autocompleteLeft, setAutocompleteLeft] = useState(0);
   const editableRef = useRef<HTMLDivElement | null>(null);
+  const lastCursorOffsetRef = useRef<number>(value.length);
   // Track whether the last value change came from user typing (internal)
   // vs an external source (picker, parent prop change, etc.)
   const isInternalChangeRef = useRef(false);
 
   const segments = useMemo(() => segmentValue(value), [value]);
+
+  const rememberCursorPosition = useCallback(() => {
+    const el = editableRef.current;
+    if (!el) return;
+    const pos = getCursorOffset(el);
+    if (pos >= 0) {
+      lastCursorOffsetRef.current = pos;
+      setCursorPosition(pos);
+    }
+  }, []);
 
   const handleInput = useCallback(() => {
     const el = editableRef.current;
@@ -483,6 +494,7 @@ export function useVariableInput({ value, onChange }: UseVariableInputOptions) {
     // Detect $ to trigger autocomplete
     const pos = getCursorOffset(el);
     if (pos >= 0) {
+      lastCursorOffsetRef.current = pos;
       setCursorPosition(pos);
       const beforeCursor = newValue.slice(0, pos);
       const dollarIdx = beforeCursor.lastIndexOf("$");
@@ -565,9 +577,11 @@ export function useVariableInput({ value, onChange }: UseVariableInputOptions) {
     (path: string) => {
       const el = editableRef.current;
       const pos = el ? getCursorOffset(el) : -1;
-      const effectivePos = pos >= 0 ? pos : value.length;
+      const rememberedPos = Math.max(0, Math.min(lastCursorOffsetRef.current, value.length));
+      const effectivePos = pos >= 0 ? pos : rememberedPos;
       const newValue = value.slice(0, effectivePos) + path + value.slice(effectivePos);
       const newCursorRawPos = effectivePos + path.length;
+      lastCursorOffsetRef.current = newCursorRawPos;
       onChange(newValue);
 
       requestAnimationFrame(() => {
@@ -589,6 +603,7 @@ export function useVariableInput({ value, onChange }: UseVariableInputOptions) {
     editableRef,
     isInternalChangeRef,
     handleInput,
+    rememberCursorPosition,
     insertVariable,
     insertFromPicker,
     setShowAutocomplete,

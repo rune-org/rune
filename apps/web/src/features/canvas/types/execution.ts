@@ -31,6 +31,8 @@ export interface NodeExecutionData {
   durationMs?: number;
   // For split node support (TODO(ash): remember this)
   lineageHash?: string;
+  lineageStack?: RtesStackFrame[];
+  splitNodeId?: string;
   branchId?: string;
   itemIndex?: number;
   totalItems?: number;
@@ -42,6 +44,7 @@ export interface ExecutionState {
   workflowId: number | null;
   status: WorkflowExecutionStatus;
   nodes: Map<string, NodeExecutionData>;
+  nodeExecutions: Map<string, NodeExecutionData[]>;
   error?: string;
   startedAt?: string;
   completedAt?: string;
@@ -157,6 +160,11 @@ export function parseWorkflowStatus(status: string | null | undefined): Workflow
 export function rtesUpdateToNodeData(update: RtesNodeUpdate): NodeExecutionData | null {
   if (!update.node_id) return null;
 
+  const latestLineageFrame =
+    update.lineage_stack && update.lineage_stack.length > 0
+      ? update.lineage_stack[update.lineage_stack.length - 1]
+      : undefined;
+
   return {
     nodeId: update.node_id,
     status: parseNodeStatus(update.status),
@@ -167,10 +175,43 @@ export function rtesUpdateToNodeData(update: RtesNodeUpdate): NodeExecutionData 
       ? { message: update.error.message, code: update.error.code, details: update.error.details }
       : undefined,
     lineageHash: update.lineage_hash ?? undefined,
-    branchId: update.branch_id ?? undefined,
-    itemIndex: update.item_index ?? undefined,
-    totalItems: update.total_items ?? undefined,
+    lineageStack: update.lineage_stack ?? undefined,
+    splitNodeId: update.split_node_id ?? latestLineageFrame?.split_node_id,
+    branchId: update.branch_id ?? latestLineageFrame?.branch_id,
+    itemIndex: update.item_index ?? latestLineageFrame?.item_index,
+    totalItems: update.total_items ?? latestLineageFrame?.total_items,
   };
+}
+
+export function nodeExecutionInstanceKey(execution: NodeExecutionData): string {
+  if (execution.lineageStack && execution.lineageStack.length > 0) {
+    return `stack:${execution.lineageStack
+      .map((frame) => `${frame.split_node_id}:${frame.item_index}`)
+      .join("/")}`;
+  }
+  if (execution.splitNodeId && execution.itemIndex !== undefined) {
+    return `split:${execution.splitNodeId}:item:${execution.itemIndex}`;
+  }
+  if (execution.branchId && execution.itemIndex !== undefined) {
+    return `branch:${execution.branchId}:item:${execution.itemIndex}`;
+  }
+  if (execution.lineageHash) return `lineage:${execution.lineageHash}`;
+  if (execution.branchId) return `branch:${execution.branchId}`;
+  if (execution.itemIndex !== undefined) return `item:${execution.itemIndex}`;
+  return "default";
+}
+
+export function isSameNodeExecutionInstance(a: NodeExecutionData, b: NodeExecutionData): boolean {
+  if (a.nodeId !== b.nodeId) return false;
+  if (nodeExecutionInstanceKey(a) === nodeExecutionInstanceKey(b)) return true;
+  if (a.itemIndex === undefined || b.itemIndex === undefined) return false;
+  if (a.itemIndex !== b.itemIndex) return false;
+  if (a.totalItems !== undefined && b.totalItems !== undefined && a.totalItems !== b.totalItems) {
+    return false;
+  }
+  if (a.splitNodeId && b.splitNodeId && a.splitNodeId !== b.splitNodeId) return false;
+
+  return true;
 }
 
 /**
@@ -189,4 +230,5 @@ export const initialExecutionState: ExecutionState = {
   workflowId: null,
   status: "idle",
   nodes: new Map(),
+  nodeExecutions: new Map(),
 };

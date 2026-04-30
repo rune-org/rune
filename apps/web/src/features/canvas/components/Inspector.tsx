@@ -19,7 +19,11 @@ import { RuntimeDataPanel } from "./inspectors/RuntimeDataPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WaitInspector } from "./inspectors/WaitInspector";
 import { LogInspector } from "./inspectors/LogInspector";
-import { DateTimeInspector } from "./inspectors/DateTimeInspector";
+import { DateTimeNowInspector } from "./inspectors/DateTimeNowInspector";
+import { DateTimeAddInspector } from "./inspectors/DateTimeAddInspector";
+import { DateTimeSubtractInspector } from "./inspectors/DateTimeSubtractInspector";
+import { DateTimeFormatInspector } from "./inspectors/DateTimeFormatInspector";
+import { DateTimeParseInspector } from "./inspectors/DateTimeParseInspector";
 import { ScheduledTriggerInspector } from "./inspectors/ScheduledTriggerInspector";
 import { EditInspector } from "./inspectors/EditInspector";
 import { FilterInspector } from "./inspectors/FilterInspector";
@@ -61,8 +65,20 @@ function renderInspectorForm(
       return <WaitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "log":
       return <LogInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
-    case "datetime":
-      return <DateTimeInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "dateTimeNow":
+      return <DateTimeNowInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "dateTimeAdd":
+      return <DateTimeAddInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "dateTimeSubtract":
+      return (
+        <DateTimeSubtractInspector node={node} updateData={updateData} isExpanded={isExpanded} />
+      );
+    case "dateTimeFormat":
+      return (
+        <DateTimeFormatInspector node={node} updateData={updateData} isExpanded={isExpanded} />
+      );
+    case "dateTimeParse":
+      return <DateTimeParseInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "scheduledTrigger":
       return (
         <ScheduledTriggerInspector node={node} updateData={updateData} isExpanded={isExpanded} />
@@ -421,6 +437,7 @@ export function Inspector({
                     <RuntimeDataPanel
                       nodeId={selectedNode.id}
                       nodeLabel={selectedNode.data.label}
+                      nodeType={selectedNode.type}
                     />
                   </div>
                 </TabsContent>

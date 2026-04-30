@@ -29,7 +29,7 @@ func NewWorkflowConsumer(cfg *config.WorkerConfig, redisClient *redis.Client) (*
 		return nil, errors.New("workflow consumer: config is nil")
 	}
 
-	reg := registry.InitializeRegistry()
+	reg, _ := registry.InitializeRegistry()
 
 	q, err := queue.NewRabbitMQConsumer(queue.Options{
 		URL:         cfg.RabbitURL,

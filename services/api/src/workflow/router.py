@@ -51,6 +51,7 @@ async def list_workflows(
         WorkflowListItem(
             id=wf.id,
             name=wf.name,
+            description=wf.description,
             is_active=wf.is_active,
             role=role,
             owner_name=owner_name,
