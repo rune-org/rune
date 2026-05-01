@@ -8,7 +8,13 @@ from src.db.models import WebhookRegistration
 
 WEBHOOK_WORKFLOW_DATA = {
     "nodes": [
-        {"id": "t1", "type": "webhook", "trigger": True, "name": "Webhook Trigger"},
+        {
+            "id": "t1",
+            "type": "webhook",
+            "trigger": True,
+            "name": "Webhook Trigger",
+            "webhook_guid": "123e4567-e89b-12d3-a456-426614174000",
+        },
         {"id": "a1", "type": "action", "trigger": False, "name": "Action"},
     ],
     "edges": [{"id": "e1", "src": "t1", "dst": "a1"}],
