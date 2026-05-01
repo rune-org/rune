@@ -26,34 +26,41 @@ export function DeleteCredentialDialog({
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    let active = true;
+
     if (open && credentialId) {
-      loadUsage();
+      const fetchUsage = async () => {
+        try {
+          setIsLoading(true);
+          const response = await credentialsAPI.getCredentialUsage(credentialId);
+          if (active && response.data && response.data.data) {
+            setUsage(response.data.data);
+          }
+        } catch (err) {
+          if (active) {
+            const message = extractApiErrorMessage(err, "Failed to load credential usage");
+            console.error(message, err);
+          }
+        } finally {
+          if (active) setIsLoading(false);
+        }
+      };
+
+      fetchUsage();
     } else {
       setUsage([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, credentialId]);
 
-  const loadUsage = async () => {
-    if (!credentialId) return;
-    try {
-      setIsLoading(true);
-      const response = await credentialsAPI.getCredentialUsage(credentialId);
-      if (response.data && response.data.data) {
-        setUsage(response.data.data);
-      }
-    } catch (err) {
-      const message = extractApiErrorMessage(err, "Failed to load credential usage");
-      console.error(message, err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    return () => {
+      active = false;
+    };
+  }, [open, credentialId]);
 
   return (
     <ConfirmationDialog
       open={open}
       onOpenChange={onOpenChange}
+      isLoading={isLoading}
       title="Delete credential?"
       description={
         <div className="flex flex-col gap-4 pt-2 text-left">

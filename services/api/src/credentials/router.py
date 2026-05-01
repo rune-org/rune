@@ -216,8 +216,9 @@ async def get_credential_usage(
     Get a list of workflows that are currently using this credential.
 
     """
-    # Verify user has access to the credential first
-    await service.get_credential(credential_id, current_user)
+    # Verify user has delete access to the credential
+    credential = await service.get_credential(credential_id, current_user)
+    await service.permission_service.require_delete_access(credential, current_user)
 
     workflows = await service.get_credential_usage(credential_id)
 
