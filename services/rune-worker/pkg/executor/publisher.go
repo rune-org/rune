@@ -22,7 +22,7 @@ func (e *Executor) publishRunningStatus(ctx context.Context, msg *messages.NodeE
 		Parameters:       params,
 		AllUsedInputKeys: usedKeys,
 		UsedInputs:       usedInputs,
-		ExecutedAt:       time.Now(),
+		ExecutedAt:       time.Now().UTC(),
 		DurationMs:       0,
 	}
 
@@ -88,7 +88,7 @@ func (e *Executor) publishCompletion(ctx context.Context, msg *messages.NodeExec
 		ExecutionID:     msg.ExecutionID,
 		Status:          status,
 		FinalContext:    finalContext,
-		CompletedAt:     time.Now(),
+		CompletedAt:     time.Now().UTC(),
 		TotalDurationMs: totalDuration.Milliseconds(),
 	}
 

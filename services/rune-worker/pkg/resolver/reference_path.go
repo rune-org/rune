@@ -24,8 +24,14 @@ func ResolveReferenceValue(
 		return nil, "", fmt.Errorf("invalid reference: missing root key")
 	}
 
-	parts := strings.SplitN(path, ".", 2)
-	rootName := parts[0]
+	separatorIndex := strings.IndexAny(path, ".[")
+	rootName := path
+	remainingPath := ""
+	if separatorIndex >= 0 {
+		rootName = path[:separatorIndex]
+		remainingPath = path[separatorIndex:]
+		remainingPath = strings.TrimPrefix(remainingPath, ".")
+	}
 	if rootName == "" {
 		return nil, "", fmt.Errorf("invalid reference: missing root key")
 	}
@@ -41,11 +47,11 @@ func ResolveReferenceValue(
 		return nil, rootKey, fmt.Errorf("node '%s' not found in context", rootName)
 	}
 
-	if len(parts) == 1 {
+	if remainingPath == "" {
 		return nodeData, rootKey, nil
 	}
 
-	value, err := NavigateValuePath(nodeData, parts[1])
+	value, err := NavigateValuePath(nodeData, remainingPath)
 	if err != nil {
 		return nil, rootKey, err
 	}

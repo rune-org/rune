@@ -18,7 +18,7 @@ export const HttpNode = memo(function HttpNode({ id, data }: NodeProps<Node<Http
     >
       <div className="flex items-center justify-between">
         <span className="truncate text-xs text-muted-foreground">
-          {data.url ?? "https://api.example.com"}
+          {data.url?.trim() ? data.url : "Configure URL"}
         </span>
         <span className="ml-2 rounded bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">
           {(data.method ?? "GET").toUpperCase()}

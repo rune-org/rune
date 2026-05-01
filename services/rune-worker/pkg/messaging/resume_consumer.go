@@ -32,7 +32,7 @@ func NewResumeConsumer(cfg *config.WorkerConfig, redisClient *redis.Client) (*Re
 		return nil, errors.New("resume consumer: config is nil")
 	}
 
-	reg := registry.InitializeRegistry()
+	reg, _ := registry.InitializeRegistry()
 
 	q, err := queue.NewRabbitMQConsumer(queue.Options{
 		URL:         cfg.RabbitURL,
@@ -181,7 +181,7 @@ func (c *ResumeConsumer) publishWaitSuccessStatus(ctx context.Context, msg *mess
 		Status:      messages.StatusSuccess,
 		Parameters:  params,
 		Output:      output,
-		ExecutedAt:  time.Now(),
+		ExecutedAt:  time.Now().UTC(),
 		DurationMs:  0,
 	}
 
