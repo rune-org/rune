@@ -9,7 +9,14 @@ from src.credentials.schemas import (
     CredentialResponse,
     CredentialUpdate,
 )
-from src.db.models import User, WorkflowCredential
+from src.db.models import (
+    User,
+    Workflow,
+    WorkflowCredential,
+    WorkflowCredentialLink,
+    WorkflowRole,
+    WorkflowUser,
+)
 
 
 class CredentialService:
@@ -177,6 +184,31 @@ class CredentialService:
 
         await self.session.delete(credential)
         await self.session.commit()
+
+    async def get_credential_usage(
+        self, credential_id: int
+    ) -> list[tuple[Workflow, User]]:
+        """
+        Get all workflows using this credential along with their owners.
+
+        Args:
+            credential_id: ID of the credential
+
+        Returns:
+            List of (Workflow, User) tuples referencing this credential
+        """
+        statement = (
+            select(Workflow, User)
+            .join(WorkflowCredentialLink)
+            .join(WorkflowUser, Workflow.id == WorkflowUser.workflow_id)
+            .join(User, WorkflowUser.user_id == User.id)
+            .where(
+                WorkflowCredentialLink.credential_id == credential_id,
+                WorkflowUser.role == WorkflowRole.OWNER,
+            )
+        )
+        result = await self.session.exec(statement)
+        return result.all()
 
     async def list_credentials(self, user: User) -> list[WorkflowCredential]:
         """

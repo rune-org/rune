@@ -11,6 +11,7 @@ from src.credentials.schemas import (
     CredentialShare,
     CredentialShareInfo,
     CredentialUpdate,
+    CredentialUsage,
 )
 from src.credentials.service import CredentialService
 from src.db.models import User
@@ -199,6 +200,35 @@ async def delete_credential(
     - SHARED USER: cannot delete
     """
     await service.delete_credential(credential_id, current_user)
+
+
+@router.get(
+    "/{credential_id}/usage",
+    response_model=ApiResponse[list[CredentialUsage]],
+    summary="Get workflows using this credential",
+)
+async def get_credential_usage(
+    credential_id: int,
+    current_user: User = Depends(require_password_changed),
+    service: CredentialService = Depends(get_credential_service),
+) -> ApiResponse[list[CredentialUsage]]:
+    """
+    Get a list of workflows that are currently using this credential.
+
+    """
+    # Verify user has delete access to the credential
+    credential = await service.get_credential(credential_id, current_user)
+    await service.permission_service.require_delete_access(credential, current_user)
+
+    workflows = await service.get_credential_usage(credential_id)
+
+    return ApiResponse(
+        data=[
+            CredentialUsage(id=w.id, name=w.name, owner_name=u.name)
+            for w, u in workflows
+        ],
+        message=f"Found {len(workflows)} dependent workflow(s)",
+    )
 
 
 @router.post(

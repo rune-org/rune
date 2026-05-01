@@ -96,10 +96,13 @@ export function setupClientInterceptors() {
 
     const headers = normalized;
     headers.set("x-retried", "1");
+    headers.delete("Authorization");
     const result = await client.request({
       ...options,
+      security: [],
       headers,
       method: (options.method ?? "GET") as Uppercase<HttpMethod>,
+      parseAs: "stream",
     });
     return result.response;
   });

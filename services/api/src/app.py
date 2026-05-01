@@ -11,7 +11,7 @@ from src.core.exception_handlers import (
     http_exception_handler,
     validation_exception_handler,
 )
-from src.db.config import init_db, build_connection_string
+from src.db.config import init_db, build_connection_string, get_async_engine
 from src.db.redis import close_redis
 from src.queue.rabbitmq import close_rabbitmq
 from src.smith.agent import create_smith_agent
@@ -19,6 +19,7 @@ from src.auth.router import router as auth_router
 from src.auth.saml.router import router as saml_router
 from src.setup.router import router as setup_router
 from src.workflow.router import router as workflow_router
+from src.workflow.service import run_credential_backfill
 from src.executions.router import router as executions_router
 from src.permissions.router import router as permissions_router
 from src.templates.router import router as templates_router
@@ -27,6 +28,7 @@ from src.credentials.router import router as credentials_router
 from src.scryb.router import router as scryb_router
 from src.smith.router import router as smith_router
 from src.internal.router import router as internal_router
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 # Get settings
 settings = get_settings()
@@ -37,6 +39,11 @@ async def lifespan(app: FastAPI):
     # Startup
     print(f"Starting {settings.app_name} in {settings.environment.value} mode...")
     await init_db()
+
+    # Run credential backfill to ensure legacy workflows are tracked
+    async_engine = get_async_engine()
+    async with AsyncSession(async_engine, expire_on_commit=False) as session:
+        await run_credential_backfill(session)
 
     # Initialize PostgreSQL checkpointer using context manager
     conn_string = build_connection_string(

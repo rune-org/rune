@@ -7,6 +7,7 @@ import {
   revokeCredentialAccessCredentialsCredentialIdShareUserIdDelete,
   listCredentialSharesCredentialsCredentialIdSharesGet,
   getMyShareInfoCredentialsCredentialIdMyShareGet,
+  getCredentialUsageCredentialsCredentialIdUsageGet,
 } from "@/client";
 
 import type { CredentialCreate, CredentialShare } from "@/client/types.gen";
@@ -77,5 +78,14 @@ export const listCredentialShares = (credentialId: number) =>
  */
 export const getMyShareInfo = (credentialId: number) =>
   getMyShareInfoCredentialsCredentialIdMyShareGet({
+    path: { credential_id: credentialId },
+  });
+
+/**
+ * Get all workflows using a credential
+ * @param credentialId - The ID of the credential
+ */
+export const getCredentialUsage = (credentialId: number) =>
+  getCredentialUsageCredentialsCredentialIdUsageGet({
     path: { credential_id: credentialId },
   });

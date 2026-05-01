@@ -20,6 +20,7 @@ from src.db.models import (
     User,
     Workflow,
     WorkflowCredential,
+    WorkflowCredentialLink,
     WorkflowRole,
     WorkflowUser,
     WorkflowVersion,
@@ -33,6 +34,8 @@ from src.workflow.constants import (
     SCHEDULED_TRIGGER_UNIT_MULTIPLIERS,
 )
 from src.workflow.queue import validate_workflow_can_run
+
+from src.workflow.queries import CREDENTIAL_BACKFILL_QUERY
 
 
 class WorkflowVersionConflictError(Exception):
@@ -131,6 +134,8 @@ class WorkflowService:
             locked_workflow.published_version_id = latest.id
             locked_workflow.is_active = True
             await self._upsert_schedule(locked_workflow.id, latest.workflow_data)
+            # Sync credential links for activation
+            await self._sync_credential_links(locked_workflow.id, latest.workflow_data)
         else:
             locked_workflow.published_version_id = None
             locked_workflow.is_active = False
@@ -188,6 +193,10 @@ class WorkflowService:
 
         locked_workflow.latest_version_id = version.id
         locked_workflow.is_active = locked_workflow.published_version_id is not None
+
+        # Sync credential links for usage tracking
+        await self._sync_credential_links(locked_workflow.id, workflow_data)
+
         await self.db.commit()
         await self.db.refresh(version)
         return version
@@ -201,6 +210,10 @@ class WorkflowService:
         locked_workflow.published_version_id = version.id
         locked_workflow.is_active = True
         await self._upsert_schedule(locked_workflow.id, version.workflow_data)
+
+        # Sync credential links to reflect the published version
+        await self._sync_credential_links(locked_workflow.id, version.workflow_data)
+
         await self.db.commit()
         await self.db.refresh(locked_workflow)
         return locked_workflow
@@ -232,6 +245,10 @@ class WorkflowService:
 
         locked_workflow.latest_version_id = version.id
         locked_workflow.is_active = locked_workflow.published_version_id is not None
+
+        # Sync credential links for usage tracking
+        await self._sync_credential_links(locked_workflow.id, version.workflow_data)
+
         await self.db.commit()
         await self.db.refresh(version)
         return version
@@ -491,6 +508,8 @@ class WorkflowService:
                     wf.published_version_id = latest.id
                     wf.is_active = True
                     await self._upsert_schedule(wf.id, latest.workflow_data)
+                    # Sync credential links for activation
+                    await self._sync_credential_links(wf.id, latest.workflow_data)
                 # Skip workflows with no versions (cannot be activated)
             else:
                 # Deactivate: clear published pointer and delete schedule
@@ -733,3 +752,104 @@ class WorkflowService:
 
         normalized = message.strip()
         return normalized or None
+
+    async def _sync_credential_links(
+        self, workflow_id: int, workflow_data: dict
+    ) -> None:
+        """Update WorkflowCredentialLink entries for a workflow.
+
+        Parses workflow_data to find all referenced credential IDs and ensures
+        the link table matches this set for usage tracking.
+
+        To ensure deletion safety, we track credentials from both:
+        1. The version currently being saved/processed (usually the latest draft).
+        2. The currently published version (if different).
+        """
+        # Extract credential IDs from the provided workflow data
+        credential_ids = self._extract_credential_ids(workflow_data)
+
+        # Also include credentials from the published version to protect live workflows
+        workflow = await self.db.get(Workflow, workflow_id)
+        if workflow and workflow.published_version_id:
+            # If the published version is different from the one we are syncing,
+            # we need to fetch its credentials too.
+            latest_version_id = workflow.latest_version_id
+            if workflow.published_version_id != latest_version_id:
+                pub_version = await self.get_version(
+                    workflow_id, workflow.published_version_id
+                )
+                if pub_version:
+                    pub_credential_ids = self._extract_credential_ids(
+                        pub_version.workflow_data
+                    )
+                    credential_ids.update(pub_credential_ids)
+
+        # Remove existing links that are no longer in either version
+        # If credential_ids is empty, we remove all links for this workflow
+        if not credential_ids:
+            delete_stmt = delete(WorkflowCredentialLink).where(
+                WorkflowCredentialLink.workflow_id == workflow_id
+            )
+        else:
+            delete_stmt = delete(WorkflowCredentialLink).where(
+                WorkflowCredentialLink.workflow_id == workflow_id,
+                col(WorkflowCredentialLink.credential_id).notin_(list(credential_ids)),
+            )
+        await self.db.exec(delete_stmt)
+
+        # Add new links that don't exist yet
+        if credential_ids:
+            # Find IDs that exist in the system but don't have a link for this workflow yet
+            new_links_stmt = (
+                select(WorkflowCredential.id)
+                .outerjoin(
+                    WorkflowCredentialLink,
+                    (WorkflowCredentialLink.credential_id == WorkflowCredential.id)
+                    & (WorkflowCredentialLink.workflow_id == workflow_id),
+                )
+                .where(
+                    col(WorkflowCredential.id).in_(list(credential_ids)),
+                    WorkflowCredentialLink.credential_id.is_(None),
+                )
+            )
+            new_links_res = await self.db.exec(new_links_stmt)
+            new_ids = new_links_res.all()
+
+            for cred_id in new_ids:
+                link = WorkflowCredentialLink(
+                    workflow_id=workflow_id, credential_id=cred_id
+                )
+                self.db.add(link)
+
+    @staticmethod
+    def _extract_credential_ids(workflow_data: dict) -> set[int]:
+        """Helper to extract unique credential IDs from workflow nodes."""
+        credential_ids: set[int] = set()
+        nodes = workflow_data.get("nodes", [])
+        for node in nodes:
+            # Standard path: node.credentials.id
+            if "credentials" in node and isinstance(node["credentials"], dict):
+                cred_ref = node["credentials"]
+                if "id" in cred_ref:
+                    try:
+                        credential_ids.add(int(cred_ref["id"]))
+                    except (ValueError, TypeError):
+                        pass
+
+                    try:
+                        credential_ids.add(int(cred_ref["id"]))
+                    except (ValueError, TypeError):
+                        pass
+
+        return credential_ids
+
+
+async def run_credential_backfill(session: AsyncSession) -> None:
+    """
+    One-time SQL query to populate WorkflowCredentialLink from existing JSON data.
+    This ensures that old workflows have their credential usage tracked without
+    needing a manual database migration.
+    """
+
+    await session.execute(CREDENTIAL_BACKFILL_QUERY)
+    await session.commit()
