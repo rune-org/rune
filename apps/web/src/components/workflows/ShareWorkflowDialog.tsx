@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { X, Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -48,7 +48,7 @@ export function ShareWorkflowDialog({
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<WorkflowRole>("viewer");
   const [permissions, setPermissions] = useState<WorkflowPermission[]>([]);
-  const [availableUsers, setAvailableUsers] = useState<UserBasicInfo[]>([]);
+  const [searchResults, setSearchResults] = useState<UserBasicInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,7 +56,12 @@ export function ShareWorkflowDialog({
   const [userToRevoke, setUserToRevoke] = useState<{ id: number; name: string } | null>(null);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const permissionsRef = useRef<WorkflowPermission[]>([]);
+
+  // Derive available users by excluding those who already have permissions
+  const availableUsers = useMemo(() => {
+    const existing = new Set(permissions.map((p) => p.user_id));
+    return searchResults.filter((u) => !existing.has(u.id));
+  }, [searchResults, permissions]);
 
   // Check if selected user is an admin
   const selectedUser = availableUsers.find((u) => u.id === parseInt(selectedUserId || "0"));
@@ -66,7 +71,7 @@ export function ShareWorkflowDialog({
   useEffect(() => {
     if (open) {
       void loadPermissions();
-      setAvailableUsers([]);
+      setSearchResults([]);
       setSearchQuery("");
       setSelectedUserId("");
       setSelectedRole("viewer");
@@ -91,11 +96,6 @@ export function ShareWorkflowDialog({
     };
   }, []);
 
-  // Keep latest permissions for debounced search filtering.
-  useEffect(() => {
-    permissionsRef.current = permissions;
-  }, [permissions]);
-
   const loadPermissions = async () => {
     try {
       setLoading(true);
@@ -112,10 +112,9 @@ export function ShareWorkflowDialog({
     setIsSearching(true);
     try {
       const res = await listUsersForSharing(query || undefined);
-      // Exclude users who already have permissions
-      const existing = new Set(permissionsRef.current.map((p) => p.user_id));
-      setAvailableUsers((res.data?.data ?? []).filter((u) => !existing.has(u.id)));
-    } catch {
+      setSearchResults(res.data?.data ?? []);
+    } catch (_error) {
+      toast.error("Failed to search users");
     } finally {
       setIsSearching(false);
     }
@@ -151,7 +150,7 @@ export function ShareWorkflowDialog({
       toast.success(`Workflow shared with ${roleToUse} access`);
       setSelectedUserId("");
       setSearchQuery("");
-      setAvailableUsers([]);
+      setSearchResults([]);
       setSelectedRole("viewer");
       await loadPermissions();
     } catch (error) {
