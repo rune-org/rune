@@ -32,7 +32,7 @@ func NewResumeConsumer(cfg *config.WorkerConfig, redisClient *redis.Client) (*Re
 		return nil, errors.New("resume consumer: config is nil")
 	}
 
-	reg, _ := registry.InitializeRegistry()
+	reg := registry.InitializeRegistry()
 
 	q, err := queue.NewRabbitMQConsumer(queue.Options{
 		URL:         cfg.RabbitURL,

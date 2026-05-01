@@ -23,7 +23,7 @@ type Executor struct {
 // NewExecutor builds an executor with the provided registry and publisher.
 func NewExecutor(reg *nodes.Registry, pub queue.Publisher, redisClient interface{}) *Executor {
 	if reg == nil {
-		reg, _ = registry.InitializeRegistry()
+		reg = registry.InitializeRegistry()
 	}
 
 	return &Executor{

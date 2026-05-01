@@ -1,6 +1,7 @@
 # TODO: this file needs to be removed from here
 
 SCHEDULED_TRIGGER_TYPE = "ScheduledTrigger"
+WEBHOOK_TRIGGER_TYPE = "webhook"
 SCHEDULED_TRIGGER_PARAM_AMOUNT = "amount"
 SCHEDULED_TRIGGER_PARAM_UNIT = "unit"
 SCHEDULED_TRIGGER_UNIT_MULTIPLIERS: dict[str, int] = {
