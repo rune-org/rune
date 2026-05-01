@@ -4,11 +4,8 @@ import pytest
 from sqlmodel import select
 
 from src.db.models import Execution
-from test.webhook.fixtures import (  # noqa: F401  — register fixtures
-    active_webhook_workflow,
-    inactive_webhook_workflow,
-    workflow_service,
-)
+
+pytest_plugins = ("test.webhook.fixtures",)
 
 
 class TestWebhookTriggerAPI:

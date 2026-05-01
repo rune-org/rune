@@ -4,7 +4,6 @@ import pytest
 from sqlmodel import select
 
 from src.db.models import WebhookRegistration
-from src.workflow.service import WorkflowService
 
 
 WEBHOOK_WORKFLOW_DATA = {
