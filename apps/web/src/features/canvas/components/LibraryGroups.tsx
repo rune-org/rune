@@ -172,7 +172,11 @@ function DraggableItem({
         aria-label={`Add ${label}`}
         style={dragging ? { opacity: 0 } : undefined}
       >
-        <NodeIcon iconSrc={metadata.iconSrc} Icon={ItemIcon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <NodeIcon
+          iconSrc={metadata.iconSrc}
+          Icon={ItemIcon}
+          className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+        />
         <span>{label}</span>
         {editing ? (
           <input
@@ -203,7 +207,11 @@ function DraggableItem({
             }}
           >
             <div className="flex items-center gap-2 rounded-sm border border-border/60 bg-background/90 px-3 py-1.5 text-left text-[0.8rem] shadow-md">
-              <NodeIcon iconSrc={metadata.iconSrc} Icon={ItemIcon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <NodeIcon
+                iconSrc={metadata.iconSrc}
+                Icon={ItemIcon}
+                className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+              />
               <span>{label}</span>
             </div>
           </div>,
@@ -293,9 +301,20 @@ function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }
       <div className="mt-2 grid gap-2">
         {subgroups ? (
           subgroups.map((sg) => (
-            <details key={sg.label} open className="rounded-sm border border-border/40 bg-muted/10 p-1.5">
+            <details
+              key={sg.label}
+              open
+              className="rounded-sm border border-border/40 bg-muted/10 p-1.5"
+            >
               <summary className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
-                <Image src={sg.iconSrc} alt="" width={12} height={12} className="h-3 w-3 shrink-0" aria-hidden />
+                <Image
+                  src={sg.iconSrc}
+                  alt=""
+                  width={12}
+                  height={12}
+                  className="h-3 w-3 shrink-0"
+                  aria-hidden
+                />
                 {sg.label}
               </summary>
               <div className="mt-1.5">
