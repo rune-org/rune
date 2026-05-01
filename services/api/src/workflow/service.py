@@ -764,7 +764,7 @@ class WorkflowService:
             self.db.add(
                 WebhookRegistration(
                     workflow_id=workflow_id,
-                    guid=str(trigger_node['webhook_guid']),
+                    guid=str(trigger_node["webhook_guid"]),
                     is_active=is_active,
                 )
             )
