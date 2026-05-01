@@ -198,7 +198,6 @@ export function Library({
           </button>
         </div>
 
-        {/* Tab strip */}
         <div className="shrink-0 px-2 py-1.5 border-b border-border/40">
           <div
             role="tablist"

@@ -3,18 +3,16 @@
 import { memo } from "react";
 import Image from "next/image";
 import { type Node, type NodeProps } from "@xyflow/react";
-import { Braces } from "lucide-react";
+import { Plug } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { IntegrationNodeData } from "../integrations/types";
-import { getIntegrationTool, isIntegrationNodeKind } from "../integrations/helpers";
+import { getIntegrationTool } from "../integrations/helpers";
 
 export const IntegrationNode = memo(function IntegrationNode({
   id,
   data,
 }: NodeProps<Node<IntegrationNodeData>>) {
-  const tool = isIntegrationNodeKind(data.integrationKind)
-    ? getIntegrationTool(data.integrationKind)
-    : null;
+  const tool = getIntegrationTool(data.integrationKind);
 
   const previewField =
     tool?.argumentFields.find((f) => f.required && (f.type === "text" || f.type === "textarea")) ??
@@ -28,7 +26,7 @@ export const IntegrationNode = memo(function IntegrationNode({
         tool ? (
           <Image src={tool.icon} alt="" width={16} height={16} className="h-4 w-4" aria-hidden />
         ) : (
-          <Braces className="h-4 w-4 text-muted-foreground" />
+          <Plug className="h-4 w-4 text-muted-foreground" />
         )
       }
       label={data.label ?? tool?.label ?? "Integration"}

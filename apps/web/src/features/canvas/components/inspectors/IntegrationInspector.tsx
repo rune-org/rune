@@ -1,10 +1,11 @@
+import { useCallback } from "react";
 import Image from "next/image";
 import type { Node } from "@xyflow/react";
 import { JsonField } from "../JsonField";
 import { VariableInput } from "../variable-picker/VariableInput";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
 import type { IntegrationArgumentField, IntegrationNodeData } from "../../integrations/types";
-import { getIntegrationTool, isIntegrationNodeKind } from "../../integrations/helpers";
+import { getIntegrationTool } from "../../integrations/helpers";
 import { CredentialSelector } from "@/components/shared/CredentialSelector";
 import type { CredentialRef } from "@/lib/credentials";
 import {
@@ -23,30 +24,46 @@ type IntegrationInspectorProps = {
 const isJsonObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+function FieldLabel({ label, required }: { label: string; required?: boolean }) {
+  return (
+    <label className="block text-xs text-muted-foreground">
+      {label}
+      {required ? " *" : ""}
+    </label>
+  );
+}
+
 export function IntegrationInspector({ node, updateData }: IntegrationInspectorProps) {
-  const tool = isIntegrationNodeKind(node.data.integrationKind)
-    ? getIntegrationTool(node.data.integrationKind)
-    : null;
+  const tool = getIntegrationTool(node.data.integrationKind);
 
-  const updateIntegrationData = (updater: (data: IntegrationNodeData) => IntegrationNodeData) => {
-    updateData(node.id, node.data.integrationKind, updater);
-  };
+  const updateIntegrationData = useCallback(
+    (updater: (data: IntegrationNodeData) => IntegrationNodeData) => {
+      updateData(node.id, node.data.integrationKind, updater);
+    },
+    [updateData, node.id, node.data.integrationKind],
+  );
 
-  const handleCredentialChange = (credential: CredentialRef | null) => {
-    updateIntegrationData((data) => ({ ...data, credential: credential ?? undefined }));
-  };
+  const handleCredentialChange = useCallback(
+    (credential: CredentialRef | null) => {
+      updateIntegrationData((data) => ({ ...data, credential: credential ?? undefined }));
+    },
+    [updateIntegrationData],
+  );
 
-  const updateArgument = (name: string, value: unknown) => {
-    updateIntegrationData((data) => ({
-      ...data,
-      arguments: Object.fromEntries(
-        Object.entries({
-          ...(data.arguments ?? {}),
-          [name]: value,
-        }).filter(([, entryValue]) => entryValue !== undefined),
-      ),
-    }));
-  };
+  const updateArgument = useCallback(
+    (name: string, value: unknown) => {
+      updateIntegrationData((data) => ({
+        ...data,
+        arguments: Object.fromEntries(
+          Object.entries({
+            ...(data.arguments ?? {}),
+            [name]: value,
+          }).filter(([, entryValue]) => entryValue !== undefined),
+        ),
+      }));
+    },
+    [updateIntegrationData],
+  );
 
   const renderField = (field: IntegrationArgumentField) => {
     const value = node.data.arguments?.[field.name];
@@ -77,10 +94,7 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
             field.options?.[0]?.value);
       return (
         <div key={field.name}>
-          <label className="block text-xs text-muted-foreground">
-            {field.label}
-            {field.required ? " *" : ""}
-          </label>
+          <FieldLabel label={field.label} required={field.required} />
           <Select
             value={selectValue}
             onValueChange={(nextValue) => updateArgument(field.name, nextValue)}
@@ -104,10 +118,7 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
     if (field.type === "json") {
       return (
         <div key={field.name}>
-          <label className="block text-xs text-muted-foreground">
-            {field.label}
-            {field.required ? " *" : ""}
-          </label>
+          <FieldLabel label={field.label} required={field.required} />
           <JsonField
             value={value}
             objectOnly={false}
@@ -121,10 +132,7 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
     if (field.type === "number") {
       return (
         <div key={field.name}>
-          <label className="block text-xs text-muted-foreground">
-            {field.label}
-            {field.required ? " *" : ""}
-          </label>
+          <FieldLabel label={field.label} required={field.required} />
           <input
             type="number"
             className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
@@ -142,10 +150,7 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
 
     return (
       <div key={field.name}>
-        <label className="block text-xs text-muted-foreground">
-          {field.label}
-          {field.required ? " *" : ""}
-        </label>
+        <FieldLabel label={field.label} required={field.required} />
         <VariableInput
           value={typeof value === "string" ? value : ""}
           onChange={(nextValue) => updateArgument(field.name, nextValue)}
@@ -195,21 +200,13 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
 
       <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
         <summary className="cursor-pointer text-xs text-muted-foreground">Advanced JSON</summary>
-        <div className="mt-2">
-          <JsonField
-            value={node.data.arguments}
-            onChange={(value) => {
-              if (!isJsonObject(value)) {
-                return;
-              }
-
-              updateIntegrationData((data) => ({
-                ...data,
-                arguments: value,
-              }));
-            }}
-          />
-        </div>
+        <JsonField
+          value={node.data.arguments}
+          onChange={(value) => {
+            if (!isJsonObject(value)) return;
+            updateIntegrationData((data) => ({ ...data, arguments: value }));
+          }}
+        />
       </details>
     </div>
   );
