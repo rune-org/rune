@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Panel } from "@xyflow/react";
 import { Maximize2, Trash2, ArrowRightLeft, Settings, Pin, PinOff } from "lucide-react";
 import type { CanvasNode } from "../types";
-import { getNodeSchema } from "../lib/nodeRegistry";
+import { getNodeSchema, NODE_REGISTRY } from "../lib/nodeRegistry";
 import { useUpdateNodeData } from "../hooks/useUpdateNodeData";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -31,8 +31,11 @@ import { SortInspector } from "./inspectors/SortInspector";
 import { LimitInspector } from "./inspectors/LimitInspector";
 import { SplitInspector } from "./inspectors/SplitInspector";
 import { MergeInspector } from "./inspectors/MergeInspector";
+import { IntegrationInspector } from "./inspectors/IntegrationInspector";
 import { toast } from "@/components/ui/toast";
 import { Activity } from "lucide-react";
+import { isIntegrationNodeKind } from "../integrations/helpers";
+import type { IntegrationNodeData } from "../integrations/types";
 
 type InspectorProps = {
   selectedNode: CanvasNode | null;
@@ -52,6 +55,15 @@ function renderInspectorForm(
   updateData: ReturnType<typeof useUpdateNodeData>,
   isExpanded: boolean,
 ) {
+  if (isIntegrationNodeKind(node.type)) {
+    return (
+      <IntegrationInspector
+        node={node as CanvasNode & { data: IntegrationNodeData }}
+        updateData={updateData}
+      />
+    );
+  }
+
   switch (node.type) {
     case "http":
       return <HttpInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
@@ -98,6 +110,10 @@ function renderInspectorForm(
     default:
       return null;
   }
+}
+
+function nodeDisplayType(node: CanvasNode): string {
+  return NODE_REGISTRY[node.type]?.label ?? node.type;
 }
 
 type LabelInputProps = {
@@ -190,6 +206,8 @@ export function Inspector({
     onDelete?.();
   };
 
+  const selectedNodeTypeLabel = selectedNode ? nodeDisplayType(selectedNode) : "";
+
   const Content = (
     <div
       data-inspector
@@ -245,7 +263,7 @@ export function Inspector({
           {/* Node Info */}
           <div className="shrink-0 border-b border-border/40 px-3 py-2">
             <div className="text-sm font-medium text-foreground">
-              {selectedNode.type} • {selectedNode.id.slice(0, 6)}
+              {selectedNodeTypeLabel} • {selectedNode.id.slice(0, 6)}
             </div>
           </div>
 
@@ -309,10 +327,10 @@ export function Inspector({
                 <div className="space-y-1">
                   <DialogTitle className="flex items-center gap-2 text-xl">
                     <Settings className="h-5 w-5 text-muted-foreground" />
-                    Configure {selectedNode.type} Node
+                    Configure {selectedNodeTypeLabel} Node
                   </DialogTitle>
                   <div className="text-sm text-muted-foreground">
-                    ID: {selectedNode.id} • Type: {selectedNode.type}
+                    ID: {selectedNode.id} • Type: {selectedNodeTypeLabel}
                   </div>
                 </div>
               </div>
@@ -508,7 +526,7 @@ export function Inspector({
             {selectedNode && (
               <div className="rounded-sm border border-border/60 bg-muted/30 p-3">
                 <div className="text-sm font-medium text-foreground">
-                  {selectedNode.type} • {selectedNode.data.label || selectedNode.id.slice(0, 6)}
+                  {selectedNodeTypeLabel} • {selectedNode.data.label || selectedNode.id.slice(0, 6)}
                 </div>
               </div>
             )}

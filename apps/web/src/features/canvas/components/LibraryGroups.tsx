@@ -1,22 +1,28 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { useDraggable } from "@neodrag/react";
 import type { NodeKind } from "../types";
 import {
-  getNodeIcon,
   getNodesByGroup,
   getAllGroups,
   getGroupLabel,
   getGroupIcon,
-  getGroupColorClass,
+  getGroupIconSrc,
+  getGroupColor,
+  isIntegrationGroup,
+  NODE_REGISTRY,
   type NodeGroup,
 } from "../lib/nodeRegistry";
+
+export type LibraryTab = "runic" | "integrations";
 
 type LibraryProps = {
   containerRef: React.RefObject<HTMLDivElement | null>;
   onAdd: (type: NodeKind, x?: number, y?: number) => void;
+  tab?: LibraryTab;
   shortcutsByKind?: Partial<Record<NodeKind, string>>;
   onAssignShortcut?: (kind: NodeKind, key: string | null) => void;
 };
@@ -102,7 +108,8 @@ function DraggableItem({
     },
   });
 
-  const ItemIcon = getNodeIcon(type);
+  const metadata = NODE_REGISTRY[type];
+  const ItemIcon = metadata.icon;
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
@@ -148,7 +155,18 @@ function DraggableItem({
         aria-label={`Add ${label}`}
         style={dragging ? { opacity: 0 } : undefined}
       >
-        <ItemIcon className="h-3.5 w-3.5 text-muted-foreground" />
+        {metadata.iconSrc ? (
+          <Image
+            src={metadata.iconSrc}
+            alt=""
+            width={14}
+            height={14}
+            className="h-3.5 w-3.5 shrink-0"
+            aria-hidden
+          />
+        ) : (
+          <ItemIcon className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
         <span>{label}</span>
         {editing ? (
           <input
@@ -179,7 +197,18 @@ function DraggableItem({
             }}
           >
             <div className="flex items-center gap-2 rounded-sm border border-border/60 bg-background/90 px-3 py-1.5 text-left text-[0.8rem] shadow-md">
-              <ItemIcon className="h-3.5 w-3.5 text-muted-foreground" />
+              {metadata.iconSrc ? (
+                <Image
+                  src={metadata.iconSrc}
+                  alt=""
+                  width={14}
+                  height={14}
+                  className="h-3.5 w-3.5 shrink-0"
+                  aria-hidden
+                />
+              ) : (
+                <ItemIcon className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
               <span>{label}</span>
             </div>
           </div>,
@@ -199,8 +228,9 @@ type GroupProps = {
 
 function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }: GroupProps) {
   const Icon = getGroupIcon(group);
+  const iconSrc = getGroupIconSrc(group);
   const nodes = getNodesByGroup(group);
-  const colorClass = getGroupColorClass(group);
+  const color = getGroupColor(group);
   const title = getGroupLabel(group);
 
   // Alphabetical order
@@ -209,8 +239,12 @@ function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }
   return (
     <details open className="rounded-sm border border-border/60 bg-muted/20 p-2">
       <summary className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
-        <div className={`h-2 w-2 rounded-full ${colorClass}`} />
-        <Icon className="h-3.5 w-3.5" />
+        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+        {iconSrc ? (
+          <Image src={iconSrc} alt="" width={14} height={14} className="h-3.5 w-3.5" aria-hidden />
+        ) : (
+          <Icon className="h-3.5 w-3.5" />
+        )}
         {title}
       </summary>
       <div className="mt-2 grid gap-2">
@@ -233,12 +267,23 @@ function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }
 export function LibraryGroups({
   containerRef,
   onAdd,
+  tab,
   shortcutsByKind,
   onAssignShortcut,
 }: LibraryProps) {
+  const groups = useMemo(
+    () =>
+      getAllGroups().filter((g) => {
+        if (tab === "runic") return !isIntegrationGroup(g);
+        if (tab === "integrations") return isIntegrationGroup(g);
+        return true;
+      }),
+    [tab],
+  );
+
   return (
     <div className="flex flex-col gap-3">
-      {getAllGroups().map((group) => (
+      {groups.map((group) => (
         <Group
           key={group}
           group={group}
