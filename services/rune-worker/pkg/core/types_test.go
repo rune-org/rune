@@ -306,12 +306,13 @@ func TestNodeHasCredentials(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.node.HasCredentials(); got != tt.want {
-				t.Errorf("Node.HasCredentials() = %v, want %v", got, tt.want)
+			if got := NodeHasCredentials(tt.node); got != tt.want {
+				t.Errorf("NodeHasCredentials() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
+
 
 func TestNodeHasErrorHandling(t *testing.T) {
 	tests := []struct {
@@ -348,12 +349,13 @@ func TestNodeHasErrorHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.node.HasErrorHandling(); got != tt.want {
-				t.Errorf("Node.HasErrorHandling() = %v, want %v", got, tt.want)
+			if got := NodeHasErrorHandling(tt.node); got != tt.want {
+				t.Errorf("NodeHasErrorHandling() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
+
 
 func TestNodeTypeConstants(t *testing.T) {
 	// Verify node type constants are defined

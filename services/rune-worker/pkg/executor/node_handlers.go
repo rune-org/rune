@@ -122,8 +122,8 @@ func (e *Executor) handleNodeFailure(ctx context.Context, msg *messages.NodeExec
 
 	case "branch":
 		// Follow error edge if specified
-		if node.Error != nil && node.Error.ErrorEdge != "" {
-			errorNode := e.getNodeByErrorEdge(&msg.WorkflowDefinition, node.Error.ErrorEdge)
+		if node.Error != nil && node.Error.ErrorEdge != nil && *node.Error.ErrorEdge != "" {
+			errorNode := e.getNodeByErrorEdge(&msg.WorkflowDefinition, *node.Error.ErrorEdge)
 			if errorNode != nil {
 				return e.publishNextNodes(ctx, msg, []string{errorNode.ID}, msg.AccumulatedContext)
 			}
