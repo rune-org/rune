@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
+from fastapi.responses import StreamingResponse
+import asyncio
 
 from src.core.dependencies import require_password_changed
 from src.core.responses import ApiResponse
@@ -109,6 +111,53 @@ async def list_credentials_dropdown(
         data=[CredentialResponseDropDown.model_validate(c) for c in credentials],
         message=f"Found {len(credentials)} credential(s)",
     )
+
+
+@router.get(
+    "/events",
+    response_class=StreamingResponse,
+    summary="Subscribe to real-time credential events",
+)
+async def credential_events(
+    request: Request,
+    current_user: User = Depends(require_password_changed),
+) -> StreamingResponse:
+    """
+    Server-Sent Events (SSE) endpoint for credential updates.
+
+    Streams real-time events when credentials are deleted, shared, or revoked.
+    Useful for updating the UI instantly without polling.
+
+    Permissions:
+    - Any authenticated user can subscribe. They will only receive events
+      for credentials they have access to (handled by the client checking IDs).
+    """
+
+    async def event_generator():
+        from src.db.redis import get_redis_client
+
+        redis = get_redis_client()
+        pubsub = redis.pubsub()
+        await pubsub.subscribe("credential_events")
+
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+
+                message = await pubsub.get_message(
+                    ignore_subscribe_messages=True, timeout=1.0
+                )
+                if message is not None:
+                    data = message["data"].decode("utf-8")
+                    yield f"data: {data}\n\n"
+
+                await asyncio.sleep(0.1)
+        finally:
+            await pubsub.unsubscribe("credential_events")
+            await pubsub.close()
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @router.get(
@@ -275,7 +324,7 @@ async def revoke_credential_access(
     """
     credential = await service.get_credential(credential_id, current_user)
 
-    await permission_service.revoke_credential_access(credential, user_id, current_user)
+    await service.revoke_credential_access(credential, user_id, current_user)
 
 
 @router.get(
