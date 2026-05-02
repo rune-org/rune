@@ -41,12 +41,12 @@ def test_generate_temporary_password_uses_valid_characters():
     
     
 def test_generate_temporary_password_validates_password_strength():
-"""Should validate password adheres to validation rules."""
-for _ in range(30):
-    password = generate_temporary_password()
-    is_valid, error_message = validate_password_strength(password)
-    assert is_valid
-    assert error_message == "Password is strong"
+    """Should validate password adheres to validation rules."""
+    for _ in range(30):
+        password = generate_temporary_password()
+        is_valid, error_message = validate_password_strength(password)
+        assert is_valid
+        assert error_message == "Password is strong"
 
 
 # ============================================================================
