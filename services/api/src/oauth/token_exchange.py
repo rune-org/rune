@@ -14,7 +14,9 @@ def content_type_indicates_json(value: str | None) -> bool:
     return main == "application/json" or main.endswith("+json")
 
 
-def parse_token_error_json_payload(content_type: str | None, body: str) -> dict[str, Any]:
+def parse_token_error_json_payload(
+    content_type: str | None, body: str
+) -> dict[str, Any]:
     """Parse token-endpoint error body as JSON only when Content-Type allows it."""
     if not content_type_indicates_json(content_type):
         return {}
@@ -58,9 +60,7 @@ async def post_oauth_token_form(url: str, form: dict[str, str]) -> dict[str, Any
     text = response.text
     ctype = response.headers.get("content-type")
     if response.status_code >= 400:
-        raise OAuthTokenHttpError(
-            response.status_code, text, content_type=ctype
-        )
+        raise OAuthTokenHttpError(response.status_code, text, content_type=ctype)
 
     try:
         data = response.json()
