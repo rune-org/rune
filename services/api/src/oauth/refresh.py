@@ -12,9 +12,11 @@ from src.oauth.credential_tokens import (
     is_invalid_grant_response,
     merge_refresh_tokens,
 )
-import json
-
-from src.oauth.token_exchange import OAuthTokenHttpError, post_oauth_token_form
+from src.oauth.token_exchange import (
+    OAuthTokenHttpError,
+    parse_token_error_json_payload,
+    post_oauth_token_form,
+)
 
 
 def _parse_expires_at(raw: Any) -> datetime | None:
@@ -108,12 +110,9 @@ async def ensure_oauth2_access_token(
         await db.commit()
         await db.refresh(credential)
 
-        err_payload: dict[str, Any] = {}
-        try:
-            if e.body.strip().startswith("{"):
-                err_payload = json.loads(e.body)
-        except Exception:
-            err_payload = {}
+        err_payload: dict[str, Any] = parse_token_error_json_payload(
+            e.content_type, e.body
+        )
 
         if is_invalid_grant_response(e.body, err_payload):
             raise BadRequest(

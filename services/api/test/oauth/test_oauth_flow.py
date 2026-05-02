@@ -5,6 +5,24 @@ from src.oauth.authorize_extras import extra_authorize_query_params
 from src.oauth.credential_patch import merge_oauth2_credential_patch
 from src.oauth.credential_tokens import oauth2_worker_public_values
 from src.oauth.state import encode_oauth_state
+from src.oauth.token_exchange import content_type_indicates_json, parse_token_error_json_payload
+
+
+def test_content_type_indicates_json():
+    assert content_type_indicates_json("application/json") is True
+    assert content_type_indicates_json("application/json; charset=UTF-8") is True
+    assert content_type_indicates_json("application/problem+json") is True
+    assert content_type_indicates_json("text/html") is False
+    assert content_type_indicates_json(None) is False
+
+
+def test_parse_token_error_json_payload_respects_content_type():
+    body = '{"error":"invalid_grant"}'
+    assert parse_token_error_json_payload("application/json", body) == {
+        "error": "invalid_grant",
+    }
+    assert parse_token_error_json_payload("text/html", body) == {}
+    assert parse_token_error_json_payload(None, body) == {}
 
 
 def test_extra_authorize_params_google():
