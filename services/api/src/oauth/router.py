@@ -27,7 +27,9 @@ def _callback_redirect_uri() -> str:
     return f"{base}/oauth/callback"
 
 
-def _append_query(url: str, extra: dict[str, str], keep_blank_values: bool = True) -> str:
+def _append_query(
+    url: str, extra: dict[str, str], keep_blank_values: bool = True
+) -> str:
     parts = urlparse(url)
     q = dict(parse_qsl(parts.query, keep_blank_values=keep_blank_values))
     for k, v in extra.items():
