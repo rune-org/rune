@@ -27,31 +27,12 @@ def _callback_redirect_uri() -> str:
     return f"{base}/oauth/callback"
 
 
-def _append_query(url: str, extra: dict[str, str]) -> str:
+def _append_query(url: str, extra: dict[str, str], keep_blank_values: bool = True) -> str:
     parts = urlparse(url)
-    q = dict(parse_qsl(parts.query, keep_blank_values=True))
+    q = dict(parse_qsl(parts.query, keep_blank_values=keep_blank_values))
     for k, v in extra.items():
         q[k] = v
     new_query = urlencode(q)
-    return urlunparse(
-        (
-            parts.scheme,
-            parts.netloc,
-            parts.path,
-            parts.params,
-            new_query,
-            parts.fragment,
-        )
-    )
-
-
-def _merge_authorize_query_params(auth_url: str, params: dict[str, str]) -> str:
-    parts = urlparse(auth_url)
-    existing = dict(parse_qsl(parts.query, keep_blank_values=True))
-    for k, v in params.items():
-        if v != "":
-            existing[k] = v
-    new_query = urlencode(existing)
     return urlunparse(
         (
             parts.scheme,
@@ -105,7 +86,7 @@ async def oauth_authorize(
     for key, value in extra_authorize_query_params(str(auth_url)).items():
         qparams.setdefault(key, value)
 
-    location = _merge_authorize_query_params(str(auth_url), qparams)
+    location = _append_query(str(auth_url), qparams, keep_blank_values=False)
     return RedirectResponse(url=location, status_code=302)
 
 

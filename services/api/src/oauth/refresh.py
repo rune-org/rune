@@ -104,17 +104,16 @@ async def ensure_oauth2_access_token(
     try:
         token_response = await post_oauth_token_form(str(token_url), form)
     except OAuthTokenHttpError as e:
-        cleared = clear_oauth_session_tokens(data)
-        credential.credential_data = encryptor.encrypt_credential_data(cleared)
-        db.add(credential)
-        await db.commit()
-        await db.refresh(credential)
-
         err_payload: dict[str, Any] = parse_token_error_json_payload(
             e.content_type, e.body
         )
 
         if is_invalid_grant_response(e.body, err_payload):
+            cleared = clear_oauth_session_tokens(data)
+            credential.credential_data = encryptor.encrypt_credential_data(cleared)
+            db.add(credential)
+            await db.commit()
+            await db.refresh(credential)
             raise BadRequest(
                 detail="OAuth2 refresh failed (session revoked or expired). "
                 "Reconnect this credential."
