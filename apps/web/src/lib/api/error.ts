@@ -1,50 +1,28 @@
-/**
- * Extracts a human-readable message from an API error value.
- *
- * All API errors in this codebase go through the global `http_exception_handler`
- * which normalises every HTTPException into:
- *   { success: false, message: "...", data: null }
- *
- * So we only need to read `message` — there is no `detail` field on any
- * error response this backend sends to the frontend.
- */
 export function extractApiErrorMessage(
   error: unknown,
   fallback = "An unexpected error occurred. Please try again.",
 ): string {
-  if (typeof error === "string" && error.trim()) {
-    return error;
+  // 1. Handle strings or non-objects immediately
+  if (typeof error === "string" && error.trim()) return error;
+  if (!error || typeof error !== "object") return fallback;
+
+  const e = error as Record<string, any>;
+
+  // 2. Prioritize common API fields: 'message' or 'detail'
+  const candidate = e.message ?? e.detail;
+
+  // 3. If it's a string, use it
+  if (typeof candidate === "string" && candidate.trim()) return candidate;
+
+  // 4. If it's an array (common in validation errors), join it
+  if (Array.isArray(candidate)) {
+    return candidate
+      .map((item) => (typeof item === "string" ? item : JSON.stringify(item)))
+      .join(", ");
   }
 
-  if (typeof error !== "object" || error === null) {
-    return fallback;
-  }
-
-  const rec = error as Record<string, unknown>;
-
-  if ("message" in rec) {
-    const m = rec.message;
-    if (typeof m === "string" && m.trim()) {
-      return m;
-    }
-    if (m != null && typeof m !== "object") {
-      return String(m);
-    }
-  }
-
-  if ("detail" in rec) {
-    const d = rec.detail;
-    if (typeof d === "string" && d.trim()) {
-      return d;
-    }
-    if (Array.isArray(d)) {
-      return d.map((x) => (typeof x === "string" ? x : JSON.stringify(x))).join("; ");
-    }
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
+  // 5. Fallback to standard Error object message
+  if (error instanceof Error && error.message) return error.message;
 
   return fallback;
 }

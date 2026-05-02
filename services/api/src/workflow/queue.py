@@ -4,6 +4,43 @@ from src.queue.base import BaseQueuePublisher
 from src.workflow.schemas import NodeExecutionMessage
 
 
+NO_ACTION_NODES_MESSAGE = "This workflow has no action nodes."
+
+
+def get_first_executable_node_ids(workflow_data: dict) -> list[str]:
+    """Validate a workflow can start and return nodes after the trigger."""
+    nodes = workflow_data.get("nodes", [])
+    edges = workflow_data.get("edges", [])
+
+    if not nodes:
+        raise ValueError("Workflow has no nodes to execute")
+
+    trigger_nodes = [node for node in nodes if node.get("trigger", False)]
+
+    if len(trigger_nodes) != 1:
+        raise ValueError("Workflow must have exactly one trigger node")
+
+    trigger_node_id = trigger_nodes[0].get("id")
+    if not trigger_node_id:
+        raise ValueError("Trigger node must have an id")
+
+    first_nodes = [
+        edge.get("dst")
+        for edge in edges
+        if edge.get("src") == trigger_node_id and edge.get("dst")
+    ]
+
+    if not first_nodes:
+        raise ValueError(NO_ACTION_NODES_MESSAGE)
+
+    return first_nodes
+
+
+def validate_workflow_can_run(workflow_data: dict) -> None:
+    """Raise ValueError if a workflow cannot be queued for execution."""
+    get_first_executable_node_ids(workflow_data)
+
+
 class WorkflowQueueService(BaseQueuePublisher):
     """Service for publishing workflow execution messages to RabbitMQ."""
 
@@ -24,6 +61,7 @@ class WorkflowQueueService(BaseQueuePublisher):
         workflow_version_id: int,
         execution_id: str,
         workflow_data: dict,
+        accumulated_context: dict | None = None,
     ) -> None:
         """
         Publish a workflow run message to the queue.
@@ -42,33 +80,7 @@ class WorkflowQueueService(BaseQueuePublisher):
         Raises:
             ValueError: If workflow has invalid structure
         """
-        # Find trigger nodes and the first executable nodes
-        nodes = workflow_data.get("nodes", [])
-        edges = workflow_data.get("edges", [])
-
-        if not nodes:
-            raise ValueError("Workflow has no nodes to execute")
-
-        # Validate trigger nodes - must have exactly one
-        trigger_nodes = [node for node in nodes if node.get("trigger", False)]
-
-        if len(trigger_nodes) != 1:
-            raise ValueError("Workflow must have exactly one trigger node")
-
-        # Get the single trigger node
-        trigger_node = trigger_nodes[0]
-        trigger_node_id = trigger_node.get("id")
-
-        # Find the executable nodes the trigger points to
-        first_nodes = []
-
-        for edge in edges:
-            if edge.get("src") == trigger_node_id:
-                dst_node_id = edge.get("dst")
-                first_nodes.append(dst_node_id)
-
-        if not first_nodes:
-            return None
+        first_nodes = get_first_executable_node_ids(workflow_data)
 
         # For now, use the first one (in the future, might send multiple messages)
         first_node = first_nodes[0]
@@ -80,6 +92,7 @@ class WorkflowQueueService(BaseQueuePublisher):
             execution_id=execution_id,
             current_node=first_node,
             workflow_definition=workflow_data,
+            accumulated_context=accumulated_context or {},
         )
 
         await self._publish(payload, durable=True)
