@@ -38,8 +38,8 @@ def test_generate_temporary_password_uses_valid_characters():
     alphabet = string.ascii_letters + string.digits + string.punctuation
     password = generate_temporary_password(length=50)
     assert all(c in alphabet for c in password)
-    
-    
+
+
 def test_generate_temporary_password_validates_password_strength():
     """Should validate password adheres to validation rules."""
     for _ in range(30):
