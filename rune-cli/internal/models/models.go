@@ -142,3 +142,31 @@ type PaginatedResponse[T any] struct {
 	PageSize   int `json:"page_size"`
 	TotalPages int `json:"total_pages"`
 }
+
+// DBHealthInfo contains database health check results from the API
+type DBHealthInfo struct {
+	Connected     bool          `json:"connected"`
+	Version       string        `json:"version"`
+	DatabaseName  string        `json:"database_name"`
+	DatabaseSize  string        `json:"database_size"`
+	TableCount    int           `json:"table_count"`
+	UserCount     int           `json:"user_count"`
+	WorkflowCount int           `json:"workflow_count"`
+	LatencyMs     float64       `json:"latency_ms"`
+}
+
+// DBTableInfo contains information about a database table
+type DBTableInfo struct {
+	Name      string `json:"name"`
+	RowCount  int64  `json:"row_count"`
+	SizeBytes int64  `json:"size_bytes"`
+	SizeHuman string `json:"size_human"`
+}
+
+// DBTableData contains the data from a database table query
+type DBTableData struct {
+	TableName string     `json:"table_name"`
+	Columns   []string   `json:"columns"`
+	Rows      [][]string `json:"rows"`
+	RowCount  int        `json:"row_count"`
+}

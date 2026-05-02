@@ -1,11 +1,14 @@
 /*
 Package cli - workflows.go provides workflow management commands.
 
+All workflow commands require user authentication.
+
 Commands:
   - workflows list: List all workflows
   - workflows get: Get workflow details
   - workflows run: Execute a workflow
   - workflows delete: Delete a workflow
+  - workflows executions: List recent executions
 */
 package cli
 
@@ -21,24 +24,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
+	"github.com/rune-org/rune-cli/internal/helpers"
 	"github.com/rune-org/rune-cli/internal/theme"
 )
-
-func init() {
-	rootCmd.AddCommand(workflowsCmd)
-	workflowsCmd.AddCommand(workflowsListCmd)
-	workflowsCmd.AddCommand(workflowsGetCmd)
-	workflowsCmd.AddCommand(workflowsRunCmd)
-	workflowsCmd.AddCommand(workflowsDeleteCmd)
-	workflowsCmd.AddCommand(executionsCmd)
-
-	// Run flags
-	workflowsRunCmd.Flags().StringP("input", "i", "", "Input data as JSON string")
-	workflowsRunCmd.Flags().StringP("file", "f", "", "Input data from JSON file")
-
-	// Delete flags
-	workflowsDeleteCmd.Flags().BoolP("force", "f", false, "Force delete without confirmation")
-}
 
 var workflowsCmd = &cobra.Command{
 	Use:     "workflows",
@@ -53,6 +41,7 @@ Examples:
   rune workflows list
   rune workflows get 123
   rune workflows run 123 -i '{"key": "value"}'`,
+	PersistentPreRunE: requireAuth,
 }
 
 var workflowsListCmd = &cobra.Command{
@@ -93,16 +82,31 @@ var executionsCmd = &cobra.Command{
 	RunE:  runExecutionsList,
 }
 
+func init() {
+	// NOTE: workflowsCmd is registered in root.go — do NOT add it again here
+	workflowsCmd.AddCommand(workflowsListCmd)
+	workflowsCmd.AddCommand(workflowsGetCmd)
+	workflowsCmd.AddCommand(workflowsRunCmd)
+	workflowsCmd.AddCommand(workflowsDeleteCmd)
+	workflowsCmd.AddCommand(executionsCmd)
+
+	// Run flags
+	workflowsRunCmd.Flags().StringP("input", "i", "", "Input data as JSON string")
+	workflowsRunCmd.Flags().StringP("file", "f", "", "Input data from JSON file")
+
+	// Delete flags
+	workflowsDeleteCmd.Flags().BoolP("force", "f", false, "Force delete without confirmation")
+}
+
 func runWorkflowsList(cmd *cobra.Command, args []string) error {
 	client, err := getAuthenticatedClient()
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
 	fmt.Println(theme.SectionHeader("Workflows"))
 
-	// Show loading animation
+	// Show loading indicator
 	spinnerStyle := lipgloss.NewStyle().Foreground(theme.PrimaryColor)
 	fmt.Printf("%s Fetching workflows...\r", spinnerStyle.Render("◆"))
 
@@ -114,7 +118,7 @@ func runWorkflowsList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Clear loading message
-	fmt.Print("\033[K") // Clear line
+	fmt.Print("\033[K")
 
 	if outputJSON {
 		enc := json.NewEncoder(os.Stdout)
@@ -132,7 +136,6 @@ func runWorkflowsList(cmd *cobra.Command, args []string) error {
 	// Table output
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 
-	// Header
 	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(theme.PrimaryColor)
 	fmt.Fprintf(w, "  %s\t%s\t%s\t%s\n",
 		headerStyle.Render("ID"),
@@ -149,11 +152,11 @@ func runWorkflowsList(cmd *cobra.Command, args []string) error {
 			status = "published"
 		}
 
-		updatedAt := formatRelativeTime(wf.UpdatedAt)
+		updatedAt := helpers.FormatRelativeTime(wf.UpdatedAt)
 
 		fmt.Fprintf(w, "  %d\t%s\t%s\t%s\n",
 			wf.ID,
-			truncateString(wf.Name, 30),
+			helpers.TruncateString(wf.Name, 30),
 			statusStyle.Render(status),
 			theme.MutedStyle.Render(updatedAt),
 		)
@@ -169,7 +172,6 @@ func runWorkflowsList(cmd *cobra.Command, args []string) error {
 func runWorkflowsGet(cmd *cobra.Command, args []string) error {
 	client, err := getAuthenticatedClient()
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
@@ -193,7 +195,6 @@ func runWorkflowsGet(cmd *cobra.Command, args []string) error {
 
 	fmt.Println(theme.SectionHeader("Workflow Details"))
 
-	// Workflow info
 	labelStyle := lipgloss.NewStyle().Foreground(theme.MutedColor).Width(14)
 	valueStyle := lipgloss.NewStyle().Foreground(theme.TextColor)
 
@@ -215,7 +216,6 @@ func runWorkflowsGet(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  %s %s\n", labelStyle.Render("Created:"), theme.MutedStyle.Render(workflow.CreatedAt.Format(time.RFC3339)))
 	fmt.Printf("  %s %s\n", labelStyle.Render("Updated:"), theme.MutedStyle.Render(workflow.UpdatedAt.Format(time.RFC3339)))
 
-	// Version info
 	if workflow.LatestVersionID != nil {
 		fmt.Printf("  %s %d\n", labelStyle.Render("Latest Ver:"), *workflow.LatestVersionID)
 	}
@@ -229,7 +229,6 @@ func runWorkflowsGet(cmd *cobra.Command, args []string) error {
 func runWorkflowsRun(cmd *cobra.Command, args []string) error {
 	client, err := getAuthenticatedClient()
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
@@ -273,7 +272,6 @@ func runWorkflowsRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Clear loading message
 	fmt.Print("\033[K")
 
 	if outputJSON {
@@ -297,7 +295,6 @@ func runWorkflowsRun(cmd *cobra.Command, args []string) error {
 func runWorkflowsDelete(cmd *cobra.Command, args []string) error {
 	client, err := getAuthenticatedClient()
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
@@ -340,7 +337,6 @@ func runWorkflowsDelete(cmd *cobra.Command, args []string) error {
 func runExecutionsList(cmd *cobra.Command, args []string) error {
 	client, err := getAuthenticatedClient()
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
@@ -383,11 +379,11 @@ func runExecutionsList(cmd *cobra.Command, args []string) error {
 
 	for _, ex := range executions {
 		fmt.Fprintf(w, "  %s\t%d\t%s\t%s\t%s\n",
-			truncateString(ex.ID, 12),
+			helpers.TruncateString(ex.ID, 12),
 			ex.WorkflowID,
 			getExecutionStatusStyle(ex.Status).Render(ex.Status),
 			ex.TriggerType,
-			theme.MutedStyle.Render(formatRelativeTime(ex.StartedAt)),
+			theme.MutedStyle.Render(helpers.FormatRelativeTime(ex.StartedAt)),
 		)
 	}
 
@@ -418,42 +414,5 @@ func getExecutionStatusStyle(status string) lipgloss.Style {
 		return lipgloss.NewStyle().Foreground(theme.WarningColor)
 	default:
 		return lipgloss.NewStyle().Foreground(theme.MutedColor)
-	}
-}
-
-func truncateString(s string, maxLen int) string {
-	if len(s) > maxLen {
-		return s[:maxLen-3] + "..."
-	}
-	return s
-}
-
-func formatRelativeTime(t time.Time) string {
-	now := time.Now()
-	diff := now.Sub(t)
-
-	switch {
-	case diff < time.Minute:
-		return "just now"
-	case diff < time.Hour:
-		mins := int(diff.Minutes())
-		if mins == 1 {
-			return "1 min ago"
-		}
-		return fmt.Sprintf("%d mins ago", mins)
-	case diff < 24*time.Hour:
-		hours := int(diff.Hours())
-		if hours == 1 {
-			return "1 hour ago"
-		}
-		return fmt.Sprintf("%d hours ago", hours)
-	case diff < 7*24*time.Hour:
-		days := int(diff.Hours() / 24)
-		if days == 1 {
-			return "yesterday"
-		}
-		return fmt.Sprintf("%d days ago", days)
-	default:
-		return t.Format("Jan 2, 2006")
 	}
 }

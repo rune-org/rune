@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/rune-org/rune-cli/internal/config"
+	"github.com/rune-org/rune-cli/internal/helpers"
 	"github.com/rune-org/rune-cli/internal/theme"
 )
 
@@ -174,9 +175,5 @@ func runConfigPath(cmd *cobra.Command, args []string) error {
 
 // maskConnectionString hides sensitive parts of a database connection string
 func maskConnectionString(connStr string) string {
-	// Simple masking - show only host and database
-	if len(connStr) > 20 {
-		return connStr[:10] + "****" + connStr[len(connStr)-10:]
-	}
-	return "****"
+	return helpers.MaskConnectionString(connStr)
 }

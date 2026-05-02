@@ -13,17 +13,19 @@ import (
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/rune-org/rune-cli/internal/theme"
 )
 
-// RUNE brand colors
+// Use centralized theme colors instead of local duplicates
 var (
-	primaryColor   = lipgloss.Color("#6366F1")
-	secondaryColor = lipgloss.Color("#8B5CF6")
-	accentColor    = lipgloss.Color("#A855F7")
-	successColor   = lipgloss.Color("#22C55E")
-	warningColor   = lipgloss.Color("#F59E0B")
-	errorColor     = lipgloss.Color("#EF4444")
-	mutedColor     = lipgloss.Color("#64748B")
+	primaryColor   = theme.PrimaryColor
+	secondaryColor = theme.SecondaryColor
+	accentColor    = theme.AccentColor
+	successColor   = theme.SuccessColor
+	warningColor   = theme.WarningColor
+	errorColor     = theme.ErrorColor
+	mutedColor     = theme.MutedColor
 )
 
 // SpinnerType defines different spinner styles

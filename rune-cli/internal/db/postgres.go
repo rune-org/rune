@@ -257,6 +257,59 @@ func TruncateAllTables(pool *pgxpool.Pool) error {
 	return nil
 }
 
+// TruncateTable truncates a single table by name (data only, schema preserved).
+func TruncateTable(pool *pgxpool.Pool, tableName string) error {
+	if tableName == "alembic_version" {
+		return fmt.Errorf("cannot truncate migration tracking table")
+	}
+
+	// Validate table exists
+	tables, err := ListTables(pool)
+	if err != nil {
+		return fmt.Errorf("failed to list tables: %w", err)
+	}
+	found := false
+	for _, t := range tables {
+		if t.Name == tableName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("table '%s' not found", tableName)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, "SET session_replication_role = 'replica'")
+	if err != nil {
+		return fmt.Errorf("failed to disable foreign key checks: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, fmt.Sprintf("TRUNCATE TABLE %q CASCADE", tableName))
+	if err != nil {
+		return fmt.Errorf("failed to truncate table %s: %w", tableName, err)
+	}
+
+	_, err = tx.Exec(ctx, "SET session_replication_role = 'origin'")
+	if err != nil {
+		return fmt.Errorf("failed to re-enable foreign key checks: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 // ExecuteSQL runs a raw SQL query and returns the results
 func ExecuteSQL(pool *pgxpool.Pool, query string) ([]map[string]any, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

@@ -2,11 +2,11 @@
 Package api - workflows.go provides workflow management API methods.
 
 These methods correspond to the /api/workflows endpoints in the FastAPI backend.
+All responses are wrapped in an ApiResponse envelope and extracted via unwrapData.
 */
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/rune-org/rune-cli/internal/models"
@@ -25,7 +25,7 @@ func (c *Client) ListWorkflows() ([]models.Workflow, error) {
 	}
 
 	var workflows []models.Workflow
-	if err := json.Unmarshal(resp.Body(), &workflows); err != nil {
+	if err := unwrapData(resp.Body(), &workflows); err != nil {
 		return nil, fmt.Errorf("failed to parse workflows response: %w", err)
 	}
 
@@ -45,7 +45,7 @@ func (c *Client) GetWorkflow(workflowID int) (*models.Workflow, error) {
 	}
 
 	var workflow models.Workflow
-	if err := json.Unmarshal(resp.Body(), &workflow); err != nil {
+	if err := unwrapData(resp.Body(), &workflow); err != nil {
 		return nil, fmt.Errorf("failed to parse workflow response: %w", err)
 	}
 
@@ -71,7 +71,7 @@ func (c *Client) TriggerWorkflow(workflowID int, inputs map[string]any) (*models
 	}
 
 	var execution models.Execution
-	if err := json.Unmarshal(resp.Body(), &execution); err != nil {
+	if err := unwrapData(resp.Body(), &execution); err != nil {
 		return nil, fmt.Errorf("failed to parse execution response: %w", err)
 	}
 
@@ -106,7 +106,7 @@ func (c *Client) ListExecutions() ([]models.Execution, error) {
 	}
 
 	var executions []models.Execution
-	if err := json.Unmarshal(resp.Body(), &executions); err != nil {
+	if err := unwrapData(resp.Body(), &executions); err != nil {
 		return nil, fmt.Errorf("failed to parse executions response: %w", err)
 	}
 
@@ -126,7 +126,7 @@ func (c *Client) GetExecution(executionID string) (*models.Execution, error) {
 	}
 
 	var execution models.Execution
-	if err := json.Unmarshal(resp.Body(), &execution); err != nil {
+	if err := unwrapData(resp.Body(), &execution); err != nil {
 		return nil, fmt.Errorf("failed to parse execution response: %w", err)
 	}
 

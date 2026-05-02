@@ -231,12 +231,3 @@ func (Clipboard) Paste() (string, error) {
 	return clipboard.ReadAll()
 }
 
-// CopyToClipboard is a convenience function for copying to clipboard
-func CopyToClipboard(text string) error {
-	return clipboard.WriteAll(text)
-}
-
-// PasteFromClipboard is a convenience function for pasting from clipboard
-func PasteFromClipboard() (string, error) {
-	return clipboard.ReadAll()
-}

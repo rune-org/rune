@@ -2,11 +2,11 @@
 Package api - users.go provides user management API methods.
 
 These methods correspond to the /api/users endpoints in the FastAPI backend.
+All responses are wrapped in an ApiResponse envelope and extracted via unwrapData.
 */
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/rune-org/rune-cli/internal/models"
@@ -25,7 +25,7 @@ func (c *Client) ListUsers() ([]models.User, error) {
 	}
 
 	var users []models.User
-	if err := json.Unmarshal(resp.Body(), &users); err != nil {
+	if err := unwrapData(resp.Body(), &users); err != nil {
 		return nil, fmt.Errorf("failed to parse users response: %w", err)
 	}
 
@@ -45,7 +45,7 @@ func (c *Client) GetUser(userID int) (*models.User, error) {
 	}
 
 	var user models.User
-	if err := json.Unmarshal(resp.Body(), &user); err != nil {
+	if err := unwrapData(resp.Body(), &user); err != nil {
 		return nil, fmt.Errorf("failed to parse user response: %w", err)
 	}
 
@@ -66,7 +66,7 @@ func (c *Client) CreateUser(req *models.UserCreate) (*models.User, error) {
 	}
 
 	var user models.User
-	if err := json.Unmarshal(resp.Body(), &user); err != nil {
+	if err := unwrapData(resp.Body(), &user); err != nil {
 		return nil, fmt.Errorf("failed to parse create response: %w", err)
 	}
 
@@ -87,7 +87,7 @@ func (c *Client) UpdateUser(userID int, req *models.UserUpdate) (*models.User, e
 	}
 
 	var user models.User
-	if err := json.Unmarshal(resp.Body(), &user); err != nil {
+	if err := unwrapData(resp.Body(), &user); err != nil {
 		return nil, fmt.Errorf("failed to parse update response: %w", err)
 	}
 
@@ -139,7 +139,7 @@ func (c *Client) SetUserStatus(userID int, isActive bool) (*models.User, error) 
 	}
 
 	var user models.User
-	if err := json.Unmarshal(resp.Body(), &user); err != nil {
+	if err := unwrapData(resp.Body(), &user); err != nil {
 		return nil, fmt.Errorf("failed to parse status response: %w", err)
 	}
 
@@ -149,7 +149,7 @@ func (c *Client) SetUserStatus(userID int, isActive bool) (*models.User, error) 
 // GetProfile retrieves the current user's profile
 func (c *Client) GetProfile() (*models.User, error) {
 	resp, err := c.httpClient.R().
-		Get(c.endpoint("/profile/"))
+		Get(c.endpoint("/profile/me"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get profile: %w", err)
 	}
@@ -159,7 +159,7 @@ func (c *Client) GetProfile() (*models.User, error) {
 	}
 
 	var user models.User
-	if err := json.Unmarshal(resp.Body(), &user); err != nil {
+	if err := unwrapData(resp.Body(), &user); err != nil {
 		return nil, fmt.Errorf("failed to parse profile response: %w", err)
 	}
 

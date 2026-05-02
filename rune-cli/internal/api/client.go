@@ -164,7 +164,7 @@ func (c *Client) Login(email, password string) (*models.LoginResponse, error) {
 	}
 
 	var loginResp models.LoginResponse
-	if err := json.Unmarshal(resp.Body(), &loginResp); err != nil {
+	if err := unwrapData(resp.Body(), &loginResp); err != nil {
 		return nil, fmt.Errorf("failed to parse login response: %w", err)
 	}
 

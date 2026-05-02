@@ -5,11 +5,11 @@ This package uses Cobra for command management. When run without arguments,
 it launches the interactive TUI. Commands are available for scripting and automation.
 
 Commands are organized into groups:
-  - auth: Authentication (login, logout, status)
-  - config: Configuration management
-  - db: Database operations (health, reset, tables)
-  - users: User management (admin only)
-  - workflows: Workflow operations
+  - auth: Authentication (login, logout, status) — no auth required
+  - config: Configuration management — no auth required
+  - db: Database operations (admin only) — requires admin auth
+  - users: User management (admin only) — requires admin auth
+  - workflows: Workflow operations — requires auth
 */
 package cli
 
@@ -78,12 +78,13 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&outputJSON, "json", "j", false, "Output in JSON format")
 
 	// Add subcommands
-	rootCmd.AddCommand(authCmd)
-	rootCmd.AddCommand(configCmd)
-	rootCmd.AddCommand(dbCmd)
-	rootCmd.AddCommand(usersCmd)
-	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(tuiCmd)
+	rootCmd.AddCommand(authCmd)     // No auth required
+	rootCmd.AddCommand(configCmd)   // No auth required
+	rootCmd.AddCommand(dbCmd)       // Admin auth required (set in db.go)
+	rootCmd.AddCommand(usersCmd)    // Admin auth required (set in users.go)
+	rootCmd.AddCommand(workflowsCmd) // Auth required (set in workflows.go)
+	rootCmd.AddCommand(versionCmd)  // No auth required
+	rootCmd.AddCommand(tuiCmd)      // No auth required (TUI handles its own auth)
 }
 
 // versionCmd shows version information

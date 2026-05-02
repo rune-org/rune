@@ -27,6 +27,7 @@ from src.credentials.router import router as credentials_router
 from src.scryb.router import router as scryb_router
 from src.smith.router import router as smith_router
 from src.internal.router import router as internal_router
+from src.cli.router import router as cli_db_router
 
 # Get settings
 settings = get_settings()
@@ -97,3 +98,4 @@ app.include_router(credentials_router)
 app.include_router(scryb_router)
 app.include_router(smith_router)
 app.include_router(internal_router)
+app.include_router(cli_db_router)

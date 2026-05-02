@@ -5,7 +5,6 @@ Clean, minimal design focused on usability.
 package tui
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -19,7 +18,7 @@ import (
 
 	"github.com/rune-org/rune-cli/internal/api"
 	"github.com/rune-org/rune-cli/internal/config"
-	"github.com/rune-org/rune-cli/internal/db"
+	"github.com/rune-org/rune-cli/internal/helpers"
 	"github.com/rune-org/rune-cli/internal/models"
 	"github.com/rune-org/rune-cli/internal/theme"
 )
@@ -29,6 +28,7 @@ type Screen int
 
 const (
 	ScreenSplash Screen = iota
+	ScreenLogin
 	ScreenDashboard
 	ScreenUsers
 	ScreenWorkflows
@@ -52,6 +52,12 @@ const (
 type (
 	tickMsg             time.Time
 	splashDoneMsg       struct{}
+	loginResultMsg      struct {
+		success bool
+		email   string
+		role    string
+		message string
+	}
 	usersLoadedMsg      struct{ users []models.User }
 	workflowsLoadedMsg  struct{ workflows []models.Workflow }
 	executionsLoadedMsg struct{ executions []models.Execution }
@@ -111,6 +117,12 @@ type Model struct {
 	userEmail       string
 	userRole        string
 
+	// Login form
+	loginInputs   []textinput.Model
+	loginFocusIdx int
+	loginError    string
+	loginLoading  bool
+
 	// Config
 	cfg            *config.Config
 	configInputs   []textinput.Model
@@ -149,21 +161,22 @@ type Model struct {
 	confirmAction  func() tea.Cmd
 }
 
-// Menu items - ALL visible to everyone
+// Menu items - visible to everyone, but some require admin (guarded at runtime)
 var menuItems = []struct {
-	name   string
-	screen Screen
-	key    string
+	name      string
+	screen    Screen
+	key       string
+	adminOnly bool
 }{
-	{"Dashboard", ScreenDashboard, "1"},
-	{"Users", ScreenUsers, "2"},
-	{"Workflows", ScreenWorkflows, "3"},
-	{"Executions", ScreenExecutions, "4"},
-	{"Credentials", ScreenCredentials, "5"},
-	{"Templates", ScreenTemplates, "6"},
-	{"Database", ScreenDatabase, "7"},
-	{"Config", ScreenConfig, "8"},
-	{"Help", ScreenHelp, "?"},
+	{"Dashboard", ScreenDashboard, "1", false},
+	{"Users", ScreenUsers, "2", true},
+	{"Workflows", ScreenWorkflows, "3", false},
+	{"Executions", ScreenExecutions, "4", false},
+	{"Credentials", ScreenCredentials, "5", false},
+	{"Templates", ScreenTemplates, "6", false},
+	{"Database", ScreenDatabase, "7", true},
+	{"Config", ScreenConfig, "8", false},
+	{"Help", ScreenHelp, "?", false},
 }
 
 // NewModel creates a new TUI model
@@ -180,10 +193,11 @@ func NewModel() Model {
 		sidebarFocused: true,
 		cfg:            cfg,
 		spinner:        s,
-		dbMessage:      "Connecting...",
+		dbMessage:      "Checking...",
 		dbViewMode:     DBViewTables,
 	}
 
+	m.initLoginInputs()
 	m.initConfigInputs()
 
 	if creds != nil && creds.AccessToken != "" {
@@ -193,6 +207,25 @@ func NewModel() Model {
 	}
 
 	return m
+}
+
+func (m *Model) initLoginInputs() {
+	m.loginInputs = make([]textinput.Model, 2)
+
+	m.loginInputs[0] = textinput.New()
+	m.loginInputs[0].Placeholder = "email@example.com"
+	m.loginInputs[0].CharLimit = 128
+	m.loginInputs[0].Width = 40
+	m.loginInputs[0].Prompt = "  "
+	m.loginInputs[0].Focus()
+
+	m.loginInputs[1] = textinput.New()
+	m.loginInputs[1].Placeholder = "password"
+	m.loginInputs[1].CharLimit = 128
+	m.loginInputs[1].Width = 40
+	m.loginInputs[1].EchoMode = textinput.EchoPassword
+	m.loginInputs[1].EchoCharacter = '*'
+	m.loginInputs[1].Prompt = "  "
 }
 
 func (m *Model) initConfigInputs() {
@@ -228,8 +261,6 @@ func (m Model) Init() tea.Cmd {
 		m.spinner.Tick,
 		tickCmd(),
 		splashDelayCmd(),
-		checkDBHealth(m.cfg),
-		loadDBTables(m.cfg),
 	)
 }
 
@@ -246,6 +277,43 @@ func splashDelayCmd() tea.Cmd {
 }
 
 // Commands
+
+func loginCmd(email, password, apiURL string) tea.Cmd {
+	return func() tea.Msg {
+		client := api.NewClient(apiURL)
+		loginResp, err := client.Login(email, password)
+		if err != nil {
+			return loginResultMsg{success: false, message: err.Error()}
+		}
+
+		// Save credentials
+		creds := &config.Credentials{
+			AccessToken:  loginResp.AccessToken,
+			RefreshToken: loginResp.RefreshToken,
+			ExpiresAt:    time.Now().Add(time.Duration(loginResp.ExpiresIn) * time.Second),
+			Email:        email,
+		}
+
+		// Fetch profile to get role
+		client.SetToken(loginResp.AccessToken)
+		profile, err := client.GetProfile()
+		if err == nil && profile != nil {
+			creds.Email = profile.Email
+			creds.Role = profile.Role
+			creds.UserID = profile.ID
+		}
+
+		config.SaveCredentials(creds)
+
+		return loginResultMsg{
+			success: true,
+			email:   creds.Email,
+			role:    creds.Role,
+			message: "Logged in as " + creds.Email,
+		}
+	}
+}
+
 func loadUsers() tea.Cmd {
 	return func() tea.Msg {
 		client := api.NewClientFromConfig()
@@ -281,38 +349,22 @@ func loadExecutions() tea.Cmd {
 
 func checkDBHealth(cfg *config.Config) tea.Cmd {
 	return func() tea.Msg {
-		if cfg.DatabaseURL == "" {
-			return dbHealthMsg{healthy: false, message: "Not configured"}
-		}
-
-		pool, err := db.Connect(cfg.DatabaseURL)
+		client := api.NewClientFromConfig()
+		health, err := client.DBHealth()
 		if err != nil {
-			return dbHealthMsg{healthy: false, message: "Failed: " + truncate(err.Error(), 30)}
+			return dbHealthMsg{healthy: false, message: "API: " + helpers.TruncateString(err.Error(), 30)}
 		}
-		defer pool.Close()
-
-		health, err := db.CheckHealth(pool)
-		if err != nil {
-			return dbHealthMsg{healthy: false, message: "Error: " + truncate(err.Error(), 30)}
+		if !health.Connected {
+			return dbHealthMsg{healthy: false, message: "Disconnected"}
 		}
-
 		return dbHealthMsg{healthy: true, message: "Connected to " + health.DatabaseName}
 	}
 }
 
 func loadDBTables(cfg *config.Config) tea.Cmd {
 	return func() tea.Msg {
-		if cfg.DatabaseURL == "" {
-			return dbTablesMsg{tables: nil}
-		}
-
-		pool, err := db.Connect(cfg.DatabaseURL)
-		if err != nil {
-			return dbTablesMsg{tables: nil}
-		}
-		defer pool.Close()
-
-		tableInfos, err := db.ListTables(pool)
+		client := api.NewClientFromConfig()
+		tableInfos, err := client.DBListTables()
 		if err != nil {
 			return dbTablesMsg{tables: nil}
 		}
@@ -328,76 +380,30 @@ func loadDBTables(cfg *config.Config) tea.Cmd {
 
 func loadTableData(cfg *config.Config, tableName string) tea.Cmd {
 	return func() tea.Msg {
-		if cfg.DatabaseURL == "" {
-			return errorMsg{fmt.Errorf("database not configured")}
-		}
-
-		pool, err := db.Connect(cfg.DatabaseURL)
+		client := api.NewClientFromConfig()
+		data, err := client.DBTableData(tableName, 100)
 		if err != nil {
 			return errorMsg{err}
 		}
-		defer pool.Close()
-
-		ctx := context.Background()
-		query := fmt.Sprintf("SELECT * FROM %s LIMIT 100", tableName)
-		rows, err := pool.Query(ctx, query)
-		if err != nil {
-			return errorMsg{err}
-		}
-		defer rows.Close()
-
-		fieldDescs := rows.FieldDescriptions()
-		columns := make([]string, len(fieldDescs))
-		for i, fd := range fieldDescs {
-			columns[i] = string(fd.Name)
-		}
-
-		var dataRows [][]string
-		for rows.Next() {
-			values, err := rows.Values()
-			if err != nil {
-				continue
-			}
-			row := make([]string, len(values))
-			for i, v := range values {
-				row[i] = fmt.Sprintf("%v", v)
-			}
-			dataRows = append(dataRows, row)
-		}
-
-		var totalCount int
-		countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)
-		pool.QueryRow(ctx, countQuery).Scan(&totalCount)
 
 		return dbTableDataMsg{
-			tableName: tableName,
-			columns:   columns,
-			rows:      dataRows,
-			rowCount:  totalCount,
+			tableName: data.TableName,
+			columns:   data.Columns,
+			rows:      data.Rows,
+			rowCount:  data.RowCount,
 		}
 	}
 }
 
 func deleteTableData(cfg *config.Config, tableName string) tea.Cmd {
 	return func() tea.Msg {
-		if cfg.DatabaseURL == "" {
-			return dbDeleteMsg{tableName: tableName, success: false, message: "Not configured"}
-		}
-
-		pool, err := db.Connect(cfg.DatabaseURL)
-		if err != nil {
-			return dbDeleteMsg{tableName: tableName, success: false, message: err.Error()}
-		}
-		defer pool.Close()
-
-		ctx := context.Background()
-		query := fmt.Sprintf("DELETE FROM %s", tableName)
-		_, err = pool.Exec(ctx, query)
+		client := api.NewClientFromConfig()
+		err := client.DBTruncateTable(tableName)
 		if err != nil {
 			return dbDeleteMsg{tableName: tableName, success: false, message: err.Error()}
 		}
 
-		return dbDeleteMsg{tableName: tableName, success: true, message: "Deleted all from " + tableName}
+		return dbDeleteMsg{tableName: tableName, success: true, message: "Truncated " + tableName}
 	}
 }
 
@@ -424,10 +430,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case splashDoneMsg:
 		m.splashDone = true
-		m.currentScreen = ScreenDashboard
 		if m.isAuthenticated {
-			cmds = append(cmds, loadUsers(), loadWorkflows(), loadExecutions())
+			m.currentScreen = ScreenDashboard
+			cmds = append(cmds, loadUsers(), loadWorkflows(), loadExecutions(),
+				checkDBHealth(m.cfg), loadDBTables(m.cfg))
 			m.isLoading = true
+		} else {
+			m.currentScreen = ScreenLogin
+		}
+
+	case loginResultMsg:
+		m.loginLoading = false
+		if msg.success {
+			m.isAuthenticated = true
+			m.userEmail = msg.email
+			m.userRole = msg.role
+			m.loginError = ""
+			m.currentScreen = ScreenDashboard
+			m.statusMessage = msg.message
+			m.isError = false
+			cmds = append(cmds, loadUsers(), loadWorkflows(), loadExecutions(),
+				checkDBHealth(m.cfg), loadDBTables(m.cfg))
+			m.isLoading = true
+		} else {
+			m.loginError = msg.message
 		}
 
 	case spinner.TickMsg:
@@ -509,12 +535,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.currentScreen == ScreenSplash && !m.splashDone {
 			m.splashDone = true
-			m.currentScreen = ScreenDashboard
 			if m.isAuthenticated {
-				cmds = append(cmds, loadUsers(), loadWorkflows(), loadExecutions())
+				m.currentScreen = ScreenDashboard
+				cmds = append(cmds, loadUsers(), loadWorkflows(), loadExecutions(),
+					checkDBHealth(m.cfg), loadDBTables(m.cfg))
 				m.isLoading = true
+			} else {
+				m.currentScreen = ScreenLogin
 			}
 			return m, tea.Batch(cmds...)
+		}
+
+		if m.currentScreen == ScreenLogin {
+			return m.handleLoginInput(msg)
 		}
 
 		if m.currentScreen == ScreenConfig && !m.sidebarFocused {
@@ -855,7 +888,11 @@ func (m Model) viewSplash() string {
 }
 
 func (m Model) viewMain() string {
-	sidebarW := 18
+	if m.currentScreen == ScreenLogin {
+		return m.viewLogin()
+	}
+
+	sidebarW := 20
 	contentW := m.width - sidebarW - 3
 	if contentW < 40 {
 		contentW = 40
@@ -896,13 +933,31 @@ func (m Model) viewSidebar(w, h int) string {
 		Foreground(primary).
 		Bold(true).
 		Render("  RUNE")
-	items = append(items, title, "")
+	items = append(items, title)
+
+	// Auth status line
+	if m.isAuthenticated {
+		roleTag := m.userRole
+		roleColor := success
+		if m.userRole == "admin" {
+			roleColor = warning
+		}
+		items = append(items, "  "+lipgloss.NewStyle().Foreground(roleColor).Render(roleTag))
+	} else {
+		items = append(items, "  "+lipgloss.NewStyle().Foreground(danger).Render("not logged in"))
+	}
+	items = append(items, "")
 
 	// Menu
 	for i, item := range menuItems {
 		style := lipgloss.NewStyle().Padding(0, 1).Width(w - 2)
 
 		label := item.key + " " + item.name
+
+		// Mark admin-only items for non-admin users
+		if item.adminOnly && m.userRole != "admin" {
+			label += " *"
+		}
 
 		if i == m.menuIndex {
 			if m.sidebarFocused {
@@ -1019,58 +1074,59 @@ func (m Model) viewDashboard(w int) string {
 	titleStyle := lipgloss.NewStyle().Foreground(primary).Bold(true)
 	b.WriteString(titleStyle.Render("Dashboard") + "\n\n")
 
-	// Stats row
-	statStyle := func(label string, value int, color lipgloss.Color) string {
-		return lipgloss.NewStyle().
+	// Stats cards
+	statCard := func(label string, value int, color lipgloss.Color) string {
+		val := lipgloss.NewStyle().
 			Foreground(color).
 			Bold(true).
-			Render(fmt.Sprintf("%d", value)) +
-			lipgloss.NewStyle().Foreground(muted).Render(" "+label)
+			Render(fmt.Sprintf("%d", value))
+		tag := lipgloss.NewStyle().Foreground(muted).Render(" " + label)
+		return val + tag
 	}
 
 	stats := []string{
-		statStyle("Workflows", len(m.workflows), secondary),
-		statStyle("Users", len(m.users), success),
-		statStyle("Executions", len(m.executions), primary),
+		statCard("Workflows", len(m.workflows), secondary),
+		statCard("Users", len(m.users), success),
+		statCard("Executions", len(m.executions), primary),
 	}
 	b.WriteString("  " + strings.Join(stats, "    ") + "\n\n")
 
-	// Divider
-	b.WriteString(lipgloss.NewStyle().Foreground(border).Render(strings.Repeat("─", w-6)) + "\n\n")
+	divider := lipgloss.NewStyle().Foreground(border).Render(strings.Repeat("─", w-6))
+	b.WriteString(divider + "\n\n")
 
-	// Status section
+	// System Status
 	sectionStyle := lipgloss.NewStyle().Foreground(secondary).Bold(true)
 	b.WriteString(sectionStyle.Render("System Status") + "\n\n")
 
-	labelW := 16
+	labelW := 14
 	label := func(s string) string {
 		return lipgloss.NewStyle().Foreground(muted).Width(labelW).Render(s)
 	}
 
-	okStyle := lipgloss.NewStyle().Foreground(success)
-	warnStyle := lipgloss.NewStyle().Foreground(warning)
+	ok := lipgloss.NewStyle().Foreground(success).Render("[ok]")
+	warn := lipgloss.NewStyle().Foreground(warning).Render("[--]")
 
-	// API Status
 	if m.isAuthenticated {
-		b.WriteString("  " + okStyle.Render("●") + " " + label("API") + m.userEmail + "\n")
+		b.WriteString("  " + ok + " " + label("API") + m.userEmail + "\n")
 	} else {
-		b.WriteString("  " + warnStyle.Render("○") + " " + label("API") + "Not authenticated\n")
+		b.WriteString("  " + warn + " " + label("API") + "Not authenticated\n")
 	}
 
-	// Database Status
 	if m.dbHealthy {
-		b.WriteString("  " + okStyle.Render("●") + " " + label("Database") + m.dbMessage + "\n")
+		b.WriteString("  " + ok + " " + label("Database") + m.dbMessage + "\n")
 	} else {
-		b.WriteString("  " + warnStyle.Render("○") + " " + label("Database") + m.dbMessage + "\n")
+		dbMsg := m.dbMessage
+		if len(dbMsg) > w-labelW-12 {
+			dbMsg = dbMsg[:w-labelW-15] + "..."
+		}
+		b.WriteString("  " + warn + " " + label("Database") + dbMsg + "\n")
 	}
 
-	// Config
-	b.WriteString("  " + okStyle.Render("●") + " " + label("Config") + "Loaded\n")
+	b.WriteString("  " + ok + " " + label("Config") + "Loaded\n")
 
-	// Divider
-	b.WriteString("\n" + lipgloss.NewStyle().Foreground(border).Render(strings.Repeat("─", w-6)) + "\n\n")
+	b.WriteString("\n" + divider + "\n\n")
 
-	// Quick info
+	// Configuration
 	b.WriteString(sectionStyle.Render("Configuration") + "\n\n")
 	b.WriteString("  " + label("API URL") + m.cfg.APIURL + "\n")
 	if m.cfg.DatabaseURL != "" {
@@ -1081,6 +1137,8 @@ func (m Model) viewDashboard(w int) string {
 		}
 		b.WriteString("  " + label("Database URL") + dbURL + "\n")
 	}
+
+	b.WriteString("\n" + lipgloss.NewStyle().Foreground(dim).Render("  Press Tab to edit") + "\n")
 
 	return b.String()
 }
@@ -1573,19 +1631,142 @@ func (m Model) viewPlaceholder(title, desc string) string {
 		lipgloss.NewStyle().Foreground(dim).Render("Coming soon...")
 }
 
-// Helpers
+// truncate delegates to the shared helpers package.
 func truncate(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-	return s[:max-3] + "..."
+	return helpers.TruncateString(s, max)
 }
 
-func min(a, b int) int {
+// min is provided by the Go 1.22 built-in, but kept here for
+// compatibility with older build environments.
+func minVal(a, b int) int {
 	if a < b {
 		return a
 	}
 	return b
+}
+
+// ─── Login Screen ──────────────────────────────────────────────
+
+func (m Model) viewLogin() string {
+	var b strings.Builder
+
+	// Header
+	titleStyle := lipgloss.NewStyle().Foreground(primary).Bold(true)
+	subtitleStyle := lipgloss.NewStyle().Foreground(muted)
+	labelStyle := lipgloss.NewStyle().Foreground(secondary).Bold(true).Width(12)
+	dimStyle := lipgloss.NewStyle().Foreground(dim)
+
+	b.WriteString(titleStyle.Render("RUNE") + "\n")
+	b.WriteString(subtitleStyle.Render("Sign in to continue") + "\n\n")
+
+	// Divider
+	b.WriteString(lipgloss.NewStyle().Foreground(border).Render(strings.Repeat("-", 44)) + "\n\n")
+
+	// Email field
+	emailLabel := "Email"
+	if m.loginFocusIdx == 0 {
+		emailLabel = "> Email"
+	}
+	b.WriteString(labelStyle.Render(emailLabel) + "\n")
+	b.WriteString(m.loginInputs[0].View() + "\n\n")
+
+	// Password field
+	passLabel := "Password"
+	if m.loginFocusIdx == 1 {
+		passLabel = "> Password"
+	}
+	b.WriteString(labelStyle.Render(passLabel) + "\n")
+	b.WriteString(m.loginInputs[1].View() + "\n\n")
+
+	// Divider
+	b.WriteString(lipgloss.NewStyle().Foreground(border).Render(strings.Repeat("-", 44)) + "\n\n")
+
+	// Error message
+	if m.loginError != "" {
+		errMsg := m.loginError
+		if len(errMsg) > 42 {
+			errMsg = errMsg[:39] + "..."
+		}
+		b.WriteString(lipgloss.NewStyle().Foreground(danger).Render("  " + errMsg) + "\n\n")
+	}
+
+	// Loading or submit hint
+	if m.loginLoading {
+		b.WriteString(m.spinner.View() + " Authenticating...\n")
+	} else {
+		b.WriteString(dimStyle.Render("  Enter: Sign in   Tab: Next field   q: Quit") + "\n")
+	}
+
+	// API URL hint
+	b.WriteString("\n" + dimStyle.Render("  API: "+m.cfg.APIURL) + "\n")
+
+	// Center the form
+	formBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(border).
+		Padding(2, 4).
+		Width(52).
+		Render(b.String())
+
+	return lipgloss.Place(
+		m.width, m.height,
+		lipgloss.Center, lipgloss.Center,
+		formBox,
+	)
+}
+
+func (m Model) handleLoginInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
+	switch msg.String() {
+	case "ctrl+c":
+		return m, tea.Quit
+
+	case "q":
+		// Only quit if both fields are empty
+		if m.loginInputs[0].Value() == "" && m.loginInputs[1].Value() == "" {
+			return m, tea.Quit
+		}
+		// Otherwise let it type
+		var cmd tea.Cmd
+		m.loginInputs[m.loginFocusIdx], cmd = m.loginInputs[m.loginFocusIdx].Update(msg)
+		return m, cmd
+
+	case "tab", "down":
+		m.loginInputs[m.loginFocusIdx].Blur()
+		m.loginFocusIdx = (m.loginFocusIdx + 1) % len(m.loginInputs)
+		m.loginInputs[m.loginFocusIdx].Focus()
+		return m, nil
+
+	case "shift+tab", "up":
+		m.loginInputs[m.loginFocusIdx].Blur()
+		m.loginFocusIdx = (m.loginFocusIdx - 1 + len(m.loginInputs)) % len(m.loginInputs)
+		m.loginInputs[m.loginFocusIdx].Focus()
+		return m, nil
+
+	case "enter":
+		email := strings.TrimSpace(m.loginInputs[0].Value())
+		password := m.loginInputs[1].Value()
+
+		if email == "" {
+			m.loginError = "Email is required"
+			return m, nil
+		}
+		if password == "" {
+			m.loginError = "Password is required"
+			return m, nil
+		}
+
+		m.loginLoading = true
+		m.loginError = ""
+		cmds = append(cmds, loginCmd(email, password, m.cfg.APIURL), m.spinner.Tick)
+		return m, tea.Batch(cmds...)
+	}
+
+	// Pass keystrokes to the focused input
+	var cmd tea.Cmd
+	m.loginInputs[m.loginFocusIdx], cmd = m.loginInputs[m.loginFocusIdx].Update(msg)
+	return m, cmd
 }
 
 // Run starts the TUI

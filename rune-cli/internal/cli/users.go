@@ -1,13 +1,11 @@
 /*
 Package cli - users.go provides user management commands.
 
-These commands require admin privileges and use the HTTP API.
+All user commands require admin authentication and use the HTTP API.
 
 Commands:
   - rune users list          List all users
   - rune users get <id>      Get user details
-  - rune users create        Create a new user
-  - rune users delete <id>   Delete a user
   - rune users activate <id> Activate a user
   - rune users deactivate <id> Deactivate a user
 */
@@ -20,15 +18,15 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rune-org/rune-cli/internal/api"
-	"github.com/rune-org/rune-cli/internal/config"
+	"github.com/rune-org/rune-cli/internal/helpers"
 	"github.com/rune-org/rune-cli/internal/theme"
 )
 
 var usersCmd = &cobra.Command{
 	Use:   "users",
-	Short: "User management",
-	Long:  "Manage RUNE platform users (requires admin privileges).",
+	Short: "User management (admin only)",
+	Long:  "Manage RUNE platform users. Requires admin privileges.",
+	PersistentPreRunE: requireAdmin,
 }
 
 var usersListCmd = &cobra.Command{
@@ -65,17 +63,9 @@ func init() {
 	usersCmd.AddCommand(usersDeactivateCmd)
 }
 
-func getAuthenticatedClient() (*api.Client, error) {
-	if !config.IsAuthenticated() {
-		return nil, fmt.Errorf("not authenticated. Run 'rune auth login' first")
-	}
-	return api.NewClientFromConfig(), nil
-}
-
 func runUsersList(cmd *cobra.Command, args []string) error {
 	client, err := getAuthenticatedClient()
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
@@ -118,10 +108,7 @@ func runUsersList(cmd *cobra.Command, args []string) error {
 			role = theme.WarningStyle.Render("ADMIN")
 		}
 
-		email := u.Email
-		if len(email) > 28 {
-			email = email[:25] + "..."
-		}
+		email := helpers.TruncateString(u.Email, 28)
 
 		fmt.Printf("  %-5d %-30s %-10s %-10s %s\n",
 			u.ID, email, role, status, u.AuthProvider)
@@ -135,13 +122,12 @@ func runUsersList(cmd *cobra.Command, args []string) error {
 func runUsersGet(cmd *cobra.Command, args []string) error {
 	client, err := getAuthenticatedClient()
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
-	var userID int
-	if _, err := fmt.Sscanf(args[0], "%d", &userID); err != nil {
-		printError("Invalid user ID: " + args[0])
+	userID, err := helpers.ParseID(args[0])
+	if err != nil {
+		printError(err.Error())
 		return err
 	}
 
@@ -180,13 +166,12 @@ func runUsersGet(cmd *cobra.Command, args []string) error {
 func runUsersActivate(cmd *cobra.Command, args []string) error {
 	client, err := getAuthenticatedClient()
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
-	var userID int
-	if _, err := fmt.Sscanf(args[0], "%d", &userID); err != nil {
-		printError("Invalid user ID: " + args[0])
+	userID, err := helpers.ParseID(args[0])
+	if err != nil {
+		printError(err.Error())
 		return err
 	}
 
@@ -203,13 +188,12 @@ func runUsersActivate(cmd *cobra.Command, args []string) error {
 func runUsersDeactivate(cmd *cobra.Command, args []string) error {
 	client, err := getAuthenticatedClient()
 	if err != nil {
-		printError(err.Error())
 		return err
 	}
 
-	var userID int
-	if _, err := fmt.Sscanf(args[0], "%d", &userID); err != nil {
-		printError("Invalid user ID: " + args[0])
+	userID, err := helpers.ParseID(args[0])
+	if err != nil {
+		printError(err.Error())
 		return err
 	}
 
