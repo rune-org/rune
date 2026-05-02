@@ -5,6 +5,15 @@ import string
 def generate_temporary_password(length: int = 8) -> str:
     """
     Generate a secure password that strictly follows validation rules.
+    
+    Args:
+        length: Length of the password (default: 8)
+    Returns:
+        Random password string containing uppercase, lowercase, digits, and special chars
+    Example:
+        >>> pwd = generate_temporary_password()
+        >>> len(pwd)
+        8
     """
     if length < 8:
         length = 8  # Enforce minimum length from validation rules
