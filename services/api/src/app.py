@@ -27,6 +27,7 @@ from src.credentials.router import router as credentials_router
 from src.scryb.router import router as scryb_router
 from src.smith.router import router as smith_router
 from src.internal.router import router as internal_router
+from src.oauth.router import router as oauth_router
 from src.webhook.router import router as webhook_router
 
 # Get settings
@@ -98,4 +99,5 @@ app.include_router(credentials_router)
 app.include_router(scryb_router)
 app.include_router(smith_router)
 app.include_router(internal_router)
+app.include_router(oauth_router)
 app.include_router(webhook_router)

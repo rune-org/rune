@@ -30,6 +30,25 @@ export default function CreateCredentialsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // OAuth redirect return (API sends browser here with ?oauth=success|error)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const oauth = params.get("oauth");
+    if (!oauth) return;
+
+    if (oauth === "success") {
+      toast.success("OAuth credential connected.");
+      loadCredentials();
+    } else if (oauth === "error") {
+      const reason = params.get("reason") || "OAuth failed";
+      toast.error(decodeURIComponent(reason));
+    }
+
+    window.history.replaceState({}, "", window.location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const loadCredentials = async () => {
     try {
       setIsLoading(true);

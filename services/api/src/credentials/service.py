@@ -12,7 +12,8 @@ from src.credentials.schemas import (
     CredentialResponse,
     CredentialUpdate,
 )
-from src.db.models import User, WorkflowCredential
+from src.db.models import CredentialType, User, WorkflowCredential
+from src.oauth.credential_patch import merge_oauth2_credential_patch
 
 
 class CredentialService:
@@ -158,10 +159,24 @@ class CredentialService:
 
         # Update and encrypt credential data if provided
         if credential_data.credential_data is not None:
-            encrypted_data = self.encryptor.encrypt_credential_data(
-                credential_data.credential_data
+            effective_type = (
+                credential_data.credential_type or credential.credential_type
             )
-            credential.credential_data = encrypted_data
+            if effective_type == CredentialType.OAUTH2:
+                current_decrypted = self.encryptor.decrypt_credential_data(
+                    credential.credential_data
+                )
+                merged = merge_oauth2_credential_patch(
+                    current_decrypted, credential_data.credential_data
+                )
+                credential.credential_data = self.encryptor.encrypt_credential_data(
+                    merged
+                )
+            else:
+                encrypted_data = self.encryptor.encrypt_credential_data(
+                    credential_data.credential_data
+                )
+                credential.credential_data = encrypted_data
 
         self.session.add(credential)
         await self.session.commit()
@@ -238,6 +253,11 @@ class CredentialService:
         response.can_share = await self.permission_service.can_share(credential, user)
         response.can_edit = await self.permission_service.can_edit(credential, user)
         response.can_delete = await self.permission_service.can_delete(credential, user)
+        if credential.credential_type == CredentialType.OAUTH2:
+            decrypted = self.encryptor.decrypt_credential_data(
+                credential.credential_data
+            )
+            response.oauth_connected = bool(decrypted.get("access_token"))
         return response
 
 
