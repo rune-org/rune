@@ -323,7 +323,10 @@ function FlowCanvasInner({
       setSaveVersionDialogOpen(false);
       setIsSaving(true);
       try {
-        return await onSaveWithMessage({ nodes: nodesRef.current, edges: edgesRef.current }, message);
+        return await onSaveWithMessage(
+          { nodes: nodesRef.current, edges: edgesRef.current },
+          message,
+        );
       } finally {
         setIsSaving(false);
       }
