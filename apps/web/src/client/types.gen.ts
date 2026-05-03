@@ -959,6 +959,10 @@ export type CredentialResponse = {
      * Whether current user can delete this credential
      */
     can_delete?: boolean;
+    /**
+     * For oauth2 credentials, whether an access token is stored (no secrets).
+     */
+    oauth_connected?: boolean | null;
 };
 
 /**
@@ -3489,6 +3493,20 @@ export type ListCredentialsDropdownCredentialsDropdownGetResponses = {
 };
 
 export type ListCredentialsDropdownCredentialsDropdownGetResponse = ListCredentialsDropdownCredentialsDropdownGetResponses[keyof ListCredentialsDropdownCredentialsDropdownGetResponses];
+
+export type CredentialEventsCredentialsEventsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/credentials/events';
+};
+
+export type CredentialEventsCredentialsEventsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type DeleteCredentialCredentialsCredentialIdDeleteData = {
     body?: never;
