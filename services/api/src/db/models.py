@@ -261,6 +261,11 @@ class WorkflowVersion(SQLModel, table=True):
         default=None,
         description="User-provided message describing the saved revision",
     )
+    content_hash: Optional[str] = Field(
+        default=None,
+        index=True,
+        description="Deterministic hash of workflow_data for deduplication",
+    )
     created_at: datetime = Field(
         default_factory=utc_now,
         sa_column=Column(UTCDateTime(), nullable=False),
