@@ -90,7 +90,10 @@ class WorkflowService:
         rows = result.all()
 
         if is_admin:
-            return [(wf, WorkflowRole.OWNER, owner_name or "Unknown") for wf, owner_name in rows]
+            return [
+                (wf, WorkflowRole.OWNER, owner_name or "Unknown")
+                for wf, owner_name in rows
+            ]
 
         return [(wf, role, owner_name or "Unknown") for wf, role, owner_name in rows]
 
