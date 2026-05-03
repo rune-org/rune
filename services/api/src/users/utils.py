@@ -7,7 +7,7 @@ def generate_temporary_password(length: int = 8) -> str:
     Generate a secure password that strictly follows validation rules.
 
     Args:
-        length: Length of the password (default: 8)
+        length: Length of the password (default: 8, minimum: 8)
     Returns:
         Random password string containing uppercase, lowercase, digits, and special chars
     Example:
