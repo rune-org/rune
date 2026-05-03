@@ -20,6 +20,12 @@ import { LimitNode } from "./LimitNode";
 import { SplitNode } from "./SplitNode";
 import { AggregatorNode } from "./AggregatorNode";
 import { MergeNode } from "./MergeNode";
+import { IntegrationNode } from "./IntegrationNode";
+import { getIntegrationNodeKinds } from "../integrations/helpers";
+
+const integrationNodeTypes = Object.fromEntries(
+  getIntegrationNodeKinds().map((kind) => [kind, IntegrationNode]),
+);
 
 export const nodeTypes: NodeTypes = {
   agent: AgentNode,
@@ -43,4 +49,5 @@ export const nodeTypes: NodeTypes = {
   split: SplitNode,
   aggregator: AggregatorNode,
   merge: MergeNode,
+  ...integrationNodeTypes,
 };

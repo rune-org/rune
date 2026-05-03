@@ -1,9 +1,10 @@
 import { Handle, Position } from "@xyflow/react";
-import { memo, useMemo, type ReactNode } from "react";
+import { memo, useMemo, type CSSProperties, type ReactNode } from "react";
 import { Pin } from "lucide-react";
 import { useNodeExecution } from "../context/ExecutionContext";
 import { StatusIndicator } from "./StatusIndicator";
 import { cn } from "@/lib/cn";
+import { resolveNodeColor } from "../lib/nodeRegistry";
 
 type BaseNodeProps = {
   /** Node ID for execution state lookup */
@@ -12,6 +13,7 @@ type BaseNodeProps = {
   label: string;
   children?: ReactNode;
   bgClassName?: string;
+  bgColor?: string;
   borderColor?: string;
   pinned?: boolean;
 };
@@ -22,6 +24,7 @@ export const BaseNode = memo(function BaseNode({
   label,
   children,
   bgClassName = "bg-card",
+  bgColor,
   borderColor,
   pinned = false,
 }: BaseNodeProps) {
@@ -29,11 +32,16 @@ export const BaseNode = memo(function BaseNode({
   const executionStatus = nodeExecution?.status ?? "idle";
 
   const borderStyle = useMemo(() => {
-    if (borderColor && executionStatus === "idle") {
-      return { borderColor: `var(${borderColor})`, borderWidth: "2px" };
+    const style: CSSProperties = {};
+    if (bgColor) {
+      style.backgroundColor = bgColor;
     }
-    return {};
-  }, [borderColor, executionStatus]);
+    if (borderColor && executionStatus === "idle") {
+      style.borderColor = resolveNodeColor(borderColor);
+      style.borderWidth = "2px";
+    }
+    return style;
+  }, [bgColor, borderColor, executionStatus]);
 
   return (
     <div

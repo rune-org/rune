@@ -20,5 +20,5 @@ export function isCredentialRef(value: unknown): value is CredentialRef {
 }
 
 export function nodeTypeRequiresCredential(nodeType: string): boolean {
-  return NODE_TYPES_REQUIRING_CREDENTIALS.has(nodeType);
+  return NODE_TYPES_REQUIRING_CREDENTIALS.has(nodeType) || nodeType.startsWith("integration.");
 }
