@@ -1,4 +1,5 @@
 import type { EditData, NodeKind } from "../types";
+import { isIntegrationNodeKind } from "../integrations/helpers";
 import type { VariableTreeNode } from "./variableSchema";
 
 /**
@@ -9,6 +10,10 @@ export function getStaticOutputSchema(
   kind: NodeKind,
   data?: Record<string, unknown>,
 ): VariableTreeNode[] {
+  if (isIntegrationNodeKind(kind)) {
+    return [{ key: "data", path: "data", type: "object", source: "schema", children: [] }];
+  }
+
   switch (kind) {
     case "http":
       return [
