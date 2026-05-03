@@ -90,9 +90,9 @@ class WorkflowService:
         rows = result.all()
 
         if is_admin:
-            return [(wf, WorkflowRole.OWNER, owner_name) for wf, owner_name in rows]
+            return [(wf, WorkflowRole.OWNER, owner_name or "Unknown") for wf, owner_name in rows]
 
-        return rows
+        return [(wf, role, owner_name or "Unknown") for wf, role, owner_name in rows]
 
     async def get_by_id(self, workflow_id: int) -> Workflow | None:
         """Return a Workflow by primary key or None if not found."""
