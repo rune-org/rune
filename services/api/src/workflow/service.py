@@ -12,7 +12,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.datetime import utc_now
 from src.core.exceptions import BadRequest, Forbidden, NotFound
+from src.dsl import Workflow as DSLWorkflow
 from src.credentials.encryption import get_encryptor
+
 from src.db.models import (
     Execution,
     ExecutionStatus,
@@ -152,7 +154,22 @@ class WorkflowService:
         base_version_id: int | None,
         message: str | None = None,
     ) -> WorkflowVersion:
+        # Validate workflow data against DSL schema
+        try:
+            # We need to provide dummy IDs for validation if they are missing
+            # as the database/worker will fill them during execution
+            temp_data = copy.deepcopy(workflow_data)
+            if "workflow_id" not in temp_data:
+                temp_data["workflow_id"] = str(workflow.id)
+            if "execution_id" not in temp_data:
+                temp_data["execution_id"] = "validation-only"
+
+            DSLWorkflow.model_validate(temp_data)
+        except Exception as e:
+            raise BadRequest(detail=f"Invalid workflow DSL: {str(e)}")
+
         locked_workflow = await self._lock_workflow(workflow.id)
+
         current_latest = await self.get_latest_version(locked_workflow)
 
         if current_latest is None:

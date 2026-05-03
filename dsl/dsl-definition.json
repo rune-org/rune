@@ -2,7 +2,6 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "version": "1.0.0",
   "description": "Rune Workflow DSL Definition - Type-Aware Source of Truth",
-  
   "core_structures": {
     "Workflow": {
       "description": "Root workflow structure",
@@ -31,7 +30,6 @@
         }
       }
     },
-    
     "Node": {
       "description": "Single executable node within the workflow",
       "fields": {
@@ -54,7 +52,29 @@
           "type": "string",
           "required": true,
           "description": "Node type identifier",
-          "enum": ["ManualTrigger", "ScheduledTrigger", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge", "dateTimeNow", "dateTimeAdd", "dateTimeSubtract", "dateTimeFormat", "dateTimeParse", "filter", "sort", "limit"]
+          "enum": [
+            "ManualTrigger",
+            "ScheduledTrigger",
+            "http",
+            "smtp",
+            "conditional",
+            "switch",
+            "log",
+            "agent",
+            "wait",
+            "edit",
+            "split",
+            "aggregator",
+            "merge",
+            "dateTimeNow",
+            "dateTimeAdd",
+            "dateTimeSubtract",
+            "dateTimeFormat",
+            "dateTimeParse",
+            "filter",
+            "sort",
+            "limit"
+          ]
         },
         "parameters": {
           "type": "object",
@@ -79,7 +99,6 @@
         }
       }
     },
-    
     "Edge": {
       "description": "Connection between two nodes",
       "fields": {
@@ -100,7 +119,6 @@
         }
       }
     },
-    
     "Credential": {
       "description": "Credential object with sensitive values",
       "fields": {
@@ -118,16 +136,23 @@
           "type": "string",
           "required": true,
           "description": "Credential type identifier",
-          "enum": ["api_key", "oauth2", "basic_auth", "header", "token", "custom", "smtp"]
+          "enum": [
+            "api_key",
+            "oauth2",
+            "basic_auth",
+            "header",
+            "token",
+            "custom",
+            "smtp"
+          ]
         },
         "values": {
           "type": "object",
-          "required": true,
+          "required": false,
           "description": "Type-specific credential values (actual secrets)"
         }
       }
     },
-    
     "ErrorHandling": {
       "description": "Error handling configuration",
       "fields": {
@@ -135,7 +160,11 @@
           "type": "string",
           "required": true,
           "description": "Error handling strategy",
-          "enum": ["halt", "ignore", "branch"]
+          "enum": [
+            "halt",
+            "ignore",
+            "branch"
+          ]
         },
         "error_edge": {
           "type": "string",
@@ -145,32 +174,55 @@
       }
     }
   },
-  
   "node_types": {
     "ManualTrigger": {
       "description": "Manual workflow trigger",
       "credential_type": null,
       "parameters": {}
     },
-
     "ScheduledTrigger": {
       "description": "Scheduled workflow trigger with interval-based execution",
       "credential_type": null,
       "parameters": {
-        "amount": { "type": "number", "required": true, "description": "Quantity of time between executions" },
-        "unit": { "type": "string", "required": true, "enum": ["seconds", "minutes", "hours", "days"], "description": "Unit of time for the interval" }
+        "amount": {
+          "type": "number",
+          "required": false,
+          "description": "Quantity of time between executions"
+        },
+        "unit": {
+          "type": "string",
+          "required": false,
+          "enum": [
+            "seconds",
+            "minutes",
+            "hours",
+            "days"
+          ],
+          "description": "Unit of time for the interval"
+        }
       }
     },
-
     "http": {
       "description": "HTTP request node",
-      "credential_type": ["api_key", "oauth2", "basic_auth", "header", "token"],
+      "credential_type": [
+        "api_key",
+        "oauth2",
+        "basic_auth",
+        "header",
+        "token"
+      ],
       "parameters": {
         "method": {
           "type": "string",
           "required": true,
           "description": "HTTP method",
-          "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH"
+          ]
         },
         "url": {
           "type": "string",
@@ -223,10 +275,11 @@
         }
       }
     },
-    
     "smtp": {
       "description": "Send email via SMTP",
-      "credential_type": ["smtp"],
+      "credential_type": [
+        "smtp"
+      ],
       "parameters": {
         "subject": {
           "type": "string",
@@ -263,7 +316,6 @@
         }
       }
     },
-    
     "conditional": {
       "description": "If/else branching based on boolean expression",
       "credential_type": null,
@@ -275,7 +327,6 @@
         }
       }
     },
-    
     "switch": {
       "description": "Multi-way branching based on multiple rules",
       "credential_type": null,
@@ -288,7 +339,6 @@
         }
       }
     },
-    
     "log": {
       "description": "Log information during workflow execution",
       "credential_type": null,
@@ -302,12 +352,16 @@
           "type": "string",
           "required": false,
           "description": "Log level",
-          "enum": ["debug", "info", "warn", "error"],
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
           "default": "info"
         }
       }
     },
-
     "dateTimeNow": {
       "description": "Get the current date and time in a given timezone",
       "credential_type": null,
@@ -326,7 +380,6 @@
         }
       }
     },
-
     "dateTimeAdd": {
       "description": "Add a duration to a date or timestamp",
       "credential_type": null,
@@ -345,7 +398,15 @@
           "type": "string",
           "required": false,
           "description": "Unit of time",
-          "enum": ["seconds", "minutes", "hours", "days", "weeks", "months", "years"],
+          "enum": [
+            "seconds",
+            "minutes",
+            "hours",
+            "days",
+            "weeks",
+            "months",
+            "years"
+          ],
           "default": "days"
         },
         "timezone": {
@@ -362,7 +423,6 @@
         }
       }
     },
-
     "dateTimeSubtract": {
       "description": "Subtract a duration from a date or timestamp",
       "credential_type": null,
@@ -381,7 +441,15 @@
           "type": "string",
           "required": false,
           "description": "Unit of time",
-          "enum": ["seconds", "minutes", "hours", "days", "weeks", "months", "years"],
+          "enum": [
+            "seconds",
+            "minutes",
+            "hours",
+            "days",
+            "weeks",
+            "months",
+            "years"
+          ],
           "default": "days"
         },
         "timezone": {
@@ -398,7 +466,6 @@
         }
       }
     },
-
     "dateTimeFormat": {
       "description": "Format a date or timestamp in a chosen timezone",
       "credential_type": null,
@@ -422,7 +489,6 @@
         }
       }
     },
-
     "dateTimeParse": {
       "description": "Parse a date or timestamp into structured components",
       "credential_type": null,
@@ -440,13 +506,11 @@
         }
       }
     },
-    
     "agent": {
       "description": "AI agent node",
       "credential_type": null,
       "parameters": {}
     },
-    
     "wait": {
       "description": "Wait for a specified duration",
       "credential_type": null,
@@ -460,11 +524,15 @@
           "type": "string",
           "required": true,
           "description": "Unit of time",
-          "enum": ["seconds", "minutes", "hours", "days"]
+          "enum": [
+            "seconds",
+            "minutes",
+            "hours",
+            "days"
+          ]
         }
       }
     },
-    
     "edit": {
       "description": "Data transformation node",
       "credential_type": null,
@@ -473,7 +541,10 @@
           "type": "string",
           "required": false,
           "description": "Transformation mode",
-          "enum": ["assignments", "keep_only"],
+          "enum": [
+            "assignments",
+            "keep_only"
+          ],
           "default": "assignments"
         },
         "assignments": {
@@ -485,7 +556,6 @@
         }
       }
     },
-
     "filter": {
       "description": "Keep only list items that match one or more rules",
       "credential_type": null,
@@ -499,7 +569,10 @@
           "type": "string",
           "required": false,
           "description": "How multiple rules are combined",
-          "enum": ["all", "any"],
+          "enum": [
+            "all",
+            "any"
+          ],
           "default": "all"
         },
         "rules": {
@@ -510,7 +583,6 @@
         }
       }
     },
-
     "sort": {
       "description": "Order a list using one or more sort rules",
       "credential_type": null,
@@ -528,7 +600,6 @@
         }
       }
     },
-
     "limit": {
       "description": "Keep only the first items from a list",
       "credential_type": null,
@@ -545,7 +616,6 @@
         }
       }
     },
-    
     "split": {
       "description": "Split array into individual items (Fan-Out)",
       "credential_type": null,
@@ -557,13 +627,11 @@
         }
       }
     },
-    
     "aggregator": {
       "description": "Aggregate items back into array (Gather)",
       "credential_type": null,
       "parameters": {}
     },
-    
     "merge": {
       "description": "Merge multiple execution branches",
       "credential_type": null,
@@ -572,7 +640,10 @@
           "type": "string",
           "required": false,
           "description": "Synchronization mode",
-          "enum": ["wait_for_all", "wait_for_any"],
+          "enum": [
+            "wait_for_all",
+            "wait_for_any"
+          ],
           "default": "wait_for_all"
         },
         "timeout": {
@@ -584,7 +655,6 @@
       }
     }
   },
-  
   "nested_types": {
     "SwitchRule": {
       "description": "Switch rule definition",
@@ -598,7 +668,15 @@
           "type": "string",
           "required": true,
           "description": "Comparison operator",
-          "enum": ["==", "!=", ">", "<", ">=", "<=", "contains"]
+          "enum": [
+            "==",
+            "!=",
+            ">",
+            "<",
+            ">=",
+            "<=",
+            "contains"
+          ]
         },
         "compare": {
           "type": "string",
@@ -607,7 +685,6 @@
         }
       }
     },
-
     "FilterRule": {
       "description": "Filter rule definition",
       "fields": {
@@ -620,7 +697,15 @@
           "type": "string",
           "required": true,
           "description": "Comparison operator",
-          "enum": ["==", "!=", ">", "<", ">=", "<=", "contains"]
+          "enum": [
+            "==",
+            "!=",
+            ">",
+            "<",
+            ">=",
+            "<=",
+            "contains"
+          ]
         },
         "value": {
           "type": "any",
@@ -629,7 +714,6 @@
         }
       }
     },
-
     "SortRule": {
       "description": "Sort rule definition",
       "fields": {
@@ -642,18 +726,27 @@
           "type": "string",
           "required": true,
           "description": "Sort direction",
-          "enum": ["asc", "desc", "ascending", "descending"]
+          "enum": [
+            "asc",
+            "desc",
+            "ascending",
+            "descending"
+          ]
         },
         "type": {
           "type": "string",
           "required": false,
           "description": "Value type used for sorting",
-          "enum": ["auto", "text", "number", "date"],
+          "enum": [
+            "auto",
+            "text",
+            "number",
+            "date"
+          ],
           "default": "auto"
         }
       }
     },
-    
     "EditAssignment": {
       "description": "Edit node assignment",
       "fields": {
@@ -671,11 +764,15 @@
           "type": "string",
           "required": false,
           "description": "Target type casting",
-          "enum": ["string", "number", "boolean", "json"],
+          "enum": [
+            "string",
+            "number",
+            "boolean",
+            "json"
+          ],
           "default": "string"
         }
       }
     }
   }
 }
-
