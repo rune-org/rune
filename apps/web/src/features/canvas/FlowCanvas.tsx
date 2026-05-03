@@ -133,6 +133,7 @@ function FlowCanvasInner({
   } | null>(null);
 
   const [saveVersionDialogOpen, setSaveVersionDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Connect for instant updates on shared/deleted credentials
   useCredentialEvents();
@@ -303,21 +304,31 @@ function FlowCanvasInner({
     setSelectedNodeId,
   });
 
-  const persistGraph = useCallback(() => {
-    if (!onPersist) return;
-    return onPersist({
-      nodes: nodesRef.current,
-      edges: edgesRef.current,
-    });
-  }, [onPersist]);
+  const persistGraph = useCallback(async () => {
+    if (!onPersist || isSaving) return;
+    setIsSaving(true);
+    try {
+      return await onPersist({
+        nodes: nodesRef.current,
+        edges: edgesRef.current,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [onPersist, isSaving]);
 
   const handleSaveVersionWithMessage = useCallback(
-    (message: string) => {
-      if (!onSaveWithMessage) return;
+    async (message: string) => {
+      if (!onSaveWithMessage || isSaving) return;
       setSaveVersionDialogOpen(false);
-      return onSaveWithMessage({ nodes: nodesRef.current, edges: edgesRef.current }, message);
+      setIsSaving(true);
+      try {
+        return await onSaveWithMessage({ nodes: nodesRef.current, edges: edgesRef.current }, message);
+      } finally {
+        setIsSaving(false);
+      }
     },
-    [onSaveWithMessage],
+    [onSaveWithMessage, isSaving],
   );
 
   const handleViewVersion = useCallback(
@@ -618,7 +629,7 @@ function FlowCanvasInner({
               onImportFromFile={importFromFile}
               onImportFromTemplate={importFromTemplate}
               onAutoLayout={autoLayout}
-              saveDisabled={saveDisabled || isViewingSnapshot}
+              saveDisabled={saveDisabled || isViewingSnapshot || isSaving}
               executionStatus={executionState.status}
               wsStatus={wsStatus}
               isStartingExecution={isStartingExecution}
@@ -699,7 +710,7 @@ function FlowCanvasInner({
           open={saveVersionDialogOpen}
           onOpenChange={setSaveVersionDialogOpen}
           onSave={handleSaveVersionWithMessage}
-          isSaving={saveDisabled}
+          isSaving={isSaving || saveDisabled}
         />
 
         {/* Version Conflict dialog */}

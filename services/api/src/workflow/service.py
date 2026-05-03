@@ -35,6 +35,7 @@ from src.workflow.constants import (
     WEBHOOK_TRIGGER_TYPE,
 )
 from src.workflow.queue import validate_workflow_can_run
+from src.workflow.utils import calculate_workflow_hash
 
 
 class WorkflowVersionConflictError(Exception):
@@ -154,27 +155,38 @@ class WorkflowService:
     ) -> WorkflowVersion:
         locked_workflow = await self._lock_workflow(workflow.id)
         current_latest = await self.get_latest_version(locked_workflow)
+        new_hash = calculate_workflow_hash(workflow_data)
+        normalized_message = self._normalize_message(message)
 
-        if current_latest is None:
-            if base_version_id is not None:
-                raise BadRequest(
-                    detail="base_version_id must be null when creating the first version"
-                )
-            next_version_number = 1
-        else:
+        if current_latest is not None:
             if base_version_id != current_latest.id:
                 raise WorkflowVersionConflictError(
                     server_version=current_latest.version,
                     server_version_id=current_latest.id,
                 )
+
+            # if content hash and message are identical, skip creation
+            if (
+                current_latest.content_hash == new_hash
+                and current_latest.message == normalized_message
+            ):
+                return current_latest
+
             next_version_number = current_latest.version + 1
+        else:
+            if base_version_id is not None:
+                raise BadRequest(
+                    detail="base_version_id must be null when creating the first version"
+                )
+            next_version_number = 1
 
         version = WorkflowVersion(
             workflow_id=locked_workflow.id,
             version=next_version_number,
             workflow_data=workflow_data,
+            content_hash=new_hash,
             created_by=user_id,
-            message=self._normalize_message(message),
+            message=normalized_message,
         )
         self.db.add(version)
 
@@ -224,10 +236,15 @@ class WorkflowService:
 
         latest = await self.get_latest_version(locked_workflow)
         next_version_number = 1 if latest is None else latest.version + 1
+
+        workflow_data = copy.deepcopy(source_version.workflow_data)
+        new_hash = calculate_workflow_hash(workflow_data)
+
         version = WorkflowVersion(
             workflow_id=locked_workflow.id,
             version=next_version_number,
-            workflow_data=copy.deepcopy(source_version.workflow_data),
+            workflow_data=workflow_data,
+            content_hash=new_hash,
             created_by=user_id,
             message=self._normalize_message(message)
             or f"Restored from v{source_version.version}",
