@@ -1692,6 +1692,22 @@ paths:
                 $ref: '#/components/schemas/ApiResponse_list_CredentialResponseDropDown__'
       security:
       - OAuth2PasswordBearer: []
+  /credentials/events:
+    get:
+      tags:
+      - credentials
+      summary: Subscribe to real-time credential events
+      description: "Server-Sent Events (SSE) endpoint for credential updates.\n\n\
+        Streams real-time events when credentials are deleted, shared, or revoked.\n\
+        Useful for updating the UI instantly without polling.\n\nPermissions:\n- Any\
+        \ authenticated user can subscribe. They will only receive events\n  for credentials\
+        \ they have access to (handled by the client checking IDs)."
+      operationId: credential_events_credentials_events_get
+      responses:
+        '200':
+          description: Successful Response
+      security:
+      - OAuth2PasswordBearer: []
   /credentials/{credential_id}:
     get:
       tags:
