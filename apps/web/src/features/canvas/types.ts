@@ -42,6 +42,71 @@ export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
 export type HttpMethod = (typeof HTTP_METHODS)[number];
 
+export const AGENT_PROVIDERS = ["gemini", "openai", "anthropic"] as const;
+export type AgentProvider = (typeof AGENT_PROVIDERS)[number];
+
+export const GEMINI_BACKENDS = ["ai_studio", "vertex"] as const;
+export type GeminiBackend = (typeof GEMINI_BACKENDS)[number];
+
+export const AGENT_FIELD_TYPES = ["string", "number", "boolean", "object"] as const;
+export type AgentFieldType = (typeof AGENT_FIELD_TYPES)[number];
+
+export type AgentMessageRole = "user" | "model";
+
+export type AgentMessage = {
+  role: AgentMessageRole;
+  content: string;
+};
+
+export type AgentModelConfig = {
+  provider: AgentProvider;
+  name: string;
+  /** Gemini-only: which google.golang.org/genai backend to route through. */
+  backend?: GeminiBackend;
+  temperature?: number;
+};
+
+/** A tool field is either fixed or decided by the agent at call time. */
+export type AgentFieldMode =
+  | { mode: "fixed"; value?: unknown }
+  | {
+      mode: "agent";
+      agent: { description: string; type: AgentFieldType; required: boolean };
+    };
+
+export type AgentKVField = { key: string; value: AgentFieldMode };
+
+export type AgentHttpToolConfig = {
+  method: HttpMethod;
+  url: AgentFieldMode;
+  headers?: AgentKVField[];
+  query?: AgentKVField[];
+  body?: AgentKVField[];
+  timeout?: string;
+  retry?: string;
+  retry_delay?: string;
+  raise_on_status?: string;
+  ignore_ssl?: boolean;
+};
+
+export type AgentTool = {
+  type: "http_request";
+  name: string;
+  description: string;
+  /** Master resolves this into a `credentials` block (with values) before publishing. */
+  credential?: CredentialRef | null;
+  config: AgentHttpToolConfig;
+};
+
+export type AgentMcpTransport = "sse" | "streamable_http";
+
+export type AgentMcpServer = {
+  name: string;
+  transport: AgentMcpTransport;
+  url: string;
+  credential?: CredentialRef | null;
+};
+
 export function isHttpMethod(value: string): value is HttpMethod {
   return (HTTP_METHODS as readonly string[]).includes(value);
 }
@@ -55,7 +120,13 @@ export type BuiltInNodeDataMap = {
     unit?: "seconds" | "minutes" | "hours" | "days";
   };
 
-  agent: BaseData;
+  agent: BaseData & {
+    model?: AgentModelConfig;
+    system_prompt?: string;
+    messages?: AgentMessage[];
+    tools?: AgentTool[];
+    mcp_servers?: AgentMcpServer[];
+  };
 
   if: BaseData & {
     expression?: string;

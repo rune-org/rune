@@ -44,6 +44,7 @@ class CredentialType(str, Enum):
     TOKEN = "token"  # nosec B105
     CUSTOM = "custom"
     SMTP = "smtp"
+    GEMINI_API_KEY = "gemini_api_key"
 
 
 class AuthProvider(str, Enum):

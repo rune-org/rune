@@ -210,11 +210,42 @@ describe("workflow DSL helpers", () => {
   it("strips credential references from workflow data exports", () => {
     expect(
       stripCredentialsFromWorkflowData({
-        nodes: [{ id: "1", credentials: { id: "cred-1" }, name: "Node 1" }],
+        nodes: [
+          {
+            id: "1",
+            credentials: { id: "cred-1" },
+            name: "Node 1",
+            parameters: {
+              tools: [
+                {
+                  name: "Fetch",
+                  credential: { id: "tool-cred", name: "Tool Cred", type: "oauth2" },
+                  config: { url: "https://example.com" },
+                },
+              ],
+              mcp_servers: [
+                {
+                  name: "Docs",
+                  credential: { id: "mcp-cred", name: "MCP Cred", type: "oauth2" },
+                  url: "https://mcp.example.com",
+                },
+              ],
+            },
+          },
+        ],
         edges: [{ id: "edge-1" }],
       }),
     ).toEqual({
-      nodes: [{ id: "1", name: "Node 1" }],
+      nodes: [
+        {
+          id: "1",
+          name: "Node 1",
+          parameters: {
+            tools: [{ name: "Fetch", config: { url: "https://example.com" } }],
+            mcp_servers: [{ name: "Docs", url: "https://mcp.example.com" }],
+          },
+        },
+      ],
       edges: [{ id: "edge-1" }],
     });
   });
