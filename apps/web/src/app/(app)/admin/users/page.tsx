@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,6 @@ import { EditUserDialog } from "@/components/admin/EditUserDialog";
 import { TempPasswordModal } from "@/components/admin/TempPasswordModal";
 
 export default function UsersPage() {
-  const router = useRouter();
   const { state } = useAuth();
   const currentUser = state.user;
 
@@ -46,19 +44,6 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
-
-  useEffect(() => {
-    if (currentUser && currentUser.role !== "admin") {
-      router.replace("/create");
-    }
-  }, [currentUser, router]);
-
-  if (!currentUser) {
-    return <div className="p-8 text-sm text-muted-foreground">Loading user...</div>;
-  }
-  if (currentUser.role !== "admin") {
-    return null;
-  }
 
   // Invite flow
   const handleSendInvite = async (
@@ -222,7 +207,7 @@ export default function UsersPage() {
                       <Edit2 className="w-4 h-4" />
                     </Button>
 
-                    {u.id !== currentUser.id && (
+                    {u.id !== currentUser?.id && (
                       <>
                         <Button
                           variant="outline"
