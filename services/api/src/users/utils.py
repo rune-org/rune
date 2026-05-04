@@ -25,7 +25,7 @@ def generate_temporary_password(length: int = 8) -> str:
     special = '!@#$%^&*(),.?":{}|<>'
 
     # 2. Guarantee at least one of each required type
-    password = [
+    required_chars = [
         secrets.choice(lower),
         secrets.choice(upper),
         secrets.choice(digits),
@@ -34,7 +34,7 @@ def generate_temporary_password(length: int = 8) -> str:
 
     # 3. Fill the rest of the length with a mix of everything
     all_chars = lower + upper + digits + special
-    password += [secrets.choice(all_chars) for _ in range(length - 4)]
+    password = required_chars + [secrets.choice(all_chars) for _ in range(length - len(required_chars))]
 
     # 4. Shuffle the list so the required characters aren't always at the start
     # Note: secrets.SystemRandom().shuffle is used for cryptographic security
