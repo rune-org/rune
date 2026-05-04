@@ -4132,12 +4132,16 @@ components:
           title: Is Active
         role:
           $ref: '#/components/schemas/WorkflowRole'
+        owner_name:
+          type: string
+          title: Owner Name
       type: object
       required:
       - id
       - name
       - is_active
       - role
+      - owner_name
       title: WorkflowListItem
     WorkflowPermissionInfo:
       properties:

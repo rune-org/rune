@@ -58,19 +58,47 @@ class WorkflowService:
         self.db = db
         self.encryptor = get_encryptor()
 
-    async def list_for_user(self, user_id: int) -> list[tuple[Workflow, WorkflowRole]]:
+    async def list_for_user(
+        self, user_id: int, is_admin: bool = False
+    ) -> list[tuple[Workflow, WorkflowRole, str]]:
         """Return workflows visible to `user_id`, newest first.
 
-        Used for the `GET /workflows` endpoint.
+        If `is_admin` is True, returns all workflows in the system.
+        Returns a tuple of (Workflow, role, owner_name) for each item.
         """
-        statement = (
-            select(Workflow, WorkflowUser.role)
-            .join(WorkflowUser)
-            .where(WorkflowUser.user_id == user_id)
-            .order_by(Workflow.updated_at.desc())
+        owner_subquery = (
+            select(WorkflowUser.workflow_id, User.name.label("owner_name"))
+            .join(User, WorkflowUser.user_id == User.id)
+            .where(WorkflowUser.role == WorkflowRole.OWNER)
+            .subquery()
         )
+
+        if is_admin:
+            # Admins see everything and default to OWNER access
+            statement = (
+                select(Workflow, owner_subquery.c.owner_name)
+                .outerjoin(owner_subquery, Workflow.id == owner_subquery.c.workflow_id)
+                .order_by(Workflow.updated_at.desc())
+            )
+        else:
+            statement = (
+                select(Workflow, WorkflowUser.role, owner_subquery.c.owner_name)
+                .join(WorkflowUser)
+                .outerjoin(owner_subquery, Workflow.id == owner_subquery.c.workflow_id)
+                .where(WorkflowUser.user_id == user_id)
+                .order_by(Workflow.updated_at.desc())
+            )
+
         result = await self.db.exec(statement)
-        return result.all()
+        rows = result.all()
+
+        if is_admin:
+            return [
+                (wf, WorkflowRole.OWNER, owner_name or "Unknown")
+                for wf, owner_name in rows
+            ]
+
+        return [(wf, role, owner_name or "Unknown") for wf, role, owner_name in rows]
 
     async def get_by_id(self, workflow_id: int) -> Workflow | None:
         """Return a Workflow by primary key or None if not found."""
