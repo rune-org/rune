@@ -2,68 +2,34 @@ import { describe, it, expect } from "vitest";
 import { getInitials } from "./initials";
 
 describe("getInitials", () => {
-  it("returns 'U' for empty string", () => {
+  it("test_returns_default_initial_for_empty_or_whitespace_name", () => {
     expect(getInitials("")).toBe("U");
-  });
-
-  it("returns 'U' for whitespace only", () => {
     expect(getInitials("   ")).toBe("U");
+    expect(getInitials("\n\t  ")).toBe("U");
   });
 
-  it("returns 'U' for null-like values", () => {
-    expect(getInitials("")).toBe("U");
-  });
-
-  it("returns first letter uppercase for single name", () => {
+  it("test_single_token_name_uses_uppercase_first_letter", () => {
     expect(getInitials("John")).toBe("J");
+    expect(getInitials("alice")).toBe("A");
   });
 
-  it("returns first letters of first and last name", () => {
+  it("test_multi_part_name_uses_first_and_last_tokens", () => {
     expect(getInitials("John Doe")).toBe("JD");
-  });
-
-  it("returns first letters with multiple spaces", () => {
-    expect(getInitials("John   Doe")).toBe("JD");
-  });
-
-  it("handles leading and trailing whitespace", () => {
-    expect(getInitials("  John Doe  ")).toBe("JD");
-  });
-
-  it("handles names with leading/trailing/multiple spaces", () => {
-    expect(getInitials("  Alice   Bob  ")).toBe("AB");
-  });
-
-  it("handles multiple spaces inside names", () => {
-    expect(getInitials("John      Doe")).toBe("JD");
-  });
-
-  it("handles tabs and mixed whitespace", () => {
-    expect(getInitials("John\tDoe")).toBe("JD");
-    expect(getInitials("John \t Doe")).toBe("JD");
-  });
-
-  it("returns first and last for names with multiple parts", () => {
     expect(getInitials("John Q Public")).toBe("JP");
+    expect(getInitials("  Alice   Bob  ")).toBe("AB");
+    expect(getInitials("John\tDoe")).toBe("JD");
   });
 
-  it("handles single letter names", () => {
+  it("test_single_character_tokens_are_kept", () => {
     expect(getInitials("A")).toBe("A");
-  });
-
-  it("handles names with single letters", () => {
     expect(getInitials("A B")).toBe("AB");
   });
 
-  it("returns uppercase initials", () => {
-    expect(getInitials("alice bob")).toBe("AB");
-  });
-
-  it("handles arabic characters", () => {
+  it("test_non_latin_names_use_first_and_last_characters", () => {
     expect(getInitials("أحمد محمد")).toBe("أم");
   });
 
-  it("handles names with non-alphabetic characters", () => {
+  it("test_punctuation_inside_tokens_does_not_split_name_parts", () => {
     expect(getInitials("John-Doe")).toBe("J");
     expect(getInitials("John O'Connor")).toBe("JO");
   });
