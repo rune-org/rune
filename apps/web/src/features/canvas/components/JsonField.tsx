@@ -4,27 +4,31 @@ import { useEffect, useState } from "react";
 
 type JsonFieldProps = {
   value?: unknown;
-  onChange: (obj: Record<string, unknown>) => void;
+  onChange: (value: unknown) => void;
+  objectOnly?: boolean;
 };
 
-export function JsonField({ value, onChange }: JsonFieldProps) {
-  const [text, setText] = useState<string>(() => (value ? JSON.stringify(value, null, 2) : "{}"));
+const formatJsonValue = (value: unknown) =>
+  value === undefined ? "{}" : (JSON.stringify(value, null, 2) ?? "{}");
+
+export function JsonField({ value, onChange, objectOnly = true }: JsonFieldProps) {
+  const [text, setText] = useState<string>(() => formatJsonValue(value));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const next = value ? JSON.stringify(value, null, 2) : "{}";
+    const next = formatJsonValue(value);
     setText(next);
   }, [value]);
 
   const handleBlur = () => {
     try {
       const obj = text.trim() ? JSON.parse(text) : {};
-      if (typeof obj !== "object" || Array.isArray(obj) || obj === null) {
+      if (objectOnly && (typeof obj !== "object" || Array.isArray(obj) || obj === null)) {
         setError("Must be a JSON object");
         return;
       }
       setError(null);
-      onChange(obj as Record<string, unknown>);
+      onChange(obj);
     } catch {
       setError("Invalid JSON");
     }
@@ -42,7 +46,9 @@ export function JsonField({ value, onChange }: JsonFieldProps) {
       {error ? (
         <div className="text-[11px] text-destructive">{error}</div>
       ) : (
-        <div className="text-[11px] text-muted-foreground">JSON object</div>
+        <div className="text-[11px] text-muted-foreground">
+          {objectOnly ? "JSON object" : "JSON value"}
+        </div>
       )}
     </div>
   );

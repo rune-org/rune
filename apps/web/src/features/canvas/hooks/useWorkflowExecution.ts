@@ -6,6 +6,7 @@ import { useExecution } from "../context/ExecutionContext";
 import { useRtesWebSocket, type WsConnectionStatus } from "./useRtesWebSocket";
 import type { ExecutionState, RtesNodeUpdate } from "../types/execution";
 import { runWorkflow } from "@/lib/api/workflows";
+import { extractApiErrorMessage } from "@/lib/api/error";
 
 export interface UseWorkflowExecutionOptions {
   /** Workflow ID to execute */
@@ -115,10 +116,7 @@ export function useWorkflowExecution(
         if (!isMountedRef.current) return;
 
         if (response.error) {
-          const errorMsg =
-            typeof response.error === "object" && "detail" in response.error
-              ? String((response.error as { detail: unknown }).detail)
-              : "Failed to start execution";
+          const errorMsg = extractApiErrorMessage(response.error, "Failed to start execution");
           throw new Error(errorMsg);
         }
 
@@ -140,7 +138,9 @@ export function useWorkflowExecution(
       } catch (err) {
         if (!isMountedRef.current) return;
 
-        const errorMsg = err instanceof Error ? err.message : "Failed to start execution";
+        // With throwOnError: true, the Hey API client throws the parsed JSON body
+        // (e.g. { success, message, data }) — not an Error instance.
+        const errorMsg = extractApiErrorMessage(err, "Failed to start execution");
         setError(errorMsg);
         toast.error(errorMsg);
         dispatch({ type: "SET_ERROR", error: errorMsg });

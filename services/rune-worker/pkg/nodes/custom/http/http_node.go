@@ -103,6 +103,18 @@ func NewHTTPNode(execCtx plugin.ExecutionContext) *HTTPNode {
 						node.headers[field] = value
 					}
 				}
+			case "oauth2":
+				if _, exists := node.headers["Authorization"]; !exists {
+					token, _ := creds["access_token"].(string)
+					if token != "" {
+						tokenType, _ := creds["token_type"].(string)
+						if strings.EqualFold(tokenType, "bearer") || tokenType == "" {
+							node.headers["Authorization"] = "Bearer " + token
+						} else {
+							node.headers["Authorization"] = tokenType + " " + token
+						}
+					}
+				}
 			}
 		}
 	}

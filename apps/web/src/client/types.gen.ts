@@ -959,6 +959,10 @@ export type CredentialResponse = {
      * Whether current user can delete this credential
      */
     can_delete?: boolean;
+    /**
+     * For oauth2 credentials, whether an access token is stored (no secrets).
+     */
+    oauth_connected?: boolean | null;
 };
 
 /**
