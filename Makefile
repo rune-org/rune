@@ -285,11 +285,11 @@ web-format:
 
 api-lint:
 	@echo "Linting API with ruff..."
-	cd services/api && uv run ruff check src/
+	cd services/api && uv run ruff check src/ test/
 
 api-format:
 	@echo "Formatting API code with ruff..."
-	cd services/api && uv run ruff format src/
+	cd services/api && uv run ruff format src/ test/
 
 worker-lint:
 	@echo "Linting worker..."

@@ -16,6 +16,7 @@ class WorkflowListItem(BaseModel):
     description: Optional[str] = Field(default=None)
     is_active: bool
     role: WorkflowRole
+    owner_name: str
 
 
 def normalize_and_validate_name(value: str, *, field_name: str = "name") -> str:

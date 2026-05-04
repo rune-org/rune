@@ -1,5 +1,6 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { CredentialRef } from "@/lib/credentials";
+import type { IntegrationNodeData, IntegrationNodeKind } from "./integrations/types";
 
 /** The base data structure that all nodes share. */
 export type BaseData = {
@@ -111,7 +112,7 @@ export function isHttpMethod(value: string): value is HttpMethod {
 }
 
 /** A map defining the specific data for each kind of node. */
-export type NodeDataMap = {
+export type BuiltInNodeDataMap = {
   trigger: BaseData;
 
   scheduledTrigger: BaseData & {
@@ -239,6 +240,12 @@ export type NodeDataMap = {
     timeout?: number;
   };
 };
+
+export type IntegrationNodeDataMap = {
+  [K in IntegrationNodeKind]: IntegrationNodeData;
+};
+
+export type NodeDataMap = BuiltInNodeDataMap & IntegrationNodeDataMap;
 
 /** A union type of all possible node kinds. */
 export type NodeKind = keyof NodeDataMap;

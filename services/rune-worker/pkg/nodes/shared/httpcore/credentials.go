@@ -2,6 +2,7 @@ package httpcore
 
 import (
 	"encoding/base64"
+	"strings"
 )
 
 // ApplyCredential injects a resolved credential into the request headers.
@@ -12,6 +13,7 @@ import (
 //   - "basic_auth":      {"username": "...", "password": "..."}    -> Authorization: Basic <b64>
 //   - "header":          {"field": "X-Foo", "value": "bar"}        -> X-Foo: bar
 //   - "token":           {"token": "..."}                          -> Authorization: Bearer <token>
+//   - "oauth2":          {"access_token": "...", "token_type": "..."} -> Authorization: <type> <token>
 //   - "api_key":         {"key": "X-API-Key", "value": "..."} OR   -> X-API-Key: <value>
 //     {"value": "..."}                          -> Authorization: Bearer <value>
 //
@@ -57,6 +59,21 @@ func ApplyCredential(headers map[string]string, cred map[string]any) {
 			return
 		}
 		headers["Authorization"] = "Bearer " + token
+
+	case "oauth2":
+		if _, exists := headers["Authorization"]; exists {
+			return
+		}
+		token, _ := values["access_token"].(string)
+		if token == "" {
+			return
+		}
+		tokenType, _ := values["token_type"].(string)
+		if strings.EqualFold(tokenType, "bearer") || tokenType == "" {
+			headers["Authorization"] = "Bearer " + token
+			return
+		}
+		headers["Authorization"] = tokenType + " " + token
 
 	case "api_key":
 		field, _ := values["key"].(string)

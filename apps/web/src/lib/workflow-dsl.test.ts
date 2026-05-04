@@ -138,14 +138,114 @@ describe("workflow DSL helpers", () => {
     });
   });
 
+  it("serializes integration nodes with provider-qualified type and flat parameters", () => {
+    const credential = { id: "cred-1", name: "My Google Account", type: "oauth2" };
+    const gmailNode = createNode("gmail-1", "integration.google.gmail.send_email", {
+      label: "Send via Gmail",
+      integrationKind: "integration.google.gmail.send_email",
+      credential,
+      arguments: {
+        to: "team@example.com",
+        subject: "Report",
+      },
+    });
+
+    const { nodes } = canvasToWorkflowData([gmailNode], []);
+
+    expect(nodes[0]).toMatchObject({
+      id: "gmail-1",
+      name: "Send_via_Gmail",
+      type: "integration.google.gmail.send_email",
+      credentials: credential,
+      parameters: {
+        to: "team@example.com",
+        subject: "Report",
+      },
+    });
+  });
+
+  it("throws when an integration node is missing a credential", () => {
+    const gmailNode = createNode("gmail-1", "integration.google.gmail.send_email", {
+      label: "Send via Gmail",
+      integrationKind: "integration.google.gmail.send_email",
+      arguments: { to: "team@example.com", subject: "Report" },
+    });
+    expect(() => canvasToWorkflowData([gmailNode], [])).toThrow(MissingNodeCredentialsError);
+  });
+
+  it("rehydrates integration workflow data back into canvas nodes", () => {
+    const { nodes } = workflowDataToCanvas({
+      nodes: [
+        {
+          id: "sheets-1",
+          name: "Read Sheet",
+          trigger: false,
+          type: "integration.google.sheets.read_range",
+          parameters: {
+            spreadsheet_id: "abc123",
+            range: "Sheet1!A1:B10",
+          },
+          output: {},
+          position: [30, 40],
+        },
+      ],
+      edges: [],
+    });
+
+    expect(nodes[0]).toMatchObject({
+      id: "sheets-1",
+      type: "integration.google.sheets.read_range",
+      position: { x: 30, y: 40 },
+      data: {
+        label: "Read_Sheet",
+        integrationKind: "integration.google.sheets.read_range",
+        arguments: {
+          spreadsheet_id: "abc123",
+          range: "Sheet1!A1:B10",
+        },
+      },
+    });
+  });
+
   it("strips credential references from workflow data exports", () => {
     expect(
       stripCredentialsFromWorkflowData({
-        nodes: [{ id: "1", credentials: { id: "cred-1" }, name: "Node 1" }],
+        nodes: [
+          {
+            id: "1",
+            credentials: { id: "cred-1" },
+            name: "Node 1",
+            parameters: {
+              tools: [
+                {
+                  name: "Fetch",
+                  credential: { id: "tool-cred", name: "Tool Cred", type: "oauth2" },
+                  config: { url: "https://example.com" },
+                },
+              ],
+              mcp_servers: [
+                {
+                  name: "Docs",
+                  credential: { id: "mcp-cred", name: "MCP Cred", type: "oauth2" },
+                  url: "https://mcp.example.com",
+                },
+              ],
+            },
+          },
+        ],
         edges: [{ id: "edge-1" }],
       }),
     ).toEqual({
-      nodes: [{ id: "1", name: "Node 1" }],
+      nodes: [
+        {
+          id: "1",
+          name: "Node 1",
+          parameters: {
+            tools: [{ name: "Fetch", config: { url: "https://example.com" } }],
+            mcp_servers: [{ name: "Docs", url: "https://mcp.example.com" }],
+          },
+        },
+      ],
       edges: [{ id: "edge-1" }],
     });
   });

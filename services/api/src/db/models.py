@@ -231,6 +231,7 @@ class Workflow(TimestampModel, table=True):
     )
     executions: list["Execution"] = Relationship(back_populates="workflow")
     schedule: Optional["ScheduledWorkflow"] = Relationship(back_populates="workflow")
+    webhook: Optional["WebhookRegistration"] = Relationship(back_populates="workflow")
 
 
 class WorkflowVersion(SQLModel, table=True):
@@ -434,6 +435,21 @@ class ScheduledWorkflow(TimestampModel, table=True):
     )
 
     workflow: "Workflow" = Relationship(back_populates="schedule")
+
+
+class WebhookRegistration(TimestampModel, table=True):
+    __tablename__ = "webhook_registrations"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workflow_id: int = Field(
+        foreign_key="workflows.id",
+        ondelete="CASCADE",
+        unique=True,
+    )
+    guid: str = Field(unique=True, index=True)
+    is_active: bool = Field(default=False)
+
+    workflow: "Workflow" = Relationship(back_populates="webhook")
 
 
 class Execution(TimestampModel, table=True):

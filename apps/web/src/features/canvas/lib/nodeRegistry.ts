@@ -15,6 +15,7 @@ import {
   Logs,
   Mail,
   Pencil,
+  Plug,
   Play,
   Route,
   Split,
@@ -23,6 +24,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { FilterData, NodeDataMap, NodeKind, SortData, SwitchData } from "../types";
+import { getIntegrationTools } from "../integrations/helpers";
+import type { IntegrationNodeData, IntegrationNodeKind } from "../integrations/types";
 
 export type NodeGroup =
   | "triggers"
@@ -31,14 +34,13 @@ export type NodeGroup =
   | "datetime"
   | "http"
   | "email"
-  | "agents";
+  | "agents"
+  | "google"
+  | "microsoft";
 
 export type NodeColorTheme = {
-  /** base color (e.g., "--node-http") */
   base: string;
-  /** background (e.g., "--node-http-bg") */
   bg: string;
-  /** border (e.g., "--node-http-border") */
   border: string;
 };
 
@@ -51,6 +53,7 @@ export type NodeMetadata<K extends NodeKind = NodeKind> = {
   kind: K;
   label: string;
   icon: LucideIcon;
+  iconSrc?: string;
   colorTheme: NodeColorTheme;
   dimensions: { width: number; height: number };
   defaults: NodeDataMap[K];
@@ -64,6 +67,29 @@ export type NodeMetadata<K extends NodeKind = NodeKind> = {
 export type NodeRegistry = {
   [K in NodeKind]: NodeMetadata<K>;
 };
+
+const INTEGRATION_NODE_REGISTRY = Object.fromEntries(
+  getIntegrationTools().map((tool) => [
+    tool.kind,
+    {
+      kind: tool.kind,
+      label: `${tool.serviceLabel}: ${tool.label}`,
+      icon: Plug,
+      iconSrc: tool.icon,
+      colorTheme: tool.colorTheme,
+      dimensions: { width: 220, height: 88 },
+      defaults: {
+        label: tool.label,
+        integrationKind: tool.kind,
+        arguments: tool.defaultArguments,
+      } satisfies IntegrationNodeData,
+      schema: { inputs: ["input"], outputs: ["output"] },
+      group: tool.provider,
+      isTrigger: false,
+      hasDynamicOutputs: false,
+    } satisfies NodeMetadata<IntegrationNodeKind>,
+  ]),
+) as unknown as { [K in IntegrationNodeKind]: NodeMetadata<K> };
 
 export const NODE_REGISTRY: NodeRegistry = {
   trigger: {
@@ -477,6 +503,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
   },
+  ...INTEGRATION_NODE_REGISTRY,
 };
 
 // ============================================================================
@@ -552,9 +579,12 @@ export function getNodeColorVar(kind: NodeKind): string {
   return NODE_REGISTRY[kind].colorTheme.base;
 }
 
+export function resolveNodeColor(value: string): string {
+  return value.startsWith("--") ? `var(${value})` : value;
+}
+
 export function getMiniMapNodeColor(kind: NodeKind): string {
-  const varName = NODE_REGISTRY[kind].colorTheme.base;
-  return `color-mix(in srgb, var(${varName}) 30%, transparent)`;
+  return `color-mix(in srgb, ${resolveNodeColor(NODE_REGISTRY[kind].colorTheme.base)} 30%, transparent)`;
 }
 
 // ============================================================================
@@ -582,17 +612,30 @@ export function getNodeSchema(kind: NodeKind, data?: NodeDataMap[NodeKind]): Nod
 type GroupMetadata = {
   label: string;
   icon: LucideIcon;
-  colorClass: string;
+  iconSrc?: string;
+  color: string;
 };
 
 const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
-  triggers: { label: "Triggers", icon: Play, colorClass: "bg-node-trigger" },
-  http: { label: "HTTP", icon: Globe, colorClass: "bg-node-http" },
-  flow: { label: "Control Flow", icon: Route, colorClass: "bg-node-flow" },
-  transform: { label: "Data Transform", icon: Wand2, colorClass: "bg-node-transform" },
-  datetime: { label: "Date & Time", icon: CalendarClock, colorClass: "bg-node-datetime" },
-  email: { label: "Email", icon: Mail, colorClass: "bg-node-email" },
-  agents: { label: "Agents", icon: Bot, colorClass: "bg-node-agent" },
+  triggers: { label: "Triggers", icon: Play, color: "var(--node-trigger)" },
+  http: { label: "HTTP", icon: Globe, color: "var(--node-http)" },
+  flow: { label: "Control Flow", icon: Route, color: "var(--node-flow)" },
+  transform: { label: "Data Transform", icon: Wand2, color: "var(--node-transform)" },
+  datetime: { label: "Date & Time", icon: CalendarClock, color: "var(--node-datetime)" },
+  email: { label: "Email", icon: Mail, color: "var(--node-email)" },
+  agents: { label: "Agents", icon: Bot, color: "var(--node-agent)" },
+  google: {
+    label: "Google",
+    icon: Plug,
+    iconSrc: "/icons/integrations/google.svg",
+    color: "#34a853",
+  },
+  microsoft: {
+    label: "Microsoft",
+    icon: Plug,
+    iconSrc: "/icons/integrations/microsoft.svg",
+    color: "#0078d4",
+  },
 };
 
 export function getNodesByGroup(group: NodeGroup): NodeMetadata[] {
@@ -612,8 +655,18 @@ export function getGroupIcon(group: NodeGroup): LucideIcon {
   return GROUP_METADATA[group].icon;
 }
 
-export function getGroupColorClass(group: NodeGroup): string {
-  return GROUP_METADATA[group].colorClass;
+export function getGroupIconSrc(group: NodeGroup): string | undefined {
+  return GROUP_METADATA[group].iconSrc;
+}
+
+export function getGroupColor(group: NodeGroup): string {
+  return GROUP_METADATA[group].color;
+}
+
+const INTEGRATION_GROUP_SET = new Set(Object.values(INTEGRATION_NODE_REGISTRY).map((m) => m.group));
+
+export function isIntegrationGroup(group: NodeGroup): boolean {
+  return INTEGRATION_GROUP_SET.has(group);
 }
 
 /** Data Helper */

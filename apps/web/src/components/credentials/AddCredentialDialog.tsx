@@ -81,12 +81,20 @@ const CREDENTIAL_FIELDS: Record<
       label: "Authorization URL",
       type: "text",
       placeholder: "https://oauth.example.com/authorize",
+      required: true,
     },
     {
       key: "token_url",
       label: "Token URL",
       type: "text",
       placeholder: "https://oauth.example.com/token",
+      required: true,
+    },
+    {
+      key: "scope",
+      label: "Scopes (space-separated)",
+      type: "text",
+      placeholder: "openid email https://www.googleapis.com/auth/calendar.readonly",
     },
   ],
   basic_auth: [

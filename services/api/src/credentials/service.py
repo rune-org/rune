@@ -1,5 +1,8 @@
+import json
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from src.db.redis import get_redis_client
+
 
 from src.core.exceptions import AlreadyExists, NotFound
 from src.credentials.encryption import get_encryptor
@@ -9,7 +12,8 @@ from src.credentials.schemas import (
     CredentialResponse,
     CredentialUpdate,
 )
-from src.db.models import User, WorkflowCredential
+from src.db.models import CredentialType, User, WorkflowCredential
+from src.oauth.credential_patch import merge_oauth2_credential_patch
 
 
 class CredentialService:
@@ -20,6 +24,16 @@ class CredentialService:
         self.session = session
         self.encryptor = get_encryptor()
         self.permission_service = CredentialPermissionService(session)
+
+    async def _publish_event(
+        self, action: str, credential_id: int, user_id: int | None = None
+    ) -> None:
+        """Publish a credential event to Redis."""
+        redis = get_redis_client()
+        data = {"action": action, "credential_id": credential_id}
+        if user_id:
+            data["user_id"] = user_id
+        await redis.publish("credential_events", json.dumps(data))
 
     async def create_credential(
         self, credential_data: CredentialCreate, user: User
@@ -145,10 +159,24 @@ class CredentialService:
 
         # Update and encrypt credential data if provided
         if credential_data.credential_data is not None:
-            encrypted_data = self.encryptor.encrypt_credential_data(
-                credential_data.credential_data
+            effective_type = (
+                credential_data.credential_type or credential.credential_type
             )
-            credential.credential_data = encrypted_data
+            if effective_type == CredentialType.OAUTH2:
+                current_decrypted = self.encryptor.decrypt_credential_data(
+                    credential.credential_data
+                )
+                merged = merge_oauth2_credential_patch(
+                    current_decrypted, credential_data.credential_data
+                )
+                credential.credential_data = self.encryptor.encrypt_credential_data(
+                    merged
+                )
+            else:
+                encrypted_data = self.encryptor.encrypt_credential_data(
+                    credential_data.credential_data
+                )
+                credential.credential_data = encrypted_data
 
         self.session.add(credential)
         await self.session.commit()
@@ -177,6 +205,20 @@ class CredentialService:
 
         await self.session.delete(credential)
         await self.session.commit()
+
+        # Publish event
+        await self._publish_event("deleted", credential_id)
+
+    async def revoke_credential_access(
+        self, credential: WorkflowCredential, target_user_id: int, user: User
+    ) -> None:
+        """
+        Revoke credential access and publish event.
+        """
+        await self.permission_service.revoke_credential_access(
+            credential, target_user_id, user
+        )
+        await self._publish_event("revoked", credential.id, target_user_id)
 
     async def list_credentials(self, user: User) -> list[WorkflowCredential]:
         """
@@ -211,6 +253,11 @@ class CredentialService:
         response.can_share = await self.permission_service.can_share(credential, user)
         response.can_edit = await self.permission_service.can_edit(credential, user)
         response.can_delete = await self.permission_service.can_delete(credential, user)
+        if credential.credential_type == CredentialType.OAUTH2:
+            decrypted = self.encryptor.decrypt_credential_data(
+                credential.credential_data
+            )
+            response.oauth_connected = bool(decrypted.get("access_token"))
         return response
 
 

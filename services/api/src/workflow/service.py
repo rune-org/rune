@@ -14,16 +14,20 @@ from src.core.datetime import utc_now
 from src.core.exceptions import BadRequest, Forbidden, NotFound
 from src.credentials.encryption import get_encryptor
 from src.db.models import (
+    CredentialType,
     Execution,
     ExecutionStatus,
     ScheduledWorkflow,
     User,
     Workflow,
+    WebhookRegistration,
     WorkflowCredential,
     WorkflowRole,
     WorkflowUser,
     WorkflowVersion,
 )
+from src.oauth.credential_tokens import oauth2_worker_public_values
+from src.oauth.refresh import ensure_oauth2_access_token
 
 
 from src.workflow.constants import (
@@ -31,6 +35,7 @@ from src.workflow.constants import (
     SCHEDULED_TRIGGER_PARAM_AMOUNT,
     SCHEDULED_TRIGGER_PARAM_UNIT,
     SCHEDULED_TRIGGER_UNIT_MULTIPLIERS,
+    WEBHOOK_TRIGGER_TYPE,
 )
 from src.workflow.queue import validate_workflow_can_run
 
@@ -53,19 +58,47 @@ class WorkflowService:
         self.db = db
         self.encryptor = get_encryptor()
 
-    async def list_for_user(self, user_id: int) -> list[tuple[Workflow, WorkflowRole]]:
+    async def list_for_user(
+        self, user_id: int, is_admin: bool = False
+    ) -> list[tuple[Workflow, WorkflowRole, str]]:
         """Return workflows visible to `user_id`, newest first.
 
-        Used for the `GET /workflows` endpoint.
+        If `is_admin` is True, returns all workflows in the system.
+        Returns a tuple of (Workflow, role, owner_name) for each item.
         """
-        statement = (
-            select(Workflow, WorkflowUser.role)
-            .join(WorkflowUser)
-            .where(WorkflowUser.user_id == user_id)
-            .order_by(Workflow.updated_at.desc())
+        owner_subquery = (
+            select(WorkflowUser.workflow_id, User.name.label("owner_name"))
+            .join(User, WorkflowUser.user_id == User.id)
+            .where(WorkflowUser.role == WorkflowRole.OWNER)
+            .subquery()
         )
+
+        if is_admin:
+            # Admins see everything and default to OWNER access
+            statement = (
+                select(Workflow, owner_subquery.c.owner_name)
+                .outerjoin(owner_subquery, Workflow.id == owner_subquery.c.workflow_id)
+                .order_by(Workflow.updated_at.desc())
+            )
+        else:
+            statement = (
+                select(Workflow, WorkflowUser.role, owner_subquery.c.owner_name)
+                .join(WorkflowUser)
+                .outerjoin(owner_subquery, Workflow.id == owner_subquery.c.workflow_id)
+                .where(WorkflowUser.user_id == user_id)
+                .order_by(Workflow.updated_at.desc())
+            )
+
         result = await self.db.exec(statement)
-        return result.all()
+        rows = result.all()
+
+        if is_admin:
+            return [
+                (wf, WorkflowRole.OWNER, owner_name or "Unknown")
+                for wf, owner_name in rows
+            ]
+
+        return [(wf, role, owner_name or "Unknown") for wf, role, owner_name in rows]
 
     async def get_by_id(self, workflow_id: int) -> Workflow | None:
         """Return a Workflow by primary key or None if not found."""
@@ -131,10 +164,12 @@ class WorkflowService:
             locked_workflow.published_version_id = latest.id
             locked_workflow.is_active = True
             await self._upsert_schedule(locked_workflow.id, latest.workflow_data)
+            await self._upsert_webhook(locked_workflow.id, latest.workflow_data, True)
         else:
             locked_workflow.published_version_id = None
             locked_workflow.is_active = False
             await self._delete_schedule(locked_workflow.id)
+            await self._deactivate_webhook(locked_workflow.id)
 
         await self.db.commit()
         await self.db.refresh(locked_workflow)
@@ -201,6 +236,7 @@ class WorkflowService:
         locked_workflow.published_version_id = version.id
         locked_workflow.is_active = True
         await self._upsert_schedule(locked_workflow.id, version.workflow_data)
+        await self._upsert_webhook(locked_workflow.id, version.workflow_data, True)
         await self.db.commit()
         await self.db.refresh(locked_workflow)
         return locked_workflow
@@ -326,6 +362,11 @@ class WorkflowService:
 
         stmt = delete(ScheduledWorkflow).where(
             ScheduledWorkflow.workflow_id == workflow_id
+        )
+        await self.db.exec(stmt)
+
+        stmt = delete(WebhookRegistration).where(
+            WebhookRegistration.workflow_id == workflow_id
         )
         await self.db.exec(stmt)
 
@@ -491,12 +532,14 @@ class WorkflowService:
                     wf.published_version_id = latest.id
                     wf.is_active = True
                     await self._upsert_schedule(wf.id, latest.workflow_data)
+                    await self._upsert_webhook(wf.id, latest.workflow_data, True)
                 # Skip workflows with no versions (cannot be activated)
             else:
                 # Deactivate: clear published pointer and delete schedule
                 wf.published_version_id = None
                 wf.is_active = False
                 await self._delete_schedule(wf.id)
+                await self._deactivate_webhook(wf.id)
 
         await self.db.commit()
 
@@ -507,6 +550,7 @@ class WorkflowService:
         queue_service,
         token_service=None,
         version_id: int | None = None,
+        accumulated_context: dict | None = None,
     ) -> str:
         """Queue a workflow for execution and return the execution_id.
 
@@ -570,6 +614,7 @@ class WorkflowService:
             workflow_version_id=version.id,
             execution_id=execution_id,
             workflow_data=resolved_workflow_data,
+            accumulated_context=accumulated_context or {},
         )
 
         return execution_id
@@ -590,6 +635,7 @@ class WorkflowService:
 
         Raises:
             NotFound: If a referenced credential doesn't exist.
+            BadRequest: If an OAuth2 credential is not connected or cannot be refreshed.
         """
         resolved_data = copy.deepcopy(workflow_data)
         nodes = resolved_data.get("nodes", [])
@@ -627,11 +673,19 @@ class WorkflowService:
         decrypted_data = self.encryptor.decrypt_credential_data(
             credential.credential_data
         )
+        if credential.credential_type == CredentialType.OAUTH2:
+            decrypted_data = await ensure_oauth2_access_token(
+                self.db, credential, self.encryptor
+            )
+            values = oauth2_worker_public_values(decrypted_data)
+        else:
+            values = decrypted_data
+
         return {
             "id": str(credential.id),
             "name": credential.name,
             "type": credential.credential_type.value,
-            "values": decrypted_data,
+            "values": values,
         }
 
     async def _resolve_agent_nested_credentials(self, node: dict) -> None:
@@ -738,6 +792,72 @@ class WorkflowService:
         if not workflow:
             raise NotFound(detail="Workflow not found")
         return workflow
+
+    # ------------------------------------------------------------------
+    # Webhook registration helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _find_webhook_trigger(workflow_data: dict) -> dict | None:
+        """Return the webhook trigger node dict, or None if absent."""
+        for node in workflow_data.get("nodes", []):
+            if node.get("type") == WEBHOOK_TRIGGER_TYPE:
+                return node
+        return None
+
+    async def _upsert_webhook(
+        self, workflow_id: int, workflow_data: dict, is_active: bool
+    ) -> None:
+        """Create or update webhook registration.
+
+        Deletes the registration if the workflow no longer has a webhook node.
+        The GUID is generated once on creation and never changed.
+        """
+        trigger_node = self._find_webhook_trigger(workflow_data)
+
+        if trigger_node is None:
+            await self._delete_webhook(workflow_id)
+            return
+
+        stmt = select(WebhookRegistration).where(
+            WebhookRegistration.workflow_id == workflow_id
+        )
+        result = await self.db.exec(stmt)
+        existing = result.first()
+
+        if existing is None:
+            self.db.add(
+                WebhookRegistration(
+                    workflow_id=workflow_id,
+                    guid=str(trigger_node["webhook_guid"]),
+                    is_active=is_active,
+                )
+            )
+        else:
+            existing.is_active = is_active
+
+    async def _deactivate_webhook(self, workflow_id: int) -> None:
+        """Mark the webhook registration inactive without deleting it.
+
+        Preserves the GUID so the URL remains stable if the workflow is reactivated.
+        """
+        stmt = select(WebhookRegistration).where(
+            WebhookRegistration.workflow_id == workflow_id
+        )
+        result = await self.db.exec(stmt)
+        existing = result.first()
+        if existing is not None:
+            existing.is_active = False
+
+    async def _delete_webhook(self, workflow_id: int) -> None:
+        """Remove the webhook_registrations row for this workflow if it exists."""
+        stmt = select(WebhookRegistration).where(
+            WebhookRegistration.workflow_id == workflow_id
+        )
+        result = await self.db.exec(stmt)
+        existing = result.first()
+        if existing is not None:
+            await self.db.delete(existing)
 
     async def _get_latest_version_by_workflow_id(
         self, workflow_id: int

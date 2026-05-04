@@ -29,6 +29,8 @@ import {
   type MergeData,
   type AgentData,
 } from "@/features/canvas/types";
+import type { IntegrationNodeData } from "@/features/canvas/integrations/types";
+import { isIntegrationNodeKind } from "@/features/canvas/integrations/helpers";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
 import type { CredentialRef } from "@/lib/credentials";
 import {
@@ -163,6 +165,11 @@ export function isLegacySmtpPlaceholder(value: unknown): boolean {
 
 // Build parameter objects for supported node types
 function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unknown> {
+  if (isIntegrationNodeKind(n.type)) {
+    const d = (n.data || {}) as IntegrationNodeData;
+    return d.arguments ?? {};
+  }
+
   switch (n.type) {
     case "http": {
       /** Pre–snake_case canvas fields (still serialize if present). */
@@ -871,6 +878,21 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
       ...(credentials ? { credential: credentials } : {}),
     } as CanvasNode["data"];
     const params = (n.parameters ?? {}) as Record<string, unknown>;
+    if (isIntegrationNodeKind(canvasType)) {
+      const dataForNode: IntegrationNodeData = {
+        ...baseData,
+        integrationKind: canvasType,
+        arguments: params,
+      };
+
+      return {
+        id: n.id,
+        type: canvasType,
+        position: { x, y },
+        data: dataForNode,
+      } as CanvasNode;
+    }
+
     const hydrateDataForNode = Object.hasOwn(nodeHydrators, canvasType)
       ? (nodeHydrators[canvasType as CanvasNode["type"]] ?? identityNodeHydrator)
       : identityNodeHydrator;
@@ -933,6 +955,21 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
  * Strips credential references from workflow_data nodes for safe export.
  * Returns nodes and edges at top level; does not convert DSL to canvas shape.
  */
+function stripNestedCredentialRefs(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stripNestedCredentialRefs);
+  }
+
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const { credential: _credential, ...rest } = value as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(rest).map(([key, child]) => [key, stripNestedCredentialRefs(child)]),
+  );
+}
+
 export function stripCredentialsFromWorkflowData(workflowData: {
   nodes?: Array<Record<string, unknown>>;
   edges?: unknown[];
@@ -944,7 +981,7 @@ export function stripCredentialsFromWorkflowData(workflowData: {
   }
   const sanitizedNodes = nodes.map((node) => {
     const { credentials: _omit, ...rest } = node;
-    return rest;
+    return stripNestedCredentialRefs(rest) as Record<string, unknown>;
   });
   return { nodes: sanitizedNodes, edges };
 }
