@@ -3,20 +3,26 @@
 import Image from "next/image";
 import { useEffect, useState, Suspense } from "react";
 import { toast } from "@/components/ui/toast";
-import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Mail, BarChart, Code, Cloud, Calendar, Share2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/shared/Container";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { listTemplates } from "@/lib/api/templates";
+import { listTemplates, deleteTemplate } from "@/lib/api/templates";
 import type { TemplateSummary } from "@/client/types.gen";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/lib/auth";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { TemplateCard } from "@/components/templates/TemplateCard";
 
 function TemplatesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { state: authState } = useAuth();
+  const user = authState.user;
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<TemplateSummary | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Get category from URL params
   const selectedCategory = searchParams.get("category");
@@ -45,6 +51,31 @@ function TemplatesPageInner() {
   const handleUseTemplate = async (templateId: number) => {
     // Navigate to canvas with template ID in URL
     router.push(`/create/app?templateId=${templateId}`);
+  };
+
+  const handleDeleteTemplate = async (templateId: number) => {
+    try {
+      setIsDeleting(true);
+      const response = await deleteTemplate(templateId);
+      if (!response.error) {
+        toast.success("Template deleted successfully");
+        setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+        return true;
+      } else {
+        const errorData = response.error as { message?: string; detail?: string | unknown[] };
+        const errorMessage =
+          errorData?.message ||
+          (typeof errorData?.detail === "string" ? errorData.detail : null) ||
+          "Failed to delete template";
+        toast.error(errorMessage);
+        return false;
+      }
+    } catch (_error) {
+      toast.error("An error occurred while deleting the template");
+      return false;
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Group templates by category
@@ -117,25 +148,13 @@ function TemplatesPageInner() {
         {categoryTemplates.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {categoryTemplates.map((template) => (
-              <Card
+              <TemplateCard
                 key={template.id}
-                className="transition-colors hover:border-accent/50 hover:bg-accent/10"
-              >
-                <CardContent className="flex flex-col p-5">
-                  <CardTitle className="mb-1 text-base font-semibold">{template.name}</CardTitle>
-                  <CardDescription className="mb-4 text-sm">{template.description}</CardDescription>
-                  <div className="mt-auto flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Create from template</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleUseTemplate(template.id)}
-                    >
-                      Use
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                template={template}
+                user={user}
+                onUse={handleUseTemplate}
+                onDelete={setDeleteTarget}
+              />
             ))}
           </div>
         ) : (
@@ -178,25 +197,13 @@ function TemplatesPageInner() {
         {trendingTemplates.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {trendingTemplates.map((template) => (
-              <Card
+              <TemplateCard
                 key={template.id}
-                className="transition-colors hover:border-accent/50 hover:bg-accent/10"
-              >
-                <CardContent className="flex flex-col p-5">
-                  <CardTitle className="mb-1 text-base font-semibold">{template.name}</CardTitle>
-                  <CardDescription className="mb-4 text-sm">{template.description}</CardDescription>
-                  <div className="mt-auto flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Create from template</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleUseTemplate(template.id)}
-                    >
-                      Use
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                template={template}
+                user={user}
+                onUse={handleUseTemplate}
+                onDelete={setDeleteTarget}
+              />
             ))}
           </div>
         ) : (
@@ -242,6 +249,24 @@ function TemplatesPageInner() {
           + Create New Template
         </Button>
       </div>
+
+      <ConfirmationDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeleteTarget(null);
+        }}
+        title="Delete Template"
+        description={
+          <>
+            Are you sure you want to delete the template{" "}
+            <span className="font-semibold">{deleteTarget?.name}</span>? This action cannot be
+            undone.
+          </>
+        }
+        confirmText="Delete"
+        onConfirm={() => handleDeleteTemplate(deleteTarget!.id)}
+        isLoading={isDeleting}
+      />
     </Container>
   );
 }

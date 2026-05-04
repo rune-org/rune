@@ -4,7 +4,7 @@ from sqlmodel import or_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.exceptions import Forbidden, NotFound
-from src.db.models import WorkflowTemplate
+from src.db.models import User, UserRole, WorkflowTemplate
 from src.templates.schemas import TemplateCreate
 
 
@@ -79,13 +79,13 @@ class TemplateService:
         await self.db.refresh(template)
         return template
 
-    async def delete_template(self, template_id: int, user_id: int) -> None:
+    async def delete_template(self, template_id: int, user: User) -> None:
         """Delete a template."""
-        template = await self.get_template(template_id, user_id)
+        template = await self.get_template(template_id, user.id)
 
-        # Only the creator can delete their template
-        if template.created_by != user_id:
-            raise Forbidden("Only the template creator can delete it")
+        # Only the creator or an admin can delete the template
+        if template.created_by != user.id and user.role != UserRole.ADMIN:
+            raise Forbidden("Only the template creator or an admin can delete it")
 
         await self.db.delete(template)
         await self.db.commit()

@@ -3822,6 +3822,11 @@ components:
         is_public:
           type: boolean
           title: Is Public
+        created_by:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Created By
       type: object
       required:
       - id
