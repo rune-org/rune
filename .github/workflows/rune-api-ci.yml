@@ -109,6 +109,10 @@ jobs:
         working-directory: ./services/api
 
       - name: Run tests
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5433/test_rune
+          REDIS_URL: redis://localhost:6380
+          RABBITMQ_URL: amqp://test_user:test_password@localhost:5673
         run: uv run pytest --cov=src --cov-report=xml --cov-report=term
         working-directory: ./services/api
 
