@@ -3036,9 +3036,25 @@ export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponse = Up
 export type ListUsersForSharingUsersDirectoryGetData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Q
+         *
+         * Search by name or email
+         */
+        q?: string | null;
+    };
     url: '/users/directory';
 };
+
+export type ListUsersForSharingUsersDirectoryGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListUsersForSharingUsersDirectoryGetError = ListUsersForSharingUsersDirectoryGetErrors[keyof ListUsersForSharingUsersDirectoryGetErrors];
 
 export type ListUsersForSharingUsersDirectoryGetResponses = {
     /**

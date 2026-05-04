@@ -49,21 +49,15 @@ export function ShareCredentialDialog({
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [revokingUserId, setRevokingUserId] = useState<number | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadShares = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [sharesRes, usersRes] = await Promise.all([
-        listCredentialShares(credentialId),
-        listUsersForSharing(),
-      ]);
-
+      const sharesRes = await listCredentialShares(credentialId);
       if (sharesRes.data?.data) {
         setShares(sharesRes.data.data);
-      }
-      if (usersRes.data?.data) {
-        setUsers(usersRes.data.data);
       }
     } catch (_error) {
       toast.error("Failed to load sharing information");
@@ -72,24 +66,31 @@ export function ShareCredentialDialog({
     }
   }, [credentialId]);
 
-  // Load shares and users when dialog opens
+  const handleSearch = useCallback(async (query: string) => {
+    setIsSearching(true);
+    try {
+      const res = await listUsersForSharing(query || undefined);
+      setUsers(res.data?.data ?? []);
+    } catch (_error) {
+      toast.error("Failed to search users");
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Load shares when dialog opens
   useEffect(() => {
     if (open) {
-      loadData();
+      void loadShares();
+      setUsers([]);
+      setSelectedUserIds([]);
     }
-  }, [open, loadData]);
+  }, [open, loadShares]);
 
-  // Filter out users who already have access and the current user (can't share with yourself)
+  // Exclude already-shared users and self from results
   const availableUsers = users.filter(
     (user) => user.id !== currentUserId && !shares.some((share) => share.user_id === user.id),
   );
-
-  // Helper to get user name by ID
-  const getUserNameById = (userId: number | null): string | null => {
-    if (!userId) return null;
-    const user = users.find((u) => u.id === userId);
-    return user?.name ?? null;
-  };
 
   const handleShare = async () => {
     if (selectedUserIds.length === 0) {
@@ -114,6 +115,7 @@ export function ShareCredentialDialog({
       }
 
       setSelectedUserIds([]);
+      setUsers([]);
       toast.success("Credential shared successfully");
       onSharesChanged?.();
       onOpenChange(false);
@@ -165,6 +167,8 @@ export function ShareCredentialDialog({
                   selectedUserIds={selectedUserIds}
                   onSelect={(id) => setSelectedUserIds((prev) => [...prev, id])}
                   onRemove={(id) => setSelectedUserIds((prev) => prev.filter((uid) => uid !== id))}
+                  onSearch={handleSearch}
+                  isSearching={isSearching}
                   disabled={isLoading || isSharing}
                 />
               </div>
@@ -190,7 +194,6 @@ export function ShareCredentialDialog({
             ) : (
               <div className="max-h-[200px] overflow-y-auto rounded-md border">
                 {shares.map((share) => {
-                  const sharedByName = getUserNameById(share.shared_by);
                   return (
                     <div
                       key={share.user_id}
@@ -204,7 +207,7 @@ export function ShareCredentialDialog({
                           {formatDistanceToNow(new Date(share.shared_at), {
                             addSuffix: true,
                           })}
-                          {sharedByName && ` by ${sharedByName}`}
+                          {share.shared_by_name && ` by ${share.shared_by_name}`}
                         </span>
                       </div>
                       {canShare && (

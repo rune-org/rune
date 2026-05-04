@@ -101,6 +101,6 @@ export function setupClientInterceptors() {
       headers,
       method: (options.method ?? "GET") as Uppercase<HttpMethod>,
     });
-    return result.response;
+    return result.response ?? response;
   });
 }
