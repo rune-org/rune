@@ -11,13 +11,21 @@ import {
 export type RFGraph = { nodes: RFNode[]; edges: RFEdge[] };
 
 /**
- * Strips credential data from nodes to prevent sensitive data from being exported.
- * Returns a new graph with credentials cleared from all nodes.
+ * Strips sensitive data from nodes to prevent secrets from being exported.
+ * Returns a new graph with credentials and webhook GUIDs cleared from all nodes.
  */
 export function stripCredentials(graph: RFGraph): RFGraph {
   const nodes = graph.nodes.map((node) => {
-    if (node.data && typeof node.data === "object" && "credential" in node.data) {
-      const { credential: _credential, ...restData } = node.data as Record<string, unknown>;
+    if (
+      node.data &&
+      typeof node.data === "object" &&
+      ("credential" in node.data || "webhookGuid" in node.data)
+    ) {
+      const {
+        credential: _credential,
+        webhookGuid: _webhookGuid,
+        ...restData
+      } = node.data as Record<string, unknown>;
       return {
         ...node,
         data: restData,

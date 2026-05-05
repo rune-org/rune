@@ -21,6 +21,7 @@ import {
   Split,
   SquareDashedBottom,
   Wand2,
+  Webhook,
   type LucideIcon,
 } from "lucide-react";
 import type { FilterData, NodeDataMap, NodeKind, SortData, SwitchData } from "../types";
@@ -125,6 +126,23 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: true,
     hasDynamicOutputs: false,
     shortcutKey: "r",
+  },
+  webhookTrigger: {
+    kind: "webhookTrigger",
+    label: "Webhook Trigger",
+    icon: Webhook,
+    colorTheme: {
+      base: "--node-trigger",
+      bg: "--node-trigger-bg",
+      border: "--node-trigger-border",
+    },
+    dimensions: { width: 160, height: 48 },
+    defaults: { label: "Webhook" },
+    schema: { inputs: [], outputs: ["trigger"] },
+    group: "triggers",
+    isTrigger: true,
+    hasDynamicOutputs: false,
+    shortcutKey: "w",
   },
   agent: {
     kind: "agent",
@@ -239,7 +257,6 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "flow",
     isTrigger: false,
     hasDynamicOutputs: false,
-    shortcutKey: "w",
   },
   log: {
     kind: "log",

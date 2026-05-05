@@ -2,6 +2,7 @@ import type { NodeTypes } from "@xyflow/react";
 import { AgentNode } from "./AgentNode";
 import { TriggerNode } from "./TriggerNode";
 import { ScheduledTriggerNode } from "./ScheduledTriggerNode";
+import { WebhookTriggerNode } from "./WebhookTriggerNode";
 import { IfNode } from "./IfNode";
 import { SwitchNode } from "./SwitchNode";
 import { HttpNode } from "./HttpNode";
@@ -31,6 +32,7 @@ export const nodeTypes: NodeTypes = {
   agent: AgentNode,
   trigger: TriggerNode,
   scheduledTrigger: ScheduledTriggerNode,
+  webhookTrigger: WebhookTriggerNode,
   if: IfNode,
   switch: SwitchNode,
   http: HttpNode,

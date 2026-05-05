@@ -25,6 +25,7 @@ import { DateTimeSubtractInspector } from "./inspectors/DateTimeSubtractInspecto
 import { DateTimeFormatInspector } from "./inspectors/DateTimeFormatInspector";
 import { DateTimeParseInspector } from "./inspectors/DateTimeParseInspector";
 import { ScheduledTriggerInspector } from "./inspectors/ScheduledTriggerInspector";
+import { WebhookTriggerInspector } from "./inspectors/WebhookTriggerInspector";
 import { EditInspector } from "./inspectors/EditInspector";
 import { FilterInspector } from "./inspectors/FilterInspector";
 import { SortInspector } from "./inspectors/SortInspector";
@@ -95,6 +96,8 @@ function renderInspectorForm(
       return (
         <ScheduledTriggerInspector node={node} updateData={updateData} isExpanded={isExpanded} />
       );
+    case "webhookTrigger":
+      return <WebhookTriggerInspector node={node} isExpanded={isExpanded} />;
     case "edit":
       return <EditInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "filter":

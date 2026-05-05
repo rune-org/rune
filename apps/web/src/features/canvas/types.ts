@@ -50,6 +50,10 @@ export function isHttpMethod(value: string): value is HttpMethod {
 export type BuiltInNodeDataMap = {
   trigger: BaseData;
 
+  webhookTrigger: BaseData & {
+    webhookGuid?: string;
+  };
+
   scheduledTrigger: BaseData & {
     amount?: number;
     unit?: "seconds" | "minutes" | "hours" | "days";
@@ -189,6 +193,7 @@ export type HttpData = NodeDataMap["http"];
 export type SmtpData = NodeDataMap["smtp"];
 export type AgentData = NodeDataMap["agent"];
 export type TriggerData = NodeDataMap["trigger"];
+export type WebhookTriggerData = NodeDataMap["webhookTrigger"];
 export type ScheduledTriggerData = NodeDataMap["scheduledTrigger"];
 export type WaitData = NodeDataMap["wait"];
 export type LogData = NodeDataMap["log"];

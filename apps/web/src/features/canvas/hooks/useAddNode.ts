@@ -55,11 +55,16 @@ export function useAddNode(
           counter++;
         }
 
+        const nodeData =
+          kind === "webhookTrigger" && !("webhookGuid" in defaults.data)
+            ? { ...defaults.data, webhookGuid: createId() }
+            : defaults.data;
+
         const newNode = {
           id: createId(),
           position,
           type: defaults.type,
-          data: { ...defaults.data, label: newLabel },
+          data: { ...nodeData, label: newLabel },
         } as CanvasNode;
 
         return nodes.concat(newNode);
