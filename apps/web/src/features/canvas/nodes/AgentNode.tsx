@@ -6,6 +6,7 @@ import { Bot, MessageSquare, Wrench, Plug } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { AgentData } from "../types";
 import { agentTabStore } from "../stores/agentTabStore";
+import type { AgentTab } from "../stores/agentTabStore";
 
 export const AgentNode = memo(function AgentNode({ id, data }: NodeProps<Node<AgentData>>) {
   const modelName = data.model?.name ?? "No model configured";
@@ -13,7 +14,7 @@ export const AgentNode = memo(function AgentNode({ id, data }: NodeProps<Node<Ag
   const mcpCount = data.mcp_servers?.length ?? 0;
 
   const handleBlockClick = useCallback(
-    (tab: string) => {
+    (tab: AgentTab) => {
       agentTabStore.request(id, tab);
     },
     [id],
@@ -69,8 +70,8 @@ function MiniBlock({
   icon: ReactNode;
   label: string;
   count?: number;
-  tab: string;
-  onClick: (tab: string) => void;
+  tab: AgentTab;
+  onClick: (tab: AgentTab) => void;
 }) {
   return (
     <button
