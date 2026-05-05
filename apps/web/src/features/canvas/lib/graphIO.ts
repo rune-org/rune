@@ -1,6 +1,7 @@
 import type { Edge as RFEdge, Node as RFNode } from "@xyflow/react";
 import type { CSSProperties } from "react";
 import { nodeTypes } from "@/features/canvas/nodes";
+import { createId } from "../utils/id";
 import {
   SWITCH_FALLBACK_HANDLE_ID,
   SWITCH_RULE_HANDLE_PREFIX,
@@ -48,6 +49,26 @@ type EdgeMeta = {
 
 export function allowedTypeSet(): Set<string> {
   return new Set(Object.keys(nodeTypes));
+}
+
+export function ensureWebhookTriggerGuids(graph: RFGraph): RFGraph {
+  const nodes = graph.nodes.map((node) => {
+    if (node.type !== "webhookTrigger") return node;
+
+    const data = node.data && typeof node.data === "object" ? node.data : {};
+    const webhookGuid = (data as { webhookGuid?: unknown }).webhookGuid;
+    if (typeof webhookGuid === "string" && webhookGuid.length > 0) return node;
+
+    return {
+      ...node,
+      data: {
+        ...data,
+        webhookGuid: createId(),
+      },
+    };
+  });
+
+  return { nodes, edges: graph.edges };
 }
 
 export function sanitizeGraph(graph: RFGraph, allowed = allowedTypeSet()): RFGraph {
@@ -124,7 +145,7 @@ export function sanitizeGraph(graph: RFGraph, allowed = allowedTypeSet()): RFGra
     return { ...e, type: "default" } as RFEdge;
   });
 
-  return { nodes, edges };
+  return ensureWebhookTriggerGuids({ nodes, edges });
 }
 
 /**

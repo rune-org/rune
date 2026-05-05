@@ -118,7 +118,12 @@ describe("graphIO", () => {
     ).toEqual({
       nodes: [
         { id: "trigger-1", type: "trigger", position: { x: 0, y: 0 }, data: {} },
-        { id: "webhook-1", type: "webhookTrigger", position: { x: 100, y: 0 }, data: {} },
+        {
+          id: "webhook-1",
+          type: "webhookTrigger",
+          position: { x: 100, y: 0 },
+          data: { webhookGuid: expect.any(String) },
+        },
       ],
       edges: [],
     });

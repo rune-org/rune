@@ -40,7 +40,6 @@ import {
   switchRuleHandleId,
 } from "@/features/canvas/utils/switchHandles";
 import { sanitizeNodeLabel } from "@/features/canvas/utils/nodeLabels";
-import { createId } from "@/features/canvas/utils/id";
 
 export interface WorkflowNode<Params = Record<string, unknown>> {
   id: string;
@@ -806,9 +805,7 @@ export function canvasToWorkflowData(
     }
 
     const webhookGuid =
-      n.type === "webhookTrigger"
-        ? ((n.data as WebhookTriggerData).webhookGuid ?? createId())
-        : undefined;
+      n.type === "webhookTrigger" ? (n.data as WebhookTriggerData).webhookGuid : undefined;
 
     return {
       id: n.id,
@@ -868,7 +865,7 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
         position: { x, y },
         data: {
           ...baseData,
-          webhookGuid: typeof n.webhook_guid === "string" ? n.webhook_guid : createId(),
+          ...(typeof n.webhook_guid === "string" ? { webhookGuid: n.webhook_guid } : {}),
         },
       } as CanvasNode;
     }

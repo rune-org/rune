@@ -57,14 +57,23 @@ export function WebhookTriggerInspector({ node, isExpanded }: WebhookTriggerInsp
   );
 }
 
-function getWebhookUrl(guid: string): string {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-  const path = `/webhook/${guid}`;
+const ABSOLUTE_HTTP_URL_RE = /^https?:\/\//i;
 
-  if (baseUrl.startsWith("http://") || baseUrl.startsWith("https://")) {
-    return `${baseUrl.replace(/\/$/, "")}${path}`;
+export function getWebhookUrl(guid: string): string {
+  const rawBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+  const baseUrl = rawBaseUrl.endsWith("/") ? rawBaseUrl : `${rawBaseUrl}/`;
+  const webhookPath = `webhook/${guid}`;
+
+  if (ABSOLUTE_HTTP_URL_RE.test(baseUrl)) {
+    return new URL(webhookPath, baseUrl).toString();
   }
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  return `${origin}${baseUrl.replace(/\/$/, "")}${path}`;
+
+  if (baseUrl.startsWith("/")) {
+    if (!origin) return `${baseUrl}${webhookPath}`;
+    return new URL(webhookPath, new URL(baseUrl, origin)).toString();
+  }
+
+  return new URL(webhookPath, `https://${baseUrl}`).toString();
 }
