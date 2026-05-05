@@ -221,7 +221,12 @@ function ModelTab({
             setIsCustomModel(false);
             update((d) => ({
               ...d,
-              model: { ...DEFAULT_GEMINI_MODEL, ...(d.model ?? model), provider: "gemini", name: v },
+              model: {
+                ...DEFAULT_GEMINI_MODEL,
+                ...(d.model ?? model),
+                provider: "gemini",
+                name: v,
+              },
             }));
           }}
         >
