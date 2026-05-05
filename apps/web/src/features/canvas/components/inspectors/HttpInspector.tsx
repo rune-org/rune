@@ -1,5 +1,5 @@
 import type { Node } from "@xyflow/react";
-import { HTTP_METHODS, isHttpMethod, type HttpData } from "../../types";
+import { HTTP_METHODS, HTTP_CREDENTIAL_TYPES, isHttpMethod, type HttpData } from "../../types";
 import { useUpdateNodeData } from "../../hooks/useUpdateNodeData";
 import { JsonField } from "../JsonField";
 import { KeyValueVariableEditor } from "../KeyValueVariableEditor";
@@ -14,13 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const HTTP_CREDENTIAL_TYPES: ("basic_auth" | "header" | "api_key" | "oauth2" | "token")[] = [
-  "basic_auth",
-  "header",
-  "api_key",
-  "oauth2",
-  "token",
-];
 
 type HttpInspectorProps = {
   node: Node<HttpData>;

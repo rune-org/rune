@@ -40,6 +40,15 @@ export type SortRule = {
 /** Canonical list of HTTP methods for canvas + worker `http` node (includes PATCH). */
 export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
+export const HTTP_CREDENTIAL_TYPES = [
+  "basic_auth",
+  "header",
+  "api_key",
+  "oauth2",
+  "token",
+] as const;
+export type HttpCredentialType = (typeof HTTP_CREDENTIAL_TYPES)[number];
+
 export type HttpMethod = (typeof HTTP_METHODS)[number];
 
 export const AGENT_PROVIDERS = ["gemini", "openai", "anthropic"] as const;

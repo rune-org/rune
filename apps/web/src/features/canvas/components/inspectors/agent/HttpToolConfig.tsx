@@ -2,6 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import {
+  HTTP_CREDENTIAL_TYPES,
   HTTP_METHODS,
   isHttpMethod,
   type AgentHttpToolConfig,
@@ -19,13 +20,6 @@ import {
 } from "@/components/ui/select";
 import { FieldWithModeToggle } from "./FieldWithModeToggle";
 
-const HTTP_CREDENTIAL_TYPES: ("basic_auth" | "header" | "api_key" | "oauth2" | "token")[] = [
-  "basic_auth",
-  "header",
-  "api_key",
-  "oauth2",
-  "token",
-];
 
 type HttpToolConfigProps = {
   tool: AgentTool;
@@ -33,7 +27,6 @@ type HttpToolConfigProps = {
   nodeId: string;
 };
 
-/** Mirrors HttpInspector but routes toggleable fields through FieldWithModeToggle. */
 export function HttpToolConfig({ tool, onChange, nodeId }: HttpToolConfigProps) {
   const cfg = tool.config;
   const patchCfg = (patch: Partial<AgentHttpToolConfig>) => {
@@ -46,29 +39,6 @@ export function HttpToolConfig({ tool, onChange, nodeId }: HttpToolConfigProps) 
 
   return (
     <div className="space-y-3">
-      <div className="space-y-1">
-        <label className="block text-xs text-muted-foreground">Tool name (LLM-visible)</label>
-        <input
-          type="text"
-          className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm font-mono"
-          value={tool.name}
-          onChange={(e) =>
-            onChange({ ...tool, name: e.target.value.replace(/[^a-zA-Z0-9_]/g, "_") })
-          }
-          placeholder="e.g. get_weather"
-        />
-      </div>
-      <div className="space-y-1">
-        <label className="block text-xs text-muted-foreground">Description (LLM-visible)</label>
-        <textarea
-          className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm"
-          rows={2}
-          value={tool.description}
-          onChange={(e) => onChange({ ...tool, description: e.target.value })}
-          placeholder="Describe when the agent should call this tool"
-        />
-      </div>
-
       <CredentialSelector
         credentialType={HTTP_CREDENTIAL_TYPES}
         value={tool.credential ?? undefined}
