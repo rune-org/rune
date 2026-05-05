@@ -25,6 +25,13 @@ type FieldWithModeToggleProps = {
   allowedAgentTypes?: readonly AgentFieldType[];
 };
 
+function fixedDisplayValue(value: unknown): string {
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return "";
+}
+
 /**
  * Toggles between a fixed value and an agent-supplied parameter slot.
  * Both branches' last-known state is preserved in refs so users don't lose
@@ -84,7 +91,7 @@ export function FieldWithModeToggle({
         />
       ) : (
         <VariableInput
-          value={typeof value.value === "string" ? value.value : ""}
+          value={fixedDisplayValue(value.value)}
           onChange={(v) => onChange({ mode: "fixed", value: v })}
           placeholder={fixedPlaceholder}
           nodeId={nodeId}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Trash2 } from "lucide-react";
 import {
   HTTP_CREDENTIAL_TYPES,
@@ -25,6 +26,10 @@ type HttpToolConfigProps = {
   onChange: (next: AgentTool) => void;
   nodeId: string;
 };
+
+function createFieldUiId(): string {
+  return `field_${crypto.randomUUID()}`;
+}
 
 export function HttpToolConfig({ tool, onChange, nodeId }: HttpToolConfigProps) {
   const cfg = tool.config;
@@ -176,11 +181,21 @@ function KVList({
   keyPlaceholder,
   allowedAgentTypes,
 }: KVListProps) {
+  useEffect(() => {
+    if (items.some((item) => !item.ui_id)) {
+      onChange(items.map((item) => (item.ui_id ? item : { ...item, ui_id: createFieldUiId() })));
+    }
+  }, [items, onChange]);
+
   const update = (idx: number, patch: Partial<AgentKVField>) => {
     onChange(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   };
   const remove = (idx: number) => onChange(items.filter((_, i) => i !== idx));
-  const add = () => onChange([...items, { key: "", value: { mode: "fixed", value: "" } }]);
+  const add = () =>
+    onChange([
+      ...items,
+      { ui_id: createFieldUiId(), key: "", value: { mode: "fixed", value: "" } },
+    ]);
 
   return (
     <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
@@ -190,7 +205,10 @@ function KVList({
           <div className="text-xs text-muted-foreground/70">No {title.toLowerCase()} defined.</div>
         )}
         {items.map((item, idx) => (
-          <div key={idx} className="space-y-1 rounded border border-border/40 p-2">
+          <div
+            key={item.ui_id ?? item.key}
+            className="space-y-1 rounded border border-border/40 p-2"
+          >
             <div className="flex items-center gap-2">
               <input
                 type="text"

@@ -29,6 +29,7 @@ import {
   type AggregatorData,
   type MergeData,
   type AgentData,
+  type AgentKVField,
   type AgentMessage,
   type AgentTool,
 } from "@/features/canvas/types";
@@ -52,6 +53,18 @@ function stripAgentMessageUiId(message: AgentMessage): AgentMessage {
 
 function stripAgentToolUiId(tool: AgentTool): AgentTool {
   const next = { ...tool };
+  delete next.ui_id;
+  next.config = {
+    ...next.config,
+    headers: next.config.headers?.map(stripAgentKvFieldUiId),
+    query: next.config.query?.map(stripAgentKvFieldUiId),
+    body: next.config.body?.map(stripAgentKvFieldUiId),
+  };
+  return next;
+}
+
+function stripAgentKvFieldUiId(field: AgentKVField): AgentKVField {
+  const next = { ...field };
   delete next.ui_id;
   return next;
 }

@@ -84,7 +84,7 @@ export type AgentFieldMode =
       agent: { description: string; type: AgentFieldType; required: boolean };
     };
 
-export type AgentKVField = { key: string; value: AgentFieldMode };
+export type AgentKVField = { ui_id?: string; key: string; value: AgentFieldMode };
 
 export type AgentHttpToolConfig = {
   method: HttpMethod;

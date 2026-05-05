@@ -38,6 +38,10 @@ type DerivedParam = {
   required: boolean;
 };
 
+function createFieldUiId(): string {
+  return `field_${crypto.randomUUID()}`;
+}
+
 function deriveParams(cfg: AgentHttpToolConfig): DerivedParam[] {
   const params: DerivedParam[] = [];
 
@@ -56,7 +60,7 @@ function deriveParams(cfg: AgentHttpToolConfig): DerivedParam[] {
     (cfg[section] ?? []).forEach((field, idx) => {
       if (field.value.mode === "agent") {
         params.push({
-          id: `${section}-${idx}`,
+          id: field.ui_id ?? `${section}-${idx}`,
           name: field.key,
           source: { section, idx },
           description: field.value.agent.description,
@@ -139,6 +143,7 @@ function addParam(tool: AgentTool, name: string, section: AddSection): AgentTool
     };
   }
   const newField: AgentKVField = {
+    ui_id: createFieldUiId(),
     key: name,
     value: { mode: "agent", agent: { description: "", type: "string", required: true } },
   };
@@ -679,10 +684,20 @@ function FixedKVSection({
   keyPlaceholder?: string;
   onChange: (next: AgentKVField[]) => void;
 }) {
+  useEffect(() => {
+    if (items.some((item) => !item.ui_id)) {
+      onChange(items.map((item) => (item.ui_id ? item : { ...item, ui_id: createFieldUiId() })));
+    }
+  }, [items, onChange]);
+
   const update = (idx: number, patch: Partial<AgentKVField>) =>
     onChange(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   const remove = (idx: number) => onChange(items.filter((_, i) => i !== idx));
-  const add = () => onChange([...items, { key: "", value: { mode: "fixed", value: "" } }]);
+  const add = () =>
+    onChange([
+      ...items,
+      { ui_id: createFieldUiId(), key: "", value: { mode: "fixed", value: "" } },
+    ]);
 
   return (
     <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
@@ -695,7 +710,7 @@ function FixedKVSection({
       <div className="mt-2 space-y-2">
         {items.length === 0 && <p className="text-xs text-muted-foreground/70">None defined.</p>}
         {items.map((item, idx) => (
-          <div key={idx} className="flex items-start gap-1.5">
+          <div key={item.ui_id ?? item.key} className="flex items-start gap-1.5">
             <input
               type="text"
               className="w-24 shrink-0 rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-xs"
