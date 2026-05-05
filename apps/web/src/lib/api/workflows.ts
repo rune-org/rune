@@ -114,13 +114,13 @@ function sanitizeWorkflowDataForExport(data: Record<string, unknown>): Record<st
       if (node.credentials) {
         delete node.credentials;
       }
-      if (node.webhook_guid) {
+      if ("webhook_guid" in node) {
         delete node.webhook_guid;
       }
       if (node.data?.credential) {
         delete node.data.credential;
       }
-      if (node.data?.webhookGuid) {
+      if (node.data && "webhookGuid" in node.data) {
         delete node.data.webhookGuid;
       }
     }
