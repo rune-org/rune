@@ -185,7 +185,12 @@ export function ToolCard({ tool, nodeId, onChange, onRemove }: ToolCardProps) {
   const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const params = deriveParams(tool.config);
 
-  useEffect(() => () => { if (hintTimerRef.current) clearTimeout(hintTimerRef.current); }, []);
+  useEffect(
+    () => () => {
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    },
+    [],
+  );
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
@@ -237,12 +242,7 @@ export function ToolCard({ tool, nodeId, onChange, onRemove }: ToolCardProps) {
         />
       </div>
 
-      <ParametersSection
-        tool={tool}
-        params={params}
-        nodeId={nodeId}
-        onChange={onChange}
-      />
+      <ParametersSection tool={tool} params={params} nodeId={nodeId} onChange={onChange} />
 
       <RequestSection tool={tool} nodeId={nodeId} onChange={onChange} />
     </div>
@@ -340,10 +340,7 @@ function ParametersSection({
                 }}
               />
             )}
-            <Select
-              value={newSection}
-              onValueChange={(v) => setNewSection(v as AddSection)}
-            >
+            <Select value={newSection} onValueChange={(v) => setNewSection(v as AddSection)}>
               <SelectTrigger className="h-7 w-32 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -363,7 +360,10 @@ function ParametersSection({
             </button>
             <button
               type="button"
-              onClick={() => { setIsAdding(false); setNewName(""); }}
+              onClick={() => {
+                setIsAdding(false);
+                setNewName("");
+              }}
               className="text-[10px] text-muted-foreground hover:text-foreground"
             >
               Cancel
@@ -434,16 +434,11 @@ function ParameterRow({
             type="text"
             className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 font-mono text-xs hover:border-input focus:border-input focus:outline-none"
             value={param.name}
-            onChange={(e) =>
-              onUpdate({ name: e.target.value.replace(/[^a-zA-Z0-9_]/g, "_") })
-            }
+            onChange={(e) => onUpdate({ name: e.target.value.replace(/[^a-zA-Z0-9_]/g, "_") })}
             placeholder="param_name"
           />
         )}
-        <Select
-          value={param.type}
-          onValueChange={(v) => onUpdate({ type: v as AgentFieldType })}
-        >
+        <Select value={param.type} onValueChange={(v) => onUpdate({ type: v as AgentFieldType })}>
           <SelectTrigger className="h-6 w-18 text-[10px]">
             <SelectValue />
           </SelectTrigger>
@@ -675,9 +670,7 @@ function FixedKVSection({
         )}
       </summary>
       <div className="mt-2 space-y-2">
-        {items.length === 0 && (
-          <p className="text-xs text-muted-foreground/70">None defined.</p>
-        )}
+        {items.length === 0 && <p className="text-xs text-muted-foreground/70">None defined.</p>}
         {items.map((item, idx) => (
           <div key={idx} className="flex items-start gap-1.5">
             <input

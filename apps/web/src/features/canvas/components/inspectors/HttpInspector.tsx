@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-
 type HttpInspectorProps = {
   node: Node<HttpData>;
   updateData: ReturnType<typeof useUpdateNodeData>;

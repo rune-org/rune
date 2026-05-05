@@ -12,9 +12,12 @@ export const AgentNode = memo(function AgentNode({ id, data }: NodeProps<Node<Ag
   const toolCount = data.tools?.length ?? 0;
   const mcpCount = data.mcp_servers?.length ?? 0;
 
-  const handleBlockClick = useCallback((tab: string) => {
-    agentTabStore.request(id, tab);
-  }, [id]);
+  const handleBlockClick = useCallback(
+    (tab: string) => {
+      agentTabStore.request(id, tab);
+    },
+    [id],
+  );
 
   return (
     <BaseNode
@@ -31,9 +34,26 @@ export const AgentNode = memo(function AgentNode({ id, data }: NodeProps<Node<Ag
       <div className="mt-2 border-t border-border/40" />
 
       <div className="mt-2 grid grid-cols-3 gap-1">
-        <MiniBlock icon={<MessageSquare className="h-3 w-3" />} label="Prompt" tab="prompt" onClick={handleBlockClick} />
-        <MiniBlock icon={<Wrench className="h-3 w-3" />} label="Tools" count={toolCount} tab="tools" onClick={handleBlockClick} />
-        <MiniBlock icon={<Plug className="h-3 w-3" />} label="MCP" count={mcpCount} tab="mcp" onClick={handleBlockClick} />
+        <MiniBlock
+          icon={<MessageSquare className="h-3 w-3" />}
+          label="Prompt"
+          tab="prompt"
+          onClick={handleBlockClick}
+        />
+        <MiniBlock
+          icon={<Wrench className="h-3 w-3" />}
+          label="Tools"
+          count={toolCount}
+          tab="tools"
+          onClick={handleBlockClick}
+        />
+        <MiniBlock
+          icon={<Plug className="h-3 w-3" />}
+          label="MCP"
+          count={mcpCount}
+          tab="mcp"
+          onClick={handleBlockClick}
+        />
       </div>
     </BaseNode>
   );

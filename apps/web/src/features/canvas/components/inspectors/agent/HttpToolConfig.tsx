@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { FieldWithModeToggle } from "./FieldWithModeToggle";
 
-
 type HttpToolConfigProps = {
   tool: AgentTool;
   onChange: (next: AgentTool) => void;
