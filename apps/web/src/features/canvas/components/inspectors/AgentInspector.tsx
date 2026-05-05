@@ -26,7 +26,7 @@ import type { CredentialRef } from "@/lib/credentials";
 import type { CredentialType } from "@/client/types.gen";
 import { VariableInput } from "../variable-picker/VariableInput";
 import { ToolCard } from "./agent/ToolCard";
-import { agentTabStore } from "../../stores/agentTabStore";
+import { agentTabStore, isAgentTab, type AgentTab } from "../../stores/agentTabStore";
 
 const GEMINI_BACKEND_LABELS: Record<GeminiBackend, string> = {
   ai_studio: "Google AI Studio",
@@ -49,6 +49,13 @@ const GEMINI_MODEL_PRESETS = [
 ] as const;
 
 const CUSTOM_MODEL_VALUE = "__custom__";
+
+const DEFAULT_GEMINI_MODEL = {
+  provider: "gemini" as AgentProvider,
+  name: GEMINI_MODEL_PRESETS[0],
+  backend: "ai_studio" as GeminiBackend,
+  temperature: 0.2,
+};
 
 function resolveModelSelectValue(name: string | undefined): string {
   if (!name) return GEMINI_MODEL_PRESETS[0];
@@ -76,8 +83,12 @@ export function AgentInspector({ node, updateData, isExpanded }: AgentInspectorP
     updateData(node.id, "agent", updater);
   };
 
-  const tabRequest = useSyncExternalStore(agentTabStore.subscribe, agentTabStore.getSnapshot);
-  const [activeTab, setActiveTab] = useState("model");
+  const tabRequest = useSyncExternalStore(
+    agentTabStore.subscribe,
+    agentTabStore.getSnapshot,
+    agentTabStore.getServerSnapshot,
+  );
+  const [activeTab, setActiveTab] = useState<AgentTab>("model");
 
   useEffect(() => {
     if (tabRequest?.nodeId === node.id) {
@@ -90,7 +101,12 @@ export function AgentInspector({ node, updateData, isExpanded }: AgentInspectorP
   const mcpCount = data.mcp_servers?.length ?? 0;
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab}>
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => {
+        if (isAgentTab(value)) setActiveTab(value);
+      }}
+    >
       <TabsList className="grid w-full grid-cols-4 h-8">
         <TabsTrigger value="model" className="text-[11px] px-1">
           Model
@@ -150,12 +166,24 @@ function ModelTab({
   isExpanded: boolean;
 }) {
   const data = node.data;
-  const model = data.model ?? {
-    provider: "gemini" as AgentProvider,
-    name: GEMINI_MODEL_PRESETS[0],
-    backend: "ai_studio" as GeminiBackend,
-    temperature: 0.2,
-  };
+  const model =
+    data.model?.provider === "gemini"
+      ? data.model
+      : { ...DEFAULT_GEMINI_MODEL, name: data.model?.name ?? DEFAULT_GEMINI_MODEL.name };
+
+  useEffect(() => {
+    if (data.model?.provider && data.model.provider !== "gemini") {
+      update((d) => ({
+        ...d,
+        model: {
+          ...DEFAULT_GEMINI_MODEL,
+          name: d.model?.name ?? DEFAULT_GEMINI_MODEL.name,
+          temperature: d.model?.temperature ?? DEFAULT_GEMINI_MODEL.temperature,
+        },
+        credential: null,
+      }));
+    }
+  }, [data.model?.provider, update]);
 
   const modelSelectValue = resolveModelSelectValue(model.name);
   const [isCustomModel, setIsCustomModel] = useState(() => modelSelectValue === CUSTOM_MODEL_VALUE);
@@ -191,7 +219,10 @@ function ModelTab({
               return;
             }
             setIsCustomModel(false);
-            update((d) => ({ ...d, model: { ...(d.model ?? model), name: v } }));
+            update((d) => ({
+              ...d,
+              model: { ...DEFAULT_GEMINI_MODEL, ...(d.model ?? model), provider: "gemini", name: v },
+            }));
           }}
         >
           <SelectTrigger className="h-auto min-h-8 py-1.5 text-xs font-mono">
@@ -214,7 +245,15 @@ function ModelTab({
             className="mt-1.5 w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm font-mono"
             value={model.name ?? ""}
             onChange={(e) =>
-              update((d) => ({ ...d, model: { ...(d.model ?? model), name: e.target.value } }))
+              update((d) => ({
+                ...d,
+                model: {
+                  ...DEFAULT_GEMINI_MODEL,
+                  ...(d.model ?? model),
+                  provider: "gemini",
+                  name: e.target.value,
+                },
+              }))
             }
             placeholder="e.g. gemini-2.0-flash"
             autoFocus
@@ -230,7 +269,12 @@ function ModelTab({
           onValueChange={(v) =>
             update((d) => ({
               ...d,
-              model: { ...(d.model ?? model), backend: v as GeminiBackend },
+              model: {
+                ...DEFAULT_GEMINI_MODEL,
+                ...(d.model ?? model),
+                provider: "gemini",
+                backend: v as GeminiBackend,
+              },
             }))
           }
         >
@@ -265,7 +309,12 @@ function ModelTab({
           onChange={(e) =>
             update((d) => ({
               ...d,
-              model: { ...(d.model ?? model), temperature: Number(e.target.value) },
+              model: {
+                ...DEFAULT_GEMINI_MODEL,
+                ...(d.model ?? model),
+                provider: "gemini",
+                temperature: Number(e.target.value),
+              },
             }))
           }
         />
