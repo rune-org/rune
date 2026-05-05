@@ -3,6 +3,7 @@ import {
   type Workflow,
   type Edge,
   type HttpNode,
+  type WebhookNode,
   type HttpParameters,
   sanitizeWorkflow,
   sanitizeEdge,
@@ -27,6 +28,7 @@ describe("generated DSL types", () => {
       id: "node_1",
       name: "Fetch API",
       trigger: false,
+      webhook_guid: undefined,
       output: {},
       error: undefined,
       credentials: undefined,
@@ -76,6 +78,31 @@ describe("generated DSL types", () => {
       ignore_ssl: undefined,
     };
     const result = sanitizeHttpParameters(mockParams);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("sanitizeWorkflow accepts a webhook trigger node with webhook_guid", () => {
+    const mockNode: WebhookNode = {
+      id: "webhook_1",
+      name: "Webhook",
+      trigger: true,
+      webhook_guid: "123e4567-e89b-12d3-a456-426614174000",
+      output: {},
+      error: undefined,
+      credentials: undefined,
+      type: "webhook",
+      parameters: {},
+      credential_type: undefined,
+    };
+    const mockWorkflow: Workflow = {
+      workflow_id: "wf_1",
+      execution_id: "exec_1",
+      nodes: [mockNode],
+      edges: [],
+    };
+
+    const result = sanitizeWorkflow(mockWorkflow);
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
   });

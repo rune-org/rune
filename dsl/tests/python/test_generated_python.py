@@ -9,6 +9,7 @@ def test_import_generated_types():
         Workflow,
         Edge,
         HttpNode,
+        WebhookNode,
         HttpParameters,
         Node,
     )
@@ -16,6 +17,7 @@ def test_import_generated_types():
     assert Workflow is not None
     assert Edge is not None
     assert HttpNode is not None
+    assert WebhookNode is not None
     assert HttpParameters is not None
     assert Node is not None
 
@@ -45,6 +47,7 @@ def test_workflow_sanitize_valid():
         id="node_1",
         name="Fetch API",
         trigger=False,
+        webhook_guid=None,
         output={},
         parameters=http_params,
         error=None,
@@ -94,8 +97,28 @@ def test_http_node_sanitize_valid():
         id="n1",
         name="POST example",
         trigger=False,
+        webhook_guid=None,
         output={},
         parameters=params,
+        error=None,
+        credentials=None,
+    )
+    valid, errors = node.sanitize()
+    assert valid is True
+    assert len(errors) == 0
+
+
+def test_webhook_node_sanitize_valid():
+    """Construct a valid WebhookNode with webhook_guid and assert sanitize passes."""
+    from dsl.generated.types import WebhookNode
+
+    node = WebhookNode(
+        id="webhook_1",
+        name="Webhook",
+        trigger=True,
+        webhook_guid="123e4567-e89b-12d3-a456-426614174000",
+        output={},
+        parameters={},
         error=None,
         credentials=None,
     )
@@ -124,6 +147,7 @@ def test_workflow_sanitize_invalid():
         id="node_1",
         name="Fetch",
         trigger=False,
+        webhook_guid=None,
         output={},
         parameters=params,
         error=None,
