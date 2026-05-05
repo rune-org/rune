@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import type { Node } from "@xyflow/react";
 import { Trash2, Plus } from "lucide-react";
 import {
@@ -57,6 +57,10 @@ const DEFAULT_GEMINI_MODEL = {
   temperature: 0.2,
 };
 
+function createUiId(prefix: string): string {
+  return `${prefix}_${crypto.randomUUID()}`;
+}
+
 function resolveModelSelectValue(name: string | undefined): string {
   if (!name) return GEMINI_MODEL_PRESETS[0];
   return (GEMINI_MODEL_PRESETS as readonly string[]).includes(name) ? name : CUSTOM_MODEL_VALUE;
@@ -96,6 +100,28 @@ export function AgentInspector({ node, updateData, isExpanded }: AgentInspectorP
       agentTabStore.consume();
     }
   }, [tabRequest, node.id]);
+
+  useEffect(() => {
+    let changed = false;
+    const messages = data.messages?.map((message) => {
+      if (message.ui_id) return message;
+      changed = true;
+      return { ...message, ui_id: createUiId("message") };
+    });
+    const tools = data.tools?.map((tool) => {
+      if (tool.ui_id) return tool;
+      changed = true;
+      return { ...tool, ui_id: createUiId("tool") };
+    });
+
+    if (changed) {
+      updateData(node.id, "agent", (current) => ({
+        ...current,
+        ...(messages && { messages }),
+        ...(tools && { tools }),
+      }));
+    }
+  }, [data.messages, data.tools, node.id, updateData]);
 
   const toolCount = data.tools?.length ?? 0;
   const mcpCount = data.mcp_servers?.length ?? 0;
@@ -187,10 +213,12 @@ function ModelTab({
 
   const modelSelectValue = resolveModelSelectValue(model.name);
   const [isCustomModel, setIsCustomModel] = useState(() => modelSelectValue === CUSTOM_MODEL_VALUE);
+  const lastCustomModelRef = useRef(modelSelectValue === CUSTOM_MODEL_VALUE ? model.name : "");
 
   useEffect(() => {
     setIsCustomModel(modelSelectValue === CUSTOM_MODEL_VALUE);
-  }, [modelSelectValue, node.id]);
+    if (modelSelectValue === CUSTOM_MODEL_VALUE) lastCustomModelRef.current = model.name;
+  }, [model.name, modelSelectValue, node.id]);
 
   return (
     <div className="space-y-4">
@@ -216,6 +244,15 @@ function ModelTab({
           onValueChange={(v) => {
             if (v === CUSTOM_MODEL_VALUE) {
               setIsCustomModel(true);
+              update((d) => ({
+                ...d,
+                model: {
+                  ...DEFAULT_GEMINI_MODEL,
+                  ...(d.model ?? model),
+                  provider: "gemini",
+                  name: lastCustomModelRef.current,
+                },
+              }));
               return;
             }
             setIsCustomModel(false);
@@ -249,7 +286,8 @@ function ModelTab({
             type="text"
             className="mt-1.5 w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-sm font-mono"
             value={model.name ?? ""}
-            onChange={(e) =>
+            onChange={(e) => {
+              lastCustomModelRef.current = e.target.value;
               update((d) => ({
                 ...d,
                 model: {
@@ -258,8 +296,8 @@ function ModelTab({
                   provider: "gemini",
                   name: e.target.value,
                 },
-              }))
-            }
+              }));
+            }}
             placeholder="e.g. gemini-2.0-flash"
             autoFocus
           />
@@ -358,7 +396,8 @@ function PromptTab({
   const updateMsg = (idx: number, patch: Partial<AgentMessage>) =>
     onMessagesChange(messages.map((m, i) => (i === idx ? { ...m, ...patch } : m)));
   const removeMsg = (idx: number) => onMessagesChange(messages.filter((_, i) => i !== idx));
-  const addMsg = () => onMessagesChange([...messages, { role: "user", content: "" }]);
+  const addMsg = () =>
+    onMessagesChange([...messages, { ui_id: createUiId("message"), role: "user", content: "" }]);
 
   return (
     <div className="space-y-4">
@@ -384,7 +423,10 @@ function PromptTab({
           </p>
         )}
         {messages.map((msg, idx) => (
-          <div key={idx} className="space-y-1 rounded border border-border/40 p-2">
+          <div
+            key={msg.ui_id ?? `${msg.role}-${msg.content}`}
+            className="space-y-1 rounded border border-border/40 p-2"
+          >
             <div className="flex items-center gap-2">
               <Select
                 value={msg.role}
@@ -443,6 +485,7 @@ function ToolsTab({
     onChange([
       ...tools,
       {
+        ui_id: createUiId("tool"),
         type: "http_request",
         name: `tool_${tools.length + 1}`,
         description: "",
@@ -466,7 +509,7 @@ function ToolsTab({
       )}
       {tools.map((tool, idx) => (
         <ToolCard
-          key={idx}
+          key={tool.ui_id ?? tool.name}
           tool={tool}
           nodeId={nodeId}
           onChange={(next) => update(idx, next)}

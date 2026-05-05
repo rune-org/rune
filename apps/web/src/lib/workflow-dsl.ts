@@ -29,6 +29,8 @@ import {
   type AggregatorData,
   type MergeData,
   type AgentData,
+  type AgentMessage,
+  type AgentTool,
 } from "@/features/canvas/types";
 import type { IntegrationNodeData } from "@/features/canvas/integrations/types";
 import { isIntegrationNodeKind } from "@/features/canvas/integrations/helpers";
@@ -41,6 +43,18 @@ import {
   switchRuleHandleId,
 } from "@/features/canvas/utils/switchHandles";
 import { sanitizeNodeLabel } from "@/features/canvas/utils/nodeLabels";
+
+function stripAgentMessageUiId(message: AgentMessage): AgentMessage {
+  const next = { ...message };
+  delete next.ui_id;
+  return next;
+}
+
+function stripAgentToolUiId(tool: AgentTool): AgentTool {
+  const next = { ...tool };
+  delete next.ui_id;
+  return next;
+}
 
 export interface WorkflowNode<Params = Record<string, unknown>> {
   id: string;
@@ -434,8 +448,12 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (typeof d.system_prompt === "string" && d.system_prompt.length > 0) {
         params.system_prompt = d.system_prompt;
       }
-      if (Array.isArray(d.messages) && d.messages.length > 0) params.messages = d.messages;
-      if (Array.isArray(d.tools) && d.tools.length > 0) params.tools = d.tools;
+      if (Array.isArray(d.messages) && d.messages.length > 0) {
+        params.messages = d.messages.map(stripAgentMessageUiId);
+      }
+      if (Array.isArray(d.tools) && d.tools.length > 0) {
+        params.tools = d.tools.map(stripAgentToolUiId);
+      }
       if (Array.isArray(d.mcp_servers) && d.mcp_servers.length > 0) {
         params.mcp_servers = d.mcp_servers;
       }

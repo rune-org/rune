@@ -151,12 +151,35 @@ function updateFixedSection(
   updatedFixed: AgentKVField[],
 ): AgentTool {
   const cfg = tool.config;
-  const agentItems = (cfg[section] ?? []).filter((item) => item.value.mode === "agent");
-  return { ...tool, config: { ...cfg, [section]: [...updatedFixed, ...agentItems] } };
+  const nextItems: AgentKVField[] = [];
+  let fixedIdx = 0;
+
+  for (const item of cfg[section] ?? []) {
+    if (item.value.mode === "agent") {
+      nextItems.push(item);
+      continue;
+    }
+
+    const updated = updatedFixed[fixedIdx];
+    fixedIdx += 1;
+    if (updated) nextItems.push(updated);
+  }
+
+  return {
+    ...tool,
+    config: { ...cfg, [section]: [...nextItems, ...updatedFixed.slice(fixedIdx)] },
+  };
 }
 
 function fixedStr(mode: AgentHttpToolConfig["url"] | AgentKVField["value"]): string {
-  if (mode.mode === "fixed" && typeof mode.value === "string") return mode.value;
+  if (
+    mode.mode === "fixed" &&
+    (typeof mode.value === "string" ||
+      typeof mode.value === "number" ||
+      typeof mode.value === "boolean")
+  ) {
+    return String(mode.value);
+  }
   return "";
 }
 
@@ -392,7 +415,7 @@ const SOURCE_BADGE: Record<string, string> = {
 
 function sourceLabel(source: ParamSource): string {
   if (source === "url") return "url";
-  return source.section === "headers" ? "header" : source.section;
+  return source.section;
 }
 
 function ParameterRow({

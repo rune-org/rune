@@ -63,6 +63,7 @@ export type AgentFieldType = (typeof AGENT_FIELD_TYPES)[number];
 export type AgentMessageRole = "user" | "model";
 
 export type AgentMessage = {
+  ui_id?: string;
   role: AgentMessageRole;
   content: string;
 };
@@ -99,6 +100,7 @@ export type AgentHttpToolConfig = {
 };
 
 export type AgentTool = {
+  ui_id?: string;
   type: "http_request";
   name: string;
   description: string;
