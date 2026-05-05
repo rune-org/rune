@@ -54,7 +54,12 @@
           "type": "string",
           "required": true,
           "description": "Node type identifier",
-          "enum": ["ManualTrigger", "ScheduledTrigger", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge", "dateTimeNow", "dateTimeAdd", "dateTimeSubtract", "dateTimeFormat", "dateTimeParse", "filter", "sort", "limit"]
+          "enum": ["ManualTrigger", "ScheduledTrigger", "webhook", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge", "dateTimeNow", "dateTimeAdd", "dateTimeSubtract", "dateTimeFormat", "dateTimeParse", "filter", "sort", "limit"]
+        },
+        "webhook_guid": {
+          "type": "string",
+          "required": false,
+          "description": "Stable webhook registration GUID for webhook trigger nodes"
         },
         "parameters": {
           "type": "object",
@@ -160,6 +165,12 @@
         "amount": { "type": "number", "required": true, "description": "Quantity of time between executions" },
         "unit": { "type": "string", "required": true, "enum": ["seconds", "minutes", "hours", "days"], "description": "Unit of time for the interval" }
       }
+    },
+
+    "webhook": {
+      "description": "Webhook workflow trigger with a stable externally callable GUID",
+      "credential_type": null,
+      "parameters": {}
     },
 
     "http": {
@@ -678,4 +689,3 @@
     }
   }
 }
-

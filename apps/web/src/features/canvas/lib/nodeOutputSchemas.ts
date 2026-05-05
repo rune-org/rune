@@ -103,6 +103,7 @@ export function getStaticOutputSchema(
       ];
 
     case "trigger":
+    case "webhookTrigger":
       return [];
 
     case "if":

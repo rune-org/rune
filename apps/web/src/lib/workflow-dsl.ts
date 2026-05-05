@@ -11,6 +11,7 @@ import {
   type SwitchRule,
   type SmtpData,
   type ScheduledTriggerData,
+  type WebhookTriggerData,
   type WaitData,
   type LogData,
   type DateTimeNowData,
@@ -46,6 +47,7 @@ export interface WorkflowNode<Params = Record<string, unknown>> {
   name: string;
   trigger: boolean;
   type: string;
+  webhook_guid?: string;
   parameters: Params;
   credentials?: CredentialRef;
   output: Record<string, unknown>;
@@ -78,6 +80,8 @@ function toWorkerType(canvasType: string): string {
       return "ManualTrigger";
     case "scheduledTrigger":
       return "ScheduledTrigger";
+    case "webhookTrigger":
+      return "webhook";
     case "if":
       return "conditional";
     case "switch":
@@ -830,11 +834,15 @@ export function canvasToWorkflowData(
       missingCredentials.push({ id: n.id, type: n.type });
     }
 
+    const webhookGuid =
+      n.type === "webhookTrigger" ? (n.data as WebhookTriggerData).webhookGuid : undefined;
+
     return {
       id: n.id,
       name: nodeName(n),
-      trigger: n.type === "trigger" || n.type === "scheduledTrigger",
+      trigger: n.type === "trigger" || n.type === "scheduledTrigger" || n.type === "webhookTrigger",
       type: toWorkerType(n.type), // store canonical type to simplify future use
+      ...(webhookGuid ? { webhook_guid: webhookGuid } : {}),
       parameters: toWorkerParameters(n, edges),
       output: {},
       position: [n.position.x, n.position.y],
@@ -871,13 +879,27 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
           ? "trigger"
           : n.type === "ScheduledTrigger"
             ? "scheduledTrigger"
-            : n.type;
+            : n.type === "webhook"
+              ? "webhookTrigger"
+              : n.type;
     const credentials = n.credentials ? { ...n.credentials } : undefined;
     const baseData = {
       label: sanitizeNodeLabel(n.name, "Node"),
       ...(credentials ? { credential: credentials } : {}),
     } as CanvasNode["data"];
     const params = (n.parameters ?? {}) as Record<string, unknown>;
+    if (canvasType === "webhookTrigger") {
+      return {
+        id: n.id,
+        type: "webhookTrigger",
+        position: { x, y },
+        data: {
+          ...baseData,
+          ...(typeof n.webhook_guid === "string" ? { webhookGuid: n.webhook_guid } : {}),
+        },
+      } as CanvasNode;
+    }
+
     if (isIntegrationNodeKind(canvasType)) {
       const dataForNode: IntegrationNodeData = {
         ...baseData,
@@ -952,7 +974,7 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
 // ————————————————————————————————————————————————————————————————
 
 /**
- * Strips credential references from workflow_data nodes for safe export.
+ * Strips credential references and webhook GUIDs from workflow_data nodes for safe export.
  * Returns nodes and edges at top level; does not convert DSL to canvas shape.
  */
 function stripNestedCredentialRefs(value: unknown): unknown {
@@ -980,7 +1002,7 @@ export function stripCredentialsFromWorkflowData(workflowData: {
     return { nodes: [], edges };
   }
   const sanitizedNodes = nodes.map((node) => {
-    const { credentials: _omit, ...rest } = node;
+    const { credentials: _credentials, webhook_guid: _webhookGuid, ...rest } = node;
     return stripNestedCredentialRefs(rest) as Record<string, unknown>;
   });
   return { nodes: sanitizedNodes, edges };

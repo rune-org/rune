@@ -60,7 +60,61 @@ describe("executionConversion", () => {
     });
 
     expect(result).toEqual(sanitized);
+    expect(workflowDataToCanvasMock).toHaveBeenCalledWith({
+      nodes: [
+        expect.objectContaining({
+          id: "trigger-1",
+          type: "ManualTrigger",
+        }),
+      ],
+      edges: [],
+    });
     expect(applyAutoLayoutMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves webhook GUIDs in historical graph snapshots", () => {
+    const sanitized = {
+      nodes: [
+        {
+          id: "webhook-1",
+          position: { x: 10, y: 20 },
+          type: "webhookTrigger",
+          data: { webhookGuid: "hook-guid" },
+        },
+      ],
+      edges: [],
+    };
+
+    workflowDataToCanvasMock.mockReturnValue(sanitized);
+    sanitizeGraphMock.mockReturnValue(sanitized);
+
+    const result = extractGraphSnapshot({
+      execution_id: "exec-1",
+      workflow_id: "7",
+      nodes: {
+        "webhook-1": {
+          position: [10, 20],
+          name: "Webhook",
+          type: "webhook",
+          trigger: true,
+          webhook_guid: "hook-guid",
+          latest: { status: "success" },
+        },
+      },
+      edges: [],
+    });
+
+    expect(result).toEqual(sanitized);
+    expect(workflowDataToCanvasMock).toHaveBeenCalledWith({
+      nodes: [
+        expect.objectContaining({
+          id: "webhook-1",
+          type: "webhook",
+          webhook_guid: "hook-guid",
+        }),
+      ],
+      edges: [],
+    });
   });
 
   it("auto-layouts snapshots when execution nodes have no stored positions", () => {

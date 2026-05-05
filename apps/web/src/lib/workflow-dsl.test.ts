@@ -138,6 +138,54 @@ describe("workflow DSL helpers", () => {
     });
   });
 
+  it("serializes webhook triggers to the backend webhook node type", () => {
+    const webhookNode = createNode("webhook-1", "webhookTrigger", {
+      label: "Incoming Order",
+      webhookGuid: "123e4567-e89b-12d3-a456-426614174000",
+    });
+
+    const { nodes } = canvasToWorkflowData([webhookNode], []);
+
+    expect(nodes[0]).toMatchObject({
+      id: "webhook-1",
+      name: "Incoming_Order",
+      trigger: true,
+      type: "webhook",
+      webhook_guid: "123e4567-e89b-12d3-a456-426614174000",
+      parameters: {},
+      output: {},
+      position: [0, 0],
+    });
+  });
+
+  it("rehydrates backend webhook nodes back into canvas webhook triggers", () => {
+    const { nodes } = workflowDataToCanvas({
+      nodes: [
+        {
+          id: "webhook-1",
+          name: "Incoming Order",
+          trigger: true,
+          type: "webhook",
+          webhook_guid: "123e4567-e89b-12d3-a456-426614174000",
+          parameters: {},
+          output: {},
+          position: [40, 80],
+        },
+      ],
+      edges: [],
+    });
+
+    expect(nodes[0]).toMatchObject({
+      id: "webhook-1",
+      type: "webhookTrigger",
+      position: { x: 40, y: 80 },
+      data: {
+        label: "Incoming_Order",
+        webhookGuid: "123e4567-e89b-12d3-a456-426614174000",
+      },
+    });
+  });
+
   it("serializes integration nodes with provider-qualified type and flat parameters", () => {
     const credential = { id: "cred-1", name: "My Google Account", type: "oauth2" };
     const gmailNode = createNode("gmail-1", "integration.google.gmail.send_email", {
@@ -214,6 +262,7 @@ describe("workflow DSL helpers", () => {
           {
             id: "1",
             credentials: { id: "cred-1" },
+            webhook_guid: "123e4567-e89b-12d3-a456-426614174000",
             name: "Node 1",
             parameters: {
               tools: [

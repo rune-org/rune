@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { Edge } from "@xyflow/react";
 import type { CanvasNode } from "../types";
+import { isTriggerNode } from "../lib/nodeRegistry";
 
 type Setter<T> = (updater: T[] | ((prev: T[]) => T[])) => void;
 
@@ -34,7 +35,7 @@ export function useExecutionSim(
       if (!(e.source in inDeg)) inDeg[e.source] = inDeg[e.source] || 0;
     });
 
-    let startNodes: CanvasNode[] = nodes.filter((n): n is CanvasNode => n.type === "trigger");
+    let startNodes: CanvasNode[] = nodes.filter((n): n is CanvasNode => isTriggerNode(n.type));
     if (startNodes.length === 0) {
       startNodes = nodes.filter((n) => (inDeg[n.id] || 0) === 0);
     }
