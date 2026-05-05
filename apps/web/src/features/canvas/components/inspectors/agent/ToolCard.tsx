@@ -234,7 +234,7 @@ export function ToolCard({ tool, nodeId, onChange, onRemove }: ToolCardProps) {
           </p>
         )}
         <textarea
-          className="w-full rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-xs"
+          className="w-full resize-y rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 text-xs"
           rows={2}
           value={tool.description}
           onChange={(e) => onChange({ ...tool, description: e.target.value })}
@@ -287,7 +287,7 @@ function ParametersSection({
   const urlIsParam = tool.config.url.mode === "agent";
 
   const handleAdd = () => {
-    const name = newSection === "url" ? "url" : newName.trim().replace(/[^a-zA-Z0-9_]/g, "_");
+    const name = newSection === "url" ? "url" : newName.trim();
     if (!name) return;
     onChange(addParam(tool, name, newSection));
     setNewName("");
@@ -332,8 +332,8 @@ function ParametersSection({
                 autoFocus
                 className="w-28 rounded-[calc(var(--radius)-0.25rem)] border border-input bg-muted/30 px-2 py-1 font-mono text-xs"
                 value={newName}
-                onChange={(e) => setNewName(e.target.value.replace(/[^a-zA-Z0-9_]/g, "_"))}
-                placeholder="param_name"
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Header-Name"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleAdd();
                   if (e.key === "Escape") setIsAdding(false);
@@ -434,8 +434,8 @@ function ParameterRow({
             type="text"
             className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 font-mono text-xs hover:border-input focus:border-input focus:outline-none"
             value={param.name}
-            onChange={(e) => onUpdate({ name: e.target.value.replace(/[^a-zA-Z0-9_]/g, "_") })}
-            placeholder="param_name"
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            placeholder="Header-Name"
           />
         )}
         <Select value={param.type} onValueChange={(v) => onUpdate({ type: v as AgentFieldType })}>
