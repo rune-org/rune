@@ -27,6 +27,7 @@ import {
   type SplitData,
   type AggregatorData,
   type MergeData,
+  type AgentData,
 } from "@/features/canvas/types";
 import type { IntegrationNodeData } from "@/features/canvas/integrations/types";
 import { isIntegrationNodeKind } from "@/features/canvas/integrations/helpers";
@@ -422,6 +423,20 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (typeof d.timeout !== "undefined") params.timeout = Number(d.timeout);
       return params;
     }
+    case "agent": {
+      const d = (n.data || {}) as AgentData;
+      const params: Record<string, unknown> = {};
+      if (d.model) params.model = d.model;
+      if (typeof d.system_prompt === "string" && d.system_prompt.length > 0) {
+        params.system_prompt = d.system_prompt;
+      }
+      if (Array.isArray(d.messages) && d.messages.length > 0) params.messages = d.messages;
+      if (Array.isArray(d.tools) && d.tools.length > 0) params.tools = d.tools;
+      if (Array.isArray(d.mcp_servers) && d.mcp_servers.length > 0) {
+        params.mcp_servers = d.mcp_servers;
+      }
+      return params;
+    }
     default:
       return {};
   }
@@ -555,6 +570,21 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
         : [],
     };
     return switchData;
+  },
+  agent: (base, params) => {
+    const agentData: AgentData = {
+      ...base,
+      model: (params.model as AgentData["model"]) ?? undefined,
+      system_prompt: typeof params.system_prompt === "string" ? params.system_prompt : undefined,
+      messages: Array.isArray(params.messages)
+        ? (params.messages as AgentData["messages"])
+        : undefined,
+      tools: Array.isArray(params.tools) ? (params.tools as AgentData["tools"]) : undefined,
+      mcp_servers: Array.isArray(params.mcp_servers)
+        ? (params.mcp_servers as AgentData["mcp_servers"])
+        : undefined,
+    };
+    return agentData;
   },
   smtp: (base, params) => {
     const smtpData: SmtpData = {
@@ -925,6 +955,21 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
  * Strips credential references from workflow_data nodes for safe export.
  * Returns nodes and edges at top level; does not convert DSL to canvas shape.
  */
+function stripNestedCredentialRefs(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stripNestedCredentialRefs);
+  }
+
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const { credential: _credential, ...rest } = value as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(rest).map(([key, child]) => [key, stripNestedCredentialRefs(child)]),
+  );
+}
+
 export function stripCredentialsFromWorkflowData(workflowData: {
   nodes?: Array<Record<string, unknown>>;
   edges?: unknown[];
@@ -936,7 +981,7 @@ export function stripCredentialsFromWorkflowData(workflowData: {
   }
   const sanitizedNodes = nodes.map((node) => {
     const { credentials: _omit, ...rest } = node;
-    return rest;
+    return stripNestedCredentialRefs(rest) as Record<string, unknown>;
   });
   return { nodes: sanitizedNodes, edges };
 }
