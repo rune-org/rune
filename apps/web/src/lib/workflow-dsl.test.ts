@@ -264,12 +264,37 @@ describe("workflow DSL helpers", () => {
             credentials: { id: "cred-1" },
             webhook_guid: "123e4567-e89b-12d3-a456-426614174000",
             name: "Node 1",
+            parameters: {
+              tools: [
+                {
+                  name: "Fetch",
+                  credential: { id: "tool-cred", name: "Tool Cred", type: "oauth2" },
+                  config: { url: "https://example.com" },
+                },
+              ],
+              mcp_servers: [
+                {
+                  name: "Docs",
+                  credential: { id: "mcp-cred", name: "MCP Cred", type: "oauth2" },
+                  url: "https://mcp.example.com",
+                },
+              ],
+            },
           },
         ],
         edges: [{ id: "edge-1" }],
       }),
     ).toEqual({
-      nodes: [{ id: "1", name: "Node 1" }],
+      nodes: [
+        {
+          id: "1",
+          name: "Node 1",
+          parameters: {
+            tools: [{ name: "Fetch", config: { url: "https://example.com" } }],
+            mcp_servers: [{ name: "Docs", url: "https://mcp.example.com" }],
+          },
+        },
+      ],
       edges: [{ id: "edge-1" }],
     });
   });

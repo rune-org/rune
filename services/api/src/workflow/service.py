@@ -647,44 +647,69 @@ class WorkflowService:
 
                 # If it has an id field, it's a reference that needs resolving.
                 if "id" in cred_ref:
-                    credential_id = cred_ref["id"]
-
-                    # Convert string ID to int if needed.
-                    if isinstance(credential_id, str):
-                        credential_id = int(credential_id)
-
-                    # Fetch the credential from database.
-                    credential: WorkflowCredential | None = await self.db.get(
-                        WorkflowCredential, credential_id
+                    node["credentials"] = await self._resolve_one_credential(
+                        cred_ref["id"]
                     )
 
-                    if not credential:
-                        raise NotFound(
-                            detail=f"Credential with ID {credential_id} not found"
-                        )
-
-                    # Decrypt the credential data.
-                    decrypted_data = self.encryptor.decrypt_credential_data(
-                        credential.credential_data
-                    )
-
-                    if credential.credential_type == CredentialType.OAUTH2:
-                        decrypted_data = await ensure_oauth2_access_token(
-                            self.db, credential, self.encryptor
-                        )
-                        values = oauth2_worker_public_values(decrypted_data)
-                    else:
-                        values = decrypted_data
-
-                    # Replace the credentials reference with resolved values.
-                    node["credentials"] = {
-                        "id": str(credential.id),
-                        "name": credential.name,
-                        "type": credential.credential_type.value,
-                        "values": values,
-                    }
+            # Agent nodes embed per-tool and per-MCP-server credential refs
+            # under parameters.tools[] and parameters.mcp_servers[]. Walk
+            # those and resolve in place.
+            if node.get("type") == "agent":
+                await self._resolve_agent_nested_credentials(node)
 
         return resolved_data
+
+    async def _resolve_one_credential(self, credential_id) -> dict:
+        """Fetch a credential by id and return the resolved {id, name, type, values} block."""
+        if isinstance(credential_id, str):
+            credential_id = int(credential_id)
+
+        credential: WorkflowCredential | None = await self.db.get(
+            WorkflowCredential, credential_id
+        )
+        if not credential:
+            raise NotFound(detail=f"Credential with ID {credential_id} not found")
+
+        decrypted_data = self.encryptor.decrypt_credential_data(
+            credential.credential_data
+        )
+        if credential.credential_type == CredentialType.OAUTH2:
+            decrypted_data = await ensure_oauth2_access_token(
+                self.db, credential, self.encryptor
+            )
+            values = oauth2_worker_public_values(decrypted_data)
+        else:
+            values = decrypted_data
+
+        return {
+            "id": str(credential.id),
+            "name": credential.name,
+            "type": credential.credential_type.value,
+            "values": values,
+        }
+
+    async def _resolve_agent_nested_credentials(self, node: dict) -> None:
+        """Resolve per-tool and per-MCP-server credential refs on an agent node,
+        embedding the values block under a "credentials" key in each entry.
+        """
+        params = node.get("parameters")
+        if not isinstance(params, dict):
+            return
+
+        for child_key in ("tools", "mcp_servers"):
+            entries = params.get(child_key)
+            if not isinstance(entries, list):
+                continue
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                ref = entry.get("credential")
+                if not isinstance(ref, dict):
+                    continue
+                cred_id = ref.get("id")
+                if cred_id in (None, ""):
+                    continue
+                entry["credentials"] = await self._resolve_one_credential(cred_id)
 
     # ------------------------------------------------------------------
     # Schedule sync helpers
