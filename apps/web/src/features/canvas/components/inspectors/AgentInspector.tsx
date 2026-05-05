@@ -101,28 +101,6 @@ export function AgentInspector({ node, updateData, isExpanded }: AgentInspectorP
     }
   }, [tabRequest, node.id]);
 
-  useEffect(() => {
-    let changed = false;
-    const messages = data.messages?.map((message) => {
-      if (message.ui_id) return message;
-      changed = true;
-      return { ...message, ui_id: createUiId("message") };
-    });
-    const tools = data.tools?.map((tool) => {
-      if (tool.ui_id) return tool;
-      changed = true;
-      return { ...tool, ui_id: createUiId("tool") };
-    });
-
-    if (changed) {
-      updateData(node.id, "agent", (current) => ({
-        ...current,
-        ...(messages && { messages }),
-        ...(tools && { tools }),
-      }));
-    }
-  }, [data.messages, data.tools, node.id, updateData]);
-
   const toolCount = data.tools?.length ?? 0;
   const mcpCount = data.mcp_servers?.length ?? 0;
 

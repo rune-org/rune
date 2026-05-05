@@ -29,10 +29,13 @@ import {
   type AggregatorData,
   type MergeData,
   type AgentData,
-  type AgentKVField,
-  type AgentMessage,
-  type AgentTool,
 } from "@/features/canvas/types";
+import {
+  hydrateAgentMessages,
+  hydrateAgentTools,
+  stripAgentMessageUiId,
+  stripAgentToolUiId,
+} from "@/features/canvas/lib/agentDataNormalization";
 import type { IntegrationNodeData } from "@/features/canvas/integrations/types";
 import { isIntegrationNodeKind } from "@/features/canvas/integrations/helpers";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
@@ -44,30 +47,6 @@ import {
   switchRuleHandleId,
 } from "@/features/canvas/utils/switchHandles";
 import { sanitizeNodeLabel } from "@/features/canvas/utils/nodeLabels";
-
-function stripAgentMessageUiId(message: AgentMessage): AgentMessage {
-  const next = { ...message };
-  delete next.ui_id;
-  return next;
-}
-
-function stripAgentToolUiId(tool: AgentTool): AgentTool {
-  const next = { ...tool };
-  delete next.ui_id;
-  next.config = {
-    ...next.config,
-    headers: next.config.headers?.map(stripAgentKvFieldUiId),
-    query: next.config.query?.map(stripAgentKvFieldUiId),
-    body: next.config.body?.map(stripAgentKvFieldUiId),
-  };
-  return next;
-}
-
-function stripAgentKvFieldUiId(field: AgentKVField): AgentKVField {
-  const next = { ...field };
-  delete next.ui_id;
-  return next;
-}
 
 export interface WorkflowNode<Params = Record<string, unknown>> {
   id: string;
@@ -611,10 +590,8 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
       ...base,
       model: (params.model as AgentData["model"]) ?? undefined,
       system_prompt: typeof params.system_prompt === "string" ? params.system_prompt : undefined,
-      messages: Array.isArray(params.messages)
-        ? (params.messages as AgentData["messages"])
-        : undefined,
-      tools: Array.isArray(params.tools) ? (params.tools as AgentData["tools"]) : undefined,
+      messages: hydrateAgentMessages(params.messages),
+      tools: hydrateAgentTools(params.tools),
       mcp_servers: Array.isArray(params.mcp_servers)
         ? (params.mcp_servers as AgentData["mcp_servers"])
         : undefined,

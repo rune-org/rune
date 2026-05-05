@@ -684,12 +684,6 @@ function FixedKVSection({
   keyPlaceholder?: string;
   onChange: (next: AgentKVField[]) => void;
 }) {
-  useEffect(() => {
-    if (items.some((item) => !item.ui_id)) {
-      onChange(items.map((item) => (item.ui_id ? item : { ...item, ui_id: createFieldUiId() })));
-    }
-  }, [items, onChange]);
-
   const update = (idx: number, patch: Partial<AgentKVField>) =>
     onChange(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   const remove = (idx: number) => onChange(items.filter((_, i) => i !== idx));

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { Trash2 } from "lucide-react";
 import {
   HTTP_CREDENTIAL_TYPES,
@@ -181,12 +180,6 @@ function KVList({
   keyPlaceholder,
   allowedAgentTypes,
 }: KVListProps) {
-  useEffect(() => {
-    if (items.some((item) => !item.ui_id)) {
-      onChange(items.map((item) => (item.ui_id ? item : { ...item, ui_id: createFieldUiId() })));
-    }
-  }, [items, onChange]);
-
   const update = (idx: number, patch: Partial<AgentKVField>) => {
     onChange(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   };
