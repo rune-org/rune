@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutEffect, useRef } from "react";
 import {
   AGENT_FIELD_TYPES,
   type AgentFieldMode,
@@ -24,7 +25,18 @@ type FieldWithModeToggleProps = {
   allowedAgentTypes?: readonly AgentFieldType[];
 };
 
-/** Both branches' state is preserved when toggling so users don't lose work. */
+function fixedDisplayValue(value: unknown): string {
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return "";
+}
+
+/**
+ * Toggles between a fixed value and an agent-supplied parameter slot.
+ * Both branches' last-known state is preserved in refs so users don't lose
+ * work when switching back and forth.
+ */
 export function FieldWithModeToggle({
   value,
   onChange,
@@ -34,15 +46,19 @@ export function FieldWithModeToggle({
 }: FieldWithModeToggleProps) {
   const isAgent = value.mode === "agent";
 
+  const fixedSnapshot = useRef<AgentFieldMode>({ mode: "fixed", value: "" });
+  const agentSnapshot = useRef<AgentFieldMode>({
+    mode: "agent",
+    agent: { description: "", type: allowedAgentTypes[0] ?? "string", required: true },
+  });
+
+  useLayoutEffect(() => {
+    if (value.mode === "fixed") fixedSnapshot.current = value;
+    else agentSnapshot.current = value;
+  });
+
   const flipMode = () => {
-    if (isAgent) {
-      onChange({ mode: "fixed", value: "" });
-    } else {
-      onChange({
-        mode: "agent",
-        agent: { description: "", type: allowedAgentTypes[0] ?? "string", required: true },
-      });
-    }
+    onChange(isAgent ? fixedSnapshot.current : agentSnapshot.current);
   };
 
   return (
@@ -75,7 +91,7 @@ export function FieldWithModeToggle({
         />
       ) : (
         <VariableInput
-          value={typeof value.value === "string" ? value.value : ""}
+          value={fixedDisplayValue(value.value)}
           onChange={(v) => onChange({ mode: "fixed", value: v })}
           placeholder={fixedPlaceholder}
           nodeId={nodeId}

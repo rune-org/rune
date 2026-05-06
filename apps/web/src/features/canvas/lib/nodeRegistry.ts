@@ -153,7 +153,7 @@ export const NODE_REGISTRY: NodeRegistry = {
       bg: "--node-agent-bg",
       border: "--node-agent-border",
     },
-    dimensions: { width: 220, height: 80 },
+    dimensions: { width: 260, height: 132 },
     defaults: {
       label: "Agent",
       model: {

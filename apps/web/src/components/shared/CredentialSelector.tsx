@@ -18,7 +18,7 @@ import type { CredentialRef } from "@/lib/credentials";
 import { CREDENTIAL_CHANGED_EVENT } from "@/hooks/useCredentialEvents";
 
 interface CredentialSelectorProps {
-  credentialType: CredentialType | CredentialType[];
+  credentialType: CredentialType | ReadonlyArray<CredentialType>;
   value: CredentialRef | null | undefined;
   onChange: (credential: CredentialRef | null) => void;
   label?: string;
@@ -37,7 +37,7 @@ export function CredentialSelector({
   showHelp = false,
 }: CredentialSelectorProps) {
   const [credentials, setCredentials] = useState<CredentialResponseDropDown[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -149,6 +149,7 @@ export function CredentialSelector({
 
   const selectedValue = value?.id ?? "none";
   const isMissing = !!(
+    !isLoading &&
     value?.id &&
     value.id !== "none" &&
     !credentials.some((c) => c.id.toString() === value.id)
@@ -175,9 +176,7 @@ export function CredentialSelector({
         onValueChange={handleValueChange}
         disabled={isLoading}
         onOpenChange={(open) => {
-          if (open) {
-            void fetchCredentials();
-          }
+          if (open && !isLoading) void fetchCredentials();
         }}
       >
         <SelectTrigger

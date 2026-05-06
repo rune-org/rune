@@ -30,6 +30,12 @@ import {
   type MergeData,
   type AgentData,
 } from "@/features/canvas/types";
+import {
+  hydrateAgentMessages,
+  hydrateAgentTools,
+  stripAgentMessageUiId,
+  stripAgentToolUiId,
+} from "@/features/canvas/lib/agentDataNormalization";
 import type { IntegrationNodeData } from "@/features/canvas/integrations/types";
 import { isIntegrationNodeKind } from "@/features/canvas/integrations/helpers";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
@@ -434,8 +440,12 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (typeof d.system_prompt === "string" && d.system_prompt.length > 0) {
         params.system_prompt = d.system_prompt;
       }
-      if (Array.isArray(d.messages) && d.messages.length > 0) params.messages = d.messages;
-      if (Array.isArray(d.tools) && d.tools.length > 0) params.tools = d.tools;
+      if (Array.isArray(d.messages) && d.messages.length > 0) {
+        params.messages = d.messages.map(stripAgentMessageUiId);
+      }
+      if (Array.isArray(d.tools) && d.tools.length > 0) {
+        params.tools = d.tools.map(stripAgentToolUiId);
+      }
       if (Array.isArray(d.mcp_servers) && d.mcp_servers.length > 0) {
         params.mcp_servers = d.mcp_servers;
       }
@@ -580,10 +590,8 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
       ...base,
       model: (params.model as AgentData["model"]) ?? undefined,
       system_prompt: typeof params.system_prompt === "string" ? params.system_prompt : undefined,
-      messages: Array.isArray(params.messages)
-        ? (params.messages as AgentData["messages"])
-        : undefined,
-      tools: Array.isArray(params.tools) ? (params.tools as AgentData["tools"]) : undefined,
+      messages: hydrateAgentMessages(params.messages),
+      tools: hydrateAgentTools(params.tools),
       mcp_servers: Array.isArray(params.mcp_servers)
         ? (params.mcp_servers as AgentData["mcp_servers"])
         : undefined,
