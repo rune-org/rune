@@ -15,14 +15,18 @@ import {
   Logs,
   Mail,
   Pencil,
+  Plug,
   Play,
   Route,
   Split,
   SquareDashedBottom,
   Wand2,
+  Webhook,
   type LucideIcon,
 } from "lucide-react";
 import type { FilterData, NodeDataMap, NodeKind, SortData, SwitchData } from "../types";
+import { getIntegrationTools } from "../integrations/helpers";
+import type { IntegrationNodeData, IntegrationNodeKind } from "../integrations/types";
 
 export type NodeGroup =
   | "triggers"
@@ -31,14 +35,13 @@ export type NodeGroup =
   | "datetime"
   | "http"
   | "email"
-  | "agents";
+  | "agents"
+  | "google"
+  | "microsoft";
 
 export type NodeColorTheme = {
-  /** base color (e.g., "--node-http") */
   base: string;
-  /** background (e.g., "--node-http-bg") */
   bg: string;
-  /** border (e.g., "--node-http-border") */
   border: string;
 };
 
@@ -51,6 +54,7 @@ export type NodeMetadata<K extends NodeKind = NodeKind> = {
   kind: K;
   label: string;
   icon: LucideIcon;
+  iconSrc?: string;
   colorTheme: NodeColorTheme;
   dimensions: { width: number; height: number };
   defaults: NodeDataMap[K];
@@ -64,6 +68,29 @@ export type NodeMetadata<K extends NodeKind = NodeKind> = {
 export type NodeRegistry = {
   [K in NodeKind]: NodeMetadata<K>;
 };
+
+const INTEGRATION_NODE_REGISTRY = Object.fromEntries(
+  getIntegrationTools().map((tool) => [
+    tool.kind,
+    {
+      kind: tool.kind,
+      label: `${tool.serviceLabel}: ${tool.label}`,
+      icon: Plug,
+      iconSrc: tool.icon,
+      colorTheme: tool.colorTheme,
+      dimensions: { width: 220, height: 88 },
+      defaults: {
+        label: tool.label,
+        integrationKind: tool.kind,
+        arguments: tool.defaultArguments,
+      } satisfies IntegrationNodeData,
+      schema: { inputs: ["input"], outputs: ["output"] },
+      group: tool.provider,
+      isTrigger: false,
+      hasDynamicOutputs: false,
+    } satisfies NodeMetadata<IntegrationNodeKind>,
+  ]),
+) as unknown as { [K in IntegrationNodeKind]: NodeMetadata<K> };
 
 export const NODE_REGISTRY: NodeRegistry = {
   trigger: {
@@ -100,6 +127,23 @@ export const NODE_REGISTRY: NodeRegistry = {
     hasDynamicOutputs: false,
     shortcutKey: "r",
   },
+  webhookTrigger: {
+    kind: "webhookTrigger",
+    label: "Webhook Trigger",
+    icon: Webhook,
+    colorTheme: {
+      base: "--node-trigger",
+      bg: "--node-trigger-bg",
+      border: "--node-trigger-border",
+    },
+    dimensions: { width: 160, height: 48 },
+    defaults: { label: "Webhook" },
+    schema: { inputs: [], outputs: ["trigger"] },
+    group: "triggers",
+    isTrigger: true,
+    hasDynamicOutputs: false,
+    shortcutKey: "w",
+  },
   agent: {
     kind: "agent",
     label: "Agent",
@@ -109,8 +153,20 @@ export const NODE_REGISTRY: NodeRegistry = {
       bg: "--node-agent-bg",
       border: "--node-agent-border",
     },
-    dimensions: { width: 220, height: 80 },
-    defaults: { label: "Agent" },
+    dimensions: { width: 260, height: 132 },
+    defaults: {
+      label: "Agent",
+      model: {
+        provider: "gemini",
+        name: "gemini-3.1-flash-lite-preview",
+        backend: "ai_studio",
+        temperature: 0.2,
+      },
+      system_prompt: "",
+      messages: [],
+      tools: [],
+      mcp_servers: [],
+    },
     schema: { inputs: ["input"], outputs: ["response"] },
     group: "agents",
     isTrigger: false,
@@ -163,7 +219,14 @@ export const NODE_REGISTRY: NodeRegistry = {
       border: "--node-http-border",
     },
     dimensions: { width: 220, height: 80 },
-    defaults: { label: "HTTP", method: "GET", url: "https://api.example.com" },
+    defaults: {
+      label: "HTTP",
+      method: "GET",
+      raise_on_status: "4xx,5xx",
+      retry: 0,
+      retry_delay: 0,
+      timeout: 30,
+    },
     schema: { inputs: ["request"], outputs: ["response", "error"] },
     group: "http",
     isTrigger: false,
@@ -182,8 +245,6 @@ export const NODE_REGISTRY: NodeRegistry = {
     dimensions: { width: 220, height: 80 },
     defaults: {
       label: "SMTP",
-      from: "sender@example.com",
-      to: "recipient@example.com",
       subject: "",
       body: "",
     },
@@ -208,7 +269,6 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "flow",
     isTrigger: false,
     hasDynamicOutputs: false,
-    shortcutKey: "w",
   },
   log: {
     kind: "log",
@@ -344,7 +404,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     defaults: {
       label: "Edit",
       mode: "assignments",
-      assignments: [{ name: "newField", value: "", type: "string" }],
+      assignments: [{ name: "", value: "", type: "string" }],
     },
     schema: { inputs: ["input"], outputs: ["output"] },
     group: "transform",
@@ -460,6 +520,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
   },
+  ...INTEGRATION_NODE_REGISTRY,
 };
 
 // ============================================================================
@@ -535,9 +596,12 @@ export function getNodeColorVar(kind: NodeKind): string {
   return NODE_REGISTRY[kind].colorTheme.base;
 }
 
+export function resolveNodeColor(value: string): string {
+  return value.startsWith("--") ? `var(${value})` : value;
+}
+
 export function getMiniMapNodeColor(kind: NodeKind): string {
-  const varName = NODE_REGISTRY[kind].colorTheme.base;
-  return `color-mix(in srgb, var(${varName}) 30%, transparent)`;
+  return `color-mix(in srgb, ${resolveNodeColor(NODE_REGISTRY[kind].colorTheme.base)} 30%, transparent)`;
 }
 
 // ============================================================================
@@ -565,17 +629,30 @@ export function getNodeSchema(kind: NodeKind, data?: NodeDataMap[NodeKind]): Nod
 type GroupMetadata = {
   label: string;
   icon: LucideIcon;
-  colorClass: string;
+  iconSrc?: string;
+  color: string;
 };
 
 const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
-  triggers: { label: "Triggers", icon: Play, colorClass: "bg-node-trigger" },
-  http: { label: "HTTP", icon: Globe, colorClass: "bg-node-http" },
-  flow: { label: "Control Flow", icon: Route, colorClass: "bg-node-flow" },
-  transform: { label: "Data Transform", icon: Wand2, colorClass: "bg-node-transform" },
-  datetime: { label: "Date & Time", icon: CalendarClock, colorClass: "bg-node-datetime" },
-  email: { label: "Email", icon: Mail, colorClass: "bg-node-email" },
-  agents: { label: "Agents", icon: Bot, colorClass: "bg-node-agent" },
+  triggers: { label: "Triggers", icon: Play, color: "var(--node-trigger)" },
+  http: { label: "HTTP", icon: Globe, color: "var(--node-http)" },
+  flow: { label: "Control Flow", icon: Route, color: "var(--node-flow)" },
+  transform: { label: "Data Transform", icon: Wand2, color: "var(--node-transform)" },
+  datetime: { label: "Date & Time", icon: CalendarClock, color: "var(--node-datetime)" },
+  email: { label: "Email", icon: Mail, color: "var(--node-email)" },
+  agents: { label: "Agents", icon: Bot, color: "var(--node-agent)" },
+  google: {
+    label: "Google",
+    icon: Plug,
+    iconSrc: "/icons/integrations/google.svg",
+    color: "#34a853",
+  },
+  microsoft: {
+    label: "Microsoft",
+    icon: Plug,
+    iconSrc: "/icons/integrations/microsoft.svg",
+    color: "#0078d4",
+  },
 };
 
 export function getNodesByGroup(group: NodeGroup): NodeMetadata[] {
@@ -595,8 +672,18 @@ export function getGroupIcon(group: NodeGroup): LucideIcon {
   return GROUP_METADATA[group].icon;
 }
 
-export function getGroupColorClass(group: NodeGroup): string {
-  return GROUP_METADATA[group].colorClass;
+export function getGroupIconSrc(group: NodeGroup): string | undefined {
+  return GROUP_METADATA[group].iconSrc;
+}
+
+export function getGroupColor(group: NodeGroup): string {
+  return GROUP_METADATA[group].color;
+}
+
+const INTEGRATION_GROUP_SET = new Set(Object.values(INTEGRATION_NODE_REGISTRY).map((m) => m.group));
+
+export function isIntegrationGroup(group: NodeGroup): boolean {
+  return INTEGRATION_GROUP_SET.has(group);
 }
 
 /** Data Helper */

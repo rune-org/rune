@@ -5,6 +5,7 @@ import (
 
 	"rune-worker/pkg/nodes"
 	// Import all node packages to trigger their init() functions
+	_ "rune-worker/pkg/nodes/custom/agent"
 	_ "rune-worker/pkg/nodes/custom/aggregator"
 	_ "rune-worker/pkg/nodes/custom/conditional"
 	_ "rune-worker/pkg/nodes/custom/datetime_add"

@@ -3,7 +3,6 @@
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,29 +10,13 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "@/components/ui/toast";
 import { useAuth } from "@/lib/auth";
-
-const signUpSchema = z.object({
-  name: z
-    .string()
-    .min(3, "Name must be at least 3 characters long")
-    .max(40, "Name must be 40 characters or less"),
-  email: z.string().email("Enter a valid email"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
-});
-
-type SignUpForm = z.infer<typeof signUpSchema>;
+import { signUpSchema, type SignUpFormValues } from "@/lib/validation";
 
 export function AuthForm() {
   const [isPending, startTransition] = useTransition();
   const { state, signUp } = useAuth();
 
-  const form = useForm<SignUpForm>({
+  const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       name: "",
@@ -42,7 +25,7 @@ export function AuthForm() {
     },
   });
 
-  function onSubmit(values: SignUpForm) {
+  function onSubmit(values: SignUpFormValues) {
     startTransition(() => {
       signUp(values.name, values.email, values.password)
         .then((ok) => {

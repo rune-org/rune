@@ -102,7 +102,7 @@ func NewCompletedMessage(workflowID, executionID string, finalContext map[string
 		ExecutionID:     executionID,
 		Status:          CompletionStatusCompleted,
 		FinalContext:    finalContext,
-		CompletedAt:     time.Now(),
+		CompletedAt:     time.Now().UTC(),
 		TotalDurationMs: totalDurationMs,
 	}
 }
@@ -114,7 +114,7 @@ func NewFailedMessage(workflowID, executionID string, finalContext map[string]in
 		ExecutionID:     executionID,
 		Status:          CompletionStatusFailed,
 		FinalContext:    finalContext,
-		CompletedAt:     time.Now(),
+		CompletedAt:     time.Now().UTC(),
 		TotalDurationMs: totalDurationMs,
 		FailureReason:   reason,
 	}
@@ -127,7 +127,7 @@ func NewHaltedMessage(workflowID, executionID string, finalContext map[string]in
 		ExecutionID:     executionID,
 		Status:          CompletionStatusHalted,
 		FinalContext:    finalContext,
-		CompletedAt:     time.Now(),
+		CompletedAt:     time.Now().UTC(),
 		TotalDurationMs: totalDurationMs,
 		FailureReason:   reason,
 	}

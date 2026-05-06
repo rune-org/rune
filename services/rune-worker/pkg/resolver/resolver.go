@@ -36,11 +36,11 @@ func (r *Resolver) GetUsedKeys() []string {
 	return keys
 }
 
-// referencePattern matches $node_name.path.to.field or $node_name.array[0].
+// referencePattern matches $node_name.path.to.field, $node_name.array[0], or $json[0].
 // Field paths may themselves contain $ segments, such as $Filter.$json.
-var referencePattern = regexp.MustCompile(`\$([a-zA-Z0-9_-]+)(\.[a-zA-Z0-9_\[\]\.\$-]+)?`)
+var referencePattern = regexp.MustCompile(`\$([a-zA-Z0-9_-]+)((?:\.|\[)[a-zA-Z0-9_\[\]\.\$-]+)?`)
 
-var fullReferencePattern = regexp.MustCompile(`^\$[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_\[\]\.\$-]+)?$`)
+var fullReferencePattern = regexp.MustCompile(`^\$[a-zA-Z0-9_-]+(?:(?:\.|\[)[a-zA-Z0-9_\[\]\.\$-]+)?$`)
 
 // ResolveParameters recursively resolves all parameter values in the given map.
 // It replaces string values that match the pattern $node_name.path with the actual value

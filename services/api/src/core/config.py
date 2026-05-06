@@ -72,6 +72,16 @@ class Settings(BaseSettings):
     # Scryb Documentation Settings
     scryb_model: str = "gemini/gemini-2.5-flash-lite"
 
+    # OAuth2 BYO (custom provider) — browser redirect + token exchange
+    # Public API base as seen by browsers and OAuth providers (no trailing slash).
+    # Register redirect URI in the provider console: {API_PUBLIC_URL}/oauth/callback
+    # unless OAUTH_REDIRECT_URI is set to the full callback URL.
+    api_public_url: str = "http://127.0.0.1:8000"
+    oauth_frontend_success_url: str = "http://localhost:3000/create/credentials"
+    oauth_frontend_error_url: str = "http://localhost:3000/create/credentials"
+    oauth_redirect_uri: str | None = None
+    oauth_refresh_skew_seconds: int = 300
+
     # SAML SSO Settings
     # The public-facing base URL of the API (used to build ACS / metadata URLs).
     # Must NOT end with a trailing slash.

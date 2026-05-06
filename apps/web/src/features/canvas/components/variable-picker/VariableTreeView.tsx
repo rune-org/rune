@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState, useCallback } from "react";
-import { ChevronRight, ChevronDown, Copy } from "lucide-react";
+import { ChevronRight, ChevronDown, Copy, Hash } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { toast } from "@/components/ui/toast";
 import type { VariableTreeNode } from "../../lib/variableSchema";
@@ -42,6 +42,89 @@ function formatSampleValue(value: unknown): string {
   return String(value);
 }
 
+function cloneNodeForArrayIndex(
+  templateNode: VariableTreeNode,
+  arrayPath: string,
+  index: number,
+): VariableTreeNode {
+  const oldPrefix = templateNode.path;
+  const newPrefix = `${arrayPath}[${index}]`;
+  const rewrite = (node: VariableTreeNode): VariableTreeNode => ({
+    ...node,
+    key: node === templateNode ? `[${index}]` : node.key,
+    path: node.path.startsWith(oldPrefix)
+      ? `${newPrefix}${node.path.slice(oldPrefix.length)}`
+      : node.path,
+    children: node.children?.map(rewrite),
+  });
+
+  return rewrite(templateNode);
+}
+
+function findIndexTemplateNode(node: VariableTreeNode): VariableTreeNode | undefined {
+  return node.children?.find((child) => /^\[\d+\]$/.test(child.key));
+}
+
+function ArrayIndexLookup({
+  node,
+  onSelect,
+  depth,
+}: {
+  node: VariableTreeNode;
+  onSelect: (path: string) => void;
+  depth: number;
+}) {
+  const [indexValue, setIndexValue] = useState("");
+  const parsedIndex = Number.parseInt(indexValue, 10);
+  const isValid =
+    Number.isInteger(parsedIndex) &&
+    parsedIndex >= 0 &&
+    (node.arrayLength === undefined || parsedIndex < node.arrayLength);
+  const templateNode = findIndexTemplateNode(node);
+  const indexedNode =
+    isValid && templateNode ? cloneNodeForArrayIndex(templateNode, node.path, parsedIndex) : null;
+
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!isValid) return;
+      onSelect(`${node.path}[${parsedIndex}]`);
+    },
+    [isValid, node.path, onSelect, parsedIndex],
+  );
+
+  return (
+    <div>
+      <form
+        className="flex items-center gap-1.5 px-1.5 py-1 text-xs"
+        style={{ paddingLeft: `${depth * 12 + 4}px` }}
+        onSubmit={handleSubmit}
+      >
+        <Hash className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className="shrink-0 text-muted-foreground">Index</span>
+        <input
+          type="number"
+          min={0}
+          max={node.arrayLength !== undefined ? Math.max(0, node.arrayLength - 1) : undefined}
+          value={indexValue}
+          onChange={(e) => setIndexValue(e.target.value)}
+          placeholder={node.arrayLength !== undefined ? `0-${node.arrayLength - 1}` : "0"}
+          className="h-6 min-w-0 flex-1 rounded border border-border/60 bg-muted/30 px-1.5 text-xs outline-none focus:border-ring"
+          onClick={(e) => e.stopPropagation()}
+        />
+        <button
+          type="submit"
+          disabled={!isValid}
+          className="h-6 shrink-0 rounded border border-border/60 px-2 text-[10px] font-medium text-muted-foreground hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Use
+        </button>
+      </form>
+      {indexedNode && <VariableTreeView nodes={[indexedNode]} onSelect={onSelect} depth={depth} />}
+    </div>
+  );
+}
+
 function TreeRow({
   node,
   onSelect,
@@ -53,6 +136,11 @@ function TreeRow({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const hasChildren = node.children && node.children.length > 0;
+  const hiddenArrayItems =
+    node.type === "array" &&
+    node.arrayLength !== undefined &&
+    node.children !== undefined &&
+    node.arrayLength > node.children.length;
 
   const handleSelect = useCallback(() => {
     onSelect(node.path);
@@ -128,6 +216,12 @@ function TreeRow({
         {/* Type badge */}
         <TypeBadge type={node.type} />
 
+        {node.type === "array" && node.arrayLength !== undefined && (
+          <span className="shrink-0 text-[10px] text-muted-foreground/70">
+            {node.arrayLength} items
+          </span>
+        )}
+
         {/* Sample value preview */}
         {node.sampleValue !== undefined && (
           <span className="truncate text-[10px] text-muted-foreground/70">
@@ -147,7 +241,12 @@ function TreeRow({
 
       {/* Children */}
       {hasChildren && isOpen && (
-        <VariableTreeView nodes={node.children!} onSelect={onSelect} depth={depth + 1} />
+        <>
+          <VariableTreeView nodes={node.children!} onSelect={onSelect} depth={depth + 1} />
+          {hiddenArrayItems && (
+            <ArrayIndexLookup node={node} onSelect={onSelect} depth={depth + 1} />
+          )}
+        </>
       )}
     </div>
   );

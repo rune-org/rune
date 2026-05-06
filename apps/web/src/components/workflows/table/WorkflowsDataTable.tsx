@@ -66,6 +66,7 @@ type WorkflowsDataTableProps = {
   isRowPending: (id: string) => boolean;
   isRowExporting: (id: string) => boolean;
   isAdmin: boolean;
+  currentUserName: string;
   lastRunByWorkflow: Map<string, ApiExecutionListItem>;
   executionsLoaded: boolean;
   onRun: (workflow: WorkflowSummary) => void;
@@ -87,6 +88,7 @@ export function WorkflowsDataTable({
   isRowPending,
   isRowExporting,
   isAdmin,
+  currentUserName,
   lastRunByWorkflow,
   executionsLoaded,
   onRun,
@@ -154,10 +156,18 @@ export function WorkflowsDataTable({
                     </a>
 
                     <Badge
-                      variant={workflow.role === "owner" ? "secondary" : "outline"}
+                      variant={
+                        workflow.role === "owner" && workflow.ownerName === currentUserName
+                          ? "secondary"
+                          : "outline"
+                      }
                       className="shrink-0 text-xs"
                     >
-                      {workflow.role === "owner" ? "Owner" : "Shared"}
+                      {workflow.role === "owner"
+                        ? workflow.ownerName === currentUserName
+                          ? "Owner"
+                          : workflow.ownerName || "Unknown"
+                        : "Shared"}
                     </Badge>
                   </div>
                 </TableCell>

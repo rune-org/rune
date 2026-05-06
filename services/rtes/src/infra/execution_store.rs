@@ -317,8 +317,8 @@ impl ExecutionStore {
             }
         };
 
-        let max_retries: u32 = 5;
-        let mut backoff = std::time::Duration::from_secs(1);
+        let max_retries: u32 = 3;
+        let mut backoff = std::time::Duration::from_millis(500);
 
         for attempt in 0..=max_retries {
             let result = self

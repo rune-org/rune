@@ -5,6 +5,12 @@ import { type Node, type NodeProps } from "@xyflow/react";
 import { Mail, Key, AlertCircle } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import type { SmtpData } from "../types";
+import { LEGACY_SMTP_PLACEHOLDER_VALUES } from "@/lib/workflow-dsl";
+
+function hasConfiguredValue(value: string | undefined): value is string {
+  const trimmed = value?.trim();
+  return !!trimmed && !LEGACY_SMTP_PLACEHOLDER_VALUES.has(trimmed);
+}
 
 export const SmtpNode = memo(function SmtpNode({ id, data }: NodeProps<Node<SmtpData>>) {
   const hasCredential = !!data.credential;
@@ -30,16 +36,14 @@ export const SmtpNode = memo(function SmtpNode({ id, data }: NodeProps<Node<Smtp
             <span className="truncate">No credential</span>
           </div>
         )}
-        {data.from && (
-          <div className="truncate text-xs text-muted-foreground">
-            From: {data.from ?? "sender@example.com"}
-          </div>
+        {hasConfiguredValue(data.from) && (
+          <div className="truncate text-xs text-muted-foreground">From: {data.from}</div>
         )}
         <div className="truncate text-xs text-muted-foreground">
-          To: {data.to ?? "recipient@example.com"}
+          {hasConfiguredValue(data.to) ? `To: ${data.to}` : "Add recipient"}
         </div>
         <div className="truncate text-xs text-muted-foreground">
-          Subj: {data.subject || "(no subject)"}
+          Subj: {hasConfiguredValue(data.subject) ? data.subject : "(no subject)"}
         </div>
       </div>
     </BaseNode>

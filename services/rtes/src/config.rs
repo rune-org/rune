@@ -48,7 +48,7 @@ impl Config {
                 .unwrap_or_else(|_| "10".to_string())
                 .parse()
                 .unwrap_or(10),
-            rabbitmq_queue_durable: Self::parse_bool_env("RABBITMQ_QUEUE_DURABLE", false),
+            rabbitmq_queue_durable: Self::parse_bool_env("RABBITMQ_QUEUE_DURABLE", true),
             mongodb_url: env::var("MONGODB_URL")
                 .unwrap_or_else(|_| "mongodb://localhost:27017".to_string()),
             rabbitmq_status_queue: env::var("RABBITMQ_STATUS_QUEUE")

@@ -23,6 +23,10 @@ func TestResolver_ResolveParameters(t *testing.T) {
 			"user_id": "456",
 			"action":  "login",
 		},
+		"$json": []interface{}{
+			map[string]interface{}{"id": 1, "name": "First"},
+			map[string]interface{}{"id": 2, "name": "Second"},
+		},
 	}
 
 	tests := []struct {
@@ -58,6 +62,16 @@ func TestResolver_ResolveParameters(t *testing.T) {
 			},
 			want: map[string]interface{}{
 				"first_value": "first",
+			},
+			wantErr: false,
+		},
+		{
+			name: "root array index reference",
+			parameters: map[string]interface{}{
+				"second_name": "$json[1].name",
+			},
+			want: map[string]interface{}{
+				"second_name": "Second",
 			},
 			wantErr: false,
 		},
