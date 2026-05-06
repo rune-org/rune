@@ -12,49 +12,61 @@ import {
 } from "./permissions";
 
 describe("workflow permissions", () => {
-  it("test_viewer_can_view_but_cannot_change_or_run_workflow", () => {
-    const role: WorkflowRole = "viewer";
+  function visibleWorkflowActions(role: WorkflowRole, isAdmin = false): string[] {
+    const actions = [
+      ["open-canvas", canViewWorkflow(role, isAdmin)],
+      ["export-json", canViewWorkflow(role, isAdmin)],
+      ["run", canExecuteWorkflow(role, isAdmin)],
+      ["rename", canRenameWorkflow(role, isAdmin)],
+      ["toggle-active", canChangeWorkflowStatus(role, isAdmin)],
+      ["share", canShareWorkflow(role, isAdmin)],
+      ["delete", canDeleteWorkflow(role, isAdmin)],
+    ] as const;
 
-    expect(canViewWorkflow(role)).toBe(true);
-    expect(canEditWorkflow(role)).toBe(false);
-    expect(canExecuteWorkflow(role)).toBe(false);
-    expect(canDeleteWorkflow(role)).toBe(false);
-    expect(canShareWorkflow(role)).toBe(false);
-    expect(canRenameWorkflow(role)).toBe(false);
-    expect(canChangeWorkflowStatus(role)).toBe(false);
+    return actions
+      .filter(([, allowed]) => allowed)
+      .map(([action]) => action);
+  }
+
+  it("viewer can only access read-only workflow actions", () => {
+    expect(visibleWorkflowActions("viewer")).toEqual(["open-canvas", "export-json"]);
+    expect(canEditWorkflow("viewer")).toBe(false);
   });
 
-  it("test_editor_can_edit_and_run_but_cannot_delete_or_share", () => {
-    const role: WorkflowRole = "editor";
-
-    expect(canViewWorkflow(role)).toBe(true);
-    expect(canEditWorkflow(role)).toBe(true);
-    expect(canExecuteWorkflow(role)).toBe(true);
-    expect(canDeleteWorkflow(role)).toBe(false);
-    expect(canShareWorkflow(role)).toBe(false);
-    expect(canRenameWorkflow(role)).toBe(true);
-    expect(canChangeWorkflowStatus(role)).toBe(true);
+  it("editor can run and modify workflow but not share or delete", () => {
+    expect(visibleWorkflowActions("editor")).toEqual([
+      "open-canvas",
+      "export-json",
+      "run",
+      "rename",
+      "toggle-active",
+    ]);
+    expect(canEditWorkflow("editor")).toBe(true);
   });
 
-  it("test_owner_has_full_workflow_management_permissions", () => {
-    const role: WorkflowRole = "owner";
-
-    expect(canViewWorkflow(role)).toBe(true);
-    expect(canEditWorkflow(role)).toBe(true);
-    expect(canExecuteWorkflow(role)).toBe(true);
-    expect(canDeleteWorkflow(role)).toBe(true);
-    expect(canShareWorkflow(role)).toBe(true);
-    expect(canRenameWorkflow(role)).toBe(true);
-    expect(canChangeWorkflowStatus(role)).toBe(true);
+  it("owner can access every workflow action", () => {
+    expect(visibleWorkflowActions("owner")).toEqual([
+      "open-canvas",
+      "export-json",
+      "run",
+      "rename",
+      "toggle-active",
+      "share",
+      "delete",
+    ]);
+    expect(canEditWorkflow("owner")).toBe(true);
   });
 
-  it("test_admin_override_grants_permissions_even_with_viewer_workflow_role", () => {
-    expect(canViewWorkflow("viewer", true)).toBe(true);
+  it("admin override grants all workflow actions even for viewer role", () => {
+    expect(visibleWorkflowActions("viewer", true)).toEqual([
+      "open-canvas",
+      "export-json",
+      "run",
+      "rename",
+      "toggle-active",
+      "share",
+      "delete",
+    ]);
     expect(canEditWorkflow("viewer", true)).toBe(true);
-    expect(canExecuteWorkflow("viewer", true)).toBe(true);
-    expect(canDeleteWorkflow("viewer", true)).toBe(true);
-    expect(canShareWorkflow("viewer", true)).toBe(true);
-    expect(canRenameWorkflow("viewer", true)).toBe(true);
-    expect(canChangeWorkflowStatus("viewer", true)).toBe(true);
   });
 });

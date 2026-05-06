@@ -1,31 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const workflowDataToCanvasMock = vi.hoisted(() => vi.fn());
-const sanitizeGraphMock = vi.hoisted(() => vi.fn());
-const applyAutoLayoutMock = vi.hoisted(() => vi.fn());
-
-vi.mock("@/lib/workflow-dsl", () => ({
-  workflowDataToCanvas: workflowDataToCanvasMock,
-}));
-
-vi.mock("./graphIO", () => ({
-  sanitizeGraph: sanitizeGraphMock,
-}));
-
-vi.mock("./autoLayout", () => ({
-  applyAutoLayout: applyAutoLayoutMock,
-}));
+import { describe, expect, it } from "vitest";
 
 import { extractGraphSnapshot, rtesDocToExecutionState } from "./executionConversion";
 
 describe("executionConversion", () => {
-  beforeEach(() => {
-    workflowDataToCanvasMock.mockReset();
-    sanitizeGraphMock.mockReset();
-    applyAutoLayoutMock.mockReset();
-  });
-
-  it("test_extract_graph_snapshot_returns_undefined_when_execution_has_no_nodes", () => {
+  it("extractGraphSnapshot returns undefined when execution has no nodes", () => {
     expect(
       extractGraphSnapshot({
         execution_id: "exec-1",
@@ -35,142 +13,191 @@ describe("executionConversion", () => {
     ).toBeUndefined();
   });
 
-  it("test_extract_graph_snapshot_uses_stored_positions_without_applying_auto_layout", () => {
-    const sanitized = {
-      nodes: [{ id: "trigger-1", position: { x: 10, y: 20 }, type: "trigger", data: {} }],
-      edges: [],
-    };
-
-    workflowDataToCanvasMock.mockReturnValue(sanitized);
-    sanitizeGraphMock.mockReturnValue(sanitized);
-
-    const result = extractGraphSnapshot({
-      execution_id: "exec-1",
-      workflow_id: "7",
+  it("extractGraphSnapshot preserves valid graph branches and removes invalid nodes/edges", () => {
+    const snapshot = extractGraphSnapshot({
+      execution_id: "exec-graph",
+      workflow_id: "99",
       nodes: {
-        "trigger-1": {
-          position: [10, 20],
-          name: "Trigger",
+        trigger: {
+          name: "Manual Trigger",
           type: "ManualTrigger",
+          position: [0, 0],
           latest: { status: "success" },
         },
+        ifNode: {
+          name: "Branch",
+          type: "conditional",
+          position: [200, 0],
+          latest: { status: "success" },
+        },
+        successNode: {
+          name: "Success path",
+          type: "log",
+          position: [400, -120],
+          latest: { status: "success" },
+        },
+        failedNode: {
+          name: "Failure path",
+          type: "log",
+          position: [400, 120],
+          latest: { status: "error" },
+        },
+        unsafeNode: {
+          name: "Unsafe",
+          type: "non-existent-type",
+          position: [600, 0],
+          latest: { status: "running" },
+        },
       },
-      edges: [],
+      edges: [
+        { id: "edge-1", src: "trigger", dst: "ifNode" },
+        { id: "edge-2", src: "ifNode", dst: "successNode", label: "true" },
+        { id: "edge-3", src: "ifNode", dst: "failedNode", label: "false" },
+        { id: "edge-4", src: "ifNode", dst: "unsafeNode", label: "true" },
+      ],
     });
 
-    expect(result).toEqual(sanitized);
-    expect(applyAutoLayoutMock).not.toHaveBeenCalled();
+    expect(snapshot).toBeDefined();
+    expect(snapshot?.nodes.map((node) => node.id)).toEqual([
+      "trigger",
+      "ifNode",
+      "successNode",
+      "failedNode",
+    ]);
+    expect(snapshot?.edges.map((edge) => edge.id)).toEqual(["edge-1", "edge-2", "edge-3"]);
+    expect(snapshot?.edges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "edge-2", sourceHandle: "true", label: "true" }),
+        expect.objectContaining({ id: "edge-3", sourceHandle: "false", label: "false" }),
+      ]),
+    );
   });
 
-  it("test_extract_graph_snapshot_auto_layouts_when_positions_are_missing", () => {
-    const sanitized = {
-      nodes: [
-        { id: "a", position: { x: 0, y: 0 }, type: "trigger", data: {} },
-        { id: "b", position: { x: 0, y: 0 }, type: "log", data: {} },
-      ],
-      edges: [{ id: "edge-1", source: "a", target: "b" }],
-    };
-    const layouted = {
-      nodes: [
-        { id: "a", position: { x: 0, y: 0 }, type: "trigger", data: {} },
-        { id: "b", position: { x: 300, y: 0 }, type: "log", data: {} },
-      ],
-      edges: sanitized.edges,
-    };
-
-    workflowDataToCanvasMock.mockReturnValue(sanitized);
-    sanitizeGraphMock.mockReturnValue(sanitized);
-    applyAutoLayoutMock.mockReturnValue(layouted);
-
-    const result = extractGraphSnapshot({
-      execution_id: "exec-1",
-      workflow_id: "7",
-      nodes: {
-        a: { latest: { name: "A", node_type: "ManualTrigger" } },
-        b: { latest: { name: "B", node_type: "log" } },
-      },
-      edges: [{ id: "edge-1", src: "a", dst: "b" }],
-    });
-
-    expect(applyAutoLayoutMock).toHaveBeenCalledWith({
-      nodes: sanitized.nodes,
-      edges: sanitized.edges,
-      respectPinned: false,
-    });
-    expect(result).toEqual(layouted);
-  });
-
-  it("test_rtes_doc_to_execution_state_maps_outputs_errors_and_statuses", () => {
-    const sanitized = {
-      nodes: [{ id: "a", position: { x: 0, y: 0 }, type: "trigger", data: {} }],
-      edges: [],
-    };
-
-    workflowDataToCanvasMock.mockReturnValue(sanitized);
-    sanitizeGraphMock.mockReturnValue(sanitized);
-
+  it("maps realistic mixed execution outcomes to frontend state", () => {
     const state = rtesDocToExecutionState({
       execution_id: "exec-42",
       workflow_id: "12",
-      status: "completed",
+      status: "running",
       created_at: "2026-03-29T12:00:00Z",
       nodes: {
-        a: {
+        trigger: {
+          name: "Manual Trigger",
+          type: "ManualTrigger",
           position: [0, 0],
           latest: {
             status: "completed",
             output: { ok: true },
-            duration_ms: 150,
+            duration_ms: 20,
             executed_at: "2026-03-29T12:00:01Z",
-            error: { message: "boom", code: "ERR" },
           },
         },
+        http: {
+          name: "Call API",
+          type: "http",
+          position: [260, 0],
+          latest: {
+            status: "error",
+            output: { statusCode: 500 },
+            duration_ms: 153,
+            executed_at: "2026-03-29T12:00:02Z",
+            error: { message: "Upstream timeout", code: "HTTP_TIMEOUT" },
+          },
+        },
+        transform: {
+          name: "Transform payload",
+          type: "edit",
+          position: [520, 0],
+          latest: {
+            status: "pending",
+          },
+        },
+        staleNode: {
+          name: "Old node with no run",
+          type: "log",
+          position: [780, 0],
+        },
       },
-      edges: [],
+      edges: [
+        { id: "a", src: "trigger", dst: "http" },
+        { id: "b", src: "http", dst: "transform" },
+      ],
     });
 
     expect(state.executionId).toBe("exec-42");
     expect(state.workflowId).toBe(12);
-    expect(state.status).toBe("completed");
-    expect(state.graphSnapshot).toEqual(sanitized);
-    expect(state.nodes.get("a")).toEqual({
-      nodeId: "a",
+    expect(state.status).toBe("running");
+    expect(state.startedAt).toBe("2026-03-29T12:00:00Z");
+    expect(state.graphSnapshot?.nodes.map((node) => node.id)).toEqual([
+      "trigger",
+      "http",
+      "transform",
+      "staleNode",
+    ]);
+    expect(state.graphSnapshot?.edges.map((edge) => edge.id)).toEqual(["a", "b"]);
+
+    expect(state.nodes.get("trigger")).toEqual({
+      nodeId: "trigger",
       status: "success",
       output: { ok: true },
-      error: { message: "boom", code: "ERR" },
+      error: undefined,
       executedAt: "2026-03-29T12:00:01Z",
-      durationMs: 150,
+      durationMs: 20,
     });
+    expect(state.nodes.get("http")).toEqual({
+      nodeId: "http",
+      status: "failed",
+      output: { statusCode: 500 },
+      error: { message: "Upstream timeout", code: "HTTP_TIMEOUT" },
+      executedAt: "2026-03-29T12:00:02Z",
+      durationMs: 153,
+    });
+    expect(state.nodes.get("transform")).toEqual({
+      nodeId: "transform",
+      status: "waiting",
+      output: undefined,
+      error: undefined,
+      executedAt: undefined,
+      durationMs: undefined,
+    });
+    expect(state.nodes.has("staleNode")).toBe(false);
   });
 
-  it("test_rtes_doc_to_execution_state_ignores_nodes_without_latest_execution_instance", () => {
-    workflowDataToCanvasMock.mockReturnValue({
-      nodes: [{ id: "a", position: { x: 0, y: 0 }, type: "trigger", data: {} }],
-      edges: [],
-    });
-    sanitizeGraphMock.mockReturnValue({
-      nodes: [{ id: "a", position: { x: 0, y: 0 }, type: "trigger", data: {} }],
-      edges: [],
-    });
-
+  it("maps halted executions with partial node progress into stable frontend statuses", () => {
     const state = rtesDocToExecutionState({
       execution_id: "exec-43",
-      workflow_id: "9",
-      status: "running",
+      workflow_id: "12",
+      status: "halted",
       created_at: "2026-03-29T12:00:00Z",
       nodes: {
-        a: {
+        done: {
+          name: "Done step",
+          type: "log",
           position: [0, 0],
+          latest: { status: "success", executed_at: "2026-03-29T12:00:01Z" },
+        },
+        waiting: {
+          name: "Waiting step",
+          type: "http",
+          position: [200, 0],
+          latest: { status: "pending" },
+        },
+        unknown: {
+          name: "Unknown status step",
+          type: "edit",
+          position: [400, 0],
+          latest: { status: "not-a-real-status" },
         },
       },
-      edges: [],
+      edges: [
+        { id: "a", src: "done", dst: "waiting" },
+        { id: "b", src: "waiting", dst: "unknown" },
+      ],
     });
 
-    expect(state.nodes.size).toBe(0);
-    expect(state.status).toBe("running");
-    expect(state.graphSnapshot).toEqual({
-      nodes: [{ id: "a", position: { x: 0, y: 0 }, type: "trigger", data: {} }],
-      edges: [],
-    });
+    expect(state.status).toBe("halted");
+    expect(state.nodes.get("done")?.status).toBe("success");
+    expect(state.nodes.get("waiting")?.status).toBe("waiting");
+    expect(state.nodes.get("unknown")?.status).toBe("idle");
+    expect(state.graphSnapshot?.nodes.map((node) => node.id)).toEqual(["done", "waiting", "unknown"]);
   });
 });
