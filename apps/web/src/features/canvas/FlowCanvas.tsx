@@ -159,6 +159,7 @@ function FlowCanvasInner({
     null,
   );
   const onboardingStateRef = useRef({ isOpen: isOnboardingOpen, step: onboardingStep });
+  onboardingStateRef.current = { isOpen: isOnboardingOpen, step: onboardingStep };
   const prevOnboardingStepRef = useRef(onboardingStep);
   const mousePosRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -173,10 +174,6 @@ function FlowCanvasInner({
     nodesRef.current = nodes;
     edgesRef.current = edges;
   }, [nodes, edges]);
-
-  useEffect(() => {
-    onboardingStateRef.current = { isOpen: isOnboardingOpen, step: onboardingStep };
-  }, [isOnboardingOpen, onboardingStep]);
 
   useEffect(() => {
     if (isOnboardingOpen && onboardingStep === 1 && prevOnboardingStepRef.current < 1) {

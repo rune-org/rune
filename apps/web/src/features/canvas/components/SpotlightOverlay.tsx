@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, CheckCircle2, Lightbulb, MousePointerClick } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -108,6 +108,7 @@ export function SpotlightOverlay({
   onSkip,
   onOverview,
 }: SpotlightOverlayProps) {
+  const maskId = useId();
   const [rect, setRect] = useState<Rect | null>(null);
   const lastRectRef = useRef<Rect | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -158,7 +159,7 @@ export function SpotlightOverlay({
     >
       <svg className="pointer-events-none absolute inset-0 h-full w-full">
         <defs>
-          <mask id="onboarding-mask">
+          <mask id={maskId}>
             <rect width="100%" height="100%" fill="white" />
             <motion.rect
               animate={{ x: sx, y: sy, width: sw, height: sh }}
@@ -168,7 +169,7 @@ export function SpotlightOverlay({
             />
           </mask>
         </defs>
-        <rect width="100%" height="100%" fill="rgba(0,0,0,0.72)" mask="url(#onboarding-mask)" />
+        <rect width="100%" height="100%" fill="rgba(0,0,0,0.72)" mask={`url(#${maskId})`} />
         <motion.rect
           animate={{ x: sx, y: sy, width: sw, height: sh }}
           transition={spring}
