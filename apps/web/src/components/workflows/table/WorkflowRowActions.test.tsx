@@ -122,8 +122,17 @@ describe("WorkflowRowActions", () => {
     expect(screen.getByRole("menuitem", { name: "Delete" })).toBeInTheDocument();
   });
 
-  it("shows Activate for inactive workflows and keeps actions disabled while pending", async () => {
+  it("shows Activate for inactive workflows", async () => {
     const user = userEvent.setup();
+    const { workflow } = renderActions("owner", {
+      status: "draft",
+    });
+
+    await user.click(screen.getByLabelText(`More actions for ${workflow.name}`));
+    expect(screen.getByRole("menuitem", { name: "Activate" })).toBeInTheDocument();
+  });
+
+  it("keeps actions disabled while pending", () => {
     const { workflow, onRun, onDelete } = renderActions("owner", {
       status: "draft",
       isPending: true,
@@ -131,10 +140,7 @@ describe("WorkflowRowActions", () => {
 
     expect(screen.getByLabelText(`Run ${workflow.name}`)).toBeDisabled();
     expect(screen.getByLabelText(`Delete ${workflow.name}`)).toBeDisabled();
-
-    await user.click(screen.getByLabelText(`More actions for ${workflow.name}`));
-    expect(screen.getByRole("menuitem", { name: "Activate" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Delete" })).toHaveAttribute("data-disabled");
+    expect(screen.getByLabelText(`More actions for ${workflow.name}`)).toBeDisabled();
 
     expect(onRun).not.toHaveBeenCalled();
     expect(onDelete).not.toHaveBeenCalled();

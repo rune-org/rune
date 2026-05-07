@@ -2,11 +2,28 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 
 import { act, fireEvent, render, screen } from "@/test/render";
-import { initialExecutionState, type ExecutionState } from "../types/execution";
+import type { ExecutionState } from "../types/execution";
 import { ExecutionStatusBar } from "./ExecutionStatusBar";
 
+function makeExecutionState(overrides: Partial<ExecutionState> = {}): ExecutionState {
+  return {
+    executionId: null,
+    workflowId: null,
+    status: "idle",
+    nodes: new Map(),
+    nodeExecutions: new Map(),
+    ...overrides,
+  };
+}
+
 const executionState = vi.hoisted(() => ({
-  state: initialExecutionState,
+  state: {
+    executionId: null,
+    workflowId: null,
+    status: "idle",
+    nodes: new Map(),
+    nodeExecutions: new Map(),
+  } as ExecutionState,
 }));
 
 vi.mock("../context/ExecutionContext", () => ({
@@ -22,8 +39,7 @@ describe("ExecutionStatusBar", () => {
     const onDismissRunning = vi.fn();
     const user = userEvent.setup();
 
-    executionState.state = {
-      ...initialExecutionState,
+    executionState.state = makeExecutionState({
       executionId: "exec-abcdef123",
       workflowId: 12,
       status: "running",
@@ -32,7 +48,7 @@ describe("ExecutionStatusBar", () => {
         ["http", { nodeId: "http", status: "running" }],
         ["log", { nodeId: "log", status: "failed" }],
       ]),
-    };
+    });
 
     render(
       <ExecutionStatusBar
@@ -55,14 +71,13 @@ describe("ExecutionStatusBar", () => {
   it("auto-dismisses completed status after the grace period", () => {
     vi.useFakeTimers();
 
-    executionState.state = {
-      ...initialExecutionState,
+    executionState.state = makeExecutionState({
       executionId: "exec-done",
       workflowId: 12,
       status: "completed",
       totalDurationMs: 450,
       nodes: new Map(),
-    };
+    });
 
     render(<ExecutionStatusBar wsStatus="connected" />);
     expect(screen.getByText("Completed in 450ms")).toBeInTheDocument();
@@ -77,14 +92,13 @@ describe("ExecutionStatusBar", () => {
   it("shows failure reason and supports manual dismissal", () => {
     vi.useFakeTimers();
 
-    executionState.state = {
-      ...initialExecutionState,
+    executionState.state = makeExecutionState({
       executionId: "exec-fail",
       workflowId: 12,
       status: "failed",
       error: "Workflow timed out",
       nodes: new Map(),
-    };
+    });
 
     render(<ExecutionStatusBar wsStatus="connected" />);
     expect(screen.getByText("Workflow timed out")).toBeInTheDocument();
@@ -101,13 +115,12 @@ describe("ExecutionStatusBar", () => {
     const onDismissRunning = vi.fn();
     const user = userEvent.setup();
 
-    executionState.state = {
-      ...initialExecutionState,
+    executionState.state = makeExecutionState({
       executionId: "exec-live-fallback",
       workflowId: 12,
       status: "running",
       nodes: new Map([["http", { nodeId: "http", status: "running" }]]),
-    };
+    });
 
     render(
       <ExecutionStatusBar
@@ -125,13 +138,12 @@ describe("ExecutionStatusBar", () => {
   it("renders halted status and dismisses after timeout", () => {
     vi.useFakeTimers();
 
-    executionState.state = {
-      ...initialExecutionState,
+    executionState.state = makeExecutionState({
       executionId: "exec-halted",
       workflowId: 12,
       status: "halted",
       nodes: new Map(),
-    };
+    });
 
     render(<ExecutionStatusBar wsStatus="connected" />);
     expect(screen.getByText("Workflow halted")).toBeInTheDocument();
