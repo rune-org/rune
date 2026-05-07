@@ -36,26 +36,37 @@ function measureTarget(target: SpotlightTarget): Rect | null {
   if (!el) return null;
   const r = el.getBoundingClientRect();
   if (r.left < 0) {
-    return { x: 4, y: Math.max(60, r.top), width: 40, height: Math.min(r.height, window.innerHeight - 80) };
+    return {
+      x: 4,
+      y: Math.max(60, r.top),
+      width: 40,
+      height: Math.min(r.height, window.innerHeight - 80),
+    };
   }
   return { x: r.left, y: r.top, width: r.width, height: r.height };
 }
 
 function getSide(target: SpotlightTarget): Side {
   switch (target) {
-    case "library":   return "right";
-    case "inspector": return "left";
+    case "library":
+      return "right";
+    case "inspector":
+      return "left";
     case "save":
-    case "toolbar":   return "bottom";
-    case "canvas":    return "center";
+    case "toolbar":
+      return "bottom";
+    case "canvas":
+      return "center";
   }
 }
 
 function getTooltipPos(rect: Rect, side: Side): { x: number; y: number } {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const sx = rect.x - PAD, sy = rect.y - PAD;
-  const sw = rect.width + PAD * 2, sh = rect.height + PAD * 2;
+  const sx = rect.x - PAD,
+    sy = rect.y - PAD;
+  const sw = rect.width + PAD * 2,
+    sh = rect.height + PAD * 2;
 
   switch (side) {
     case "right":
@@ -109,7 +120,13 @@ export function SpotlightOverlay({
       const r = measureTarget(target);
       if (r) {
         const prev = lastRectRef.current;
-        if (!prev || prev.x !== r.x || prev.y !== r.y || prev.width !== r.width || prev.height !== r.height) {
+        if (
+          !prev ||
+          prev.x !== r.x ||
+          prev.y !== r.y ||
+          prev.width !== r.width ||
+          prev.height !== r.height
+        ) {
           lastRectRef.current = r;
           setRect(r);
         }
@@ -207,9 +224,7 @@ export function SpotlightOverlay({
                   {title}
                 </h3>
 
-                <p className="text-[13px] leading-[1.6] text-muted-foreground">
-                  {description}
-                </p>
+                <p className="text-[13px] leading-[1.6] text-muted-foreground">{description}</p>
 
                 {tip && (
                   <div className="mt-3 flex items-start gap-2 rounded-xl border border-border/60 bg-muted/40 px-3 py-2.5">
@@ -231,7 +246,9 @@ export function SpotlightOverlay({
                           className="flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.07] px-3 py-2"
                         >
                           <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-400/70" />
-                          <span className="text-[11px] text-emerald-400/70">Step complete — continue when ready</span>
+                          <span className="text-[11px] text-emerald-400/70">
+                            Step complete — continue when ready
+                          </span>
                         </motion.div>
                       ) : (
                         <motion.div
@@ -243,7 +260,9 @@ export function SpotlightOverlay({
                           className="flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/[0.06] px-3 py-2"
                         >
                           <MousePointerClick className="mt-px h-3 w-3 shrink-0 text-primary/50" />
-                          <span className="text-[11px] leading-relaxed text-primary/70">{task}</span>
+                          <span className="text-[11px] leading-relaxed text-primary/70">
+                            {task}
+                          </span>
                         </motion.div>
                       )}
                     </AnimatePresence>
