@@ -99,7 +99,7 @@ describe("graphIO", () => {
           id: "smtp-1",
           type: "smtp",
           position: { x: 0, y: 0 },
-          data: { credential: { id: "cred-1" }, label: "SMTP" },
+          data: { credential: { id: "cred-1" }, webhookGuid: "hook-guid", label: "SMTP" },
         },
       ],
       edges: [
