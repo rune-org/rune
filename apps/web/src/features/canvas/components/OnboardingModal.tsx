@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -156,34 +157,6 @@ const EXAMPLE_WORKFLOW_JSON = JSON.stringify({
   ],
 });
 
-function useTheme(): "dark" | "light" {
-  const [isDark, setIsDark] = useState(true);
-  useEffect(() => {
-    const check = () => {
-      const cl = document.documentElement.classList;
-      if (cl.contains("dark")) {
-        setIsDark(true);
-        return;
-      }
-      if (cl.contains("light")) {
-        setIsDark(false);
-        return;
-      }
-      setIsDark(window.matchMedia("(prefers-color-scheme: dark)").matches);
-    };
-    check();
-    const mo = new MutationObserver(check);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    mq.addEventListener("change", check);
-    return () => {
-      mo.disconnect();
-      mq.removeEventListener("change", check);
-    };
-  }, []);
-  return isDark ? "dark" : "light";
-}
-
 const CAROUSEL_STEPS = TOUR_STEPS.filter((s) => s.showInCarousel !== false);
 const TOTAL_PAGES = 1 + CAROUSEL_STEPS.length;
 
@@ -214,7 +187,8 @@ export function OnboardingModal({
 
   const [page, setPage] = useState(0);
   const [dir, setDir] = useState(1);
-  const theme = useTheme();
+  const { resolvedTheme } = useTheme();
+  const theme = resolvedTheme === "light" ? "light" : "dark";
 
   useEffect(() => {
     if (open && isWelcome) setPage(0);
