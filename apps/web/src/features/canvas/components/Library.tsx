@@ -147,6 +147,7 @@ export function Library({
       {/* Sliding library panel */}
       <div
         ref={panelRef}
+        data-onboarding="library"
         className="pointer-events-auto absolute flex flex-col overflow-visible rounded-(--radius) border border-border/60 bg-card/90 shadow-xl"
         style={{
           top: top,

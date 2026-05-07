@@ -50,6 +50,8 @@ import { ExecutionProvider, useExecution } from "./context/ExecutionContext";
 import { GraphProvider } from "./context/GraphContext";
 import { SmithChatDrawer } from "@/features/smith/SmithChatDrawer";
 import { useCredentialEvents } from "@/hooks/useCredentialEvents";
+import { useOnboarding } from "./hooks/useOnboarding";
+import { OnboardingModal } from "./components/OnboardingModal";
 
 type FlowCanvasProps = {
   externalNodes?: CanvasNode[];
@@ -137,11 +139,27 @@ function FlowCanvasInner({
   // Connect for instant updates on shared/deleted credentials
   useCredentialEvents();
 
+  const {
+    isOpen: isOnboardingOpen,
+    step: onboardingStep,
+    setStep: setOnboardingStep,
+    open: openOnboarding,
+    close: closeOnboarding,
+  } = useOnboarding();
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rfInstanceRef = useRef<ReactFlowInstance<CanvasNode, Edge> | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
+
+  const [hasClickedSaveDuringTour, setHasClickedSaveDuringTour] = useState(false);
+  const [hasClickedRunDuringTour, setHasClickedRunDuringTour] = useState(false);
+  const tourBaselineRef = useRef<{ nodes: number; edges: number; nodeIds: Set<string> } | null>(
+    null,
+  );
+  const onboardingStateRef = useRef({ isOpen: isOnboardingOpen, step: onboardingStep });
+  const prevOnboardingStepRef = useRef(onboardingStep);
   const mousePosRef = useRef<{ x: number; y: number } | null>(null);
 
   const {
@@ -155,6 +173,53 @@ function FlowCanvasInner({
     nodesRef.current = nodes;
     edgesRef.current = edges;
   }, [nodes, edges]);
+
+  useEffect(() => {
+    onboardingStateRef.current = { isOpen: isOnboardingOpen, step: onboardingStep };
+  }, [isOnboardingOpen, onboardingStep]);
+
+  useEffect(() => {
+    if (isOnboardingOpen && onboardingStep === 1 && prevOnboardingStepRef.current < 1) {
+      tourBaselineRef.current = {
+        nodes: nodesRef.current.length,
+        edges: edgesRef.current.length,
+        nodeIds: new Set(nodesRef.current.map((n) => n.id)),
+      };
+      setHasClickedSaveDuringTour(false);
+      setHasClickedRunDuringTour(false);
+    }
+    prevOnboardingStepRef.current = onboardingStep;
+  }, [isOnboardingOpen, onboardingStep]);
+
+  const stepCompleted = useMemo(() => {
+    if (!isOnboardingOpen) return true;
+    const baseline = tourBaselineRef.current ?? { nodes: 0, edges: 0, nodeIds: new Set<string>() };
+    switch (onboardingStep) {
+      case 1:
+        return nodes.some((n) => n.type === "trigger" && !baseline.nodeIds.has(n.id));
+      case 2:
+        return (
+          nodes.some((n) => n.type !== "trigger" && !baseline.nodeIds.has(n.id)) &&
+          edges.length > baseline.edges
+        );
+      case 3:
+        return selectedNodeId !== null;
+      case 4:
+        return hasClickedSaveDuringTour;
+      case 5:
+        return hasClickedRunDuringTour;
+      default:
+        return true;
+    }
+  }, [
+    isOnboardingOpen,
+    onboardingStep,
+    nodes,
+    edges.length,
+    selectedNodeId,
+    hasClickedSaveDuringTour,
+    hasClickedRunDuringTour,
+  ]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -304,6 +369,9 @@ function FlowCanvasInner({
   });
 
   const persistGraph = useCallback(() => {
+    if (onboardingStateRef.current.isOpen && onboardingStateRef.current.step === 4) {
+      setHasClickedSaveDuringTour(true);
+    }
     if (!onPersist) return;
     return onPersist({
       nodes: nodesRef.current,
@@ -353,6 +421,18 @@ function FlowCanvasInner({
       setEdges(state.edges);
     }
   }, [redo, setNodes, setEdges]);
+
+  const handleCreateExample = useCallback(
+    (exampleNodes: CanvasNode[], exampleEdges: Edge[]) => {
+      pushHistory();
+      setNodes(exampleNodes);
+      setEdges(exampleEdges);
+      setTimeout(() => {
+        rfInstanceRef.current?.fitView({ padding: 0.2 });
+      }, 100);
+    },
+    [pushHistory, setNodes, setEdges],
+  );
 
   const performDelete = useCallback(
     (nodeIds: Set<string>, edgeIds: Set<string>, clearNames?: Set<string>) => {
@@ -537,7 +617,10 @@ function FlowCanvasInner({
         return;
       }
     }
-    void startExecution(versionIdToRun);
+    const didStart = await startExecution(versionIdToRun);
+    if (didStart && onboardingStateRef.current.isOpen && onboardingStateRef.current.step === 5) {
+      setHasClickedRunDuringTour(true);
+    }
   }, [isViewingSnapshot, onPersist, resetExecution, startExecution, workflowId]);
 
   useCanvasShortcuts({
@@ -578,6 +661,7 @@ function FlowCanvasInner({
       <div
         ref={containerRef}
         data-canvas-dragging="false"
+        data-onboarding="canvas"
         className="relative h-full w-full overflow-hidden"
       >
         <FlowViewport
@@ -600,7 +684,11 @@ function FlowCanvasInner({
         />
 
         <div className="pointer-events-none absolute left-4 top-4 z-35">
-          <div ref={toolbarRef} className="pointer-events-auto flex items-center gap-2">
+          <div
+            ref={toolbarRef}
+            data-onboarding="toolbar"
+            className="pointer-events-auto flex items-center gap-2"
+          >
             <Toolbar
               onExecute={onExecute}
               executeDisabled={isViewingSnapshot}
@@ -631,6 +719,7 @@ function FlowCanvasInner({
               onViewVersion={handleViewVersion}
               viewingVersionNumber={versionSnapshot?.versionNumber}
               onExecutionUrlChange={setExecutionParam}
+              onOpenOnboarding={openOnboarding}
             />
             <SmithButton
               onClick={openSmith}
@@ -641,7 +730,6 @@ function FlowCanvasInner({
           </div>
         </div>
 
-        {/* Right Sidebar (Inspector + Scryb) */}
         <RightPanelStack
           selectedNode={selectedNode}
           updateSelectedNodeLabel={updateSelectedNodeLabel}
@@ -671,7 +759,6 @@ function FlowCanvasInner({
           />
         )}
 
-        {/* Hidden file input for importing JSON files */}
         <input
           ref={fileInputRef}
           type="file"
@@ -680,21 +767,18 @@ function FlowCanvasInner({
           className="hidden"
         />
 
-        {/* Save as Template dialog */}
         <SaveTemplateDialog
           open={isSaveTemplateOpen}
           onOpenChange={setIsSaveTemplateOpen}
           workflowData={{ nodes, edges }}
         />
 
-        {/* Import from Templates dialog */}
         <ImportTemplateDialog
           open={isImportTemplateOpen}
           onOpenChange={setIsImportTemplateOpen}
           onSelect={handleTemplateSelect}
         />
 
-        {/* Save Version with Message dialog */}
         <SaveVersionDialog
           open={saveVersionDialogOpen}
           onOpenChange={setSaveVersionDialogOpen}
@@ -702,7 +786,6 @@ function FlowCanvasInner({
           isSaving={saveDisabled}
         />
 
-        {/* Version Conflict dialog */}
         {conflictData && onConflictLoadServer && onConflictForceSave && onConflictCancel && (
           <VersionConflictDialog
             open={!!conflictData}
@@ -744,6 +827,15 @@ function FlowCanvasInner({
             onChoice={handleDeleteChoice}
           />
         )}
+
+        <OnboardingModal
+          open={isOnboardingOpen}
+          step={onboardingStep}
+          onStepChange={setOnboardingStep}
+          onClose={closeOnboarding}
+          onCreateExample={handleCreateExample}
+          stepCompleted={stepCompleted}
+        />
       </div>
     </GraphProvider>
   );
