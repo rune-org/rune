@@ -73,6 +73,42 @@ describe("executionConversion", () => {
     );
   });
 
+  it("extractGraphSnapshot applies auto-layout when stored node positions are missing", () => {
+    const snapshot = extractGraphSnapshot({
+      execution_id: "exec-no-positions",
+      workflow_id: "13",
+      nodes: {
+        trigger: {
+          name: "Manual Trigger",
+          type: "ManualTrigger",
+          latest: { status: "success" },
+        },
+        http: {
+          name: "Call API",
+          type: "http",
+          latest: { status: "success" },
+        },
+        log: {
+          name: "Log output",
+          type: "log",
+          latest: { status: "success" },
+        },
+      },
+      edges: [
+        { id: "edge-1", src: "trigger", dst: "http" },
+        { id: "edge-2", src: "http", dst: "log" },
+      ],
+    });
+
+    expect(snapshot).toBeDefined();
+    expect(snapshot?.nodes.map((node) => node.id)).toEqual(["trigger", "http", "log"]);
+    expect(snapshot?.nodes.every((node) => Number.isFinite(node.position.x))).toBe(true);
+    expect(snapshot?.nodes.every((node) => Number.isFinite(node.position.y))).toBe(true);
+    expect(snapshot?.nodes.some((node) => node.position.x !== 100 || node.position.y !== 100)).toBe(
+      true,
+    );
+  });
+
   it("maps realistic mixed execution outcomes to frontend state", () => {
     const state = rtesDocToExecutionState({
       execution_id: "exec-42",
