@@ -23,9 +23,7 @@ describe("workflow permissions", () => {
       ["delete", canDeleteWorkflow(role, isAdmin)],
     ] as const;
 
-    return actions
-      .filter(([, allowed]) => allowed)
-      .map(([action]) => action);
+    return actions.filter(([, allowed]) => allowed).map(([action]) => action);
   }
 
   it("viewer can only access read-only workflow actions", () => {

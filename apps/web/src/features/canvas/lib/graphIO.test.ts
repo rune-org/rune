@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { sanitizeGraph, stringifyGraph, stripExecutionStyling, tryParseGraphFromText } from "./graphIO";
+import {
+  sanitizeGraph,
+  stringifyGraph,
+  stripExecutionStyling,
+  tryParseGraphFromText,
+} from "./graphIO";
 import { SWITCH_FALLBACK_HANDLE_ID } from "../utils/switchHandles";
 
 describe("graphIO", () => {
@@ -21,7 +26,12 @@ describe("graphIO", () => {
           { id: "e-2", source: "if-1", target: "switch-1", sourceHandle: "true" },
           { id: "e-3", source: "if-1", target: "log-fail", sourceHandle: "false" },
           { id: "e-4", source: "switch-1", target: "log-ok", label: "case 1" },
-          { id: "e-5", source: "switch-1", target: "log-fail", sourceHandle: SWITCH_FALLBACK_HANDLE_ID },
+          {
+            id: "e-5",
+            source: "switch-1",
+            target: "log-fail",
+            sourceHandle: SWITCH_FALLBACK_HANDLE_ID,
+          },
           { id: "e-6", source: "switch-1", target: "unsafe-node", sourceHandle: "switch-case-1" },
           { id: "e-7", source: "ghost", target: "log-ok" },
           { id: null, source: "if-1", target: "log-ok" },

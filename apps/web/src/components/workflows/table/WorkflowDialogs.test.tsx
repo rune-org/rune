@@ -74,7 +74,9 @@ describe("WorkflowsDialogs", () => {
 
     expect(screen.getByText("Delete selected workflows")).toBeInTheDocument();
     expect(
-      screen.getByText(/2 selected workflows are skipped because you do not have delete permission/i),
+      screen.getByText(
+        /2 selected workflows are skipped because you do not have delete permission/i,
+      ),
     ).toBeInTheDocument();
   });
 });

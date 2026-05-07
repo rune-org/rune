@@ -47,7 +47,9 @@ describe("ExecutionStatusBar", () => {
     );
 
     expect(screen.getByText("Reconnecting...")).toBeInTheDocument();
-    expect(screen.getByLabelText("2 of 3 nodes completed, 1 currently running")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("2 of 3 nodes completed, 1 currently running"),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Execution ID: exec-abcdef123")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Dismiss live execution status" }));
