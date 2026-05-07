@@ -2,16 +2,11 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 
 import { act, fireEvent, render, screen } from "@/test/render";
-import type { ExecutionState } from "../types/execution";
+import { initialExecutionState, type ExecutionState } from "../types/execution";
 import { ExecutionStatusBar } from "./ExecutionStatusBar";
 
 const executionState = vi.hoisted(() => ({
-  state: {
-    executionId: null,
-    workflowId: null,
-    status: "idle",
-    nodes: new Map(),
-  } as ExecutionState,
+  state: initialExecutionState,
 }));
 
 vi.mock("../context/ExecutionContext", () => ({
@@ -28,6 +23,7 @@ describe("ExecutionStatusBar", () => {
     const user = userEvent.setup();
 
     executionState.state = {
+      ...initialExecutionState,
       executionId: "exec-abcdef123",
       workflowId: 12,
       status: "running",
@@ -60,6 +56,7 @@ describe("ExecutionStatusBar", () => {
     vi.useFakeTimers();
 
     executionState.state = {
+      ...initialExecutionState,
       executionId: "exec-done",
       workflowId: 12,
       status: "completed",
@@ -81,6 +78,7 @@ describe("ExecutionStatusBar", () => {
     vi.useFakeTimers();
 
     executionState.state = {
+      ...initialExecutionState,
       executionId: "exec-fail",
       workflowId: 12,
       status: "failed",
@@ -104,6 +102,7 @@ describe("ExecutionStatusBar", () => {
     const user = userEvent.setup();
 
     executionState.state = {
+      ...initialExecutionState,
       executionId: "exec-live-fallback",
       workflowId: 12,
       status: "running",
@@ -127,6 +126,7 @@ describe("ExecutionStatusBar", () => {
     vi.useFakeTimers();
 
     executionState.state = {
+      ...initialExecutionState,
       executionId: "exec-halted",
       workflowId: 12,
       status: "halted",

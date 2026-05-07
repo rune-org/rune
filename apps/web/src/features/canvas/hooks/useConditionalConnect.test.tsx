@@ -17,17 +17,29 @@ describe("useConditionalConnect", () => {
       edges.splice(0, edges.length, ...(next as Edge[]));
     });
 
-    let onConnect: ReturnType<typeof useConditionalConnect> | null = null;
+    const onConnect = { current: null as ReturnType<typeof useConditionalConnect> | null };
     function Harness() {
-      onConnect = useConditionalConnect(setEdges);
+      onConnect.current = useConditionalConnect(setEdges);
       return null;
     }
 
     render(<Harness />);
 
-    onConnect?.({ source: "if", target: "ok", sourceHandle: "true" });
-    onConnect?.({ source: "switch", target: "fallback", sourceHandle: SWITCH_FALLBACK_HANDLE_ID });
-    onConnect?.({ source: "switch", target: "case", sourceHandle: "switch-case-0" });
+    const connect = onConnect.current;
+    if (!connect) throw new Error("useConditionalConnect did not return a callback");
+    connect({ source: "if", target: "ok", sourceHandle: "true", targetHandle: null });
+    connect({
+      source: "switch",
+      target: "fallback",
+      sourceHandle: SWITCH_FALLBACK_HANDLE_ID,
+      targetHandle: null,
+    });
+    connect({
+      source: "switch",
+      target: "case",
+      sourceHandle: "switch-case-0",
+      targetHandle: null,
+    });
 
     expect(edges).toHaveLength(3);
     expect(edges[0]).toEqual(
@@ -64,14 +76,16 @@ describe("useConditionalConnect", () => {
       edges.splice(0, edges.length, ...(next as Edge[]));
     });
 
-    let onConnect: ReturnType<typeof useConditionalConnect> | null = null;
+    const onConnect = { current: null as ReturnType<typeof useConditionalConnect> | null };
     function Harness() {
-      onConnect = useConditionalConnect(setEdges);
+      onConnect.current = useConditionalConnect(setEdges);
       return null;
     }
 
     render(<Harness />);
-    onConnect?.({ source: "trigger", target: "log" });
+    const connect = onConnect.current;
+    if (!connect) throw new Error("useConditionalConnect did not return a callback");
+    connect({ source: "trigger", target: "log", sourceHandle: null, targetHandle: null });
 
     expect(edges).toHaveLength(1);
     expect(edges[0]).toEqual(

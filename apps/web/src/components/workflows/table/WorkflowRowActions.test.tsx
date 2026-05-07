@@ -17,6 +17,7 @@ function makeWorkflow(role: WorkflowSummary["role"]): WorkflowSummary {
     lastRunStatus: "n/a",
     runs: 0,
     role,
+    ownerName: "Me",
   };
 }
 
