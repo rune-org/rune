@@ -8,17 +8,19 @@ import { sanitizeNodeLabel } from "../utils/nodeLabels";
 import type { Edge, ReactFlowInstance } from "@xyflow/react";
 
 // Helper function to calculate the node's position.
-function calculateNodePosition(
+export function calculateNodePosition(
   rfInstance: ReactFlowInstance<CanvasNode, Edge> | null,
   container: HTMLDivElement | null,
   clientX?: number,
   clientY?: number,
 ) {
-  if (container && rfInstance && typeof clientX === "number" && typeof clientY === "number") {
+  if (container && rfInstance) {
     const rect = container.getBoundingClientRect();
+    const x = typeof clientX === "number" ? clientX - rect.left : rect.width / 2;
+    const y = typeof clientY === "number" ? clientY - rect.top : rect.height / 2;
     const position = rfInstance.screenToFlowPosition({
-      x: clientX - rect.left,
-      y: clientY - rect.top,
+      x,
+      y,
     });
     return position;
   }
