@@ -11,6 +11,7 @@ import {
   type SwitchRule,
   type SmtpData,
   type ScheduledTriggerData,
+  type WebhookTriggerData,
   type WaitData,
   type LogData,
   type DateTimeNowData,
@@ -27,7 +28,16 @@ import {
   type SplitData,
   type AggregatorData,
   type MergeData,
+  type AgentData,
 } from "@/features/canvas/types";
+import {
+  hydrateAgentMessages,
+  hydrateAgentTools,
+  stripAgentMessageUiId,
+  stripAgentToolUiId,
+} from "@/features/canvas/lib/agentDataNormalization";
+import type { IntegrationNodeData } from "@/features/canvas/integrations/types";
+import { isIntegrationNodeKind } from "@/features/canvas/integrations/helpers";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
 import type { CredentialRef } from "@/lib/credentials";
 import {
@@ -43,6 +53,7 @@ export interface WorkflowNode<Params = Record<string, unknown>> {
   name: string;
   trigger: boolean;
   type: string;
+  webhook_guid?: string;
   parameters: Params;
   credentials?: CredentialRef;
   output: Record<string, unknown>;
@@ -75,6 +86,8 @@ function toWorkerType(canvasType: string): string {
       return "ManualTrigger";
     case "scheduledTrigger":
       return "ScheduledTrigger";
+    case "webhookTrigger":
+      return "webhook";
     case "if":
       return "conditional";
     case "switch":
@@ -127,6 +140,7 @@ function nodeName(n: CanvasNode): string {
 
 // Helper to convert comma-separated email string to array
 function emailStringToArray(value: string | undefined): string[] | string | undefined {
+  if (isLegacySmtpPlaceholder(value)) return undefined;
   if (!value || !value.trim()) return undefined;
   const emails = value
     .split(",")
@@ -146,8 +160,26 @@ function emailArrayToString(value: unknown): string | undefined {
   return undefined;
 }
 
+export const LEGACY_SMTP_PLACEHOLDER_VALUES = new Set([
+  "sender@example.com",
+  "recipient@example.com",
+  "cc@example.com",
+  "bcc@example.com",
+  "Email subject line",
+  "Email message body",
+]);
+
+export function isLegacySmtpPlaceholder(value: unknown): boolean {
+  return typeof value === "string" && LEGACY_SMTP_PLACEHOLDER_VALUES.has(value.trim());
+}
+
 // Build parameter objects for supported node types
 function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unknown> {
+  if (isIntegrationNodeKind(n.type)) {
+    const d = (n.data || {}) as IntegrationNodeData;
+    return d.arguments ?? {};
+  }
+
   switch (n.type) {
     case "http": {
       /** Pre–snake_case canvas fields (still serialize if present). */
@@ -262,12 +294,12 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
     case "smtp": {
       const d = (n.data || {}) as SmtpData;
       const params: Record<string, unknown> = {};
-      if (d.from) params.from = String(d.from);
+      if (d.from && !isLegacySmtpPlaceholder(d.from)) params.from = String(d.from);
       if (d.to) params.to = emailStringToArray(d.to);
       if (d.cc) params.cc = emailStringToArray(d.cc);
       if (d.bcc) params.bcc = emailStringToArray(d.bcc);
-      if (d.subject) params.subject = String(d.subject);
-      if (d.body) params.body = String(d.body);
+      if (d.subject && !isLegacySmtpPlaceholder(d.subject)) params.subject = String(d.subject);
+      if (d.body && !isLegacySmtpPlaceholder(d.body)) params.body = String(d.body);
       return params;
     }
     case "wait": {
@@ -399,6 +431,24 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       const params: Record<string, unknown> = {};
       if (d.wait_mode) params.wait_mode = String(d.wait_mode);
       if (typeof d.timeout !== "undefined") params.timeout = Number(d.timeout);
+      return params;
+    }
+    case "agent": {
+      const d = (n.data || {}) as AgentData;
+      const params: Record<string, unknown> = {};
+      if (d.model) params.model = d.model;
+      if (typeof d.system_prompt === "string" && d.system_prompt.length > 0) {
+        params.system_prompt = d.system_prompt;
+      }
+      if (Array.isArray(d.messages) && d.messages.length > 0) {
+        params.messages = d.messages.map(stripAgentMessageUiId);
+      }
+      if (Array.isArray(d.tools) && d.tools.length > 0) {
+        params.tools = d.tools.map(stripAgentToolUiId);
+      }
+      if (Array.isArray(d.mcp_servers) && d.mcp_servers.length > 0) {
+        params.mcp_servers = d.mcp_servers;
+      }
       return params;
     }
     default:
@@ -534,6 +584,19 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
         : [],
     };
     return switchData;
+  },
+  agent: (base, params) => {
+    const agentData: AgentData = {
+      ...base,
+      model: (params.model as AgentData["model"]) ?? undefined,
+      system_prompt: typeof params.system_prompt === "string" ? params.system_prompt : undefined,
+      messages: hydrateAgentMessages(params.messages),
+      tools: hydrateAgentTools(params.tools),
+      mcp_servers: Array.isArray(params.mcp_servers)
+        ? (params.mcp_servers as AgentData["mcp_servers"])
+        : undefined,
+    };
+    return agentData;
   },
   smtp: (base, params) => {
     const smtpData: SmtpData = {
@@ -779,11 +842,15 @@ export function canvasToWorkflowData(
       missingCredentials.push({ id: n.id, type: n.type });
     }
 
+    const webhookGuid =
+      n.type === "webhookTrigger" ? (n.data as WebhookTriggerData).webhookGuid : undefined;
+
     return {
       id: n.id,
       name: nodeName(n),
-      trigger: n.type === "trigger" || n.type === "scheduledTrigger",
+      trigger: n.type === "trigger" || n.type === "scheduledTrigger" || n.type === "webhookTrigger",
       type: toWorkerType(n.type), // store canonical type to simplify future use
+      ...(webhookGuid ? { webhook_guid: webhookGuid } : {}),
       parameters: toWorkerParameters(n, edges),
       output: {},
       position: [n.position.x, n.position.y],
@@ -820,13 +887,42 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
           ? "trigger"
           : n.type === "ScheduledTrigger"
             ? "scheduledTrigger"
-            : n.type;
+            : n.type === "webhook"
+              ? "webhookTrigger"
+              : n.type;
     const credentials = n.credentials ? { ...n.credentials } : undefined;
     const baseData = {
       label: sanitizeNodeLabel(n.name, "Node"),
       ...(credentials ? { credential: credentials } : {}),
     } as CanvasNode["data"];
     const params = (n.parameters ?? {}) as Record<string, unknown>;
+    if (canvasType === "webhookTrigger") {
+      return {
+        id: n.id,
+        type: "webhookTrigger",
+        position: { x, y },
+        data: {
+          ...baseData,
+          ...(typeof n.webhook_guid === "string" ? { webhookGuid: n.webhook_guid } : {}),
+        },
+      } as CanvasNode;
+    }
+
+    if (isIntegrationNodeKind(canvasType)) {
+      const dataForNode: IntegrationNodeData = {
+        ...baseData,
+        integrationKind: canvasType,
+        arguments: params,
+      };
+
+      return {
+        id: n.id,
+        type: canvasType,
+        position: { x, y },
+        data: dataForNode,
+      } as CanvasNode;
+    }
+
     const hydrateDataForNode = Object.hasOwn(nodeHydrators, canvasType)
       ? (nodeHydrators[canvasType as CanvasNode["type"]] ?? identityNodeHydrator)
       : identityNodeHydrator;
@@ -886,9 +982,24 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
 // ————————————————————————————————————————————————————————————————
 
 /**
- * Strips credential references from workflow_data nodes for safe export.
+ * Strips credential references and webhook GUIDs from workflow_data nodes for safe export.
  * Returns nodes and edges at top level; does not convert DSL to canvas shape.
  */
+function stripNestedCredentialRefs(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stripNestedCredentialRefs);
+  }
+
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const { credential: _credential, ...rest } = value as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(rest).map(([key, child]) => [key, stripNestedCredentialRefs(child)]),
+  );
+}
+
 export function stripCredentialsFromWorkflowData(workflowData: {
   nodes?: Array<Record<string, unknown>>;
   edges?: unknown[];
@@ -899,8 +1010,8 @@ export function stripCredentialsFromWorkflowData(workflowData: {
     return { nodes: [], edges };
   }
   const sanitizedNodes = nodes.map((node) => {
-    const { credentials: _omit, ...rest } = node;
-    return rest;
+    const { credentials: _credentials, webhook_guid: _webhookGuid, ...rest } = node;
+    return stripNestedCredentialRefs(rest) as Record<string, unknown>;
   });
   return { nodes: sanitizedNodes, edges };
 }

@@ -470,6 +470,7 @@ class DSLGenerator:
             "id": node_def["fields"]["id"],
             "name": node_def["fields"]["name"],
             "trigger": node_def["fields"]["trigger"],
+            "webhook_guid": node_def["fields"]["webhook_guid"],
             "output": node_def["fields"]["output"],
             "error": node_def["fields"]["error"],
             "credential_type": {
@@ -624,6 +625,7 @@ class DSLGenerator:
             "id": node_def["fields"]["id"],
             "name": node_def["fields"]["name"],
             "trigger": node_def["fields"]["trigger"],
+            "webhook_guid": node_def["fields"]["webhook_guid"],
             "output": node_def["fields"]["output"],
             "error": node_def["fields"]["error"],
             "credential_type": {

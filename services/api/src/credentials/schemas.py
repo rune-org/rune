@@ -67,6 +67,10 @@ class CredentialResponse(BaseModel):
     created_by: Optional[int]
     created_at: datetime
     updated_at: datetime
+    oauth_connected: Optional[bool] = Field(
+        default=None,
+        description="For oauth2 credentials, whether an access token is stored (no secrets).",
+    )
     is_owner: bool = Field(
         default=False,
         description="Whether current user is the owner of this credential",

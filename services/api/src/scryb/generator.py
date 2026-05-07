@@ -1,58 +1,43 @@
+import json
 import os
-from typing import Any, Literal
+from typing import Any
 
-import dspy
 from dotenv import load_dotenv
+from litellm import acompletion
 
 from src.core.config import get_settings
 from src.scryb.serializer import WorkflowSerializer
 
 
-class WorkflowDocumentation(dspy.Signature):
-    """
-    Generates documentation for the workflow based on its JSON definition
-    and a specific target audience.
-    """
-
-    workflow_json: dict[str, Any] = dspy.InputField(
-        desc="The raw JSON domain-specific language of the workflow."
-    )
-    target_audience: Literal["Technical Developer", "Executive Summary"] = (
-        dspy.InputField(desc="The persona to write for.")
-    )
-
-    report = dspy.OutputField(
-        desc="The generated documentation report in Markdown format."
-    )
-
-
 class DocumentationGenerator:
-    _bot = None
+    _prompt: str | None = None
+    _model: str | None = None
 
     def __init__(self):
-        if DocumentationGenerator._bot is None:
-            self._setup_dspy()
+        if DocumentationGenerator._model is None:
+            self._setup_llm()
+        if DocumentationGenerator._prompt is None:
             self._load_prompt()
 
-    def _setup_dspy(self):
+    def _setup_llm(self):
         load_dotenv()
         settings = get_settings()
-        # Use Google AI Studio (Gemini)
-        # Expects GOOGLE_API_KEY in environment variables
-        lm = dspy.LM(
-            settings.scryb_model,
-        )
-        dspy.configure(lm=lm)
+        DocumentationGenerator._model = settings.scryb_model
 
     def _load_prompt(self):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         prompt_path = os.path.join(current_dir, "gemini-flash-lite.json")
 
-        bot = dspy.ChainOfThought(WorkflowDocumentation)
+        prompt = (
+            "Generate workflow documentation in Markdown for the requested "
+            "target audience. Return only the documentation report."
+        )
         if os.path.exists(prompt_path):
-            bot.load(prompt_path)
+            with open(prompt_path, encoding="utf-8") as prompt_file:
+                saved_prompt = json.load(prompt_file)
+            prompt = saved_prompt["predict"]["signature"]["instructions"]
 
-        DocumentationGenerator._bot = bot
+        DocumentationGenerator._prompt = prompt
 
     async def generate(
         self, workflow_data: dict[str, Any], target_audience: str
@@ -61,7 +46,29 @@ class DocumentationGenerator:
         sir_workflow = serializer.serialize()
         serialized_data = sir_workflow.model_dump()
 
-        prediction = await DocumentationGenerator._bot.acall(
-            workflow_json=serialized_data, target_audience=target_audience
+        model = DocumentationGenerator._model
+        prompt = DocumentationGenerator._prompt
+        if model is None or prompt is None:
+            raise RuntimeError("Documentation generator was not initialized")
+
+        response = await acompletion(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": prompt,
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "target_audience": target_audience,
+                            "workflow_json": serialized_data,
+                        },
+                        default=str,
+                    ),
+                },
+            ],
         )
-        return prediction.report
+        content = response.choices[0].message.content
+        return content or ""

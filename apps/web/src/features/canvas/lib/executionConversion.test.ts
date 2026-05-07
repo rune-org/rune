@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { extractGraphSnapshot, rtesDocToExecutionState } from "./executionConversion";
+import { nodeExecutionInstanceKey } from "../types/execution";
 
 describe("executionConversion", () => {
   it("extractGraphSnapshot returns undefined when execution has no nodes", () => {
@@ -71,6 +72,33 @@ describe("executionConversion", () => {
         expect.objectContaining({ id: "edge-3", sourceHandle: "false", label: "false" }),
       ]),
     );
+  });
+
+  it("extractGraphSnapshot preserves webhook GUIDs in historical graph snapshots", () => {
+    const snapshot = extractGraphSnapshot({
+      execution_id: "exec-webhook",
+      workflow_id: "7",
+      nodes: {
+        "webhook-1": {
+          position: [10, 20],
+          name: "Webhook",
+          type: "webhook",
+          trigger: true,
+          webhook_guid: "hook-guid",
+          latest: { status: "success" },
+        },
+      },
+      edges: [],
+    });
+
+    expect(snapshot?.nodes).toEqual([
+      expect.objectContaining({
+        id: "webhook-1",
+        type: "webhookTrigger",
+        position: { x: 10, y: 20 },
+        data: expect.objectContaining({ webhookGuid: "hook-guid" }),
+      }),
+    ]);
   });
 
   it("extractGraphSnapshot applies auto-layout when stored node positions are missing", () => {
@@ -179,11 +207,25 @@ describe("executionConversion", () => {
       executedAt: "2026-03-29T12:00:01Z",
       durationMs: 20,
     });
+    expect(state.nodeExecutions.get("trigger")).toEqual([
+      expect.objectContaining({
+        nodeId: "trigger",
+        status: "success",
+        output: { ok: true },
+        error: undefined,
+        executedAt: "2026-03-29T12:00:01Z",
+        durationMs: 20,
+        lineageHash: undefined,
+        branchId: undefined,
+        itemIndex: undefined,
+        totalItems: undefined,
+      }),
+    ]);
     expect(state.nodes.get("http")).toEqual({
       nodeId: "http",
       status: "failed",
       output: { statusCode: 500 },
-      error: { message: "Upstream timeout", code: "HTTP_TIMEOUT" },
+      error: { message: "Upstream timeout", code: "HTTP_TIMEOUT", details: undefined },
       executedAt: "2026-03-29T12:00:02Z",
       durationMs: 153,
     });
@@ -234,6 +276,87 @@ describe("executionConversion", () => {
     expect(state.nodes.get("done")?.status).toBe("success");
     expect(state.nodes.get("waiting")?.status).toBe("waiting");
     expect(state.nodes.get("unknown")?.status).toBe("idle");
-    expect(state.graphSnapshot?.nodes.map((node) => node.id)).toEqual(["done", "waiting", "unknown"]);
+    expect(state.graphSnapshot?.nodes.map((node) => node.id)).toEqual([
+      "done",
+      "waiting",
+      "unknown",
+    ]);
+  });
+
+  it("preserves split lineage executions for per-item runtime data", () => {
+    const state = rtesDocToExecutionState({
+      execution_id: "exec-44",
+      workflow_id: "12",
+      status: "completed",
+      nodes: {
+        "log-1": {
+          position: [0, 0],
+          type: "log",
+          latest: {
+            status: "completed",
+            output: { item: 1 },
+            item_index: 1,
+            total_items: 2,
+          },
+          lineages: {
+            branch0: {
+              status: "completed",
+              input: { id: 0 },
+              output: { item: 0 },
+              lineage_hash: "branch0",
+              branch_id: "exec_split_0",
+              item_index: 0,
+              total_items: 2,
+            },
+            branch1: {
+              status: "completed",
+              input: { id: 1 },
+              output: { item: 1 },
+              lineage_hash: "branch1",
+              branch_id: "exec_split_1",
+              item_index: 1,
+              total_items: 2,
+            },
+          },
+        },
+      },
+      edges: [],
+    });
+
+    expect(state.nodes.get("log-1")?.output).toEqual({ item: 1 });
+    expect(state.nodeExecutions.get("log-1")?.map((execution) => execution.output)).toEqual([
+      { item: 0 },
+      { item: 1 },
+    ]);
+  });
+
+  it("produces the same instance key for historical and live split executions", () => {
+    const state = rtesDocToExecutionState({
+      execution_id: "exec-45",
+      workflow_id: "12",
+      status: "completed",
+      nodes: {
+        "log-1": {
+          position: [0, 0],
+          type: "log",
+          latest: { status: "completed", output: { item: 2 } },
+          lineages: {
+            branch2: {
+              status: "completed",
+              output: { item: 2 },
+              split_node_id: "split-1",
+              branch_id: "exec_split_2",
+              item_index: 2,
+              total_items: 3,
+            },
+          },
+        },
+      },
+      edges: [],
+    });
+
+    const historicalExecution = state.nodeExecutions.get("log-1")?.[0];
+    expect(historicalExecution).toBeDefined();
+    expect(nodeExecutionInstanceKey(historicalExecution!)).toBe("stack:split-1:2");
   });
 });

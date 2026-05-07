@@ -59,7 +59,7 @@ describe("graphIO", () => {
           id: "smtp-1",
           type: "smtp",
           position: { x: 0, y: 0 },
-          data: { credential: { id: "cred-1" }, label: "SMTP" },
+          data: { credential: { id: "cred-1" }, webhookGuid: "hook-guid", label: "SMTP" },
         },
       ],
       edges: [
@@ -125,12 +125,28 @@ describe("graphIO", () => {
     expect(
       tryParseGraphFromText(
         JSON.stringify({
-          nodes: [{ id: "trigger-1", type: "trigger", position: { x: 0, y: 0 }, data: {} }],
+          nodes: [
+            { id: "trigger-1", type: "trigger", position: { x: 0, y: 0 }, data: {} },
+            {
+              id: "webhook-1",
+              type: "webhookTrigger",
+              position: { x: 100, y: 0 },
+              data: {},
+            },
+          ],
           edges: [],
         }),
       ),
     ).toEqual({
-      nodes: [{ id: "trigger-1", type: "trigger", position: { x: 0, y: 0 }, data: {} }],
+      nodes: [
+        { id: "trigger-1", type: "trigger", position: { x: 0, y: 0 }, data: {} },
+        {
+          id: "webhook-1",
+          type: "webhookTrigger",
+          position: { x: 100, y: 0 },
+          data: { webhookGuid: expect.any(String) },
+        },
+      ],
       edges: [],
     });
 

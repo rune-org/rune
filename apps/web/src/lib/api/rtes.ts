@@ -49,6 +49,11 @@ export interface RtesNodeExecutionInstance {
   };
   executed_at?: string;
   duration_ms?: number;
+  lineage_hash?: string | null;
+  branch_id?: string | null;
+  split_node_id?: string | null;
+  item_index?: number | null;
+  total_items?: number | null;
   node_type?: string;
   name?: string;
 }

@@ -38,6 +38,7 @@ type Node struct {
   Name string `json:"name"`  // Human-readable node name
   Trigger bool `json:"trigger"`  // Whether this node initiates workflow execution
   Type string `json:"type"`  // Node type identifier
+  WebhookGuid *string `json:"webhook_guid"`  // Stable webhook registration GUID for webhook trigger nodes
   Parameters map[string]interface{} `json:"parameters"`  // Type-specific configuration (may be empty)
   Output map[string]interface{} `json:"output"`  // Placeholder for execution output (empty in definition)
   Credentials *Credential `json:"credentials"`  // Complete credential object with values
@@ -525,6 +526,7 @@ func (n *MergeParameters) Sanitize() (bool, []string) {
 
 var MANUALTRIGGER_CREDENTIAL_TYPE []string = nil
 var SCHEDULEDTRIGGER_CREDENTIAL_TYPE []string = nil
+var WEBHOOK_CREDENTIAL_TYPE []string = nil
 var HTTP_CREDENTIAL_TYPE []string = []string{"api_key", "oauth2", "basic_auth", "header", "token"}
 var SMTP_CREDENTIAL_TYPE []string = []string{"smtp"}
 var CONDITIONAL_CREDENTIAL_TYPE []string = nil

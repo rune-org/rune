@@ -3,7 +3,8 @@
 import { ChevronLeft, ChevronsRight, GripHorizontal, Info, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { LibraryGroups } from "./LibraryGroups";
+import { LibraryGroups, type LibraryTab } from "./LibraryGroups";
+import { cn } from "@/lib/cn";
 import type { NodeKind } from "../types";
 
 export function Library({
@@ -22,6 +23,7 @@ export function Library({
   onResetShortcuts?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<LibraryTab>("runic");
   const [panelWidth, setPanelWidth] = useState(300);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -196,11 +198,37 @@ export function Library({
           </button>
         </div>
 
+        <div className="shrink-0 px-2 py-1.5 border-b border-border/40">
+          <div
+            role="tablist"
+            aria-label="Library sections"
+            className="flex rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-muted/20 p-0.5"
+          >
+            {(["runic", "integrations"] as const).map((t) => (
+              <button
+                key={t}
+                role="tab"
+                aria-selected={tab === t}
+                onClick={() => setTab(t)}
+                className={cn(
+                  "flex-1 cursor-pointer rounded-[calc(var(--radius)-0.35rem)] py-1 text-xs font-medium capitalize transition-all duration-150",
+                  tab === t
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground/70",
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Content */}
         <div className="h-full overflow-y-auto p-2">
           <LibraryGroups
             containerRef={containerRef}
             onAdd={onAdd}
+            tab={tab}
             shortcutsByKind={shortcutsByKind}
             onAssignShortcut={onAssignShortcut}
           />

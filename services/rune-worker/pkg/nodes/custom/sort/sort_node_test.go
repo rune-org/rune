@@ -87,6 +87,28 @@ func TestSortNodeScenarios(t *testing.T) {
 			},
 			wantIDs: []string{"3", "2", "1"},
 		},
+		{
+			name: "discovers single incoming http array when input array is blank",
+			parameters: map[string]any{
+				"rules": []any{map[string]any{"field": "$item.id", "direction": "desc", "type": "auto"}},
+			},
+			input: map[string]any{
+				"$HTTP": map[string]any{
+					"status": 200,
+					"body": map[string]any{
+						"posts": []any{
+							map[string]any{"id": "1"},
+							map[string]any{"id": "3"},
+							map[string]any{"id": "2"},
+						},
+						"total": 60,
+						"skip":  0,
+						"limit": 60,
+					},
+				},
+			},
+			wantIDs: []string{"3", "2", "1"},
+		},
 	}
 
 	for _, tt := range tests {
