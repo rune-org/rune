@@ -1,4 +1,4 @@
-from sqlmodel import select
+from sqlmodel import or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.exceptions import AlreadyExists, Forbidden, NotFound, Unauthorized
@@ -34,19 +34,45 @@ class UserService:
 
         return normalized_email
 
+    async def search_users(
+        self, exclude_user_id: int, search: str | None = None, limit: int = 20
+    ) -> list[User]:
+        """
+        Search active users for sharing purposes with optional filtering.
+
+        Args:
+            exclude_user_id: The ID of the current user to exclude
+            search: Optional search term to filter by name or email
+            limit: Maximum number of results to return (default: 20)
+
+        Returns:
+            List of matching active User objects
+        """
+        statement = select(User).where(
+            User.is_active,
+            User.id != exclude_user_id,
+        )
+
+        if search and search.strip():
+            like = f"%{search.strip()}%"
+            statement = statement.where(
+                or_(User.name.ilike(like), User.email.ilike(like))
+            )
+
+        statement = statement.limit(limit)
+        result = await self.db.exec(statement)
+        return result.all()
+
     async def get_all_users(self) -> list[User]:
         """
         Retrieve all users from the database.
 
         Returns:
             List of all User objects
-            [User(id=1, name="someone"...), User(id=2, name="someone2"...)]
         """
         statement = select(User)
         result = await self.db.exec(statement)
-        users = result.all()
-
-        return users
+        return result.all()
 
     async def get_user_by_id(self, user_id: int) -> User:
         """
