@@ -604,6 +604,30 @@ export type ApiResponseListCredentialShareInfo = {
 };
 
 /**
+ * ApiResponse[list[CredentialUsage]]
+ */
+export type ApiResponseListCredentialUsage = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<CredentialUsage>;
+};
+
+/**
  * ApiResponse[list[ExecutionListItem]]
  */
 export type ApiResponseListExecutionListItem = {
@@ -936,6 +960,12 @@ export type CredentialResponse = {
      */
     updated_at: string;
     /**
+     * Oauth Connected
+     *
+     * For oauth2 credentials, whether an access token is stored (no secrets).
+     */
+    oauth_connected?: boolean | null;
+    /**
      * Is Owner
      *
      * Whether current user is the owner of this credential
@@ -959,10 +989,6 @@ export type CredentialResponse = {
      * Whether current user can delete this credential
      */
     can_delete?: boolean;
-    /**
-     * For oauth2 credentials, whether an access token is stored (no secrets).
-     */
-    oauth_connected?: boolean | null;
 };
 
 /**
@@ -1061,6 +1087,26 @@ export type CredentialUpdate = {
     credential_data?: {
         [key: string]: unknown;
     } | null;
+};
+
+/**
+ * CredentialUsage
+ *
+ * Schema for reporting workflow usage of a credential.
+ */
+export type CredentialUsage = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Owner Name
+     */
+    owner_name: string;
 };
 
 /**
@@ -3602,6 +3648,36 @@ export type UpdateCredentialCredentialsCredentialIdPatchResponses = {
 
 export type UpdateCredentialCredentialsCredentialIdPatchResponse = UpdateCredentialCredentialsCredentialIdPatchResponses[keyof UpdateCredentialCredentialsCredentialIdPatchResponses];
 
+export type GetCredentialUsageCredentialsCredentialIdUsageGetData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    query?: never;
+    url: '/credentials/{credential_id}/usage';
+};
+
+export type GetCredentialUsageCredentialsCredentialIdUsageGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetCredentialUsageCredentialsCredentialIdUsageGetError = GetCredentialUsageCredentialsCredentialIdUsageGetErrors[keyof GetCredentialUsageCredentialsCredentialIdUsageGetErrors];
+
+export type GetCredentialUsageCredentialsCredentialIdUsageGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListCredentialUsage;
+};
+
+export type GetCredentialUsageCredentialsCredentialIdUsageGetResponse = GetCredentialUsageCredentialsCredentialIdUsageGetResponses[keyof GetCredentialUsageCredentialsCredentialIdUsageGetResponses];
+
 export type ShareCredentialCredentialsCredentialIdSharePostData = {
     body: CredentialShare;
     path: {
@@ -3876,3 +3952,99 @@ export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses = {
 };
 
 export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponse = RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses[keyof RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses];
+
+export type OauthAuthorizeOauthAuthorizeGetData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    url: '/oauth/authorize';
+};
+
+export type OauthAuthorizeOauthAuthorizeGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type OauthAuthorizeOauthAuthorizeGetError = OauthAuthorizeOauthAuthorizeGetErrors[keyof OauthAuthorizeOauthAuthorizeGetErrors];
+
+export type OauthAuthorizeOauthAuthorizeGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type OauthCallbackOauthCallbackGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Code
+         */
+        code?: string | null;
+        /**
+         * State
+         */
+        state?: string | null;
+        /**
+         * Error
+         */
+        error?: string | null;
+        /**
+         * Error Description
+         */
+        error_description?: string | null;
+    };
+    url: '/oauth/callback';
+};
+
+export type OauthCallbackOauthCallbackGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type OauthCallbackOauthCallbackGetError = OauthCallbackOauthCallbackGetErrors[keyof OauthCallbackOauthCallbackGetErrors];
+
+export type OauthCallbackOauthCallbackGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type TriggerWebhookWebhookGuidPostData = {
+    body?: never;
+    path: {
+        /**
+         * Guid
+         */
+        guid: string;
+    };
+    query?: never;
+    url: '/webhook/{guid}';
+};
+
+export type TriggerWebhookWebhookGuidPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TriggerWebhookWebhookGuidPostError = TriggerWebhookWebhookGuidPostErrors[keyof TriggerWebhookWebhookGuidPostErrors];
+
+export type TriggerWebhookWebhookGuidPostResponses = {
+    /**
+     * Successful Response
+     */
+    202: unknown;
+};
