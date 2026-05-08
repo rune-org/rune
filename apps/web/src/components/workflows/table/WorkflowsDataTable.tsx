@@ -31,6 +31,18 @@ function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
     );
   }
 
+  if (status === "inactive") {
+    return (
+      // Redish color to indicate attention needed for inactive workflows
+      <Badge
+        className="bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200"
+        variant="secondary"
+      >
+        Inactive
+      </Badge>
+    );
+  }
+
   return (
     <Badge
       className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
