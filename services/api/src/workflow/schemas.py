@@ -10,11 +10,18 @@ from src.core.responses import ApiResponse
 from src.db.models import User, Workflow, WorkflowRole, WorkflowVersion
 
 
+class WorkflowStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    DRAFT = "draft"
+
+
 class WorkflowListItem(BaseModel):
     id: int
     name: str
     description: Optional[str] = Field(default=None)
     is_active: bool
+    status: WorkflowStatus
     role: WorkflowRole
     owner_name: str
 
