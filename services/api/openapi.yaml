@@ -538,7 +538,7 @@ paths:
 
         In the versioned model, activating publishes the latest saved version and
 
-        deactivating clears the published pointer.
+        deactivating keeps the published pointer but disables execution.
 
 
         **Requires:** EDIT permission (OWNER or EDITOR)'
@@ -2349,6 +2349,117 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /oauth/authorize:
+    get:
+      tags:
+      - oauth
+      summary: Oauth Authorize
+      description: Start OAuth2 authorization code flow for a saved oauth2 credential.
+      operationId: oauth_authorize_oauth_authorize_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: credential_id
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: Credential Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /oauth/callback:
+    get:
+      tags:
+      - oauth
+      summary: Oauth Callback
+      description: 'OAuth2 redirect URI: exchange code and merge tokens into the credential.'
+      operationId: oauth_callback_oauth_callback_get
+      parameters:
+      - name: code
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+      - name: state
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: State
+      - name: error
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+      - name: error_description
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Description
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /webhook/{guid}:
+    post:
+      tags:
+      - Webhook
+      summary: Trigger Webhook
+      description: "Trigger a workflow via its registered webhook URL.\n\nThe request\
+        \ body (JSON) is forwarded to the worker as trigger data\nunder the ``$trigger``\
+        \ key in the execution context.\n\nNo authentication is required \u2014 the\
+        \ GUID itself is the secret.\nReturns 404 if the GUID is unknown or the workflow\
+        \ is inactive."
+      operationId: trigger_webhook_webhook__guid__post
+      parameters:
+      - name: guid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Guid
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AdminPasswordResetResponse:
@@ -3198,6 +3309,13 @@ components:
           type: string
           format: date-time
           title: Updated At
+        oauth_connected:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Oauth Connected
+          description: For oauth2 credentials, whether an access token is stored (no
+            secrets).
         is_owner:
           type: boolean
           title: Is Owner
@@ -4131,6 +4249,8 @@ components:
         is_active:
           type: boolean
           title: Is Active
+        status:
+          $ref: '#/components/schemas/WorkflowStatus'
         role:
           $ref: '#/components/schemas/WorkflowRole'
         owner_name:
@@ -4141,6 +4261,7 @@ components:
       - id
       - name
       - is_active
+      - status
       - role
       - owner_name
       title: WorkflowListItem
@@ -4271,6 +4392,13 @@ components:
       - message
       title: WorkflowShareResponse
       description: Response after sharing a workflow.
+    WorkflowStatus:
+      type: string
+      enum:
+      - active
+      - inactive
+      - draft
+      title: WorkflowStatus
     WorkflowUpdateName:
       properties:
         name:

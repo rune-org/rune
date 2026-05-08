@@ -936,6 +936,12 @@ export type CredentialResponse = {
      */
     updated_at: string;
     /**
+     * Oauth Connected
+     *
+     * For oauth2 credentials, whether an access token is stored (no secrets).
+     */
+    oauth_connected?: boolean | null;
+    /**
      * Is Owner
      *
      * Whether current user is the owner of this credential
@@ -959,10 +965,6 @@ export type CredentialResponse = {
      * Whether current user can delete this credential
      */
     can_delete?: boolean;
-    /**
-     * For oauth2 credentials, whether an access token is stored (no secrets).
-     */
-    oauth_connected?: boolean | null;
 };
 
 /**
@@ -1869,6 +1871,7 @@ export type WorkflowListItem = {
      * Is Active
      */
     is_active: boolean;
+    status: WorkflowStatus;
     role: WorkflowRole;
     /**
      * Owner Name
@@ -2008,6 +2011,11 @@ export type WorkflowShareResponse = {
      */
     message: string;
 };
+
+/**
+ * WorkflowStatus
+ */
+export type WorkflowStatus = 'active' | 'inactive' | 'draft';
 
 /**
  * WorkflowUpdateName
@@ -3876,3 +3884,99 @@ export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses = {
 };
 
 export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponse = RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses[keyof RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses];
+
+export type OauthAuthorizeOauthAuthorizeGetData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    url: '/oauth/authorize';
+};
+
+export type OauthAuthorizeOauthAuthorizeGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type OauthAuthorizeOauthAuthorizeGetError = OauthAuthorizeOauthAuthorizeGetErrors[keyof OauthAuthorizeOauthAuthorizeGetErrors];
+
+export type OauthAuthorizeOauthAuthorizeGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type OauthCallbackOauthCallbackGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Code
+         */
+        code?: string | null;
+        /**
+         * State
+         */
+        state?: string | null;
+        /**
+         * Error
+         */
+        error?: string | null;
+        /**
+         * Error Description
+         */
+        error_description?: string | null;
+    };
+    url: '/oauth/callback';
+};
+
+export type OauthCallbackOauthCallbackGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type OauthCallbackOauthCallbackGetError = OauthCallbackOauthCallbackGetErrors[keyof OauthCallbackOauthCallbackGetErrors];
+
+export type OauthCallbackOauthCallbackGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type TriggerWebhookWebhookGuidPostData = {
+    body?: never;
+    path: {
+        /**
+         * Guid
+         */
+        guid: string;
+    };
+    query?: never;
+    url: '/webhook/{guid}';
+};
+
+export type TriggerWebhookWebhookGuidPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TriggerWebhookWebhookGuidPostError = TriggerWebhookWebhookGuidPostErrors[keyof TriggerWebhookWebhookGuidPostErrors];
+
+export type TriggerWebhookWebhookGuidPostResponses = {
+    /**
+     * Successful Response
+     */
+    202: unknown;
+};
