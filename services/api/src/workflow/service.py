@@ -170,8 +170,8 @@ class WorkflowService:
                 current_latest.content_hash == new_hash
                 and current_latest.message == normalized_message
             ):
+                await self.db.commit()
                 return current_latest
-
             next_version_number = current_latest.version + 1
         else:
             if base_version_id is not None:

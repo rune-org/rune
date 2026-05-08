@@ -524,8 +524,10 @@ function FlowCanvasInner({
   );
 
   const onExecute = useCallback(async () => {
-    if (isViewingSnapshot) {
-      toast.error("Execution is disabled while viewing history");
+    if (isViewingSnapshot || isSaving) {
+      if (isViewingSnapshot) {
+        toast.error("Execution is disabled while viewing history");
+      }
       return;
     }
 
@@ -538,9 +540,7 @@ function FlowCanvasInner({
     let versionIdToRun: number | undefined;
     if (onPersist) {
       try {
-        const nodes = nodesRef.current;
-        const edges = edgesRef.current;
-        const persistedVersionId = await onPersist({ nodes, edges });
+        const persistedVersionId = await persistGraph();
         if (typeof persistedVersionId === "number") {
           versionIdToRun = persistedVersionId;
         } else {
@@ -552,7 +552,15 @@ function FlowCanvasInner({
       }
     }
     void startExecution(versionIdToRun);
-  }, [isViewingSnapshot, onPersist, resetExecution, startExecution, workflowId]);
+  }, [
+    isViewingSnapshot,
+    isSaving,
+    persistGraph,
+    onPersist,
+    resetExecution,
+    startExecution,
+    workflowId,
+  ]);
 
   useCanvasShortcuts({
     nodes,
@@ -617,7 +625,7 @@ function FlowCanvasInner({
           <div ref={toolbarRef} className="pointer-events-auto flex items-center gap-2">
             <Toolbar
               onExecute={onExecute}
-              executeDisabled={isViewingSnapshot}
+              executeDisabled={isViewingSnapshot || isSaving}
               readOnly={isViewingSnapshot}
               onStop={stopExecution}
               onUndo={handleUndo}
