@@ -960,6 +960,12 @@ export type CredentialResponse = {
      */
     updated_at: string;
     /**
+     * Oauth Connected
+     *
+     * For oauth2 credentials, whether an access token is stored (no secrets).
+     */
+    oauth_connected?: boolean | null;
+    /**
      * Is Owner
      *
      * Whether current user is the owner of this credential
@@ -1055,7 +1061,7 @@ export type CredentialShareInfo = {
  *
  * Credential type enumeration.
  */
-export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'header' | 'token' | 'custom' | 'smtp';
+export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'header' | 'token' | 'custom' | 'smtp' | 'gemini_api_key';
 
 /**
  * CredentialUpdate
@@ -1910,6 +1916,10 @@ export type WorkflowListItem = {
      */
     is_active: boolean;
     role: WorkflowRole;
+    /**
+     * Owner Name
+     */
+    owner_name: string;
 };
 
 /**
@@ -3534,6 +3544,20 @@ export type ListCredentialsDropdownCredentialsDropdownGetResponses = {
 
 export type ListCredentialsDropdownCredentialsDropdownGetResponse = ListCredentialsDropdownCredentialsDropdownGetResponses[keyof ListCredentialsDropdownCredentialsDropdownGetResponses];
 
+export type CredentialEventsCredentialsEventsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/credentials/events';
+};
+
+export type CredentialEventsCredentialsEventsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
 export type DeleteCredentialCredentialsCredentialIdDeleteData = {
     body?: never;
     path: {
@@ -3928,3 +3952,99 @@ export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses = {
 };
 
 export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponse = RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses[keyof RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses];
+
+export type OauthAuthorizeOauthAuthorizeGetData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Credential Id
+         */
+        credential_id: number;
+    };
+    url: '/oauth/authorize';
+};
+
+export type OauthAuthorizeOauthAuthorizeGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type OauthAuthorizeOauthAuthorizeGetError = OauthAuthorizeOauthAuthorizeGetErrors[keyof OauthAuthorizeOauthAuthorizeGetErrors];
+
+export type OauthAuthorizeOauthAuthorizeGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type OauthCallbackOauthCallbackGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Code
+         */
+        code?: string | null;
+        /**
+         * State
+         */
+        state?: string | null;
+        /**
+         * Error
+         */
+        error?: string | null;
+        /**
+         * Error Description
+         */
+        error_description?: string | null;
+    };
+    url: '/oauth/callback';
+};
+
+export type OauthCallbackOauthCallbackGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type OauthCallbackOauthCallbackGetError = OauthCallbackOauthCallbackGetErrors[keyof OauthCallbackOauthCallbackGetErrors];
+
+export type OauthCallbackOauthCallbackGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type TriggerWebhookWebhookGuidPostData = {
+    body?: never;
+    path: {
+        /**
+         * Guid
+         */
+        guid: string;
+    };
+    query?: never;
+    url: '/webhook/{guid}';
+};
+
+export type TriggerWebhookWebhookGuidPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TriggerWebhookWebhookGuidPostError = TriggerWebhookWebhookGuidPostErrors[keyof TriggerWebhookWebhookGuidPostErrors];
+
+export type TriggerWebhookWebhookGuidPostResponses = {
+    /**
+     * Successful Response
+     */
+    202: unknown;
+};

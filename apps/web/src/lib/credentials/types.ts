@@ -39,6 +39,10 @@ export const CREDENTIAL_TYPE_CONFIG: Record<
     label: "Custom",
     description: "Custom credential format",
   },
+  gemini_api_key: {
+    label: "Gemini API Key",
+    description: "Google Gemini model API key",
+  },
 } as const;
 
 /**
@@ -83,5 +87,8 @@ export const CREDENTIAL_TYPE_BADGE_STYLES: Record<CredentialType, { className: s
   },
   custom: {
     className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+  },
+  gemini_api_key: {
+    className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200",
   },
 };

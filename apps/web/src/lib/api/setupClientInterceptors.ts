@@ -104,6 +104,6 @@ export function setupClientInterceptors() {
       method: (options.method ?? "GET") as Uppercase<HttpMethod>,
       parseAs: "stream",
     });
-    return result.response;
+    return result.response ?? response;
   });
 }

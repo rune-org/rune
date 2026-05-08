@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { NODE_REGISTRY } from "../../lib/nodeRegistry";
+import { NODE_REGISTRY, resolveNodeColor } from "../../lib/nodeRegistry";
 import {
   useVariableInput,
   parseVariableReferences,
@@ -43,7 +43,7 @@ function buildColorMap(sources: VariableSource[]): Map<string, string> {
   for (const source of sources) {
     const meta = NODE_REGISTRY[source.nodeKind];
     if (meta) {
-      map.set(source.nodeLabel, `var(${meta.colorTheme.base})`);
+      map.set(source.nodeLabel, resolveNodeColor(meta.colorTheme.base));
     }
   }
   return map;
@@ -207,7 +207,7 @@ function InlinePickerDropdown({
                   key={source.nodeId}
                   source={source}
                   icon={Icon}
-                  colorVar={meta.colorTheme.base}
+                  color={resolveNodeColor(meta.colorTheme.base)}
                   onSelect={(path) => {
                     onSelect(path);
                     onClose();
@@ -225,7 +225,7 @@ function InlinePickerDropdown({
 function SourceGroup({
   source,
   icon: Icon,
-  colorVar,
+  color,
   onSelect,
 }: {
   source: VariableSource;
@@ -233,7 +233,7 @@ function SourceGroup({
     className?: string;
     style?: React.CSSProperties;
   }>;
-  colorVar: string;
+  color: string;
   onSelect: (path: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -246,7 +246,7 @@ function SourceGroup({
         ) : (
           <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
         )}
-        <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: `var(${colorVar})` }} />
+        <Icon className="h-3.5 w-3.5 shrink-0" style={{ color }} />
         <span className="truncate">{source.nodeLabel}</span>
         <span className="ml-auto shrink-0 text-[10px] text-muted-foreground/60">
           {source.children.length} fields
