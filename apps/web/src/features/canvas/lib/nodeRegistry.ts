@@ -21,6 +21,7 @@ import {
   Split,
   SquareDashedBottom,
   Wand2,
+  Webhook,
   type LucideIcon,
 } from "lucide-react";
 import type { FilterData, NodeDataMap, NodeKind, SortData, SwitchData } from "../types";
@@ -126,6 +127,23 @@ export const NODE_REGISTRY: NodeRegistry = {
     hasDynamicOutputs: false,
     shortcutKey: "r",
   },
+  webhookTrigger: {
+    kind: "webhookTrigger",
+    label: "Webhook Trigger",
+    icon: Webhook,
+    colorTheme: {
+      base: "--node-trigger",
+      bg: "--node-trigger-bg",
+      border: "--node-trigger-border",
+    },
+    dimensions: { width: 160, height: 48 },
+    defaults: { label: "Webhook" },
+    schema: { inputs: [], outputs: ["trigger"] },
+    group: "triggers",
+    isTrigger: true,
+    hasDynamicOutputs: false,
+    shortcutKey: "w",
+  },
   agent: {
     kind: "agent",
     label: "Agent",
@@ -135,8 +153,20 @@ export const NODE_REGISTRY: NodeRegistry = {
       bg: "--node-agent-bg",
       border: "--node-agent-border",
     },
-    dimensions: { width: 220, height: 80 },
-    defaults: { label: "Agent" },
+    dimensions: { width: 260, height: 132 },
+    defaults: {
+      label: "Agent",
+      model: {
+        provider: "gemini",
+        name: "gemini-3.1-flash-lite-preview",
+        backend: "ai_studio",
+        temperature: 0.2,
+      },
+      system_prompt: "",
+      messages: [],
+      tools: [],
+      mcp_servers: [],
+    },
     schema: { inputs: ["input"], outputs: ["response"] },
     group: "agents",
     isTrigger: false,
@@ -239,7 +269,6 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "flow",
     isTrigger: false,
     hasDynamicOutputs: false,
-    shortcutKey: "w",
   },
   log: {
     kind: "log",

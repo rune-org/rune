@@ -9,7 +9,6 @@ import { runWorkflow } from "@/lib/api/workflows";
 import { extractApiErrorMessage } from "@/lib/api/error";
 
 export interface UseWorkflowExecutionOptions {
-  /** Workflow ID to execute */
   workflowId: number | null;
 }
 
@@ -19,35 +18,13 @@ export interface UseWorkflowExecutionReturn {
   wsReconnectAttempts: number;
   isStarting: boolean;
 
-  startExecution: (versionId?: number) => Promise<void>;
+  startExecution: (versionId?: number) => Promise<boolean>;
   stopExecution: () => void;
   reset: () => void;
 
-  /** Last error that occurred */
   error: string | null;
 }
 
-/**
- * Hook for orchestrating workflow execution.
- *
- * Combines:
- * - API call to /run endpoint
- * - WebSocket connection management
- * - Execution context dispatch
- *
- * Execution history is stored by RTES and fetched via the ExecutionHistoryPanel.
- *
- * @example
- * ```tsx
- * const {
- *   executionState,
- *   wsStatus,
- *   isStarting,
- *   startExecution,
- *   reset,
- * } = useWorkflowExecution({ workflowId: 123 });
- * ```
- */
 export function useWorkflowExecution(
   options: UseWorkflowExecutionOptions,
 ): UseWorkflowExecutionReturn {
@@ -58,10 +35,8 @@ export function useWorkflowExecution(
   const [error, setError] = useState<string | null>(null);
   const [wsEnabled, setWsEnabled] = useState(false);
 
-  // Refs for cleanup
   const isMountedRef = useRef(true);
 
-  // WebSocket connection - disabled when viewing historical executions
   const {
     status: wsStatus,
     reconnectAttempts: wsReconnectAttempts,
@@ -83,7 +58,6 @@ export function useWorkflowExecution(
     }, []),
   });
 
-  // Cleanup on unmount
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -91,52 +65,46 @@ export function useWorkflowExecution(
     };
   }, []);
 
-  /**
-   * Start a new workflow execution.
-   */
   const startExecution = useCallback(
     async (versionId?: number) => {
       if (!workflowId) {
         setError("No workflow ID provided");
-        return;
+        return false;
       }
 
       if (state.status === "running") {
         console.warn("[Execution] Already running");
-        return;
+        return false;
       }
 
       setIsStarting(true);
       setError(null);
 
       try {
-        // Call the /run endpoint
         const response = await runWorkflow(workflowId, versionId);
 
-        if (!isMountedRef.current) return;
+        if (!isMountedRef.current) return false;
 
         if (response.error) {
           const errorMsg = extractApiErrorMessage(response.error, "Failed to start execution");
           throw new Error(errorMsg);
         }
 
-        // Extract execution_id from response
         const executionId = response.data?.data;
         if (!executionId) {
           throw new Error("No execution ID returned from API");
         }
 
-        // Dispatch start action
         dispatch({
           type: "START_EXECUTION",
           executionId,
           workflowId,
         });
 
-        // Enable WebSocket connection
         setWsEnabled(true);
+        return true;
       } catch (err) {
-        if (!isMountedRef.current) return;
+        if (!isMountedRef.current) return false;
 
         // With throwOnError: true, the Hey API client throws the parsed JSON body
         // (e.g. { success, message, data }) — not an Error instance.
@@ -144,6 +112,7 @@ export function useWorkflowExecution(
         setError(errorMsg);
         toast.error(errorMsg);
         dispatch({ type: "SET_ERROR", error: errorMsg });
+        return false;
       } finally {
         if (isMountedRef.current) {
           setIsStarting(false);

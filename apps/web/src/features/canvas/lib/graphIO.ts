@@ -1,6 +1,7 @@
 import type { Edge as RFEdge, Node as RFNode } from "@xyflow/react";
 import type { CSSProperties } from "react";
 import { nodeTypes } from "@/features/canvas/nodes";
+import { createId } from "../utils/id";
 import {
   SWITCH_FALLBACK_HANDLE_ID,
   SWITCH_RULE_HANDLE_PREFIX,
@@ -11,13 +12,21 @@ import {
 export type RFGraph = { nodes: RFNode[]; edges: RFEdge[] };
 
 /**
- * Strips credential data from nodes to prevent sensitive data from being exported.
- * Returns a new graph with credentials cleared from all nodes.
+ * Strips sensitive data from nodes to prevent secrets from being exported.
+ * Returns a new graph with credentials and webhook GUIDs cleared from all nodes.
  */
 export function stripCredentials(graph: RFGraph): RFGraph {
   const nodes = graph.nodes.map((node) => {
-    if (node.data && typeof node.data === "object" && "credential" in node.data) {
-      const { credential: _credential, ...restData } = node.data as Record<string, unknown>;
+    if (
+      node.data &&
+      typeof node.data === "object" &&
+      ("credential" in node.data || "webhookGuid" in node.data)
+    ) {
+      const {
+        credential: _credential,
+        webhookGuid: _webhookGuid,
+        ...restData
+      } = node.data as Record<string, unknown>;
       return {
         ...node,
         data: restData,
@@ -40,6 +49,26 @@ type EdgeMeta = {
 
 export function allowedTypeSet(): Set<string> {
   return new Set(Object.keys(nodeTypes));
+}
+
+export function ensureWebhookTriggerGuids(graph: RFGraph): RFGraph {
+  const nodes = graph.nodes.map((node) => {
+    if (node.type !== "webhookTrigger") return node;
+
+    const data = node.data && typeof node.data === "object" ? node.data : {};
+    const webhookGuid = (data as { webhookGuid?: unknown }).webhookGuid;
+    if (typeof webhookGuid === "string" && webhookGuid.length > 0) return node;
+
+    return {
+      ...node,
+      data: {
+        ...data,
+        webhookGuid: createId(),
+      },
+    };
+  });
+
+  return { nodes, edges: graph.edges };
 }
 
 export function sanitizeGraph(graph: RFGraph, allowed = allowedTypeSet()): RFGraph {
@@ -116,7 +145,7 @@ export function sanitizeGraph(graph: RFGraph, allowed = allowedTypeSet()): RFGra
     return { ...e, type: "default" } as RFEdge;
   });
 
-  return { nodes, edges };
+  return ensureWebhookTriggerGuids({ nodes, edges });
 }
 
 /**

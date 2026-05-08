@@ -1035,7 +1035,7 @@ export type CredentialShareInfo = {
  *
  * Credential type enumeration.
  */
-export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'header' | 'token' | 'custom' | 'smtp';
+export type CredentialType = 'api_key' | 'oauth2' | 'basic_auth' | 'header' | 'token' | 'custom' | 'smtp' | 'gemini_api_key';
 
 /**
  * CredentialUpdate
@@ -1870,6 +1870,10 @@ export type WorkflowListItem = {
      */
     is_active: boolean;
     role: WorkflowRole;
+    /**
+     * Owner Name
+     */
+    owner_name: string;
 };
 
 /**

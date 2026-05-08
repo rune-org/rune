@@ -25,12 +25,14 @@ import { DateTimeSubtractInspector } from "./inspectors/DateTimeSubtractInspecto
 import { DateTimeFormatInspector } from "./inspectors/DateTimeFormatInspector";
 import { DateTimeParseInspector } from "./inspectors/DateTimeParseInspector";
 import { ScheduledTriggerInspector } from "./inspectors/ScheduledTriggerInspector";
+import { WebhookTriggerInspector } from "./inspectors/WebhookTriggerInspector";
 import { EditInspector } from "./inspectors/EditInspector";
 import { FilterInspector } from "./inspectors/FilterInspector";
 import { SortInspector } from "./inspectors/SortInspector";
 import { LimitInspector } from "./inspectors/LimitInspector";
 import { SplitInspector } from "./inspectors/SplitInspector";
 import { MergeInspector } from "./inspectors/MergeInspector";
+import { AgentInspector } from "./inspectors/AgentInspector";
 import { IntegrationInspector } from "./inspectors/IntegrationInspector";
 import { toast } from "@/components/ui/toast";
 import { Activity } from "lucide-react";
@@ -95,6 +97,8 @@ function renderInspectorForm(
       return (
         <ScheduledTriggerInspector node={node} updateData={updateData} isExpanded={isExpanded} />
       );
+    case "webhookTrigger":
+      return <WebhookTriggerInspector node={node} isExpanded={isExpanded} />;
     case "edit":
       return <EditInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "filter":
@@ -107,6 +111,8 @@ function renderInspectorForm(
       return <SplitInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     case "merge":
       return <MergeInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
+    case "agent":
+      return <AgentInspector node={node} updateData={updateData} isExpanded={isExpanded} />;
     default:
       return null;
   }

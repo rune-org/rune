@@ -768,6 +768,7 @@ export interface BaseNode {
   id: string;  // Unique identifier for the node within the workflow
   name: string;  // Human-readable node name
   trigger: boolean;  // Whether this node initiates workflow execution
+  webhook_guid: string | undefined;  // Stable webhook registration GUID for webhook trigger nodes
   output: Record<string, any>;  // Placeholder for execution output (empty in definition)
   error: ErrorHandling | undefined;  // Error handling configuration
   credential_type: string[] | undefined;  // List of allowed credential types for this node (for UI filtering)
@@ -795,6 +796,9 @@ export function sanitizeBaseNode(obj: BaseNode): { valid: boolean; errors: strin
   if (obj.trigger !== undefined && typeof obj.trigger !== "boolean") {
     errors.push("BaseNode.trigger must be a boolean");
   }
+  if (obj.webhook_guid !== undefined && typeof obj.webhook_guid !== "string") {
+    errors.push("BaseNode.webhook_guid must be a string");
+  }
   if (obj.output === undefined || obj.output === null) {
     errors.push("BaseNode.output is required");
   }
@@ -818,6 +822,13 @@ export interface ScheduledTriggerNode extends BaseNode {
   // Scheduled workflow trigger with interval-based execution
   type: "ScheduledTrigger";
   parameters: ScheduledtriggerParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface WebhookNode extends BaseNode {
+  // Webhook workflow trigger with a stable externally callable GUID
+  type: "webhook";
+  parameters: Record<string, any>;
   credential_type: string[] | undefined;
 }
 
@@ -956,4 +967,4 @@ export interface MergeNode extends BaseNode {
 
 // Union type for all nodes
 
-export type Node = ManualTriggerNode | ScheduledTriggerNode | HttpNode | SmtpNode | ConditionalNode | SwitchNode | LogNode | DatetimenowNode | DatetimeaddNode | DatetimesubtractNode | DatetimeformatNode | DatetimeparseNode | AgentNode | WaitNode | EditNode | FilterNode | SortNode | LimitNode | SplitNode | AggregatorNode | MergeNode;
+export type Node = ManualTriggerNode | ScheduledTriggerNode | WebhookNode | HttpNode | SmtpNode | ConditionalNode | SwitchNode | LogNode | DatetimenowNode | DatetimeaddNode | DatetimesubtractNode | DatetimeformatNode | DatetimeparseNode | AgentNode | WaitNode | EditNode | FilterNode | SortNode | LimitNode | SplitNode | AggregatorNode | MergeNode;

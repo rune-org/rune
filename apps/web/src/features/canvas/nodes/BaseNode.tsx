@@ -16,6 +16,7 @@ type BaseNodeProps = {
   bgColor?: string;
   borderColor?: string;
   pinned?: boolean;
+  className?: string;
 };
 
 export const BaseNode = memo(function BaseNode({
@@ -27,6 +28,7 @@ export const BaseNode = memo(function BaseNode({
   bgColor,
   borderColor,
   pinned = false,
+  className,
 }: BaseNodeProps) {
   const nodeExecution = useNodeExecution(nodeId);
   const executionStatus = nodeExecution?.status ?? "idle";
@@ -50,6 +52,7 @@ export const BaseNode = memo(function BaseNode({
         bgClassName,
         executionStatus !== "idle" && executionStatus,
         executionStatus === "running" && "animate-pulse-subtle",
+        className,
       )}
       style={borderStyle}
     >
