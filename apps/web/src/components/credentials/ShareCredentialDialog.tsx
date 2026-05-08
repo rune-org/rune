@@ -54,6 +54,8 @@ export function ShareCredentialDialog({
 
   const loadShares = useCallback(async () => {
     setIsLoading(true);
+    setUsers([]);
+    setSelectedUserIds([]);
     try {
       const sharesRes = await listCredentialShares(credentialId);
       if (sharesRes.data?.data) {
@@ -82,8 +84,6 @@ export function ShareCredentialDialog({
   useEffect(() => {
     if (open) {
       void loadShares();
-      setUsers([]);
-      setSelectedUserIds([]);
     }
   }, [open, loadShares]);
 
@@ -109,13 +109,8 @@ export function ShareCredentialDialog({
       );
 
       // Refresh shares list to get updated data including timestamps/names
-      const sharesRes = await listCredentialShares(credentialId);
-      if (sharesRes.data?.data) {
-        setShares(sharesRes.data.data);
-      }
+      await loadShares();
 
-      setSelectedUserIds([]);
-      setUsers([]);
       toast.success("Credential shared successfully");
       onSharesChanged?.();
       onOpenChange(false);

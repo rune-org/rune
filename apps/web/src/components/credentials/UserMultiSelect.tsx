@@ -5,6 +5,7 @@ import { X, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import type { UserBasicInfo } from "@/client/types.gen";
+import { DEFAULT_DEBOUNCE_TIME } from "@/lib/constants";
 
 interface UserMultiSelectProps {
   users: UserBasicInfo[];
@@ -43,7 +44,7 @@ export function UserMultiSelect({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       onSearch(value);
-    }, 200);
+    }, DEFAULT_DEBOUNCE_TIME);
   };
 
   const handleUnselect = (userId: number) => {

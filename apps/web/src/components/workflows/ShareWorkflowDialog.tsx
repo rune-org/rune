@@ -31,6 +31,7 @@ import {
 import type { WorkflowRole } from "@/lib/permissions";
 import { listUsersForSharing } from "@/lib/api/users";
 import type { UserBasicInfo } from "@/client/types.gen";
+import { DEFAULT_DEBOUNCE_TIME } from "@/lib/constants";
 
 interface ShareWorkflowDialogProps {
   workflowId: string;
@@ -127,7 +128,7 @@ export function ShareWorkflowDialog({
     setSelectedUserId("");
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => void handleSearch(value), 300);
+    debounceRef.current = setTimeout(() => void handleSearch(value), DEFAULT_DEBOUNCE_TIME);
   };
 
   const handleSelectUser = (user: UserBasicInfo) => {
