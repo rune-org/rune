@@ -55,9 +55,15 @@ export const INTEGRATION_TOOLS = [
       { name: "cc", label: "Cc", type: "text", placeholder: "cc@example.com" },
       { name: "bcc", label: "Bcc", type: "text", placeholder: "bcc@example.com" },
       { name: "subject", label: "Subject", type: "text", required: true },
+      {
+        name: "bodyType",
+        label: "Body type",
+        type: "select",
+        options: BODY_CONTENT_TYPE_OPTIONS,
+      },
       { name: "body", label: "Body", type: "textarea", required: true },
     ],
-    defaultArguments: {},
+    defaultArguments: { bodyType: "text" },
   },
   {
     kind: "integration.google.gmail.read_email",

@@ -77,9 +77,57 @@ func TestSendEmail(t *testing.T) {
 		!strings.Contains(msg, "Subject: Hello") {
 		t.Fatalf("unexpected mime message: %s", msg)
 	}
+	if !strings.Contains(msg, "Content-Type: text/plain; charset=UTF-8") {
+		t.Fatalf("expected text/plain content type, got: %s", msg)
+	}
 
 	if status, _ := out["status"].(int); status != 200 {
 		t.Fatalf("status = %v", out["status"])
+	}
+}
+
+func TestSendEmailHTMLBody(t *testing.T) {
+	origBaseURL := baseURL
+	defer func() { baseURL = origBaseURL }()
+
+	var gotRaw string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		gotRaw, _ = body["raw"].(string)
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": "sent-html"})
+	}))
+	defer server.Close()
+	baseURL = server.URL
+
+	ec := plugin.ExecutionContext{
+		Type: SendEmailKind,
+		Parameters: map[string]any{
+			"to":       "team@example.com",
+			"subject":  "Hello",
+			"body":     "<p>Hi</p>",
+			"bodyType": "html",
+		},
+	}
+	ec.SetCredentials(map[string]any{
+		"type":         "oauth2",
+		"access_token": "tok-send",
+	})
+
+	if _, err := (SendEmail{}).Execute(context.Background(), ec); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+
+	decoded, err := base64.RawURLEncoding.DecodeString(gotRaw)
+	if err != nil {
+		t.Fatalf("decode raw error = %v", err)
+	}
+	msg := string(decoded)
+	if !strings.Contains(msg, "Content-Type: text/html; charset=UTF-8") {
+		t.Fatalf("expected text/html content type, got: %s", msg)
+	}
+	if !strings.Contains(msg, "<p>Hi</p>") {
+		t.Fatalf("expected html body in message, got: %s", msg)
 	}
 }
 

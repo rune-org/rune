@@ -29,7 +29,7 @@ describe("nodeRegistry defaults", () => {
     expect(gmailDefaults).toEqual({
       label: "Send Email",
       integrationKind: "integration.google.gmail.send_email",
-      arguments: {},
+      arguments: { bodyType: "text" },
     });
   });
 });

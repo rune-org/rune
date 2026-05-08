@@ -15,11 +15,12 @@ import (
 type SendEmail struct{}
 
 type sendEmailArgs struct {
-	To      string `json:"to"`
-	CC      string `json:"cc"`
-	BCC     string `json:"bcc"`
-	Subject string `json:"subject"`
-	Body    string `json:"body"`
+	To       string `json:"to"`
+	CC       string `json:"cc"`
+	BCC      string `json:"bcc"`
+	Subject  string `json:"subject"`
+	Body     string `json:"body"`
+	BodyType string `json:"bodyType"`
 }
 
 func (SendEmail) Kind() string {
@@ -67,10 +68,15 @@ func buildRawMessage(args sendEmailArgs) (string, error) {
 		lines = append(lines, fmt.Sprintf("Bcc: %s", bcc))
 	}
 
+	contentType := "text/plain; charset=UTF-8"
+	if strings.EqualFold(args.BodyType, "html") {
+		contentType = "text/html; charset=UTF-8"
+	}
+
 	lines = append(lines,
 		fmt.Sprintf("Subject: %s", sanitizeHeaderValue(args.Subject)),
 		"MIME-Version: 1.0",
-		"Content-Type: text/plain; charset=UTF-8",
+		fmt.Sprintf("Content-Type: %s", contentType),
 		"",
 		args.Body,
 	)
