@@ -1674,6 +1674,22 @@ paths:
                 $ref: '#/components/schemas/ApiResponse_list_CredentialResponseDropDown__'
       security:
       - OAuth2PasswordBearer: []
+  /credentials/events:
+    get:
+      tags:
+      - credentials
+      summary: Subscribe to real-time credential events
+      description: "Server-Sent Events (SSE) endpoint for credential updates.\n\n\
+        Streams real-time events when credentials are deleted, shared, or revoked.\n\
+        Useful for updating the UI instantly without polling.\n\nPermissions:\n- Any\
+        \ authenticated user can subscribe. They will only receive events\n  for credentials\
+        \ they have access to (handled by the client checking IDs)."
+      operationId: credential_events_credentials_events_get
+      responses:
+        '200':
+          description: Successful Response
+      security:
+      - OAuth2PasswordBearer: []
   /credentials/{credential_id}:
     get:
       tags:
@@ -1802,6 +1818,35 @@ paths:
       responses:
         '204':
           description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /credentials/{credential_id}/usage:
+    get:
+      tags:
+      - credentials
+      summary: Get workflows using this credential
+      description: Get a list of workflows that are currently using this credential.
+      operationId: get_credential_usage_credentials__credential_id__usage_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: credential_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Credential Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_list_CredentialUsage__'
         '422':
           description: Validation Error
           content:
@@ -2327,6 +2372,117 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_str_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /oauth/authorize:
+    get:
+      tags:
+      - oauth
+      summary: Oauth Authorize
+      description: Start OAuth2 authorization code flow for a saved oauth2 credential.
+      operationId: oauth_authorize_oauth_authorize_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: credential_id
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: Credential Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /oauth/callback:
+    get:
+      tags:
+      - oauth
+      summary: Oauth Callback
+      description: 'OAuth2 redirect URI: exchange code and merge tokens into the credential.'
+      operationId: oauth_callback_oauth_callback_get
+      parameters:
+      - name: code
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+      - name: state
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: State
+      - name: error
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+      - name: error_description
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Description
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /webhook/{guid}:
+    post:
+      tags:
+      - Webhook
+      summary: Trigger Webhook
+      description: "Trigger a workflow via its registered webhook URL.\n\nThe request\
+        \ body (JSON) is forwarded to the worker as trigger data\nunder the ``$trigger``\
+        \ key in the execution context.\n\nNo authentication is required \u2014 the\
+        \ GUID itself is the secret.\nReturns 404 if the GUID is unknown or the workflow\
+        \ is inactive."
+      operationId: trigger_webhook_webhook__guid__post
+      parameters:
+      - name: guid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Guid
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
         '422':
           description: Validation Error
           content:
@@ -2865,6 +3021,28 @@ components:
       required:
       - data
       title: ApiResponse[list[CredentialShareInfo]]
+    ApiResponse_list_CredentialUsage__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/CredentialUsage'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[list[CredentialUsage]]
     ApiResponse_list_ExecutionListItem__:
       properties:
         success:
@@ -3182,6 +3360,13 @@ components:
           type: string
           format: date-time
           title: Updated At
+        oauth_connected:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Oauth Connected
+          description: For oauth2 credentials, whether an access token is stored (no
+            secrets).
         is_owner:
           type: boolean
           title: Is Owner
@@ -3285,6 +3470,7 @@ components:
       - token
       - custom
       - smtp
+      - gemini_api_key
       title: CredentialType
       description: Credential type enumeration.
     CredentialUpdate:
@@ -3313,6 +3499,24 @@ components:
       type: object
       title: CredentialUpdate
       description: Schema for updating a credential.
+    CredentialUsage:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        owner_name:
+          type: string
+          title: Owner Name
+      type: object
+      required:
+      - id
+      - name
+      - owner_name
+      title: CredentialUsage
+      description: Schema for reporting workflow usage of a credential.
     ExecutionListItem:
       properties:
         id:
@@ -4116,12 +4320,16 @@ components:
           title: Is Active
         role:
           $ref: '#/components/schemas/WorkflowRole'
+        owner_name:
+          type: string
+          title: Owner Name
       type: object
       required:
       - id
       - name
       - is_active
       - role
+      - owner_name
       title: WorkflowListItem
     WorkflowPermissionInfo:
       properties:

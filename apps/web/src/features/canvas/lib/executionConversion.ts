@@ -41,6 +41,7 @@ export function extractGraphSnapshot(
       name,
       type,
       trigger,
+      webhook_guid: typeof extra.webhook_guid === "string" ? extra.webhook_guid : undefined,
       parameters: (extra.parameters as Record<string, unknown>) ?? {},
       output: (extra.output as Record<string, unknown>) ?? {},
       position,

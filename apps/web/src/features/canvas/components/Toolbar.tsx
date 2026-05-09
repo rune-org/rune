@@ -18,6 +18,7 @@ import {
   Loader2,
   Square,
   Send,
+  HelpCircle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -51,6 +52,7 @@ type ToolbarProps = {
   onImportFromTemplate: () => void;
   onAutoLayout?: () => void;
   saveDisabled?: boolean;
+  onOpenOnboarding?: () => void;
 
   executionStatus?: WorkflowExecutionStatus;
   wsStatus?: WsConnectionStatus;
@@ -87,6 +89,7 @@ export const Toolbar = memo(function Toolbar({
   onImportFromTemplate,
   onAutoLayout,
   saveDisabled = false,
+  onOpenOnboarding,
   executionStatus = "idle",
   wsStatus = "disconnected",
   isStartingExecution = false,
@@ -127,17 +130,20 @@ export const Toolbar = memo(function Toolbar({
     title,
     children,
     disabled,
+    "data-onboarding": dataOnboarding,
   }: {
     onClick: () => void;
     title: string;
     children: React.ReactNode;
     disabled?: boolean;
+    "data-onboarding"?: string;
   }) => (
     <button
       title={title}
       aria-label={title}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
+      data-onboarding={dataOnboarding}
       className="inline-flex h-8 items-center gap-2 rounded-sm border border-border/60 bg-muted/40 px-2.5 text-xs hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {children}
@@ -202,7 +208,7 @@ export const Toolbar = memo(function Toolbar({
       <Btn onClick={onRedo} title="Redo (Ctrl+Shift+Z)" disabled={!canRedo}>
         <RotateCw className="h-4 w-4" /> Redo
       </Btn>
-      <Btn onClick={onSave} title="Save (Ctrl+S)" disabled={saveDisabled}>
+      <Btn onClick={onSave} title="Save (Ctrl+S)" disabled={saveDisabled} data-onboarding="save">
         <Save className="h-4 w-4" /> Save
       </Btn>
       {onPublish && hasUnpublishedChanges && !viewingVersionNumber && !readOnly && (
@@ -254,6 +260,11 @@ export const Toolbar = memo(function Toolbar({
       {onAutoLayout && (
         <Btn onClick={onAutoLayout} title="Auto Layout" disabled={readOnly}>
           <LayoutDashboard className="h-4 w-4" /> Layout
+        </Btn>
+      )}
+      {onOpenOnboarding && (
+        <Btn onClick={onOpenOnboarding} title="Open onboarding guide">
+          <HelpCircle className="h-4 w-4" />
         </Btn>
       )}
     </div>

@@ -133,6 +133,19 @@ Specification for the typed date/time node family:
 
 ---
 
+### [RFC-010-integration-nodes.md](./RFC-010-integration-nodes.md)
+**Status**: Implemented  
+**Created**: 2026-05-07  
+**Title**: Integration Nodes Architecture for rune-worker
+
+Specification for integration node execution in worker:
+- Canonical kind format: `integration.<provider>.<service>.<tool>`
+- Internal integrations registry + adapter wiring into global node registry
+- Shared connector on top of `httpcore` for URL/auth/request execution
+- Phase 1 Gmail tools with typed args parsing and non-2xx error contract
+
+---
+
 ### [ISSUE_RECURSIVE_EXECUTOR.md](./ISSUE_RECURSIVE_EXECUTOR.md)
 **Status**: Superseded by RFC-001  
 **Title**: Implement Recursive Node-by-Node Executor with RabbitMQ

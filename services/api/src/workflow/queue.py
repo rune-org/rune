@@ -61,6 +61,7 @@ class WorkflowQueueService(BaseQueuePublisher):
         workflow_version_id: int,
         execution_id: str,
         workflow_data: dict,
+        accumulated_context: dict | None = None,
     ) -> None:
         """
         Publish a workflow run message to the queue.
@@ -91,6 +92,7 @@ class WorkflowQueueService(BaseQueuePublisher):
             execution_id=execution_id,
             current_node=first_node,
             workflow_definition=workflow_data,
+            accumulated_context=accumulated_context or {},
         )
 
         await self._publish(payload, durable=True)
