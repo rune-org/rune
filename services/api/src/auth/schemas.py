@@ -1,6 +1,7 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.field_types import UserEmail, UserPassword
+
 
 class LoginRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")

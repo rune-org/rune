@@ -41,7 +41,9 @@ class AdminPasswordResetResponse(BaseModel):
 
 
 class UserPasswordChange(BaseModel):
-    old_password: UserPassword = Field(..., description="Current password for verification")
+    old_password: UserPassword = Field(
+        ..., description="Current password for verification"
+    )
     new_password: UserPassword = Field(..., description="New password")
 
 

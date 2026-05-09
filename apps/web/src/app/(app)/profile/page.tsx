@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const [editingField, setEditingField] = useState<EditingField>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isPasswordDialogOpen, setIsPassworsdDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [dialogResetKey, setDialogResetKey] = useState(0);
   const { state, logout, refetchProfile, refresh } = useAuth();
 

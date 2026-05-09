@@ -26,7 +26,9 @@ def validate_user_display_name(name: str) -> str:
     if not valid:
         raise ValueError(error_message)
 
-    valid, error_message = _validate_string_contains_emoji_or_regional_indicator(name, field_name="name")
+    valid, error_message = _validate_string_contains_emoji_or_regional_indicator(
+        name, field_name="name"
+    )
     if not valid:
         raise ValueError(error_message)
 
@@ -52,7 +54,9 @@ def validate_password(password: str) -> str:
     if not valid:
         raise ValueError(error_message)
 
-    valid, error_message = _validate_string_contains_emoji_or_regional_indicator(password, field_name="password")
+    valid, error_message = _validate_string_contains_emoji_or_regional_indicator(
+        password, field_name="password"
+    )
     if not valid:
         raise ValueError(error_message)
 
@@ -74,7 +78,9 @@ def validate_email(email: str) -> str:
     """
     email = email.strip().lower()
 
-    valid, error_message = _validate_string_contains_emoji_or_regional_indicator(email, field_name="email")
+    valid, error_message = _validate_string_contains_emoji_or_regional_indicator(
+        email, field_name="email"
+    )
     if not valid:
         raise ValueError(error_message)
 
@@ -116,7 +122,9 @@ def _validate_password_strength(password: str) -> tuple[bool, str]:
     return True, "Password is strong"
 
 
-def _validate_string_length(value: str, min_length: int, max_length: int, *, field_name: str = "string") -> tuple[bool, str]:
+def _validate_string_length(
+    value: str, min_length: int, max_length: int, *, field_name: str = "string"
+) -> tuple[bool, str]:
     """
     Validate string length.
 
@@ -130,7 +138,9 @@ def _validate_string_length(value: str, min_length: int, max_length: int, *, fie
     return True, f"{field_name} is valid"
 
 
-def _validate_string_contains_emoji_or_regional_indicator(value: str, *, field_name: str = "string") -> tuple[bool, str]:
+def _validate_string_contains_emoji_or_regional_indicator(
+    value: str, *, field_name: str = "string"
+) -> tuple[bool, str]:
     """
     Reject strings containing emoji or regional-indicator symbols.
 
