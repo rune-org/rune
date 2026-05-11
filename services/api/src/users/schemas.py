@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
 from src.db.models import UserRole
 from src.core.field_types import UserDisplayName, UserEmail, UserPassword
@@ -41,8 +41,8 @@ class AdminPasswordResetResponse(BaseModel):
 
 
 class UserPasswordChange(BaseModel):
-    old_password: UserPassword = Field(
-        ..., description="Current password for verification"
+    old_password: str = Field(
+        ..., min_length=1, description="Current password for verification"
     )
     new_password: UserPassword = Field(..., description="New password")
 
@@ -51,8 +51,8 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    name: UserDisplayName
-    email: UserEmail
+    name: str
+    email: EmailStr
     role: UserRole
     is_active: bool = Field(..., description="Account active status")
     created_at: datetime = Field(..., description="Account creation timestamp")
@@ -76,6 +76,6 @@ class UserBasicInfo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    name: UserDisplayName
-    email: UserEmail
+    name: str
+    email: EmailStr
     role: UserRole

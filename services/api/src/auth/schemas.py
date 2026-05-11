@@ -1,13 +1,11 @@
-from pydantic import BaseModel, ConfigDict, Field
-
-from src.core.field_types import UserEmail, UserPassword
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
 
 class LoginRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    email: UserEmail = Field(..., description="User's email address")
-    password: UserPassword = Field(..., description="User's password")
+    email: EmailStr = Field(..., min_length=1, description="User's email address")
+    password: str = Field(..., min_length=1, description="User's password")
 
 
 class TokenResponse(BaseModel):

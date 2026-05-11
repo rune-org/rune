@@ -11,7 +11,7 @@ def validate_user_display_name(name: str) -> str:
     """
     Trim, enforce length (3–40), and reject emoji / regional-indicator symbols.
 
-    Intended for Pydantic ``BeforeValidator``: on failure raises ``ValueError``;
+    Intended for Pydantic ``AfterValidator``: on failure raises ``ValueError``;
     on success returns the normalized string.
 
     Returns:
@@ -40,7 +40,7 @@ def validate_password(password: str) -> str:
     Validate password strength according to security requirements.
     Validate the absence of emoji or regional-indicator symbols.
 
-    Intended for Pydantic ``BeforeValidator``: on failure raises ``ValueError``;
+    Intended for Pydantic ``AfterValidator``: on failure raises ``ValueError``;
     on success returns the normalized string.
 
     Returns:
@@ -67,7 +67,7 @@ def validate_email(email: str) -> str:
     """
     Trim, normalize to lowercase, and reject emoji or regional-indicator symbols.
 
-    Intended for Pydantic ``BeforeValidator``: on failure raises ``ValueError``;
+    Intended for Pydantic ``AfterValidator``: on failure raises ``ValueError``;
     on success returns the normalized string.
 
     Returns:

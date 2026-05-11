@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
 from src.core.field_types import UserDisplayName, UserEmail, UserPassword
 
@@ -17,5 +17,5 @@ class FirstAdminSignupResponse(BaseModel):
     """Response schema for successful first-time admin signup."""
 
     user_id: int = Field(..., description="ID of the newly created admin user")
-    name: UserDisplayName = Field(..., description="Admin's name")
-    email: UserEmail = Field(..., description="Admin's email")
+    name: str = Field(..., description="Admin's name")
+    email: EmailStr = Field(..., description="Admin's email")
