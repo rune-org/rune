@@ -14,21 +14,19 @@ from src.core.validators import (
 UserDisplayName = Annotated[
     str,
     AfterValidator(validate_user_display_name),
-    Field(..., description="User display name"),
+    Field(..., min_length=3, max_length=40, description="User display name"),
 ]
 
 
 UserPassword = Annotated[
     str,
     AfterValidator(validate_password),
-    Field(..., description="User password"),
-    Field(..., min_length=8, max_length=128),
+    Field(..., min_length=8, max_length=128, description="User password"),
 ]
 
 
 UserEmail = Annotated[
     EmailStr,
     AfterValidator(validate_email),
-    Field(..., description="User email"),
-    Field(..., min_length=3, max_length=255),
+    Field(..., min_length=3, max_length=255, description="User email"),
 ]
