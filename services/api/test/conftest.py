@@ -3,14 +3,14 @@ from typing import AsyncGenerator
 import pytest
 import pytest_asyncio
 from aio_pika import connect_robust
-from argon2 import PasswordHasher
 from httpx import ASGITransport, AsyncClient
 from redis.asyncio import Redis
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.app import app
 from src.core.config import Settings, get_settings
+from src.core.password import hash_password
 from src.db.config import create_database_engine, get_db
 from src.db.models import User, UserRole
 from src.db.redis import get_redis
@@ -132,9 +132,22 @@ async def client(
     """
     # Import here to avoid circular imports
     from src.queue.rabbitmq import get_rabbitmq
+    from sqlmodel.ext.asyncio.session import AsyncSession as SQLModelAsyncSession
+    from sqlalchemy.ext.asyncio import async_sessionmaker
 
-    async def override_get_db():
-        yield test_db
+    connection = await test_db.connection()
+    async_session_maker = async_sessionmaker(
+        connection,
+        class_=SQLModelAsyncSession,
+        expire_on_commit=False,
+        autoflush=False,
+    )
+
+    async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
+        """Create a fresh session per request on the shared connection."""
+        async with async_session_maker() as session:
+            yield session
+        test_db.expunge_all()
 
     async def override_get_redis():
         yield test_redis
@@ -162,11 +175,23 @@ async def test_user(test_db: AsyncSession):
     """
     Create a test user in the database.
     Returns the user object for use in tests.
+
+    Idempotent: if user already exists, returns existing user instead of creating duplicate.
+    Uses the app's hash_password() function to ensure password compatibility with login.
     """
-    ph = PasswordHasher()
+    # Check if user already exists
+    stmt = select(User).where(User.email == "test@example.com")
+    result = await test_db.exec(stmt)
+    existing_user = result.first()
+
+    if existing_user:
+        return existing_user
+
+    # Create new user if doesn't exist
+    # IMPORTANT: use the app's hash_password() function with correct Argon2 parameters
     user = User(
         email="test@example.com",
-        hashed_password=ph.hash("testpassword123"),
+        hashed_password=hash_password("testpassword123"),
         name="Test User",
         role=UserRole.USER,
     )
@@ -182,11 +207,23 @@ async def test_admin(test_db: AsyncSession):
     """
     Create a test admin user in the database.
     Returns the admin user object for use in tests.
+
+    Idempotent: if user already exists, returns existing user instead of creating duplicate.
+    Uses the app's hash_password() function to ensure password compatibility with login.
     """
-    ph = PasswordHasher()
+    # Check if admin user already exists
+    stmt = select(User).where(User.email == "admin@example.com")
+    result = await test_db.exec(stmt)
+    existing_admin = result.first()
+
+    if existing_admin:
+        return existing_admin
+
+    # Create new admin if doesn't exist
+    # IMPORTANT: use the app's hash_password() function with correct Argon2 parameters
     admin = User(
         email="admin@example.com",
-        hashed_password=ph.hash("adminpassword123"),
+        hashed_password=hash_password("adminpassword123"),
         name="Test Admin",
         role=UserRole.ADMIN,
     )
