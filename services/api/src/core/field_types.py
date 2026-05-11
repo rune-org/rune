@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from pydantic import BeforeValidator, EmailStr, Field
+from pydantic import AfterValidator, EmailStr, Field
 
 from src.core.validators import (
     validate_user_display_name,
@@ -13,16 +13,22 @@ from src.core.validators import (
 
 UserDisplayName = Annotated[
     str,
-    BeforeValidator(validate_user_display_name),
+    AfterValidator(validate_user_display_name),
     Field(..., description="User display name"),
 ]
 
 
 UserPassword = Annotated[
-    str, BeforeValidator(validate_password), Field(..., description="User password")
+    str,
+    AfterValidator(validate_password),
+    Field(..., description="User password"),
+    Field(..., min_length=8, max_length=128),
 ]
 
 
 UserEmail = Annotated[
-    EmailStr, BeforeValidator(validate_email), Field(..., description="User email")
+    EmailStr,
+    AfterValidator(validate_email),
+    Field(..., description="User email"),
+    Field(..., min_length=3, max_length=255),
 ]
