@@ -1,0 +1,57 @@
+{
+  "workflow_id": "wf-customer-risk-rejected",
+  "execution_id": "exec-customer-risk-rejected",
+  "status_messages": [
+    {
+      "node_id": "fetch-order",
+      "node_name": "FetchOrder",
+      "status": "success",
+      "output": {
+        "status": 200
+      }
+    },
+    {
+      "node_id": "http-reject",
+      "node_name": "RejectCall",
+      "status": "failed",
+      "error": {
+        "message": "http request failed after 1 attempts: status code 404 matches raise_on_status pattern: 4xx,5xx",
+        "code": "NODE_EXECUTION_FAILED"
+      }
+    },
+    {
+      "node_id": "if-risk",
+      "node_name": "RiskGate",
+      "status": "success",
+      "output": {
+        "expression": "$FetchOrder.body.risk_score \u003e 70",
+        "result": true
+      }
+    },
+    {
+      "node_id": "log-precheck",
+      "node_name": "PrecheckLog",
+      "status": "success",
+      "output": {
+        "level": "warn",
+        "message": "Risk too high, notifying"
+      }
+    }
+  ],
+  "completion": {
+    "status": "halted",
+    "final_context": {
+      "$FetchOrder": {
+        "status": 200
+      },
+      "$PrecheckLog": {
+        "level": "warn",
+        "message": "Risk too high, notifying"
+      },
+      "$RiskGate": {
+        "expression": "$FetchOrder.body.risk_score \u003e 70",
+        "result": true
+      }
+    }
+  }
+}

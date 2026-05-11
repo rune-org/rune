@@ -1,0 +1,219 @@
+{
+  "workflow_id": "wf-inventory-cleanup",
+  "execution_id": "exec-inventory-cleanup",
+  "status_messages": [
+    {
+      "node_id": "edit-select",
+      "node_name": "SelectFields",
+      "status": "success",
+      "output": {
+        "$json": [
+          {
+            "id": "p3",
+            "price": 200
+          },
+          {
+            "id": "p4",
+            "price": 150
+          }
+        ]
+      }
+    },
+    {
+      "node_id": "fetch-inventory",
+      "node_name": "FetchInventory",
+      "status": "success",
+      "output": {
+        "status": 200
+      }
+    },
+    {
+      "node_id": "filter-active",
+      "node_name": "FilterActive",
+      "status": "success",
+      "output": {
+        "$json": [
+          {
+            "id": "p1",
+            "price": 120,
+            "stock": 4,
+            "title": "Alpha"
+          },
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          }
+        ],
+        "count": 3,
+        "original_count": 4
+      }
+    },
+    {
+      "node_id": "limit-top",
+      "node_name": "Top2",
+      "status": "success",
+      "output": {
+        "$json": [
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          }
+        ],
+        "count": 2,
+        "original_count": 3
+      }
+    },
+    {
+      "node_id": "log-result",
+      "node_name": "InventoryLog",
+      "status": "success",
+      "output": {
+        "level": "info",
+        "message": "Top items ready"
+      }
+    },
+    {
+      "node_id": "sort-price",
+      "node_name": "SortPrice",
+      "status": "success",
+      "output": {
+        "$json": [
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          },
+          {
+            "id": "p1",
+            "price": 120,
+            "stock": 4,
+            "title": "Alpha"
+          }
+        ],
+        "count": 3
+      }
+    }
+  ],
+  "completion": {
+    "status": "completed",
+    "final_context": {
+      "$FetchInventory": {
+        "status": 200
+      },
+      "$FilterActive": {
+        "$json": [
+          {
+            "id": "p1",
+            "price": 120,
+            "stock": 4,
+            "title": "Alpha"
+          },
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          }
+        ],
+        "count": 3,
+        "original_count": 4
+      },
+      "$InventoryLog": {
+        "level": "info",
+        "message": "Top items ready"
+      },
+      "$SelectFields": {
+        "$json": [
+          {
+            "id": "p3",
+            "price": 200
+          },
+          {
+            "id": "p4",
+            "price": 150
+          }
+        ]
+      },
+      "$SortPrice": {
+        "$json": [
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          },
+          {
+            "id": "p1",
+            "price": 120,
+            "stock": 4,
+            "title": "Alpha"
+          }
+        ],
+        "count": 3
+      },
+      "$Top2": {
+        "$json": [
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          }
+        ],
+        "count": 2,
+        "original_count": 3
+      },
+      "$json": [
+        {
+          "id": "p3",
+          "price": 200
+        },
+        {
+          "id": "p4",
+          "price": 150
+        }
+      ]
+    }
+  }
+}

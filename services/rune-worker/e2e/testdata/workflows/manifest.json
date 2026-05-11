@@ -1,0 +1,81 @@
+{
+  "cases": [
+    {
+      "id": "customer-risk-approved",
+      "name": "customer risk approved",
+      "workflow": "customer-risk-approved.json",
+      "entry_node_id": "fetch-order",
+      "expect_completion_status": "completed"
+    },
+    {
+      "id": "customer-risk-rejected",
+      "name": "customer risk rejected",
+      "workflow": "customer-risk-rejected.json",
+      "entry_node_id": "fetch-order",
+      "expect_completion_status": "halted"
+    },
+    {
+      "id": "support-switch-case",
+      "name": "support switch case",
+      "workflow": "support-switch-case.json",
+      "entry_node_id": "fetch-ticket",
+      "expect_completion_status": "completed"
+    },
+    {
+      "id": "support-switch-fallback-fail",
+      "name": "support switch fallback fail",
+      "workflow": "support-switch-fallback-fail.json",
+      "entry_node_id": "fetch-ticket",
+      "expect_completion_status": "halted"
+    },
+    {
+      "id": "inventory-cleanup",
+      "name": "inventory cleanup",
+      "workflow": "inventory-cleanup.json",
+      "entry_node_id": "fetch-inventory",
+      "expect_completion_status": "completed"
+    },
+    {
+      "id": "split-aggregate-summary",
+      "name": "split aggregate summary",
+      "workflow": "split-aggregate-summary.json",
+      "entry_node_id": "fetch-cart",
+      "expect_completion_status": "completed"
+    },
+    {
+      "id": "merge-any-approval",
+      "name": "merge any approval",
+      "workflow": "merge-any-approval.json",
+      "entry_node_id": "fetch-approval",
+      "expect_completion_status": "completed"
+    },
+    {
+      "id": "time-normalization",
+      "name": "time normalization",
+      "workflow": "time-normalization.json",
+      "entry_node_id": "parse-date",
+      "expect_completion_status": "completed"
+    },
+    {
+      "id": "time-now-enrichment",
+      "name": "time now enrichment",
+      "workflow": "time-now-enrichment.json",
+      "entry_node_id": "now-node",
+      "expect_completion_status": "completed"
+    },
+    {
+      "id": "malformed-http-config",
+      "name": "malformed http config",
+      "workflow": "malformed-http-config.json",
+      "entry_node_id": "log-start",
+      "expect_completion_status": "halted"
+    },
+    {
+      "id": "etl-pipeline",
+      "name": "ETL pipeline",
+      "workflow": "etl-pipeline.json",
+      "entry_node_id": "00-fetch",
+      "expect_completion_status": "completed"
+    }
+  ]
+}

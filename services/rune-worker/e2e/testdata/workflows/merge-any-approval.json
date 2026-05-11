@@ -1,0 +1,75 @@
+{
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "trigger",
+      "position": {"x": 80, "y": 40},
+      "data": {"label": "Start"}
+    },
+    {
+      "id": "fetch-approval",
+      "type": "http",
+      "position": {"x": 280, "y": 40},
+      "data": {
+        "label": "FetchApproval",
+        "method": "GET",
+        "url": "https://dummyjson.com/approvals/manager",
+        "timeout": 30,
+        "retry": 0,
+        "retry_delay": 0,
+        "raise_on_status": "4xx,5xx"
+      }
+    },
+    {
+      "id": "if-approval",
+      "type": "if",
+      "position": {"x": 560, "y": 40},
+      "data": {"label": "ApprovalGate", "expression": "$FetchApproval.body.source == 'manager'"}
+    },
+    {
+      "id": "log-manager",
+      "type": "log",
+      "position": {"x": 840, "y": 0},
+      "data": {"label": "ManagerLog", "message": "Manager approved", "level": "info"}
+    },
+    {
+      "id": "log-auto",
+      "type": "log",
+      "position": {"x": 840, "y": 80},
+      "data": {"label": "AutoLog", "message": "Auto approved", "level": "info"}
+    },
+    {
+      "id": "merge-approval",
+      "type": "merge",
+      "position": {"x": 1120, "y": 40},
+      "data": {"label": "MergeApprovals", "wait_mode": "wait_for_any"}
+    },
+    {
+      "id": "log-final",
+      "type": "log",
+      "position": {"x": 1400, "y": 40},
+      "data": {"label": "FinalLog", "message": "Approval merged", "level": "info"}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "trigger-1", "target": "fetch-approval", "type": "default"},
+    {"id": "e1b", "source": "fetch-approval", "target": "if-approval", "type": "default"},
+    {
+      "id": "e2",
+      "source": "if-approval",
+      "sourceHandle": "true",
+      "target": "log-manager",
+      "type": "default"
+    },
+    {
+      "id": "e3",
+      "source": "if-approval",
+      "sourceHandle": "false",
+      "target": "log-auto",
+      "type": "default"
+    },
+    {"id": "e4", "source": "log-manager", "target": "merge-approval", "type": "default"},
+    {"id": "e5", "source": "log-auto", "target": "merge-approval", "type": "default"},
+    {"id": "e6", "source": "merge-approval", "target": "log-final", "type": "default"}
+  ]
+}

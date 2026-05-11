@@ -1,0 +1,69 @@
+{
+  "workflow_id": "wf-support-switch-case",
+  "execution_id": "exec-support-switch-case",
+  "status_messages": [
+    {
+      "node_id": "fetch-ticket",
+      "node_name": "FetchTicket",
+      "status": "success",
+      "output": {
+        "status": 200
+      }
+    },
+    {
+      "node_id": "log-done",
+      "node_name": "Done",
+      "status": "success",
+      "output": {
+        "level": "info",
+        "message": "Ticket routed"
+      }
+    },
+    {
+      "node_id": "log-high",
+      "node_name": "Escalate",
+      "status": "success",
+      "output": {
+        "level": "warn",
+        "message": "Escalated to on-call"
+      }
+    },
+    {
+      "node_id": "switch-route",
+      "node_name": "Route",
+      "status": "success",
+      "output": {
+        "matched_rule": {
+          "compare": "high",
+          "operator": "==",
+          "value": "$FetchTicket.body.priority"
+        },
+        "output_index": 0
+      }
+    }
+  ],
+  "completion": {
+    "status": "completed",
+    "final_context": {
+      "$Done": {
+        "level": "info",
+        "message": "Ticket routed"
+      },
+      "$Escalate": {
+        "level": "warn",
+        "message": "Escalated to on-call"
+      },
+      "$FetchTicket": {
+        "status": 200
+      },
+      "$Route": {
+        "matched_rule": {
+          "compare": "high",
+          "operator": "==",
+          "value": "$FetchTicket.body.priority"
+        },
+        "output_index": 0
+      }
+    }
+  }
+}
