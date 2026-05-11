@@ -1,0 +1,46 @@
+{
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "trigger",
+      "position": {"x": 80, "y": 40},
+      "data": {"label": "Start"}
+    },
+    {
+      "id": "log-start",
+      "type": "log",
+      "position": {"x": 280, "y": 40},
+      "data": {"label": "StartLog", "message": "Preparing request", "level": "info"}
+    },
+    {
+      "id": "edit-payload",
+      "type": "edit",
+      "position": {"x": 520, "y": 40},
+      "data": {
+        "label": "BuildPayload",
+        "mode": "assignments",
+        "assignments": [
+          {"name": "payload", "value": "ok", "type": "string"}
+        ]
+      }
+    },
+    {
+      "id": "http-bad",
+      "type": "http",
+      "position": {"x": 760, "y": 40},
+      "data": {"label": "BadHTTP", "method": "GET"}
+    },
+    {
+      "id": "log-end",
+      "type": "log",
+      "position": {"x": 980, "y": 40},
+      "data": {"label": "EndLog", "message": "Should not run", "level": "info"}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "trigger-1", "target": "log-start", "type": "default"},
+    {"id": "e2", "source": "log-start", "target": "edit-payload", "type": "default"},
+    {"id": "e3", "source": "edit-payload", "target": "http-bad", "type": "default"},
+    {"id": "e4", "source": "http-bad", "target": "log-end", "type": "default"}
+  ]
+}

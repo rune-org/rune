@@ -1,0 +1,82 @@
+{
+  "workflow_id": "wf-merge-any-approval",
+  "execution_id": "exec-merge-any-approval",
+  "status_messages": [
+    {
+      "node_id": "fetch-approval",
+      "node_name": "FetchApproval",
+      "status": "success",
+      "output": {
+        "status": 200
+      }
+    },
+    {
+      "node_id": "if-approval",
+      "node_name": "ApprovalGate",
+      "status": "success",
+      "output": {
+        "expression": "$FetchApproval.body.source == 'manager'",
+        "result": true
+      }
+    },
+    {
+      "node_id": "log-final",
+      "node_name": "FinalLog",
+      "status": "success",
+      "output": {
+        "level": "info",
+        "message": "Approval merged"
+      }
+    },
+    {
+      "node_id": "log-manager",
+      "node_name": "ManagerLog",
+      "status": "success",
+      "output": {
+        "level": "info",
+        "message": "Manager approved"
+      }
+    },
+    {
+      "node_id": "merge-approval",
+      "node_name": "MergeApprovals",
+      "status": "success",
+      "output": {
+        "_merge_winner": "log-manager",
+        "merged_context": {
+          "$ApprovalGate": {
+            "expression": "$FetchApproval.body.source == 'manager'",
+            "result": true
+          },
+          "$FetchApproval": {
+            "status": 200
+          },
+          "$ManagerLog": {
+            "level": "info",
+            "message": "Manager approved"
+          }
+        }
+      }
+    }
+  ],
+  "completion": {
+    "status": "completed",
+    "final_context": {
+      "$ApprovalGate": {
+        "expression": "$FetchApproval.body.source == 'manager'",
+        "result": true
+      },
+      "$FetchApproval": {
+        "status": 200
+      },
+      "$FinalLog": {
+        "level": "info",
+        "message": "Approval merged"
+      },
+      "$ManagerLog": {
+        "level": "info",
+        "message": "Manager approved"
+      }
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "workflow_id": "wf-support-switch-fallback-fail",
+  "execution_id": "exec-support-switch-fallback-fail",
+  "status_messages": [
+    {
+      "node_id": "fetch-ticket",
+      "node_name": "FetchTicket",
+      "status": "success",
+      "output": {
+        "status": 200
+      }
+    },
+    {
+      "node_id": "http-fail",
+      "node_name": "Notify Failure",
+      "status": "failed",
+      "error": {
+        "message": "http request failed after 1 attempts: status code 500 matches raise_on_status pattern: 5xx",
+        "code": "NODE_EXECUTION_FAILED"
+      }
+    },
+    {
+      "node_id": "log-fallback",
+      "node_name": "Fallback",
+      "status": "success",
+      "output": {
+        "level": "warn",
+        "message": "Fallback route"
+      }
+    },
+    {
+      "node_id": "switch-route",
+      "node_name": "Channel Router",
+      "status": "success",
+      "output": {
+        "fallback": true,
+        "output_index": 2
+      }
+    }
+  ],
+  "completion": {
+    "status": "halted",
+    "final_context": {
+      "$Channel Router": {
+        "fallback": true,
+        "output_index": 2
+      },
+      "$Fallback": {
+        "level": "warn",
+        "message": "Fallback route"
+      },
+      "$FetchTicket": {
+        "status": 200
+      }
+    }
+  }
+}

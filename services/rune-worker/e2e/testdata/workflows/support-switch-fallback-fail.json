@@ -1,0 +1,72 @@
+{
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "trigger",
+      "position": {"x": 80, "y": 40},
+      "data": {"label": "Start"}
+    },
+    {
+      "id": "switch-route",
+      "type": "switch",
+      "position": {"x": 280, "y": 40},
+      "data": {
+        "label": "Channel Router",
+        "rules": [
+          {"value": "$FetchTicket.body.channel", "operator": "==", "compare": "email"},
+          {"value": "$FetchTicket.body.channel", "operator": "==", "compare": "chat"}
+        ]
+      }
+    },
+    {
+      "id": "fetch-ticket",
+      "type": "http",
+      "position": {"x": 280, "y": -80},
+      "data": {
+        "label": "FetchTicket",
+        "method": "GET",
+        "url": "https://dummyjson.com/tickets/sms",
+        "timeout": 30,
+        "retry": 0,
+        "retry_delay": 0,
+        "raise_on_status": "4xx,5xx"
+      }
+    },
+    {
+      "id": "log-fallback",
+      "type": "log",
+      "position": {"x": 520, "y": 40},
+      "data": {"label": "Fallback", "message": "Fallback route", "level": "warn"}
+    },
+    {
+      "id": "http-fail",
+      "type": "http",
+      "position": {"x": 760, "y": 40},
+      "data": {
+        "label": "Notify Failure",
+        "method": "GET",
+        "url": "https://httpbin.org/status/500",
+        "raise_on_status": "5xx"
+      }
+    },
+    {
+      "id": "log-end",
+      "type": "log",
+      "position": {"x": 980, "y": 40},
+      "data": {"label": "End", "message": "Should not run", "level": "info"}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "trigger-1", "target": "fetch-ticket", "type": "default"},
+    {"id": "e1b", "source": "fetch-ticket", "target": "switch-route", "type": "default"},
+    {
+      "id": "e2",
+      "source": "switch-route",
+      "sourceHandle": "switch-fallback",
+      "target": "log-fallback",
+      "type": "default"
+    },
+    {"id": "e3", "source": "log-fallback", "target": "http-fail", "type": "default"},
+    {"id": "e4", "source": "http-fail", "target": "log-end", "type": "default"}
+  ]
+}

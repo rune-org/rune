@@ -1,0 +1,43 @@
+{
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "trigger",
+      "position": {"x": 80, "y": 40},
+      "data": {"label": "Start"}
+    },
+    {
+      "id": "now-node",
+      "type": "dateTimeNow",
+      "position": {"x": 280, "y": 40},
+      "data": {
+        "label": "Now",
+        "timezone": "UTC",
+        "format": "2006-01-02T15:04:05Z07:00"
+      }
+    },
+    {
+      "id": "edit-now",
+      "type": "edit",
+      "position": {"x": 520, "y": 40},
+      "data": {
+        "label": "PickTimezone",
+        "mode": "assignments",
+        "assignments": [
+          {"name": "timezone", "value": "{{ $Now.timezone }}", "type": "string"}
+        ]
+      }
+    },
+    {
+      "id": "log-now",
+      "type": "log",
+      "position": {"x": 760, "y": 40},
+      "data": {"label": "NowLog", "message": "Timestamp captured", "level": "info"}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "trigger-1", "target": "now-node", "type": "default"},
+    {"id": "e2", "source": "now-node", "target": "edit-now", "type": "default"},
+    {"id": "e3", "source": "edit-now", "target": "log-now", "type": "default"}
+  ]
+}
