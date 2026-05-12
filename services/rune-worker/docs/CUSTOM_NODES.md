@@ -329,9 +329,9 @@ func (n *MyNode) Execute(ctx context.Context, execCtx plugin.ExecutionContext) (
         slog.Info("processing user", "user_id", userID)
     }
     
-    // Access workflow input
-    if triggerData, ok := execCtx.Input["$input"].(map[string]interface{}); ok {
-        requestID, _ := triggerData["request_id"].(string)
+    // Access caller-provided workflow input, when present
+    if inputData, ok := execCtx.Input["$input"].(map[string]interface{}); ok {
+        requestID, _ := inputData["request_id"].(string)
         slog.Info("processing request", "request_id", requestID)
     }
     

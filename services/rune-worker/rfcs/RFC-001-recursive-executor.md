@@ -232,13 +232,13 @@ This proposal aims to achieve the following objectives:
 ┌─────────────────────────────────────────────────────────────┐
 │ INITIATION (Master Service)                                 │
 ├─────────────────────────────────────────────────────────────┤
-│ 1. Trigger fires (e.g., manual trigger, webhook)            │
-│ 2. Master executes trigger logic                            │
+│ 1. Workflow start is requested (e.g., manual run, webhook)  │
+│ 2. Master determines the first executable node              │
 │ 3. Master resolves ALL credentials for workflow nodes       │
 │ 4. Master publishes NodeExecutionMessage:                    │
 │    - current_node = first_execution_node_id                 │
 │    - workflow_definition (with resolved credentials)        │
-│    - accumulated_context = {"$trigger": trigger_output}     │
+│    - accumulated_context = optional caller-provided context │
 └─────────────────────────────────────────────────────────────┘
                            ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -285,7 +285,7 @@ Execution state is maintained through message payload propagation:
 ### 6.1 NodeExecutionMessage
 
 **Purpose**: Instructs a worker to execute a specific node. This message serves dual purposes:
-1. **Initial workflow start**: Published by master service after trigger execution
+1. **Initial workflow start**: Published by master service after run validation
 2. **Recursive execution**: Published by workers after completing a node
 
 **Queue**: `workflow.execution`
@@ -325,12 +325,7 @@ Execution state is maintained through message payload propagation:
     "nodes": [...],
     "edges": [...]
   },
-  "accumulated_context": {
-    "$trigger": {
-      "user_id": "user_123",
-      "timestamp": "2025-10-09T12:34:56Z"
-    }
-  }
+  "accumulated_context": {}
 }
 ```
 
@@ -345,7 +340,7 @@ This unified message structure ensures that both initial workflow starts and rec
 
 **Initial vs Recursive Messages**:
 
-- **Initial Message**: `current_node` points to the first execution node (trigger outputs already in `accumulated_context` as `$trigger`)
+- **Initial Message**: `current_node` points to the first executable node after the trigger node
 - **Recursive Message**: `current_node` points to next node, `accumulated_context` includes all previous node outputs with `$<node_name>` keys
 
 ### 6.2 NodeStatusMessage
@@ -554,20 +549,20 @@ Workers MUST:
 Example accumulation:
 
 ```
-Initial context:
+Initial context, if the caller provided one:
   {
-    "$trigger": {"user_id": "123"}
+    "$payload": {"event_id": "evt_123"}
   }
 
 After "Fetch User" node execution:
   {
-    "$trigger": {"user_id": "123"},
+    "$payload": {"event_id": "evt_123"},
     "$Fetch User": {"status": 200, "body": {...}}
   }
 
 After "Check Status" conditional node execution:
   {
-    "$trigger": {"user_id": "123"},
+    "$payload": {"event_id": "evt_123"},
     "$Fetch User": {"status": 200, "body": {...}},
     "$Check Status": {"result": true}
   }
