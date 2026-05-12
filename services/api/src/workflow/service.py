@@ -152,7 +152,9 @@ class WorkflowService:
         await self.db.refresh(workflow)
         return workflow
 
-    async def update_description(self, workflow: Workflow, description: str) -> Workflow:
+    async def update_description(
+        self, workflow: Workflow, description: str
+    ) -> Workflow:
         """Update only the workflow's description and persist the change."""
         workflow.description = description
         await self.db.commit()

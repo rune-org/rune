@@ -287,7 +287,9 @@ async def update_description(
     detail = WorkflowDetail.from_workflow(
         wf, await service.get_latest_version_with_creator(wf)
     )
-    return ApiResponse(success=True, message="Workflow description updated", data=detail)
+    return ApiResponse(
+        success=True, message="Workflow description updated", data=detail
+    )
 
 
 @router.get(

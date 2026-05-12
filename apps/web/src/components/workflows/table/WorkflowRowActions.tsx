@@ -121,10 +121,7 @@ export function WorkflowRowActions({
             </DropdownMenuItem>
           )}
           {canRenameWorkflow(workflow.role, isAdmin) && (
-            <DropdownMenuItem
-              onSelect={() => onEditDescription(workflow)}
-              disabled={isPending}
-            >
+            <DropdownMenuItem onSelect={() => onEditDescription(workflow)} disabled={isPending}>
               Edit description
             </DropdownMenuItem>
           )}
