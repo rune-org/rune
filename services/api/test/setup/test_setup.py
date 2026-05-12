@@ -276,6 +276,28 @@ async def test_first_admin_signup_invalid_email_format(client: AsyncClient):
     assert response.status_code == 422
     data = response.json()
     assert data["success"] is False
+    assert data["message"] == "Validation Error(s)"
+    assert any("email" in error.lower() for error in data["data"])
+
+
+async def test_first_admin_signup_invalid_password_format(client: AsyncClient):
+    """
+    Test first admin signup fails with invalid password format.
+    """
+    response = await client.post(
+        "/setup/initialize",
+        json={
+            "name": "Admin User",
+            "email": "admin@example.com",
+            "password": "not-a-password",
+        },
+    )
+
+    assert response.status_code == 422
+    data = response.json()
+    assert data["success"] is False
+    assert data["message"] == "Validation Error(s)"
+    assert any("password" in error.lower() for error in data["data"])
 
 
 @pytest.mark.asyncio
