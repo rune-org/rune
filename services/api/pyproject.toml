@@ -23,7 +23,7 @@ dependencies = [
     "python-dotenv==1.2.2",
     "redis==6.4.0",
     "regex==2026.4.4",
-    "starlette==0.52.1",
+    "starlette==1.0.0",
     "sqlmodel==0.0.38",
     "python3-saml==1.16.0",
 ]
