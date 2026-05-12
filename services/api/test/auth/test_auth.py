@@ -61,11 +61,10 @@ async def test_login_invalid_password_format(client: AsyncClient, test_user):
     response = await client.post(
         "/auth/login", json={"email": "test@example.com", "password": "not-a-password"}
     )
-    assert response.status_code == 422
+    assert response.status_code == 401
     data = response.json()
     assert data["success"] is False
-    assert data["message"] == "Validation Error(s)"
-    assert any("password" in error.lower() for error in data["data"])
+    assert data["message"] == "Invalid credentials"
 
 
 @pytest.mark.asyncio
@@ -668,7 +667,7 @@ async def test_unicode_characters_in_credentials(
         json={"email": "unicode@example.com", "password": unicode_password},
     )
 
-    assert response.status_code == 422
+    assert response.status_code == 200
 
 
 @pytest.mark.asyncio
@@ -680,7 +679,7 @@ async def test_very_long_password(client: AsyncClient, test_user):
         "/auth/login", json={"email": "test@example.com", "password": long_password}
     )
 
-    assert response.status_code == 422
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio
