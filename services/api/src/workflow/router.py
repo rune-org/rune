@@ -35,6 +35,7 @@ from src.workflow.schemas import (
     WorkflowVersionConflict,
     WorkflowVersionDetail,
     WorkflowVersionListItem,
+    compute_workflow_status,
 )
 from src.workflow.service import WorkflowService, WorkflowVersionConflictError
 
@@ -54,13 +55,7 @@ async def list_workflows(
             name=wf.name,
             description=wf.description,
             is_active=wf.is_active,
-            status=(
-                WorkflowStatus.ACTIVE
-                if wf.is_active
-                else WorkflowStatus.INACTIVE
-                if wf.published_version_id is not None
-                else WorkflowStatus.DRAFT
-            ),
+            status=compute_workflow_status(wf),
             role=role,
             owner_name=owner_name,
         )

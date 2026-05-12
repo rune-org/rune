@@ -16,6 +16,15 @@ class WorkflowStatus(str, Enum):
     DRAFT = "draft"
 
 
+def compute_workflow_status(workflow: Workflow) -> WorkflowStatus:
+    """Compute the workflow status based on is_active and published_version_id."""
+    if workflow.is_active:
+        return WorkflowStatus.ACTIVE
+    if workflow.published_version_id is not None:
+        return WorkflowStatus.INACTIVE
+    return WorkflowStatus.DRAFT
+
+
 class WorkflowListItem(BaseModel):
     id: int
     name: str

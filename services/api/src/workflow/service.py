@@ -226,7 +226,6 @@ class WorkflowService:
             raise
 
         locked_workflow.latest_version_id = version.id
-        locked_workflow.is_active = locked_workflow.published_version_id is not None
 
         # Sync credential links for usage tracking
         await self._sync_credential_links(locked_workflow.id, workflow_data)
@@ -279,7 +278,6 @@ class WorkflowService:
         await self.db.flush()
 
         locked_workflow.latest_version_id = version.id
-        locked_workflow.is_active = locked_workflow.published_version_id is not None
 
         # Sync credential links for usage tracking
         await self._sync_credential_links(locked_workflow.id, version.workflow_data)
@@ -341,9 +339,10 @@ class WorkflowService:
     async def get_run_version(
         self, workflow: Workflow, version_id: int | None
     ) -> WorkflowVersion:
+        if not workflow.is_active:
+            raise BadRequest(detail="Workflow is inactive")
+
         if version_id is None:
-            if not workflow.is_active:
-                raise BadRequest(detail="Workflow is inactive")
             if workflow.published_version_id is None:
                 raise BadRequest(detail="Workflow has no published version")
 
