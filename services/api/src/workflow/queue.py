@@ -68,7 +68,7 @@ class WorkflowQueueService(BaseQueuePublisher):
 
         Creates a NodeExecutionMessage with the proper structure
         including workflow_id, execution_id, current_node (first node), workflow_definition,
-        and accumulated_context (with trigger data).
+        and accumulated_context (with optional caller-provided data).
 
         Args:
             workflow_id: The workflow database ID
