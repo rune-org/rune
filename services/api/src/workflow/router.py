@@ -29,6 +29,7 @@ from src.workflow.schemas import (
     WorkflowPublishVersion,
     WorkflowRestoreVersion,
     WorkflowRunRequest,
+    WorkflowUpdateDescription,
     WorkflowUpdateName,
     WorkflowUpdateStatus,
     WorkflowVersionConflict,
@@ -268,6 +269,25 @@ async def update_name(
         wf, await service.get_latest_version_with_creator(wf)
     )
     return ApiResponse(success=True, message="Workflow name updated", data=detail)
+
+
+@router.put("/{workflow_id}/description", response_model=ApiResponse[WorkflowDetail])
+@require_workflow_permission("edit")
+async def update_description(
+    payload: WorkflowUpdateDescription,
+    workflow: Workflow = Depends(get_workflow_with_permission),
+    service: WorkflowService = Depends(get_workflow_service),
+) -> ApiResponse[WorkflowDetail]:
+    """
+    Update workflow description.
+
+    **Requires:** EDIT permission (OWNER or EDITOR)
+    """
+    wf = await service.update_description(workflow, payload.description or "")
+    detail = WorkflowDetail.from_workflow(
+        wf, await service.get_latest_version_with_creator(wf)
+    )
+    return ApiResponse(success=True, message="Workflow description updated", data=detail)
 
 
 @router.get(

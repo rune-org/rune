@@ -2056,6 +2056,16 @@ export type WorkflowShareResponse = {
 };
 
 /**
+ * WorkflowUpdateDescription
+ */
+export type WorkflowUpdateDescription = {
+    /**
+     * Description
+     */
+    description?: string | null;
+};
+
+/**
  * WorkflowUpdateName
  */
 export type WorkflowUpdateName = {
@@ -2676,6 +2686,36 @@ export type UpdateNameWorkflowsWorkflowIdNamePutResponses = {
 };
 
 export type UpdateNameWorkflowsWorkflowIdNamePutResponse = UpdateNameWorkflowsWorkflowIdNamePutResponses[keyof UpdateNameWorkflowsWorkflowIdNamePutResponses];
+
+export type UpdateDescriptionWorkflowsWorkflowIdDescriptionPutData = {
+    body: WorkflowUpdateDescription;
+    path: {
+        /**
+         * Workflow Id
+         */
+        workflow_id: number;
+    };
+    query?: never;
+    url: '/workflows/{workflow_id}/description';
+};
+
+export type UpdateDescriptionWorkflowsWorkflowIdDescriptionPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateDescriptionWorkflowsWorkflowIdDescriptionPutError = UpdateDescriptionWorkflowsWorkflowIdDescriptionPutErrors[keyof UpdateDescriptionWorkflowsWorkflowIdDescriptionPutErrors];
+
+export type UpdateDescriptionWorkflowsWorkflowIdDescriptionPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseWorkflowDetail;
+};
+
+export type UpdateDescriptionWorkflowsWorkflowIdDescriptionPutResponse = UpdateDescriptionWorkflowsWorkflowIdDescriptionPutResponses[keyof UpdateDescriptionWorkflowsWorkflowIdDescriptionPutResponses];
 
 export type ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetData = {
     body?: never;

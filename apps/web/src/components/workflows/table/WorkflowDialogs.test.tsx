@@ -28,6 +28,7 @@ describe("WorkflowsDialogs", () => {
     render(
       <WorkflowsDialogs
         renameTarget={makeWorkflow("Nightly sync")}
+        descriptionTarget={null}
         deleteTarget={null}
         bulkDeleteOpen={false}
         pending={false}
@@ -35,6 +36,8 @@ describe("WorkflowsDialogs", () => {
         deletableCount={0}
         onRenameClose={vi.fn()}
         onRenameSubmit={onRenameSubmit}
+        onDescriptionClose={vi.fn()}
+        onDescriptionSubmit={vi.fn()}
         onDeleteCancel={vi.fn()}
         onDeleteConfirm={vi.fn()}
         onBulkDeleteCancel={vi.fn()}
@@ -59,6 +62,7 @@ describe("WorkflowsDialogs", () => {
     render(
       <WorkflowsDialogs
         renameTarget={null}
+        descriptionTarget={null}
         deleteTarget={null}
         bulkDeleteOpen={true}
         pending={false}
@@ -66,6 +70,8 @@ describe("WorkflowsDialogs", () => {
         deletableCount={3}
         onRenameClose={vi.fn()}
         onRenameSubmit={vi.fn()}
+        onDescriptionClose={vi.fn()}
+        onDescriptionSubmit={vi.fn()}
         onDeleteCancel={vi.fn()}
         onDeleteConfirm={vi.fn()}
         onBulkDeleteCancel={vi.fn()}
