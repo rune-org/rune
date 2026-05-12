@@ -36,7 +36,12 @@ export function TempPasswordModal({ open, onClose, email, password }: TempPasswo
         if (!nextOpen) onClose();
       }}
     >
-      <DialogContent hideCloseButton className="max-w-md gap-4">
+      <DialogContent
+        hideCloseButton
+        closeOnOutsideClick={false}
+        closeOnEscape={false}
+        className="max-w-md gap-4"
+      >
         <DialogHeader className="gap-2 text-left">
           <DialogTitle className="text-lg">Invitation created</DialogTitle>
           <DialogDescription>
