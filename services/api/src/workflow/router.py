@@ -26,7 +26,6 @@ from src.workflow.schemas import (
     WorkflowCreateVersion,
     WorkflowDetail,
     WorkflowListItem,
-    WorkflowStatus,
     WorkflowPublishVersion,
     WorkflowRestoreVersion,
     WorkflowRunRequest,
