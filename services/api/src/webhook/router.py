@@ -14,8 +14,8 @@ async def trigger_webhook(
 ) -> Response:
     """Trigger a workflow via its registered webhook URL.
 
-    The request body (JSON) is forwarded to the worker as trigger data
-    under the ``$trigger`` key in the execution context.
+    The request body (JSON) is forwarded to the worker as webhook request
+    payload under the ``$trigger`` key in the execution context.
 
     No authentication is required — the GUID itself is the secret.
     Returns 404 if the GUID is unknown or the workflow is inactive.
