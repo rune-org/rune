@@ -73,7 +73,7 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
     >
       <DialogContent
         hideCloseButton
-        className="max-w-md gap-4 sm:max-w-md"
+        className="max-w-md gap-4"
         onEscapeKeyDown={preventCloseWhileSubmitting}
         onPointerDownOutside={preventCloseWhileSubmitting}
         onInteractOutside={preventCloseWhileSubmitting}

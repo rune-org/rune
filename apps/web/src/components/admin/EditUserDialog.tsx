@@ -93,7 +93,7 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
     >
       <DialogContent
         hideCloseButton
-        className="max-w-md gap-4 sm:max-w-md"
+        className="max-w-md gap-4"
         onEscapeKeyDown={preventCloseWhileSubmitting}
         onPointerDownOutside={preventCloseWhileSubmitting}
         onInteractOutside={preventCloseWhileSubmitting}
