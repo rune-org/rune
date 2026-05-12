@@ -1,7 +1,13 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Copy } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 
@@ -13,8 +19,6 @@ interface TempPasswordModalProps {
 }
 
 export function TempPasswordModal({ open, onClose, email, password }: TempPasswordModalProps) {
-  if (!open) return null;
-
   const copyTempPassword = async () => {
     try {
       await navigator.clipboard.writeText(password);
@@ -25,21 +29,20 @@ export function TempPasswordModal({ open, onClose, email, password }: TempPasswo
     }
   };
 
-  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Prevent backdrop click from closing when clicking inside card
-    e.stopPropagation();
-  };
-
   return (
-    <div
-      className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center p-6 z-50"
-      onClick={onClose}
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
+      }}
     >
-      <Card className="p-6 w-full max-w-md bg-background border" onClick={handleCardClick}>
-        <h3 className="text-lg font-semibold mb-2">Invitation created</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Share the temporary password with the new user so they can sign in and change it.
-        </p>
+      <DialogContent hideCloseButton className="max-w-md gap-4">
+        <DialogHeader className="gap-2 text-left">
+          <DialogTitle className="text-lg">Invitation created</DialogTitle>
+          <DialogDescription>
+            Share the temporary password with the new user so they can sign in and change it.
+          </DialogDescription>
+        </DialogHeader>
 
         <div className="mb-4 p-4 bg-muted rounded">
           <div className="flex flex-col gap-3">
@@ -64,7 +67,7 @@ export function TempPasswordModal({ open, onClose, email, password }: TempPasswo
             Close
           </Button>
         </div>
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
