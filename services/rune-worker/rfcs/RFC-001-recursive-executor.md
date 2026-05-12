@@ -458,7 +458,6 @@ This unified message structure ensures that both initial workflow starts and rec
   "execution_id": "exec_20251009_123456",
   "status": "completed",
   "final_context": {
-    "$trigger": {...},
     "$http_fetch_user": {...},
     "$smtp_send_email": {
       "sent": true,
