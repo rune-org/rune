@@ -166,7 +166,7 @@ async def test_user(test_db: AsyncSession):
     ph = PasswordHasher()
     user = User(
         email="test@example.com",
-        hashed_password=ph.hash("testpassword123"),
+        hashed_password=ph.hash("Testpassword!23"),
         name="Test User",
         role=UserRole.USER,
     )
@@ -186,7 +186,7 @@ async def test_admin(test_db: AsyncSession):
     ph = PasswordHasher()
     admin = User(
         email="admin@example.com",
-        hashed_password=ph.hash("adminpassword123"),
+        hashed_password=ph.hash("Adminpassword!23"),
         name="Test Admin",
         role=UserRole.ADMIN,
     )
@@ -205,7 +205,7 @@ async def authenticated_client(client: AsyncClient, test_user) -> AsyncClient:
     """
     # Login to get authentication cookies
     response = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
+        "/auth/login", json={"email": "test@example.com", "password": "Testpassword!23"}
     )
     assert response.status_code == 200, (
         f"Login failed: {response.status_code} {response.text}"
@@ -224,7 +224,7 @@ async def admin_client(client: AsyncClient, test_admin) -> AsyncClient:
     # Login to get authentication cookies
     response = await client.post(
         "/auth/login",
-        json={"email": "admin@example.com", "password": "adminpassword123"},
+        json={"email": "admin@example.com", "password": "Adminpassword!23"},
     )
     assert response.status_code == 200, (
         f"Admin login failed: {response.status_code} {response.text}"

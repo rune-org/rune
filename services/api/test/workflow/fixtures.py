@@ -14,7 +14,7 @@ async def other_user(test_db):
     ph = PasswordHasher()
     user = User(
         email="other@example.com",
-        hashed_password=ph.hash("otherpassword123"),
+        hashed_password=ph.hash("Otherpassword!23"),
         name="Other User",
         role=UserRole.USER,
     )
