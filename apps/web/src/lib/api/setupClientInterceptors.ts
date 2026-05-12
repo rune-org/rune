@@ -96,10 +96,16 @@ export function setupClientInterceptors() {
 
     const headers = normalized;
     headers.set("x-retried", "1");
+    headers.delete("Authorization");
+
     const result = await client.request({
       ...options,
+      security: [],
       headers,
       method: (options.method ?? "GET") as Uppercase<HttpMethod>,
+      // Use "stream" to ensure the inner retry request does not consume the response
+      // body to prevent "body stream already read" errors for the original caller
+      parseAs: "stream",
     });
     return result.response ?? response;
   });

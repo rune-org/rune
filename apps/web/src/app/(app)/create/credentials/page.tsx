@@ -170,6 +170,7 @@ export default function CreateCredentialsPage() {
       <DeleteCredentialDialog
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}
+        credentialId={deleteDialog.credentialId}
         credentialName={deleteDialog.credentialName}
         onConfirm={confirmDelete}
       />
