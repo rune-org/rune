@@ -7,7 +7,6 @@ Integrates node, edge, and structure validation.
 from typing import Any
 
 from src.workflow.validation.base import (
-    CompositeValidator,
     ValidationError,
     ValidationResult,
     Validator,
@@ -103,9 +102,7 @@ class WorkflowStructureValidator(Validator):
     def validate(self, data: dict[str, Any]) -> ValidationResult:
         """Validate workflow structure.
 
-        Note: This validator returns first error only (early return on failure),
-        as structure validation is the gate for further validation. If structure
-        is invalid, detailed node/edge errors would be noisy/misleading.
+        Collects all structure errors and returns them together.
 
         Args:
             data: Workflow data to validate
@@ -113,40 +110,48 @@ class WorkflowStructureValidator(Validator):
         Returns:
             ValidationResult with any errors found
         """
+        errors: list[ValidationError] = []
+
         if not isinstance(data, dict):
-            return ValidationResult.failure_from_single(WorkflowDataNotObjectError())
+            errors.append(WorkflowDataNotObjectError())
+            return ValidationResult.failure(errors)
 
         if not data:
-            return ValidationResult.failure_from_single(WorkflowDataEmptyError())
+            errors.append(WorkflowDataEmptyError())
+            return ValidationResult.failure(errors)
 
         if "nodes" not in data:
-            return ValidationResult.failure_from_single(WorkflowMissingNodesError())
+            errors.append(WorkflowMissingNodesError())
 
         if "edges" not in data:
-            return ValidationResult.failure_from_single(WorkflowMissingEdgesError())
+            errors.append(WorkflowMissingEdgesError())
 
         nodes = data.get("nodes")
         if not isinstance(nodes, list):
-            return ValidationResult.failure_from_single(NodesNotArrayError())
+            errors.append(NodesNotArrayError())
+        elif not nodes:
+            errors.append(NodesEmptyError())
 
         edges = data.get("edges")
         if not isinstance(edges, list):
-            return ValidationResult.failure_from_single(EdgesNotArrayError())
+            errors.append(EdgesNotArrayError())
 
-        if not nodes:
-            return ValidationResult.failure_from_single(NodesEmptyError())
+        if errors:
+            return ValidationResult.failure(errors)
 
-        trigger_nodes = [
-            node
-            for node in nodes
-            if isinstance(node, dict) and node.get("trigger", False)
-        ]
-        if not trigger_nodes:
-            return ValidationResult.failure_from_single(TriggerNodeMissingError())
+        if isinstance(nodes, list):
+            trigger_nodes = [
+                node
+                for node in nodes
+                if isinstance(node, dict) and node.get("trigger", False)
+            ]
+            if not trigger_nodes:
+                errors.append(TriggerNodeMissingError())
+            elif len(trigger_nodes) > 1:
+                errors.append(TriggerNodeMultipleError())
 
-        if len(trigger_nodes) > 1:
-            return ValidationResult.failure_from_single(TriggerNodeMultipleError())
-
+        if errors:
+            return ValidationResult.failure(errors)
         return ValidationResult.success()
 
 
