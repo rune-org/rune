@@ -1680,10 +1680,14 @@ export type UserBasicInfo = {
 export type UserCreate = {
     /**
      * Name
+     *
+     * User display name
      */
     name: string;
     /**
      * Email
+     *
+     * User email
      */
     email: string;
     /**

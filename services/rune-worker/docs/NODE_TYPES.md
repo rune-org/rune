@@ -41,7 +41,7 @@ All nodes share these common properties:
 
 Nodes can access data using template interpolation:
 
-- `{{$input.field}}` - Access workflow input/trigger data
+- `{{$input.field}}` - Access caller-provided workflow input, when present
 - `{{$previous_node.field}}` - Access output from a specific node
 - `{{$credential.field}}` - Access credential values
 
