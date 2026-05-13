@@ -103,6 +103,10 @@ class WorkflowStructureValidator(Validator):
     def validate(self, data: dict[str, Any]) -> ValidationResult:
         """Validate workflow structure.
 
+        Note: This validator returns first error only (early return on failure),
+        as structure validation is the gate for further validation. If structure
+        is invalid, detailed node/edge errors would be noisy/misleading.
+
         Args:
             data: Workflow data to validate
 
@@ -146,23 +150,33 @@ class WorkflowStructureValidator(Validator):
         return ValidationResult.success()
 
 
-class WorkflowValidator(CompositeValidator):
+class WorkflowValidator(Validator):
     """Complete workflow validator combining all validators.
 
     Runs:
-    1. Structure validation (basic shape)
+    1. Structure validation (basic shape) - short-circuits on failure
     2. Node ID validation (node IDs, uniqueness)
     3. Edge wiring validation (edge connections)
     """
 
     def __init__(self):
-        super().__init__(
-            [
-                WorkflowStructureValidator(),
-                NodeIdValidator(),
-                EdgeWiringValidator(),
-            ]
-        )
+        self.structure_validator = WorkflowStructureValidator()
+        self.node_validator = NodeIdValidator()
+        self.edge_validator = EdgeWiringValidator()
+
+    def validate(self, data: dict[str, Any]) -> ValidationResult:
+        """Run all validators, short-circuiting on structure failure."""
+        structure_result = self.structure_validator.validate(data)
+        if not structure_result.valid:
+            return structure_result
+
+        node_result = self.node_validator.validate(data)
+        edge_result = self.edge_validator.validate(data)
+
+        all_errors = list(node_result.errors) + list(edge_result.errors)
+        if all_errors:
+            return ValidationResult.failure(all_errors)
+        return ValidationResult.success()
 
 
 def validate_workflow_structure(data: dict[str, Any]) -> ValidationResult:

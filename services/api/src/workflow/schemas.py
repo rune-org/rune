@@ -173,8 +173,11 @@ class WorkflowCreateVersion(BaseModel):
         """Validate workflow data using modular validators."""
         result = validate_workflow_data(self.workflow_data)
         if not result.valid:
-            error_messages = [e.message for e in result.errors]
-            raise ValueError(f"Invalid workflow: {'; '.join(error_messages)}")
+            error_parts = []
+            for e in result.errors:
+                field_prefix = f"[{e.field}] " if e.field else ""
+                error_parts.append(f"{field_prefix}{e.message}")
+            raise ValueError(f"Invalid workflow: {'; '.join(error_parts)}")
         return self
 
 

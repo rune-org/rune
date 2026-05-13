@@ -58,6 +58,17 @@ class NodeNotObjectError(ValidationError):
         self.index = index
 
 
+class NodeInvalidIdTypeError(ValidationError):
+    """Node id is not a string."""
+
+    def __init__(self, index: int, actual_type: str):
+        message = f"Node at index {index} id must be a string, got {actual_type}"
+        super().__init__(
+            message, field="node.id", context={"index": index, "type": actual_type}
+        )
+        self.index = index
+
+
 class NodeIdValidator(Validator):
     """Validator for node IDs and structure.
 
@@ -106,6 +117,9 @@ class NodeIdValidator(Validator):
             return NodeMissingIdError(index)
 
         node_id = node.get("id")
+        if not isinstance(node_id, str):
+            return NodeInvalidIdTypeError(index, type(node_id).__name__)
+
         if not node_id:
             return NodeEmptyIdError(index)
 
@@ -117,18 +131,3 @@ class NodeIdValidator(Validator):
             return NodeMissingTypeError(index)
 
         return None
-
-
-def validate_node_ids(nodes: list[dict[str, Any]]) -> list[ValidationError]:
-    """Validate node IDs in nodes list.
-
-    Args:
-        nodes: List of node dictionaries
-
-    Returns:
-        List of validation errors
-    """
-    validator = NodeIdValidator()
-    workflow_data = {"nodes": nodes, "edges": []}
-    result = validator.validate(workflow_data)
-    return result.errors

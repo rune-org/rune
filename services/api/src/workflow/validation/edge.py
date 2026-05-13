@@ -109,6 +109,15 @@ class EdgeInvalidDestinationTypeError(ValidationError):
         )
 
 
+class EdgeNotObjectError(ValidationError):
+    """Edge is not a valid object."""
+
+    def __init__(self, index: int):
+        message = f"Edge at index {index} must be an object"
+        super().__init__(message, field="edge", context={"index": index})
+        self.index = index
+
+
 class EdgeWiringValidator(Validator):
     """Validator for edge wiring/connections in workflow data.
 
@@ -160,6 +169,7 @@ class EdgeWiringValidator(Validator):
 
         for idx, edge in enumerate(edges):
             if not isinstance(edge, dict):
+                errors.append(EdgeNotObjectError(idx))
                 continue
 
             edge_id = edge.get("id")
@@ -217,56 +227,3 @@ class EdgeWiringValidator(Validator):
                 return EdgeDestinationNodeNotFoundError(edge_id, value)
 
         return None
-
-
-def validate_edge_references(
-    edges: list[dict[str, Any]], node_ids: set[str]
-) -> list[ValidationError]:
-    """Validate edges reference valid node IDs.
-
-    Args:
-        edges: List of edge dictionaries
-        node_ids: Set of valid node IDs
-
-    Returns:
-        List of validation errors
-    """
-    validator = EdgeWiringValidator()
-    workflow_data = {"nodes": [], "edges": edges}
-    result = validator.validate(workflow_data)
-    return result.errors
-
-
-def validate_no_self_referencing_edges(
-    edges: list[dict[str, Any]], node_ids: set[str]
-) -> list[ValidationError]:
-    """Validate no edges connect a node to itself.
-
-    Args:
-        edges: List of edge dictionaries
-        node_ids: Set of valid node IDs
-
-    Returns:
-        List of validation errors
-    """
-    errors: list[ValidationError] = []
-
-    for edge in edges:
-        if not isinstance(edge, dict):
-            continue
-
-        edge_id = edge.get("id")
-        src = edge.get("src")
-        dst = edge.get("dst")
-
-        if (
-            src is not None
-            and dst is not None
-            and isinstance(src, str)
-            and isinstance(dst, str)
-            and src == dst
-            and src in node_ids
-        ):
-            errors.append(SelfReferencingEdgeError(edge_id, src))
-
-    return errors

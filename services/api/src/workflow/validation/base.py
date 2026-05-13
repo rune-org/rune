@@ -1,10 +1,4 @@
-"""Base validation classes and interfaces.
-
-Provides:
-- ValidationError: Base exception for validation failures
-- ValidationResult: Result object for validation operations
-- Validator: Abstract base class for validators
-"""
+"""Base validation classes and interfaces."""
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
