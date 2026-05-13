@@ -4,10 +4,11 @@ from typing import Any, Optional
 
 from fastapi import status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from src.core.responses import ApiResponse
 from src.db.models import User, Workflow, WorkflowRole, WorkflowVersion
+from src.workflow.validation import validate_workflow_data
 
 
 class WorkflowListItem(BaseModel):
@@ -166,6 +167,15 @@ class WorkflowCreateVersion(BaseModel):
         ..., description="Workflow definition to save"
     )
     message: Optional[str] = Field(default=None, description="Revision message")
+
+    @model_validator(mode="after")
+    def _validate_workflow_data(self) -> "WorkflowCreateVersion":
+        """Validate workflow data using modular validators."""
+        result = validate_workflow_data(self.workflow_data)
+        if not result.valid:
+            error_messages = [e.message for e in result.errors]
+            raise ValueError(f"Invalid workflow: {'; '.join(error_messages)}")
+        return self
 
 
 class WorkflowPublishVersion(BaseModel):
