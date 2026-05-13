@@ -109,8 +109,6 @@ class WorkflowStructureValidator(Validator):
         Returns:
             ValidationResult with any errors found
         """
-        errors: list[ValidationError] = []
-
         if not isinstance(data, dict):
             return ValidationResult.failure_from_single(WorkflowDataNotObjectError())
 

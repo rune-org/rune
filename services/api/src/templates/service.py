@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Optional
 
 from sqlmodel import or_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
