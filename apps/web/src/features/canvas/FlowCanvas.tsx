@@ -69,6 +69,7 @@ type FlowCanvasProps = {
   ) => Promise<void> | void;
   saveDisabled?: boolean;
   workflowId?: number | null;
+  workflowName?: string | null;
   onPublish?: () => void;
   hasUnpublishedChanges?: boolean;
   publishDisabled?: boolean;
@@ -99,6 +100,7 @@ function FlowCanvasInner({
   onSaveWithMessage,
   saveDisabled = false,
   workflowId = null,
+  workflowName = null,
   onPublish,
   hasUnpublishedChanges = false,
   publishDisabled = false,
@@ -708,6 +710,7 @@ function FlowCanvasInner({
               wsStatus={wsStatus}
               isStartingExecution={isStartingExecution}
               workflowId={workflowId}
+              workflowName={workflowName}
               onPublish={onPublish}
               hasUnpublishedChanges={hasUnpublishedChanges}
               publishDisabled={publishDisabled}
