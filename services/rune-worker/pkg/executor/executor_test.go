@@ -379,7 +379,7 @@ func TestExecutor_ContextAccumulation(t *testing.T) {
 	}
 
 	initialContext := map[string]interface{}{
-		"$trigger": map[string]interface{}{"user_id": "123"},
+		"$payload": map[string]interface{}{"event_id": "evt_123"},
 	}
 
 	msg := &messages.NodeExecutionMessage{
@@ -406,9 +406,9 @@ func TestExecutor_ContextAccumulation(t *testing.T) {
 		t.Fatalf("Failed to unmarshal execution message: %v", err)
 	}
 
-	// Verify context contains both trigger and node output
-	if _, ok := nextMsg.AccumulatedContext["$trigger"]; !ok {
-		t.Error("Expected context to preserve $trigger")
+	// Verify context contains both initial payload and node output
+	if _, ok := nextMsg.AccumulatedContext["$payload"]; !ok {
+		t.Error("Expected context to preserve $payload")
 	}
 
 	nodeOutput, ok := nextMsg.AccumulatedContext["$Test Node"]

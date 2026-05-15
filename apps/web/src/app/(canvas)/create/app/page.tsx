@@ -63,6 +63,7 @@ function CanvasPageInner() {
   const [draftMessage, setDraftMessage] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftDescription, setDraftDescription] = useState("");
+  const [workflowName, setWorkflowName] = useState<string | null>(null);
 
   // Version state
   const [baseVersionId, setBaseVersionId] = useState<number | null>(null);
@@ -121,6 +122,7 @@ function CanvasPageInner() {
           setEdges(undefined);
           setBaseVersionId(null);
           setWorkflowMeta(null);
+          setWorkflowName(null);
         }
         return;
       }
@@ -161,6 +163,7 @@ function CanvasPageInner() {
             hasUnpublishedChanges: detail.has_unpublished_changes ?? false,
             latestVersionNumber: detail.latest_version?.version ?? null,
           });
+          setWorkflowName(detail.name);
         }
       } catch (err) {
         if (!abortController.signal.aborted) {
@@ -411,6 +414,7 @@ function CanvasPageInner() {
           hasUnpublishedChanges: true,
           latestVersionNumber: newVersion.version,
         });
+        setWorkflowName(created.name);
         toast.success("Workflow created");
         setDraftGraph(null);
         setDraftMessage(null);
@@ -443,6 +447,7 @@ function CanvasPageInner() {
           onSaveWithMessage={handleSaveWithMessage}
           saveDisabled={isSaving}
           workflowId={numericWorkflowId}
+          workflowName={workflowName}
           onPublish={handlePublish}
           hasUnpublishedChanges={workflowMeta?.hasUnpublishedChanges ?? false}
           publishDisabled={!baseVersionId}
