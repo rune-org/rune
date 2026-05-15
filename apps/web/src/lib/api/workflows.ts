@@ -4,6 +4,7 @@ import {
   getWorkflowWorkflowsWorkflowIdGet,
   createWorkflowWorkflowsPost,
   updateNameWorkflowsWorkflowIdNamePut,
+  updateDescriptionWorkflowsWorkflowIdDescriptionPut,
   updateStatusWorkflowsWorkflowIdStatusPut,
   deleteWorkflowWorkflowsWorkflowIdDelete,
   runWorkflowWorkflowsWorkflowIdRunPost,
@@ -20,6 +21,7 @@ import {
 import type {
   WorkflowCreate,
   WorkflowUpdateName,
+  WorkflowUpdateDescription,
   WorkflowUpdateStatus,
   WorkflowCreateVersion,
   WorkflowPublishVersion,
@@ -30,6 +32,7 @@ import type {
   GetWorkflowWorkflowsWorkflowIdGetResponse,
   CreateWorkflowWorkflowsPostResponse,
   UpdateNameWorkflowsWorkflowIdNamePutResponse,
+  UpdateDescriptionWorkflowsWorkflowIdDescriptionPutResponse,
   UpdateStatusWorkflowsWorkflowIdStatusPutResponse,
   DeleteWorkflowWorkflowsWorkflowIdDeleteResponse,
   RunWorkflowWorkflowsWorkflowIdRunPostResponse,
@@ -60,6 +63,12 @@ export const updateWorkflowName = (workflow_id: number, name: string) =>
   updateNameWorkflowsWorkflowIdNamePut({
     path: { workflow_id },
     body: { name } as WorkflowUpdateName,
+  });
+
+export const updateWorkflowDescription = (workflow_id: number, description: string) =>
+  updateDescriptionWorkflowsWorkflowIdDescriptionPut({
+    path: { workflow_id },
+    body: { description } as WorkflowUpdateDescription,
   });
 
 export const updateWorkflowStatus = (workflow_id: number, is_active: boolean) =>
@@ -207,6 +216,8 @@ export type ListUserExecutionsResponse = ListUserExecutionsExecutionsGetResponse
 export type GetWorkflowResponse = GetWorkflowWorkflowsWorkflowIdGetResponse;
 export type CreateWorkflowResponse = CreateWorkflowWorkflowsPostResponse;
 export type UpdateWorkflowNameResponse = UpdateNameWorkflowsWorkflowIdNamePutResponse;
+export type UpdateWorkflowDescriptionResponse =
+  UpdateDescriptionWorkflowsWorkflowIdDescriptionPutResponse;
 export type UpdateWorkflowStatusResponse = UpdateStatusWorkflowsWorkflowIdStatusPutResponse;
 export type DeleteWorkflowResponse = DeleteWorkflowWorkflowsWorkflowIdDeleteResponse;
 export type RunWorkflowResponse = RunWorkflowWorkflowsWorkflowIdRunPostResponse;

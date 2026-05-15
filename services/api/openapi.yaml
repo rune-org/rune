@@ -609,6 +609,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /workflows/{workflow_id}/description:
+    put:
+      tags:
+      - Workflows
+      summary: Update Description
+      description: 'Update workflow description.
+
+
+        **Requires:** EDIT permission (OWNER or EDITOR)'
+      operationId: update_description_workflows__workflow_id__description_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: workflow_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Workflow Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowUpdateDescription'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_WorkflowDetail_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /workflows/{workflow_id}/versions:
     get:
       tags:
@@ -4476,6 +4514,16 @@ components:
       - message
       title: WorkflowShareResponse
       description: Response after sharing a workflow.
+    WorkflowUpdateDescription:
+      properties:
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+          default: ''
+      type: object
+      title: WorkflowUpdateDescription
     WorkflowUpdateName:
       properties:
         name:

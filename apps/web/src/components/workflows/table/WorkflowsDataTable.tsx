@@ -73,6 +73,7 @@ type WorkflowsDataTableProps = {
   onExport: (workflow: WorkflowSummary) => void;
   onDelete: (workflow: WorkflowSummary) => void;
   onRename: (workflow: WorkflowSummary) => void;
+  onEditDescription: (workflow: WorkflowSummary) => void;
   onToggleActive: (workflow: WorkflowSummary) => void;
   onShare: (workflow: WorkflowSummary) => void;
 };
@@ -95,6 +96,7 @@ export function WorkflowsDataTable({
   onExport,
   onDelete,
   onRename,
+  onEditDescription,
   onToggleActive,
   onShare,
 }: WorkflowsDataTableProps) {
@@ -214,6 +216,7 @@ export function WorkflowsDataTable({
                     onExport={onExport}
                     onDelete={onDelete}
                     onRename={onRename}
+                    onEditDescription={onEditDescription}
                     onToggleActive={onToggleActive}
                     onShare={onShare}
                   />

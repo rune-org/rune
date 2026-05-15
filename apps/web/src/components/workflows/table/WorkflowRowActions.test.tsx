@@ -37,6 +37,7 @@ function renderActions(
     onExport: vi.fn(),
     onDelete: vi.fn(),
     onRename: vi.fn(),
+    onEditDescription: vi.fn(),
     onToggleActive: vi.fn(),
     onShare: vi.fn(),
   };

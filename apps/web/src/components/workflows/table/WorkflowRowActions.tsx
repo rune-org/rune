@@ -29,6 +29,7 @@ type WorkflowRowActionsProps = {
   onExport: (workflow: WorkflowSummary) => void;
   onDelete: (workflow: WorkflowSummary) => void;
   onRename: (workflow: WorkflowSummary) => void;
+  onEditDescription: (workflow: WorkflowSummary) => void;
   onToggleActive: (workflow: WorkflowSummary) => void;
   onShare: (workflow: WorkflowSummary) => void;
 };
@@ -42,6 +43,7 @@ export function WorkflowRowActions({
   onExport,
   onDelete,
   onRename,
+  onEditDescription,
   onToggleActive,
   onShare,
 }: WorkflowRowActionsProps) {
@@ -116,6 +118,11 @@ export function WorkflowRowActions({
           {canRenameWorkflow(workflow.role, isAdmin) && (
             <DropdownMenuItem onSelect={() => onRename(workflow)} disabled={isPending}>
               Rename
+            </DropdownMenuItem>
+          )}
+          {canRenameWorkflow(workflow.role, isAdmin) && (
+            <DropdownMenuItem onSelect={() => onEditDescription(workflow)} disabled={isPending}>
+              Edit description
             </DropdownMenuItem>
           )}
           {canChangeWorkflowStatus(workflow.role, isAdmin) && (

@@ -40,6 +40,24 @@ def normalize_and_validate_name(value: str, *, field_name: str = "name") -> str:
     return normalized
 
 
+def normalize_optional_text(
+    value: str | None,
+    *,
+    field_name: str,
+    max_length: int | None = None,
+) -> str:
+    """Normalize optional text input.
+
+    Trims whitespace and returns an empty string when unset.
+    """
+    if value is None:
+        return ""
+    normalized = value.strip()
+    if max_length is not None and len(normalized) > max_length:
+        raise ValueError(f"{field_name} must be {max_length} characters or fewer")
+    return normalized
+
+
 class WorkflowCreate(BaseModel):
     name: str = Field(..., min_length=1)
     description: Optional[str] = Field(default="")
@@ -49,6 +67,11 @@ class WorkflowCreate(BaseModel):
     def _validate_name(cls, v: str) -> str:
         return normalize_and_validate_name(v)
 
+    @field_validator("description")
+    @classmethod
+    def _normalize_description(cls, v: str | None) -> str:
+        return normalize_optional_text(v, field_name="description")
+
 
 class WorkflowUpdateName(BaseModel):
     name: str = Field(..., min_length=1)
@@ -57,6 +80,15 @@ class WorkflowUpdateName(BaseModel):
     @classmethod
     def _validate_name(cls, v: str) -> str:
         return normalize_and_validate_name(v)
+
+
+class WorkflowUpdateDescription(BaseModel):
+    description: Optional[str] = Field(default="")
+
+    @field_validator("description")
+    @classmethod
+    def _normalize_description(cls, v: str | None) -> str:
+        return normalize_optional_text(v, field_name="description")
 
 
 class WorkflowUpdateStatus(BaseModel):
