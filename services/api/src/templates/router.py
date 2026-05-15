@@ -34,6 +34,7 @@ async def list_templates(
             category=template.category,
             usage_count=template.usage_count,
             is_public=template.is_public,
+            created_by=template.created_by,
         )
         summaries.append(summary)
 
@@ -81,7 +82,7 @@ async def delete_template(
     service: TemplateService = Depends(get_template_service),
 ) -> None:
     """Delete a template."""
-    await service.delete_template(template_id, current_user.id)
+    await service.delete_template(template_id, current_user)
 
 
 @router.post("/{template_id}/use", response_model=ApiResponse[TemplateWorkflowData])
