@@ -58,6 +58,7 @@ type ToolbarProps = {
   wsStatus?: WsConnectionStatus;
   isStartingExecution?: boolean;
   workflowId?: number | null;
+  workflowName?: string | null;
 
   onPublish?: () => void;
   hasUnpublishedChanges?: boolean;
@@ -94,6 +95,7 @@ export const Toolbar = memo(function Toolbar({
   wsStatus = "disconnected",
   isStartingExecution = false,
   workflowId,
+  workflowName,
   onPublish,
   hasUnpublishedChanges = false,
   publishDisabled = false,
@@ -163,6 +165,18 @@ export const Toolbar = memo(function Toolbar({
       >
         <Logo href="" variant="glyph" className="h-5 w-5 translate-x-[1.5px]" />
       </Link>
+
+      <div className="h-6 w-px bg-foreground/20" />
+
+      {workflowName && (
+        <div className="flex items-center rounded-md bg-muted/40 px-2.5 py-1">
+          <span className="max-w-[100px] truncate text-xs font-medium text-foreground">
+            {workflowName}
+          </span>
+        </div>
+      )}
+
+      <div className="h-6 w-px bg-foreground/20" />
 
       {isExecuting ? (
         <>
