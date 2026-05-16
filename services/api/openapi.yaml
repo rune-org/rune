@@ -2465,10 +2465,10 @@ paths:
       - Webhook
       summary: Trigger Webhook
       description: "Trigger a workflow via its registered webhook URL.\n\nThe request\
-        \ body (JSON) is forwarded to the worker as trigger data\nunder the ``$trigger``\
-        \ key in the execution context.\n\nNo authentication is required \u2014 the\
-        \ GUID itself is the secret.\nReturns 404 if the GUID is unknown or the workflow\
-        \ is inactive."
+        \ body (JSON) is forwarded to the worker as webhook request\npayload under\
+        \ the ``$trigger`` key in the execution context.\n\nNo authentication is required\
+        \ \u2014 the GUID itself is the secret.\nReturns 404 if the GUID is unknown\
+        \ or the workflow is inactive."
       operationId: trigger_webhook_webhook__guid__post
       parameters:
       - name: guid
@@ -2513,12 +2513,16 @@ components:
           - type: string
             maxLength: 40
             minLength: 3
+            description: User display name
           - type: 'null'
           title: Name
         email:
           anyOf:
           - type: string
+            maxLength: 255
+            minLength: 3
             format: email
+            description: User email
           - type: 'null'
           title: Email
         role:
@@ -3577,11 +3581,14 @@ components:
           description: Admin's full name
         email:
           type: string
+          maxLength: 255
+          minLength: 3
           format: email
           title: Email
           description: Admin's email address
         password:
           type: string
+          maxLength: 128
           minLength: 8
           title: Password
           description: Admin's password
@@ -3649,6 +3656,7 @@ components:
       properties:
         email:
           type: string
+          minLength: 1
           format: email
           title: Email
           description: User's email address
@@ -3670,12 +3678,16 @@ components:
           - type: string
             maxLength: 40
             minLength: 3
+            description: User display name
           - type: 'null'
           title: Name
         email:
           anyOf:
           - type: string
+            maxLength: 255
+            minLength: 3
             format: email
+            description: User email
           - type: 'null'
           title: Email
       type: object
@@ -4085,10 +4097,14 @@ components:
           maxLength: 40
           minLength: 3
           title: Name
+          description: User display name
         email:
           type: string
+          maxLength: 255
+          minLength: 3
           format: email
           title: Email
+          description: User email
         role:
           $ref: '#/components/schemas/UserRole'
           description: 'User role: ''user'' or ''admin'''
@@ -4102,10 +4118,12 @@ components:
       properties:
         old_password:
           type: string
+          minLength: 1
           title: Old Password
           description: Current password for verification
         new_password:
           type: string
+          maxLength: 128
           minLength: 8
           title: New Password
           description: New password

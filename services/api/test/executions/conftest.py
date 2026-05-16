@@ -19,7 +19,7 @@ async def other_user(test_db):
     ph = PasswordHasher()
     user = User(
         email="other@example.com",
-        hashed_password=ph.hash("otherpassword123"),
+        hashed_password=ph.hash("Otherpassword!23"),
         name="Other User",
         role=UserRole.USER,
     )
@@ -35,7 +35,7 @@ async def viewer_user(test_db):
     ph = PasswordHasher()
     user = User(
         email="viewer@example.com",
-        hashed_password=ph.hash("viewerpassword123"),
+        hashed_password=ph.hash("Viewerpassword!23"),
         name="Viewer User",
         role=UserRole.USER,
     )
@@ -110,7 +110,7 @@ async def viewer_client(client, viewer_user):
     """Create an authenticated HTTP client for viewer user."""
     response = await client.post(
         "/auth/login",
-        json={"email": "viewer@example.com", "password": "viewerpassword123"},
+        json={"email": "viewer@example.com", "password": "Viewerpassword!23"},
     )
     assert response.status_code == 200, f"Login failed: {response.text}"
     return client
@@ -121,7 +121,7 @@ async def other_client(client, other_user):
     """Create an authenticated HTTP client for other user (no workflow access)."""
     response = await client.post(
         "/auth/login",
-        json={"email": "other@example.com", "password": "otherpassword123"},
+        json={"email": "other@example.com", "password": "Otherpassword!23"},
     )
     assert response.status_code == 200, f"Login failed: {response.text}"
     return client

@@ -1,7 +1,7 @@
 import string
 
 from src.users.utils import generate_temporary_password, normalize_email
-from src.core.validators import validate_password_strength
+from src.core.validators import _validate_password_strength
 
 # ============================================================================
 # GENERATE_TEMPORARY_PASSWORD TESTS
@@ -44,7 +44,7 @@ def test_generate_temporary_password_validates_password_strength():
     """Should validate password adheres to validation rules."""
     for _ in range(30):
         password = generate_temporary_password()
-        is_valid, _ = validate_password_strength(password)
+        is_valid, _ = _validate_password_strength(password)
         assert is_valid
 
 

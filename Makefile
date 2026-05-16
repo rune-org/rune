@@ -296,7 +296,13 @@ worker-lint:
 	@echo "Vetting code..."
 	cd services/rune-worker && go vet ./...
 	@echo "Checking code formatting..."
-	@cd services/rune-worker && gofmt -l . | grep -q . && (echo "❌ Code formatting issues found. Run 'make worker-format' to fix." && gofmt -l . && exit 1) || echo "✓ Code formatting OK"
+	@if cd services/rune-worker && gofmt -l . | grep -q .; then \
+		echo "❌ Code formatting issues found. Run 'make worker-format' to fix."; \
+		cd services/rune-worker && gofmt -l .; \
+		exit 1; \
+	else \
+		echo "✓ Code formatting OK"; \
+	fi
 
 worker-format:
 	@echo "Formatting worker code..."

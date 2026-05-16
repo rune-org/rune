@@ -19,9 +19,9 @@ func TestResolver_ResolveParameters(t *testing.T) {
 				},
 			},
 		},
-		"$trigger": map[string]interface{}{
-			"user_id": "456",
-			"action":  "login",
+		"$payload": map[string]interface{}{
+			"event_id": "evt_456",
+			"action":   "login",
 		},
 		"$json": []interface{}{
 			map[string]interface{}{"id": 1, "name": "First"},
@@ -38,10 +38,10 @@ func TestResolver_ResolveParameters(t *testing.T) {
 		{
 			name: "simple field reference",
 			parameters: map[string]interface{}{
-				"user_id": "$trigger.user_id",
+				"event_id": "$payload.event_id",
 			},
 			want: map[string]interface{}{
-				"user_id": "456",
+				"event_id": "evt_456",
 			},
 			wantErr: false,
 		},
@@ -78,7 +78,7 @@ func TestResolver_ResolveParameters(t *testing.T) {
 		{
 			name: "multiple references in same string",
 			parameters: map[string]interface{}{
-				"message": "User $http_node.body.user.name from $trigger.action",
+				"message": "User $http_node.body.user.name from $payload.action",
 			},
 			want: map[string]interface{}{
 				"message": "User John Doe from login",
@@ -89,13 +89,13 @@ func TestResolver_ResolveParameters(t *testing.T) {
 			name: "nested map with references",
 			parameters: map[string]interface{}{
 				"config": map[string]interface{}{
-					"user_id":   "$trigger.user_id",
+					"event_id":  "$payload.event_id",
 					"user_name": "$http_node.body.user.name",
 				},
 			},
 			want: map[string]interface{}{
 				"config": map[string]interface{}{
-					"user_id":   "456",
+					"event_id":  "evt_456",
 					"user_name": "John Doe",
 				},
 			},
@@ -105,13 +105,13 @@ func TestResolver_ResolveParameters(t *testing.T) {
 			name: "array with references",
 			parameters: map[string]interface{}{
 				"items": []interface{}{
-					"$trigger.user_id",
+					"$payload.event_id",
 					"$http_node.body.user.name",
 				},
 			},
 			want: map[string]interface{}{
 				"items": []interface{}{
-					"456",
+					"evt_456",
 					"John Doe",
 				},
 			},
@@ -132,12 +132,12 @@ func TestResolver_ResolveParameters(t *testing.T) {
 		{
 			name: "reference to entire node",
 			parameters: map[string]interface{}{
-				"trigger_data": "$trigger",
+				"payload_data": "$payload",
 			},
 			want: map[string]interface{}{
-				"trigger_data": map[string]interface{}{
-					"user_id": "456",
-					"action":  "login",
+				"payload_data": map[string]interface{}{
+					"event_id": "evt_456",
+					"action":   "login",
 				},
 			},
 			wantErr: false,
