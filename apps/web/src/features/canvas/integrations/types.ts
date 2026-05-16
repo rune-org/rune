@@ -22,7 +22,8 @@ export type IntegrationNodeKind =
   | "integration.google.sheets.delete_spreadsheet"
   | "integration.microsoft.outlook.send_email"
   | "integration.microsoft.outlook.read_email"
-  | "integration.microsoft.outlook.list_inbox";
+  | "integration.microsoft.outlook.search_emails"
+  | "integration.microsoft.outlook.list_folders";
 
 export type IntegrationNodeData = {
   label?: string;
