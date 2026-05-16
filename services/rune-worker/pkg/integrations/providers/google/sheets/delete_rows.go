@@ -63,7 +63,7 @@ func (DeleteRows) Execute(ctx context.Context, ec plugin.ExecutionContext) (map[
 					"deleteDimension": map[string]any{
 						"range": map[string]any{
 							"sheetId":    sheetID,
-							"dimension":  "ROWS",
+							"dimension": "ROWS",
 							"startIndex": startIndex,
 							"endIndex":   endIndex,
 						},
