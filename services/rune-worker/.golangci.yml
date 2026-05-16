@@ -1,0 +1,15 @@
+# golangci-lint v2 — picked up automatically by golangci-lint-action when running in this directory.
+# See: https://golangci-lint.run/docs/configuration/file/
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  # Preserve typical CI defaults (same spirit as golangci-lint without a config file).
+  default: standard
+
+formatters:
+  # Align with `make worker-lint` / `gofmt -l` so CI catches formatting drift.
+  enable:
+    - gofmt
