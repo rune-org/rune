@@ -106,7 +106,12 @@ Implemented in this phase:
   - `integration.google.gmail.search_emails`
   - `integration.google.gmail.list_labels`
 
+- Microsoft Outlook tools:
+  - `integration.microsoft.outlook.send_email`
+  - `integration.microsoft.outlook.read_email`
+  - `integration.microsoft.outlook.search_emails`
+  - `integration.microsoft.outlook.list_folders`
+
 Planned next:
 
 - Google Sheets tools
-- Microsoft Outlook tools
