@@ -34,6 +34,7 @@ from src.workflow.schemas import (
     WorkflowVersionConflict,
     WorkflowVersionDetail,
     WorkflowVersionListItem,
+    compute_workflow_status,
 )
 from src.workflow.service import WorkflowService, WorkflowVersionConflictError
 
@@ -53,6 +54,7 @@ async def list_workflows(
             name=wf.name,
             description=wf.description,
             is_active=wf.is_active,
+            status=compute_workflow_status(wf),
             role=role,
             owner_name=owner_name,
         )
@@ -240,7 +242,7 @@ async def update_status(
     Update workflow status (active/inactive).
 
     In the versioned model, activating publishes the latest saved version and
-    deactivating clears the published pointer.
+    deactivating keeps the published pointer but disables execution.
 
     **Requires:** EDIT permission (OWNER or EDITOR)
     """

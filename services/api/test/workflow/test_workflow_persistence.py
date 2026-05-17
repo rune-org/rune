@@ -36,7 +36,7 @@ class TestWorkflowVersionPersistence:
         assert sample_workflow.is_active is True
 
     @pytest.mark.asyncio
-    async def test_update_status_false_clears_published_pointer(
+    async def test_update_status_false_preserves_published_pointer(
         self, workflow_service, sample_workflow, test_db
     ):
         latest = await workflow_service.get_latest_version(sample_workflow)
@@ -45,7 +45,7 @@ class TestWorkflowVersionPersistence:
         await workflow_service.update_status(sample_workflow, False)
 
         await test_db.refresh(sample_workflow)
-        assert sample_workflow.published_version_id is None
+        assert sample_workflow.published_version_id == latest.id
         assert sample_workflow.is_active is False
 
     @pytest.mark.asyncio

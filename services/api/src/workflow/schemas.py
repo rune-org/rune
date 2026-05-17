@@ -10,11 +10,27 @@ from src.core.responses import ApiResponse
 from src.db.models import User, Workflow, WorkflowRole, WorkflowVersion
 
 
+class WorkflowStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    DRAFT = "draft"
+
+
+def compute_workflow_status(workflow: Workflow) -> WorkflowStatus:
+    """Compute the workflow status based on is_active and published_version_id."""
+    if workflow.is_active:
+        return WorkflowStatus.ACTIVE
+    if workflow.published_version_id is not None:
+        return WorkflowStatus.INACTIVE
+    return WorkflowStatus.DRAFT
+
+
 class WorkflowListItem(BaseModel):
     id: int
     name: str
     description: Optional[str] = Field(default=None)
     is_active: bool
+    status: WorkflowStatus
     role: WorkflowRole
     owner_name: str
 

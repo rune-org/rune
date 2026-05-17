@@ -80,7 +80,7 @@ class TestWorkflowShellAPI:
         assert data["has_unpublished_changes"] is False
 
     @pytest.mark.asyncio
-    async def test_update_status_can_unpublish_workflow(
+    async def test_update_status_can_deactivate_workflow(
         self, authenticated_client, sample_workflow
     ):
         published = await authenticated_client.put(
@@ -88,6 +88,8 @@ class TestWorkflowShellAPI:
             json={"is_active": True},
         )
         assert published.status_code == 200
+        published_data = published.json()["data"]
+        published_version_id = published_data["published_version_id"]
 
         response = await authenticated_client.put(
             f"/workflows/{sample_workflow.id}/status",
@@ -97,8 +99,8 @@ class TestWorkflowShellAPI:
         assert response.status_code == 200
         data = response.json()["data"]
         assert data["is_active"] is False
-        assert data["published_version_id"] is None
-        assert data["has_unpublished_changes"] is True
+        assert data["published_version_id"] == published_version_id
+        assert data["has_unpublished_changes"] is False
 
 
 class TestWorkflowVersionsAPI:

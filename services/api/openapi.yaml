@@ -538,7 +538,7 @@ paths:
 
         In the versioned model, activating publishes the latest saved version and
 
-        deactivating clears the published pointer.
+        deactivating keeps the published pointer but disables execution.
 
 
         **Requires:** EDIT permission (OWNER or EDITOR)'
@@ -4336,6 +4336,8 @@ components:
         is_active:
           type: boolean
           title: Is Active
+        status:
+          $ref: '#/components/schemas/WorkflowStatus'
         role:
           $ref: '#/components/schemas/WorkflowRole'
         owner_name:
@@ -4346,6 +4348,7 @@ components:
       - id
       - name
       - is_active
+      - status
       - role
       - owner_name
       title: WorkflowListItem
@@ -4476,6 +4479,13 @@ components:
       - message
       title: WorkflowShareResponse
       description: Response after sharing a workflow.
+    WorkflowStatus:
+      type: string
+      enum:
+      - active
+      - inactive
+      - draft
+      title: WorkflowStatus
     WorkflowUpdateName:
       properties:
         name:

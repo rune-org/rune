@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import type { StatFilter } from "@/components/workflows/table/workflowTableTypes";
 
 type WorkflowsTableFiltersProps = {
-  stats: { active: number; runs: number; draft: number; failed: number };
+  stats: { active: number; inactive: number; runs: number; draft: number; failed: number };
   filter: StatFilter;
   onFilterChange: (next: StatFilter) => void;
   query: string;
@@ -50,6 +50,12 @@ export function WorkflowsTableFilters({
             count={stats.active}
             active={filter === "active"}
             onClick={() => onFilterChange(filter === "active" ? "all" : "active")}
+          />
+          <FilterButton
+            label="Inactive"
+            count={stats.inactive}
+            active={filter === "inactive"}
+            onClick={() => onFilterChange(filter === "inactive" ? "all" : "inactive")}
           />
           <FilterButton
             label="Runs"
