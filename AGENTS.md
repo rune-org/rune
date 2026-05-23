@@ -210,6 +210,7 @@ cd dsl/tests/ts && pnpm test
 cd dsl/tests/go && go test ./... -v
 ```
 DSLs are JSON structures that define workflow objects. An example Canvas-exported DSL for a simple Rune workflow:
+<details><summary>Rune Canvas Workflow DSL Example</summary>
 
 ```json 
 {
@@ -287,6 +288,9 @@ DSLs are JSON structures that define workflow objects. An example Canvas-exporte
   ]
 }
 ```
+
+</details>
+
 ---
 
 When adding a node type:
