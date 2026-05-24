@@ -101,7 +101,7 @@ export function ExportToGalleryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Submit to the global gallery</DialogTitle>
           <DialogDescription>
@@ -119,8 +119,8 @@ export function ExportToGalleryDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 gap-4 py-4 md:grid-cols-2">
-          <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-1 gap-4 py-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="min-w-0 flex flex-col gap-2">
             <Label htmlFor="gallery-name">
               Name <span className="text-destructive">*</span>
             </Label>
@@ -131,13 +131,13 @@ export function ExportToGalleryDialog({
               onChange={(e) => setName(e.target.value)}
             />
             {externalId && (
-              <span className="text-xs text-muted-foreground">
+              <span className="min-w-0 break-all text-xs text-muted-foreground">
                 Slug: <code>{externalId}</code>
               </span>
             )}
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="min-w-0 flex flex-col gap-2">
             <Label htmlFor="gallery-category">Category</Label>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger id="gallery-category">
@@ -153,7 +153,7 @@ export function ExportToGalleryDialog({
             </Select>
           </div>
 
-          <div className="md:col-span-2 flex flex-col gap-2">
+          <div className="min-w-0 flex flex-col gap-2 md:col-span-2">
             <Label htmlFor="gallery-description">Description</Label>
             <Textarea
               id="gallery-description"
@@ -164,17 +164,17 @@ export function ExportToGalleryDialog({
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="min-w-0 flex flex-col gap-2">
             <Label>Icon</Label>
             <IconPicker value={icon} onChange={setIcon} layout="scroll-row" />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="min-w-0 flex flex-col gap-2">
             <Label htmlFor="gallery-tags">Tags</Label>
             <TagsInput id="gallery-tags" value={tags} onChange={setTags} />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="min-w-0 flex flex-col gap-2">
             <Label htmlFor="gallery-author-name">Author name</Label>
             <Input
               id="gallery-author-name"
@@ -184,7 +184,7 @@ export function ExportToGalleryDialog({
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="min-w-0 flex flex-col gap-2">
             <Label htmlFor="gallery-author-url">Author URL</Label>
             <Input
               id="gallery-author-url"
@@ -196,10 +196,10 @@ export function ExportToGalleryDialog({
         </div>
 
         {entry && (
-          <div className="rounded-md border border-input bg-muted/30 p-3 text-xs">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="font-medium">Preview</span>
-              <span className="text-muted-foreground">
+          <div className="min-w-0 rounded-md border border-input bg-muted/30 p-3 text-xs">
+            <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
+              <span className="shrink-0 font-medium">Preview</span>
+              <span className="min-w-0 truncate text-muted-foreground">
                 Drop into <code>{targetPath}</code>
               </span>
             </div>
@@ -209,20 +209,20 @@ export function ExportToGalleryDialog({
           </div>
         )}
 
-        <DialogFooter className="gap-2 sm:gap-2">
-          <Button variant="outline" asChild>
+        <DialogFooter className="min-w-0 gap-2 sm:flex-wrap sm:gap-2">
+          <Button variant="outline" className="shrink-0" asChild>
             <a href={CONTRIBUTING_URL} target="_blank" rel="noreferrer">
               <ExternalLink className="mr-1.5 h-4 w-4" />
               How to contribute
             </a>
           </Button>
-          <Button variant="outline" onClick={handleCopy} disabled={!entry}>
+          <Button variant="outline" className="shrink-0" onClick={handleCopy} disabled={!entry}>
             <Copy className="mr-1.5 h-4 w-4" />
             Copy JSON
           </Button>
-          <Button onClick={handleDownload} disabled={!entry}>
-            <Download className="mr-1.5 h-4 w-4" />
-            Download {filename}
+          <Button className="min-w-0 flex-1" onClick={handleDownload} disabled={!entry}>
+            <Download className="mr-1.5 h-4 w-4 shrink-0" />
+            <span className="truncate">Download {filename}</span>
           </Button>
         </DialogFooter>
       </DialogContent>
