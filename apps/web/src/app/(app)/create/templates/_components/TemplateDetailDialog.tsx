@@ -1,12 +1,7 @@
 "use client";
 
 import { ArrowRight, Box, ExternalLink, Sparkles, Tag, User2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -75,37 +70,25 @@ export function TemplateDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-hidden p-0 sm:max-w-xl">
-        <div
-          className={cn(
-            "relative h-40 overflow-hidden bg-gradient-to-br",
-            categoryTone,
-          )}
-        >
+        <div className={cn("relative h-40 overflow-hidden bg-gradient-to-br", categoryTone)}>
           <Icon
             aria-hidden
             strokeWidth={1.5}
             className="pointer-events-none absolute left-2 -bottom-5 h-50 w-50 text-foreground opacity-60"
             style={{
-              WebkitMaskImage:
-                "linear-gradient(to right, black 20%, transparent 95%)",
+              WebkitMaskImage: "linear-gradient(to right, black 20%, transparent 95%)",
               maskImage: "linear-gradient(to right, black 20%, transparent 95%)",
             }}
           />
           <div className="absolute bottom-4 right-6 flex items-center gap-2">
             <Badge
               variant="outline"
-              className={cn(
-                "border bg-background/80 text-[11px] backdrop-blur-md",
-                scopeTone,
-              )}
+              className={cn("border bg-background/80 text-[11px] backdrop-blur-md", scopeTone)}
             >
               {scope === "official" && <Sparkles className="mr-1 h-3 w-3" />}
               {scopeLabel}
             </Badge>
-            <Badge
-              variant="secondary"
-              className="bg-background/80 text-[11px] backdrop-blur-md"
-            >
+            <Badge variant="secondary" className="bg-background/80 text-[11px] backdrop-blur-md">
               {categoryLabel}
             </Badge>
           </div>
@@ -123,16 +106,8 @@ export function TemplateDetailDialog({
 
           <div className="grid grid-cols-3 gap-3">
             <Stat icon={<Box className="h-3.5 w-3.5" />} label="Nodes" value={nodeCount} />
-            <Stat
-              icon={<Sparkles className="h-3.5 w-3.5" />}
-              label="Uses"
-              value={usage}
-            />
-            <Stat
-              icon={<Tag className="h-3.5 w-3.5" />}
-              label="Tags"
-              value={tags.length}
-            />
+            <Stat icon={<Sparkles className="h-3.5 w-3.5" />} label="Uses" value={usage} />
+            <Stat icon={<Tag className="h-3.5 w-3.5" />} label="Tags" value={tags.length} />
           </div>
 
           {tags.length > 0 && (
@@ -177,15 +152,7 @@ export function TemplateDetailDialog({
   );
 }
 
-function Stat({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-}) {
+function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
     <div className="flex flex-col gap-1 rounded-lg border bg-muted/30 px-3 py-2">
       <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">

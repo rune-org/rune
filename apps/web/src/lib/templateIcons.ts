@@ -40,10 +40,7 @@ const CATEGORY_DEFAULT_ICON: Record<string, LucideIcon> = {
   productivity: Rocket,
 };
 
-export function resolveTemplateIcon(opts: {
-  icon?: string | null;
-  category: string;
-}): LucideIcon {
+export function resolveTemplateIcon(opts: { icon?: string | null; category: string }): LucideIcon {
   if (opts.icon && opts.icon in TEMPLATE_ICONS) {
     return TEMPLATE_ICONS[opts.icon as TemplateIconName];
   }

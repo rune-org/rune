@@ -22,8 +22,7 @@ const SCOPE_LABELS: Record<string, string> = {
 
 const SCOPE_TONE: Record<string, string> = {
   official: "bg-primary/15 text-primary border-primary/30 backdrop-blur-sm",
-  community:
-    "bg-blue-500/15 text-blue-600 border-blue-500/30 backdrop-blur-sm dark:text-blue-300",
+  community: "bg-blue-500/15 text-blue-600 border-blue-500/30 backdrop-blur-sm dark:text-blue-300",
   personal:
     "bg-amber-500/15 text-amber-700 border-amber-500/30 backdrop-blur-sm dark:text-amber-300",
 };
@@ -67,12 +66,7 @@ export function TemplateCard({ template, onOpenDetail, onUse }: TemplateCardProp
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
       )}
     >
-      <div
-        className={cn(
-          "relative h-40 overflow-hidden bg-gradient-to-br",
-          categoryTone,
-        )}
-      >
+      <div className={cn("relative h-40 overflow-hidden bg-gradient-to-br", categoryTone)}>
         <Icon
           aria-hidden
           className={cn(
