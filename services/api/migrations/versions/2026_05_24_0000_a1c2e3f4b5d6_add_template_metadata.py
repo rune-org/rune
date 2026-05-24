@@ -34,16 +34,12 @@ def upgrade() -> None:
             server_default="user",
         ),
     )
-    op.execute(
-        "UPDATE workflow_templates SET source = 'user' WHERE source IS NULL"
-    )
+    op.execute("UPDATE workflow_templates SET source = 'user' WHERE source IS NULL")
     op.alter_column("workflow_templates", "source", nullable=False)
 
     op.add_column(
         "workflow_templates",
-        sa.Column(
-            "external_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
+        sa.Column("external_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     )
     op.create_index(
         op.f("ix_workflow_templates_external_id"),
@@ -67,22 +63,16 @@ def upgrade() -> None:
             server_default=sa.text("'[]'::jsonb"),
         ),
     )
-    op.execute(
-        "UPDATE workflow_templates SET tags = '[]'::jsonb WHERE tags IS NULL"
-    )
+    op.execute("UPDATE workflow_templates SET tags = '[]'::jsonb WHERE tags IS NULL")
     op.alter_column("workflow_templates", "tags", nullable=False)
 
     op.add_column(
         "workflow_templates",
-        sa.Column(
-            "author_name", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
+        sa.Column("author_name", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     )
     op.add_column(
         "workflow_templates",
-        sa.Column(
-            "author_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
+        sa.Column("author_url", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     )
 
     # Composite index for the most common list query: filter by source + category.
