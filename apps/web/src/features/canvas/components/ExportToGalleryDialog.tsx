@@ -25,6 +25,8 @@ import { toast } from "@/components/ui/toast";
 import { buildBundleEntry, serialiseBundleEntry, slugifyExternalId } from "../lib/bundleSerializer";
 import { TEMPLATE_CATEGORIES } from "../lib/templateCategories";
 import { TagsInput } from "./TagsInput";
+import { IconPicker } from "@/components/templates/IconPicker";
+import type { TemplateIconName } from "@/lib/templateIcons";
 import type { CanvasNode } from "../types";
 import type { Edge } from "@xyflow/react";
 
@@ -46,7 +48,7 @@ export function ExportToGalleryDialog({
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("general");
   const [tags, setTags] = useState<string[]>([]);
-  const [icon, setIcon] = useState("");
+  const [icon, setIcon] = useState<TemplateIconName | null>(null);
   const [authorName, setAuthorName] = useState("");
   const [authorUrl, setAuthorUrl] = useState("");
 
@@ -58,7 +60,7 @@ export function ExportToGalleryDialog({
       name,
       description,
       category,
-      icon: icon || undefined,
+      icon: icon ?? undefined,
       tags,
       author: authorName.trim()
         ? { name: authorName, url: authorUrl.trim() || undefined }
@@ -119,7 +121,9 @@ export function ExportToGalleryDialog({
 
         <div className="grid grid-cols-1 gap-4 py-4 md:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="gallery-name">Name</Label>
+            <Label htmlFor="gallery-name">
+              Name <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="gallery-name"
               placeholder="Gmail to Slack daily digest"
@@ -161,13 +165,8 @@ export function ExportToGalleryDialog({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="gallery-icon">Icon (optional)</Label>
-            <Input
-              id="gallery-icon"
-              placeholder="Lucide name, e.g. Mail"
-              value={icon}
-              onChange={(e) => setIcon(e.target.value)}
-            />
+            <Label>Icon</Label>
+            <IconPicker value={icon} onChange={setIcon} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -176,7 +175,7 @@ export function ExportToGalleryDialog({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="gallery-author-name">Author name (optional)</Label>
+            <Label htmlFor="gallery-author-name">Author name</Label>
             <Input
               id="gallery-author-name"
               placeholder="Your name"
@@ -186,7 +185,7 @@ export function ExportToGalleryDialog({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="gallery-author-url">Author URL (optional)</Label>
+            <Label htmlFor="gallery-author-url">Author URL</Label>
             <Input
               id="gallery-author-url"
               placeholder="https://github.com/you"

@@ -28,6 +28,8 @@ import type { TemplateCategory, WorkflowGraph } from "@/client/types.gen";
 import { stripCredentials } from "../lib/graphIO";
 import { TEMPLATE_CATEGORIES } from "../lib/templateCategories";
 import { TagsInput } from "./TagsInput";
+import { IconPicker } from "@/components/templates/IconPicker";
+import type { TemplateIconName } from "@/lib/templateIcons";
 import type { CanvasNode } from "../types";
 import type { Edge } from "@xyflow/react";
 
@@ -63,6 +65,7 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<TemplateCategory>("general");
+  const [icon, setIcon] = useState<TemplateIconName | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [visibility, setVisibility] = useState<Visibility>("personal");
   const [saving, setSaving] = useState(false);
@@ -71,6 +74,7 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
     setName("");
     setDescription("");
     setCategory("general");
+    setIcon(null);
     setTags([]);
     setVisibility("personal");
   };
@@ -88,6 +92,7 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
         name: name.trim(),
         description: description.trim(),
         category,
+        icon: icon ?? undefined,
         // Canvas RFGraph and WorkflowGraph are structurally compatible at
         // runtime; the cast bridges optional ``type`` on RFNode and required
         // ``type`` on WorkflowNode (every node on the canvas has a type set).
@@ -123,7 +128,9 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
 
         <div className="flex flex-col gap-4 py-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="template-name">Name</Label>
+            <Label htmlFor="template-name">
+              Name <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="template-name"
               placeholder="Gmail to Slack digest"
@@ -157,6 +164,11 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label>Icon</Label>
+            <IconPicker value={icon} onChange={setIcon} />
           </div>
 
           <div className="flex flex-col gap-2">
