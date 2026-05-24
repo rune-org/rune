@@ -12,6 +12,7 @@ import {
   exportWorkflowsZip,
   listUserExecutions,
   runWorkflow,
+  updateWorkflowDescription,
   updateWorkflowName,
   updateWorkflowStatus,
 } from "@/lib/api/workflows";
@@ -108,6 +109,7 @@ export function WorkflowsTable() {
   const [exportingWorkflowIds, setExportingWorkflowIds] = useState<Set<string>>(new Set());
   const [bulkActionPending, setBulkActionPending] = useState(false);
   const [renameTarget, setRenameTarget] = useState<WorkflowSummary | null>(null);
+  const [descriptionTarget, setDescriptionTarget] = useState<WorkflowSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<WorkflowSummary | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [shareTarget, setShareTarget] = useState<WorkflowSummary | null>(null);
@@ -420,6 +422,36 @@ export function WorkflowsTable() {
     [actions, markWorkflowsPending, renameTarget],
   );
 
+  const handleDescriptionSubmit = useCallback(
+    async (newDescription: string) => {
+      if (!descriptionTarget) return;
+      const workflowId = Number(descriptionTarget.id);
+      if (!Number.isFinite(workflowId)) return;
+
+      const trimmed = newDescription.trim();
+      const current = descriptionTarget.description?.trim() ?? "";
+      if (trimmed === current) {
+        setDescriptionTarget(null);
+        return;
+      }
+
+      markWorkflowsPending([descriptionTarget.id], true);
+      try {
+        await updateWorkflowDescription(workflowId, trimmed);
+        toast.success("Workflow description updated");
+        setDescriptionTarget(null);
+        await actions.refreshWorkflows();
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to update workflow description.",
+        );
+      } finally {
+        markWorkflowsPending([descriptionTarget.id], false);
+      }
+    },
+    [actions, descriptionTarget, markWorkflowsPending],
+  );
+
   const handleBulkExport = useCallback(async () => {
     if (bulkActionPending || selectedCount === 0) return;
 
@@ -661,6 +693,7 @@ export function WorkflowsTable() {
         }}
         onDelete={beginDelete}
         onRename={setRenameTarget}
+        onEditDescription={setDescriptionTarget}
         onToggleActive={(workflow) => {
           void handleToggleActive(workflow);
         }}
@@ -669,6 +702,7 @@ export function WorkflowsTable() {
 
       <WorkflowsDialogs
         renameTarget={renameTarget}
+        descriptionTarget={descriptionTarget}
         deleteTarget={deleteTarget}
         bulkDeleteOpen={bulkDeleteOpen}
         pending={hasPendingWorkflowOps}
@@ -676,6 +710,8 @@ export function WorkflowsTable() {
         deletableCount={selectedDeletable.length}
         onRenameClose={() => setRenameTarget(null)}
         onRenameSubmit={handleRenameSubmit}
+        onDescriptionClose={() => setDescriptionTarget(null)}
+        onDescriptionSubmit={handleDescriptionSubmit}
         onDeleteCancel={() => setDeleteTarget(null)}
         onDeleteConfirm={confirmDelete}
         onBulkDeleteCancel={() => setBulkDeleteOpen(false)}

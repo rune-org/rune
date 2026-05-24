@@ -12,10 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import type { WorkflowSummary } from "@/lib/workflows";
 
 type WorkflowsDialogsProps = {
   renameTarget: WorkflowSummary | null;
+  descriptionTarget: WorkflowSummary | null;
   deleteTarget: WorkflowSummary | null;
   bulkDeleteOpen: boolean;
   pending: boolean;
@@ -23,6 +25,8 @@ type WorkflowsDialogsProps = {
   deletableCount: number;
   onRenameClose: () => void;
   onRenameSubmit: (name: string) => void | Promise<void>;
+  onDescriptionClose: () => void;
+  onDescriptionSubmit: (description: string) => void | Promise<void>;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void | Promise<void>;
   onBulkDeleteCancel: () => void;
@@ -31,6 +35,7 @@ type WorkflowsDialogsProps = {
 
 export function WorkflowsDialogs({
   renameTarget,
+  descriptionTarget,
   deleteTarget,
   bulkDeleteOpen,
   pending,
@@ -38,21 +43,34 @@ export function WorkflowsDialogs({
   deletableCount,
   onRenameClose,
   onRenameSubmit,
+  onDescriptionClose,
+  onDescriptionSubmit,
   onDeleteCancel,
   onDeleteConfirm,
   onBulkDeleteCancel,
   onBulkDeleteConfirm,
 }: WorkflowsDialogsProps) {
   const [name, setName] = useState(renameTarget?.name ?? "");
+  const [description, setDescription] = useState(descriptionTarget?.description ?? "");
 
   useEffect(() => {
     setName(renameTarget?.name ?? "");
   }, [renameTarget]);
 
+  useEffect(() => {
+    setDescription(descriptionTarget?.description ?? "");
+  }, [descriptionTarget]);
+
   const handleRenameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!renameTarget || pending) return;
     await onRenameSubmit(name);
+  };
+
+  const handleDescriptionSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!descriptionTarget || pending) return;
+    await onDescriptionSubmit(description);
   };
 
   return (
@@ -86,6 +104,48 @@ export function WorkflowsDialogs({
                 Cancel
               </Button>
               <Button type="submit" disabled={pending || !name.trim()}>
+                {pending ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={descriptionTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !pending) onDescriptionClose();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit description</DialogTitle>
+            <DialogDescription>
+              Update the workflow description. This does not impact any executions.
+            </DialogDescription>
+          </DialogHeader>
+          <form className="grid gap-4" onSubmit={handleDescriptionSubmit}>
+            <div className="grid gap-2">
+              <Label htmlFor="workflow-description">Description</Label>
+              <Textarea
+                id="workflow-description"
+                value={description}
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                  setDescription(event.target.value)
+                }
+                disabled={pending}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onDescriptionClose}
+                disabled={pending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={pending}>
                 {pending ? "Saving..." : "Save"}
               </Button>
             </DialogFooter>
