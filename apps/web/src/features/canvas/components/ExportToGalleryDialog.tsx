@@ -166,7 +166,7 @@ export function ExportToGalleryDialog({
 
           <div className="flex flex-col gap-2">
             <Label>Icon</Label>
-            <IconPicker value={icon} onChange={setIcon} />
+            <IconPicker value={icon} onChange={setIcon} layout="scroll-row" />
           </div>
 
           <div className="flex flex-col gap-2">
