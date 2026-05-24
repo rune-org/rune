@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
-import { resolveTemplateIcon } from "./templateIcons";
+import { resolveTemplateIcon } from "@/lib/templateIcons";
 import type { TemplateSummary } from "@/client/types.gen";
 
 type TemplateCardProps = {
@@ -21,9 +21,11 @@ const SCOPE_LABELS: Record<string, string> = {
 };
 
 const SCOPE_TONE: Record<string, string> = {
-  official: "bg-primary/10 text-primary border-primary/20",
-  community: "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400",
-  personal: "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400",
+  official: "bg-primary/15 text-primary border-primary/30 backdrop-blur-sm",
+  community:
+    "bg-blue-500/15 text-blue-600 border-blue-500/30 backdrop-blur-sm dark:text-blue-300",
+  personal:
+    "bg-amber-500/15 text-amber-700 border-amber-500/30 backdrop-blur-sm dark:text-amber-300",
 };
 
 const CATEGORY_TONE: Record<string, string> = {
@@ -67,13 +69,18 @@ export function TemplateCard({ template, onOpenDetail, onUse }: TemplateCardProp
     >
       <div
         className={cn(
-          "relative flex h-24 items-center justify-center bg-gradient-to-br",
+          "relative h-40 overflow-hidden bg-gradient-to-br",
           categoryTone,
         )}
       >
-        <div className="rounded-xl bg-background/70 p-3 shadow-sm backdrop-blur-sm transition-transform group-hover:scale-110">
-          <Icon className="h-7 w-7 text-foreground" />
-        </div>
+        <Icon
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute left-4 bottom-1 h-36 w-36 text-foreground opacity-80",
+            "transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-105",
+          )}
+          strokeWidth={1.5}
+        />
         <span
           className={cn(
             "absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border bg-background/70 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur-sm",
@@ -88,14 +95,16 @@ export function TemplateCard({ template, onOpenDetail, onUse }: TemplateCardProp
         >
           {scopeLabel}
         </Badge>
+        <div className="absolute inset-y-0 right-0 flex w-[55%] flex-col justify-center px-5">
+          <div className="font-display line-clamp-3 text-[1.7rem] font-semibold leading-[1.1] tracking-tight text-foreground">
+            {template.name}
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 p-4">
-        <div>
-          <div className="line-clamp-1 text-sm font-semibold">{template.name}</div>
-          <div className="line-clamp-2 mt-0.5 text-xs text-muted-foreground">
-            {template.description || "No description provided."}
-          </div>
+        <div className="line-clamp-2 text-xs text-muted-foreground">
+          {template.description || "No description provided."}
         </div>
 
         {(visibleTags.length > 0 || template.author_name) && (
