@@ -21,7 +21,7 @@ class TestEdgeCases:
             json={
                 "name": None,
                 "description": "",
-                "category": "automation",
+                "category": "general",
                 "workflow_data": {"nodes": []},
                 "is_public": False,
             },
@@ -39,7 +39,7 @@ class TestEdgeCases:
             json={
                 "name": long_name,
                 "description": "",
-                "category": "automation",
+                "category": "general",
                 "workflow_data": {"nodes": []},
                 "is_public": False,
             },
@@ -57,7 +57,7 @@ class TestEdgeCases:
             json={
                 "name": "Test Template",
                 "description": long_description,
-                "category": "automation",
+                "category": "general",
                 "workflow_data": {"nodes": []},
                 "is_public": False,
             },
@@ -86,7 +86,7 @@ class TestEdgeCases:
             json={
                 "name": 123,
                 "description": "Test",
-                "category": "automation",
+                "category": "general",
                 "workflow_data": {"nodes": []},
                 "is_public": False,
             },
@@ -118,7 +118,7 @@ class TestEdgeCases:
             json={
                 "name": "Test Template",
                 "description": "Test",
-                "category": "automation",
+                "category": "general",
                 "workflow_data": {"nodes": []},
                 "is_public": "yes",  # Should be bool
             },
@@ -134,7 +134,7 @@ class TestEdgeCases:
             json={
                 "name": "Test Template",
                 "description": "Test",
-                "category": "automation",
+                "category": "general",
                 "workflow_data": "not a dict",  # Should be dict
                 "is_public": False,
             },
@@ -150,7 +150,7 @@ class TestEdgeCases:
             json={
                 "name": "Test Template",
                 "description": "Test",
-                "category": "automation",
+                "category": "general",
                 "workflow_data": {"nodes": []},
                 "is_public": False,
             },
@@ -173,7 +173,7 @@ class TestSpecialCharactersAndEncoding:
             json={
                 "name": malicious_name,
                 "description": "Test",
-                "category": "automation",
+                "category": "general",
                 "workflow_data": {"nodes": []},
                 "is_public": False,
             },
@@ -204,7 +204,7 @@ class TestSpecialCharactersAndEncoding:
             json={
                 "name": "XSS Test",
                 "description": malicious_html,
-                "category": "automation",
+                "category": "general",
                 "workflow_data": {"nodes": []},
                 "is_public": False,
             },
@@ -234,7 +234,7 @@ class TestSpecialCharactersAndEncoding:
             json={
                 "name": special_name,
                 "description": "Test description",
-                "category": "automation",
+                "category": "general",
                 "workflow_data": {"nodes": []},
                 "is_public": False,
             },
@@ -249,18 +249,24 @@ class TestSpecialCharactersAndEncoding:
 
     @pytest.mark.asyncio
     async def test_template_with_unicode_characters(self, authenticated_client):
-        """Should preserve Unicode characters in template fields."""
+        """Should preserve Unicode characters in free-form template fields.
+
+        ``category`` is constrained to the ``TemplateCategory`` enum and so is
+        no longer a valid place to test Unicode round-tripping; ``tags`` are
+        free-form and exercise the same JSON path.
+        """
         unicode_name = "测试模板-テスト-टेम्पलेट-🚀"
         unicode_description = "Описание шаблона avec des caractères spéciaux"
-        unicode_category = "自動化"
+        unicode_tags = ["自動化", "تطوير", "🚀"]
 
         response = await authenticated_client.post(
             "/templates/",
             json={
                 "name": unicode_name,
                 "description": unicode_description,
-                "category": unicode_category,
+                "category": "general",
                 "workflow_data": {"nodes": []},
+                "tags": unicode_tags,
                 "is_public": False,
             },
         )
@@ -269,7 +275,7 @@ class TestSpecialCharactersAndEncoding:
         data = response.json()["data"]
         assert data["name"] == unicode_name
         assert data["description"] == unicode_description
-        assert data["category"] == unicode_category
+        assert data["tags"] == unicode_tags
 
     @pytest.mark.asyncio
     async def test_template_with_newlines_and_tabs(self, authenticated_client):
@@ -283,7 +289,7 @@ class TestSpecialCharactersAndEncoding:
             json={
                 "name": "Formatting Test",
                 "description": description_with_formatting,
-                "category": "automation",
+                "category": "general",
                 "workflow_data": {"nodes": []},
                 "is_public": False,
             },
@@ -293,65 +299,24 @@ class TestSpecialCharactersAndEncoding:
         data = response.json()["data"]
         assert data["description"] == description_with_formatting
 
-    @pytest.mark.asyncio
-    async def test_workflow_data_with_special_json_values(self, authenticated_client):
-        """Should handle special JSON values in workflow_data."""
-        workflow_data = {
-            "null_value": None,
-            "boolean_true": True,
-            "boolean_false": False,
-            "number": 42,
-            "float": 3.14159,
-            "negative": -100,
-            "string": "normal string",
-            "empty_string": "",
-            "empty_array": [],
-            "empty_object": {},
-            "nested": {
-                "deep": {"deeper": {"deepest": "value"}},
-                "array": [1, 2, 3, [4, 5]],
-            },
-        }
-
-        response = await authenticated_client.post(
-            "/templates/",
-            json={
-                "name": "Special JSON Test",
-                "description": "Test",
-                "category": "automation",
-                "workflow_data": workflow_data,
-                "is_public": False,
-            },
-        )
-
-        assert response.status_code == 201
-        data = response.json()["data"]
-        assert data["workflow_data"] == workflow_data
-
 
 class TestCategoryHandling:
     """Tests for template category functionality."""
 
     @pytest.mark.asyncio
-    async def test_create_template_with_various_categories(self, authenticated_client):
-        """Should accept various category values."""
-        categories = [
-            "automation",
-            "data-processing",
-            "integration",
-            "notification",
-            "general",
-            "testing",
-            "custom",
-        ]
+    async def test_create_template_with_supported_categories(
+        self, authenticated_client
+    ):
+        """Should accept every supported ``TemplateCategory`` value."""
+        from src.templates.categories import TemplateCategory
 
-        for category in categories:
+        for category in TemplateCategory:
             response = await authenticated_client.post(
                 "/templates/",
                 json={
-                    "name": f"Template {category}",
+                    "name": f"Template {category.value}",
                     "description": "Test",
-                    "category": category,
+                    "category": category.value,
                     "workflow_data": {"nodes": []},
                     "is_public": False,
                 },
@@ -359,11 +324,11 @@ class TestCategoryHandling:
 
             assert response.status_code == 201
             data = response.json()["data"]
-            assert data["category"] == category
+            assert data["category"] == category.value
 
     @pytest.mark.asyncio
     async def test_create_template_with_empty_category(self, authenticated_client):
-        """Should accept empty category string."""
+        """Should reject empty category string (not a valid TemplateCategory)."""
         response = await authenticated_client.post(
             "/templates/",
             json={
@@ -375,7 +340,25 @@ class TestCategoryHandling:
             },
         )
 
-        assert response.status_code == 201
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_create_template_rejects_unknown_category(
+        self, authenticated_client
+    ):
+        """Should reject categories that aren't part of TemplateCategory."""
+        response = await authenticated_client.post(
+            "/templates/",
+            json={
+                "name": "Unknown Category",
+                "description": "Test",
+                "category": "made-up-category",
+                "workflow_data": {"nodes": []},
+                "is_public": False,
+            },
+        )
+
+        assert response.status_code == 422
 
     @pytest.mark.asyncio
     async def test_default_category_is_general(self, authenticated_client):

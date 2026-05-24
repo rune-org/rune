@@ -128,7 +128,7 @@ async def test_create_template_sets_created_by(template_service, test_user, test
     template_data = TemplateCreate(
         name="User Template",
         description="Test",
-        category="automation",
+        category="general",
         workflow_data={"nodes": []},
         is_public=False,
     )
@@ -145,7 +145,7 @@ async def test_create_template_initializes_usage_count_to_zero(
     template_data = TemplateCreate(
         name="New Template",
         description="Test",
-        category="automation",
+        category="general",
         workflow_data={"nodes": []},
         is_public=False,
     )
@@ -184,7 +184,7 @@ async def test_create_template_persists_to_database(
     template_data = TemplateCreate(
         name="Persisted",
         description="Test",
-        category="automation",
+        category="general",
         workflow_data={"nodes": []},
         is_public=False,
     )

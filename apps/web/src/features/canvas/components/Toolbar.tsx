@@ -14,6 +14,7 @@ import {
   Clipboard,
   FileJson,
   FileBox,
+  Globe2,
   ChevronDown,
   Loader2,
   Square,
@@ -47,6 +48,7 @@ type ToolbarProps = {
   onExportToClipboard: () => void;
   onExportToFile: () => void;
   onExportToTemplate: () => void;
+  onExportToGallery: () => void;
   onImportFromClipboard: () => void;
   onImportFromFile: () => void;
   onImportFromTemplate: () => void;
@@ -85,6 +87,7 @@ export const Toolbar = memo(function Toolbar({
   onExportToClipboard,
   onExportToFile,
   onExportToTemplate,
+  onExportToGallery,
   onImportFromClipboard,
   onImportFromFile,
   onImportFromTemplate,
@@ -267,6 +270,9 @@ export const Toolbar = memo(function Toolbar({
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onExportToTemplate} className="gap-2">
             <FileBox className="h-4 w-4" /> Save as Template
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onExportToGallery} className="gap-2">
+            <Globe2 className="h-4 w-4" /> Submit to Global Gallery
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
