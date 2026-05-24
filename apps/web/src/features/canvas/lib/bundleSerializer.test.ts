@@ -53,6 +53,50 @@ describe("buildBundleEntry", () => {
     expect(node).toMatchObject({ id: "n1", type: "trigger", data: { label: "Start" } });
   });
 
+  it("strips nested credential refs from gallery bundle exports", () => {
+    const entry = buildBundleEntry(
+      {
+        nodes: [
+          {
+            id: "agent-1",
+            type: "agent",
+            position: { x: 0, y: 0 },
+            data: {
+              label: "Agent",
+              credential: { id: "model-cred", name: "Model Cred", type: "api_key" },
+              tools: [
+                {
+                  name: "fetch",
+                  credential: { id: "tool-cred", name: "Tool Cred", type: "oauth2" },
+                  headers: [{ key: "Accept", value: "application/json" }],
+                },
+              ],
+              mcp_servers: [
+                {
+                  name: "docs",
+                  credential: { id: "mcp-cred", name: "MCP Cred", type: "oauth2" },
+                },
+              ],
+            },
+          } as unknown as RFGraph["nodes"][number],
+        ],
+        edges: [],
+      },
+      {
+        name: "Agent Demo",
+        description: "",
+        category: "general",
+        tags: [],
+      },
+    );
+
+    expect(entry.workflow_data.nodes[0].data).toEqual({
+      label: "Agent",
+      tools: [{ name: "fetch", headers: [{ key: "Accept", value: "application/json" }] }],
+      mcp_servers: [{ name: "docs" }],
+    });
+  });
+
   it("derives external_id from name when not overridden", () => {
     const entry = buildBundleEntry(baseGraph, {
       name: "Gmail → Slack",
