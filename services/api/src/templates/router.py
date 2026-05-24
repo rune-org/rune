@@ -45,7 +45,7 @@ async def list_templates(
     ),
     search: Optional[str] = Query(
         None,
-        description="Case-insensitive substring search across name and description.",
+        description="Case-insensitive substring search across name, description, and tags.",
     ),
     sort: TemplateSort = Query(
         TemplateSort.FEATURED, description="Ordering applied to the result set."

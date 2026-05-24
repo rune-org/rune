@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import case, func
+from sqlalchemy import String, case, func
 from sqlmodel import or_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -37,7 +37,7 @@ class TemplateService:
         callers can still filter on legacy values stored in the DB. ``tags``
         uses Postgres' ``?|`` operator - a row matches if **any** of its tags
         is in the requested list. ``search`` is a case-insensitive substring
-        match against ``name`` and ``description``.
+        match against ``name``, ``description``, and ``tags``.
         """
         stmt = select(WorkflowTemplate).where(
             or_(WorkflowTemplate.is_public, WorkflowTemplate.created_by == user_id)
@@ -71,6 +71,7 @@ class TemplateService:
                 or_(
                     WorkflowTemplate.name.ilike(term),
                     WorkflowTemplate.description.ilike(term),
+                    WorkflowTemplate.tags.cast(String).ilike(term),
                 )
             )
 
