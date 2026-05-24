@@ -21,31 +21,20 @@ const SCOPE_LABELS: Record<string, string> = {
 };
 
 const SCOPE_TONE: Record<string, string> = {
-  official:
-    "bg-primary/10 text-primary border-primary/20",
-  community:
-    "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400",
-  personal:
-    "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400",
+  official: "bg-primary/10 text-primary border-primary/20",
+  community: "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400",
+  personal: "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400",
 };
 
 const CATEGORY_TONE: Record<string, string> = {
-  general:
-    "from-slate-500/15 via-slate-500/5 to-transparent",
-  email:
-    "from-sky-500/20 via-sky-500/5 to-transparent",
-  analytics:
-    "from-violet-500/20 via-violet-500/5 to-transparent",
-  development:
-    "from-emerald-500/20 via-emerald-500/5 to-transparent",
-  cloud:
-    "from-cyan-500/20 via-cyan-500/5 to-transparent",
-  scheduling:
-    "from-amber-500/20 via-amber-500/5 to-transparent",
-  social_media:
-    "from-pink-500/20 via-pink-500/5 to-transparent",
-  productivity:
-    "from-indigo-500/20 via-indigo-500/5 to-transparent",
+  general: "from-slate-500/15 via-slate-500/5 to-transparent",
+  email: "from-sky-500/20 via-sky-500/5 to-transparent",
+  analytics: "from-violet-500/20 via-violet-500/5 to-transparent",
+  development: "from-emerald-500/20 via-emerald-500/5 to-transparent",
+  cloud: "from-cyan-500/20 via-cyan-500/5 to-transparent",
+  scheduling: "from-amber-500/20 via-amber-500/5 to-transparent",
+  social_media: "from-pink-500/20 via-pink-500/5 to-transparent",
+  productivity: "from-indigo-500/20 via-indigo-500/5 to-transparent",
 };
 
 export function TemplateCard({ template, onOpenDetail, onUse }: TemplateCardProps) {
@@ -95,10 +84,7 @@ export function TemplateCard({ template, onOpenDetail, onUse }: TemplateCardProp
         </span>
         <Badge
           variant="outline"
-          className={cn(
-            "absolute left-3 top-3 border text-[10px]",
-            scopeTone,
-          )}
+          className={cn("absolute left-3 top-3 border text-[10px]", scopeTone)}
         >
           {scopeLabel}
         </Badge>
@@ -120,9 +106,7 @@ export function TemplateCard({ template, onOpenDetail, onUse }: TemplateCardProp
               </Badge>
             ))}
             {extraTags > 0 && (
-              <span className="text-[10px] text-muted-foreground">
-                +{extraTags} more
-              </span>
+              <span className="text-[10px] text-muted-foreground">+{extraTags} more</span>
             )}
             {template.author_name && (
               <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-muted-foreground">

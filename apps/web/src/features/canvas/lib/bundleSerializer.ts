@@ -97,17 +97,13 @@ export function slugifyExternalId(name: string): string {
     .slice(0, 80);
 }
 
-export function buildBundleEntry(
-  graph: RFGraph,
-  meta: BundleMetadata,
-): TemplateBundleEntry {
+export function buildBundleEntry(graph: RFGraph, meta: BundleMetadata): TemplateBundleEntry {
   // stripCredentials clears credential refs + webhook GUIDs from node.data.
   // stripExecutionStyling removes per-edge animated/style.stroke applied
   // during runs. Together they leave a graph that's safe to publish.
   const sanitisedGraph = stripExecutionStyling(stripCredentials(graph));
 
-  const externalId =
-    meta.externalIdOverride?.trim() || slugifyExternalId(meta.name);
+  const externalId = meta.externalIdOverride?.trim() || slugifyExternalId(meta.name);
 
   return {
     external_id: externalId,

@@ -39,10 +39,7 @@ const ICONS_BY_CATEGORY: Record<string, LucideIcon> = {
   productivity: Rocket,
 };
 
-export function resolveTemplateIcon(opts: {
-  icon?: string | null;
-  category: string;
-}): LucideIcon {
+export function resolveTemplateIcon(opts: { icon?: string | null; category: string }): LucideIcon {
   if (opts.icon && ICONS_BY_NAME[opts.icon]) return ICONS_BY_NAME[opts.icon];
   return ICONS_BY_CATEGORY[opts.category] ?? FileText;
 }

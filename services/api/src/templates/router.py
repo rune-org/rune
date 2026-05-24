@@ -44,7 +44,8 @@ async def list_templates(
         description="Filter to templates that have at least one of the given tag slugs.",
     ),
     search: Optional[str] = Query(
-        None, description="Case-insensitive substring search across name and description."
+        None,
+        description="Case-insensitive substring search across name and description.",
     ),
     sort: TemplateSort = Query(
         TemplateSort.FEATURED, description="Ordering applied to the result set."
@@ -88,9 +89,7 @@ async def list_categories(
     (free-form strings stored before the enum) are not surfaced here - the
     gallery UI renders strictly from this enum.
     """
-    counts = await service.count_templates_by_category(
-        current_user.id, scope=scope
-    )
+    counts = await service.count_templates_by_category(current_user.id, scope=scope)
     summaries = [
         TemplateCategorySummary(
             value=category.value,

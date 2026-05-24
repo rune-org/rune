@@ -12,12 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { toast } from "@/components/ui/toast";
 import { listTemplates, listTemplateCategories } from "@/lib/api/templates";
 import type {
@@ -75,9 +70,7 @@ export function TemplateGallery() {
   const [categories, setCategories] = useState<TemplateCategorySummary[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateSummary | null>(
-    null,
-  );
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateSummary | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
   useEffect(() => {
@@ -128,10 +121,7 @@ export function TemplateGallery() {
       });
   }, [scope]);
 
-  const totalCount = useMemo(
-    () => categories.reduce((sum, c) => sum + c.count, 0),
-    [categories],
-  );
+  const totalCount = useMemo(() => categories.reduce((sum, c) => sum + c.count, 0), [categories]);
 
   const handleUse = useCallback(
     (template: TemplateSummary) => {
@@ -151,8 +141,8 @@ export function TemplateGallery() {
         <div>
           <h1 className="text-2xl font-semibold">Templates</h1>
           <p className="text-sm text-muted-foreground">
-            Start your workflow from a curated template, a community-shared
-            blueprint, or one of your own.
+            Start your workflow from a curated template, a community-shared blueprint, or one of
+            your own.
           </p>
         </div>
 
@@ -248,22 +238,13 @@ function LoadingGrid() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          className="h-36 animate-pulse rounded-lg border border-input bg-muted/30"
-        />
+        <div key={i} className="h-36 animate-pulse rounded-lg border border-input bg-muted/30" />
       ))}
     </div>
   );
 }
 
 function parseScope(raw: string | null): ScopeFilter {
-  if (
-    raw === "community" ||
-    raw === "personal" ||
-    raw === "official" ||
-    raw === "all"
-  )
-    return raw;
+  if (raw === "community" || raw === "personal" || raw === "official" || raw === "all") return raw;
   return "all";
 }

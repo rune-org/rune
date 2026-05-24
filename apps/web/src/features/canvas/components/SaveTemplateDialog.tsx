@@ -145,10 +145,7 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="template-category">Category</Label>
-            <Select
-              value={category}
-              onValueChange={(v) => setCategory(v as TemplateCategory)}
-            >
+            <Select value={category} onValueChange={(v) => setCategory(v as TemplateCategory)}>
               <SelectTrigger id="template-category">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -190,9 +187,7 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
                       <Icon className="h-4 w-4" />
                       {option.label}
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      {option.description}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{option.description}</span>
                   </button>
                 );
               })}

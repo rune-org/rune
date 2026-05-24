@@ -22,11 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/toast";
-import {
-  buildBundleEntry,
-  serialiseBundleEntry,
-  slugifyExternalId,
-} from "../lib/bundleSerializer";
+import { buildBundleEntry, serialiseBundleEntry, slugifyExternalId } from "../lib/bundleSerializer";
 import { TEMPLATE_CATEGORIES } from "../lib/templateCategories";
 import { TagsInput } from "./TagsInput";
 import type { CanvasNode } from "../types";
@@ -54,10 +50,7 @@ export function ExportToGalleryDialog({
   const [authorName, setAuthorName] = useState("");
   const [authorUrl, setAuthorUrl] = useState("");
 
-  const externalId = useMemo(
-    () => (name.trim() ? slugifyExternalId(name) : ""),
-    [name],
-  );
+  const externalId = useMemo(() => (name.trim() ? slugifyExternalId(name) : ""), [name]);
 
   const entry = useMemo(() => {
     if (!name.trim() || !externalId) return null;
@@ -71,22 +64,9 @@ export function ExportToGalleryDialog({
         ? { name: authorName, url: authorUrl.trim() || undefined }
         : undefined,
     });
-  }, [
-    name,
-    externalId,
-    description,
-    category,
-    icon,
-    tags,
-    authorName,
-    authorUrl,
-    workflowData,
-  ]);
+  }, [name, externalId, description, category, icon, tags, authorName, authorUrl, workflowData]);
 
-  const serialised = useMemo(
-    () => (entry ? serialiseBundleEntry(entry) : ""),
-    [entry],
-  );
+  const serialised = useMemo(() => (entry ? serialiseBundleEntry(entry) : ""), [entry]);
 
   const filename = externalId ? `${externalId}.json` : "template.json";
   const targetPath = `templates/${
@@ -132,8 +112,8 @@ export function ExportToGalleryDialog({
             >
               rune-templates
             </a>{" "}
-            repo. Download the file and open a PR - once merged, every Rune
-            instance will pick it up at next release.
+            repo. Download the file and open a PR - once merged, every Rune instance will pick it up
+            at next release.
           </DialogDescription>
         </DialogHeader>
 

@@ -343,9 +343,7 @@ class TestCategoryHandling:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_create_template_rejects_unknown_category(
-        self, authenticated_client
-    ):
+    async def test_create_template_rejects_unknown_category(self, authenticated_client):
         """Should reject categories that aren't part of TemplateCategory."""
         response = await authenticated_client.post(
             "/templates/",

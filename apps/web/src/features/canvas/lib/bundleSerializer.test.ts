@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildBundleEntry,
-  serialiseBundleEntry,
-  slugifyExternalId,
-} from "./bundleSerializer";
+import { buildBundleEntry, serialiseBundleEntry, slugifyExternalId } from "./bundleSerializer";
 import type { RFGraph } from "./graphIO";
 
 const baseGraph: RFGraph = {
@@ -111,6 +107,6 @@ describe("serialiseBundleEntry", () => {
     });
     const out = serialiseBundleEntry(entry);
     expect(out.endsWith("\n")).toBe(true);
-    expect(out).toContain("  \"external_id\": \"demo\"");
+    expect(out).toContain('  "external_id": "demo"');
   });
 });

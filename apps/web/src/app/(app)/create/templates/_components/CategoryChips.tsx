@@ -16,12 +16,7 @@ type CategoryChipsProps = {
  * ``GET /templates/categories`` and reflect the current user's visibility
  * (public + own).
  */
-export function CategoryChips({
-  categories,
-  selected,
-  onChange,
-  totalCount,
-}: CategoryChipsProps) {
+export function CategoryChips({ categories, selected, onChange, totalCount }: CategoryChipsProps) {
   return (
     <div
       className="flex gap-2 overflow-x-auto pb-2"

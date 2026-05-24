@@ -8,11 +8,7 @@ import {
   useTemplateTemplatesTemplateIdUsePost,
 } from "@/client";
 
-import type {
-  TemplateCreate,
-  TemplateScope,
-  TemplateSort,
-} from "@/client/types.gen";
+import type { TemplateCreate, TemplateScope, TemplateSort } from "@/client/types.gen";
 
 // Readable wrappers for template-related SDK functions
 // Note: The generated SDK function names start with "use" but are not React Hooks

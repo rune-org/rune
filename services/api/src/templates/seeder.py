@@ -105,18 +105,14 @@ def _entry_to_row_values(entry: TemplateBundleEntry) -> dict:
         "tags": entry.tags,
         "author_name": entry.author.name if entry.author else None,
         "author_url": entry.author.url if entry.author else None,
-        "workflow_data": entry.workflow_data.model_dump(
-            exclude_none=True, mode="json"
-        ),
+        "workflow_data": entry.workflow_data.model_dump(exclude_none=True, mode="json"),
         "source": "official" if entry.official else "user",
         "is_public": True,
         "created_by": None,
     }
 
 
-async def seed_templates_from_bundle(
-    db: AsyncSession, bundle_dir: Path
-) -> SeedResult:
+async def seed_templates_from_bundle(db: AsyncSession, bundle_dir: Path) -> SeedResult:
     """Seed every template in the bundle into the DB and remove orphans.
 
     The function is idempotent - running it repeatedly with the same bundle

@@ -70,9 +70,7 @@ export function TemplateDetailDialog({
 
         <div className="flex flex-col gap-3 py-2">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={scope === "official" ? "default" : "outline"}>
-              {scopeLabel}
-            </Badge>
+            <Badge variant={scope === "official" ? "default" : "outline"}>{scopeLabel}</Badge>
             <Badge variant="secondary">{categoryLabel}</Badge>
             <span className="text-xs text-muted-foreground">
               {template.usage_count > 0
