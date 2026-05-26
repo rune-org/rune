@@ -1,0 +1,492 @@
+\documentclass[12pt]{report}
+\usepackage[a4paper, left=1in, right=1in, top=1in, bottom=1in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+\usepackage[hypertexnames=false]{hyperref}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{indentfirst}
+\usepackage{etoolbox}
+
+% Adjust headheight for fancyhdr
+\setlength{\headheight}{15pt}
+
+% Line spacing (1.5 line spacing)
+\onehalfspacing
+
+% Headers/Footers configuration (fancyhdr)
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{RUNE: AI Workflow Automation Platform}
+\fancyhead[R]{\thepage}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0.5pt}
+
+% Force headers on chapter pages as well (matching the original PDF)
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyhead[L]{RUNE: AI Workflow Automation Platform}
+  \fancyhead[R]{\thepage}
+  \renewcommand{\headrulewidth}{0.5pt}
+}
+
+% Code Listings configuration
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codeblue}{rgb}{0.13,0.13,1}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  commentstyle=\color{codegray},
+  keywordstyle=\color{codeblue},
+  stringstyle=\color{codegreen},
+  numbers=left,
+  numberstyle=\tiny\color{codegray},
+  stepnumber=1,
+  numbersep=5pt,
+  frame=single,
+  tabsize=2,
+  showstringspaces=false
+}
+
+\begin{document}
+
+% ==================== Title Page ====================
+\begin{titlepage}
+  \begin{center}
+    \large AIN SHAMS UNIVERSITY \\
+    FACULTY OF ENGINEERING \\
+    COMPUTER AND SYSTEMS ENGINEERING PROGRAM \\
+    \vspace{2.5cm}
+    \Huge \textbf{RUNE} \\
+    \vspace{0.5cm}
+    \Large Low Code Automation Platform \\
+    \vspace{1.5cm}
+    \LARGE \textbf{Engineering Core and Academic Thesis \\ (Comprehensive Semester 2 Documentation)} \\
+    \vspace{2cm}
+    \large \textbf{Prepared by:} \\
+    Seif Elwarwary \\
+    \vspace{1cm}
+    \textbf{Supervised by:} \\
+    Dr. Yomna Safaaeldin \\
+    Eng. Amr Ibrahim \\
+    \vspace{2.5cm}
+    Academic Year 2025--2026 \\
+    May 27, 2026
+  \end{center}
+\end{titlepage}
+
+% ==================== Table of Contents ====================
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+% ==================== Chapter 4: System Architecture ====================
+\chapter{System Architecture}
+\label{ch:system_architecture}
+
+\section{High-Level Architecture}
+The RUNE platform is designed as an asynchronous, event-driven microservices architecture. It separates client-facing REST APIs from the high-throughput, distributed execution backend. The system isolates the processing lifecycle of automated tasks using a message-oriented middleware approach, ensuring that failures in execution instances do not propagate to the HTTP API layer or corrupt persistent configurations.
+
+The system is partitioned into three primary execution tiers:
+\begin{enumerate}
+    \item \textbf{The Ingress and Control Plane:} Governs workflow design, authorization validation, database mutations, and execution scheduling.
+    \item \textbf{The Transport and Queueing Layer:} Orchestrates routing keys, dead-letter exchanges (DLX), and message persistence.
+    \item \textbf{The Execution and Telemetry Plane:} Consists of stateless workers executing workflow payloads and a Rust WebSocket broker streaming telemetry updates back to the client interface.
+\end{enumerate}
+
+\section{Components Overview}
+The platform is composed of six distinct services that communicate asynchronously:
+\begin{itemize}
+    \item \textbf{Backend Master (FastAPI):} The API Gateway and core administrator. Implements user authentication (JWT), RBAC policies, model persistence (using PostgreSQL), credential encryption/decryption, and publishes execution payloads.
+    \item \textbf{Worker Engine (Go):} A stateless microservice that consumes execution payloads, compiles execution contexts, parses parameter bindings, runs node-specific code blocks, and evaluates control-flow paths.
+    \item \textbf{RTES WebSocket Server (Rust):} A high-performance telemetry server that broadcasts real-time execution states (running, success, failed, waiting) to the visual canvas interface.
+    \item \textbf{Archivist (Python):} A background completion processor. It binds to the RabbitMQ completion topic, processes terminal status updates, and updates PostgreSQL database execution tables asynchronously.
+    \item \textbf{Scheduler (Python):} A polling cron service that queries PostgreSQL for workflows scheduled to run, triggering runs via protected internal API endpoints.
+    \item \textbf{RUNE CLI:} A terminal-based tool built using the Bubble Tea TUI library in Go, supporting operations like database seeds, migration runs, and system diagnostics.
+\end{itemize}
+
+\section{Technology Stack}
+The technology stack is selected to optimize concurrency, memory safety, and communication latency:
+\begin{itemize}
+    \item \textbf{FastAPI (Python 3.13):} Implements the control plane, utilizing async features and Pydantic validation to handle model schema checks.
+    \item \textbf{Go Worker Engine:} Compiled to native code, utilizing goroutines and sync pools to support concurrent workflow execution with a minimal memory footprint.
+    \item \textbf{Rust RTES:} Built using the tokio runtime and axum WebSocket handlers, ensuring fast execution and memory safety without garbage-collection overhead.
+    \item \textbf{RabbitMQ:} The central message broker, supporting task distribution via durable queues.
+    \item \textbf{PostgreSQL:} The authoritative relational store, utilizing SQLModel for metadata persistence.
+    \item \textbf{Redis:} Handles caching, tracks execution locks, stores single-use WebSocket authorization tokens, and manages Wait-node scheduler timers.
+    \item \textbf{MongoDB:} Log persistence store. Saves unstructured, historic execution graphs and telemetry logs.
+\end{itemize}
+
+\section{Communication Flow}
+The interaction lifecycle during execution is structured as follows:
+\begin{enumerate}
+    \item \textbf{Design Phase:} The user defines a workflow on the Next.js visual canvas. The definition is sent via POST to the Backend Master, which validates and stores it in PostgreSQL.
+    \item \textbf{Trigger Phase:} A run is requested via manual trigger, webhook call, or scheduled timer. The Master creates a pending run database entry, resolves environment credentials, and publishes a task to the RabbitMQ \path{runs} queue.
+    \item \textbf{Execution Phase:} A Go Worker consumes the message, evaluates parameters, runs the target node, updates the execution status via Redis Pub/Sub, and recurses downstream.
+    \item \textbf{Broadcast Phase:} The RTES server captures Redis Pub/Sub events and streams them to the user's browser over a WebSocket.
+    \item \textbf{Archival Phase:} On completion, the worker publishes a final status message to the RabbitMQ \path{completion} queue. The Archivist consumes this message and saves the final result to PostgreSQL.
+\end{enumerate}
+
+\section{Design Principles}
+The platform's design relies on four core principles:
+\begin{itemize}
+    \item \textbf{Stateless Execution:} Workers do not maintain local state. Any crashed worker's task can be safely redelivered to another instance.
+    \item \textbf{Contract-Driven API Boundaries:} Frontend API clients and DSL structs are generated from unified schemas, preventing contract drift between the UI, API, and Worker.
+    \item \textbf{Isolation of Concerns:} Network outages or database failures in worker instances do not impact API Gateway availability.
+    \item \textbf{Deterministic Migrations:} Alembic and database bootstrap routines manage schema mutations deterministically during startup.
+\end{itemize}
+
+\section{Repository and Monorepo Layout}
+RUNE is structured as a monorepo, managed via a root-level Makefile:
+\begin{itemize}
+    \item \path{apps/web/}: Next.js frontend application.
+    \item \path{services/api/}: FastAPI backend service.
+    \item \path{services/rune-worker/}: Go Worker codebase.
+    \item \path{services/rtes/}: Rust real-time WebSocket server.
+    \item \path{services/archivist/}: Python completion consumer.
+    \item \path{services/scheduler/}: Python cron polling service.
+    \item \path{dsl/}: Workflow DSL definition files and schema generator script.
+\end{itemize}
+
+% ==================== Chapter 5: Workflow DSL and Type System ====================
+\chapter{Workflow DSL and Type System}
+\label{ch:workflow_dsl}
+
+\section{DSL Definition and Versioning}
+Workflows in RUNE are modeled using a JSON-based Domain Specific Language (DSL). The schema source of truth is declared in \path{dsl/dsl-definition.json}. This file defines the structure of all nodes, edges, validation rules, and output variables. DSL definitions are versioned, allowing the system to validate backward compatibility when executing older workflows.
+
+\section{Core DSL Components}
+A RUNE DSL document contains three primary structural elements:
+\begin{itemize}
+    \item \textbf{Workflow Metadata:} Configuration settings (name, description, unique identifier).
+    \item \textbf{Nodes Array:} Execution blocks. Each node specifies its type, name, position coordinates, and parameters.
+    \item \textbf{Edges Array:} Mappings representing connections between nodes. Each edge identifies a source node, a target node, and optionally an error flag if the edge routes failures.
+\end{itemize}
+
+\begin{lstlisting}[language={}, caption=Workflow DSL JSON Example]
+{
+  "id": "wf-100",
+  "name": "Webhook Notifier",
+  "nodes": [
+    {
+      "id": "node-trigger-1",
+      "type": "webhook",
+      "name": "Webhook Ingress",
+      "parameters": {
+        "method": "POST"
+      }
+    },
+    {
+      "id": "node-switch-1",
+      "type": "switch",
+      "name": "Filter Action",
+      "parameters": {
+        "expression": "context['$input']['body']['event'] === 'alert'"
+      }
+    },
+    {
+      "id": "node-log-1",
+      "type": "log",
+      "name": "Logger",
+      "parameters": {
+        "message": "Received alert: $input.body.message"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "src": "node-trigger-1",
+      "dst": "node-switch-1"
+    },
+    {
+      "id": "edge-2",
+      "src": "node-switch-1",
+      "dst": "node-log-1"
+    }
+  ]
+}
+\end{lstlisting}
+
+\section{Supported Node Types}
+The DSL supports standard execution blocks:
+\begin{itemize}
+    \item \textbf{Triggers:} Webhook ingress, scheduling timers, and manual HTTP calls.
+    \item \textbf{Control-Flow:} Conditional splits, multi-branch switches, synchronization merges, and wait barriers.
+    \item \textbf{Data Transforms:} Variable editing, list operations, and datetime parsers.
+    \item \textbf{Integrations:} SMTP mailers, Slack notifications, Gmail managers, Google Sheets connectors, and Microsoft Outlook.
+    \item \textbf{AI Agent Nodes:} LLM-driven blocks executing tool-use loops.
+\end{itemize}
+
+\section{Parameter Resolution and Expression Evaluation}
+Parameters in the DSL can be static values or dynamic references to previous node outputs. Dynamic references use the format \path{$node_name.path.to.field}. During worker execution, the \path{Resolver} component parses these paths, fetches the concrete values from the accumulated execution context, and interpolates them before triggering the node.
+For advanced expressions, users can wrap JavaScript logic in double curly braces, e.g., \path{{{ $node_name.value * 1.15 }}}. This expression is evaluated within a sandboxed Goja JavaScript interpreter inside the Go Worker, preventing malicious system calls.
+
+\section{Error Handling Strategies}
+To manage execution failures, nodes can declare one of three error handling behaviors:
+\begin{itemize}
+    \item \textbf{Halt:} Terminates the entire workflow run immediately and marks the execution as failed.
+    \item \textbf{Ignore:} Treats the failure as non-fatal, skips the output injection, and triggers downstream nodes normally.
+    \item \textbf{Branch (Error Edges):} Routes execution down a dedicated error edge, allowing users to define compensating tasks or notifications.
+\end{itemize}
+
+\section{Schema Validation}
+Before a workflow is saved or executed, the DSL representation is processed by a validation pipeline. The system validates the schema structure against the JSON schema, checks that all source and target references in edges are valid, verifies that no circular dependency loops exist using topological sorting, and ensures required credentials are configured.
+
+\section{The DSL Generator}
+To prevent code drift across services, the platform uses a Python-based generator tool (\path{dsl/generator/}). The generator parses the primary schema in \path{dsl-definition.json} and writes:
+\begin{itemize}
+    \item Go structs representing inputs, parameters, and outputs.
+    \item TypeScript interfaces for visual node rendering and configuration forms.
+    \item Python Pydantic models for API validation.
+\end{itemize}
+CI pipelines validate that no schema changes are committed without running the generator, ensuring consistency.
+
+% ==================== Chapter 7: Worker Engine ====================
+\chapter{Worker Engine (Go)}
+\label{ch:worker_engine}
+
+\section{Overview and Recursive Executor}
+The Worker Engine is the core execution runtime of the RUNE platform. Written in Go, it runs as a stateless consumer fleet listening on RabbitMQ queues. 
+Rather than relying on a centralized coordinator that polls execution steps, the Worker uses a recursive execution model. When a task message is pulled from RabbitMQ, the worker instantiates a local \path{ExecutionContext}, parses parameter expressions, executes the node's handler, modifies the context with the outputs, and evaluates downstream routing. If multiple successor nodes exist, the worker publishes separate \path{NodeExecutionMessage}s to the message bus, fanning out execution concurrently.
+
+\section{Node Registry and Resolver}
+The Worker registers constructors for all node types in a centralized \path{Registry} (\path{pkg/registry/init_registry.go}) during initialization. During execution, the worker resolves dynamic parameters against the accumulated execution context using the \path{Resolver} (\path{pkg/resolver/resolver.go}). The resolver parses path expressions, evaluates bracket notations, and resolves values recursively.
+
+\section{Control-Flow Nodes}
+Control-flow nodes coordinate branching, synchronization, and delays:
+\begin{itemize}
+    \item \textbf{Switch Node:} Directs execution to different paths by evaluating condition predicates or JavaScript expressions in a Goja VM.
+    \item \textbf{Split Node:} Loops over an input array and triggers parallel executions of downstream branches by fanning out separate messages.
+    \item \textbf{Merge Node:} Syncs fanned-out runs. In \texttt{wait\_for\_all} mode, it uses atomic Redis Lua script decrements to determine when all branches have finished before continuing downstream.
+    \item \textbf{Wait Node:} Halts execution by writing state to Redis and setting a timer. When the timer expires, the external Scheduler publishes a resume event.
+\end{itemize}
+
+The Merge Node uses an atomic Lua script executed on Redis to track branch completion without race conditions:
+\lstinputlisting[language=Lisp, caption=Redis Lua Script for Wait-For-All Merge Coordination, firstline=1, lastline=15]{/Users/seif/_uni/rune/services/rune-worker/pkg/nodes/custom/merge/merge_wait_for_all.lua}
+
+\section{Data-Transformation Nodes}
+Data-transformation nodes let users edit values inside the execution context:
+\begin{itemize}
+    \item \textbf{Edit Node:} Evaluates JavaScript code within the Goja sandbox to let users filter, map, or restructure keys in the accumulated context.
+    \item \textbf{List operations:} Provides standard list operations (filter, sort, map, slice) natively, avoiding the need for custom scripting.
+\end{itemize}
+
+\section{DateTime Family}
+The DateTime node family includes specialized blocks for parsing string dates, calculating durations, formatting timestamps, and comparing times. This separation prevents validation errors and ensures date calculations conform to standard UTC representations before integration requests are dispatched.
+
+\section{Integration Node Framework}
+RUNE uses a structured Integration Node Framework (\path{pkg/integrations}) to coordinate connections to third-party APIs. The framework handles OAuth2 token refreshing, request serialization, retry loops, and error mapping. Implemented integrations include Gmail, Google Sheets, and Microsoft Outlook.
+
+\section{Agent Node}
+The Agent Node integrates large language models directly into workflows using the Google ADK Go library. It supports tool binding, allowing the agent to evaluate context fields and determine whether it needs to invoke other workflow steps as tools. It features execution guards (token budgets, timeout constraints, loop counters) to prevent runaway execution costs.
+
+\section{MCP Support}
+To support local execution tooling, the Go worker implemented experimental Model Context Protocol (MCP) integration, allowing LLMs to execute system tools directly. However, the initial implementation was reverted due to high connection overhead, execution delays, and security concerns with running unverified local commands. The platform is currently being refactored to support a containerized, isolated sandbox model for local tools.
+
+\section{Observability Hooks in the Worker}
+The Worker Engine provides deep observability hooks during node runs:
+\begin{itemize}
+    \item \textbf{Metrics:} Logs queue delays, node execution durations, and error rates via Prometheus metrics.
+    \item \textbf{Structured Logs:} Emits structured JSON logs containing execution, workflow, and node identifiers.
+    \item \textbf{Traces:} Propagates OpenTelemetry context headers across processes to map the complete execution lifecycle.
+\end{itemize}
+
+% ==================== Chapter 8: RTES ====================
+\chapter{Rust Real-Time Execution Service (RTES)}
+\label{ch:rtes}
+
+\section{Overview and Responsibilities}
+The RUNE Token Execution Service (RTES) is a WebSocket service written in Rust. It serves as the bridge for streaming execution updates between backend worker processes and the user's browser. RTES maintains persistent connections to clients, receiving execution updates over Redis Pub/Sub and broadcasting them to the frontend canvas.
+
+\section{Architecture and Module Decomposition (PR \#345)}
+To support codebase maintainability, RTES was refactored from a monolithic file into modular components:
+\begin{itemize}
+    \item \path{src/api/ws.rs}: Upgrade handlers and WebSocket write loops.
+    \item \path{src/api/handlers.rs}: REST endpoints for health checks.
+    \item \path{src/infra/execution_store.rs}: MongoDB client interface.
+    \item \path{src/infra/token_store.rs}: Redis token validation checks.
+    \item \path{src/infra/messaging.rs}: Pub/Sub consumer loops.
+\end{itemize}
+
+\section{MongoDB Execution Store}
+RTES writes live execution states to MongoDB (\path{infra/execution_store.rs}). When an execution starts, the workflow definition is persisted. As workers run nodes, RTES updates the database documents with inputs, outputs, status codes, and execution durations. MongoDB was selected for this store due to its document-oriented model, which handles varying node outputs without schema locks.
+
+\section{Token Store and Authorization Flow}
+To secure the WebSocket endpoints, the service uses an ephemeral token validation flow managed via Redis:
+\begin{enumerate}
+    \item The client requests an execution access token from the API Master.
+    \item The Master generates a random UUID token, caches it in Redis with a 60-second TTL, and returns it to the client.
+    \item The client initiates a WebSocket connection to RTES, passing the token as a query parameter.
+    \item RTES verifies and deletes the token from Redis in a single check, upgrading the connection.
+\end{enumerate}
+
+\section{WebSocket Streaming}
+When a client establishes a connection, RTES runs a two-phase initialization sequence:
+\begin{itemize}
+    \item \textbf{Replay Phase:} RTES queries MongoDB for all existing status records related to that execution. It replays these updates to the client to draw the current execution state on the visual canvas.
+    \item \textbf{Live Phase:} RTES registers the client connection against the Redis Pub/Sub channel for that execution ID, streaming live updates as they are published by workers.
+\end{itemize}
+
+\section{Multi-Execution/Workflow Subscription}
+The updated WebSocket handler supports multiplexing, allowing a single connection to subscribe to multiple execution IDs or workflow IDs. This capability allows the dashboard to display status indicators for all running workflows without opening separate connections.
+
+\section{Known Limitations}
+Because visual canvas nodes update linearly, parallel updates from split branches can cause state visual races on the frontend. RTES captures and stores all parallel executions under their lineage hashes in MongoDB, but real-time linear rendering remains limited.
+
+% ==================== Chapter 11: Webhook Trigger Subsystem ====================
+\chapter{Webhook Trigger Subsystem}
+\label{ch:webhook_trigger}
+
+\section{Ingress Endpoint}
+RUNE exposes public HTTP ingress endpoints under \path{/api/v1/webhooks/{webhook_guid}} via the FastAPI Gateway. These endpoints support standard HTTP methods (GET, POST, PUT, DELETE). When an external request is received, the gateway identifies the corresponding workflow from the GUID, validates the request, and queues a new execution.
+
+\section{Canvas-Side Webhook Trigger Node}
+The Webhook Trigger Node represents the entry point on the visual canvas. It displays the unique webhook URL, shows format configuration parameters, and lets users specify required authentication keys and headers.
+
+\section{Authentication and Replay Protection}
+Ingress webhooks support signature verification (such as HMAC-SHA256 headers) to validate incoming payloads. To prevent replay attacks, the gateway validates request timestamps against a configured validity window (e.g., 5 minutes) and caches unique request signatures, rejecting duplicate payloads.
+
+\section{Payload Shape and Resolution into \$input}
+When a webhook payload is verified, the gateway normalizes the headers, query parameters, and body into a structured JSON payload. This payload is stored in the workflow execution context under the variable \path{$input}. The worker can then reference these values downstream (e.g., using \path{$input.body.issue.number}).
+
+% ==================== Chapter 12: Data Flow and Execution Lifecycle ====================
+\chapter{Data Flow and Execution Lifecycle}
+\label{ch:data_flow_lifecycle}
+
+\section{Overview}
+The execution lifecycle tracks how data and control states transition from workflow initiation to completion. RUNE uses an asynchronous, message-driven data model to handle this process.
+
+\section{High-Level Execution Flow}
+An execution transitions through the following phases:
+\begin{enumerate}
+    \item \textbf{Triggering:} A run is requested via manual click, scheduler timer, or webhook ingress.
+    \item \textbf{Queueing:} The API Master compiles the initial context and publishes a task to RabbitMQ.
+    \item \textbf{Worker Execution:} The worker consumes the task, executes the node, updates Redis with the status, and evaluates downstream nodes.
+    \item \textbf{Live Telemetry:} RTES reads the status from Redis and streams it to the client over a WebSocket.
+    \item \textbf{Completion:} Once the final node finishes, the worker publishes a completion message. The Archivist reads this message and updates PostgreSQL.
+\end{enumerate}
+
+\section{Message and Data Lifecycles}
+The platform defines three canonical message schemas:
+\begin{itemize}
+    \item \path{NodeExecutionMessage}: Passed between workers, containing the workflow definition, target node, accumulated context, and branch lineage hashes.
+    \item \path{NodeStatusMessage}: Lightweight progress updates published to Redis.
+    \item \path{CompletionMessage}: Marks execution completion and details terminal states and final contexts.
+\end{itemize}
+
+\begin{lstlisting}[language={}, caption=NodeExecutionMessage JSON Payload Example]
+{
+  "execution_id": "exec-abc-123",
+  "workflow_id": "wf-100",
+  "workflow_version": 1,
+  "node_id": "node-switch-1",
+  "accumulated_context": {
+    "$input": {
+      "body": {
+        "event": "alert",
+        "message": "CPU threshold exceeded"
+      }
+    }
+  },
+  "lineage_stack": []
+}
+\end{lstlisting}
+
+\section{Wait / Resume Semantics}
+When a workflow hits a Wait node, the Go Worker persists the current context to Redis and schedules a timer. The Scheduler service polls these timers and, upon expiration, publishes a resume payload to the \path{workflow.resume} queue. A dedicated consumer picks up the message, rehydrates the context, and schedules the downstream node.
+
+\section{Error Handling and Retry Behavior}
+If a node fails, the executor evaluates the node's error policy. If the failure is transient (e.g., database network blip), the worker rejects the message, causing RabbitMQ to requeue it. Persistent failures are routed to dead-letter queues (DLQ) for investigation.
+
+\section{Real-Time Updates via RTES}
+RTES subscribes to status channels on Redis Pub/Sub. When a worker publishes an update, RTES broadcasts the payload to all WebSocket connections subscribed to that execution ID.
+
+\section{Observability and Auditing}
+Observability is built into the data flow. The system records structured logs, traces execution calls across service boundaries, and maintains audit logs of execution results in PostgreSQL for compliance.
+
+% ==================== Chapter 17: Workflow Versioning ====================
+\chapter{Workflow Versioning}
+\label{ch:workflow_versioning}
+
+\section{Motivation}
+As workflows are deployed to run mission-critical tasks, editing them directly can break running instances. RUNE implements a versioning system that separates drafts from active production runs.
+
+\section{Backend Cutover (PR \#396)}
+The versioning backend splits the workflow data model in PostgreSQL. Workflows are edited as drafts. When the user publishes, a new immutable version is cut.
+The database schema uses SQLModel definitions:
+
+\begin{lstlisting}[language={}, caption=SQLModel Schema representing Workflow and WorkflowVersion models]
+class Workflow(SQLModel, table=True):
+    __tablename__ = "workflows"
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    name: str = Field(nullable=False)
+    description: Optional[str] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    active_version_id: Optional[UUID] = Field(default=None, foreign_key="workflow_versions.id")
+
+class WorkflowVersion(SQLModel, table=True):
+    __tablename__ = "workflow_versions"
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    workflow_id: UUID = Field(foreign_key="workflows.id", index=True)
+    version_number: int = Field(nullable=False)
+    definition: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+\end{lstlisting}
+
+\section{Frontend Versioning}
+The frontend canvas allows users to browse version histories, compare drafts against previous published versions, and roll back to older snapshots.
+
+\section{Execution Pinning to Versions}
+When an execution starts, RUNE pins it to the current published version's snapshot ID. This ensures that edits made to the draft during execution will not affect active runs, preventing state corruption.
+
+\section{Historical Graph Replay in Canvas}
+When a user views an execution log, the canvas reads the pinned version ID and reconstructs the exact graph layout as it existed when the run started, preventing rendering errors.
+
+\section{Interaction with Templates and Export}
+Exported workflow files include version stamps. When imported, the API Master validates the schema version and seeds the workflow as a new version history, preserving draft states.
+
+% ==================== Chapter 21: Reliability, Concurrency, and Operations ====================
+\chapter{Reliability, Concurrency, and Operations}
+\label{ch:reliability_operations}
+
+\section{Save Deduplication and Concurrent Save Prevention}
+To prevent conflicts when multiple users edit a workflow simultaneously, RUNE uses optimistic concurrency control. Save requests include the last retrieved version ID. If a write conflict is detected, the API Gateway rejects the save, prompting the user to resolve differences.
+
+\section{Workflow Status Lifecycle and Computation}
+The platform computes workflow statuses by aggregating active execution histories. Statuses transition through states like \texttt{draft}, \texttt{active}, \texttt{paused}, and \texttt{archived}, which are updated automatically by the API Master.
+
+\section{RabbitMQ Tuning and Pool Configuration}
+To handle high execution throughput, the RabbitMQ channels are tuned with prefetch limits (e.g., 50 messages per worker). This configuration prevents single worker instances from hogging tasks and manages back-pressure during load bursts.
+
+\section{Migration Bootstrap at API Startup}
+At startup, the API Master verifies the PostgreSQL database schema status. If pending migrations are found, the service prints a warning and blocks initialization until they are applied, preventing runtime schema mismatches.
+
+\section{Failure Modes Catalog}
+The platform defines failure modes and fallback actions:
+\begin{itemize}
+    \item \textbf{Worker Crash:} RabbitMQ detects connection drops, reclaims unacknowledged tasks, and routes them to another worker.
+    \item \textbf{Redis Down:} Wait nodes fail to schedule. The system logs the failure and reroutes tasks to the dead-letter queue.
+    \item \textbf{API Gateway Down:} Telemetry updates queue up in Redis until the API Gateway recovers and resumes writes.
+\end{itemize}
+
+% ==================== Appendix A: Per-Member Contributions ====================
+\chapter*{Appendix A: Per-Member Contributions}
+\addcontentsline{toc}{chapter}{Appendix A: Per-Member Contributions}
+
+\section*{A.5 Seif Elwarwary}
+Seif Elwarwary is the primary architect and developer of the real-time systems and control-flow execution layers. His contributions include:
+\begin{itemize}
+    \item \textbf{Real-Time Telemetry (RTES):} Designed and implemented the complete RTES microservice in Rust, using axum and tokio. Developed the Redis Pub/Sub integration and MongoDB execution store (\path{infra/execution_store.rs}), including the load-then-live history replay mechanism.
+    \item \textbf{Worker Control-Flow:} Implemented the recursive executor and developed node execution handlers in Go for Switch, Split, Merge (with Redis-backed Lua scripts), Wait, and Goja-based Edit nodes.
+    \item \textbf{Webhook Ingress:} Authored the FastAPI webhook subsystem, including request authentication, signature validation, and entry payload parsing.
+    \item \textbf{Versioning Backend:} Implemented the backend cutover to support draft vs. published versions and execution pinning.
+    \item \textbf{Key Pull Requests:} PR \#259 (Initial RTES service), PR \#345 (RTES refactoring and multi-subscription), PR \#396 (Versioning backend cutover), PR \#593/594 (Webhook trigger integration).
+\end{itemize}
+
+\end{document}
