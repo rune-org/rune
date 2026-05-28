@@ -68,7 +68,7 @@ func (DeleteColumns) Execute(ctx context.Context, ec plugin.ExecutionContext) (m
 					"deleteDimension": map[string]any{
 						"range": map[string]any{
 							"sheetId":    sheetID,
-							"dimension": "COLUMNS",
+							"dimension":  "COLUMNS",
 							"startIndex": startIndex,
 							"endIndex":   endIndex,
 						},

@@ -63,10 +63,12 @@ function CanvasPageInner() {
   const [draftMessage, setDraftMessage] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftDescription, setDraftDescription] = useState("");
+  const [workflowName, setWorkflowName] = useState<string | null>(null);
 
   // Version state
   const [baseVersionId, setBaseVersionId] = useState<number | null>(null);
   const baseVersionIdRef = useRef<number | null>(null);
+  const appliedTemplateRef = useRef<number | null>(null);
   useEffect(() => {
     baseVersionIdRef.current = baseVersionId;
   }, [baseVersionId]);
@@ -87,15 +89,15 @@ function CanvasPageInner() {
     const abortController = new AbortController();
 
     async function load() {
-      // Check if loading from template
       if (templateId) {
+        const numericTemplateId = Number(templateId);
+        if (appliedTemplateRef.current === numericTemplateId) return;
+        appliedTemplateRef.current = numericTemplateId;
         try {
-          // Check if aborted before making the API call
           if (abortController.signal.aborted) return;
 
-          const response = await applyTemplate(Number(templateId));
+          const response = await applyTemplate(numericTemplateId);
 
-          // Check if aborted after API call
           if (abortController.signal.aborted) return;
 
           if (response.data && !response.error) {
@@ -121,6 +123,7 @@ function CanvasPageInner() {
           setEdges(undefined);
           setBaseVersionId(null);
           setWorkflowMeta(null);
+          setWorkflowName(null);
         }
         return;
       }
@@ -161,6 +164,7 @@ function CanvasPageInner() {
             hasUnpublishedChanges: detail.has_unpublished_changes ?? false,
             latestVersionNumber: detail.latest_version?.version ?? null,
           });
+          setWorkflowName(detail.name);
         }
       } catch (err) {
         if (!abortController.signal.aborted) {
@@ -411,6 +415,7 @@ function CanvasPageInner() {
           hasUnpublishedChanges: true,
           latestVersionNumber: newVersion.version,
         });
+        setWorkflowName(created.name);
         toast.success("Workflow created");
         setDraftGraph(null);
         setDraftMessage(null);
@@ -443,6 +448,7 @@ function CanvasPageInner() {
           onSaveWithMessage={handleSaveWithMessage}
           saveDisabled={isSaving}
           workflowId={numericWorkflowId}
+          workflowName={workflowName}
           onPublish={handlePublish}
           hasUnpublishedChanges={workflowMeta?.hasUnpublishedChanges ?? false}
           publishDisabled={!baseVersionId}

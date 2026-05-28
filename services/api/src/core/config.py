@@ -72,6 +72,16 @@ class Settings(BaseSettings):
     # Scryb Documentation Settings
     scryb_model: str = "gemini/gemini-2.5-flash-lite"
 
+    # Templates Bundle Settings (curated templates from the rune-templates repo)
+    # On startup, when ``seed_templates`` is true, the API reads validated
+    # template JSON files from ``rune_templates_bundle_dir`` and upserts them
+    # into the ``workflow_templates`` table with ``source="official"``. The
+    # bundle directory is populated by the ``rune-templates`` git submodule
+    # checked out at ``services/api/templates_bundle/``; the submodule pointer
+    # in this repo determines which version of the templates ships.
+    rune_templates_bundle_dir: str = "templates_bundle/templates"
+    seed_templates: bool = True
+
     # OAuth2 BYO (custom provider) — browser redirect + token exchange
     # Public API base as seen by browsers and OAuth providers (no trailing slash).
     # Register redirect URI in the provider console: {API_PUBLIC_URL}/oauth/callback

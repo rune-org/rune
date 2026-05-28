@@ -26,6 +26,7 @@ import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
 import { SaveTemplateDialog } from "./components/SaveTemplateDialog";
+import { ExportToGalleryDialog } from "./components/ExportToGalleryDialog";
 import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
 import { SaveVersionDialog } from "./components/SaveVersionDialog";
 import { VersionConflictDialog } from "./components/VersionConflictDialog";
@@ -69,6 +70,7 @@ type FlowCanvasProps = {
   ) => Promise<void> | void;
   saveDisabled?: boolean;
   workflowId?: number | null;
+  workflowName?: string | null;
   onPublish?: () => void;
   hasUnpublishedChanges?: boolean;
   publishDisabled?: boolean;
@@ -99,6 +101,7 @@ function FlowCanvasInner({
   onSaveWithMessage,
   saveDisabled = false,
   workflowId = null,
+  workflowName = null,
   onPublish,
   hasUnpublishedChanges = false,
   publishDisabled = false,
@@ -344,6 +347,7 @@ function FlowCanvasInner({
     exportToClipboard,
     exportToFile,
     exportToTemplate,
+    exportToGallery,
     importFromClipboard,
     importFromFile,
     handleFileImport,
@@ -351,6 +355,8 @@ function FlowCanvasInner({
     handleTemplateSelect,
     isSaveTemplateOpen,
     setIsSaveTemplateOpen,
+    isExportGalleryOpen,
+    setIsExportGalleryOpen,
     isImportTemplateOpen,
     setIsImportTemplateOpen,
     fileInputRef,
@@ -699,6 +705,7 @@ function FlowCanvasInner({
               onExportToClipboard={exportToClipboard}
               onExportToFile={exportToFile}
               onExportToTemplate={exportToTemplate}
+              onExportToGallery={exportToGallery}
               onImportFromClipboard={importFromClipboard}
               onImportFromFile={importFromFile}
               onImportFromTemplate={importFromTemplate}
@@ -708,6 +715,7 @@ function FlowCanvasInner({
               wsStatus={wsStatus}
               isStartingExecution={isStartingExecution}
               workflowId={workflowId}
+              workflowName={workflowName}
               onPublish={onPublish}
               hasUnpublishedChanges={hasUnpublishedChanges}
               publishDisabled={publishDisabled}
@@ -767,6 +775,12 @@ function FlowCanvasInner({
         <SaveTemplateDialog
           open={isSaveTemplateOpen}
           onOpenChange={setIsSaveTemplateOpen}
+          workflowData={{ nodes, edges }}
+        />
+
+        <ExportToGalleryDialog
+          open={isExportGalleryOpen}
+          onOpenChange={setIsExportGalleryOpen}
           workflowData={{ nodes, edges }}
         />
 
