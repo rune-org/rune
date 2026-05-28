@@ -7,11 +7,15 @@ from argon2 import PasswordHasher
 from src.db.models import User, UserRole
 from src.workflow.service import WorkflowService
 
+ph = PasswordHasher()
+
 
 @pytest_asyncio.fixture(scope="function")
 async def other_user(test_db):
-    """Create a second test user in the database."""
-    ph = PasswordHasher()
+    """Create a second test user in the database.
+
+    Uses the app's hash_password() function to ensure password compatibility with login.
+    """
     user = User(
         email="other@example.com",
         hashed_password=ph.hash("Otherpassword!23"),

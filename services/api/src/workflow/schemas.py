@@ -8,6 +8,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    StrictBool,
     field_validator,
     model_validator,
 )
@@ -67,7 +68,7 @@ class WorkflowUpdateName(BaseModel):
 
 
 class WorkflowUpdateStatus(BaseModel):
-    is_active: bool
+    is_active: StrictBool
 
 
 class WorkflowVersionCreator(BaseModel):
