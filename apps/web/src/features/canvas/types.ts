@@ -122,9 +122,38 @@ export function isHttpMethod(value: string): value is HttpMethod {
   return (HTTP_METHODS as readonly string[]).includes(value);
 }
 
+/** Preset color keys for sticky notes (must match the DSL `Note.color` enum). */
+export const STICKY_NOTE_COLORS = [
+  "yellow",
+  "green",
+  "blue",
+  "pink",
+  "purple",
+  "gray",
+] as const;
+export type StickyNoteColor = (typeof STICKY_NOTE_COLORS)[number];
+
+/** Text-size presets for sticky notes (must match the DSL `Note.font_size` enum). */
+export const STICKY_NOTE_FONT_SIZES = ["sm", "md", "lg"] as const;
+export type StickyNoteFontSize = (typeof STICKY_NOTE_FONT_SIZES)[number];
+
 /** A map defining the specific data for each kind of node. */
 export type BuiltInNodeDataMap = {
   trigger: BaseData;
+
+  /**
+   * Decorative sticky note. Not part of execution — serialized into the DSL's
+   * top-level `notes` array (not `nodes`) at the persistence boundary.
+   */
+  stickyNote: BaseData & {
+    /** Markdown source of the note body. */
+    content?: string;
+    color?: StickyNoteColor;
+    fontSize?: StickyNoteFontSize;
+    /** Persisted resize dimensions (px). */
+    width?: number;
+    height?: number;
+  };
 
   webhookTrigger: BaseData & {
     webhookGuid?: string;
@@ -269,6 +298,7 @@ export type CanvasNode = {
   [K in NodeKind]: Node<NodeDataMap[K]> & { type: K };
 }[NodeKind];
 
+export type StickyNoteData = NodeDataMap["stickyNote"];
 export type IfData = NodeDataMap["if"];
 export type SwitchData = NodeDataMap["switch"];
 export type HttpData = NodeDataMap["http"];

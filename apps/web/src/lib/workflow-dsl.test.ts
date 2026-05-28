@@ -394,3 +394,89 @@ describe("workflow DSL helpers", () => {
     expect(nodes[0].parameters.retry).toBe("1");
   });
 });
+
+describe("sticky notes", () => {
+  it("splits sticky notes out of nodes into the top-level notes array", () => {
+    const trigger = createNode("trigger-1", "trigger", { label: "Start" });
+    const note = createNode(
+      "note-1",
+      "stickyNote",
+      { content: "# Hello\n\nremember this", color: "green", fontSize: "lg", width: 320, height: 200 },
+      { x: 50, y: 60 },
+    );
+
+    const { nodes, notes } = canvasToWorkflowData([trigger, note], []);
+
+    expect(nodes.map((n) => n.id)).toEqual(["trigger-1"]);
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toMatchObject({
+      id: "note-1",
+      content: "# Hello\n\nremember this",
+      x: 50,
+      y: 60,
+      width: 320,
+      height: 200,
+      color: "green",
+      font_size: "lg",
+    });
+  });
+
+  it("omits optional note fields that are unset", () => {
+    const note = createNode("note-1", "stickyNote", { content: "" }, { x: 1, y: 2 });
+    const { notes } = canvasToWorkflowData([note], []);
+    expect(notes[0]).toEqual({ id: "note-1", content: "", x: 1, y: 2 });
+  });
+
+  it("hydrates notes back into stickyNote canvas nodes (font_size -> fontSize)", () => {
+    const { nodes } = workflowDataToCanvas({
+      nodes: [],
+      edges: [],
+      notes: [
+        {
+          id: "note-1",
+          content: "body",
+          x: 12,
+          y: 34,
+          width: 280,
+          height: 160,
+          color: "blue",
+          font_size: "sm",
+        },
+      ],
+    });
+
+    const noteNode = nodes.find((n) => n.id === "note-1");
+    expect(noteNode?.type).toBe("stickyNote");
+    expect(noteNode?.position).toEqual({ x: 12, y: 34 });
+    expect(noteNode?.data).toMatchObject({
+      content: "body",
+      width: 280,
+      height: 160,
+      color: "blue",
+      fontSize: "sm",
+    });
+  });
+
+  it("round-trips a note through canvas -> DSL -> canvas", () => {
+    const note = createNode(
+      "note-1",
+      "stickyNote",
+      { content: "round trip", color: "pink", fontSize: "md", width: 250, height: 175 },
+      { x: 7, y: 8 },
+    );
+
+    const { notes } = canvasToWorkflowData([note], []);
+    const { nodes } = workflowDataToCanvas({ nodes: [], edges: [], notes });
+
+    const restored = nodes.find((n) => n.id === "note-1");
+    expect(restored?.type).toBe("stickyNote");
+    expect(restored?.position).toEqual({ x: 7, y: 8 });
+    expect(restored?.data).toMatchObject({
+      content: "round trip",
+      color: "pink",
+      fontSize: "md",
+      width: 250,
+      height: 175,
+    });
+  });
+});

@@ -57,6 +57,9 @@
   --node-agent: hsl(189 85% 40%);
   --node-agent-bg: hsl(189 85% 40% / 0.04);
   --node-agent-border: hsl(189 85% 40% / 0.55);
+  --node-note: hsl(45 90% 50%);
+  --node-note-bg: hsl(45 90% 50% / 0.12);
+  --node-note-border: hsl(45 90% 50% / 0.55);
 
   --toast-success-bg: hsl(152 40% 96%);
   --toast-success-border: hsl(152 30% 82%);
@@ -137,6 +140,9 @@
   --node-agent: hsl(189 85% 62%);
   --node-agent-bg: hsl(189 85% 62% / 0.18);
   --node-agent-border: hsl(189 85% 62% / 0.35);
+  --node-note: hsl(45 90% 62%);
+  --node-note-bg: hsl(45 90% 62% / 0.18);
+  --node-note-border: hsl(45 90% 62% / 0.35);
 
   /* Toast notification colors — dark tint of each variant's hue with glass */
   --toast-success-bg: hsl(152 18% 14%);

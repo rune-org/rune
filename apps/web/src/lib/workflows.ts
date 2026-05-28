@@ -3,6 +3,7 @@ import type { CanvasNode, CanvasEdge } from "@/features/canvas/types";
 import type {
   WorkflowNode as WorkflowNodeDSL,
   WorkflowEdge as WorkflowEdgeDSL,
+  WorkflowNote as WorkflowNoteDSL,
 } from "@/lib/workflow-dsl";
 import { canvasToWorkflowData, workflowDataToCanvas } from "@/lib/workflow-dsl";
 import type { WorkflowRole } from "@/lib/permissions";
@@ -90,10 +91,12 @@ function workflowDataToGraph(raw: Record<string, unknown>): WorkflowGraph {
   const data = raw as {
     nodes?: WorkflowNodeDSL[] | undefined;
     edges?: WorkflowEdgeDSL[] | undefined;
+    notes?: WorkflowNoteDSL[] | undefined;
   };
   const { nodes, edges } = workflowDataToCanvas({
     nodes: Array.isArray(data.nodes) ? data.nodes : [],
     edges: Array.isArray(data.edges) ? data.edges : [],
+    notes: Array.isArray(data.notes) ? data.notes : [],
   });
 
   return {

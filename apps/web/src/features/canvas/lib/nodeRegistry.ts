@@ -14,6 +14,7 @@ import {
   ListOrdered,
   Logs,
   Mail,
+  NotepadText,
   Pencil,
   Plug,
   Play,
@@ -37,7 +38,8 @@ export type NodeGroup =
   | "email"
   | "agents"
   | "google"
-  | "microsoft";
+  | "microsoft"
+  | "annotate";
 
 export type NodeColorTheme = {
   base: string;
@@ -63,6 +65,7 @@ export type NodeMetadata<K extends NodeKind = NodeKind> = {
   isTrigger: boolean;
   hasDynamicOutputs: boolean;
   shortcutKey?: string;
+  inspectable?: boolean; // Sticky notes don't trigger an inspector
 };
 
 export type NodeRegistry = {
@@ -109,6 +112,24 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: true,
     hasDynamicOutputs: false,
     shortcutKey: "t",
+  },
+  stickyNote: {
+    kind: "stickyNote",
+    label: "Note",
+    icon: NotepadText,
+    colorTheme: {
+      base: "--node-note",
+      bg: "--node-note-bg",
+      border: "--node-note-border",
+    },
+    dimensions: { width: 240, height: 180 },
+    defaults: { label: "Note", content: "", color: "yellow", fontSize: "md" },
+    schema: { inputs: [], outputs: [] },
+    group: "annotate",
+    isTrigger: false,
+    hasDynamicOutputs: false,
+    inspectable: false,
+    shortcutKey: "k",
   },
   scheduledTrigger: {
     kind: "scheduledTrigger",
@@ -621,6 +642,9 @@ export function getNodeSchema(kind: NodeKind, data?: NodeDataMap[NodeKind]): Nod
 
   return metadata.schema;
 }
+export function isInspectableNode(kind: NodeKind): boolean {
+  return NODE_REGISTRY[kind].inspectable !== false;
+}
 
 // ============================================================================
 // Library/Grouping Helpers
@@ -653,6 +677,7 @@ const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
     iconSrc: "/icons/integrations/microsoft.svg",
     color: "#0078d4",
   },
+  annotate: { label: "Annotate", icon: NotepadText, color: "var(--node-note)" },
 };
 
 export function getNodesByGroup(group: NodeGroup): NodeMetadata[] {

@@ -29,6 +29,9 @@ import {
   type AggregatorData,
   type MergeData,
   type AgentData,
+  type StickyNoteData,
+  type StickyNoteColor,
+  type StickyNoteFontSize,
 } from "@/features/canvas/types";
 import {
   hydrateAgentMessages,
@@ -65,6 +68,16 @@ export interface WorkflowEdge {
   src: string;
   dst: string;
   label?: string;
+}
+export interface WorkflowNote {
+  id: string;
+  content: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  color?: StickyNoteColor;
+  font_size?: StickyNoteFontSize;
 }
 
 export class MissingNodeCredentialsError extends Error {
@@ -829,14 +842,37 @@ function extractNodeCredential(node: CanvasNode): CredentialRef | undefined {
   return undefined;
 }
 
-// Convert Canvas graph to a workflow_data blueprint (stored in API)
+function toWorkflowNote(n: CanvasNode): WorkflowNote {
+  const d = (n.data || {}) as StickyNoteData;
+  const note: WorkflowNote = {
+    id: n.id,
+    content: typeof d.content === "string" ? d.content : "",
+    x: n.position.x,
+    y: n.position.y,
+  };
+  if (typeof d.width === "number") note.width = d.width;
+  if (typeof d.height === "number") note.height = d.height;
+  if (d.color) note.color = d.color;
+  if (d.fontSize) note.font_size = d.fontSize;
+  return note;
+}
+
+// Convert Canvas graph to a workflow_data blueprint (stored in API).
+// Sticky notes are split out of `nodes` into the decorative top-level `notes`
+// array so they never reach the executable graph (worker/validation).
 export function canvasToWorkflowData(
   nodes: CanvasNode[],
   edges: RFEdge[],
-): { nodes: WorkflowNode[]; edges: WorkflowEdge[] } {
+): { nodes: WorkflowNode[]; edges: WorkflowEdge[]; notes: WorkflowNote[] } {
   const missingCredentials: Array<{ id: string; type: string }> = [];
 
-  const blueprintNodes: WorkflowNode[] = nodes.map((n) => {
+  const notes: WorkflowNote[] = nodes
+    .filter((n) => n.type === "stickyNote")
+    .map(toWorkflowNote);
+
+  const blueprintNodes: WorkflowNode[] = nodes
+    .filter((n) => n.type !== "stickyNote")
+    .map((n) => {
     const credential = extractNodeCredential(n);
     if (nodeTypeRequiresCredential(n.type) && !credential) {
       missingCredentials.push({ id: n.id, type: n.type });
@@ -869,11 +905,31 @@ export function canvasToWorkflowData(
     throw new MissingNodeCredentialsError(missingCredentials);
   }
 
-  return { nodes: blueprintNodes, edges: blueprintEdges };
+  return { nodes: blueprintNodes, edges: blueprintEdges, notes };
+}
+
+function noteToCanvasNode(note: WorkflowNote): CanvasNode {
+  const data: StickyNoteData = {
+    content: typeof note.content === "string" ? note.content : "",
+  };
+  if (typeof note.width === "number") data.width = note.width;
+  if (typeof note.height === "number") data.height = note.height;
+  if (note.color) data.color = note.color;
+  if (note.font_size) data.fontSize = note.font_size;
+  return {
+    id: note.id,
+    type: "stickyNote",
+    position: { x: note.x ?? 100, y: note.y ?? 100 },
+    data,
+  } as CanvasNode;
 }
 
 // Convert stored workflow_data blueprint back to Canvas graph for editing
-export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: WorkflowEdge[] }): {
+export function workflowDataToCanvas(data: {
+  nodes?: WorkflowNode[];
+  edges?: WorkflowEdge[];
+  notes?: WorkflowNote[];
+}): {
   nodes: CanvasNode[];
   edges: RFEdge[];
 } {
@@ -974,7 +1030,9 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
     return edge;
   });
 
-  return { nodes, edges };
+  const noteNodes: CanvasNode[] = (data.notes ?? []).map(noteToCanvasNode);
+
+  return { nodes: [...nodes, ...noteNodes], edges };
 }
 
 // ————————————————————————————————————————————————————————————————
