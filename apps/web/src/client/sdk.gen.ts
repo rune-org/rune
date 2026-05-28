@@ -709,7 +709,7 @@ export const createTemplateTemplatesPost = <ThrowOnError extends boolean = false
  *
  * Counts honour ``scope`` so the gallery's category chips reflect what the
  * user will actually see in the currently-selected tab. Legacy categories
- * (free-form strings stored before the enum) are not surfaced here — the
+ * (free-form strings stored before the enum) are not surfaced here - the
  * gallery UI renders strictly from this enum.
  */
 export const listCategoriesTemplatesCategoriesGet = <ThrowOnError extends boolean = false>(options?: Options<ListCategoriesTemplatesCategoriesGetData, ThrowOnError>) => (options?.client ?? client).get<ListCategoriesTemplatesCategoriesGetResponses, ListCategoriesTemplatesCategoriesGetErrors, ThrowOnError>({

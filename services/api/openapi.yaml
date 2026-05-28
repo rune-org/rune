@@ -1511,9 +1511,11 @@ paths:
           anyOf:
           - type: string
           - type: 'null'
-          description: Case-insensitive substring search across name and description.
+          description: Case-insensitive substring search across name, description,
+            and tags.
           title: Search
-        description: Case-insensitive substring search across name and description.
+        description: Case-insensitive substring search across name, description, and
+          tags.
       - name: sort
         in: query
         required: false
@@ -1567,11 +1569,17 @@ paths:
       tags:
       - Templates
       summary: List Categories
-      description: "Enumerate the canonical TemplateCategory values with per-category\
-        \ counts.\n\nCounts honour ``scope`` so the gallery's category chips reflect\
-        \ what the\nuser will actually see in the currently-selected tab. Legacy categories\n\
-        (free-form strings stored before the enum) are not surfaced here \u2014 the\n\
-        gallery UI renders strictly from this enum."
+      description: 'Enumerate the canonical TemplateCategory values with per-category
+        counts.
+
+
+        Counts honour ``scope`` so the gallery''s category chips reflect what the
+
+        user will actually see in the currently-selected tab. Legacy categories
+
+        (free-form strings stored before the enum) are not surfaced here - the
+
+        gallery UI renders strictly from this enum.'
       operationId: list_categories_templates_categories_get
       security:
       - OAuth2PasswordBearer: []
@@ -3839,6 +3847,113 @@ components:
       required:
       - refresh_token
       title: RefreshRequest
+    RuntimeWorkflowEdge:
+      properties:
+        id:
+          type: string
+          minLength: 1
+          title: Id
+        src:
+          type: string
+          minLength: 1
+          title: Src
+        dst:
+          type: string
+          minLength: 1
+          title: Dst
+        type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+        label:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Label
+      additionalProperties: true
+      type: object
+      required:
+      - id
+      - src
+      - dst
+      title: RuntimeWorkflowEdge
+      description: 'A single edge in the runtime workflow graph.
+
+
+        The runtime/save shape uses ``src``/``dst`` (the worker convention),
+
+        converted client-side from the canvas ``source``/``target`` shape in
+
+        workflow-dsl.'
+    RuntimeWorkflowGraph:
+      properties:
+        nodes:
+          items:
+            $ref: '#/components/schemas/RuntimeWorkflowNode'
+          type: array
+          minItems: 1
+          title: Nodes
+        edges:
+          items:
+            $ref: '#/components/schemas/RuntimeWorkflowEdge'
+          type: array
+          title: Edges
+        metadata:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Metadata
+      additionalProperties: true
+      type: object
+      required:
+      - nodes
+      - edges
+      title: RuntimeWorkflowGraph
+      description: 'The runtime workflow graph saved as a version: nodes + edges.
+
+
+        Pydantic owns *shape* validation here (required/non-empty fields, types,
+
+        id uniqueness); cross-field *semantics* (edges reference existing nodes,
+
+        no self-references, exactly one trigger) live in
+
+        ``src.workflow.validation``. Stricter than the lenient template
+
+        ``WorkflowGraph``: a saved version must have at least one node.'
+    RuntimeWorkflowNode:
+      properties:
+        id:
+          type: string
+          minLength: 1
+          title: Id
+        type:
+          type: string
+          minLength: 1
+          title: Type
+        trigger:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Trigger
+      additionalProperties: true
+      type: object
+      required:
+      - id
+      - type
+      title: RuntimeWorkflowNode
+      description: 'A single node in the runtime workflow graph.
+
+
+        Only the structural identity fields are validated (``id``, ``type``); the
+
+        rest of the runtime shape (``name``, ``parameters``, ``output``,
+
+        ``position`` as an ``[x, y]`` array, ``credentials``, ...) is intentionally
+
+        loose and passes through via ``extra="allow"``.'
     SAMLConfigCreate:
       properties:
         name:
@@ -4242,11 +4357,10 @@ components:
       title: TemplateScope
       description: "The user-facing bucket a template belongs to.\n\nDerived from\
         \ ``(source, is_public)`` so callers don't need to combine\nthe two dimensions\
-        \ themselves:\n\n* ``OFFICIAL`` \u2014 curated by the Rune team, seeded from\
-        \ the\n  ``rune-templates`` repo.\n* ``COMMUNITY`` \u2014 saved by an end\
-        \ user and marked public, visible to\n  everyone on the Rune instance.\n*\
-        \ ``PERSONAL`` \u2014 saved by an end user for their own use, visible only\n\
-        \  to the creator."
+        \ themselves:\n\n* ``OFFICIAL`` - curated by the Rune team, seeded from the\n\
+        \  ``rune-templates`` repo.\n* ``COMMUNITY`` - saved by an end user and marked\
+        \ public, visible to\n  everyone on the Rune instance.\n* ``PERSONAL`` - saved\
+        \ by an end user for their own use, visible only\n  to the creator."
     TemplateSort:
       type: string
       enum:
@@ -4572,9 +4686,7 @@ components:
           description: Expected current latest version id. Null is allowed only for
             the first save.
         workflow_data:
-          additionalProperties: true
-          type: object
-          title: Workflow Data
+          $ref: '#/components/schemas/RuntimeWorkflowGraph'
           description: Workflow definition to save
         message:
           anyOf:
@@ -4682,11 +4794,16 @@ components:
       - source
       - target
       title: WorkflowEdge
-      description: "A single edge in a workflow graph (React Flow shape).\n\nEdges\
-        \ use ``source``/``target`` (React Flow convention) \u2014 this is the\ncanvas-facing\
-        \ shape that templates ship in. The runtime worker uses\n``src``/``dst`` but\
-        \ conversion happens client-side in ``workflow-dsl.ts``\nwhen a workflow is\
-        \ saved."
+      description: 'A single edge in a workflow graph (React Flow shape).
+
+
+        Edges use ``source``/``target`` (React Flow convention) - this is the
+
+        canvas-facing shape that templates ship in. The runtime worker uses
+
+        ``src``/``dst`` but conversion happens client-side in ``workflow-dsl.ts``
+
+        when a workflow is saved.'
     WorkflowGraph:
       properties:
         nodes:
@@ -4708,11 +4825,16 @@ components:
       additionalProperties: true
       type: object
       title: WorkflowGraph
-      description: "A workflow graph: nodes + edges (+ optional metadata).\n\nStructure\
-        \ is strict (the top-level shape and per-element required fields\nare validated).\
-        \ Empty ``nodes``/``edges`` arrays are allowed at the\ntemplate-storage layer\
-        \ \u2014 runtime ``queue.py`` enforces \"must have a\ntrigger\" only when\
-        \ a workflow is actually queued for execution."
+      description: 'A workflow graph: nodes + edges (+ optional metadata).
+
+
+        Structure is strict (the top-level shape and per-element required fields
+
+        are validated). Empty ``nodes``/``edges`` arrays are allowed at the
+
+        template-storage layer - runtime ``queue.py`` enforces "must have a
+
+        trigger" only when a workflow is actually queued for execution.'
     WorkflowListItem:
       properties:
         id:
