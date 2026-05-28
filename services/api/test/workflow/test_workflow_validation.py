@@ -203,3 +203,63 @@ def test_accepts_runtime_node_shape_from_canvas():
     dumped = graph.model_dump(exclude_none=True, mode="json")
     assert dumped["nodes"][0]["position"] == [100, 200]
     assert validate_workflow_data(dumped).valid is True
+
+def _note(note_id: str, **extra):
+    return {"id": note_id, "content": "hi", "x": 0, "y": 0, **extra}
+
+
+def test_notes_round_trip_and_preserve_shape():
+    graph = RuntimeWorkflowGraph(
+        nodes=[TRIGGER],
+        edges=[],
+        notes=[_note("note_1", color="yellow", font_size="md", width=240, height=180)],
+    )
+    dumped = graph.model_dump(exclude_none=True, mode="json")
+    assert dumped["notes"][0]["id"] == "note_1"
+    assert dumped["notes"][0]["color"] == "yellow"
+    # extra="allow" preserves the full loose note shape.
+    assert dumped["notes"][0]["font_size"] == "md"
+    assert dumped["notes"][0]["width"] == 240
+
+
+def test_notes_default_to_empty_list_when_omitted():
+    graph = RuntimeWorkflowGraph(nodes=[TRIGGER], edges=[])
+    assert graph.notes == []
+
+
+def test_notes_do_not_satisfy_trigger_requirement():
+    # A board with notes but no trigger node is still invalid.
+    graph = RuntimeWorkflowGraph(nodes=[ACTION], edges=[], notes=[_note("note_1")])
+    result = validate_workflow_data(graph.model_dump())
+    assert result.valid is False
+    assert any(
+        e.message == "Workflow must have at least one trigger node"
+        for e in result.errors
+    )
+
+
+def test_notes_are_ignored_by_semantic_validation():
+    # Notes are not nodes: a valid trigger graph stays valid regardless of notes,
+    # and notes never count as edge endpoints.
+    graph = RuntimeWorkflowGraph(
+        nodes=[TRIGGER, ACTION],
+        edges=[{"id": "e1", "src": "t", "dst": "a"}],
+        notes=[_note("note_1"), _note("note_2")],
+    )
+    assert validate_workflow_data(graph.model_dump()).valid is True
+
+
+def test_duplicate_note_ids_rejected():
+    with pytest.raises(
+        PydanticValidationError, match=re.escape("Workflow note ids must be unique")
+    ):
+        RuntimeWorkflowGraph(
+            nodes=[TRIGGER],
+            edges=[],
+            notes=[_note("dup"), _note("dup")],
+        )
+
+
+def test_empty_note_id_rejected():
+    with pytest.raises(PydanticValidationError):
+        RuntimeWorkflowGraph(nodes=[TRIGGER], edges=[], notes=[_note("")])

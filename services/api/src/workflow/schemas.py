@@ -198,18 +198,35 @@ class RuntimeWorkflowEdge(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+class RuntimeWorkflowNote(BaseModel):
+    """A decorative sticky note placed on the canvas.
+
+    Notes are persisted with the workflow but never executed: the worker
+    deserializes only ``nodes``/``edges`` and semantic validation
+    (``src.workflow.validation``) ignores notes entirely.
+    """
+
+    id: str = Field(..., min_length=1)
+
+    model_config = ConfigDict(extra="allow")
+
+
 class RuntimeWorkflowGraph(BaseModel):
-    """The runtime workflow graph saved as a version: nodes + edges.
+    """The runtime workflow graph saved as a version: nodes + edges (+ optionally notes).
 
     Pydantic owns *shape* validation here (required/non-empty fields, types,
     id uniqueness); cross-field *semantics* (edges reference existing nodes,
     no self-references, exactly one trigger) live in
     ``src.workflow.validation``. Stricter than the lenient template
     ``WorkflowGraph``: a saved version must have at least one node.
+
+    ``notes`` is a decorative layer: free-floating sticky notes that are
+    persisted but excluded from execution and from trigger/edge semantics.
     """
 
     nodes: list[RuntimeWorkflowNode] = Field(..., min_length=1)
     edges: list[RuntimeWorkflowEdge] = Field(...)
+    notes: list[RuntimeWorkflowNote] = Field(default_factory=list)
     metadata: Optional[dict[str, Any]] = None
 
     model_config = ConfigDict(extra="allow")
@@ -232,6 +249,16 @@ class RuntimeWorkflowGraph(BaseModel):
         ids = [e.id for e in v]
         if len(ids) != len(set(ids)):
             raise ValueError("Workflow edge ids must be unique")
+        return v
+
+    @field_validator("notes")
+    @classmethod
+    def validate_note_ids_unique(
+        cls, v: list[RuntimeWorkflowNote]
+    ) -> list[RuntimeWorkflowNote]:
+        ids = [n.id for n in v]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Workflow note ids must be unique")
         return v
 
 
