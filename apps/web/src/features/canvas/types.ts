@@ -123,14 +123,7 @@ export function isHttpMethod(value: string): value is HttpMethod {
 }
 
 /** Preset color keys for sticky notes (must match the DSL `Note.color` enum). */
-export const STICKY_NOTE_COLORS = [
-  "yellow",
-  "green",
-  "blue",
-  "pink",
-  "purple",
-  "gray",
-] as const;
+export const STICKY_NOTE_COLORS = ["yellow", "green", "blue", "pink", "purple", "gray"] as const;
 export type StickyNoteColor = (typeof STICKY_NOTE_COLORS)[number];
 
 /** Text-size presets for sticky notes (must match the DSL `Note.font_size` enum). */

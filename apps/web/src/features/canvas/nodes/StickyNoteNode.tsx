@@ -105,9 +105,7 @@ export const StickyNoteNode = memo(function StickyNoteNode({
         isVisible={selected}
         minWidth={MIN_WIDTH}
         minHeight={MIN_HEIGHT}
-        onResize={(_, params) =>
-          updateNodeData(id, { width: params.width, height: params.height })
-        }
+        onResize={(_, params) => updateNodeData(id, { width: params.width, height: params.height })}
         lineClassName="border-2 border-foreground/15"
         handleStyle={{
           width: 16,

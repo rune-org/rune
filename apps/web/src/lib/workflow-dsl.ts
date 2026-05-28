@@ -866,33 +866,32 @@ export function canvasToWorkflowData(
 ): { nodes: WorkflowNode[]; edges: WorkflowEdge[]; notes: WorkflowNote[] } {
   const missingCredentials: Array<{ id: string; type: string }> = [];
 
-  const notes: WorkflowNote[] = nodes
-    .filter((n) => n.type === "stickyNote")
-    .map(toWorkflowNote);
+  const notes: WorkflowNote[] = nodes.filter((n) => n.type === "stickyNote").map(toWorkflowNote);
 
   const blueprintNodes: WorkflowNode[] = nodes
     .filter((n) => n.type !== "stickyNote")
     .map((n) => {
-    const credential = extractNodeCredential(n);
-    if (nodeTypeRequiresCredential(n.type) && !credential) {
-      missingCredentials.push({ id: n.id, type: n.type });
-    }
+      const credential = extractNodeCredential(n);
+      if (nodeTypeRequiresCredential(n.type) && !credential) {
+        missingCredentials.push({ id: n.id, type: n.type });
+      }
 
-    const webhookGuid =
-      n.type === "webhookTrigger" ? (n.data as WebhookTriggerData).webhookGuid : undefined;
+      const webhookGuid =
+        n.type === "webhookTrigger" ? (n.data as WebhookTriggerData).webhookGuid : undefined;
 
-    return {
-      id: n.id,
-      name: nodeName(n),
-      trigger: n.type === "trigger" || n.type === "scheduledTrigger" || n.type === "webhookTrigger",
-      type: toWorkerType(n.type), // store canonical type to simplify future use
-      ...(webhookGuid ? { webhook_guid: webhookGuid } : {}),
-      parameters: toWorkerParameters(n, edges),
-      output: {},
-      position: [n.position.x, n.position.y],
-      credentials: credential,
-    };
-  });
+      return {
+        id: n.id,
+        name: nodeName(n),
+        trigger:
+          n.type === "trigger" || n.type === "scheduledTrigger" || n.type === "webhookTrigger",
+        type: toWorkerType(n.type), // store canonical type to simplify future use
+        ...(webhookGuid ? { webhook_guid: webhookGuid } : {}),
+        parameters: toWorkerParameters(n, edges),
+        output: {},
+        position: [n.position.x, n.position.y],
+        credentials: credential,
+      };
+    });
 
   const blueprintEdges: WorkflowEdge[] = edges.map((e) => ({
     id: e.id,

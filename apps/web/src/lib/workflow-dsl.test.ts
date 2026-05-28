@@ -401,7 +401,13 @@ describe("sticky notes", () => {
     const note = createNode(
       "note-1",
       "stickyNote",
-      { content: "# Hello\n\nremember this", color: "green", fontSize: "lg", width: 320, height: 200 },
+      {
+        content: "# Hello\n\nremember this",
+        color: "green",
+        fontSize: "lg",
+        width: 320,
+        height: 200,
+      },
       { x: 50, y: 60 },
     );
 

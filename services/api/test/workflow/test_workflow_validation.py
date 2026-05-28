@@ -204,6 +204,7 @@ def test_accepts_runtime_node_shape_from_canvas():
     assert dumped["nodes"][0]["position"] == [100, 200]
     assert validate_workflow_data(dumped).valid is True
 
+
 def _note(note_id: str, **extra):
     return {"id": note_id, "content": "hi", "x": 0, "y": 0, **extra}
 
