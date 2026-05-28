@@ -1,5 +1,5 @@
 import pytest_asyncio
-from src.core.password import hash_password
+from argon2 import PasswordHasher
 
 from src.db.models import (
     Execution,
@@ -11,6 +11,8 @@ from src.db.models import (
     WorkflowUser,
 )
 from src.workflow.service import WorkflowService
+
+ph = PasswordHasher()
 
 
 @pytest_asyncio.fixture(scope="function")

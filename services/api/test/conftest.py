@@ -2,6 +2,7 @@ from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
+from argon2 import PasswordHasher
 from aio_pika import connect_robust
 from httpx import ASGITransport, AsyncClient
 from redis.asyncio import Redis
@@ -10,10 +11,11 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.app import app
 from src.core.config import Settings, get_settings
-from src.core.password import hash_password
 from src.db.config import create_database_engine, get_db
 from src.db.models import User, UserRole
 from src.db.redis import get_redis
+
+ph = PasswordHasher()
 
 
 # Override settings for tests
