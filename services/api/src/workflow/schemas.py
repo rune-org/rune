@@ -4,10 +4,17 @@ from typing import Any, Optional
 
 from fastapi import status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, StrictBool, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from src.core.responses import ApiResponse
 from src.db.models import User, Workflow, WorkflowRole, WorkflowVersion
+from src.workflow.validation import validate_workflow_data
 
 
 class WorkflowListItem(BaseModel):
@@ -157,68 +164,96 @@ class WorkflowDetail(BaseModel):
         )
 
 
+class RuntimeWorkflowNode(BaseModel):
+    """A single node in the runtime workflow graph.
+
+    Only the structural identity fields are validated (``id``, ``type``); the
+    rest of the runtime shape (``name``, ``parameters``, ``output``,
+    ``position`` as an ``[x, y]`` array, ``credentials``, ...) is intentionally
+    loose and passes through via ``extra="allow"``.
+    """
+
+    id: str = Field(..., min_length=1)
+    type: str = Field(..., min_length=1)
+    trigger: Optional[bool] = None
+
+    model_config = ConfigDict(extra="allow")
+
+
+class RuntimeWorkflowEdge(BaseModel):
+    """A single edge in the runtime workflow graph.
+
+    The runtime/save shape uses ``src``/``dst`` (the worker convention),
+    converted client-side from the canvas ``source``/``target`` shape in
+    workflow-dsl.
+    """
+
+    id: str = Field(..., min_length=1)
+    src: str = Field(..., min_length=1)
+    dst: str = Field(..., min_length=1)
+    type: Optional[str] = None
+    label: Optional[str] = None
+
+    model_config = ConfigDict(extra="allow")
+
+
+class RuntimeWorkflowGraph(BaseModel):
+    """The runtime workflow graph saved as a version: nodes + edges.
+
+    Pydantic owns *shape* validation here (required/non-empty fields, types,
+    id uniqueness); cross-field *semantics* (edges reference existing nodes,
+    no self-references, exactly one trigger) live in
+    ``src.workflow.validation``. Stricter than the lenient template
+    ``WorkflowGraph``: a saved version must have at least one node.
+    """
+
+    nodes: list[RuntimeWorkflowNode] = Field(..., min_length=1)
+    edges: list[RuntimeWorkflowEdge] = Field(...)
+    metadata: Optional[dict[str, Any]] = None
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("nodes")
+    @classmethod
+    def validate_node_ids_unique(
+        cls, v: list[RuntimeWorkflowNode]
+    ) -> list[RuntimeWorkflowNode]:
+        ids = [n.id for n in v]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Workflow node ids must be unique")
+        return v
+
+    @field_validator("edges")
+    @classmethod
+    def validate_edge_ids_unique(
+        cls, v: list[RuntimeWorkflowEdge]
+    ) -> list[RuntimeWorkflowEdge]:
+        ids = [e.id for e in v]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Workflow edge ids must be unique")
+        return v
+
+
 class WorkflowCreateVersion(BaseModel):
     base_version_id: Optional[int] = Field(
         default=None,
         description="Expected current latest version id. Null is allowed only for the first save.",
     )
-    workflow_data: dict[str, Any] = Field(
+    workflow_data: RuntimeWorkflowGraph = Field(
         ..., description="Workflow definition to save"
     )
     message: Optional[str] = Field(default=None, description="Revision message")
 
-    @field_validator("workflow_data")
-    @classmethod
-    def _validate_workflow_data(cls, v: dict[str, Any]) -> dict[str, Any]:
-        """Validate workflow data structure.
-
-        Ensures required fields and basic structure are present.
-        """
-        if not isinstance(v, dict):
-            raise ValueError("workflow_data must be an object")
-
-        if not v:
-            raise ValueError("workflow_data cannot be empty")
-
-        # Check for required fields
-        if "nodes" not in v:
-            raise ValueError("workflow_data must contain 'nodes' field")
-        if "edges" not in v:
-            raise ValueError("workflow_data must contain 'edges' field")
-
-        nodes = v.get("nodes")
-        if not isinstance(nodes, list):
-            raise ValueError("'nodes' must be an array")
-        if not nodes:
-            raise ValueError("'nodes' array cannot be empty")
-
-        edges = v.get("edges")
-        if not isinstance(edges, list):
-            raise ValueError("'edges' must be an array")
-
-        # Validate each node has required fields and check for duplicate IDs
-        seen_ids: set[str] = set()
-        for i, node in enumerate(nodes):
-            if not isinstance(node, dict):
-                raise ValueError(f"Node at index {i} must be an object")
-            if "id" not in node:
-                raise ValueError(f"Node at index {i} must have 'id' field")
-            if not node["id"]:
-                raise ValueError(f"Node at index {i} has empty 'id'")
-            if node["id"] in seen_ids:
-                raise ValueError(f"Duplicate node id '{node['id']}'")
-            seen_ids.add(node["id"])
-            if "type" not in node:
-                raise ValueError(f"Node at index {i} must have 'type' field")
-
-        # Validate trigger node exists
-        trigger_nodes = [node for node in nodes if node.get("trigger", False)]
-        if not trigger_nodes:
-            raise ValueError("Workflow must have at least one trigger node")
-        if len(trigger_nodes) > 1:
-            raise ValueError("Workflow must have exactly one trigger node")
-
-        return v
+    @model_validator(mode="after")
+    def _validate_workflow_data(self) -> "WorkflowCreateVersion":
+        result = validate_workflow_data(self.workflow_data.model_dump())
+        if not result.valid:
+            parts = [
+                f"[{e.field}] {e.message}" if e.field else e.message
+                for e in result.errors
+            ]
+            raise ValueError(f"Invalid workflow: {'; '.join(parts)}")
+        return self
 
 
 class WorkflowPublishVersion(BaseModel):

@@ -335,3 +335,51 @@ class TestWorkflowDeletion:
         # Verify database record removed
         result = await test_db.exec(select(Workflow).where(Workflow.id == workflow_id))
         assert result.first() is None
+
+
+class TestWorkflowVersionValidation:
+    """The save endpoint rejects structurally or semantically invalid graphs."""
+
+    @pytest.mark.asyncio
+    async def test_save_with_empty_nodes_returns_422(
+        self, authenticated_client, sample_workflow
+    ):
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        latest = detail.json()["data"]["latest_version"]
+
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": latest["id"],
+                "workflow_data": {"nodes": [], "edges": []},
+                "message": "Empty nodes",
+            },
+        )
+
+        # Shape error surfaces as a Pydantic field error (422).
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_save_with_multiple_triggers_returns_422(
+        self, authenticated_client, sample_workflow
+    ):
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        latest = detail.json()["data"]["latest_version"]
+
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/versions",
+            json={
+                "base_version_id": latest["id"],
+                "workflow_data": {
+                    "nodes": [
+                        {"id": "t1", "type": "trigger", "trigger": True},
+                        {"id": "t2", "type": "trigger", "trigger": True},
+                    ],
+                    "edges": [],
+                },
+                "message": "Two triggers",
+            },
+        )
+
+        # Semantic error surfaces via the model_validator ValueError (422).
+        assert response.status_code == 422
