@@ -16,6 +16,7 @@ class Workflow(BaseModel):
     execution_id: str  # Unique identifier for this specific execution instance
     nodes: list[Node]  # Array of node definitions
     edges: list[Edge]  # Array of edge definitions
+    notes: Optional[list[Note]]  # Array of decorative sticky notes (not part of execution)
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -33,6 +34,46 @@ class Workflow(BaseModel):
             errors.append("Workflow.nodes is required")
         if self.edges is None:
             errors.append("Workflow.edges is required")
+
+        return len(errors) == 0, errors
+
+class Note(BaseModel):
+    """Decorative sticky note placed on the canvas. Persisted with the workflow but never executed; ignored by the worker and by trigger/edge validation."""
+    id: str  # Unique identifier for the note within the workflow
+    content: Optional[str]  # Markdown source of the note body (may be empty)
+    x: float  # Canvas x position
+    y: float  # Canvas y position
+    width: Optional[float]  # Note width in pixels (persisted resize)
+    height: Optional[float]  # Note height in pixels (persisted resize)
+    color: Optional[Literal["yellow", "green", "blue", "pink", "purple", "gray"]]  # Preset color theme key
+    font_size: Optional[Literal["sm", "md", "lg"]]  # Text size preset
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.id is None:
+            errors.append("Note.id is required")
+        if self.id is not None and not isinstance(self.id, str):
+            errors.append("Note.id must be a string")
+        if self.content is not None and not isinstance(self.content, str):
+            errors.append("Note.content must be a string")
+        if self.x is None:
+            errors.append("Note.x is required")
+        if self.x is not None and not isinstance(self.x, (int, float)):
+            errors.append("Note.x must be a number")
+        if self.y is None:
+            errors.append("Note.y is required")
+        if self.y is not None and not isinstance(self.y, (int, float)):
+            errors.append("Note.y must be a number")
+        if self.width is not None and not isinstance(self.width, (int, float)):
+            errors.append("Note.width must be a number")
+        if self.height is not None and not isinstance(self.height, (int, float)):
+            errors.append("Note.height must be a number")
+        if self.color is not None and not isinstance(self.color, str):
+            errors.append("Note.color must be a string")
+        if self.font_size is not None and not isinstance(self.font_size, str):
+            errors.append("Note.font_size must be a string")
 
         return len(errors) == 0, errors
 
