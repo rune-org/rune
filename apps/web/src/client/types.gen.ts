@@ -1304,6 +1304,94 @@ export type RefreshRequest = {
 };
 
 /**
+ * RuntimeWorkflowEdge
+ *
+ * A single edge in the runtime workflow graph.
+ *
+ * The runtime/save shape uses ``src``/``dst`` (the worker convention),
+ * converted client-side from the canvas ``source``/``target`` shape in
+ * workflow-dsl.
+ */
+export type RuntimeWorkflowEdge = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Src
+     */
+    src: string;
+    /**
+     * Dst
+     */
+    dst: string;
+    /**
+     * Type
+     */
+    type?: string | null;
+    /**
+     * Label
+     */
+    label?: string | null;
+    [key: string]: unknown;
+};
+
+/**
+ * RuntimeWorkflowGraph
+ *
+ * The runtime workflow graph saved as a version: nodes + edges.
+ *
+ * Pydantic owns *shape* validation here (required/non-empty fields, types,
+ * id uniqueness); cross-field *semantics* (edges reference existing nodes,
+ * no self-references, exactly one trigger) live in
+ * ``src.workflow.validation``. Stricter than the lenient template
+ * ``WorkflowGraph``: a saved version must have at least one node.
+ */
+export type RuntimeWorkflowGraph = {
+    /**
+     * Nodes
+     */
+    nodes: Array<RuntimeWorkflowNode>;
+    /**
+     * Edges
+     */
+    edges: Array<RuntimeWorkflowEdge>;
+    /**
+     * Metadata
+     */
+    metadata?: {
+        [key: string]: unknown;
+    } | null;
+    [key: string]: unknown;
+};
+
+/**
+ * RuntimeWorkflowNode
+ *
+ * A single node in the runtime workflow graph.
+ *
+ * Only the structural identity fields are validated (``id``, ``type``); the
+ * rest of the runtime shape (``name``, ``parameters``, ``output``,
+ * ``position`` as an ``[x, y]`` array, ``credentials``, ...) is intentionally
+ * loose and passes through via ``extra="allow"``.
+ */
+export type RuntimeWorkflowNode = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Type
+     */
+    type: string;
+    /**
+     * Trigger
+     */
+    trigger?: boolean | null;
+    [key: string]: unknown;
+};
+
+/**
  * SAMLConfigCreate
  *
  * Request body for ``POST /auth/saml/config``.
@@ -1679,11 +1767,11 @@ export type TemplateDetail = {
  * Derived from ``(source, is_public)`` so callers don't need to combine
  * the two dimensions themselves:
  *
- * * ``OFFICIAL`` — curated by the Rune team, seeded from the
+ * * ``OFFICIAL`` - curated by the Rune team, seeded from the
  * ``rune-templates`` repo.
- * * ``COMMUNITY`` — saved by an end user and marked public, visible to
+ * * ``COMMUNITY`` - saved by an end user and marked public, visible to
  * everyone on the Rune instance.
- * * ``PERSONAL`` — saved by an end user for their own use, visible only
+ * * ``PERSONAL`` - saved by an end user for their own use, visible only
  * to the creator.
  */
 export type TemplateScope = 'official' | 'community' | 'personal';
@@ -2006,13 +2094,9 @@ export type WorkflowCreateVersion = {
      */
     base_version_id?: number | null;
     /**
-     * Workflow Data
-     *
      * Workflow definition to save
      */
-    workflow_data: {
-        [key: string]: unknown;
-    };
+    workflow_data: RuntimeWorkflowGraph;
     /**
      * Message
      *
@@ -2075,7 +2159,7 @@ export type WorkflowDetailDocs = {
  *
  * A single edge in a workflow graph (React Flow shape).
  *
- * Edges use ``source``/``target`` (React Flow convention) — this is the
+ * Edges use ``source``/``target`` (React Flow convention) - this is the
  * canvas-facing shape that templates ship in. The runtime worker uses
  * ``src``/``dst`` but conversion happens client-side in ``workflow-dsl.ts``
  * when a workflow is saved.
@@ -2119,7 +2203,7 @@ export type WorkflowEdge = {
  *
  * Structure is strict (the top-level shape and per-element required fields
  * are validated). Empty ``nodes``/``edges`` arrays are allowed at the
- * template-storage layer — runtime ``queue.py`` enforces "must have a
+ * template-storage layer - runtime ``queue.py`` enforces "must have a
  * trigger" only when a workflow is actually queued for execution.
  */
 export type WorkflowGraph = {
@@ -3871,7 +3955,7 @@ export type ListTemplatesTemplatesGetData = {
         /**
          * Search
          *
-         * Case-insensitive substring search across name and description.
+         * Case-insensitive substring search across name, description, and tags.
          */
         search?: string | null;
         /**
