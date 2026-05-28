@@ -23,6 +23,7 @@ from src.workflow.service import run_credential_backfill
 from src.executions.router import router as executions_router
 from src.permissions.router import router as permissions_router
 from src.templates.router import router as templates_router
+from src.templates.seeder import seed_templates_from_bundle
 from src.users.routers import admin_router, profile_router, sharing_router
 from src.credentials.router import router as credentials_router
 from src.scryb.router import router as scryb_router
@@ -46,6 +47,27 @@ async def lifespan(app: FastAPI):
     async_engine = get_async_engine()
     async with AsyncSession(async_engine, expire_on_commit=False) as session:
         await run_credential_backfill(session)
+
+    # Seed curated templates from the rune-templates bundle (opt-in). Failures
+    # are logged but never crash startup: templates are non-critical content
+    # and the rest of the app should keep working even if the bundle is missing
+    # or malformed.
+    if settings.seed_templates:
+        from pathlib import Path
+
+        bundle_dir = Path(settings.rune_templates_bundle_dir)
+        if not bundle_dir.is_absolute():
+            bundle_dir = (Path(__file__).resolve().parent.parent / bundle_dir).resolve()
+        async with AsyncSession(async_engine, expire_on_commit=False) as session:
+            try:
+                result = await seed_templates_from_bundle(session, bundle_dir)
+                print(
+                    f"Templates seeded from {bundle_dir}: "
+                    f"+{result.inserted} new, ~{result.updated} updated, "
+                    f"-{result.removed} removed."
+                )
+            except Exception as exc:
+                print(f"Template seeding failed (continuing without seed): {exc}")
 
     # Initialize PostgreSQL checkpointer using context manager
     conn_string = build_connection_string(

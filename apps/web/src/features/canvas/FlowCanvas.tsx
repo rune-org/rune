@@ -26,6 +26,7 @@ import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
 import { SaveTemplateDialog } from "./components/SaveTemplateDialog";
+import { ExportToGalleryDialog } from "./components/ExportToGalleryDialog";
 import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
 import { SaveVersionDialog } from "./components/SaveVersionDialog";
 import { VersionConflictDialog } from "./components/VersionConflictDialog";
@@ -346,6 +347,7 @@ function FlowCanvasInner({
     exportToClipboard,
     exportToFile,
     exportToTemplate,
+    exportToGallery,
     importFromClipboard,
     importFromFile,
     handleFileImport,
@@ -353,6 +355,8 @@ function FlowCanvasInner({
     handleTemplateSelect,
     isSaveTemplateOpen,
     setIsSaveTemplateOpen,
+    isExportGalleryOpen,
+    setIsExportGalleryOpen,
     isImportTemplateOpen,
     setIsImportTemplateOpen,
     fileInputRef,
@@ -701,6 +705,7 @@ function FlowCanvasInner({
               onExportToClipboard={exportToClipboard}
               onExportToFile={exportToFile}
               onExportToTemplate={exportToTemplate}
+              onExportToGallery={exportToGallery}
               onImportFromClipboard={importFromClipboard}
               onImportFromFile={importFromFile}
               onImportFromTemplate={importFromTemplate}
@@ -770,6 +775,12 @@ function FlowCanvasInner({
         <SaveTemplateDialog
           open={isSaveTemplateOpen}
           onOpenChange={setIsSaveTemplateOpen}
+          workflowData={{ nodes, edges }}
+        />
+
+        <ExportToGalleryDialog
+          open={isExportGalleryOpen}
+          onOpenChange={setIsExportGalleryOpen}
           workflowData={{ nodes, edges }}
         />
 

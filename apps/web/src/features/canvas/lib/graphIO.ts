@@ -16,20 +16,27 @@ export type RFGraph = { nodes: RFNode[]; edges: RFEdge[] };
  * Returns a new graph with credentials and webhook GUIDs cleared from all nodes.
  */
 export function stripCredentials(graph: RFGraph): RFGraph {
+  const stripCredentialFields = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map(stripCredentialFields);
+    }
+
+    if (!value || typeof value !== "object") {
+      return value;
+    }
+
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([key]) => key !== "credential" && key !== "webhookGuid")
+        .map(([key, child]) => [key, stripCredentialFields(child)]),
+    );
+  };
+
   const nodes = graph.nodes.map((node) => {
-    if (
-      node.data &&
-      typeof node.data === "object" &&
-      ("credential" in node.data || "webhookGuid" in node.data)
-    ) {
-      const {
-        credential: _credential,
-        webhookGuid: _webhookGuid,
-        ...restData
-      } = node.data as Record<string, unknown>;
+    if (node.data && typeof node.data === "object") {
       return {
         ...node,
-        data: restData,
+        data: stripCredentialFields(node.data) as RFNode["data"],
       };
     }
     return node;
