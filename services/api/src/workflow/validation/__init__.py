@@ -1,37 +1,16 @@
 """Workflow validation package.
 
-Modular validation system for workflow data.
-Organized into:
-- base: Base classes and interfaces
-- edge: Edge/wiring validation
-- node: Node ID validation
-- workflow: Combined workflow validation
+Semantic validation for workflow data. Shape validation lives in the
+``RuntimeWorkflowGraph`` Pydantic model (``src/workflow/schemas.py``); this
+package only checks cross-field rules: edge endpoints reference existing nodes,
+no self-references, and exactly one trigger node.
 """
 
-from src.workflow.validation.base import (
-    ValidationError,
-    ValidationResult,
-    Validator,
-)
-from src.workflow.validation.edge import EdgeWiringValidator
-from src.workflow.validation.node import NodeIdValidator
-from src.workflow.validation.workflow import (
-    WorkflowStructureValidator,
-    WorkflowValidator,
-    validate_workflow_data,
-    validate_workflow_structure,
-    validate_workflow_wiring,
-)
+from src.workflow.validation.base import ValidationError, ValidationResult
+from src.workflow.validation.workflow import validate_workflow_data
 
 __all__ = [
     "ValidationError",
     "ValidationResult",
-    "Validator",
-    "EdgeWiringValidator",
-    "NodeIdValidator",
-    "WorkflowStructureValidator",
-    "WorkflowValidator",
     "validate_workflow_data",
-    "validate_workflow_structure",
-    "validate_workflow_wiring",
 ]

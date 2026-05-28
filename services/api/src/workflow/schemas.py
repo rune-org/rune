@@ -4,7 +4,13 @@ from typing import Any, Optional
 
 from fastapi import status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from src.core.responses import ApiResponse
 from src.db.models import User, Workflow, WorkflowRole, WorkflowVersion
@@ -158,26 +164,95 @@ class WorkflowDetail(BaseModel):
         )
 
 
+class RuntimeWorkflowNode(BaseModel):
+    """A single node in the runtime workflow graph.
+
+    Only the structural identity fields are validated (``id``, ``type``); the
+    rest of the runtime shape (``name``, ``parameters``, ``output``,
+    ``position`` as an ``[x, y]`` array, ``credentials``, ...) is intentionally
+    loose and passes through via ``extra="allow"``.
+    """
+
+    id: str = Field(..., min_length=1)
+    type: str = Field(..., min_length=1)
+    trigger: Optional[bool] = None
+
+    model_config = ConfigDict(extra="allow")
+
+
+class RuntimeWorkflowEdge(BaseModel):
+    """A single edge in the runtime workflow graph.
+
+    The runtime/save shape uses ``src``/``dst`` (the worker convention),
+    converted client-side from the canvas ``source``/``target`` shape in
+    workflow-dsl.
+    """
+
+    id: str = Field(..., min_length=1)
+    src: str = Field(..., min_length=1)
+    dst: str = Field(..., min_length=1)
+    type: Optional[str] = None
+    label: Optional[str] = None
+
+    model_config = ConfigDict(extra="allow")
+
+
+class RuntimeWorkflowGraph(BaseModel):
+    """The runtime workflow graph saved as a version: nodes + edges.
+
+    Pydantic owns *shape* validation here (required/non-empty fields, types,
+    id uniqueness); cross-field *semantics* (edges reference existing nodes,
+    no self-references, exactly one trigger) live in
+    ``src.workflow.validation``. Stricter than the lenient template
+    ``WorkflowGraph``: a saved version must have at least one node.
+    """
+
+    nodes: list[RuntimeWorkflowNode] = Field(..., min_length=1)
+    edges: list[RuntimeWorkflowEdge] = Field(...)
+    metadata: Optional[dict[str, Any]] = None
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("nodes")
+    @classmethod
+    def validate_node_ids_unique(
+        cls, v: list[RuntimeWorkflowNode]
+    ) -> list[RuntimeWorkflowNode]:
+        ids = [n.id for n in v]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Workflow node ids must be unique")
+        return v
+
+    @field_validator("edges")
+    @classmethod
+    def validate_edge_ids_unique(
+        cls, v: list[RuntimeWorkflowEdge]
+    ) -> list[RuntimeWorkflowEdge]:
+        ids = [e.id for e in v]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Workflow edge ids must be unique")
+        return v
+
+
 class WorkflowCreateVersion(BaseModel):
     base_version_id: Optional[int] = Field(
         default=None,
         description="Expected current latest version id. Null is allowed only for the first save.",
     )
-    workflow_data: dict[str, Any] = Field(
+    workflow_data: RuntimeWorkflowGraph = Field(
         ..., description="Workflow definition to save"
     )
     message: Optional[str] = Field(default=None, description="Revision message")
 
     @model_validator(mode="after")
     def _validate_workflow_data(self) -> "WorkflowCreateVersion":
-        """Validate workflow data using modular validators."""
-        result = validate_workflow_data(self.workflow_data)
+        result = validate_workflow_data(self.workflow_data.model_dump())
         if not result.valid:
-            error_parts = []
-            for e in result.errors:
-                field_prefix = f"[{e.field}] " if e.field else ""
-                error_parts.append(f"{field_prefix}{e.message}")
-            raise ValueError(f"Invalid workflow: {'; '.join(error_parts)}")
+            parts = [
+                f"[{e.field}] {e.message}" if e.field else e.message
+                for e in result.errors
+            ]
+            raise ValueError(f"Invalid workflow: {'; '.join(parts)}")
         return self
 
 
