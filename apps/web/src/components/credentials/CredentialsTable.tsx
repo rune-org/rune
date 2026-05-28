@@ -35,6 +35,7 @@ import { toast } from "@/components/ui/toast";
 import type { CredentialResponse, CredentialType, CredentialShareInfo } from "@/client/types.gen";
 import { getCredentialTypeLabel, CREDENTIAL_TYPE_BADGE_STYLES } from "@/lib/credentials/types";
 import { ShareCredentialDialog } from "./ShareCredentialDialog";
+import { UpdateOAuthCredentialDialog } from "./UpdateOAuthCredentialDialog";
 import { revokeCredentialAccess, getMyShareInfo } from "@/lib/api/credentials";
 import { getUserById } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth";
@@ -73,6 +74,7 @@ export function CredentialsTable({
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<CredentialType | "all">("all");
   const [shareDialogCredential, setShareDialogCredential] = useState<Credential | null>(null);
+  const [oauthUpdateCredential, setOauthUpdateCredential] = useState<Credential | null>(null);
   const [leavingCredentialId, setLeavingCredentialId] = useState<number | null>(null);
   const [shareInfoMap, setShareInfoMap] = useState<
     Record<number, (CredentialShareInfo & { shared_by_name?: string | null }) | null>
@@ -174,6 +176,14 @@ export function CredentialsTable({
     }
   };
 
+  const startOauthConnect = (credentialId: number) => {
+    const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(
+      /\/$/,
+      "",
+    );
+    window.location.href = `${apiBase}/oauth/authorize?credential_id=${credentialId}`;
+  };
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = credentials;
@@ -270,6 +280,11 @@ export function CredentialsTable({
                 <TableCell className="font-medium text-foreground">{c.name}</TableCell>
                 <TableCell>
                   <CredentialTypeBadge type={c.credential_type} />
+                  {c.credential_type === "oauth2" && (
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {c.oauth_connected ? "Connected" : "Not connected"}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell>
                   {c.is_owner ? (
@@ -356,6 +371,17 @@ export function CredentialsTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      {c.credential_type === "oauth2" && c.can_edit && (
+                        <>
+                          <DropdownMenuItem onClick={() => startOauthConnect(c.id)}>
+                            {c.oauth_connected ? "Reconnect (OAuth)" : "Connect (OAuth)"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setOauthUpdateCredential(c)}>
+                            Update OAuth settings
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                        </>
+                      )}
                       {(c.is_owner || c.can_share) && (
                         <>
                           <DropdownMenuItem onClick={() => setShareDialogCredential(c)}>
@@ -411,6 +437,15 @@ export function CredentialsTable({
           onSharesChanged={onSharesChanged}
         />
       )}
+
+      <UpdateOAuthCredentialDialog
+        open={!!oauthUpdateCredential}
+        onOpenChange={(open) => {
+          if (!open) setOauthUpdateCredential(null);
+        }}
+        credential={oauthUpdateCredential}
+        onUpdated={() => onSharesChanged?.()}
+      />
     </div>
   );
 }

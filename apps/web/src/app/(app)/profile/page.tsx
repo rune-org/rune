@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { updateMyProfile } from "@/lib/api/users";
 import { getInitials } from "@/lib/initials";
@@ -23,19 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
-
-// Zod schemas for validation
-const nameSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Name is required")
-    .min(2, "Name must be at least 2 characters")
-    .max(100, "Name must be less than 100 characters"),
-});
-
-const emailSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
-});
+import { profileEmailSchema, profileNameSchema } from "@/lib/validation";
 
 type EditingField = "name" | "email" | null;
 
@@ -61,7 +48,7 @@ export default function ProfilePage() {
 
   const handleSaveName = async () => {
     // Validate with zod
-    const result = nameSchema.safeParse({ name: fullName });
+    const result = profileNameSchema.safeParse({ name: fullName });
     if (!result.success) {
       setError(result.error.issues[0].message);
       return;
@@ -89,7 +76,7 @@ export default function ProfilePage() {
 
   const handleSaveEmail = async () => {
     // Validate with zod
-    const result = emailSchema.safeParse({ email });
+    const result = profileEmailSchema.safeParse({ email: email });
     if (!result.success) {
       setError(result.error.issues[0].message);
       return;

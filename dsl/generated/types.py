@@ -567,6 +567,7 @@ class BaseNode(BaseModel):
     id: str  # Unique identifier for the node within the workflow
     name: str  # Human-readable node name
     trigger: bool  # Whether this node initiates workflow execution
+    webhook_guid: Optional[str]  # Stable webhook registration GUID for webhook trigger nodes
     output: dict[str, Any]  # Placeholder for execution output (empty in definition)
     error: Optional[ErrorHandling]  # Error handling configuration
     credential_type: Optional[list[str]]  # List of allowed credential types for this node (for UI filtering)
@@ -588,6 +589,8 @@ class BaseNode(BaseModel):
             errors.append("BaseNode.trigger is required")
         if self.trigger is not None and not isinstance(self.trigger, bool):
             errors.append("BaseNode.trigger must be a boolean")
+        if self.webhook_guid is not None and not isinstance(self.webhook_guid, str):
+            errors.append("BaseNode.webhook_guid must be a string")
         if self.output is None:
             errors.append("BaseNode.output is required")
 
@@ -642,6 +645,28 @@ class ScheduledTriggerNode(BaseNode):
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
                 errors.append(f"ScheduledTriggerNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class WebhookNode(BaseNode):
+    """Webhook workflow trigger with a stable externally callable GUID"""
+    type_: Literal["webhook"] = Field(default="webhook", alias="type")
+    parameters: dict[str, Any]
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"WebhookNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
@@ -1167,4 +1192,4 @@ class MergeNode(BaseNode):
 
 # Union type for all nodes
 
-Node = Union[ManualTriggerNode, ScheduledTriggerNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, DatetimenowNode, DatetimeaddNode, DatetimesubtractNode, DatetimeformatNode, DatetimeparseNode, AgentNode, WaitNode, EditNode, FilterNode, SortNode, LimitNode, SplitNode, AggregatorNode, MergeNode]
+Node = Union[ManualTriggerNode, ScheduledTriggerNode, WebhookNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, DatetimenowNode, DatetimeaddNode, DatetimesubtractNode, DatetimeformatNode, DatetimeparseNode, AgentNode, WaitNode, EditNode, FilterNode, SortNode, LimitNode, SplitNode, AggregatorNode, MergeNode]

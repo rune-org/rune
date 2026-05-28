@@ -181,7 +181,7 @@ func (c *ResumeConsumer) publishWaitSuccessStatus(ctx context.Context, msg *mess
 		Status:      messages.StatusSuccess,
 		Parameters:  params,
 		Output:      output,
-		ExecutedAt:  time.Now(),
+		ExecutedAt:  time.Now().UTC(),
 		DurationMs:  0,
 	}
 

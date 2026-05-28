@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,25 +10,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "@/components/ui/toast";
 import { changeMyPassword } from "@/lib/api/auth";
 import { cn } from "@/lib/cn";
-
-const changePasswordSchema = z
-  .object({
-    oldPassword: z.string().min(1, "Current password is required"),
-    newPassword: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number")
-      .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
-    confirmPassword: z.string().min(1, "Please confirm your new password"),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
+import { changePasswordSchema, type ChangePasswordFormValues } from "@/lib/validation";
 
 export interface ChangePasswordFormProps {
   /**
@@ -64,7 +45,7 @@ export function ChangePasswordForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<ChangePasswordFormData>({
+  const form = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: {
       oldPassword: "",
@@ -81,7 +62,7 @@ export function ChangePasswordForm({
     }
   }, [resetKey, form]);
 
-  async function onSubmit(values: ChangePasswordFormData) {
+  async function onSubmit(values: ChangePasswordFormValues) {
     setIsSubmitting(true);
     setError(null);
 

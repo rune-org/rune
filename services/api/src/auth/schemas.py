@@ -1,10 +1,10 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
 
 class LoginRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    email: EmailStr = Field(..., description="User's email address")
+    email: EmailStr = Field(..., min_length=1, description="User's email address")
     password: str = Field(..., min_length=1, description="User's password")
 
 

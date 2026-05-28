@@ -17,7 +17,7 @@ async def test_bearer_token_auth_success(client: AsyncClient, test_user):
     # First, login to get access token
     login_response = await client.post(
         "/auth/login",
-        json={"email": "test@example.com", "password": "testpassword123"},
+        json={"email": "test@example.com", "password": "Testpassword!23"},
     )
     assert login_response.status_code == 200
     access_token = login_response.json()["data"]["access_token"]
@@ -83,7 +83,7 @@ async def test_cookie_takes_precedence_over_bearer(client: AsyncClient, test_use
     # Login to get access token and set cookie
     login_response = await client.post(
         "/auth/login",
-        json={"email": "test@example.com", "password": "testpassword123"},
+        json={"email": "test@example.com", "password": "Testpassword!23"},
     )
     assert login_response.status_code == 200
 
@@ -116,7 +116,7 @@ async def test_bearer_token_without_bearer_prefix(client: AsyncClient, test_user
     # Login to get access token
     login_response = await client.post(
         "/auth/login",
-        json={"email": "test@example.com", "password": "testpassword123"},
+        json={"email": "test@example.com", "password": "Testpassword!23"},
     )
     assert login_response.status_code == 200
     access_token = login_response.json()["data"]["access_token"]

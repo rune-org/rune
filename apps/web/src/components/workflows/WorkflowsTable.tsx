@@ -652,6 +652,7 @@ export function WorkflowsTable() {
         isRowPending={isRowPending}
         isRowExporting={isRowExporting}
         isAdmin={isAdmin}
+        currentUserName={authState.user?.name ?? ""}
         lastRunByWorkflow={lastRunByWorkflow}
         executionsLoaded={executionsLoaded}
         onRun={handleRun}

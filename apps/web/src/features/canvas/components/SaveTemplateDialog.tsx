@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Globe2, User2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,8 +22,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/toast";
+import { cn } from "@/lib/cn";
 import { createTemplate } from "@/lib/api/templates";
+import type { TemplateCategory, WorkflowGraph } from "@/client/types.gen";
 import { stripCredentials } from "../lib/graphIO";
+import { TEMPLATE_CATEGORIES } from "../lib/templateCategories";
+import { TagsInput } from "./TagsInput";
+import { IconPicker } from "@/components/templates/IconPicker";
+import type { TemplateIconName } from "@/lib/templateIcons";
 import type { CanvasNode } from "../types";
 import type { Edge } from "@xyflow/react";
 
@@ -32,22 +39,45 @@ type SaveTemplateDialogProps = {
   workflowData: { nodes: CanvasNode[]; edges: Edge[] };
 };
 
-const CATEGORIES = [
-  { value: "general", label: "General" },
-  { value: "email", label: "Email" },
-  { value: "analytics", label: "Analytics" },
-  { value: "development", label: "Development" },
-  { value: "cloud", label: "Cloud" },
-  { value: "scheduling", label: "Scheduling" },
-  { value: "social_media", label: "Social Media" },
+type Visibility = "personal" | "community";
+
+const VISIBILITY_OPTIONS: ReadonlyArray<{
+  value: Visibility;
+  label: string;
+  description: string;
+  icon: typeof User2;
+}> = [
+  {
+    value: "personal",
+    label: "Personal",
+    description: "Only you can see this template.",
+    icon: User2,
+  },
+  {
+    value: "community",
+    label: "Community",
+    description: "Visible to everyone on this Rune instance.",
+    icon: Globe2,
+  },
 ];
 
 export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTemplateDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("general");
-  const [isPublic, setIsPublic] = useState(false);
+  const [category, setCategory] = useState<TemplateCategory>("general");
+  const [icon, setIcon] = useState<TemplateIconName | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [visibility, setVisibility] = useState<Visibility>("personal");
   const [saving, setSaving] = useState(false);
+
+  const reset = () => {
+    setName("");
+    setDescription("");
+    setCategory("general");
+    setIcon(null);
+    setTags([]);
+    setVisibility("personal");
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -57,15 +87,18 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
 
     setSaving(true);
     try {
-      // Strip credentials from workflow data before saving to prevent sensitive data from being exported
       const sanitizedWorkflowData = stripCredentials(workflowData);
-
       const response = await createTemplate({
         name: name.trim(),
         description: description.trim(),
         category,
-        workflow_data: sanitizedWorkflowData,
-        is_public: isPublic,
+        icon: icon ?? undefined,
+        // Canvas RFGraph and WorkflowGraph are structurally compatible at
+        // runtime; the cast bridges optional ``type`` on RFNode and required
+        // ``type`` on WorkflowNode (every node on the canvas has a type set).
+        workflow_data: sanitizedWorkflowData as unknown as WorkflowGraph,
+        tags,
+        is_public: visibility === "community",
       });
 
       if (response.error) {
@@ -73,13 +106,9 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
         return;
       }
 
-      toast.success("Template saved successfully");
+      toast.success("Template saved");
       onOpenChange(false);
-      // Reset form
-      setName("");
-      setDescription("");
-      setCategory("general");
-      setIsPublic(false);
+      reset();
     } catch {
       toast.error("Failed to save template");
     } finally {
@@ -92,24 +121,28 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Save as Template</DialogTitle>
-          <DialogDescription>Save your current workflow as a reusable template.</DialogDescription>
+          <DialogDescription>
+            Save the current canvas as a reusable template you can apply later.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="template-name">
+              Name <span className="text-destructive">*</span>
+            </Label>
             <Input
-              id="name"
-              placeholder="My Workflow Template"
+              id="template-name"
+              placeholder="Gmail to Slack digest"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="template-description">Description</Label>
             <Textarea
-              id="description"
+              id="template-description"
               placeholder="Describe what this template does..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -118,13 +151,13 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="category">Category</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger id="category">
+            <Label htmlFor="template-category">Category</Label>
+            <Select value={category} onValueChange={(v) => setCategory(v as TemplateCategory)}>
+              <SelectTrigger id="template-category">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((cat) => (
+                {TEMPLATE_CATEGORIES.map((cat) => (
                   <SelectItem key={cat.value} value={cat.value}>
                     {cat.label}
                   </SelectItem>
@@ -133,17 +166,44 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
             </Select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isPublic"
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
-              className="h-4 w-4 rounded border-input"
-            />
-            <Label htmlFor="isPublic" className="text-sm font-normal">
-              Make this template public (visible to all users)
-            </Label>
+          <div className="flex flex-col gap-2">
+            <Label>Icon</Label>
+            <IconPicker value={icon} onChange={setIcon} />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="template-tags">Tags</Label>
+            <TagsInput id="template-tags" value={tags} onChange={setTags} />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label>Visibility</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {VISIBILITY_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                const active = visibility === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setVisibility(option.value)}
+                    className={cn(
+                      "flex flex-col items-start gap-1 rounded-md border p-3 text-left transition-colors",
+                      active
+                        ? "border-primary bg-primary/5"
+                        : "border-input hover:border-muted-foreground/40",
+                    )}
+                    aria-pressed={active}
+                  >
+                    <span className="flex items-center gap-2 text-sm font-medium">
+                      <Icon className="h-4 w-4" />
+                      {option.label}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{option.description}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -152,7 +212,7 @@ export function SaveTemplateDialog({ open, onOpenChange, workflowData }: SaveTem
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Template"}
+            {saving ? "Saving..." : "Save template"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -153,29 +153,61 @@ pip install uv
 
 See [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) for other methods.
 
-For local development with hot reloading:
+### Commands
+
+We use a root `Makefile` to orchestrate common development tasks across all services.
+
+#### Startup & Local Dev
 
 ```bash
-# Install dependencies for all services
-make install
-
-# Start all services in development mode
-make dev
+make install          # Install all dependencies (frontend, API, worker, archivist, scheduler)
+make dev-infra-up     # Start backing services (Postgres, Redis, RabbitMQ, MongoDB, etc.)
+make dev              # Start dev infra and all services in development mode
+make dev-infra-down   # Stop backing services
 ```
 
-Alternatively, you can start the infrastructure and services manually:
-
+Alternatively, you can start individual services in separate terminals:
 ```bash
-# Start infrastructure (Postgres, Redis, RabbitMQ, MongoDB, OpenObserve)
-make dev-infra-up
-
-# In separate terminals, start each service:
 make web-dev         # Frontend on :3000
 make api-dev         # API on :8000
 make worker-dev      # Background worker
 make rtes-dev        # Real-time execution service
 make archivist-dev   # Archivist worker
 make scheduler-dev   # Scheduled workflow trigger
+```
+
+#### Testing
+
+```bash
+make test             # Run all tests (frontend, API, worker)
+
+# Target specific test suites
+make web-test         # Frontend tests (Vitest)
+make worker-test      # Go worker tests
+make dsl-test         # DSL tests
+
+# API tests (requires separate test database/broker infrastructure)
+make test-infra-up    # Start API test infrastructure
+make api-test         # Run API tests (pytest)
+make test-infra-down  # Stop API test infrastructure
+```
+
+#### Linting & Formatting
+
+```bash
+make lint             # Run linters for all services (eslint, ruff, go vet, etc.)
+make format           # Automatically format code for all services
+make typecheck        # Check TypeScript types for frontend
+```
+
+#### Other Utility Commands
+
+```bash
+make build            # Build frontend and worker
+make dsl-generate     # Regenerate TypeScript, Python, and Go types from DSL definition
+make logs             # Follow all Docker Compose logs
+make up               # Start full Docker Compose stack
+make down             # Stop full Docker Compose stack
 ```
 
 ### Project Structure

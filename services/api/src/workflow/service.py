@@ -4,26 +4,31 @@ import json
 import re
 import uuid
 import zipfile
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from src.core.datetime import utc_now
 from src.core.exceptions import BadRequest, Forbidden, NotFound
 from src.credentials.encryption import get_encryptor
 from src.db.models import (
+    CredentialType,
     Execution,
     ExecutionStatus,
     ScheduledWorkflow,
     User,
     Workflow,
+    WebhookRegistration,
     WorkflowCredential,
+    WorkflowCredentialLink,
     WorkflowRole,
     WorkflowUser,
     WorkflowVersion,
 )
+from src.oauth.credential_tokens import oauth2_worker_public_values
+from src.oauth.refresh import ensure_oauth2_access_token
 
 
 from src.workflow.constants import (
@@ -31,8 +36,11 @@ from src.workflow.constants import (
     SCHEDULED_TRIGGER_PARAM_AMOUNT,
     SCHEDULED_TRIGGER_PARAM_UNIT,
     SCHEDULED_TRIGGER_UNIT_MULTIPLIERS,
+    WEBHOOK_TRIGGER_TYPE,
 )
 from src.workflow.queue import validate_workflow_can_run
+
+from src.workflow.queries import CREDENTIAL_BACKFILL_QUERY
 
 
 class WorkflowVersionConflictError(Exception):
@@ -53,19 +61,47 @@ class WorkflowService:
         self.db = db
         self.encryptor = get_encryptor()
 
-    async def list_for_user(self, user_id: int) -> list[tuple[Workflow, WorkflowRole]]:
+    async def list_for_user(
+        self, user_id: int, is_admin: bool = False
+    ) -> list[tuple[Workflow, WorkflowRole, str]]:
         """Return workflows visible to `user_id`, newest first.
 
-        Used for the `GET /workflows` endpoint.
+        If `is_admin` is True, returns all workflows in the system.
+        Returns a tuple of (Workflow, role, owner_name) for each item.
         """
-        statement = (
-            select(Workflow, WorkflowUser.role)
-            .join(WorkflowUser)
-            .where(WorkflowUser.user_id == user_id)
-            .order_by(Workflow.updated_at.desc())
+        owner_subquery = (
+            select(WorkflowUser.workflow_id, User.name.label("owner_name"))
+            .join(User, WorkflowUser.user_id == User.id)
+            .where(WorkflowUser.role == WorkflowRole.OWNER)
+            .subquery()
         )
+
+        if is_admin:
+            # Admins see everything and default to OWNER access
+            statement = (
+                select(Workflow, owner_subquery.c.owner_name)
+                .outerjoin(owner_subquery, Workflow.id == owner_subquery.c.workflow_id)
+                .order_by(Workflow.updated_at.desc())
+            )
+        else:
+            statement = (
+                select(Workflow, WorkflowUser.role, owner_subquery.c.owner_name)
+                .join(WorkflowUser)
+                .outerjoin(owner_subquery, Workflow.id == owner_subquery.c.workflow_id)
+                .where(WorkflowUser.user_id == user_id)
+                .order_by(Workflow.updated_at.desc())
+            )
+
         result = await self.db.exec(statement)
-        return result.all()
+        rows = result.all()
+
+        if is_admin:
+            return [
+                (wf, WorkflowRole.OWNER, owner_name or "Unknown")
+                for wf, owner_name in rows
+            ]
+
+        return [(wf, role, owner_name or "Unknown") for wf, role, owner_name in rows]
 
     async def get_by_id(self, workflow_id: int) -> Workflow | None:
         """Return a Workflow by primary key or None if not found."""
@@ -131,10 +167,14 @@ class WorkflowService:
             locked_workflow.published_version_id = latest.id
             locked_workflow.is_active = True
             await self._upsert_schedule(locked_workflow.id, latest.workflow_data)
+            # Sync credential links for activation
+            await self._sync_credential_links(locked_workflow.id, latest.workflow_data)
+            await self._upsert_webhook(locked_workflow.id, latest.workflow_data, True)
         else:
             locked_workflow.published_version_id = None
             locked_workflow.is_active = False
             await self._delete_schedule(locked_workflow.id)
+            await self._deactivate_webhook(locked_workflow.id)
 
         await self.db.commit()
         await self.db.refresh(locked_workflow)
@@ -188,6 +228,10 @@ class WorkflowService:
 
         locked_workflow.latest_version_id = version.id
         locked_workflow.is_active = locked_workflow.published_version_id is not None
+
+        # Sync credential links for usage tracking
+        await self._sync_credential_links(locked_workflow.id, workflow_data)
+
         await self.db.commit()
         await self.db.refresh(version)
         return version
@@ -201,6 +245,11 @@ class WorkflowService:
         locked_workflow.published_version_id = version.id
         locked_workflow.is_active = True
         await self._upsert_schedule(locked_workflow.id, version.workflow_data)
+
+        # Sync credential links to reflect the published version
+        await self._sync_credential_links(locked_workflow.id, version.workflow_data)
+
+        await self._upsert_webhook(locked_workflow.id, version.workflow_data, True)
         await self.db.commit()
         await self.db.refresh(locked_workflow)
         return locked_workflow
@@ -232,6 +281,10 @@ class WorkflowService:
 
         locked_workflow.latest_version_id = version.id
         locked_workflow.is_active = locked_workflow.published_version_id is not None
+
+        # Sync credential links for usage tracking
+        await self._sync_credential_links(locked_workflow.id, version.workflow_data)
+
         await self.db.commit()
         await self.db.refresh(version)
         return version
@@ -326,6 +379,11 @@ class WorkflowService:
 
         stmt = delete(ScheduledWorkflow).where(
             ScheduledWorkflow.workflow_id == workflow_id
+        )
+        await self.db.exec(stmt)
+
+        stmt = delete(WebhookRegistration).where(
+            WebhookRegistration.workflow_id == workflow_id
         )
         await self.db.exec(stmt)
 
@@ -491,12 +549,16 @@ class WorkflowService:
                     wf.published_version_id = latest.id
                     wf.is_active = True
                     await self._upsert_schedule(wf.id, latest.workflow_data)
+                    # Sync credential links for activation
+                    await self._sync_credential_links(wf.id, latest.workflow_data)
+                    await self._upsert_webhook(wf.id, latest.workflow_data, True)
                 # Skip workflows with no versions (cannot be activated)
             else:
                 # Deactivate: clear published pointer and delete schedule
                 wf.published_version_id = None
                 wf.is_active = False
                 await self._delete_schedule(wf.id)
+                await self._deactivate_webhook(wf.id)
 
         await self.db.commit()
 
@@ -507,6 +569,7 @@ class WorkflowService:
         queue_service,
         token_service=None,
         version_id: int | None = None,
+        accumulated_context: dict | None = None,
     ) -> str:
         """Queue a workflow for execution and return the execution_id.
 
@@ -570,6 +633,7 @@ class WorkflowService:
             workflow_version_id=version.id,
             execution_id=execution_id,
             workflow_data=resolved_workflow_data,
+            accumulated_context=accumulated_context or {},
         )
 
         return execution_id
@@ -590,6 +654,7 @@ class WorkflowService:
 
         Raises:
             NotFound: If a referenced credential doesn't exist.
+            BadRequest: If an OAuth2 credential is not connected or cannot be refreshed.
         """
         resolved_data = copy.deepcopy(workflow_data)
         nodes = resolved_data.get("nodes", [])
@@ -601,36 +666,69 @@ class WorkflowService:
 
                 # If it has an id field, it's a reference that needs resolving.
                 if "id" in cred_ref:
-                    credential_id = cred_ref["id"]
-
-                    # Convert string ID to int if needed.
-                    if isinstance(credential_id, str):
-                        credential_id = int(credential_id)
-
-                    # Fetch the credential from database.
-                    credential: WorkflowCredential | None = await self.db.get(
-                        WorkflowCredential, credential_id
+                    node["credentials"] = await self._resolve_one_credential(
+                        cred_ref["id"]
                     )
 
-                    if not credential:
-                        raise NotFound(
-                            detail=f"Credential with ID {credential_id} not found"
-                        )
-
-                    # Decrypt the credential data.
-                    decrypted_data = self.encryptor.decrypt_credential_data(
-                        credential.credential_data
-                    )
-
-                    # Replace the credentials reference with resolved values.
-                    node["credentials"] = {
-                        "id": str(credential.id),
-                        "name": credential.name,
-                        "type": credential.credential_type.value,
-                        "values": decrypted_data,
-                    }
+            # Agent nodes embed per-tool and per-MCP-server credential refs
+            # under parameters.tools[] and parameters.mcp_servers[]. Walk
+            # those and resolve in place.
+            if node.get("type") == "agent":
+                await self._resolve_agent_nested_credentials(node)
 
         return resolved_data
+
+    async def _resolve_one_credential(self, credential_id) -> dict:
+        """Fetch a credential by id and return the resolved {id, name, type, values} block."""
+        if isinstance(credential_id, str):
+            credential_id = int(credential_id)
+
+        credential: WorkflowCredential | None = await self.db.get(
+            WorkflowCredential, credential_id
+        )
+        if not credential:
+            raise NotFound(detail=f"Credential with ID {credential_id} not found")
+
+        decrypted_data = self.encryptor.decrypt_credential_data(
+            credential.credential_data
+        )
+        if credential.credential_type == CredentialType.OAUTH2:
+            decrypted_data = await ensure_oauth2_access_token(
+                self.db, credential, self.encryptor
+            )
+            values = oauth2_worker_public_values(decrypted_data)
+        else:
+            values = decrypted_data
+
+        return {
+            "id": str(credential.id),
+            "name": credential.name,
+            "type": credential.credential_type.value,
+            "values": values,
+        }
+
+    async def _resolve_agent_nested_credentials(self, node: dict) -> None:
+        """Resolve per-tool and per-MCP-server credential refs on an agent node,
+        embedding the values block under a "credentials" key in each entry.
+        """
+        params = node.get("parameters")
+        if not isinstance(params, dict):
+            return
+
+        for child_key in ("tools", "mcp_servers"):
+            entries = params.get(child_key)
+            if not isinstance(entries, list):
+                continue
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                ref = entry.get("credential")
+                if not isinstance(ref, dict):
+                    continue
+                cred_id = ref.get("id")
+                if cred_id in (None, ""):
+                    continue
+                entry["credentials"] = await self._resolve_one_credential(cred_id)
 
     # ------------------------------------------------------------------
     # Schedule sync helpers
@@ -698,13 +796,13 @@ class WorkflowService:
                 ScheduledWorkflow(
                     workflow_id=workflow_id,
                     interval_seconds=interval_seconds,
-                    next_run_at=datetime.now(),
+                    next_run_at=utc_now(),
                 )
             )
         else:
             if existing.interval_seconds != interval_seconds:
                 existing.interval_seconds = interval_seconds
-                existing.next_run_at = datetime.now()
+                existing.next_run_at = utc_now()
 
     async def _lock_workflow(self, workflow_id: int) -> Workflow:
         statement = select(Workflow).where(Workflow.id == workflow_id).with_for_update()
@@ -713,6 +811,72 @@ class WorkflowService:
         if not workflow:
             raise NotFound(detail="Workflow not found")
         return workflow
+
+    # ------------------------------------------------------------------
+    # Webhook registration helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _find_webhook_trigger(workflow_data: dict) -> dict | None:
+        """Return the webhook trigger node dict, or None if absent."""
+        for node in workflow_data.get("nodes", []):
+            if node.get("type") == WEBHOOK_TRIGGER_TYPE:
+                return node
+        return None
+
+    async def _upsert_webhook(
+        self, workflow_id: int, workflow_data: dict, is_active: bool
+    ) -> None:
+        """Create or update webhook registration.
+
+        Deletes the registration if the workflow no longer has a webhook node.
+        The GUID is generated once on creation and never changed.
+        """
+        trigger_node = self._find_webhook_trigger(workflow_data)
+
+        if trigger_node is None:
+            await self._delete_webhook(workflow_id)
+            return
+
+        stmt = select(WebhookRegistration).where(
+            WebhookRegistration.workflow_id == workflow_id
+        )
+        result = await self.db.exec(stmt)
+        existing = result.first()
+
+        if existing is None:
+            self.db.add(
+                WebhookRegistration(
+                    workflow_id=workflow_id,
+                    guid=str(trigger_node["webhook_guid"]),
+                    is_active=is_active,
+                )
+            )
+        else:
+            existing.is_active = is_active
+
+    async def _deactivate_webhook(self, workflow_id: int) -> None:
+        """Mark the webhook registration inactive without deleting it.
+
+        Preserves the GUID so the URL remains stable if the workflow is reactivated.
+        """
+        stmt = select(WebhookRegistration).where(
+            WebhookRegistration.workflow_id == workflow_id
+        )
+        result = await self.db.exec(stmt)
+        existing = result.first()
+        if existing is not None:
+            existing.is_active = False
+
+    async def _delete_webhook(self, workflow_id: int) -> None:
+        """Remove the webhook_registrations row for this workflow if it exists."""
+        stmt = select(WebhookRegistration).where(
+            WebhookRegistration.workflow_id == workflow_id
+        )
+        result = await self.db.exec(stmt)
+        existing = result.first()
+        if existing is not None:
+            await self.db.delete(existing)
 
     async def _get_latest_version_by_workflow_id(
         self, workflow_id: int
@@ -733,3 +897,104 @@ class WorkflowService:
 
         normalized = message.strip()
         return normalized or None
+
+    async def _sync_credential_links(
+        self, workflow_id: int, workflow_data: dict
+    ) -> None:
+        """Update WorkflowCredentialLink entries for a workflow.
+
+        Parses workflow_data to find all referenced credential IDs and ensures
+        the link table matches this set for usage tracking.
+
+        To ensure deletion safety, we track credentials from both:
+        1. The version currently being saved/processed (usually the latest draft).
+        2. The currently published version (if different).
+        """
+        # Extract credential IDs from the provided workflow data
+        credential_ids = self._extract_credential_ids(workflow_data)
+
+        # Also include credentials from the published version to protect live workflows
+        workflow = await self.db.get(Workflow, workflow_id)
+        if workflow and workflow.published_version_id:
+            # If the published version is different from the one we are syncing,
+            # we need to fetch its credentials too.
+            latest_version_id = workflow.latest_version_id
+            if workflow.published_version_id != latest_version_id:
+                pub_version = await self.get_version(
+                    workflow_id, workflow.published_version_id
+                )
+                if pub_version:
+                    pub_credential_ids = self._extract_credential_ids(
+                        pub_version.workflow_data
+                    )
+                    credential_ids.update(pub_credential_ids)
+
+        # Remove existing links that are no longer in either version
+        # If credential_ids is empty, we remove all links for this workflow
+        if not credential_ids:
+            delete_stmt = delete(WorkflowCredentialLink).where(
+                WorkflowCredentialLink.workflow_id == workflow_id
+            )
+        else:
+            delete_stmt = delete(WorkflowCredentialLink).where(
+                WorkflowCredentialLink.workflow_id == workflow_id,
+                col(WorkflowCredentialLink.credential_id).notin_(list(credential_ids)),
+            )
+        await self.db.exec(delete_stmt)
+
+        # Add new links that don't exist yet
+        if credential_ids:
+            # Find IDs that exist in the system but don't have a link for this workflow yet
+            new_links_stmt = (
+                select(WorkflowCredential.id)
+                .outerjoin(
+                    WorkflowCredentialLink,
+                    (WorkflowCredentialLink.credential_id == WorkflowCredential.id)
+                    & (WorkflowCredentialLink.workflow_id == workflow_id),
+                )
+                .where(
+                    col(WorkflowCredential.id).in_(list(credential_ids)),
+                    WorkflowCredentialLink.credential_id.is_(None),
+                )
+            )
+            new_links_res = await self.db.exec(new_links_stmt)
+            new_ids = new_links_res.all()
+
+            for cred_id in new_ids:
+                link = WorkflowCredentialLink(
+                    workflow_id=workflow_id, credential_id=cred_id
+                )
+                self.db.add(link)
+
+    @staticmethod
+    def _extract_credential_ids(workflow_data: dict) -> set[int]:
+        """Helper to extract unique credential IDs from workflow nodes."""
+        credential_ids: set[int] = set()
+        nodes = workflow_data.get("nodes", [])
+        for node in nodes:
+            # Standard path: node.credentials.id
+            if "credentials" in node and isinstance(node["credentials"], dict):
+                cred_ref = node["credentials"]
+                if "id" in cred_ref:
+                    try:
+                        credential_ids.add(int(cred_ref["id"]))
+                    except (ValueError, TypeError):
+                        pass
+
+                    try:
+                        credential_ids.add(int(cred_ref["id"]))
+                    except (ValueError, TypeError):
+                        pass
+
+        return credential_ids
+
+
+async def run_credential_backfill(session: AsyncSession) -> None:
+    """
+    One-time SQL query to populate WorkflowCredentialLink from existing JSON data.
+    This ensures that old workflows have their credential usage tracked without
+    needing a manual database migration.
+    """
+
+    await session.execute(CREDENTIAL_BACKFILL_QUERY)
+    await session.commit()

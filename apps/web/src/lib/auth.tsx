@@ -19,6 +19,7 @@ import {
 } from "@/lib/api/auth";
 import { toast } from "@/components/ui/toast";
 import { REFRESH_TOKEN_KEY, ACCESS_EXP_KEY } from "@/lib/auth/constants";
+import { extractApiErrorMessage } from "@/lib/api/error";
 import type { UserResponse } from "@/client/types.gen";
 
 type AuthUser = UserResponse;
@@ -188,6 +189,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [initialize]);
 
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === REFRESH_TOKEN_KEY || e.key === ACCESS_EXP_KEY) {
+        if (!e.newValue) {
+          storeRefreshToken(null);
+          storeAccessExp(null);
+          clearScheduledRefresh();
+          setUser(null);
+        } else {
+          fetchProfile();
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [fetchProfile]);
+
   const login = useCallback(
     async (email: string, password: string) => {
       setLoading(true);
@@ -218,7 +236,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return true;
       } catch (error) {
-        const errorMessage = getErrorMessage(error);
+        const errorMessage = extractApiErrorMessage(
+          error,
+          "Authentication failed. Please try again.",
+        );
 
         // Check for SSO-only account trigger (403 with specific message)
         if (
@@ -248,7 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Auto-login after successful registration
         return await login(email, password);
       } catch (error) {
-        setError(getErrorMessage(error));
+        setError(extractApiErrorMessage(error, "Authentication failed. Please try again."));
         setLoading(false);
         return false;
       }
@@ -288,18 +309,4 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
-}
-
-function getErrorMessage(err: unknown): string {
-  if (typeof err === "string") return err;
-  if (err && typeof err === "object") {
-    const e = err as Record<string, unknown>;
-    // Try to extract from ApiResponse format (message field)
-    if (typeof e.message === "string") return e.message;
-    // Try to extract detail (alternative error format)
-    if (typeof e.detail === "string") return e.detail;
-    // Check for error field
-    if (typeof e.error === "string") return e.error;
-  }
-  return "Authentication failed. Please try again.";
 }

@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down api-dev-infra-up rtes-dev-infra-up test-infra-up test-infra-down api-install api-lint api-format worker-dev worker-lint worker-format worker-test archivist-install archivist-dev scheduler-install scheduler-dev up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
+.PHONY: help install dev build clean docker-up docker-up-nginx docker-down docker-build docker-clean logs test lint format typecheck web-dev web-lint web-format api-dev api-test dev-infra-up dev-infra-down api-dev-infra-up rtes-dev-infra-up test-infra-up test-infra-down api-install api-lint api-format api-export-template-schema api-check-template-schema api-seed-templates worker-dev worker-lint worker-format worker-test archivist-install archivist-dev scheduler-install scheduler-dev up nginx-up down nginx-down restart restart-nginx status dsl-generate dsl-test db-shell db-revision db-upgrade db-downgrade db-current db-history db-reset
 
 # Detect OS: try 'uname' for Unix, if that fails we're on Windows
 UNAME := $(shell uname 2>/dev/null)
@@ -285,22 +285,40 @@ web-format:
 
 api-lint:
 	@echo "Linting API with ruff..."
-	cd services/api && uv run ruff check src/
+	cd services/api && uv run ruff check src/ test/
 
 api-format:
 	@echo "Formatting API code with ruff..."
-	cd services/api && uv run ruff format src/
+	cd services/api && uv run ruff format src/ test/
+
+api-export-template-schema:
+	@echo "Exporting template JSON Schema..."
+	cd services/api && uv run python scripts/export_template_schema.py
+
+api-check-template-schema:
+	@echo "Checking template JSON Schema is up to date..."
+	cd services/api && uv run python scripts/export_template_schema.py --check
+
+api-seed-templates:
+	@echo "Seeding templates from bundle..."
+	cd services/api && uv run python scripts/seed_templates.py
 
 worker-lint:
 	@echo "Linting worker..."
 	@echo "Vetting code..."
 	cd services/rune-worker && go vet ./...
 	@echo "Checking code formatting..."
-	@cd services/rune-worker && gofmt -l . | grep -q . && (echo "❌ Code formatting issues found. Run 'make worker-format' to fix." && gofmt -l . && exit 1) || echo "✓ Code formatting OK"
+	@if cd services/rune-worker && gofmt -l . | grep -q .; then \
+		echo "❌ Code formatting issues found. Run 'make worker-format' to fix."; \
+		cd services/rune-worker && gofmt -l .; \
+		exit 1; \
+	else \
+		echo "✓ Code formatting OK"; \
+	fi
 
 worker-format:
 	@echo "Formatting worker code..."
-	cd services/rune-worker && go fmt ./...
+	cd services/rune-worker && gofmt -w .
 
 format: web-format api-format worker-format
 	@echo "✓ Code formatting complete"
