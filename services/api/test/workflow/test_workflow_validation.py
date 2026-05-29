@@ -264,3 +264,11 @@ def test_duplicate_note_ids_rejected():
 def test_empty_note_id_rejected():
     with pytest.raises(PydanticValidationError):
         RuntimeWorkflowGraph(nodes=[TRIGGER], edges=[], notes=[_note("")])
+
+
+def test_note_id_colliding_with_node_id_rejected():
+    with pytest.raises(
+        PydanticValidationError,
+        match=re.escape("Workflow note ids must not collide with node ids"),
+    ):
+        RuntimeWorkflowGraph(nodes=[TRIGGER], edges=[], notes=[_note("t")])

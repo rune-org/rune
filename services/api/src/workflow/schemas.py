@@ -261,6 +261,16 @@ class RuntimeWorkflowGraph(BaseModel):
             raise ValueError("Workflow note ids must be unique")
         return v
 
+    @model_validator(mode="after")
+    def validate_note_ids_disjoint_from_nodes(self) -> "RuntimeWorkflowGraph":
+        node_ids = {n.id for n in self.nodes}
+        collisions = sorted(node_ids.intersection(n.id for n in self.notes))
+        if collisions:
+            raise ValueError(
+                f"Workflow note ids must not collide with node ids: {', '.join(collisions)}"
+            )
+        return self
+
 
 class WorkflowCreateVersion(BaseModel):
     base_version_id: Optional[int] = Field(
