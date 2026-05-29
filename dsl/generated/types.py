@@ -16,7 +16,7 @@ class Workflow(BaseModel):
     execution_id: str  # Unique identifier for this specific execution instance
     nodes: list[Node]  # Array of node definitions
     edges: list[Edge]  # Array of edge definitions
-    notes: Optional[list[Note]]  # Array of decorative sticky notes (not part of execution)
+    notes: Optional[list[Note]] = None  # Array of decorative sticky notes (not part of execution)
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -40,13 +40,13 @@ class Workflow(BaseModel):
 class Note(BaseModel):
     """Decorative sticky note placed on the canvas. Persisted with the workflow but never executed; ignored by the worker and by trigger/edge validation."""
     id: str  # Unique identifier for the note within the workflow
-    content: Optional[str]  # Markdown source of the note body (may be empty)
+    content: Optional[str] = None  # Markdown source of the note body (may be empty)
     x: float  # Canvas x position
     y: float  # Canvas y position
-    width: Optional[float]  # Note width in pixels (persisted resize)
-    height: Optional[float]  # Note height in pixels (persisted resize)
-    color: Optional[Literal["yellow", "green", "blue", "pink", "purple", "gray"]]  # Preset color theme key
-    font_size: Optional[Literal["sm", "md", "lg"]]  # Text size preset
+    width: Optional[float] = None  # Note width in pixels (persisted resize)
+    height: Optional[float] = None  # Note height in pixels (persisted resize)
+    color: Optional[Literal["yellow", "green", "blue", "pink", "purple", "gray"]] = None  # Preset color theme key
+    font_size: Optional[Literal["sm", "md", "lg"]] = None  # Text size preset
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -133,7 +133,7 @@ class Credential(BaseModel):
 class ErrorHandling(BaseModel):
     """Error handling configuration"""
     type_: Literal["halt", "ignore", "branch"] = Field(alias="type")  # Error handling strategy
-    error_edge: Optional[str]  # Edge ID to follow on error (required if type is 'branch')
+    error_edge: Optional[str] = None  # Edge ID to follow on error (required if type is 'branch')
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -202,7 +202,7 @@ class SortRule(BaseModel):
     """Sort rule definition"""
     field: str  # Field path to sort by
     direction: Literal["asc", "desc", "ascending", "descending"]  # Sort direction
-    type_: Optional[Literal["auto", "text", "number", "date"]] = Field(alias="type")  # Value type used for sorting
+    type_: Optional[Literal["auto", "text", "number", "date"]] = Field(default=None, alias="type")  # Value type used for sorting
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -225,7 +225,7 @@ class EditAssignment(BaseModel):
     """Edit node assignment"""
     name: str  # The key to set (supports dot-notation for nested objects)
     value: str  # The value to assign (supports dynamic expressions)
-    type_: Optional[Literal["string", "number", "boolean", "json"]] = Field(alias="type")  # Target type casting
+    type_: Optional[Literal["string", "number", "boolean", "json"]] = Field(default=None, alias="type")  # Target type casting
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -270,14 +270,14 @@ class HttpParameters(BaseModel):
     """HTTP request node"""
     method: Literal["GET", "POST", "PUT", "DELETE", "PATCH"]  # HTTP method
     url: str  # Target URL (supports template variables)
-    body: Optional[Any]  # Request body (JSON)
-    query: Optional[dict[str, Any]]  # URL query parameters as key-value pairs
-    headers: Optional[dict[str, Any]]  # HTTP headers as key-value pairs
-    retry: Optional[str]  # Number of retry attempts
-    retry_delay: Optional[str]  # Delay between retries in seconds
-    timeout: Optional[str]  # Request timeout in seconds
-    raise_on_status: Optional[str]  # Comma-separated status code patterns to treat as errors
-    ignore_ssl: Optional[bool]  # Whether to ignore SSL certificate validation
+    body: Optional[Any] = None  # Request body (JSON)
+    query: Optional[dict[str, Any]] = None  # URL query parameters as key-value pairs
+    headers: Optional[dict[str, Any]] = None  # HTTP headers as key-value pairs
+    retry: Optional[str] = None  # Number of retry attempts
+    retry_delay: Optional[str] = None  # Delay between retries in seconds
+    timeout: Optional[str] = None  # Request timeout in seconds
+    raise_on_status: Optional[str] = None  # Comma-separated status code patterns to treat as errors
+    ignore_ssl: Optional[bool] = None  # Whether to ignore SSL certificate validation
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -310,8 +310,8 @@ class SmtpParameters(BaseModel):
     body: str  # Email body content (plain text or HTML)
     to: list[str]  # Primary recipient email addresses
     from_: str = Field(alias="from")  # Sender email address
-    cc: Optional[list[str]]  # Carbon copy recipients
-    bcc: Optional[list[str]]  # Blind carbon copy recipients
+    cc: Optional[list[str]] = None  # Carbon copy recipients
+    bcc: Optional[list[str]] = None  # Blind carbon copy recipients
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -365,7 +365,7 @@ class SwitchParameters(BaseModel):
 class LogParameters(BaseModel):
     """Log information during workflow execution"""
     message: str  # Message to log (supports context variables)
-    level: Optional[Literal["debug", "info", "warn", "error"]]  # Log level
+    level: Optional[Literal["debug", "info", "warn", "error"]] = None  # Log level
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -382,8 +382,8 @@ class LogParameters(BaseModel):
 
 class DatetimenowParameters(BaseModel):
     """Get the current date and time in a given timezone"""
-    timezone: Optional[str]  # IANA timezone used for the output
-    format: Optional[str]  # Output format string (Go time layout)
+    timezone: Optional[str] = None  # IANA timezone used for the output
+    format: Optional[str] = None  # Output format string (Go time layout)
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -398,11 +398,11 @@ class DatetimenowParameters(BaseModel):
 
 class DatetimeaddParameters(BaseModel):
     """Add a duration to a date or timestamp"""
-    date: Optional[str]  # Input date or timestamp; defaults to now when empty
+    date: Optional[str] = None  # Input date or timestamp; defaults to now when empty
     amount: float  # Amount of time to add
-    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]]  # Unit of time
-    timezone: Optional[str]  # IANA timezone used for parsing naive inputs and for the output
-    format: Optional[str]  # Output format string (Go time layout)
+    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]] = None  # Unit of time
+    timezone: Optional[str] = None  # IANA timezone used for parsing naive inputs and for the output
+    format: Optional[str] = None  # Output format string (Go time layout)
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -425,11 +425,11 @@ class DatetimeaddParameters(BaseModel):
 
 class DatetimesubtractParameters(BaseModel):
     """Subtract a duration from a date or timestamp"""
-    date: Optional[str]  # Input date or timestamp; defaults to now when empty
+    date: Optional[str] = None  # Input date or timestamp; defaults to now when empty
     amount: float  # Amount of time to subtract
-    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]]  # Unit of time
-    timezone: Optional[str]  # IANA timezone used for parsing naive inputs and for the output
-    format: Optional[str]  # Output format string (Go time layout)
+    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]] = None  # Unit of time
+    timezone: Optional[str] = None  # IANA timezone used for parsing naive inputs and for the output
+    format: Optional[str] = None  # Output format string (Go time layout)
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -453,8 +453,8 @@ class DatetimesubtractParameters(BaseModel):
 class DatetimeformatParameters(BaseModel):
     """Format a date or timestamp in a chosen timezone"""
     date: str  # Input date or timestamp to format
-    timezone: Optional[str]  # IANA timezone used for parsing naive inputs and for the output
-    format: Optional[str]  # Output format string (Go time layout)
+    timezone: Optional[str] = None  # IANA timezone used for parsing naive inputs and for the output
+    format: Optional[str] = None  # Output format string (Go time layout)
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -474,7 +474,7 @@ class DatetimeformatParameters(BaseModel):
 class DatetimeparseParameters(BaseModel):
     """Parse a date or timestamp into structured components"""
     date: str  # Input date or timestamp to parse
-    timezone: Optional[str]  # IANA timezone used for parsing naive inputs and for the structured output
+    timezone: Optional[str] = None  # IANA timezone used for parsing naive inputs and for the structured output
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -511,8 +511,8 @@ class WaitParameters(BaseModel):
 
 class EditParameters(BaseModel):
     """Data transformation node"""
-    mode: Optional[Literal["assignments", "keep_only"]]  # Transformation mode
-    assignments: Optional[list[EditAssignment]]  # List of field operations
+    mode: Optional[Literal["assignments", "keep_only"]] = None  # Transformation mode
+    assignments: Optional[list[EditAssignment]] = None  # List of field operations
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -525,8 +525,8 @@ class EditParameters(BaseModel):
 
 class FilterParameters(BaseModel):
     """Keep only list items that match one or more rules"""
-    input_array: Optional[Any]  # Array to filter; defaults to the current working list
-    match_mode: Optional[Literal["all", "any"]]  # How multiple rules are combined
+    input_array: Optional[Any] = None  # Array to filter; defaults to the current working list
+    match_mode: Optional[Literal["all", "any"]] = None  # How multiple rules are combined
     rules: list[FilterRule]  # Rules used to decide which items to keep
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -542,7 +542,7 @@ class FilterParameters(BaseModel):
 
 class SortParameters(BaseModel):
     """Order a list using one or more sort rules"""
-    input_array: Optional[Any]  # Array to sort; defaults to the current working list
+    input_array: Optional[Any] = None  # Array to sort; defaults to the current working list
     rules: list[SortRule]  # Ordered sort rules
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -556,7 +556,7 @@ class SortParameters(BaseModel):
 
 class LimitParameters(BaseModel):
     """Keep only the first items from a list"""
-    input_array: Optional[Any]  # Array to limit; defaults to the current working list
+    input_array: Optional[Any] = None  # Array to limit; defaults to the current working list
     count: float  # Number of items to keep
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -587,8 +587,8 @@ class SplitParameters(BaseModel):
 
 class MergeParameters(BaseModel):
     """Merge multiple execution branches"""
-    wait_mode: Optional[Literal["wait_for_all", "wait_for_any"]]  # Synchronization mode
-    timeout: Optional[float]  # Safety timeout in seconds
+    wait_mode: Optional[Literal["wait_for_all", "wait_for_any"]] = None  # Synchronization mode
+    timeout: Optional[float] = None  # Safety timeout in seconds
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -608,11 +608,11 @@ class BaseNode(BaseModel):
     id: str  # Unique identifier for the node within the workflow
     name: str  # Human-readable node name
     trigger: bool  # Whether this node initiates workflow execution
-    webhook_guid: Optional[str]  # Stable webhook registration GUID for webhook trigger nodes
+    webhook_guid: Optional[str] = None  # Stable webhook registration GUID for webhook trigger nodes
     output: dict[str, Any]  # Placeholder for execution output (empty in definition)
-    error: Optional[ErrorHandling]  # Error handling configuration
-    credential_type: Optional[list[str]]  # List of allowed credential types for this node (for UI filtering)
-    credentials: Optional[Credential]  # Complete credential object with values
+    error: Optional[ErrorHandling] = None  # Error handling configuration
+    credential_type: Optional[list[str]] = None  # List of allowed credential types for this node (for UI filtering)
+    credentials: Optional[Credential] = None  # Complete credential object with values
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
