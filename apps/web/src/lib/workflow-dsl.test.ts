@@ -7,6 +7,7 @@ import {
   MissingNodeCredentialsError,
   stripCredentialsFromWorkflowData,
   workflowDataToCanvas,
+  type WorkflowNote,
 } from "./workflow-dsl";
 
 function createNode<T extends NodeKind>(
@@ -461,6 +462,20 @@ describe("sticky notes", () => {
       color: "blue",
       fontSize: "sm",
     });
+  });
+
+  it("drops unrecognized color/font_size so the note falls back to defaults", () => {
+    const { nodes } = workflowDataToCanvas({
+      nodes: [],
+      edges: [],
+      notes: [
+        { id: "note-1", content: "body", x: 0, y: 0, color: "orange", font_size: "huge" },
+      ] as unknown as WorkflowNote[],
+    });
+
+    const noteNode = nodes.find((n) => n.id === "note-1");
+    expect(noteNode?.data).not.toHaveProperty("color");
+    expect(noteNode?.data).not.toHaveProperty("fontSize");
   });
 
   it("round-trips a note through canvas -> DSL -> canvas", () => {

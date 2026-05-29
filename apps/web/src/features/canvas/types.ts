@@ -130,6 +130,14 @@ export type StickyNoteColor = (typeof STICKY_NOTE_COLORS)[number];
 export const STICKY_NOTE_FONT_SIZES = ["sm", "md", "lg"] as const;
 export type StickyNoteFontSize = (typeof STICKY_NOTE_FONT_SIZES)[number];
 
+export function isStickyNoteColor(value: unknown): value is StickyNoteColor {
+  return (STICKY_NOTE_COLORS as readonly string[]).includes(value as string);
+}
+
+export function isStickyNoteFontSize(value: unknown): value is StickyNoteFontSize {
+  return (STICKY_NOTE_FONT_SIZES as readonly string[]).includes(value as string);
+}
+
 /** A map defining the specific data for each kind of node. */
 export type BuiltInNodeDataMap = {
   trigger: BaseData;

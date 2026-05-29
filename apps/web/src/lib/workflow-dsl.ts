@@ -29,6 +29,8 @@ import {
   type AggregatorData,
   type MergeData,
   type AgentData,
+  isStickyNoteColor,
+  isStickyNoteFontSize,
   type StickyNoteData,
   type StickyNoteColor,
   type StickyNoteFontSize,
@@ -913,8 +915,8 @@ function noteToCanvasNode(note: WorkflowNote): CanvasNode {
   };
   if (typeof note.width === "number") data.width = note.width;
   if (typeof note.height === "number") data.height = note.height;
-  if (note.color) data.color = note.color;
-  if (note.font_size) data.fontSize = note.font_size;
+  if (isStickyNoteColor(note.color)) data.color = note.color;
+  if (isStickyNoteFontSize(note.font_size)) data.fontSize = note.font_size;
   return {
     id: note.id,
     type: "stickyNote",
