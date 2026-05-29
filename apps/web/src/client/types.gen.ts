@@ -1339,13 +1339,16 @@ export type RuntimeWorkflowEdge = {
 /**
  * RuntimeWorkflowGraph
  *
- * The runtime workflow graph saved as a version: nodes + edges.
+ * The runtime workflow graph saved as a version: nodes + edges (+ notes).
  *
  * Pydantic owns *shape* validation here (required/non-empty fields, types,
  * id uniqueness); cross-field *semantics* (edges reference existing nodes,
  * no self-references, exactly one trigger) live in
  * ``src.workflow.validation``. Stricter than the lenient template
  * ``WorkflowGraph``: a saved version must have at least one node.
+ *
+ * ``notes`` is a decorative layer: free-floating sticky notes that are
+ * persisted but excluded from execution and from trigger/edge semantics.
  */
 export type RuntimeWorkflowGraph = {
     /**
@@ -1356,6 +1359,10 @@ export type RuntimeWorkflowGraph = {
      * Edges
      */
     edges: Array<RuntimeWorkflowEdge>;
+    /**
+     * Notes
+     */
+    notes?: Array<RuntimeWorkflowNote>;
     /**
      * Metadata
      */
@@ -1388,6 +1395,26 @@ export type RuntimeWorkflowNode = {
      * Trigger
      */
     trigger?: boolean | null;
+    [key: string]: unknown;
+};
+
+/**
+ * RuntimeWorkflowNote
+ *
+ * A decorative sticky note placed on the canvas.
+ *
+ * Notes are persisted with the workflow but never executed: the worker
+ * deserializes only ``nodes``/``edges`` and semantic validation
+ * (``src.workflow.validation``) ignores notes entirely. Only the structural
+ * identity field is validated (``id``); the rest of the shape (``content``,
+ * ``x``/``y`` position, ``width``/``height``, ``color``, ``font_size``) is
+ * intentionally loose and passes through via ``extra="allow"``.
+ */
+export type RuntimeWorkflowNote = {
+    /**
+     * Id
+     */
+    id: string;
     [key: string]: unknown;
 };
 

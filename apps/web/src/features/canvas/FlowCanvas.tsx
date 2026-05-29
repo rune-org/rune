@@ -35,6 +35,7 @@ import { FlowViewport } from "./components/FlowViewport";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
 import { useNodeShortcuts } from "./hooks/useNodeShortcuts";
 import { useAddNode } from "./hooks/useAddNode";
+import { isInspectableNode } from "./lib/nodeRegistry";
 import { useConditionalConnect } from "./hooks/useConditionalConnect";
 import { useCanvasHistory } from "./hooks/useCanvasHistory";
 import { useUpdateNodeData } from "./hooks/useUpdateNodeData";
@@ -574,6 +575,7 @@ function FlowCanvasInner({
   }, []);
 
   const onNodeDoubleClick = useCallback((_evt: React.MouseEvent, node: CanvasNode) => {
+    if (!isInspectableNode(node.type)) return;
     setSelectedNodeId(node.id);
     setIsInspectorExpanded(true);
   }, []);
@@ -591,6 +593,8 @@ function FlowCanvasInner({
     },
     [pushHistory, addNode],
   );
+
+  const onAddStickyNote = useCallback(() => onLibraryAdd("stickyNote"), [onLibraryAdd]);
 
   const onExecute = useCallback(async () => {
     if (isViewingSnapshot) {
@@ -743,6 +747,7 @@ function FlowCanvasInner({
           isExpandedDialogOpen={isInspectorExpanded}
           setIsExpandedDialogOpen={setIsInspectorExpanded}
           onTogglePin={isViewingSnapshot ? undefined : togglePin}
+          onAddStickyNote={isViewingSnapshot ? undefined : onAddStickyNote}
           workflowId={workflowId}
           readOnly={isViewingSnapshot}
         />

@@ -21,6 +21,7 @@ import { LimitNode } from "./LimitNode";
 import { SplitNode } from "./SplitNode";
 import { AggregatorNode } from "./AggregatorNode";
 import { MergeNode } from "./MergeNode";
+import { StickyNoteNode } from "./StickyNoteNode";
 import { IntegrationNode } from "./IntegrationNode";
 import { getIntegrationNodeKinds } from "../integrations/helpers";
 
@@ -51,5 +52,6 @@ export const nodeTypes: NodeTypes = {
   split: SplitNode,
   aggregator: AggregatorNode,
   merge: MergeNode,
+  stickyNote: StickyNoteNode,
   ...integrationNodeTypes,
 };

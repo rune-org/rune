@@ -60,6 +60,7 @@ def test_workflow_sanitize_valid():
         execution_id="exec_1",
         nodes=[http_node],
         edges=[edge],
+        notes=None,
     )
 
     valid, errors = workflow.sanitize()
@@ -75,6 +76,62 @@ def test_edge_sanitize_valid():
     valid, errors = edge.sanitize()
     assert valid is True
     assert len(errors) == 0
+
+
+def test_note_sanitize_valid():
+    """Construct a valid Note and assert sanitize passes."""
+    from dsl.generated.types import Note
+
+    note = Note(
+        id="note_1",
+        content="# Hello\n\nSome **markdown**.",
+        x=10.0,
+        y=20.0,
+        width=240.0,
+        height=180.0,
+        color="yellow",
+        font_size="md",
+    )
+    valid, errors = note.sanitize()
+    assert valid is True, f"Expected valid note, got errors: {errors}"
+    assert len(errors) == 0
+
+
+def test_workflow_accepts_notes():
+    """A workflow can carry decorative notes alongside nodes and edges."""
+    from dsl.generated.types import Edge, ManualTriggerNode, Note, Workflow
+
+    trigger = ManualTriggerNode(
+        id="trigger_1",
+        name="Start",
+        trigger=True,
+        webhook_guid=None,
+        output={},
+        parameters={},
+        error=None,
+        credentials=None,
+    )
+    note = Note(
+        id="note_1",
+        content="reminder",
+        x=0.0,
+        y=0.0,
+        width=None,
+        height=None,
+        color=None,
+        font_size=None,
+    )
+    workflow = Workflow(
+        workflow_id="wf_1",
+        execution_id="exec_1",
+        nodes=[trigger],
+        edges=[],
+        notes=[note],
+    )
+
+    assert workflow.notes is not None
+    assert len(workflow.notes) == 1
+    assert workflow.notes[0].id == "note_1"
 
 
 def test_http_node_sanitize_valid():
