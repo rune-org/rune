@@ -67,16 +67,13 @@ export const FlowViewport = memo(function FlowViewport({
   wsReconnectAttempts,
   onDismissRunning,
 }: FlowViewportProps) {
-  const viewportNodes = useMemo<CanvasNode[]>(
-    () => {
-      if (!readOnly) return nodes;
-      return nodes.map<CanvasNode>((node) => {
-        if (node.type !== "stickyNote") return node;
-        return { ...node, data: { ...node.data, readOnly: true } };
-      });
-    },
-    [nodes, readOnly],
-  );
+  const viewportNodes = useMemo<CanvasNode[]>(() => {
+    if (!readOnly) return nodes;
+    return nodes.map<CanvasNode>((node) => {
+      if (node.type !== "stickyNote") return node;
+      return { ...node, data: { ...node.data, readOnly: true } };
+    });
+  }, [nodes, readOnly]);
 
   return (
     <ReactFlow
