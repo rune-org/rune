@@ -71,6 +71,7 @@ export const StickyNoteNode = memo(function StickyNoteNode({
   const width = data.width ?? DEFAULT_WIDTH;
   const height = data.height ?? DEFAULT_HEIGHT;
   const content = data.content ?? "";
+  const readOnly = data.readOnly === true;
 
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(content);
@@ -85,27 +86,34 @@ export const StickyNoteNode = memo(function StickyNoteNode({
     }
   }, [isEditing]);
 
+  useEffect(() => {
+    if (readOnly && isEditing) setIsEditing(false);
+  }, [readOnly, isEditing]);
+
   const startEditing = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
+      if (readOnly) return;
       setDraft(content);
       setIsEditing(true);
     },
-    [content],
+    [content, readOnly],
   );
 
   const commit = useCallback(() => {
     setIsEditing(false);
-    if (draft !== content) updateNodeData(id, { content: draft });
-  }, [draft, content, id, updateNodeData]);
+    if (!readOnly && draft !== content) updateNodeData(id, { content: draft });
+  }, [draft, content, id, readOnly, updateNodeData]);
 
   return (
     <>
       <NodeResizer
-        isVisible={selected}
+        isVisible={selected && !readOnly}
         minWidth={MIN_WIDTH}
         minHeight={MIN_HEIGHT}
-        onResize={(_, params) => updateNodeData(id, { width: params.width, height: params.height })}
+        onResize={(_, params) => {
+          if (!readOnly) updateNodeData(id, { width: params.width, height: params.height });
+        }}
         lineClassName="border-2 border-foreground/15"
         handleStyle={{
           width: 16,
@@ -124,9 +132,9 @@ export const StickyNoteNode = memo(function StickyNoteNode({
           selected && "ring-1 ring-foreground/30",
         )}
         style={{ width, height }}
-        onDoubleClick={startEditing}
+        onDoubleClick={readOnly ? undefined : startEditing}
       >
-        {selected && !isEditing && (
+        {selected && !isEditing && !readOnly && (
           <div className="nodrag flex shrink-0 items-center gap-1.5 border-b border-foreground/10 px-2 py-1">
             {STICKY_NOTE_COLORS.map((c) => (
               <button
@@ -195,7 +203,9 @@ export const StickyNoteNode = memo(function StickyNoteNode({
                 className={cn("text-foreground/90", NOTE_MD_OVERRIDES)}
               />
             ) : (
-              <span className="text-foreground/40">Double-click to edit…</span>
+              <span className="text-foreground/40">
+                {readOnly ? "Empty note" : "Double-click to edit…"}
+              </span>
             )}
           </div>
         )}

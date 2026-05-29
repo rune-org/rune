@@ -5,7 +5,22 @@ import type { StickyNoteData } from "../types";
 const { updateNodeData } = vi.hoisted(() => ({ updateNodeData: vi.fn() }));
 
 vi.mock("@xyflow/react", () => ({
-  NodeResizer: () => null,
+  NodeResizer: ({
+    isVisible,
+    onResize,
+  }: {
+    isVisible: boolean;
+    onResize: (_event: unknown, params: { width: number; height: number }) => void;
+  }) =>
+    isVisible ? (
+      <button
+        type="button"
+        aria-label="Resize note"
+        onClick={() => onResize({}, { width: 320, height: 220 })}
+      >
+        resize
+      </button>
+    ) : null,
   useReactFlow: () => ({ updateNodeData }),
 }));
 
@@ -74,5 +89,43 @@ describe("StickyNoteNode", () => {
   it("hides the controls when not selected", () => {
     renderNote({ content: "x", color: "yellow" }, { selected: false });
     expect(screen.queryByLabelText("Color green")).not.toBeInTheDocument();
+  });
+
+  it("does not allow editing controls in read-only mode", () => {
+    renderNote({ content: "read only", color: "yellow", readOnly: true }, { selected: true });
+
+    fireEvent.doubleClick(screen.getByText("read only").closest("div")!);
+
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Color green")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Font size lg")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Resize note")).not.toBeInTheDocument();
+    expect(updateNodeData).not.toHaveBeenCalled();
+  });
+
+  it("does not commit edits if the note becomes read-only while editing", () => {
+    const { rerender } = renderNote({ content: "before" });
+    fireEvent.doubleClick(screen.getByText("before").closest("div")!);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "after" } });
+
+    const readOnlyProps = {
+      id: "note-1",
+      type: "stickyNote",
+      data: { content: "before", readOnly: true },
+      selected: false,
+      dragging: false,
+      zIndex: 0,
+      isConnectable: true,
+      positionAbsoluteX: 0,
+      positionAbsoluteY: 0,
+      deletable: true,
+      selectable: true,
+      draggable: true,
+    } as unknown as Parameters<typeof StickyNoteNode>[0];
+
+    rerender(<StickyNoteNode {...readOnlyProps} />);
+
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(updateNodeData).not.toHaveBeenCalled();
   });
 });

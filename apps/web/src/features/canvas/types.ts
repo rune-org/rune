@@ -146,6 +146,8 @@ export type BuiltInNodeDataMap = {
     /** Persisted resize dimensions (px). */
     width?: number;
     height?: number;
+    /** Transient canvas state used while viewing historical snapshots. */
+    readOnly?: boolean;
   };
 
   webhookTrigger: BaseData & {
