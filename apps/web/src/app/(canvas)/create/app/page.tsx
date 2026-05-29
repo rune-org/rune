@@ -92,7 +92,6 @@ function CanvasPageInner() {
       if (templateId) {
         const numericTemplateId = Number(templateId);
         if (appliedTemplateRef.current === numericTemplateId) return;
-        appliedTemplateRef.current = numericTemplateId;
         try {
           if (abortController.signal.aborted) return;
 
@@ -109,6 +108,7 @@ function CanvasPageInner() {
             if (!abortController.signal.aborted) {
               setNodes(filteredNodes as unknown as CanvasNode[]);
               setEdges(filteredEdges as unknown as CanvasEdge[]);
+              appliedTemplateRef.current = numericTemplateId;
             }
           }
         } catch (_error) {
