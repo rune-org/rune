@@ -16,7 +16,7 @@ export const SplitNode = memo(function SplitNode({ id, data }: NodeProps<Node<Sp
       borderColor="--node-transform-border"
       pinned={data.pinned}
     >
-      <div className="text-xs text-muted-foreground">
+      <div className="min-w-0 truncate text-xs text-muted-foreground" title={data.array_field}>
         {data.array_field ? `Split: ${data.array_field}` : "Configure array field"}
       </div>
     </BaseNode>

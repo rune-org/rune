@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans, Playfair_Display, Cinzel } from "next/font/google";
 import { Toaster } from "@/components/ui/toast";
-import { ClientProviders } from "@/components/providers/ClientProviders";
+import { RootProviders } from "@/components/providers/ClientProviders";
 
 import "./globals.css";
 
@@ -42,7 +42,7 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontDisplay.variable} ${fontRune.variable} antialiased bg-background text-foreground min-h-screen`}
       >
-        <ClientProviders>{children}</ClientProviders>
+        <RootProviders>{children}</RootProviders>
         <Toaster />
       </body>
     </html>

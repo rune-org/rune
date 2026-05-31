@@ -12,30 +12,59 @@ import {
 } from "./permissions";
 
 describe("workflow permissions", () => {
-  it.each<[WorkflowRole, boolean, boolean, boolean, boolean, boolean, boolean]>([
-    ["owner", true, true, true, true, true, true],
-    ["editor", true, true, true, false, false, true],
-    ["viewer", true, false, false, false, false, false],
-  ])(
-    "applies the expected permissions for %s",
-    (role, view, edit, execute, del, share, renameAndStatus) => {
-      expect(canViewWorkflow(role)).toBe(view);
-      expect(canEditWorkflow(role)).toBe(edit);
-      expect(canExecuteWorkflow(role)).toBe(execute);
-      expect(canDeleteWorkflow(role)).toBe(del);
-      expect(canShareWorkflow(role)).toBe(share);
-      expect(canRenameWorkflow(role)).toBe(renameAndStatus);
-      expect(canChangeWorkflowStatus(role)).toBe(renameAndStatus);
-    },
-  );
+  function visibleWorkflowActions(role: WorkflowRole, isAdmin = false): string[] {
+    const actions = [
+      ["open-canvas", canViewWorkflow(role, isAdmin)],
+      ["export-json", canViewWorkflow(role, isAdmin)],
+      ["run", canExecuteWorkflow(role, isAdmin)],
+      ["rename", canRenameWorkflow(role, isAdmin)],
+      ["toggle-active", canChangeWorkflowStatus(role, isAdmin)],
+      ["share", canShareWorkflow(role, isAdmin)],
+      ["delete", canDeleteWorkflow(role, isAdmin)],
+    ] as const;
 
-  it("grants every permission to admins regardless of workflow role", () => {
-    expect(canViewWorkflow("viewer", true)).toBe(true);
+    return actions.filter(([, allowed]) => allowed).map(([action]) => action);
+  }
+
+  it("viewer can only access read-only workflow actions", () => {
+    expect(visibleWorkflowActions("viewer")).toEqual(["open-canvas", "export-json"]);
+    expect(canEditWorkflow("viewer")).toBe(false);
+  });
+
+  it("editor can run and modify workflow but not share or delete", () => {
+    expect(visibleWorkflowActions("editor")).toEqual([
+      "open-canvas",
+      "export-json",
+      "run",
+      "rename",
+      "toggle-active",
+    ]);
+    expect(canEditWorkflow("editor")).toBe(true);
+  });
+
+  it("owner can access every workflow action", () => {
+    expect(visibleWorkflowActions("owner")).toEqual([
+      "open-canvas",
+      "export-json",
+      "run",
+      "rename",
+      "toggle-active",
+      "share",
+      "delete",
+    ]);
+    expect(canEditWorkflow("owner")).toBe(true);
+  });
+
+  it("admin override grants all workflow actions even for viewer role", () => {
+    expect(visibleWorkflowActions("viewer", true)).toEqual([
+      "open-canvas",
+      "export-json",
+      "run",
+      "rename",
+      "toggle-active",
+      "share",
+      "delete",
+    ]);
     expect(canEditWorkflow("viewer", true)).toBe(true);
-    expect(canExecuteWorkflow("viewer", true)).toBe(true);
-    expect(canDeleteWorkflow("viewer", true)).toBe(true);
-    expect(canShareWorkflow("viewer", true)).toBe(true);
-    expect(canRenameWorkflow("viewer", true)).toBe(true);
-    expect(canChangeWorkflowStatus("viewer", true)).toBe(true);
   });
 });

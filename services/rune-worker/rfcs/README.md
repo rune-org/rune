@@ -120,15 +120,29 @@ Specification for lightweight list-shaping nodes:
 
 ---
 
-### [RFC-009-datetime-node.md](./RFC-009-datetime-node.md)
+### [RFC-009-datetime-nodes.md](./RFC-009-datetime-nodes.md)
 **Status**: Implemented  
 **Created**: 2026-03-11  
-**Title**: Date & Time Node (`datetime`)
+**Title**: Date & Time Node Family (`dateTimeNow`, `dateTimeAdd`, `dateTimeSubtract`, `dateTimeFormat`, `dateTimeParse`)
 
-Specification for simple date/time utilities in workflows:
+Specification for the typed date/time node family:
 - Current time generation
 - Add/subtract operations
 - Timezone-aware formatting
+- Decomposition into structured components
+
+---
+
+### [RFC-010-integration-nodes.md](./RFC-010-integration-nodes.md)
+**Status**: Implemented  
+**Created**: 2026-05-07  
+**Title**: Integration Nodes Architecture for rune-worker
+
+Specification for integration node execution in worker:
+- Canonical kind format: `integration.<provider>.<service>.<tool>`
+- Internal integrations registry + adapter wiring into global node registry
+- Shared connector on top of `httpcore` for URL/auth/request execution
+- Phase 1 Gmail tools with typed args parsing and non-2xx error contract
 
 ---
 

@@ -1,7 +1,7 @@
-import dagre from "dagre";
+import dagre from "@dagrejs/dagre";
 import type { Edge } from "@xyflow/react";
 import type { CanvasNode } from "../types";
-import { getNodeDimensionsWithData } from "./nodeRegistry";
+import { getNodeDimensionsWithData, isTriggerNode } from "./nodeRegistry";
 
 /**
  * Get the vertical order priority for a source handle.
@@ -86,7 +86,7 @@ export function applyAutoLayout({
   dagre.layout(dagreGraph);
 
   // Find an anchor node to preserve the user's canvas position.
-  const anchorNode = pinnedNodes[0] || nodes.find((n) => n.type === "trigger") || nodes[0];
+  const anchorNode = pinnedNodes[0] || nodes.find((n) => isTriggerNode(n.type)) || nodes[0];
 
   // Calculate offset to anchor the new layout to the existing canvas position
   const anchorDagreNode = dagreGraph.node(anchorNode.id);

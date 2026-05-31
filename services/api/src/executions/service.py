@@ -97,6 +97,6 @@ class ExecutionTokenService(BaseQueuePublisher):
             exp=now + ttl_seconds,
         )
 
-        await self._publish(token, durable=False)
+        await self._publish(token)
 
         return token

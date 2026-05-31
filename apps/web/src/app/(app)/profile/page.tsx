@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { updateMyProfile } from "@/lib/api/users";
 import { getInitials } from "@/lib/initials";
@@ -23,19 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
-
-// Zod schemas for validation
-const nameSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Name is required")
-    .min(2, "Name must be at least 2 characters")
-    .max(100, "Name must be less than 100 characters"),
-});
-
-const emailSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
-});
+import { profileEmailSchema, profileNameSchema } from "@/lib/validation";
 
 type EditingField = "name" | "email" | null;
 
@@ -47,7 +34,7 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [dialogResetKey, setDialogResetKey] = useState(0);
-  const { state, logout } = useAuth();
+  const { state, logout, refetchProfile, refresh } = useAuth();
 
   const user = state.user as UserResponse | null;
   const roleLabel = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "User";
@@ -61,7 +48,7 @@ export default function ProfilePage() {
 
   const handleSaveName = async () => {
     // Validate with zod
-    const result = nameSchema.safeParse({ name: fullName });
+    const result = profileNameSchema.safeParse({ name: fullName });
     if (!result.success) {
       setError(result.error.issues[0].message);
       return;
@@ -74,18 +61,22 @@ export default function ProfilePage() {
       await updateMyProfile({
         name: result.data.name,
       });
-
-      // Log out user after successful update
-      await logout();
+      // Refresh token to ensure JWT payload contains updated name
+      await refresh();
+      // Refetch profile to sync state across the app
+      await refetchProfile();
+      // Close edit mode
+      setEditingField(null);
     } catch (apiError) {
       setError(getErrorMessage(apiError));
+    } finally {
       setIsSaving(false);
     }
   };
 
   const handleSaveEmail = async () => {
     // Validate with zod
-    const result = emailSchema.safeParse({ email });
+    const result = profileEmailSchema.safeParse({ email: email });
     if (!result.success) {
       setError(result.error.issues[0].message);
       return;
@@ -98,11 +89,10 @@ export default function ProfilePage() {
       await updateMyProfile({
         email: result.data.email,
       });
-
-      // Log out user after successful update
       await logout();
     } catch (apiError) {
       setError(getErrorMessage(apiError));
+    } finally {
       setIsSaving(false);
     }
   };
@@ -197,9 +187,6 @@ export default function ProfilePage() {
                       autoFocus
                       disabled={isSaving}
                     />
-                    <p className="text-xs text-amber-500">
-                      Note: You will be logged out after updating your name.
-                    </p>
                     <div className="flex gap-2">
                       <Button onClick={handleSaveName} disabled={isSaving} size="sm">
                         {isSaving ? "Saving..." : "Save"}

@@ -24,6 +24,44 @@ function notifyPasteShortcut() {
   toast("Press Ctrl+V (or Cmd+V) to paste workflow from clipboard");
 }
 
+export function cloneClipboardSelectionGraph(graph: { nodes: CanvasNode[]; edges: Edge[] }): {
+  nodes: CanvasNode[];
+  edges: Edge[];
+} {
+  const idMap = new Map<string, string>();
+  const nodes: CanvasNode[] = graph.nodes.map((node) => {
+    const newId = createId();
+    idMap.set(node.id, newId);
+
+    return {
+      ...node,
+      id: newId,
+      selected: true,
+      position: {
+        x: (node.position?.x ?? 0) + PASTE_OFFSET,
+        y: (node.position?.y ?? 0) + PASTE_OFFSET,
+      },
+      data: node.type === "webhookTrigger" ? { ...node.data, webhookGuid: createId() } : node.data,
+    } as CanvasNode;
+  });
+
+  const edges = graph.edges
+    .map((edge) => {
+      const newSource = idMap.get(edge.source);
+      const newTarget = idMap.get(edge.target);
+      if (!newSource || !newTarget) return null;
+      return {
+        ...edge,
+        id: createId(),
+        source: newSource,
+        target: newTarget,
+      } satisfies Edge;
+    })
+    .filter((edge): edge is Edge => edge !== null);
+
+  return { nodes, edges };
+}
+
 export function useGraphClipboard(opts: UseGraphClipboardOptions) {
   const {
     nodes,
@@ -37,6 +75,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
   } = opts;
 
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
+  const [isExportGalleryOpen, setIsExportGalleryOpen] = useState(false);
   const [isImportTemplateOpen, setIsImportTemplateOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const nodesRef = useRef(nodes);
@@ -125,6 +164,14 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
       return;
     }
     setIsSaveTemplateOpen(true);
+  }, []);
+
+  const exportToGallery = useCallback(() => {
+    if (nodesRef.current.length === 0) {
+      toast.error("Build a workflow before submitting to the gallery");
+      return;
+    }
+    setIsExportGalleryOpen(true);
   }, []);
 
   const importFromFile = useCallback(() => {
@@ -267,34 +314,10 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
         e.preventDefault();
         pushHistory();
 
-        const idMap = new Map<string, string>();
-        const pastedNodes = (parsed.nodes as CanvasNode[]).map((node) => {
-          const newId = createId();
-          idMap.set(node.id, newId);
-          return {
-            ...node,
-            id: newId,
-            selected: true,
-            position: {
-              x: (node.position?.x ?? 0) + PASTE_OFFSET,
-              y: (node.position?.y ?? 0) + PASTE_OFFSET,
-            },
-          } satisfies CanvasNode;
+        const { nodes: pastedNodes, edges: pastedEdges } = cloneClipboardSelectionGraph({
+          nodes: parsed.nodes as CanvasNode[],
+          edges: parsed.edges as Edge[],
         });
-
-        const pastedEdges = (parsed.edges as Edge[])
-          .map((edge) => {
-            const newSource = idMap.get(edge.source);
-            const newTarget = idMap.get(edge.target);
-            if (!newSource || !newTarget) return null;
-            return {
-              ...edge,
-              id: createId(),
-              source: newSource,
-              target: newTarget,
-            } satisfies Edge;
-          })
-          .filter((edge): edge is Edge => edge !== null);
 
         setNodes((current) => [...current.map((n) => ({ ...n, selected: false })), ...pastedNodes]);
         setEdges((current) => [...current, ...pastedEdges]);
@@ -318,6 +341,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
     exportToClipboard,
     exportToFile,
     exportToTemplate,
+    exportToGallery,
     importFromClipboard: notifyPasteShortcut,
     importFromFile,
     handleFileImport,
@@ -325,6 +349,8 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
     handleTemplateSelect,
     isSaveTemplateOpen,
     setIsSaveTemplateOpen,
+    isExportGalleryOpen,
+    setIsExportGalleryOpen,
     isImportTemplateOpen,
     setIsImportTemplateOpen,
     fileInputRef,

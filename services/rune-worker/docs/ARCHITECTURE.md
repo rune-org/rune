@@ -238,7 +238,7 @@ workflows Exchange (topic, durable)
   "current_node": "node_1",
   "workflow_definition": { /* full workflow */ },
   "accumulated_context": {
-    "$input": { /* trigger data */ },
+    "$input": { /* optional caller-provided input */ },
     "$node_1": { /* previous output */ }
   }
 }

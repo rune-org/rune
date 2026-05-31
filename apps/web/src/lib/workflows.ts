@@ -3,6 +3,7 @@ import type { CanvasNode, CanvasEdge } from "@/features/canvas/types";
 import type {
   WorkflowNode as WorkflowNodeDSL,
   WorkflowEdge as WorkflowEdgeDSL,
+  WorkflowNote as WorkflowNoteDSL,
 } from "@/lib/workflow-dsl";
 import { canvasToWorkflowData, workflowDataToCanvas } from "@/lib/workflow-dsl";
 import type { WorkflowRole } from "@/lib/permissions";
@@ -15,6 +16,10 @@ import type { WorkflowRole } from "@/lib/permissions";
 export type WorkflowSummary = {
   id: string;
   name: string;
+  /**
+   * Workflow description.
+   */
+  description?: string | null;
   /**
    * Derived status – treated as active when `is_active` is true, otherwise draft.
    */
@@ -40,6 +45,10 @@ export type WorkflowSummary = {
    */
   role: WorkflowRole;
   /**
+   * Original creator's name.
+   */
+  ownerName: string;
+  /**
    * Latest version number (if versioning is active).
    */
   latestVersion?: number;
@@ -58,6 +67,7 @@ export const defaultWorkflowSummary: WorkflowSummary = {
   lastRunStatus: "n/a",
   runs: 0,
   role: "owner",
+  ownerName: "Me",
 };
 
 export function listItemToWorkflowSummary(item: WorkflowListItem): WorkflowSummary {
@@ -65,8 +75,10 @@ export function listItemToWorkflowSummary(item: WorkflowListItem): WorkflowSumma
     ...defaultWorkflowSummary,
     id: String(item.id),
     name: item.name,
+    description: item.description,
     status: item.is_active ? "active" : "draft",
     role: item.role,
+    ownerName: item.owner_name,
   };
 }
 
@@ -79,10 +91,12 @@ function workflowDataToGraph(raw: Record<string, unknown>): WorkflowGraph {
   const data = raw as {
     nodes?: WorkflowNodeDSL[] | undefined;
     edges?: WorkflowEdgeDSL[] | undefined;
+    notes?: WorkflowNoteDSL[] | undefined;
   };
   const { nodes, edges } = workflowDataToCanvas({
     nodes: Array.isArray(data.nodes) ? data.nodes : [],
     edges: Array.isArray(data.edges) ? data.edges : [],
+    notes: Array.isArray(data.notes) ? data.notes : [],
   });
 
   return {

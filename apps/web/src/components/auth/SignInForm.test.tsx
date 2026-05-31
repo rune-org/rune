@@ -76,6 +76,14 @@ describe("SignInForm", () => {
     expect(locationMock.href).toBe("http://localhost:8000/auth/saml/login?redirect=%2Fadmin");
   });
 
+  it("shows a clear message when redirected after session expiry", () => {
+    setSearchParams({ reason: "session-expired" });
+
+    render(<SignInForm />);
+
+    expect(screen.getByText("Session expired, please log in again.")).toBeInTheDocument();
+  });
+
   it("disables the submit button and shows loading feedback while signing in", () => {
     authMock.state.loading = true;
 

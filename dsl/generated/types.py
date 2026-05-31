@@ -16,6 +16,7 @@ class Workflow(BaseModel):
     execution_id: str  # Unique identifier for this specific execution instance
     nodes: list[Node]  # Array of node definitions
     edges: list[Edge]  # Array of edge definitions
+    notes: Optional[list[Note]] = None  # Array of decorative sticky notes (not part of execution)
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -33,6 +34,46 @@ class Workflow(BaseModel):
             errors.append("Workflow.nodes is required")
         if self.edges is None:
             errors.append("Workflow.edges is required")
+
+        return len(errors) == 0, errors
+
+class Note(BaseModel):
+    """Decorative sticky note placed on the canvas. Persisted with the workflow but never executed; ignored by the worker and by trigger/edge validation."""
+    id: str  # Unique identifier for the note within the workflow
+    content: Optional[str] = None  # Markdown source of the note body (may be empty)
+    x: float  # Canvas x position
+    y: float  # Canvas y position
+    width: Optional[float] = None  # Note width in pixels (persisted resize)
+    height: Optional[float] = None  # Note height in pixels (persisted resize)
+    color: Optional[Literal["yellow", "green", "blue", "pink", "purple", "gray"]] = None  # Preset color theme key
+    font_size: Optional[Literal["sm", "md", "lg"]] = None  # Text size preset
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.id is None:
+            errors.append("Note.id is required")
+        if self.id is not None and not isinstance(self.id, str):
+            errors.append("Note.id must be a string")
+        if self.content is not None and not isinstance(self.content, str):
+            errors.append("Note.content must be a string")
+        if self.x is None:
+            errors.append("Note.x is required")
+        if self.x is not None and not isinstance(self.x, (int, float)):
+            errors.append("Note.x must be a number")
+        if self.y is None:
+            errors.append("Note.y is required")
+        if self.y is not None and not isinstance(self.y, (int, float)):
+            errors.append("Note.y must be a number")
+        if self.width is not None and not isinstance(self.width, (int, float)):
+            errors.append("Note.width must be a number")
+        if self.height is not None and not isinstance(self.height, (int, float)):
+            errors.append("Note.height must be a number")
+        if self.color is not None and not isinstance(self.color, str):
+            errors.append("Note.color must be a string")
+        if self.font_size is not None and not isinstance(self.font_size, str):
+            errors.append("Note.font_size must be a string")
 
         return len(errors) == 0, errors
 
@@ -92,7 +133,7 @@ class Credential(BaseModel):
 class ErrorHandling(BaseModel):
     """Error handling configuration"""
     type_: Literal["halt", "ignore", "branch"] = Field(alias="type")  # Error handling strategy
-    error_edge: Optional[str]  # Edge ID to follow on error (required if type is 'branch')
+    error_edge: Optional[str] = None  # Edge ID to follow on error (required if type is 'branch')
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -161,7 +202,7 @@ class SortRule(BaseModel):
     """Sort rule definition"""
     field: str  # Field path to sort by
     direction: Literal["asc", "desc", "ascending", "descending"]  # Sort direction
-    type_: Optional[Literal["auto", "text", "number", "date"]] = Field(alias="type")  # Value type used for sorting
+    type_: Optional[Literal["auto", "text", "number", "date"]] = Field(default=None, alias="type")  # Value type used for sorting
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -184,7 +225,7 @@ class EditAssignment(BaseModel):
     """Edit node assignment"""
     name: str  # The key to set (supports dot-notation for nested objects)
     value: str  # The value to assign (supports dynamic expressions)
-    type_: Optional[Literal["string", "number", "boolean", "json"]] = Field(alias="type")  # Target type casting
+    type_: Optional[Literal["string", "number", "boolean", "json"]] = Field(default=None, alias="type")  # Target type casting
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -229,14 +270,14 @@ class HttpParameters(BaseModel):
     """HTTP request node"""
     method: Literal["GET", "POST", "PUT", "DELETE", "PATCH"]  # HTTP method
     url: str  # Target URL (supports template variables)
-    body: Optional[Any]  # Request body (JSON)
-    query: Optional[dict[str, Any]]  # URL query parameters as key-value pairs
-    headers: Optional[dict[str, Any]]  # HTTP headers as key-value pairs
-    retry: Optional[str]  # Number of retry attempts
-    retry_delay: Optional[str]  # Delay between retries in seconds
-    timeout: Optional[str]  # Request timeout in seconds
-    raise_on_status: Optional[str]  # Comma-separated status code patterns to treat as errors
-    ignore_ssl: Optional[bool]  # Whether to ignore SSL certificate validation
+    body: Optional[Any] = None  # Request body (JSON)
+    query: Optional[dict[str, Any]] = None  # URL query parameters as key-value pairs
+    headers: Optional[dict[str, Any]] = None  # HTTP headers as key-value pairs
+    retry: Optional[str] = None  # Number of retry attempts
+    retry_delay: Optional[str] = None  # Delay between retries in seconds
+    timeout: Optional[str] = None  # Request timeout in seconds
+    raise_on_status: Optional[str] = None  # Comma-separated status code patterns to treat as errors
+    ignore_ssl: Optional[bool] = None  # Whether to ignore SSL certificate validation
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -269,8 +310,8 @@ class SmtpParameters(BaseModel):
     body: str  # Email body content (plain text or HTML)
     to: list[str]  # Primary recipient email addresses
     from_: str = Field(alias="from")  # Sender email address
-    cc: Optional[list[str]]  # Carbon copy recipients
-    bcc: Optional[list[str]]  # Blind carbon copy recipients
+    cc: Optional[list[str]] = None  # Carbon copy recipients
+    bcc: Optional[list[str]] = None  # Blind carbon copy recipients
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -324,7 +365,7 @@ class SwitchParameters(BaseModel):
 class LogParameters(BaseModel):
     """Log information during workflow execution"""
     message: str  # Message to log (supports context variables)
-    level: Optional[Literal["debug", "info", "warn", "error"]]  # Log level
+    level: Optional[Literal["debug", "info", "warn", "error"]] = None  # Log level
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -339,33 +380,112 @@ class LogParameters(BaseModel):
 
         return len(errors) == 0, errors
 
-class DatetimeParameters(BaseModel):
-    """Create, shift, or format date and time values"""
-    operation: Literal["now", "add", "subtract", "format"]  # Date and time operation
-    date: Optional[str]  # Input date or timestamp to format or adjust
-    amount: Optional[float]  # Amount of time to add or subtract
-    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]]  # Unit of time for add and subtract
-    format: Optional[str]  # Output format string
-    timezone: Optional[str]  # Timezone used for parsing and formatting
+class DatetimenowParameters(BaseModel):
+    """Get the current date and time in a given timezone"""
+    timezone: Optional[str] = None  # IANA timezone used for the output
+    format: Optional[str] = None  # Output format string (Go time layout)
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
         errors: list[str] = []
 
-        if self.operation is None:
-            errors.append("DatetimeParameters.operation is required")
-        if self.operation is not None and not isinstance(self.operation, str):
-            errors.append("DatetimeParameters.operation must be a string")
-        if self.date is not None and not isinstance(self.date, str):
-            errors.append("DatetimeParameters.date must be a string")
-        if self.amount is not None and not isinstance(self.amount, (int, float)):
-            errors.append("DatetimeParameters.amount must be a number")
-        if self.unit is not None and not isinstance(self.unit, str):
-            errors.append("DatetimeParameters.unit must be a string")
-        if self.format is not None and not isinstance(self.format, str):
-            errors.append("DatetimeParameters.format must be a string")
         if self.timezone is not None and not isinstance(self.timezone, str):
-            errors.append("DatetimeParameters.timezone must be a string")
+            errors.append("DatetimenowParameters.timezone must be a string")
+        if self.format is not None and not isinstance(self.format, str):
+            errors.append("DatetimenowParameters.format must be a string")
+
+        return len(errors) == 0, errors
+
+class DatetimeaddParameters(BaseModel):
+    """Add a duration to a date or timestamp"""
+    date: Optional[str] = None  # Input date or timestamp; defaults to now when empty
+    amount: float  # Amount of time to add
+    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]] = None  # Unit of time
+    timezone: Optional[str] = None  # IANA timezone used for parsing naive inputs and for the output
+    format: Optional[str] = None  # Output format string (Go time layout)
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.date is not None and not isinstance(self.date, str):
+            errors.append("DatetimeaddParameters.date must be a string")
+        if self.amount is None:
+            errors.append("DatetimeaddParameters.amount is required")
+        if self.amount is not None and not isinstance(self.amount, (int, float)):
+            errors.append("DatetimeaddParameters.amount must be a number")
+        if self.unit is not None and not isinstance(self.unit, str):
+            errors.append("DatetimeaddParameters.unit must be a string")
+        if self.timezone is not None and not isinstance(self.timezone, str):
+            errors.append("DatetimeaddParameters.timezone must be a string")
+        if self.format is not None and not isinstance(self.format, str):
+            errors.append("DatetimeaddParameters.format must be a string")
+
+        return len(errors) == 0, errors
+
+class DatetimesubtractParameters(BaseModel):
+    """Subtract a duration from a date or timestamp"""
+    date: Optional[str] = None  # Input date or timestamp; defaults to now when empty
+    amount: float  # Amount of time to subtract
+    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]] = None  # Unit of time
+    timezone: Optional[str] = None  # IANA timezone used for parsing naive inputs and for the output
+    format: Optional[str] = None  # Output format string (Go time layout)
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.date is not None and not isinstance(self.date, str):
+            errors.append("DatetimesubtractParameters.date must be a string")
+        if self.amount is None:
+            errors.append("DatetimesubtractParameters.amount is required")
+        if self.amount is not None and not isinstance(self.amount, (int, float)):
+            errors.append("DatetimesubtractParameters.amount must be a number")
+        if self.unit is not None and not isinstance(self.unit, str):
+            errors.append("DatetimesubtractParameters.unit must be a string")
+        if self.timezone is not None and not isinstance(self.timezone, str):
+            errors.append("DatetimesubtractParameters.timezone must be a string")
+        if self.format is not None and not isinstance(self.format, str):
+            errors.append("DatetimesubtractParameters.format must be a string")
+
+        return len(errors) == 0, errors
+
+class DatetimeformatParameters(BaseModel):
+    """Format a date or timestamp in a chosen timezone"""
+    date: str  # Input date or timestamp to format
+    timezone: Optional[str] = None  # IANA timezone used for parsing naive inputs and for the output
+    format: Optional[str] = None  # Output format string (Go time layout)
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.date is None:
+            errors.append("DatetimeformatParameters.date is required")
+        if self.date is not None and not isinstance(self.date, str):
+            errors.append("DatetimeformatParameters.date must be a string")
+        if self.timezone is not None and not isinstance(self.timezone, str):
+            errors.append("DatetimeformatParameters.timezone must be a string")
+        if self.format is not None and not isinstance(self.format, str):
+            errors.append("DatetimeformatParameters.format must be a string")
+
+        return len(errors) == 0, errors
+
+class DatetimeparseParameters(BaseModel):
+    """Parse a date or timestamp into structured components"""
+    date: str  # Input date or timestamp to parse
+    timezone: Optional[str] = None  # IANA timezone used for parsing naive inputs and for the structured output
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the object."""
+        errors: list[str] = []
+
+        if self.date is None:
+            errors.append("DatetimeparseParameters.date is required")
+        if self.date is not None and not isinstance(self.date, str):
+            errors.append("DatetimeparseParameters.date must be a string")
+        if self.timezone is not None and not isinstance(self.timezone, str):
+            errors.append("DatetimeparseParameters.timezone must be a string")
 
         return len(errors) == 0, errors
 
@@ -391,8 +511,8 @@ class WaitParameters(BaseModel):
 
 class EditParameters(BaseModel):
     """Data transformation node"""
-    mode: Optional[Literal["assignments", "keep_only"]]  # Transformation mode
-    assignments: Optional[list[EditAssignment]]  # List of field operations
+    mode: Optional[Literal["assignments", "keep_only"]] = None  # Transformation mode
+    assignments: Optional[list[EditAssignment]] = None  # List of field operations
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -405,8 +525,8 @@ class EditParameters(BaseModel):
 
 class FilterParameters(BaseModel):
     """Keep only list items that match one or more rules"""
-    input_array: Optional[Any]  # Array to filter; defaults to the current working list
-    match_mode: Optional[Literal["all", "any"]]  # How multiple rules are combined
+    input_array: Optional[Any] = None  # Array to filter; defaults to the current working list
+    match_mode: Optional[Literal["all", "any"]] = None  # How multiple rules are combined
     rules: list[FilterRule]  # Rules used to decide which items to keep
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -422,7 +542,7 @@ class FilterParameters(BaseModel):
 
 class SortParameters(BaseModel):
     """Order a list using one or more sort rules"""
-    input_array: Optional[Any]  # Array to sort; defaults to the current working list
+    input_array: Optional[Any] = None  # Array to sort; defaults to the current working list
     rules: list[SortRule]  # Ordered sort rules
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -436,7 +556,7 @@ class SortParameters(BaseModel):
 
 class LimitParameters(BaseModel):
     """Keep only the first items from a list"""
-    input_array: Optional[Any]  # Array to limit; defaults to the current working list
+    input_array: Optional[Any] = None  # Array to limit; defaults to the current working list
     count: float  # Number of items to keep
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -467,8 +587,8 @@ class SplitParameters(BaseModel):
 
 class MergeParameters(BaseModel):
     """Merge multiple execution branches"""
-    wait_mode: Optional[Literal["wait_for_all", "wait_for_any"]]  # Synchronization mode
-    timeout: Optional[float]  # Safety timeout in seconds
+    wait_mode: Optional[Literal["wait_for_all", "wait_for_any"]] = None  # Synchronization mode
+    timeout: Optional[float] = None  # Safety timeout in seconds
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -488,10 +608,11 @@ class BaseNode(BaseModel):
     id: str  # Unique identifier for the node within the workflow
     name: str  # Human-readable node name
     trigger: bool  # Whether this node initiates workflow execution
+    webhook_guid: Optional[str] = None  # Stable webhook registration GUID for webhook trigger nodes
     output: dict[str, Any]  # Placeholder for execution output (empty in definition)
-    error: Optional[ErrorHandling]  # Error handling configuration
-    credential_type: Optional[list[str]]  # List of allowed credential types for this node (for UI filtering)
-    credentials: Optional[Credential]  # Complete credential object with values
+    error: Optional[ErrorHandling] = None  # Error handling configuration
+    credential_type: Optional[list[str]] = None  # List of allowed credential types for this node (for UI filtering)
+    credentials: Optional[Credential] = None  # Complete credential object with values
 
     def sanitize(self) -> tuple[bool, list[str]]:
         """Validate and sanitize the object."""
@@ -509,6 +630,8 @@ class BaseNode(BaseModel):
             errors.append("BaseNode.trigger is required")
         if self.trigger is not None and not isinstance(self.trigger, bool):
             errors.append("BaseNode.trigger must be a boolean")
+        if self.webhook_guid is not None and not isinstance(self.webhook_guid, str):
+            errors.append("BaseNode.webhook_guid must be a string")
         if self.output is None:
             errors.append("BaseNode.output is required")
 
@@ -563,6 +686,28 @@ class ScheduledTriggerNode(BaseNode):
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
                 errors.append(f"ScheduledTriggerNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class WebhookNode(BaseNode):
+    """Webhook workflow trigger with a stable externally callable GUID"""
+    type_: Literal["webhook"] = Field(default="webhook", alias="type")
+    parameters: dict[str, Any]
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"WebhookNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
@@ -706,10 +851,10 @@ class LogNode(BaseNode):
 
         return len(errors) == 0, errors
 
-class DatetimeNode(BaseNode):
-    """Create, shift, or format date and time values"""
-    type_: Literal["datetime"] = Field(default="datetime", alias="type")
-    parameters: DatetimeParameters
+class DatetimenowNode(BaseNode):
+    """Get the current date and time in a given timezone"""
+    type_: Literal["dateTimeNow"] = Field(default="dateTimeNow", alias="type")
+    parameters: DatetimenowParameters
     credential_type: Optional[list[str]] = None
 
     def sanitize(self) -> tuple[bool, list[str]]:
@@ -730,7 +875,119 @@ class DatetimeNode(BaseNode):
         # Validate credential type matches
         if self.credentials and self.credential_type:
             if self.credentials.type_ not in self.credential_type:
-                errors.append(f"DatetimeNode.credentials.type must be one of {self.credential_type}")
+                errors.append(f"DatetimenowNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class DatetimeaddNode(BaseNode):
+    """Add a duration to a date or timestamp"""
+    type_: Literal["dateTimeAdd"] = Field(default="dateTimeAdd", alias="type")
+    parameters: DatetimeaddParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"DatetimeaddNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class DatetimesubtractNode(BaseNode):
+    """Subtract a duration from a date or timestamp"""
+    type_: Literal["dateTimeSubtract"] = Field(default="dateTimeSubtract", alias="type")
+    parameters: DatetimesubtractParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"DatetimesubtractNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class DatetimeformatNode(BaseNode):
+    """Format a date or timestamp in a chosen timezone"""
+    type_: Literal["dateTimeFormat"] = Field(default="dateTimeFormat", alias="type")
+    parameters: DatetimeformatParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"DatetimeformatNode.credentials.type must be one of {self.credential_type}")
+
+        return len(errors) == 0, errors
+
+class DatetimeparseNode(BaseNode):
+    """Parse a date or timestamp into structured components"""
+    type_: Literal["dateTimeParse"] = Field(default="dateTimeParse", alias="type")
+    parameters: DatetimeparseParameters
+    credential_type: Optional[list[str]] = None
+
+    def sanitize(self) -> tuple[bool, list[str]]:
+        """Validate and sanitize the node including parameters."""
+        errors: list[str] = []
+
+        # Validate base fields
+        base_valid, base_errors = super().sanitize()
+        if not base_valid:
+            errors.extend(base_errors)
+
+        # Validate parameters
+        if hasattr(self.parameters, "sanitize"):
+            params_valid, params_errors = self.parameters.sanitize()
+            if not params_valid:
+                errors.extend(params_errors)
+
+        # Validate credential type matches
+        if self.credentials and self.credential_type:
+            if self.credentials.type_ not in self.credential_type:
+                errors.append(f"DatetimeparseNode.credentials.type must be one of {self.credential_type}")
 
         return len(errors) == 0, errors
 
@@ -976,4 +1233,4 @@ class MergeNode(BaseNode):
 
 # Union type for all nodes
 
-Node = Union[ManualTriggerNode, ScheduledTriggerNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, DatetimeNode, AgentNode, WaitNode, EditNode, FilterNode, SortNode, LimitNode, SplitNode, AggregatorNode, MergeNode]
+Node = Union[ManualTriggerNode, ScheduledTriggerNode, WebhookNode, HttpNode, SmtpNode, ConditionalNode, SwitchNode, LogNode, DatetimenowNode, DatetimeaddNode, DatetimesubtractNode, DatetimeformatNode, DatetimeparseNode, AgentNode, WaitNode, EditNode, FilterNode, SortNode, LimitNode, SplitNode, AggregatorNode, MergeNode]

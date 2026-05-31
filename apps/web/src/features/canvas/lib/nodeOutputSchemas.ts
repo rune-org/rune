@@ -1,4 +1,5 @@
 import type { EditData, NodeKind } from "../types";
+import { isIntegrationNodeKind } from "../integrations/helpers";
 import type { VariableTreeNode } from "./variableSchema";
 
 /**
@@ -9,6 +10,10 @@ export function getStaticOutputSchema(
   kind: NodeKind,
   data?: Record<string, unknown>,
 ): VariableTreeNode[] {
+  if (isIntegrationNodeKind(kind)) {
+    return [{ key: "data", path: "data", type: "object", source: "schema", children: [] }];
+  }
+
   switch (kind) {
     case "http":
       return [
@@ -44,18 +49,29 @@ export function getStaticOutputSchema(
         { key: "logged_at", path: "logged_at", type: "string", source: "schema" },
       ];
 
-    case "datetime":
+    case "dateTimeNow":
+    case "dateTimeAdd":
+    case "dateTimeSubtract":
+    case "dateTimeFormat":
       return [
-        {
-          key: "result",
-          path: "result",
-          type: "string",
-          source: "schema",
-        },
-        { key: "formatted", path: "formatted", type: "string", source: "schema" },
+        { key: "result", path: "result", type: "string", source: "schema" },
+        { key: "iso", path: "iso", type: "string", source: "schema" },
         { key: "unix", path: "unix", type: "number", source: "schema" },
         { key: "timezone", path: "timezone", type: "string", source: "schema" },
-        { key: "operation", path: "operation", type: "string", source: "schema" },
+      ];
+
+    case "dateTimeParse":
+      return [
+        { key: "unix", path: "unix", type: "number", source: "schema" },
+        { key: "iso", path: "iso", type: "string", source: "schema" },
+        { key: "year", path: "year", type: "number", source: "schema" },
+        { key: "month", path: "month", type: "number", source: "schema" },
+        { key: "day", path: "day", type: "number", source: "schema" },
+        { key: "hour", path: "hour", type: "number", source: "schema" },
+        { key: "minute", path: "minute", type: "number", source: "schema" },
+        { key: "second", path: "second", type: "number", source: "schema" },
+        { key: "weekday", path: "weekday", type: "string", source: "schema" },
+        { key: "timezone", path: "timezone", type: "string", source: "schema" },
       ];
 
     case "edit": {
@@ -87,6 +103,7 @@ export function getStaticOutputSchema(
       ];
 
     case "trigger":
+    case "webhookTrigger":
       return [];
 
     case "if":

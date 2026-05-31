@@ -5,7 +5,7 @@ from src.core.dependencies import (
 )
 from src.core.exceptions import BadRequest, NotFound
 from src.core.responses import ApiResponse
-from src.db.models import User, Workflow
+from src.db.models import User, UserRole, Workflow
 from src.executions.service import ExecutionTokenService
 from src.workflow.dependencies import (
     get_workflow_with_permission,
@@ -45,10 +45,18 @@ async def list_workflows(
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
-    wfs = await service.list_for_user(current_user.id)
+    is_admin = getattr(current_user, "role", None) == UserRole.ADMIN
+    wfs = await service.list_for_user(current_user.id, is_admin=is_admin)
     items = [
-        WorkflowListItem(id=wf.id, name=wf.name, is_active=wf.is_active, role=role)
-        for wf, role in wfs
+        WorkflowListItem(
+            id=wf.id,
+            name=wf.name,
+            description=wf.description,
+            is_active=wf.is_active,
+            role=role,
+            owner_name=owner_name,
+        )
+        for wf, role, owner_name in wfs
     ]
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
 
@@ -329,7 +337,9 @@ async def create_workflow_version(
         version = await service.create_version(
             workflow=workflow,
             user_id=current_user.id,
-            workflow_data=payload.workflow_data,
+            workflow_data=payload.workflow_data.model_dump(
+                exclude_none=True, mode="json"
+            ),
             base_version_id=payload.base_version_id,
             message=payload.message,
         )

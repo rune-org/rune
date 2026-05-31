@@ -7,6 +7,8 @@ from sqlalchemy import Column
 from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlmodel import Field, SQLModel
 
+from src.datetime_utils import UTCDateTime, ensure_utc, utc_now
+
 # Inline minimal model to avoid importing from the API service.
 # Must stay in sync with services/api/src/db/models.py Execution model.
 
@@ -29,12 +31,18 @@ class Execution(SQLModel, table=True):
             SQLAlchemyEnum(ExecutionStatus, name="execution_status", native_enum=True),
         ),
     )
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(
-        default_factory=datetime.now,
-        sa_column_kwargs={"onupdate": datetime.now},
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(UTCDateTime(), nullable=False),
     )
-    completed_at: Optional[datetime] = Field(default=None)
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(UTCDateTime(), nullable=False, onupdate=utc_now),
+    )
+    completed_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(UTCDateTime(), nullable=True),
+    )
     total_duration_ms: Optional[int] = Field(default=None)
     failure_reason: Optional[str] = Field(default=None)
 
@@ -48,13 +56,7 @@ class CompletionMessage(BaseModel):
     total_duration_ms: int
     failure_reason: Optional[str] = None
 
-    # TODO: We should consider using a custom deserializer that can handle timezone-aware datetimes
-    # and store them as UTC in the database, rather than stripping timezone info here.
-    # This would allow us to preserve timezone information if needed in the future.
     @field_validator("completed_at")
     @classmethod
-    def strip_timezone(cls, v: datetime) -> datetime:
-        """Strip timezone info so the value is compatible with TIMESTAMP WITHOUT TIME ZONE columns."""
-        if v.tzinfo is not None:
-            return v.replace(tzinfo=None)
-        return v
+    def normalize_completed_at(cls, v: datetime) -> datetime:
+        return ensure_utc(v)

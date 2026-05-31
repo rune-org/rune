@@ -73,6 +73,26 @@ class Settings(BaseSettings):
     scryb_model: str = "google_genai/gemini-2.5-flash-lite"
     scryb_temperature: float = 0.3
 
+    # Templates Bundle Settings (curated templates from the rune-templates repo)
+    # On startup, when ``seed_templates`` is true, the API reads validated
+    # template JSON files from ``rune_templates_bundle_dir`` and upserts them
+    # into the ``workflow_templates`` table with ``source="official"``. The
+    # bundle directory is populated by the ``rune-templates`` git submodule
+    # checked out at ``services/api/templates_bundle/``; the submodule pointer
+    # in this repo determines which version of the templates ships.
+    rune_templates_bundle_dir: str = "templates_bundle/templates"
+    seed_templates: bool = True
+
+    # OAuth2 BYO (custom provider) — browser redirect + token exchange
+    # Public API base as seen by browsers and OAuth providers (no trailing slash).
+    # Register redirect URI in the provider console: {API_PUBLIC_URL}/oauth/callback
+    # unless OAUTH_REDIRECT_URI is set to the full callback URL.
+    api_public_url: str = "http://127.0.0.1:8000"
+    oauth_frontend_success_url: str = "http://localhost:3000/create/credentials"
+    oauth_frontend_error_url: str = "http://localhost:3000/create/credentials"
+    oauth_redirect_uri: str | None = None
+    oauth_refresh_skew_seconds: int = 300
+
     # SAML SSO Settings
     # The public-facing base URL of the API (used to build ACS / metadata URLs).
     # Must NOT end with a trailing slash.

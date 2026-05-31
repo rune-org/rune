@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { NODE_REGISTRY } from "../../lib/nodeRegistry";
+import { NODE_REGISTRY, resolveNodeColor } from "../../lib/nodeRegistry";
 import {
   useVariableInput,
   parseVariableReferences,
@@ -43,7 +43,7 @@ function buildColorMap(sources: VariableSource[]): Map<string, string> {
   for (const source of sources) {
     const meta = NODE_REGISTRY[source.nodeKind];
     if (meta) {
-      map.set(source.nodeLabel, `var(${meta.colorTheme.base})`);
+      map.set(source.nodeLabel, resolveNodeColor(meta.colorTheme.base));
     }
   }
   return map;
@@ -64,7 +64,7 @@ function pillHtml(
   const borderStyle = color ? `border-color:${color};` : "";
   const bgStyle = color ? `background:color-mix(in srgb, ${color} 15%, transparent);` : "";
   const colorStyle = color ? `color:${color};` : "";
-  return `<span contenteditable="false" data-value="${escapeAttr(seg.value)}" class="variable-pill" style="${borderStyle}${bgStyle}${colorStyle}">${escapeHtml(label)}<span class="variable-pill-remove" data-remove-index="${removeIndex}">\u00d7</span></span>\u200B`;
+  return `<span contenteditable="false" data-value="${escapeAttr(seg.value)}" class="variable-pill" style="${borderStyle}${bgStyle}${colorStyle}" title="${escapeAttr(seg.value)}"><span class="variable-pill-label">${escapeHtml(label)}</span><span class="variable-pill-remove" data-remove-index="${removeIndex}">\u00d7</span></span>\u200B`;
 }
 
 /**
@@ -207,7 +207,7 @@ function InlinePickerDropdown({
                   key={source.nodeId}
                   source={source}
                   icon={Icon}
-                  colorVar={meta.colorTheme.base}
+                  color={resolveNodeColor(meta.colorTheme.base)}
                   onSelect={(path) => {
                     onSelect(path);
                     onClose();
@@ -225,7 +225,7 @@ function InlinePickerDropdown({
 function SourceGroup({
   source,
   icon: Icon,
-  colorVar,
+  color,
   onSelect,
 }: {
   source: VariableSource;
@@ -233,7 +233,7 @@ function SourceGroup({
     className?: string;
     style?: React.CSSProperties;
   }>;
-  colorVar: string;
+  color: string;
   onSelect: (path: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -246,7 +246,7 @@ function SourceGroup({
         ) : (
           <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
         )}
-        <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: `var(${colorVar})` }} />
+        <Icon className="h-3.5 w-3.5 shrink-0" style={{ color }} />
         <span className="truncate">{source.nodeLabel}</span>
         <span className="ml-auto shrink-0 text-[10px] text-muted-foreground/60">
           {source.children.length} fields
@@ -283,6 +283,7 @@ export function VariableInput({
     handleInput,
     insertVariable,
     insertFromPicker,
+    rememberCursorPosition,
     setShowAutocomplete,
   } = useVariableInput({ value, onChange });
 
@@ -329,10 +330,14 @@ export function VariableInput({
     [insertFromPicker, transformSelectedPath],
   );
 
-  const togglePicker = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setPickerOpen((prev) => !prev);
-  }, []);
+  const togglePicker = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      rememberCursorPosition();
+      setPickerOpen((prev) => !prev);
+    },
+    [rememberCursorPosition],
+  );
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -392,6 +397,9 @@ export function VariableInput({
           className={editableClasses}
           onInput={onInput}
           onClick={handleClick}
+          onKeyUp={rememberCursorPosition}
+          onMouseUp={rememberCursorPosition}
+          onFocus={rememberCursorPosition}
           onPaste={handlePaste}
           onKeyDown={handleKeyDown}
           data-placeholder={placeholder}
@@ -402,6 +410,10 @@ export function VariableInput({
         {/* + button */}
         <button
           type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            rememberCursorPosition();
+          }}
           onClick={togglePicker}
           className={cn(
             "absolute right-1 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-sm transition-colors",
@@ -446,31 +458,43 @@ export function VariableInput({
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  max-width: calc(100% - 8px);
   border: 1px solid;
   border-radius: 9999px;
-  padding: 0px 4px 0px 8px;
-  font-size: 11px;
+  padding: 0px 3px 0px 6px;
+  font-size: 10px;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.35;
   vertical-align: baseline;
   user-select: all;
   cursor: default;
-  margin: 0 2px;
+  margin: 0 1px;
   white-space: nowrap;
+}
+.inline-variable-editable .variable-pill-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .inline-variable-editable .variable-pill-remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 9999px;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
   opacity: 0.5;
   cursor: pointer;
-  margin-left: 2px;
+  margin-left: 1px;
   transition: opacity 0.15s, background 0.15s;
+}
+.inline-variable-editable {
+  scrollbar-width: none;
+}
+.inline-variable-editable::-webkit-scrollbar {
+  display: none;
 }
 .inline-variable-editable .variable-pill-remove:hover {
   opacity: 1;
@@ -478,7 +502,8 @@ export function VariableInput({
 }
 .inline-variable-editable.empty-placeholder:empty::before {
   content: attr(data-placeholder);
-  color: hsl(var(--muted-foreground) / 0.4);
+  color: var(--muted-foreground);
+  opacity: 0.55;
   pointer-events: none;
 }
 `,

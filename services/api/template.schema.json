@@ -1,0 +1,301 @@
+{
+  "$defs": {
+    "TemplateAuthor": {
+      "additionalProperties": false,
+      "description": "Author block embedded in a bundled template JSON file.",
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "TemplateAuthor",
+      "type": "object"
+    },
+    "TemplateCategory": {
+      "description": "Soft enum for template categories.\n\nStored as a free-form ``str`` in the database so adding a new category is\na Python-only change. New templates are validated against this enum on\nwrite via ``TemplateCreate``; reads stay lenient so legacy values\n(``automation``, ``data-processing``, etc.) still round-trip.",
+      "enum": [
+        "general",
+        "email",
+        "analytics",
+        "development",
+        "cloud",
+        "scheduling",
+        "social_media",
+        "productivity"
+      ],
+      "title": "TemplateCategory",
+      "type": "string"
+    },
+    "WorkflowEdge": {
+      "additionalProperties": true,
+      "description": "A single edge in a workflow graph (React Flow shape).\n\nEdges use ``source``/``target`` (React Flow convention) \u2014 this is the\ncanvas-facing shape that templates ship in. The runtime worker uses\n``src``/``dst`` but conversion happens client-side in ``workflow-dsl.ts``\nwhen a workflow is saved.",
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "sourceHandle": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcehandle"
+        },
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        },
+        "targetHandle": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Targethandle"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type"
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "target"
+      ],
+      "title": "WorkflowEdge",
+      "type": "object"
+    },
+    "WorkflowGraph": {
+      "additionalProperties": true,
+      "description": "A workflow graph: nodes + edges (+ optional metadata).\n\nStructure is strict (the top-level shape and per-element required fields\nare validated). Empty ``nodes``/``edges`` arrays are allowed at the\ntemplate-storage layer \u2014 runtime ``queue.py`` enforces \"must have a\ntrigger\" only when a workflow is actually queued for execution.",
+      "properties": {
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/WorkflowEdge"
+          },
+          "title": "Edges",
+          "type": "array"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/WorkflowNode"
+          },
+          "title": "Nodes",
+          "type": "array"
+        }
+      },
+      "title": "WorkflowGraph",
+      "type": "object"
+    },
+    "WorkflowNode": {
+      "additionalProperties": true,
+      "description": "A single node in a workflow graph (React Flow shape).\n\nPer-node ``data`` is intentionally loose (``dict[str, Any]``): different\nnode types have different config shapes, and templates need to keep working\nas the connector catalog evolves. Only the structural identity fields\n(``id``, ``type``) are strictly required.",
+      "properties": {
+        "data": {
+          "additionalProperties": true,
+          "title": "Data",
+          "type": "object"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WorkflowNodePosition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "trigger": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trigger"
+        },
+        "type": {
+          "minLength": 1,
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "WorkflowNode",
+      "type": "object"
+    },
+    "WorkflowNodePosition": {
+      "additionalProperties": true,
+      "description": "X/Y position for a workflow node on the canvas.",
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "WorkflowNodePosition",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/rune-org/rune-templates/schema/template.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Shape of a single ``.json`` file in the ``rune-templates`` bundle.\n\nThis is the contributor-facing schema \u2014 the exported JSON Schema is\ngenerated from this model and committed into ``rune-templates`` for CI\nvalidation. The seeder also parses each bundle file with this model so\ninvalid templates never reach the database.",
+  "properties": {
+    "author": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TemplateAuthor"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "category": {
+      "$ref": "#/$defs/TemplateCategory"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "external_id": {
+      "description": "Stable slug used as the upsert key. Lowercase, hyphen-separated.",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "title": "External Id",
+      "type": "string"
+    },
+    "icon": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Icon"
+    },
+    "name": {
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "official": {
+      "default": false,
+      "description": "Marks the template as a Rune-curated official entry. Contributor PRs leave this as false; PR review is the gate that prevents outside contributions from claiming official status.",
+      "title": "Official",
+      "type": "boolean"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    },
+    "workflow_data": {
+      "$ref": "#/$defs/WorkflowGraph"
+    }
+  },
+  "required": [
+    "external_id",
+    "name",
+    "category",
+    "workflow_data"
+  ],
+  "title": "TemplateBundleEntry",
+  "type": "object"
+}

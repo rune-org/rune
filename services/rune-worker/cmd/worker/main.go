@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	_ "time/tzdata" // embed IANA tzdata
 
 	"rune-worker/pkg/messaging"
 	"rune-worker/pkg/platform/config"

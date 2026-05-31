@@ -81,12 +81,20 @@ const CREDENTIAL_FIELDS: Record<
       label: "Authorization URL",
       type: "text",
       placeholder: "https://oauth.example.com/authorize",
+      required: true,
     },
     {
       key: "token_url",
       label: "Token URL",
       type: "text",
       placeholder: "https://oauth.example.com/token",
+      required: true,
+    },
+    {
+      key: "scope",
+      label: "Scopes (space-separated)",
+      type: "text",
+      placeholder: "openid email https://www.googleapis.com/auth/calendar.readonly",
     },
   ],
   basic_auth: [
@@ -161,6 +169,15 @@ const CREDENTIAL_FIELDS: Record<
       label: "Custom Data (JSON)",
       type: "textarea",
       placeholder: '{"key": "value"}',
+      required: true,
+    },
+  ],
+  gemini_api_key: [
+    {
+      key: "api_key",
+      label: "Gemini API Key",
+      type: "password",
+      placeholder: "AIza...",
       required: true,
     },
   ],
@@ -268,7 +285,10 @@ export function AddCredentialDialog({
 
           <div className="flex flex-col gap-4 py-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">
+                Name
+                <span className="text-destructive"> *</span>
+              </Label>
               <Input
                 id="name"
                 placeholder="My API Credential"

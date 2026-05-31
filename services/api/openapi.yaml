@@ -1449,9 +1449,81 @@ paths:
       tags:
       - Templates
       summary: List Templates
-      description: Get all templates accessible to the current user (public + their
-        own).
+      description: List templates the current user can see, with optional filters
+        and sort.
       operationId: list_templates_templates__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Filter by category slug. Accepts both canonical TemplateCategory
+            values and legacy strings.
+          title: Category
+        description: Filter by category slug. Accepts both canonical TemplateCategory
+          values and legacy strings.
+      - name: source
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/TemplateSource'
+          - type: 'null'
+          description: Lower-level filter by storage origin (official or user). Most
+            callers should use ``scope``.
+          title: Source
+        description: Lower-level filter by storage origin (official or user). Most
+          callers should use ``scope``.
+      - name: scope
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/TemplateScope'
+          - type: 'null'
+          description: 'Filter by user-facing bucket: official, community (instance-wide
+            public), or personal (only yours).'
+          title: Scope
+        description: 'Filter by user-facing bucket: official, community (instance-wide
+          public), or personal (only yours).'
+      - name: tags
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: Filter to templates that have at least one of the given tag
+            slugs.
+          title: Tags
+        description: Filter to templates that have at least one of the given tag slugs.
+      - name: search
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Case-insensitive substring search across name, description,
+            and tags.
+          title: Search
+        description: Case-insensitive substring search across name, description, and
+          tags.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/TemplateSort'
+          description: Ordering applied to the result set.
+          default: featured
+        description: Ordering applied to the result set.
       responses:
         '200':
           description: Successful Response
@@ -1459,20 +1531,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_List_TemplateSummary__'
-      security:
-      - OAuth2PasswordBearer: []
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
     post:
       tags:
       - Templates
       summary: Create Template
       description: Create a new template.
       operationId: create_template_templates__post
+      security:
+      - OAuth2PasswordBearer: []
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/TemplateCreate'
-        required: true
       responses:
         '201':
           description: Successful Response
@@ -1486,8 +1564,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /templates/categories:
+    get:
+      tags:
+      - Templates
+      summary: List Categories
+      description: 'Enumerate the canonical TemplateCategory values with per-category
+        counts.
+
+
+        Counts honour ``scope`` so the gallery''s category chips reflect what the
+
+        user will actually see in the currently-selected tab. Legacy categories
+
+        (free-form strings stored before the enum) are not surfaced here - the
+
+        gallery UI renders strictly from this enum.'
+      operationId: list_categories_templates_categories_get
       security:
       - OAuth2PasswordBearer: []
+      parameters:
+      - name: scope
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/TemplateScope'
+          - type: 'null'
+          description: Restrict counts to a single scope (official, community, personal).
+            Omit to count across every template the user can see.
+          title: Scope
+        description: Restrict counts to a single scope (official, community, personal).
+          Omit to count across every template the user can see.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_List_TemplateCategorySummary__'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /templates/{template_id}:
     get:
       tags:
@@ -1674,6 +1795,22 @@ paths:
                 $ref: '#/components/schemas/ApiResponse_list_CredentialResponseDropDown__'
       security:
       - OAuth2PasswordBearer: []
+  /credentials/events:
+    get:
+      tags:
+      - credentials
+      summary: Subscribe to real-time credential events
+      description: "Server-Sent Events (SSE) endpoint for credential updates.\n\n\
+        Streams real-time events when credentials are deleted, shared, or revoked.\n\
+        Useful for updating the UI instantly without polling.\n\nPermissions:\n- Any\
+        \ authenticated user can subscribe. They will only receive events\n  for credentials\
+        \ they have access to (handled by the client checking IDs)."
+      operationId: credential_events_credentials_events_get
+      responses:
+        '200':
+          description: Successful Response
+      security:
+      - OAuth2PasswordBearer: []
   /credentials/{credential_id}:
     get:
       tags:
@@ -1802,6 +1939,35 @@ paths:
       responses:
         '204':
           description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /credentials/{credential_id}/usage:
+    get:
+      tags:
+      - credentials
+      summary: Get workflows using this credential
+      description: Get a list of workflows that are currently using this credential.
+      operationId: get_credential_usage_credentials__credential_id__usage_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: credential_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Credential Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_list_CredentialUsage__'
         '422':
           description: Validation Error
           content:
@@ -2333,6 +2499,117 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /oauth/authorize:
+    get:
+      tags:
+      - oauth
+      summary: Oauth Authorize
+      description: Start OAuth2 authorization code flow for a saved oauth2 credential.
+      operationId: oauth_authorize_oauth_authorize_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: credential_id
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: Credential Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /oauth/callback:
+    get:
+      tags:
+      - oauth
+      summary: Oauth Callback
+      description: 'OAuth2 redirect URI: exchange code and merge tokens into the credential.'
+      operationId: oauth_callback_oauth_callback_get
+      parameters:
+      - name: code
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Code
+      - name: state
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: State
+      - name: error
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+      - name: error_description
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Description
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /webhook/{guid}:
+    post:
+      tags:
+      - Webhook
+      summary: Trigger Webhook
+      description: "Trigger a workflow via its registered webhook URL.\n\nThe request\
+        \ body (JSON) is forwarded to the worker as webhook request\npayload under\
+        \ the ``$trigger`` key in the execution context.\n\nNo authentication is required\
+        \ \u2014 the GUID itself is the secret.\nReturns 404 if the GUID is unknown\
+        \ or the workflow is inactive."
+      operationId: trigger_webhook_webhook__guid__post
+      parameters:
+      - name: guid
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Guid
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AdminPasswordResetResponse:
@@ -2357,12 +2634,16 @@ components:
           - type: string
             maxLength: 40
             minLength: 3
+            description: User display name
           - type: 'null'
           title: Name
         email:
           anyOf:
           - type: string
+            maxLength: 255
+            minLength: 3
             format: email
+            description: User email
           - type: 'null'
           title: Email
         role:
@@ -2490,6 +2771,28 @@ components:
       required:
       - data
       title: ApiResponse[FirstAdminSignupResponse]
+    ApiResponse_List_TemplateCategorySummary__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/TemplateCategorySummary'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[List[TemplateCategorySummary]]
     ApiResponse_List_TemplateSummary__:
       properties:
         success:
@@ -2865,6 +3168,28 @@ components:
       required:
       - data
       title: ApiResponse[list[CredentialShareInfo]]
+    ApiResponse_list_CredentialUsage__:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          items:
+            $ref: '#/components/schemas/CredentialUsage'
+          type: array
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[list[CredentialUsage]]
     ApiResponse_list_ExecutionListItem__:
       properties:
         success:
@@ -3182,6 +3507,13 @@ components:
           type: string
           format: date-time
           title: Updated At
+        oauth_connected:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Oauth Connected
+          description: For oauth2 credentials, whether an access token is stored (no
+            secrets).
         is_owner:
           type: boolean
           title: Is Owner
@@ -3285,6 +3617,7 @@ components:
       - token
       - custom
       - smtp
+      - gemini_api_key
       title: CredentialType
       description: Credential type enumeration.
     CredentialUpdate:
@@ -3313,6 +3646,24 @@ components:
       type: object
       title: CredentialUpdate
       description: Schema for updating a credential.
+    CredentialUsage:
+      properties:
+        id:
+          type: integer
+          title: Id
+        name:
+          type: string
+          title: Name
+        owner_name:
+          type: string
+          title: Owner Name
+      type: object
+      required:
+      - id
+      - name
+      - owner_name
+      title: CredentialUsage
+      description: Schema for reporting workflow usage of a credential.
     ExecutionListItem:
       properties:
         id:
@@ -3373,11 +3724,14 @@ components:
           description: Admin's full name
         email:
           type: string
+          maxLength: 255
+          minLength: 3
           format: email
           title: Email
           description: Admin's email address
         password:
           type: string
+          maxLength: 128
           minLength: 8
           title: Password
           description: Admin's password
@@ -3445,6 +3799,7 @@ components:
       properties:
         email:
           type: string
+          minLength: 1
           format: email
           title: Email
           description: User's email address
@@ -3466,12 +3821,16 @@ components:
           - type: string
             maxLength: 40
             minLength: 3
+            description: User display name
           - type: 'null'
           title: Name
         email:
           anyOf:
           - type: string
+            maxLength: 255
+            minLength: 3
             format: email
+            description: User email
           - type: 'null'
           title: Email
       type: object
@@ -3488,6 +3847,149 @@ components:
       required:
       - refresh_token
       title: RefreshRequest
+    RuntimeWorkflowEdge:
+      properties:
+        id:
+          type: string
+          minLength: 1
+          title: Id
+        src:
+          type: string
+          minLength: 1
+          title: Src
+        dst:
+          type: string
+          minLength: 1
+          title: Dst
+        type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+        label:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Label
+      additionalProperties: true
+      type: object
+      required:
+      - id
+      - src
+      - dst
+      title: RuntimeWorkflowEdge
+      description: 'A single edge in the runtime workflow graph.
+
+
+        The runtime/save shape uses ``src``/``dst`` (the worker convention),
+
+        converted client-side from the canvas ``source``/``target`` shape in
+
+        workflow-dsl.'
+    RuntimeWorkflowGraph:
+      properties:
+        nodes:
+          items:
+            $ref: '#/components/schemas/RuntimeWorkflowNode'
+          type: array
+          minItems: 1
+          title: Nodes
+        edges:
+          items:
+            $ref: '#/components/schemas/RuntimeWorkflowEdge'
+          type: array
+          title: Edges
+        notes:
+          items:
+            $ref: '#/components/schemas/RuntimeWorkflowNote'
+          type: array
+          title: Notes
+        metadata:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Metadata
+      additionalProperties: true
+      type: object
+      required:
+      - nodes
+      - edges
+      title: RuntimeWorkflowGraph
+      description: 'The runtime workflow graph saved as a version: nodes + edges (+
+        notes).
+
+
+        Pydantic owns *shape* validation here (required/non-empty fields, types,
+
+        id uniqueness); cross-field *semantics* (edges reference existing nodes,
+
+        no self-references, exactly one trigger) live in
+
+        ``src.workflow.validation``. Stricter than the lenient template
+
+        ``WorkflowGraph``: a saved version must have at least one node.
+
+
+        ``notes`` is a decorative layer: free-floating sticky notes that are
+
+        persisted but excluded from execution and from trigger/edge semantics.'
+    RuntimeWorkflowNode:
+      properties:
+        id:
+          type: string
+          minLength: 1
+          title: Id
+        type:
+          type: string
+          minLength: 1
+          title: Type
+        trigger:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Trigger
+      additionalProperties: true
+      type: object
+      required:
+      - id
+      - type
+      title: RuntimeWorkflowNode
+      description: 'A single node in the runtime workflow graph.
+
+
+        Only the structural identity fields are validated (``id``, ``type``); the
+
+        rest of the runtime shape (``name``, ``parameters``, ``output``,
+
+        ``position`` as an ``[x, y]`` array, ``credentials``, ...) is intentionally
+
+        loose and passes through via ``extra="allow"``.'
+    RuntimeWorkflowNote:
+      properties:
+        id:
+          type: string
+          minLength: 1
+          title: Id
+      additionalProperties: true
+      type: object
+      required:
+      - id
+      title: RuntimeWorkflowNote
+      description: 'A decorative sticky note placed on the canvas.
+
+
+        Notes are persisted with the workflow but never executed: the worker
+
+        deserializes only ``nodes``/``edges`` and semantic validation
+
+        (``src.workflow.validation``) ignores notes entirely. Only the structural
+
+        identity field is validated (``id``); the rest of the shape (``content``,
+
+        ``x``/``y`` position, ``width``/``height``, ``color``, ``font_size``) is
+
+        intentionally loose and passes through via ``extra="allow"``.'
     SAMLConfigCreate:
       properties:
         name:
@@ -3707,6 +4209,46 @@ components:
       description: "Response body for ``POST /auth/saml/exchange``.\n\nThe access\
         \ token is delivered as an ``HttpOnly`` cookie on the same\nresponse \u2014\
         \ it never appears in this JSON body."
+    TemplateCategory:
+      type: string
+      enum:
+      - general
+      - email
+      - analytics
+      - development
+      - cloud
+      - scheduling
+      - social_media
+      - productivity
+      title: TemplateCategory
+      description: 'Soft enum for template categories.
+
+
+        Stored as a free-form ``str`` in the database so adding a new category is
+
+        a Python-only change. New templates are validated against this enum on
+
+        write via ``TemplateCreate``; reads stay lenient so legacy values
+
+        (``automation``, ``data-processing``, etc.) still round-trip.'
+    TemplateCategorySummary:
+      properties:
+        value:
+          type: string
+          title: Value
+        label:
+          type: string
+          title: Label
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - value
+      - label
+      - count
+      title: TemplateCategorySummary
+      description: One row in the ``GET /templates/categories`` response.
     TemplateCreate:
       properties:
         name:
@@ -3718,23 +4260,35 @@ components:
           title: Description
           default: ''
         category:
-          type: string
-          title: Category
+          $ref: '#/components/schemas/TemplateCategory'
           default: general
         workflow_data:
-          additionalProperties: true
-          type: object
-          title: Workflow Data
+          $ref: '#/components/schemas/WorkflowGraph'
         is_public:
           type: boolean
           title: Is Public
           default: false
+        icon:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Icon
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
       type: object
       required:
       - name
       - workflow_data
       title: TemplateCreate
-      description: Schema for creating a new template.
+      description: 'Schema for creating a new template.
+
+
+        User-saved templates only; official templates are inserted by the bundle
+
+        seeder, which uses the DB model directly.'
     TemplateDetail:
       properties:
         id:
@@ -3772,6 +4326,40 @@ components:
           - type: integer
           - type: 'null'
           title: Created By
+        source:
+          type: string
+          title: Source
+          default: user
+        external_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: External Id
+        icon:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Icon
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+        author_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Author Name
+        author_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Author Url
+        scope:
+          type: string
+          title: Scope
+          description: 'User-facing bucket: official / community / personal.'
+          readOnly: true
       type: object
       required:
       - id
@@ -3784,8 +4372,61 @@ components:
       - created_at
       - updated_at
       - created_by
+      - scope
       title: TemplateDetail
-      description: Detailed template information including workflow data.
+      description: 'Detailed template information including workflow data.
+
+
+        ``workflow_data`` is typed as ``dict[str, Any]`` rather than
+
+        ``WorkflowGraph`` so existing templates with legacy or partial shapes
+
+        continue to round-trip on read. New templates are validated against
+
+        ``WorkflowGraph`` on write via ``TemplateCreate``.'
+    TemplateScope:
+      type: string
+      enum:
+      - official
+      - community
+      - personal
+      title: TemplateScope
+      description: "The user-facing bucket a template belongs to.\n\nDerived from\
+        \ ``(source, is_public)`` so callers don't need to combine\nthe two dimensions\
+        \ themselves:\n\n* ``OFFICIAL`` - curated by the Rune team, seeded from the\n\
+        \  ``rune-templates`` repo.\n* ``COMMUNITY`` - saved by an end user and marked\
+        \ public, visible to\n  everyone on the Rune instance.\n* ``PERSONAL`` - saved\
+        \ by an end user for their own use, visible only\n  to the creator."
+    TemplateSort:
+      type: string
+      enum:
+      - featured
+      - popular
+      - newest
+      - alphabetical
+      title: TemplateSort
+      description: 'Sort options exposed on the templates list endpoint.
+
+
+        ``FEATURED`` is the gallery default: official templates first, then by
+
+        descending ``usage_count``. The other modes are straightforward
+
+        single-column orderings.'
+    TemplateSource:
+      type: string
+      enum:
+      - official
+      - user
+      title: TemplateSource
+      description: 'Origin of a template row.
+
+
+        ``OFFICIAL`` templates come from the curated ``rune-templates`` repo bundle
+
+        and are upserted by the seeder keyed by ``external_id``. ``USER`` templates
+
+        are created via the save-template flow and owned by ``created_by``.'
     TemplateSummary:
       properties:
         id:
@@ -3806,6 +4447,44 @@ components:
         is_public:
           type: boolean
           title: Is Public
+        source:
+          type: string
+          title: Source
+          default: user
+        external_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: External Id
+        icon:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Icon
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+        author_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Author Name
+        author_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Author Url
+        node_count:
+          type: integer
+          title: Node Count
+          default: 0
+        scope:
+          type: string
+          title: Scope
+          description: 'User-facing bucket: official / community / personal.'
+          readOnly: true
       type: object
       required:
       - id
@@ -3814,8 +4493,16 @@ components:
       - category
       - usage_count
       - is_public
+      - scope
       title: TemplateSummary
-      description: Template summary for listing templates.
+      description: 'Template summary for listing templates.
+
+
+        ``category`` is typed as ``str`` (not ``TemplateCategory``) so legacy
+
+        values stored in the DB (``automation``, ``data-processing``, ...) still
+
+        round-trip on read.'
     TemplateWorkflowData:
       properties:
         workflow_data:
@@ -3881,10 +4568,14 @@ components:
           maxLength: 40
           minLength: 3
           title: Name
+          description: User display name
         email:
           type: string
+          maxLength: 255
+          minLength: 3
           format: email
           title: Email
+          description: User email
         role:
           $ref: '#/components/schemas/UserRole'
           description: 'User role: ''user'' or ''admin'''
@@ -3898,10 +4589,12 @@ components:
       properties:
         old_password:
           type: string
+          minLength: 1
           title: Old Password
           description: Current password for verification
         new_password:
           type: string
+          maxLength: 128
           minLength: 8
           title: New Password
           description: New password
@@ -3992,6 +4685,11 @@ components:
         type:
           type: string
           title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
       - loc
@@ -4024,9 +4722,7 @@ components:
           description: Expected current latest version id. Null is allowed only for
             the first save.
         workflow_data:
-          additionalProperties: true
-          type: object
-          title: Workflow Data
+          $ref: '#/components/schemas/RuntimeWorkflowGraph'
           description: Workflow definition to save
         message:
           anyOf:
@@ -4093,6 +4789,88 @@ components:
       required:
       - docs
       title: WorkflowDetailDocs
+    WorkflowEdge:
+      properties:
+        id:
+          type: string
+          minLength: 1
+          title: Id
+        source:
+          type: string
+          minLength: 1
+          title: Source
+        target:
+          type: string
+          minLength: 1
+          title: Target
+        type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+        sourceHandle:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sourcehandle
+        targetHandle:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Targethandle
+        label:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Label
+      additionalProperties: true
+      type: object
+      required:
+      - id
+      - source
+      - target
+      title: WorkflowEdge
+      description: 'A single edge in a workflow graph (React Flow shape).
+
+
+        Edges use ``source``/``target`` (React Flow convention) - this is the
+
+        canvas-facing shape that templates ship in. The runtime worker uses
+
+        ``src``/``dst`` but conversion happens client-side in ``workflow-dsl.ts``
+
+        when a workflow is saved.'
+    WorkflowGraph:
+      properties:
+        nodes:
+          items:
+            $ref: '#/components/schemas/WorkflowNode'
+          type: array
+          title: Nodes
+        edges:
+          items:
+            $ref: '#/components/schemas/WorkflowEdge'
+          type: array
+          title: Edges
+        metadata:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Metadata
+      additionalProperties: true
+      type: object
+      title: WorkflowGraph
+      description: 'A workflow graph: nodes + edges (+ optional metadata).
+
+
+        Structure is strict (the top-level shape and per-element required fields
+
+        are validated). Empty ``nodes``/``edges`` arrays are allowed at the
+
+        template-storage layer - runtime ``queue.py`` enforces "must have a
+
+        trigger" only when a workflow is actually queued for execution.'
     WorkflowListItem:
       properties:
         id:
@@ -4101,18 +4879,81 @@ components:
         name:
           type: string
           title: Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
         is_active:
           type: boolean
           title: Is Active
         role:
           $ref: '#/components/schemas/WorkflowRole'
+        owner_name:
+          type: string
+          title: Owner Name
       type: object
       required:
       - id
       - name
       - is_active
       - role
+      - owner_name
       title: WorkflowListItem
+    WorkflowNode:
+      properties:
+        id:
+          type: string
+          minLength: 1
+          title: Id
+        type:
+          type: string
+          minLength: 1
+          title: Type
+        position:
+          anyOf:
+          - $ref: '#/components/schemas/WorkflowNodePosition'
+          - type: 'null'
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+        trigger:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Trigger
+      additionalProperties: true
+      type: object
+      required:
+      - id
+      - type
+      title: WorkflowNode
+      description: 'A single node in a workflow graph (React Flow shape).
+
+
+        Per-node ``data`` is intentionally loose (``dict[str, Any]``): different
+
+        node types have different config shapes, and templates need to keep working
+
+        as the connector catalog evolves. Only the structural identity fields
+
+        (``id``, ``type``) are strictly required.'
+    WorkflowNodePosition:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      title: WorkflowNodePosition
+      description: X/Y position for a workflow node on the canvas.
     WorkflowPermissionInfo:
       properties:
         user_id:

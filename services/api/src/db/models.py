@@ -7,6 +7,8 @@ from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
 
+from src.core.datetime import UTCDateTime, utc_now
+
 
 class UserRole(str, Enum):
     """User role enumeration."""
@@ -42,6 +44,7 @@ class CredentialType(str, Enum):
     TOKEN = "token"  # nosec B105
     CUSTOM = "custom"
     SMTP = "smtp"
+    GEMINI_API_KEY = "gemini_api_key"
 
 
 class AuthProvider(str, Enum):
@@ -54,10 +57,15 @@ class AuthProvider(str, Enum):
 class TimestampModel(SQLModel):
     """Base model with created_at and updated_at timestamps."""
 
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_type=UTCDateTime(),
+        sa_column_kwargs={"nullable": False},
+    )
     updated_at: datetime = Field(
-        default_factory=datetime.now,
-        sa_column_kwargs={"onupdate": datetime.now},
+        default_factory=utc_now,
+        sa_type=UTCDateTime(),
+        sa_column_kwargs={"nullable": False, "onupdate": utc_now},
     )
 
 
@@ -150,7 +158,10 @@ class User(TimestampModel, table=True):
         default=None, foreign_key="samlconfiguration.id"
     )
     is_active: bool = Field(default=True)
-    last_login_at: Optional[datetime] = None
+    last_login_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(UTCDateTime(), nullable=True),
+    )
     must_change_password: bool = Field(
         default=False,
         description="Flag indicating user must change their password",
@@ -220,6 +231,7 @@ class Workflow(TimestampModel, table=True):
     )
     executions: list["Execution"] = Relationship(back_populates="workflow")
     schedule: Optional["ScheduledWorkflow"] = Relationship(back_populates="workflow")
+    webhook: Optional["WebhookRegistration"] = Relationship(back_populates="workflow")
 
 
 class WorkflowVersion(SQLModel, table=True):
@@ -250,7 +262,10 @@ class WorkflowVersion(SQLModel, table=True):
         default=None,
         description="User-provided message describing the saved revision",
     )
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(UTCDateTime(), nullable=False),
+    )
 
 
 class WorkflowUser(TimestampModel, table=True):
@@ -299,6 +314,13 @@ class WorkflowTemplate(TimestampModel, table=True):
     Templates are pre-made workflows that users can use as starting points.
     Each template is a standalone workflow configuration that can be instantiated.
     Templates are independent from user workflows and contain their own workflow data.
+
+    Templates come from two sources:
+
+    * ``source = "official"`` rows are upserted by the bundle seeder from the
+      ``rune-templates`` repo, keyed by ``external_id``.
+    * ``source = "user"`` rows are saved by end users via the save-template
+      flow and owned by ``created_by``.
     """
 
     __tablename__ = "workflow_templates"
@@ -315,13 +337,38 @@ class WorkflowTemplate(TimestampModel, table=True):
 
     category: str = Field(
         default="general",
-        description="Template category (e.g., 'automation', 'data-processing')",
+        description="Template category. Validated against TemplateCategory on write; stored as free-form str for forward compatibility.",
     )
     is_public: bool = Field(
         default=False, description="Whether this template is publicly available"
     )
     usage_count: int = Field(
         default=0, description="Number of times this template has been used"
+    )
+
+    source: str = Field(
+        default="user",
+        description="Template origin: 'official' (from rune-templates bundle) or 'user' (saved via UI).",
+    )
+    external_id: Optional[str] = Field(
+        default=None,
+        index=True,
+        description="Stable slug from the rune-templates repo; upsert key for official templates. Uniqueness is enforced by the unique index created in the migration.",
+    )
+    icon: Optional[str] = Field(
+        default=None,
+        description="Lucide icon name to display on the template card.",
+    )
+    tags: list[str] = Field(
+        default_factory=list,
+        sa_type=JSONB,
+        description="Free-form tags for search and filtering.",
+    )
+    author_name: Optional[str] = Field(
+        default=None, description="Display name of the template author."
+    )
+    author_url: Optional[str] = Field(
+        default=None, description="Profile/site URL for the template author."
     )
 
     created_by: Optional[int] = Field(
@@ -333,6 +380,17 @@ class WorkflowTemplate(TimestampModel, table=True):
 
     # Relationships
     creator: Optional[User] = Relationship(back_populates="templates")
+
+    @property
+    def node_count(self) -> int:
+        """Number of nodes in the workflow graph (0 if shape is unexpected).
+
+        Exposed via ``TemplateSummary`` so the gallery card can show how big
+        the workflow is at a glance without paying for the full ``workflow_data``
+        payload on every list response.
+        """
+        nodes = (self.workflow_data or {}).get("nodes")
+        return len(nodes) if isinstance(nodes, list) else 0
 
 
 class CredentialShare(TimestampModel, table=True):
@@ -414,9 +472,27 @@ class ScheduledWorkflow(TimestampModel, table=True):
         unique=True,
     )
     interval_seconds: int
-    next_run_at: datetime = Field(default_factory=datetime.now)
+    next_run_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(UTCDateTime(), nullable=False),
+    )
 
     workflow: "Workflow" = Relationship(back_populates="schedule")
+
+
+class WebhookRegistration(TimestampModel, table=True):
+    __tablename__ = "webhook_registrations"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workflow_id: int = Field(
+        foreign_key="workflows.id",
+        ondelete="CASCADE",
+        unique=True,
+    )
+    guid: str = Field(unique=True, index=True)
+    is_active: bool = Field(default=False)
+
+    workflow: "Workflow" = Relationship(back_populates="webhook")
 
 
 class Execution(TimestampModel, table=True):
@@ -430,7 +506,10 @@ class Execution(TimestampModel, table=True):
             SQLAlchemyEnum(ExecutionStatus, name="execution_status", native_enum=True),
         ),
     )
-    completed_at: Optional[datetime] = Field(default=None)
+    completed_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(UTCDateTime(), nullable=True),
+    )
     total_duration_ms: Optional[int] = Field(default=None)
     failure_reason: Optional[str] = Field(default=None)
 

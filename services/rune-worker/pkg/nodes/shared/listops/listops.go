@@ -7,6 +7,7 @@ package listops
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -20,7 +21,11 @@ import (
 // - nil, which falls back to $json
 func ResolveArrayInput(input map[string]any, raw any) ([]any, error) {
 	if raw == nil {
-		raw = input["$json"]
+		if workingJSON, ok := input["$json"]; ok {
+			raw = workingJSON
+		} else if discovered, ok := discoverSingleArrayInput(input); ok {
+			raw = discovered
+		}
 	}
 
 	resolved, err := resolveValue(input, raw)
@@ -34,6 +39,69 @@ func ResolveArrayInput(input map[string]any, raw any) ([]any, error) {
 	}
 
 	return items, nil
+}
+
+func discoverSingleArrayInput(input map[string]any) (any, bool) {
+	candidates := make([]any, 0, 1)
+
+	keys := make([]string, 0, len(input))
+	for key := range input {
+		if strings.HasPrefix(key, "_") {
+			continue
+		}
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		collectArrayCandidates(input[key], &candidates)
+		if len(candidates) > 1 {
+			return nil, false
+		}
+	}
+
+	if len(candidates) != 1 {
+		return nil, false
+	}
+	return candidates[0], true
+}
+
+func collectArrayCandidates(value any, candidates *[]any) {
+	if value == nil || len(*candidates) > 1 {
+		return
+	}
+
+	if _, ok := ToAnySlice(value); ok {
+		*candidates = append(*candidates, value)
+		return
+	}
+
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Pointer || rv.Kind() == reflect.Interface {
+		if rv.IsNil() {
+			return
+		}
+		rv = rv.Elem()
+	}
+
+	if rv.Kind() != reflect.Map {
+		return
+	}
+	if rv.IsNil() {
+		return
+	}
+
+	mapKeys := rv.MapKeys()
+	sort.Slice(mapKeys, func(i, j int) bool {
+		return fmt.Sprint(mapKeys[i].Interface()) < fmt.Sprint(mapKeys[j].Interface())
+	})
+
+	for _, key := range mapKeys {
+		collectArrayCandidates(rv.MapIndex(key).Interface(), candidates)
+		if len(*candidates) > 1 {
+			return
+		}
+	}
 }
 
 func resolveValue(input map[string]any, raw any) (any, error) {
@@ -414,6 +482,14 @@ var CommonTimeFormats = []string{
 	"2006-01-02",
 	time.RFC1123Z,
 	time.RFC1123,
+	// Minute-precision RFC1123 variants (no seconds) — the format presets
+	// offered by the datetime inspector emit these, so the parser must
+	// accept them when a datetime node's result is piped into another.
+	"Mon, 02 Jan 2006 15:04 MST",
+	"Mon, 02 Jan 2006 15:04 -0700",
+	"02 Jan 2006 15:04 MST",
+	"02 Jan 2006 15:04 -0700",
+	"02 Jan 2006",
 	time.RFC822Z,
 	time.RFC822,
 }

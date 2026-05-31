@@ -2,27 +2,47 @@
 
 import type { Edge as RFEdge } from "@xyflow/react";
 import type { CSSProperties } from "react";
-import type {
-  CanvasNode,
-  HttpData,
-  IfData,
-  SwitchData,
-  SwitchRule,
-  SmtpData,
-  ScheduledTriggerData,
-  WaitData,
-  LogData,
-  DateTimeData,
-  EditData,
-  FilterData,
-  FilterRule,
-  SortData,
-  SortRule,
-  LimitData,
-  SplitData,
-  AggregatorData,
-  MergeData,
+import {
+  isHttpMethod,
+  type CanvasNode,
+  type HttpData,
+  type IfData,
+  type SwitchData,
+  type SwitchRule,
+  type SmtpData,
+  type ScheduledTriggerData,
+  type WebhookTriggerData,
+  type WaitData,
+  type LogData,
+  type DateTimeNowData,
+  type DateTimeAddData,
+  type DateTimeSubtractData,
+  type DateTimeFormatData,
+  type DateTimeParseData,
+  type EditData,
+  type FilterData,
+  type FilterRule,
+  type SortData,
+  type SortRule,
+  type LimitData,
+  type SplitData,
+  type AggregatorData,
+  type MergeData,
+  type AgentData,
+  isStickyNoteColor,
+  isStickyNoteFontSize,
+  type StickyNoteData,
+  type StickyNoteColor,
+  type StickyNoteFontSize,
 } from "@/features/canvas/types";
+import {
+  hydrateAgentMessages,
+  hydrateAgentTools,
+  stripAgentMessageUiId,
+  stripAgentToolUiId,
+} from "@/features/canvas/lib/agentDataNormalization";
+import type { IntegrationNodeData } from "@/features/canvas/integrations/types";
+import { isIntegrationNodeKind } from "@/features/canvas/integrations/helpers";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
 import type { CredentialRef } from "@/lib/credentials";
 import {
@@ -38,6 +58,7 @@ export interface WorkflowNode<Params = Record<string, unknown>> {
   name: string;
   trigger: boolean;
   type: string;
+  webhook_guid?: string;
   parameters: Params;
   credentials?: CredentialRef;
   output: Record<string, unknown>;
@@ -49,6 +70,16 @@ export interface WorkflowEdge {
   src: string;
   dst: string;
   label?: string;
+}
+export interface WorkflowNote {
+  id: string;
+  content: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  color?: StickyNoteColor;
+  font_size?: StickyNoteFontSize;
 }
 
 export class MissingNodeCredentialsError extends Error {
@@ -70,6 +101,8 @@ function toWorkerType(canvasType: string): string {
       return "ManualTrigger";
     case "scheduledTrigger":
       return "ScheduledTrigger";
+    case "webhookTrigger":
+      return "webhook";
     case "if":
       return "conditional";
     case "switch":
@@ -84,8 +117,16 @@ function toWorkerType(canvasType: string): string {
       return "wait";
     case "log":
       return "log";
-    case "datetime":
-      return "datetime";
+    case "dateTimeNow":
+      return "dateTimeNow";
+    case "dateTimeAdd":
+      return "dateTimeAdd";
+    case "dateTimeSubtract":
+      return "dateTimeSubtract";
+    case "dateTimeFormat":
+      return "dateTimeFormat";
+    case "dateTimeParse":
+      return "dateTimeParse";
     case "edit":
       return "edit";
     case "filter":
@@ -114,6 +155,7 @@ function nodeName(n: CanvasNode): string {
 
 // Helper to convert comma-separated email string to array
 function emailStringToArray(value: string | undefined): string[] | string | undefined {
+  if (isLegacySmtpPlaceholder(value)) return undefined;
   if (!value || !value.trim()) return undefined;
   const emails = value
     .split(",")
@@ -133,11 +175,36 @@ function emailArrayToString(value: unknown): string | undefined {
   return undefined;
 }
 
+export const LEGACY_SMTP_PLACEHOLDER_VALUES = new Set([
+  "sender@example.com",
+  "recipient@example.com",
+  "cc@example.com",
+  "bcc@example.com",
+  "Email subject line",
+  "Email message body",
+]);
+
+export function isLegacySmtpPlaceholder(value: unknown): boolean {
+  return typeof value === "string" && LEGACY_SMTP_PLACEHOLDER_VALUES.has(value.trim());
+}
+
 // Build parameter objects for supported node types
 function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unknown> {
+  if (isIntegrationNodeKind(n.type)) {
+    const d = (n.data || {}) as IntegrationNodeData;
+    return d.arguments ?? {};
+  }
+
   switch (n.type) {
     case "http": {
-      const d = (n.data || {}) as HttpData;
+      /** Pre–snake_case canvas fields (still serialize if present). */
+      type LegacyHttpCanvas = {
+        retries?: number;
+        retryDelay?: number;
+        raiseOnStatus?: string;
+        ignoreSSL?: boolean;
+      };
+      const d = (n.data || {}) as HttpData & LegacyHttpCanvas;
       const params: Record<string, unknown> = {};
       if (d.method) params.method = String(d.method).toUpperCase();
       if (d.url) params.url = String(d.url);
@@ -145,8 +212,34 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (d.query && typeof d.query === "object") params.query = d.query;
       if (typeof d.body !== "undefined") params.body = d.body as unknown;
       if (typeof d.timeout !== "undefined") params.timeout = String(d.timeout);
-      if (typeof d.retries !== "undefined") params.retry = String(d.retries);
-      if (typeof d.ignoreSSL !== "undefined") params.ignore_ssl = !!d.ignoreSSL;
+      const retryCount =
+        typeof d.retry === "number" && !Number.isNaN(d.retry)
+          ? d.retry
+          : typeof d.retries === "number" && !Number.isNaN(d.retries)
+            ? d.retries
+            : undefined;
+      if (typeof retryCount !== "undefined") params.retry = String(retryCount);
+      const delay =
+        typeof d.retry_delay === "number" && !Number.isNaN(d.retry_delay)
+          ? d.retry_delay
+          : typeof d.retryDelay === "number" && !Number.isNaN(d.retryDelay)
+            ? d.retryDelay
+            : undefined;
+      if (typeof delay !== "undefined") params.retry_delay = String(delay);
+      const raise =
+        typeof d.raise_on_status === "string" && d.raise_on_status.trim()
+          ? d.raise_on_status.trim()
+          : typeof d.raiseOnStatus === "string" && d.raiseOnStatus.trim()
+            ? d.raiseOnStatus.trim()
+            : undefined;
+      if (raise) params.raise_on_status = raise;
+      const ignoreSsl =
+        typeof d.ignore_ssl === "boolean"
+          ? d.ignore_ssl
+          : typeof d.ignoreSSL === "boolean"
+            ? d.ignoreSSL
+            : undefined;
+      if (typeof ignoreSsl !== "undefined") params.ignore_ssl = ignoreSsl;
       return params;
     }
     case "if": {
@@ -216,12 +309,12 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
     case "smtp": {
       const d = (n.data || {}) as SmtpData;
       const params: Record<string, unknown> = {};
-      if (d.from) params.from = String(d.from);
+      if (d.from && !isLegacySmtpPlaceholder(d.from)) params.from = String(d.from);
       if (d.to) params.to = emailStringToArray(d.to);
       if (d.cc) params.cc = emailStringToArray(d.cc);
       if (d.bcc) params.bcc = emailStringToArray(d.bcc);
-      if (d.subject) params.subject = String(d.subject);
-      if (d.body) params.body = String(d.body);
+      if (d.subject && !isLegacySmtpPlaceholder(d.subject)) params.subject = String(d.subject);
+      if (d.body && !isLegacySmtpPlaceholder(d.body)) params.body = String(d.body);
       return params;
     }
     case "wait": {
@@ -238,14 +331,45 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (d.level) params.level = d.level;
       return params;
     }
-    case "datetime": {
-      const d = (n.data || {}) as DateTimeData;
+    case "dateTimeNow": {
+      const d = (n.data || {}) as DateTimeNowData;
       const params: Record<string, unknown> = {};
-      if (d.operation) params.operation = d.operation;
+      if (typeof d.format === "string" && d.format.trim()) params.format = d.format;
+      if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
+      return params;
+    }
+    case "dateTimeAdd": {
+      const d = (n.data || {}) as DateTimeAddData;
+      const params: Record<string, unknown> = {};
       if (typeof d.date === "string" && d.date.trim()) params.date = d.date;
       if (typeof d.amount !== "undefined") params.amount = Number(d.amount);
       if (d.unit) params.unit = d.unit;
       if (typeof d.format === "string" && d.format.trim()) params.format = d.format;
+      if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
+      return params;
+    }
+    case "dateTimeSubtract": {
+      const d = (n.data || {}) as DateTimeSubtractData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.date === "string" && d.date.trim()) params.date = d.date;
+      if (typeof d.amount !== "undefined") params.amount = Number(d.amount);
+      if (d.unit) params.unit = d.unit;
+      if (typeof d.format === "string" && d.format.trim()) params.format = d.format;
+      if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
+      return params;
+    }
+    case "dateTimeFormat": {
+      const d = (n.data || {}) as DateTimeFormatData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.date === "string" && d.date.trim()) params.date = d.date;
+      if (typeof d.format === "string" && d.format.trim()) params.format = d.format;
+      if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
+      return params;
+    }
+    case "dateTimeParse": {
+      const d = (n.data || {}) as DateTimeParseData;
+      const params: Record<string, unknown> = {};
+      if (typeof d.date === "string" && d.date.trim()) params.date = d.date;
       if (typeof d.timezone === "string" && d.timezone.trim()) params.timezone = d.timezone;
       return params;
     }
@@ -324,6 +448,24 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (typeof d.timeout !== "undefined") params.timeout = Number(d.timeout);
       return params;
     }
+    case "agent": {
+      const d = (n.data || {}) as AgentData;
+      const params: Record<string, unknown> = {};
+      if (d.model) params.model = d.model;
+      if (typeof d.system_prompt === "string" && d.system_prompt.length > 0) {
+        params.system_prompt = d.system_prompt;
+      }
+      if (Array.isArray(d.messages) && d.messages.length > 0) {
+        params.messages = d.messages.map(stripAgentMessageUiId);
+      }
+      if (Array.isArray(d.tools) && d.tools.length > 0) {
+        params.tools = d.tools.map(stripAgentToolUiId);
+      }
+      if (Array.isArray(d.mcp_servers) && d.mcp_servers.length > 0) {
+        params.mcp_servers = d.mcp_servers;
+      }
+      return params;
+    }
     default:
       return {};
   }
@@ -338,12 +480,78 @@ const identityNodeHydrator: NodeHydrator = (base) => base;
 
 const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
   http: (base, params) => {
+    type LegacyCanvas = {
+      retries?: unknown;
+      raiseOnStatus?: unknown;
+      retryDelay?: unknown;
+      ignoreSSL?: unknown;
+    };
+    const {
+      retries: _legacyRetries,
+      raiseOnStatus: _legacyRaiseCamel,
+      retryDelay: _legacyDelayCamel,
+      ignoreSSL: _legacyIgnoreCamel,
+      ...restBase
+    } = base as HttpData & LegacyCanvas;
+
+    const methodUpper = typeof params.method === "string" ? params.method.toUpperCase() : "";
+    const methodFromWire = isHttpMethod(methodUpper) ? methodUpper : undefined;
+
+    const retryFromParams =
+      typeof params.retry === "number"
+        ? params.retry
+        : typeof params.retry === "string"
+          ? Number(params.retry)
+          : undefined;
+    const retryFromLegacy =
+      typeof _legacyRetries === "number"
+        ? _legacyRetries
+        : typeof _legacyRetries === "string"
+          ? Number(_legacyRetries)
+          : undefined;
+    const retryNum = Number.isFinite(retryFromParams)
+      ? retryFromParams
+      : Number.isFinite(retryFromLegacy)
+        ? retryFromLegacy
+        : undefined;
+
+    const delayFromParams =
+      typeof params.retry_delay === "number"
+        ? params.retry_delay
+        : typeof params.retry_delay === "string"
+          ? Number(params.retry_delay)
+          : undefined;
+    const delayFromLegacyCamel =
+      typeof _legacyDelayCamel === "number"
+        ? _legacyDelayCamel
+        : typeof _legacyDelayCamel === "string"
+          ? Number(_legacyDelayCamel)
+          : undefined;
+    const delayNum = Number.isFinite(delayFromParams)
+      ? delayFromParams
+      : Number.isFinite(delayFromLegacyCamel)
+        ? delayFromLegacyCamel
+        : undefined;
+
+    const raiseFromParams =
+      typeof params.raise_on_status === "string" ? params.raise_on_status.trim() : "";
+    const raiseFromLegacyCamel =
+      typeof _legacyRaiseCamel === "string" ? String(_legacyRaiseCamel).trim() : "";
+    const raise_on_status = raiseFromParams || raiseFromLegacyCamel || undefined;
+
+    const ignoreFromParams = typeof params.ignore_ssl === "boolean" ? params.ignore_ssl : undefined;
+    const ignoreFromLegacyCamel =
+      typeof _legacyIgnoreCamel === "boolean" ? _legacyIgnoreCamel : undefined;
+    const ignore_ssl =
+      typeof ignoreFromParams === "boolean"
+        ? ignoreFromParams
+        : typeof ignoreFromLegacyCamel === "boolean"
+          ? ignoreFromLegacyCamel
+          : undefined;
+
     const httpData: HttpData = {
-      ...base,
-      method:
-        typeof params.method === "string"
-          ? (params.method.toUpperCase() as HttpData["method"])
-          : undefined,
+      ...restBase,
+      method: methodFromWire,
       url: typeof params.url === "string" ? params.url : undefined,
       headers:
         params.headers && typeof params.headers === "object"
@@ -360,13 +568,10 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
           : typeof params.timeout === "string"
             ? Number(params.timeout)
             : undefined,
-      retries:
-        typeof params.retry === "number"
-          ? params.retry
-          : typeof params.retry === "string"
-            ? Number(params.retry)
-            : undefined,
-      ignoreSSL: typeof params.ignore_ssl === "boolean" ? params.ignore_ssl : undefined,
+      retry: Number.isFinite(retryNum) ? retryNum : undefined,
+      retry_delay: Number.isFinite(delayNum) ? delayNum : undefined,
+      raise_on_status: raise_on_status || undefined,
+      ignore_ssl,
     };
     return httpData;
   },
@@ -394,6 +599,19 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
         : [],
     };
     return switchData;
+  },
+  agent: (base, params) => {
+    const agentData: AgentData = {
+      ...base,
+      model: (params.model as AgentData["model"]) ?? undefined,
+      system_prompt: typeof params.system_prompt === "string" ? params.system_prompt : undefined,
+      messages: hydrateAgentMessages(params.messages),
+      tools: hydrateAgentTools(params.tools),
+      mcp_servers: Array.isArray(params.mcp_servers)
+        ? (params.mcp_servers as AgentData["mcp_servers"])
+        : undefined,
+    };
+    return agentData;
   },
   smtp: (base, params) => {
     const smtpData: SmtpData = {
@@ -428,13 +646,17 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
     };
     return logData;
   },
-  datetime: (base, params) => {
-    const dateTimeData: DateTimeData = {
+  dateTimeNow: (base, params) => {
+    const data: DateTimeNowData = {
       ...base,
-      operation:
-        typeof params.operation === "string"
-          ? (params.operation as DateTimeData["operation"])
-          : undefined,
+      format: typeof params.format === "string" ? params.format : undefined,
+      timezone: typeof params.timezone === "string" ? params.timezone : undefined,
+    };
+    return data;
+  },
+  dateTimeAdd: (base, params) => {
+    const data: DateTimeAddData = {
+      ...base,
       date: typeof params.date === "string" ? params.date : undefined,
       amount:
         typeof params.amount === "number"
@@ -442,11 +664,45 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
           : typeof params.amount === "string"
             ? Number(params.amount)
             : undefined,
-      unit: typeof params.unit === "string" ? (params.unit as DateTimeData["unit"]) : undefined,
+      unit: typeof params.unit === "string" ? (params.unit as DateTimeAddData["unit"]) : undefined,
       format: typeof params.format === "string" ? params.format : undefined,
       timezone: typeof params.timezone === "string" ? params.timezone : undefined,
     };
-    return dateTimeData;
+    return data;
+  },
+  dateTimeSubtract: (base, params) => {
+    const data: DateTimeSubtractData = {
+      ...base,
+      date: typeof params.date === "string" ? params.date : undefined,
+      amount:
+        typeof params.amount === "number"
+          ? params.amount
+          : typeof params.amount === "string"
+            ? Number(params.amount)
+            : undefined,
+      unit:
+        typeof params.unit === "string" ? (params.unit as DateTimeSubtractData["unit"]) : undefined,
+      format: typeof params.format === "string" ? params.format : undefined,
+      timezone: typeof params.timezone === "string" ? params.timezone : undefined,
+    };
+    return data;
+  },
+  dateTimeFormat: (base, params) => {
+    const data: DateTimeFormatData = {
+      ...base,
+      date: typeof params.date === "string" ? params.date : undefined,
+      format: typeof params.format === "string" ? params.format : undefined,
+      timezone: typeof params.timezone === "string" ? params.timezone : undefined,
+    };
+    return data;
+  },
+  dateTimeParse: (base, params) => {
+    const data: DateTimeParseData = {
+      ...base,
+      date: typeof params.date === "string" ? params.date : undefined,
+      timezone: typeof params.timezone === "string" ? params.timezone : undefined,
+    };
+    return data;
   },
   scheduledTrigger: (base, params) => {
     const scheduledTriggerData: ScheduledTriggerData = {
@@ -588,30 +844,56 @@ function extractNodeCredential(node: CanvasNode): CredentialRef | undefined {
   return undefined;
 }
 
-// Convert Canvas graph to a workflow_data blueprint (stored in API)
+function toWorkflowNote(n: CanvasNode): WorkflowNote {
+  const d = (n.data || {}) as StickyNoteData;
+  const note: WorkflowNote = {
+    id: n.id,
+    content: typeof d.content === "string" ? d.content : "",
+    x: n.position.x,
+    y: n.position.y,
+  };
+  if (typeof d.width === "number") note.width = d.width;
+  if (typeof d.height === "number") note.height = d.height;
+  if (d.color) note.color = d.color;
+  if (d.fontSize) note.font_size = d.fontSize;
+  return note;
+}
+
+// Convert Canvas graph to a workflow_data blueprint (stored in API).
+// Sticky notes are split out of `nodes` into the decorative top-level `notes`
+// array so they never reach the executable graph (worker/validation).
 export function canvasToWorkflowData(
   nodes: CanvasNode[],
   edges: RFEdge[],
-): { nodes: WorkflowNode[]; edges: WorkflowEdge[] } {
+): { nodes: WorkflowNode[]; edges: WorkflowEdge[]; notes: WorkflowNote[] } {
   const missingCredentials: Array<{ id: string; type: string }> = [];
 
-  const blueprintNodes: WorkflowNode[] = nodes.map((n) => {
-    const credential = extractNodeCredential(n);
-    if (nodeTypeRequiresCredential(n.type) && !credential) {
-      missingCredentials.push({ id: n.id, type: n.type });
-    }
+  const notes: WorkflowNote[] = nodes.filter((n) => n.type === "stickyNote").map(toWorkflowNote);
 
-    return {
-      id: n.id,
-      name: nodeName(n),
-      trigger: n.type === "trigger" || n.type === "scheduledTrigger",
-      type: toWorkerType(n.type), // store canonical type to simplify future use
-      parameters: toWorkerParameters(n, edges),
-      output: {},
-      position: [n.position.x, n.position.y],
-      credentials: credential,
-    };
-  });
+  const blueprintNodes: WorkflowNode[] = nodes
+    .filter((n) => n.type !== "stickyNote")
+    .map((n) => {
+      const credential = extractNodeCredential(n);
+      if (nodeTypeRequiresCredential(n.type) && !credential) {
+        missingCredentials.push({ id: n.id, type: n.type });
+      }
+
+      const webhookGuid =
+        n.type === "webhookTrigger" ? (n.data as WebhookTriggerData).webhookGuid : undefined;
+
+      return {
+        id: n.id,
+        name: nodeName(n),
+        trigger:
+          n.type === "trigger" || n.type === "scheduledTrigger" || n.type === "webhookTrigger",
+        type: toWorkerType(n.type), // store canonical type to simplify future use
+        ...(webhookGuid ? { webhook_guid: webhookGuid } : {}),
+        parameters: toWorkerParameters(n, edges),
+        output: {},
+        position: [n.position.x, n.position.y],
+        credentials: credential,
+      };
+    });
 
   const blueprintEdges: WorkflowEdge[] = edges.map((e) => ({
     id: e.id,
@@ -624,11 +906,31 @@ export function canvasToWorkflowData(
     throw new MissingNodeCredentialsError(missingCredentials);
   }
 
-  return { nodes: blueprintNodes, edges: blueprintEdges };
+  return { nodes: blueprintNodes, edges: blueprintEdges, notes };
+}
+
+function noteToCanvasNode(note: WorkflowNote): CanvasNode {
+  const data: StickyNoteData = {
+    content: typeof note.content === "string" ? note.content : "",
+  };
+  if (typeof note.width === "number") data.width = note.width;
+  if (typeof note.height === "number") data.height = note.height;
+  if (isStickyNoteColor(note.color)) data.color = note.color;
+  if (isStickyNoteFontSize(note.font_size)) data.fontSize = note.font_size;
+  return {
+    id: note.id,
+    type: "stickyNote",
+    position: { x: note.x ?? 100, y: note.y ?? 100 },
+    data,
+  } as CanvasNode;
 }
 
 // Convert stored workflow_data blueprint back to Canvas graph for editing
-export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: WorkflowEdge[] }): {
+export function workflowDataToCanvas(data: {
+  nodes?: WorkflowNode[];
+  edges?: WorkflowEdge[];
+  notes?: WorkflowNote[];
+}): {
   nodes: CanvasNode[];
   edges: RFEdge[];
 } {
@@ -642,13 +944,42 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
           ? "trigger"
           : n.type === "ScheduledTrigger"
             ? "scheduledTrigger"
-            : n.type;
+            : n.type === "webhook"
+              ? "webhookTrigger"
+              : n.type;
     const credentials = n.credentials ? { ...n.credentials } : undefined;
     const baseData = {
       label: sanitizeNodeLabel(n.name, "Node"),
       ...(credentials ? { credential: credentials } : {}),
     } as CanvasNode["data"];
     const params = (n.parameters ?? {}) as Record<string, unknown>;
+    if (canvasType === "webhookTrigger") {
+      return {
+        id: n.id,
+        type: "webhookTrigger",
+        position: { x, y },
+        data: {
+          ...baseData,
+          ...(typeof n.webhook_guid === "string" ? { webhookGuid: n.webhook_guid } : {}),
+        },
+      } as CanvasNode;
+    }
+
+    if (isIntegrationNodeKind(canvasType)) {
+      const dataForNode: IntegrationNodeData = {
+        ...baseData,
+        integrationKind: canvasType,
+        arguments: params,
+      };
+
+      return {
+        id: n.id,
+        type: canvasType,
+        position: { x, y },
+        data: dataForNode,
+      } as CanvasNode;
+    }
+
     const hydrateDataForNode = Object.hasOwn(nodeHydrators, canvasType)
       ? (nodeHydrators[canvasType as CanvasNode["type"]] ?? identityNodeHydrator)
       : identityNodeHydrator;
@@ -700,7 +1031,9 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
     return edge;
   });
 
-  return { nodes, edges };
+  const noteNodes: CanvasNode[] = (data.notes ?? []).map(noteToCanvasNode);
+
+  return { nodes: [...nodes, ...noteNodes], edges };
 }
 
 // ————————————————————————————————————————————————————————————————
@@ -708,9 +1041,24 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
 // ————————————————————————————————————————————————————————————————
 
 /**
- * Strips credential references from workflow_data nodes for safe export.
+ * Strips credential references and webhook GUIDs from workflow_data nodes for safe export.
  * Returns nodes and edges at top level; does not convert DSL to canvas shape.
  */
+function stripNestedCredentialRefs(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stripNestedCredentialRefs);
+  }
+
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const { credential: _credential, ...rest } = value as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(rest).map(([key, child]) => [key, stripNestedCredentialRefs(child)]),
+  );
+}
+
 export function stripCredentialsFromWorkflowData(workflowData: {
   nodes?: Array<Record<string, unknown>>;
   edges?: unknown[];
@@ -721,8 +1069,8 @@ export function stripCredentialsFromWorkflowData(workflowData: {
     return { nodes: [], edges };
   }
   const sanitizedNodes = nodes.map((node) => {
-    const { credentials: _omit, ...rest } = node;
-    return rest;
+    const { credentials: _credentials, webhook_guid: _webhookGuid, ...rest } = node;
+    return stripNestedCredentialRefs(rest) as Record<string, unknown>;
   });
   return { nodes: sanitizedNodes, edges };
 }

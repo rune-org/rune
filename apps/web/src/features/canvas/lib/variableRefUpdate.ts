@@ -36,10 +36,19 @@ function visitValue(path: string, value: unknown, visitor: Visitor): void {
  * Scan all nodes (except the one being renamed) for `$oldName` variable references.
  */
 export function scanVariableReferences(nodes: CanvasNode[], oldName: string): ScanResult {
+  return scanVariableReferencesTo(nodes, new Set([oldName]));
+}
+
+function scanVariableReferencesTo(
+  nodes: CanvasNode[],
+  names: Set<string>,
+  excludeIds?: Set<string>,
+): ScanResult {
   const references: AffectedReference[] = [];
   const affectedNodeIds = new Set<string>();
 
   for (const node of nodes) {
+    if (excludeIds?.has(node.id)) continue;
     const data = node.data as Record<string, unknown>;
 
     for (const [key, val] of Object.entries(data)) {
@@ -48,7 +57,7 @@ export function scanVariableReferences(nodes: CanvasNode[], oldName: string): Sc
       visitValue(key, val, (path, str) => {
         const matches = parseVariableReferences(str);
         for (const m of matches) {
-          if (m.nodeName === oldName) {
+          if (names.has(m.nodeName)) {
             affectedNodeIds.add(node.id);
             references.push({
               nodeId: node.id,
@@ -69,39 +78,58 @@ export function scanVariableReferences(nodes: CanvasNode[], oldName: string): Sc
   };
 }
 
-function replaceInValue<T>(value: T, oldName: string, newName: string): T {
-  if (typeof value === "string") {
-    let result = "";
-    let i = 0;
-    while (i < value.length) {
-      if (value[i] === "\\" && i + 1 < value.length && value[i + 1] === "$") {
-        result += "\\$";
-        i += 2;
-        continue;
-      }
+export type DeleteScanResult = ScanResult & { orphanedNames: Set<string> };
 
-      if (value[i] === "$") {
-        const rest = value.slice(i + 1);
-        if (
-          rest.startsWith(oldName) &&
-          (rest.length === oldName.length || !/[a-zA-Z0-9_-]/.test(rest[oldName.length]))
-        ) {
-          result += `$${newName}`;
-          i += 1 + oldName.length;
-          continue;
-        }
-      }
-
-      result += value[i];
-      i++;
+/**
+ * Collect labels carried by deleted nodes that no remaining node still holds.
+ * Duplicate labels remain valid while any surviving node continues to carry
+ * them, so only orphaned labels warrant a stale-reference warning or cleanup.
+ */
+function collectOrphanedLabels(allNodes: CanvasNode[], deletedNodeIds: Set<string>): Set<string> {
+  const survivingLabels = new Set<string>();
+  for (const node of allNodes) {
+    if (!deletedNodeIds.has(node.id) && node.data.label) {
+      survivingLabels.add(node.data.label);
     }
-    return result as T;
+  }
+  const orphaned = new Set<string>();
+  for (const node of allNodes) {
+    const label = node.data.label;
+    if (deletedNodeIds.has(node.id) && label && !survivingLabels.has(label)) {
+      orphaned.add(label);
+    }
+  }
+  return orphaned;
+}
+
+/**
+ * Scan non-deleted nodes for variable references pointing at labels that will
+ * no longer resolve after the deletion. Duplicate-labeled survivors keep their
+ * references valid and are excluded from the result.
+ */
+export function scanReferencesToDeleted(
+  allNodes: CanvasNode[],
+  deletedNodeIds: Set<string>,
+): DeleteScanResult {
+  const orphanedNames = collectOrphanedLabels(allNodes, deletedNodeIds);
+  if (orphanedNames.size === 0) {
+    return { totalRefs: 0, affectedNodes: [], references: [], orphanedNames };
+  }
+  const scan = scanVariableReferencesTo(allNodes, orphanedNames, deletedNodeIds);
+  return { ...scan, orphanedNames };
+}
+
+/** Recursively walk a node-data value, applying `transformString` to every string. */
+function transformValue<T>(value: T, transformString: (s: string) => string): T {
+  if (typeof value === "string") {
+    const next = transformString(value);
+    return (next === value ? value : next) as T;
   }
 
   if (Array.isArray(value)) {
     let changed = false;
     const newArr = value.map((item) => {
-      const replaced = replaceInValue(item, oldName, newName);
+      const replaced = transformValue(item, transformString);
       if (replaced !== item) changed = true;
       return replaced;
     });
@@ -116,7 +144,7 @@ function replaceInValue<T>(value: T, oldName: string, newName: string): T {
         newObj[key] = v;
         continue;
       }
-      const replaced = replaceInValue(v, oldName, newName);
+      const replaced = transformValue(v, transformString);
       if (replaced !== v) changed = true;
       newObj[key] = replaced;
     }
@@ -126,13 +154,67 @@ function replaceInValue<T>(value: T, oldName: string, newName: string): T {
   return value;
 }
 
+function renameInString(value: string, oldName: string, newName: string): string {
+  let result = "";
+  let i = 0;
+  while (i < value.length) {
+    if (value[i] === "\\" && i + 1 < value.length && value[i + 1] === "$") {
+      result += "\\$";
+      i += 2;
+      continue;
+    }
+
+    if (value[i] === "$") {
+      const rest = value.slice(i + 1);
+      if (
+        rest.startsWith(oldName) &&
+        (rest.length === oldName.length || !/[a-zA-Z0-9_-]/.test(rest[oldName.length]))
+      ) {
+        result += `$${newName}`;
+        i += 1 + oldName.length;
+        continue;
+      }
+    }
+
+    result += value[i];
+    i++;
+  }
+  return result;
+}
+
+function clearInString(value: string, names: Set<string>): string {
+  const matches = parseVariableReferences(value);
+  if (matches.length === 0) return value;
+
+  let result = "";
+  let lastEnd = 0;
+  let changed = false;
+  for (const m of matches) {
+    if (!names.has(m.nodeName)) continue;
+    result += value.slice(lastEnd, m.start);
+    lastEnd = m.end;
+    changed = true;
+  }
+  if (!changed) return value;
+  return result + value.slice(lastEnd);
+}
+
 export function replaceVariableReferences(
   nodes: CanvasNode[],
   oldName: string,
   newName: string,
 ): CanvasNode[] {
   return nodes.map((node) => {
-    const newData = replaceInValue(node.data, oldName, newName);
+    const newData = transformValue(node.data, (s) => renameInString(s, oldName, newName));
+    if (newData === node.data) return node;
+    return { ...node, data: newData } as CanvasNode;
+  });
+}
+
+export function clearVariableReferences(nodes: CanvasNode[], names: Set<string>): CanvasNode[] {
+  if (names.size === 0) return nodes;
+  return nodes.map((node) => {
+    const newData = transformValue(node.data, (s) => clearInString(s, names));
     if (newData === node.data) return node;
     return { ...node, data: newData } as CanvasNode;
   });

@@ -4,17 +4,27 @@ from typing import Any, Optional
 
 from fastapi import status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    field_validator,
+    model_validator,
+)
 
 from src.core.responses import ApiResponse
 from src.db.models import User, Workflow, WorkflowRole, WorkflowVersion
+from src.workflow.validation import validate_workflow_data
 
 
 class WorkflowListItem(BaseModel):
     id: int
     name: str
+    description: Optional[str] = Field(default=None)
     is_active: bool
     role: WorkflowRole
+    owner_name: str
 
 
 def normalize_and_validate_name(value: str, *, field_name: str = "name") -> str:
@@ -58,7 +68,7 @@ class WorkflowUpdateName(BaseModel):
 
 
 class WorkflowUpdateStatus(BaseModel):
-    is_active: bool
+    is_active: StrictBool
 
 
 class WorkflowVersionCreator(BaseModel):
@@ -155,15 +165,133 @@ class WorkflowDetail(BaseModel):
         )
 
 
+class RuntimeWorkflowNode(BaseModel):
+    """A single node in the runtime workflow graph.
+
+    Only the structural identity fields are validated (``id``, ``type``); the
+    rest of the runtime shape (``name``, ``parameters``, ``output``,
+    ``position`` as an ``[x, y]`` array, ``credentials``, ...) is intentionally
+    loose and passes through via ``extra="allow"``.
+    """
+
+    id: str = Field(..., min_length=1)
+    type: str = Field(..., min_length=1)
+    trigger: Optional[bool] = None
+
+    model_config = ConfigDict(extra="allow")
+
+
+class RuntimeWorkflowEdge(BaseModel):
+    """A single edge in the runtime workflow graph.
+
+    The runtime/save shape uses ``src``/``dst`` (the worker convention),
+    converted client-side from the canvas ``source``/``target`` shape in
+    workflow-dsl.
+    """
+
+    id: str = Field(..., min_length=1)
+    src: str = Field(..., min_length=1)
+    dst: str = Field(..., min_length=1)
+    type: Optional[str] = None
+    label: Optional[str] = None
+
+    model_config = ConfigDict(extra="allow")
+
+
+class RuntimeWorkflowNote(BaseModel):
+    """A decorative sticky note placed on the canvas.
+
+    Notes are persisted with the workflow but never executed: the worker
+    deserializes only ``nodes``/``edges`` and semantic validation
+    (``src.workflow.validation``) ignores notes entirely.
+    """
+
+    id: str = Field(..., min_length=1)
+
+    model_config = ConfigDict(extra="allow")
+
+
+class RuntimeWorkflowGraph(BaseModel):
+    """The runtime workflow graph saved as a version: nodes + edges (+ optionally notes).
+
+    Pydantic owns *shape* validation here (required/non-empty fields, types,
+    id uniqueness); cross-field *semantics* (edges reference existing nodes,
+    no self-references, exactly one trigger) live in
+    ``src.workflow.validation``. Stricter than the lenient template
+    ``WorkflowGraph``: a saved version must have at least one node.
+
+    ``notes`` is a decorative layer: free-floating sticky notes that are
+    persisted but excluded from execution and from trigger/edge semantics.
+    """
+
+    nodes: list[RuntimeWorkflowNode] = Field(..., min_length=1)
+    edges: list[RuntimeWorkflowEdge] = Field(...)
+    notes: list[RuntimeWorkflowNote] = Field(default_factory=list)
+    metadata: Optional[dict[str, Any]] = None
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("nodes")
+    @classmethod
+    def validate_node_ids_unique(
+        cls, v: list[RuntimeWorkflowNode]
+    ) -> list[RuntimeWorkflowNode]:
+        ids = [n.id for n in v]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Workflow node ids must be unique")
+        return v
+
+    @field_validator("edges")
+    @classmethod
+    def validate_edge_ids_unique(
+        cls, v: list[RuntimeWorkflowEdge]
+    ) -> list[RuntimeWorkflowEdge]:
+        ids = [e.id for e in v]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Workflow edge ids must be unique")
+        return v
+
+    @field_validator("notes")
+    @classmethod
+    def validate_note_ids_unique(
+        cls, v: list[RuntimeWorkflowNote]
+    ) -> list[RuntimeWorkflowNote]:
+        ids = [n.id for n in v]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Workflow note ids must be unique")
+        return v
+
+    @model_validator(mode="after")
+    def validate_note_ids_disjoint_from_nodes(self) -> "RuntimeWorkflowGraph":
+        node_ids = {n.id for n in self.nodes}
+        collisions = sorted(node_ids.intersection(n.id for n in self.notes))
+        if collisions:
+            raise ValueError(
+                f"Workflow note ids must not collide with node ids: {', '.join(collisions)}"
+            )
+        return self
+
+
 class WorkflowCreateVersion(BaseModel):
     base_version_id: Optional[int] = Field(
         default=None,
         description="Expected current latest version id. Null is allowed only for the first save.",
     )
-    workflow_data: dict[str, Any] = Field(
+    workflow_data: RuntimeWorkflowGraph = Field(
         ..., description="Workflow definition to save"
     )
     message: Optional[str] = Field(default=None, description="Revision message")
+
+    @model_validator(mode="after")
+    def _validate_workflow_data(self) -> "WorkflowCreateVersion":
+        result = validate_workflow_data(self.workflow_data.model_dump())
+        if not result.valid:
+            parts = [
+                f"[{e.field}] {e.message}" if e.field else e.message
+                for e in result.errors
+            ]
+            raise ValueError(f"Invalid workflow: {'; '.join(parts)}")
+        return self
 
 
 class WorkflowPublishVersion(BaseModel):

@@ -9,6 +9,7 @@ export interface Workflow {
   execution_id: string;  // Unique identifier for this specific execution instance
   nodes: Node[];  // Array of node definitions
   edges: Edge[];  // Array of edge definitions
+  notes: Note[] | undefined;  // Array of decorative sticky notes (not part of execution)
 }
 
 export function sanitizeWorkflow(obj: Workflow): { valid: boolean; errors: string[] } {
@@ -31,6 +32,61 @@ export function sanitizeWorkflow(obj: Workflow): { valid: boolean; errors: strin
   }
   if (obj.edges === undefined || obj.edges === null) {
     errors.push("Workflow.edges is required");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+export interface Note {
+  // Decorative sticky note placed on the canvas. Persisted with the workflow but never executed; ignored by the worker and by trigger/edge validation.
+  id: string;  // Unique identifier for the note within the workflow
+  content: string | undefined;  // Markdown source of the note body (may be empty)
+  x: number;  // Canvas x position
+  y: number;  // Canvas y position
+  width: number | undefined;  // Note width in pixels (persisted resize)
+  height: number | undefined;  // Note height in pixels (persisted resize)
+  color: "yellow" | "green" | "blue" | "pink" | "purple" | "gray" | undefined;  // Preset color theme key
+  font_size: "sm" | "md" | "lg" | undefined;  // Text size preset
+}
+
+export function sanitizeNote(obj: Note): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.id === undefined || obj.id === null) {
+    errors.push("Note.id is required");
+  }
+  if (obj.id !== undefined && typeof obj.id !== "string") {
+    errors.push("Note.id must be a string");
+  }
+  if (obj.content !== undefined && typeof obj.content !== "string") {
+    errors.push("Note.content must be a string");
+  }
+  if (obj.x === undefined || obj.x === null) {
+    errors.push("Note.x is required");
+  }
+  if (obj.x !== undefined && typeof obj.x !== "number") {
+    errors.push("Note.x must be a number");
+  }
+  if (obj.y === undefined || obj.y === null) {
+    errors.push("Note.y is required");
+  }
+  if (obj.y !== undefined && typeof obj.y !== "number") {
+    errors.push("Note.y must be a number");
+  }
+  if (obj.width !== undefined && typeof obj.width !== "number") {
+    errors.push("Note.width must be a number");
+  }
+  if (obj.height !== undefined && typeof obj.height !== "number") {
+    errors.push("Note.height must be a number");
+  }
+  if (obj.color !== undefined && typeof obj.color !== "string") {
+    errors.push("Note.color must be a string");
+  }
+  if (obj.font_size !== undefined && typeof obj.font_size !== "string") {
+    errors.push("Note.font_size must be a string");
   }
 
   return {
@@ -457,39 +513,148 @@ export function sanitizeLogParameters(obj: LogParameters): { valid: boolean; err
   };
 }
 
-export interface DatetimeParameters {
-  // Create, shift, or format date and time values
-  operation: "now" | "add" | "subtract" | "format";  // Date and time operation
-  date: string | undefined;  // Input date or timestamp to format or adjust
-  amount: number | undefined;  // Amount of time to add or subtract
-  unit: "seconds" | "minutes" | "hours" | "days" | "weeks" | "months" | "years" | undefined;  // Unit of time for add and subtract
-  format: string | undefined;  // Output format string
-  timezone: string | undefined;  // Timezone used for parsing and formatting
+export interface DatetimenowParameters {
+  // Get the current date and time in a given timezone
+  timezone: string | undefined;  // IANA timezone used for the output
+  format: string | undefined;  // Output format string (Go time layout)
 }
 
-export function sanitizeDatetimeParameters(obj: DatetimeParameters): { valid: boolean; errors: string[] } {
+export function sanitizeDatetimenowParameters(obj: DatetimenowParameters): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
-  if (obj.operation === undefined || obj.operation === null) {
-    errors.push("DatetimeParameters.operation is required");
-  }
-  if (obj.operation !== undefined && typeof obj.operation !== "string") {
-    errors.push("DatetimeParameters.operation must be a string");
-  }
-  if (obj.date !== undefined && typeof obj.date !== "string") {
-    errors.push("DatetimeParameters.date must be a string");
-  }
-  if (obj.amount !== undefined && typeof obj.amount !== "number") {
-    errors.push("DatetimeParameters.amount must be a number");
-  }
-  if (obj.unit !== undefined && typeof obj.unit !== "string") {
-    errors.push("DatetimeParameters.unit must be a string");
+  if (obj.timezone !== undefined && typeof obj.timezone !== "string") {
+    errors.push("DatetimenowParameters.timezone must be a string");
   }
   if (obj.format !== undefined && typeof obj.format !== "string") {
-    errors.push("DatetimeParameters.format must be a string");
+    errors.push("DatetimenowParameters.format must be a string");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+export interface DatetimeaddParameters {
+  // Add a duration to a date or timestamp
+  date: string | undefined;  // Input date or timestamp; defaults to now when empty
+  amount: number;  // Amount of time to add
+  unit: "seconds" | "minutes" | "hours" | "days" | "weeks" | "months" | "years" | undefined;  // Unit of time
+  timezone: string | undefined;  // IANA timezone used for parsing naive inputs and for the output
+  format: string | undefined;  // Output format string (Go time layout)
+}
+
+export function sanitizeDatetimeaddParameters(obj: DatetimeaddParameters): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.date !== undefined && typeof obj.date !== "string") {
+    errors.push("DatetimeaddParameters.date must be a string");
+  }
+  if (obj.amount === undefined || obj.amount === null) {
+    errors.push("DatetimeaddParameters.amount is required");
+  }
+  if (obj.amount !== undefined && typeof obj.amount !== "number") {
+    errors.push("DatetimeaddParameters.amount must be a number");
+  }
+  if (obj.unit !== undefined && typeof obj.unit !== "string") {
+    errors.push("DatetimeaddParameters.unit must be a string");
   }
   if (obj.timezone !== undefined && typeof obj.timezone !== "string") {
-    errors.push("DatetimeParameters.timezone must be a string");
+    errors.push("DatetimeaddParameters.timezone must be a string");
+  }
+  if (obj.format !== undefined && typeof obj.format !== "string") {
+    errors.push("DatetimeaddParameters.format must be a string");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+export interface DatetimesubtractParameters {
+  // Subtract a duration from a date or timestamp
+  date: string | undefined;  // Input date or timestamp; defaults to now when empty
+  amount: number;  // Amount of time to subtract
+  unit: "seconds" | "minutes" | "hours" | "days" | "weeks" | "months" | "years" | undefined;  // Unit of time
+  timezone: string | undefined;  // IANA timezone used for parsing naive inputs and for the output
+  format: string | undefined;  // Output format string (Go time layout)
+}
+
+export function sanitizeDatetimesubtractParameters(obj: DatetimesubtractParameters): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.date !== undefined && typeof obj.date !== "string") {
+    errors.push("DatetimesubtractParameters.date must be a string");
+  }
+  if (obj.amount === undefined || obj.amount === null) {
+    errors.push("DatetimesubtractParameters.amount is required");
+  }
+  if (obj.amount !== undefined && typeof obj.amount !== "number") {
+    errors.push("DatetimesubtractParameters.amount must be a number");
+  }
+  if (obj.unit !== undefined && typeof obj.unit !== "string") {
+    errors.push("DatetimesubtractParameters.unit must be a string");
+  }
+  if (obj.timezone !== undefined && typeof obj.timezone !== "string") {
+    errors.push("DatetimesubtractParameters.timezone must be a string");
+  }
+  if (obj.format !== undefined && typeof obj.format !== "string") {
+    errors.push("DatetimesubtractParameters.format must be a string");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+export interface DatetimeformatParameters {
+  // Format a date or timestamp in a chosen timezone
+  date: string;  // Input date or timestamp to format
+  timezone: string | undefined;  // IANA timezone used for parsing naive inputs and for the output
+  format: string | undefined;  // Output format string (Go time layout)
+}
+
+export function sanitizeDatetimeformatParameters(obj: DatetimeformatParameters): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.date === undefined || obj.date === null) {
+    errors.push("DatetimeformatParameters.date is required");
+  }
+  if (obj.date !== undefined && typeof obj.date !== "string") {
+    errors.push("DatetimeformatParameters.date must be a string");
+  }
+  if (obj.timezone !== undefined && typeof obj.timezone !== "string") {
+    errors.push("DatetimeformatParameters.timezone must be a string");
+  }
+  if (obj.format !== undefined && typeof obj.format !== "string") {
+    errors.push("DatetimeformatParameters.format must be a string");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+export interface DatetimeparseParameters {
+  // Parse a date or timestamp into structured components
+  date: string;  // Input date or timestamp to parse
+  timezone: string | undefined;  // IANA timezone used for parsing naive inputs and for the structured output
+}
+
+export function sanitizeDatetimeparseParameters(obj: DatetimeparseParameters): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (obj.date === undefined || obj.date === null) {
+    errors.push("DatetimeparseParameters.date is required");
+  }
+  if (obj.date !== undefined && typeof obj.date !== "string") {
+    errors.push("DatetimeparseParameters.date must be a string");
+  }
+  if (obj.timezone !== undefined && typeof obj.timezone !== "string") {
+    errors.push("DatetimeparseParameters.timezone must be a string");
   }
 
   return {
@@ -659,6 +824,7 @@ export interface BaseNode {
   id: string;  // Unique identifier for the node within the workflow
   name: string;  // Human-readable node name
   trigger: boolean;  // Whether this node initiates workflow execution
+  webhook_guid: string | undefined;  // Stable webhook registration GUID for webhook trigger nodes
   output: Record<string, any>;  // Placeholder for execution output (empty in definition)
   error: ErrorHandling | undefined;  // Error handling configuration
   credential_type: string[] | undefined;  // List of allowed credential types for this node (for UI filtering)
@@ -686,6 +852,9 @@ export function sanitizeBaseNode(obj: BaseNode): { valid: boolean; errors: strin
   if (obj.trigger !== undefined && typeof obj.trigger !== "boolean") {
     errors.push("BaseNode.trigger must be a boolean");
   }
+  if (obj.webhook_guid !== undefined && typeof obj.webhook_guid !== "string") {
+    errors.push("BaseNode.webhook_guid must be a string");
+  }
   if (obj.output === undefined || obj.output === null) {
     errors.push("BaseNode.output is required");
   }
@@ -709,6 +878,13 @@ export interface ScheduledTriggerNode extends BaseNode {
   // Scheduled workflow trigger with interval-based execution
   type: "ScheduledTrigger";
   parameters: ScheduledtriggerParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface WebhookNode extends BaseNode {
+  // Webhook workflow trigger with a stable externally callable GUID
+  type: "webhook";
+  parameters: Record<string, any>;
   credential_type: string[] | undefined;
 }
 
@@ -747,10 +923,38 @@ export interface LogNode extends BaseNode {
   credential_type: string[] | undefined;
 }
 
-export interface DatetimeNode extends BaseNode {
-  // Create, shift, or format date and time values
-  type: "datetime";
-  parameters: DatetimeParameters;
+export interface DatetimenowNode extends BaseNode {
+  // Get the current date and time in a given timezone
+  type: "dateTimeNow";
+  parameters: DatetimenowParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface DatetimeaddNode extends BaseNode {
+  // Add a duration to a date or timestamp
+  type: "dateTimeAdd";
+  parameters: DatetimeaddParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface DatetimesubtractNode extends BaseNode {
+  // Subtract a duration from a date or timestamp
+  type: "dateTimeSubtract";
+  parameters: DatetimesubtractParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface DatetimeformatNode extends BaseNode {
+  // Format a date or timestamp in a chosen timezone
+  type: "dateTimeFormat";
+  parameters: DatetimeformatParameters;
+  credential_type: string[] | undefined;
+}
+
+export interface DatetimeparseNode extends BaseNode {
+  // Parse a date or timestamp into structured components
+  type: "dateTimeParse";
+  parameters: DatetimeparseParameters;
   credential_type: string[] | undefined;
 }
 
@@ -819,4 +1023,4 @@ export interface MergeNode extends BaseNode {
 
 // Union type for all nodes
 
-export type Node = ManualTriggerNode | ScheduledTriggerNode | HttpNode | SmtpNode | ConditionalNode | SwitchNode | LogNode | DatetimeNode | AgentNode | WaitNode | EditNode | FilterNode | SortNode | LimitNode | SplitNode | AggregatorNode | MergeNode;
+export type Node = ManualTriggerNode | ScheduledTriggerNode | WebhookNode | HttpNode | SmtpNode | ConditionalNode | SwitchNode | LogNode | DatetimenowNode | DatetimeaddNode | DatetimesubtractNode | DatetimeformatNode | DatetimeparseNode | AgentNode | WaitNode | EditNode | FilterNode | SortNode | LimitNode | SplitNode | AggregatorNode | MergeNode;

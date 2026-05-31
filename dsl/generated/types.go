@@ -11,6 +11,7 @@ type Workflow struct {
   ExecutionId string `json:"execution_id"`  // Unique identifier for this specific execution instance
   Nodes []Node `json:"nodes"`  // Array of node definitions
   Edges []Edge `json:"edges"`  // Array of edge definitions
+  Notes *[]Note `json:"notes"`  // Array of decorative sticky notes (not part of execution)
 }
 
 func (n *Workflow) Sanitize() (bool, []string) {
@@ -32,12 +33,35 @@ func (n *Workflow) Sanitize() (bool, []string) {
   return len(errors) == 0, errors
 }
 
+type Note struct {
+  // Decorative sticky note placed on the canvas. Persisted with the workflow but never executed; ignored by the worker and by trigger/edge validation.
+  Id string `json:"id"`  // Unique identifier for the note within the workflow
+  Content *string `json:"content"`  // Markdown source of the note body (may be empty)
+  X float64 `json:"x"`  // Canvas x position
+  Y float64 `json:"y"`  // Canvas y position
+  Width *float64 `json:"width"`  // Note width in pixels (persisted resize)
+  Height *float64 `json:"height"`  // Note height in pixels (persisted resize)
+  Color *string `json:"color"`  // Preset color theme key
+  FontSize *string `json:"font_size"`  // Text size preset
+}
+
+func (n *Note) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Id == "" {
+    errors = append(errors, "Note.id is required")
+  }
+
+  return len(errors) == 0, errors
+}
+
 type Node struct {
   // Single executable node within the workflow
   Id string `json:"id"`  // Unique identifier for the node within the workflow
   Name string `json:"name"`  // Human-readable node name
   Trigger bool `json:"trigger"`  // Whether this node initiates workflow execution
   Type string `json:"type"`  // Node type identifier
+  WebhookGuid *string `json:"webhook_guid"`  // Stable webhook registration GUID for webhook trigger nodes
   Parameters map[string]interface{} `json:"parameters"`  // Type-specific configuration (may be empty)
   Output map[string]interface{} `json:"output"`  // Placeholder for execution output (empty in definition)
   Credentials *Credential `json:"credentials"`  // Complete credential object with values
@@ -340,21 +364,79 @@ func (n *LogParameters) Sanitize() (bool, []string) {
   return len(errors) == 0, errors
 }
 
-type DatetimeParameters struct {
-  // Create, shift, or format date and time values
-  Operation string `json:"operation"`  // Date and time operation
-  Date *string `json:"date"`  // Input date or timestamp to format or adjust
-  Amount *float64 `json:"amount"`  // Amount of time to add or subtract
-  Unit *string `json:"unit"`  // Unit of time for add and subtract
-  Format *string `json:"format"`  // Output format string
-  Timezone *string `json:"timezone"`  // Timezone used for parsing and formatting
+type DatetimenowParameters struct {
+  // Get the current date and time in a given timezone
+  Timezone *string `json:"timezone"`  // IANA timezone used for the output
+  Format *string `json:"format"`  // Output format string (Go time layout)
 }
 
-func (n *DatetimeParameters) Sanitize() (bool, []string) {
+func (n *DatetimenowParameters) Sanitize() (bool, []string) {
   var errors []string
 
-  if n.Operation == "" {
-    errors = append(errors, "DatetimeParameters.operation is required")
+
+  return len(errors) == 0, errors
+}
+
+type DatetimeaddParameters struct {
+  // Add a duration to a date or timestamp
+  Date *string `json:"date"`  // Input date or timestamp; defaults to now when empty
+  Amount float64 `json:"amount"`  // Amount of time to add
+  Unit *string `json:"unit"`  // Unit of time
+  Timezone *string `json:"timezone"`  // IANA timezone used for parsing naive inputs and for the output
+  Format *string `json:"format"`  // Output format string (Go time layout)
+}
+
+func (n *DatetimeaddParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+
+  return len(errors) == 0, errors
+}
+
+type DatetimesubtractParameters struct {
+  // Subtract a duration from a date or timestamp
+  Date *string `json:"date"`  // Input date or timestamp; defaults to now when empty
+  Amount float64 `json:"amount"`  // Amount of time to subtract
+  Unit *string `json:"unit"`  // Unit of time
+  Timezone *string `json:"timezone"`  // IANA timezone used for parsing naive inputs and for the output
+  Format *string `json:"format"`  // Output format string (Go time layout)
+}
+
+func (n *DatetimesubtractParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+
+  return len(errors) == 0, errors
+}
+
+type DatetimeformatParameters struct {
+  // Format a date or timestamp in a chosen timezone
+  Date string `json:"date"`  // Input date or timestamp to format
+  Timezone *string `json:"timezone"`  // IANA timezone used for parsing naive inputs and for the output
+  Format *string `json:"format"`  // Output format string (Go time layout)
+}
+
+func (n *DatetimeformatParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Date == "" {
+    errors = append(errors, "DatetimeformatParameters.date is required")
+  }
+
+  return len(errors) == 0, errors
+}
+
+type DatetimeparseParameters struct {
+  // Parse a date or timestamp into structured components
+  Date string `json:"date"`  // Input date or timestamp to parse
+  Timezone *string `json:"timezone"`  // IANA timezone used for parsing naive inputs and for the structured output
+}
+
+func (n *DatetimeparseParameters) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Date == "" {
+    errors = append(errors, "DatetimeparseParameters.date is required")
   }
 
   return len(errors) == 0, errors
@@ -467,12 +549,17 @@ func (n *MergeParameters) Sanitize() (bool, []string) {
 
 var MANUALTRIGGER_CREDENTIAL_TYPE []string = nil
 var SCHEDULEDTRIGGER_CREDENTIAL_TYPE []string = nil
+var WEBHOOK_CREDENTIAL_TYPE []string = nil
 var HTTP_CREDENTIAL_TYPE []string = []string{"api_key", "oauth2", "basic_auth", "header", "token"}
 var SMTP_CREDENTIAL_TYPE []string = []string{"smtp"}
 var CONDITIONAL_CREDENTIAL_TYPE []string = nil
 var SWITCH_CREDENTIAL_TYPE []string = nil
 var LOG_CREDENTIAL_TYPE []string = nil
-var DATETIME_CREDENTIAL_TYPE []string = nil
+var DATETIMENOW_CREDENTIAL_TYPE []string = nil
+var DATETIMEADD_CREDENTIAL_TYPE []string = nil
+var DATETIMESUBTRACT_CREDENTIAL_TYPE []string = nil
+var DATETIMEFORMAT_CREDENTIAL_TYPE []string = nil
+var DATETIMEPARSE_CREDENTIAL_TYPE []string = nil
 var AGENT_CREDENTIAL_TYPE []string = nil
 var WAIT_CREDENTIAL_TYPE []string = nil
 var EDIT_CREDENTIAL_TYPE []string = nil
