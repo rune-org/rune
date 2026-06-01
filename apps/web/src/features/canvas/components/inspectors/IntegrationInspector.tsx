@@ -183,7 +183,7 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
       )}
 
       <CredentialSelector
-        credentialType="oauth2"
+        credentialType={["oauth2", "token"]}
         value={node.data.credential ?? null}
         onChange={handleCredentialChange}
         label={tool ? `${tool.providerLabel} Account` : "Account"}
