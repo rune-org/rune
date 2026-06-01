@@ -66,6 +66,26 @@ func TestNode_Sanitize_Valid(t *testing.T) {
 	}
 }
 
+func TestNode_Sanitize_WebhookValid(t *testing.T) {
+	guid := "123e4567-e89b-12d3-a456-426614174000"
+	node := dsl.Node{
+		Id:          "webhook_1",
+		Name:        "Webhook",
+		Trigger:     true,
+		Type:        "webhook",
+		WebhookGuid: &guid,
+		Parameters:  map[string]interface{}{},
+		Output:      map[string]interface{}{},
+	}
+	ok, errors := node.Sanitize()
+	if !ok {
+		t.Fatalf("expected valid webhook node, got errors: %v", errors)
+	}
+	if len(errors) != 0 {
+		t.Fatalf("expected no errors, got: %v", errors)
+	}
+}
+
 func TestWorkflow_Sanitize_Invalid(t *testing.T) {
 	workflow := dsl.Workflow{
 		WorkflowId:  "", // invalid: empty

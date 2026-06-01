@@ -41,7 +41,7 @@ func TestEditNodeE2E_SimpleAssignment(t *testing.T) {
 					Name: "Transform User Data",
 					Type: "edit",
 					Parameters: map[string]interface{}{
-						"mode": "assignments",
+						"mode":        "assignments",
 						"target_path": "baby",
 						"assignments": []interface{}{
 							map[string]interface{}{"name": "full_name", "value": "{{ $json.first_name + ' ' + $json.last_name }}", "type": "string"},

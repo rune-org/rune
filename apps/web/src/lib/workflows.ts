@@ -3,6 +3,7 @@ import type { CanvasNode, CanvasEdge } from "@/features/canvas/types";
 import type {
   WorkflowNode as WorkflowNodeDSL,
   WorkflowEdge as WorkflowEdgeDSL,
+  WorkflowNote as WorkflowNoteDSL,
 } from "@/lib/workflow-dsl";
 import { canvasToWorkflowData, workflowDataToCanvas } from "@/lib/workflow-dsl";
 import type { WorkflowRole } from "@/lib/permissions";
@@ -20,9 +21,9 @@ export type WorkflowSummary = {
    */
   description?: string | null;
   /**
-   * Derived status – treated as active when `is_active` is true, otherwise draft.
+   * Derived status from the backend workflow list item.
    */
-  status: "active" | "draft";
+  status: "active" | "inactive" | "draft";
   /**
    * Placeholder trigger type.
    */
@@ -44,6 +45,10 @@ export type WorkflowSummary = {
    */
   role: WorkflowRole;
   /**
+   * Original creator's name.
+   */
+  ownerName: string;
+  /**
    * Latest version number (if versioning is active).
    */
   latestVersion?: number;
@@ -62,7 +67,19 @@ export const defaultWorkflowSummary: WorkflowSummary = {
   lastRunStatus: "n/a",
   runs: 0,
   role: "owner",
+  ownerName: "Me",
 };
+
+function getStatusFromListItem(item: WorkflowListItem): WorkflowSummary["status"] {
+  if ("status" in item) {
+    const statusValue = (item as { status?: string }).status;
+    if (statusValue === "active" || statusValue === "inactive" || statusValue === "draft") {
+      return statusValue;
+    }
+  }
+
+  return item.is_active ? "active" : "draft";
+}
 
 export function listItemToWorkflowSummary(item: WorkflowListItem): WorkflowSummary {
   return {
@@ -70,8 +87,9 @@ export function listItemToWorkflowSummary(item: WorkflowListItem): WorkflowSumma
     id: String(item.id),
     name: item.name,
     description: item.description,
-    status: item.is_active ? "active" : "draft",
+    status: getStatusFromListItem(item),
     role: item.role,
+    ownerName: item.owner_name,
   };
 }
 
@@ -84,10 +102,12 @@ function workflowDataToGraph(raw: Record<string, unknown>): WorkflowGraph {
   const data = raw as {
     nodes?: WorkflowNodeDSL[] | undefined;
     edges?: WorkflowEdgeDSL[] | undefined;
+    notes?: WorkflowNoteDSL[] | undefined;
   };
   const { nodes, edges } = workflowDataToCanvas({
     nodes: Array.isArray(data.nodes) ? data.nodes : [],
     edges: Array.isArray(data.edges) ? data.edges : [],
+    notes: Array.isArray(data.notes) ? data.notes : [],
   });
 
   return {

@@ -3,9 +3,11 @@
 import { memo, useState } from "react";
 import { Inspector } from "./Inspector";
 import { ScrybInterface } from "./ScrybInterface";
+import { StickyNoteButton } from "./StickyNoteButton";
 import { cn } from "@/lib/cn";
 import type { CanvasNode } from "../types";
 import { useUpdateNodeData } from "../hooks/useUpdateNodeData";
+import { isInspectableNode } from "../lib/nodeRegistry";
 
 type RightPanelStackProps = {
   selectedNode: CanvasNode | null;
@@ -15,6 +17,7 @@ type RightPanelStackProps = {
   isExpandedDialogOpen?: boolean;
   setIsExpandedDialogOpen?: (open: boolean) => void;
   onTogglePin?: (nodeId: string) => void;
+  onAddStickyNote?: () => void;
   workflowId?: number | null;
   readOnly?: boolean;
 };
@@ -37,20 +40,30 @@ function areEqual(prev: RightPanelStackProps, next: RightPanelStackProps) {
     prev.isExpandedDialogOpen === next.isExpandedDialogOpen &&
     prev.readOnly === next.readOnly &&
     Boolean(prev.onDelete) === Boolean(next.onDelete) &&
+    Boolean(prev.onAddStickyNote) === Boolean(next.onAddStickyNote) &&
     isEquivalentSelectedNode(prev.selectedNode, next.selectedNode)
   );
 }
 
 export const RightPanelStack = memo(function RightPanelStack(props: RightPanelStackProps) {
   const [isScrybOpen, setIsScrybOpen] = useState(false);
-  const { workflowId, readOnly, ...inspectorProps } = props;
+  const { workflowId, readOnly, onAddStickyNote, ...inspectorProps } = props;
+
+  const inspectorSelectedNode =
+    inspectorProps.selectedNode && isInspectableNode(inspectorProps.selectedNode.type)
+      ? inspectorProps.selectedNode
+      : null;
 
   return (
-    <div className="pointer-events-none absolute right-4 top-4 bottom-8 z-35 flex h-auto flex-col items-end justify-between gap-4">
-      {/* Top: Inspector */}
-      <div className="pointer-events-auto min-h-0 flex flex-col items-end overflow-visible">
+    <div
+      data-onboarding="inspector"
+      className="pointer-events-none absolute right-4 top-4 bottom-8 z-35 flex h-auto flex-col items-end justify-between gap-4"
+    >
+      <div className="pointer-events-auto flex min-h-0 items-start gap-2 overflow-visible">
+        {!readOnly && onAddStickyNote && <StickyNoteButton onClick={onAddStickyNote} />}
         <Inspector
           {...inspectorProps}
+          selectedNode={inspectorSelectedNode}
           readOnly={readOnly}
           renderInPanel={false}
           className={cn(

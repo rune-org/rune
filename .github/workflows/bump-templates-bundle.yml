@@ -1,0 +1,68 @@
+name: Bump Templates Bundle
+on:
+  repository_dispatch:
+    types: [templates-updated]
+  # In case a dispatch is missed.
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: bump-templates-bundle
+  cancel-in-progress: false
+
+jobs:
+  bump-templates-bundle:
+    name: Bump Templates Bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            rune
+            rune-templates
+
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          submodules: true
+
+      - name: Bump templates_bundle to latest main
+        id: bump
+        run: |
+          git submodule update --remote services/api/templates_bundle
+          if git diff --quiet -- services/api/templates_bundle; then
+            echo "No changes to commit"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR with bundle bump
+        if: steps.bump.outputs.changed == 'true'
+        run: |
+          git config --local user.email "268621759+rune-ci-bot[bot]@users.noreply.github.com"
+          git config --local user.name "rune-ci-bot[bot]"
+          NEW_SHA="$(git -C services/api/templates_bundle rev-parse --short HEAD)"
+          BRANCH_NAME="chore/bump-templates-bundle"
+          git checkout -B "$BRANCH_NAME"
+          git add services/api/templates_bundle
+          git commit -m "chore: bump templates_bundle to ${NEW_SHA}"
+          git push -u --force-with-lease origin "$BRANCH_NAME"
+          if gh pr view "$BRANCH_NAME" --json state --jq '.state' 2>/dev/null | grep -q OPEN; then
+            echo "PR already open for $BRANCH_NAME; pushed update."
+          else
+            gh pr create \
+              --title "chore: bump templates_bundle" \
+              --body "This PR was automatically generated to update the \`services/api/templates_bundle\` submodule pointer to the latest \`rune-templates\` main (\`${NEW_SHA}\`)." \
+              --base main \
+              --head "$BRANCH_NAME"
+          fi
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}

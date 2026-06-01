@@ -158,6 +158,9 @@ export function WorkflowsTable() {
       case "active":
         list = list.filter((workflow) => workflow.status === "active");
         break;
+      case "inactive":
+        list = list.filter((workflow) => workflow.status === "inactive");
+        break;
       case "draft":
         list = list.filter((workflow) => workflow.status === "draft");
         break;
@@ -190,13 +193,14 @@ export function WorkflowsTable() {
 
   const stats = useMemo(() => {
     const active = workflows.filter((workflow) => workflow.status === "active").length;
+    const inactive = workflows.filter((workflow) => workflow.status === "inactive").length;
     const draft = workflows.filter((workflow) => workflow.status === "draft").length;
     const failed = workflows.filter(
       (workflow) => lastRunByWorkflow.get(workflow.id)?.status === "failed",
     ).length;
     const runs = executionItems.length;
 
-    return { active, draft, failed, runs };
+    return { active, inactive, draft, failed, runs };
   }, [executionItems.length, lastRunByWorkflow, workflows]);
 
   const selectedWorkflows = useMemo(
@@ -652,6 +656,7 @@ export function WorkflowsTable() {
         isRowPending={isRowPending}
         isRowExporting={isRowExporting}
         isAdmin={isAdmin}
+        currentUserName={authState.user?.name ?? ""}
         lastRunByWorkflow={lastRunByWorkflow}
         executionsLoaded={executionsLoaded}
         onRun={handleRun}

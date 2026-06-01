@@ -3,10 +3,13 @@ import {
   type Workflow,
   type Edge,
   type HttpNode,
+  type WebhookNode,
   type HttpParameters,
+  type Note,
   sanitizeWorkflow,
   sanitizeEdge,
   sanitizeHttpParameters,
+  sanitizeNote,
 } from "../../generated/types";
 
 describe("generated DSL types", () => {
@@ -27,6 +30,7 @@ describe("generated DSL types", () => {
       id: "node_1",
       name: "Fetch API",
       trigger: false,
+      webhook_guid: undefined,
       output: {},
       error: undefined,
       credentials: undefined,
@@ -44,6 +48,7 @@ describe("generated DSL types", () => {
       execution_id: "exec_1",
       nodes: [mockNode],
       edges: [mockEdge],
+      notes: undefined,
     };
 
     const result = sanitizeWorkflow(mockWorkflow);
@@ -80,12 +85,55 @@ describe("generated DSL types", () => {
     expect(result.errors).toHaveLength(0);
   });
 
+  it("sanitizeWorkflow accepts a webhook trigger node with webhook_guid", () => {
+    const mockNode: WebhookNode = {
+      id: "webhook_1",
+      name: "Webhook",
+      trigger: true,
+      webhook_guid: "123e4567-e89b-12d3-a456-426614174000",
+      output: {},
+      error: undefined,
+      credentials: undefined,
+      type: "webhook",
+      parameters: {},
+      credential_type: undefined,
+    };
+    const mockWorkflow: Workflow = {
+      workflow_id: "wf_1",
+      execution_id: "exec_1",
+      nodes: [mockNode],
+      edges: [],
+      notes: undefined,
+    };
+
+    const result = sanitizeWorkflow(mockWorkflow);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("sanitizeNote accepts a valid decorative note", () => {
+    const mockNote: Note = {
+      id: "note_1",
+      content: "# Title\n\nbody",
+      x: 10,
+      y: 20,
+      width: 240,
+      height: 180,
+      color: "yellow",
+      font_size: "md",
+    };
+    const result = sanitizeNote(mockNote);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
   it("sanitizeWorkflow rejects workflow with missing workflow_id", () => {
     const mockWorkflow = {
       workflow_id: undefined as unknown as string,
       execution_id: "exec_1",
       nodes: [] as Workflow["nodes"],
       edges: [] as Workflow["edges"],
+      notes: undefined,
     };
     const result = sanitizeWorkflow(mockWorkflow);
     expect(result.valid).toBe(false);

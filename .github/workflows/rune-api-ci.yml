@@ -26,7 +26,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          version: "0.11.7"
+          version: "0.11.8"
           enable-cache: true
 
       - name: Set up Python
@@ -96,7 +96,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          version: "0.11.7"
+          version: "0.11.8"
           enable-cache: true
 
       - name: Set up Python
@@ -109,6 +109,10 @@ jobs:
         working-directory: ./services/api
 
       - name: Run tests
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5433/test_rune
+          REDIS_URL: redis://localhost:6380
+          RABBITMQ_URL: amqp://test_user:test_password@localhost:5673
         run: uv run pytest --cov=src --cov-report=xml --cov-report=term
         working-directory: ./services/api
 
@@ -123,7 +127,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          version: "0.11.7"
+          version: "0.11.8"
           enable-cache: true
 
       - name: Set up Python

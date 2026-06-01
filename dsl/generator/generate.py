@@ -177,9 +177,15 @@ class DSLGenerator:
             ]
             if field_name in reserved_keywords:
                 python_field_name = f"{field_name}_"
-                # Use Pydantic Field with alias to map back to original JSON field name
-                return f'    {python_field_name}: {final_type} = Field(alias="{field_name}"){comment}'
-            return f"    {python_field_name}: {final_type}{comment}"
+                # Use Pydantic Field with alias to map back to original JSON field name.
+                field_args = (
+                    f'default=None, alias="{field_name}"'
+                    if not required
+                    else f'alias="{field_name}"'
+                )
+                return f"    {python_field_name}: {final_type} = Field({field_args}){comment}"
+            default = "" if required else " = None"
+            return f"    {python_field_name}: {final_type}{default}{comment}"
         elif lang == "go":
             comment = f"  // {description}" if description else ""
             json_tag = f'`json:"{field_name}"`'
@@ -470,6 +476,7 @@ class DSLGenerator:
             "id": node_def["fields"]["id"],
             "name": node_def["fields"]["name"],
             "trigger": node_def["fields"]["trigger"],
+            "webhook_guid": node_def["fields"]["webhook_guid"],
             "output": node_def["fields"]["output"],
             "error": node_def["fields"]["error"],
             "credential_type": {
@@ -624,6 +631,7 @@ class DSLGenerator:
             "id": node_def["fields"]["id"],
             "name": node_def["fields"]["name"],
             "trigger": node_def["fields"]["trigger"],
+            "webhook_guid": node_def["fields"]["webhook_guid"],
             "output": node_def["fields"]["output"],
             "error": node_def["fields"]["error"],
             "credential_type": {

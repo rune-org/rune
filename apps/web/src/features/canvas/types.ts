@@ -1,5 +1,6 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { CredentialRef } from "@/lib/credentials";
+import type { IntegrationNodeData, IntegrationNodeKind } from "./integrations/types";
 
 /** The base data structure that all nodes share. */
 export type BaseData = {
@@ -39,22 +40,140 @@ export type SortRule = {
 /** Canonical list of HTTP methods for canvas + worker `http` node (includes PATCH). */
 export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 
+export const HTTP_CREDENTIAL_TYPES = [
+  "basic_auth",
+  "header",
+  "api_key",
+  "oauth2",
+  "token",
+] as const;
+export type HttpCredentialType = (typeof HTTP_CREDENTIAL_TYPES)[number];
+
 export type HttpMethod = (typeof HTTP_METHODS)[number];
+
+export const AGENT_PROVIDERS = ["gemini", "openai", "anthropic"] as const;
+export type AgentProvider = (typeof AGENT_PROVIDERS)[number];
+
+export const GEMINI_BACKENDS = ["ai_studio", "vertex"] as const;
+export type GeminiBackend = (typeof GEMINI_BACKENDS)[number];
+
+export const AGENT_FIELD_TYPES = ["string", "number", "boolean", "object"] as const;
+export type AgentFieldType = (typeof AGENT_FIELD_TYPES)[number];
+
+export type AgentMessageRole = "user" | "model";
+
+export type AgentMessage = {
+  ui_id?: string;
+  role: AgentMessageRole;
+  content: string;
+};
+
+export type AgentModelConfig = {
+  provider: AgentProvider;
+  name: string;
+  /** Gemini-only: which google.golang.org/genai backend to route through. */
+  backend?: GeminiBackend;
+  temperature?: number;
+};
+
+/** A tool field is either fixed or decided by the agent at call time. */
+export type AgentFieldMode =
+  | { mode: "fixed"; value?: unknown }
+  | {
+      mode: "agent";
+      agent: { description: string; type: AgentFieldType; required: boolean };
+    };
+
+export type AgentKVField = { ui_id?: string; key: string; value: AgentFieldMode };
+
+export type AgentHttpToolConfig = {
+  method: HttpMethod;
+  url: AgentFieldMode;
+  headers?: AgentKVField[];
+  query?: AgentKVField[];
+  body?: AgentKVField[];
+  timeout?: string;
+  retry?: string;
+  retry_delay?: string;
+  raise_on_status?: string;
+  ignore_ssl?: boolean;
+};
+
+export type AgentTool = {
+  ui_id?: string;
+  type: "http_request";
+  name: string;
+  description: string;
+  /** Master resolves this into a `credentials` block (with values) before publishing. */
+  credential?: CredentialRef | null;
+  config: AgentHttpToolConfig;
+};
+
+export type AgentMcpTransport = "sse" | "streamable_http";
+
+export type AgentMcpServer = {
+  name: string;
+  transport: AgentMcpTransport;
+  url: string;
+  credential?: CredentialRef | null;
+};
 
 export function isHttpMethod(value: string): value is HttpMethod {
   return (HTTP_METHODS as readonly string[]).includes(value);
 }
 
+/** Preset color keys for sticky notes (must match the DSL `Note.color` enum). */
+export const STICKY_NOTE_COLORS = ["yellow", "green", "blue", "pink", "purple", "gray"] as const;
+export type StickyNoteColor = (typeof STICKY_NOTE_COLORS)[number];
+
+/** Text-size presets for sticky notes (must match the DSL `Note.font_size` enum). */
+export const STICKY_NOTE_FONT_SIZES = ["sm", "md", "lg"] as const;
+export type StickyNoteFontSize = (typeof STICKY_NOTE_FONT_SIZES)[number];
+
+export function isStickyNoteColor(value: unknown): value is StickyNoteColor {
+  return (STICKY_NOTE_COLORS as readonly string[]).includes(value as string);
+}
+
+export function isStickyNoteFontSize(value: unknown): value is StickyNoteFontSize {
+  return (STICKY_NOTE_FONT_SIZES as readonly string[]).includes(value as string);
+}
+
 /** A map defining the specific data for each kind of node. */
-export type NodeDataMap = {
+export type BuiltInNodeDataMap = {
   trigger: BaseData;
+
+  /**
+   * Decorative sticky note. Not part of execution — serialized into the DSL's
+   * top-level `notes` array (not `nodes`) at the persistence boundary.
+   */
+  stickyNote: BaseData & {
+    /** Markdown source of the note body. */
+    content?: string;
+    color?: StickyNoteColor;
+    fontSize?: StickyNoteFontSize;
+    /** Persisted resize dimensions (px). */
+    width?: number;
+    height?: number;
+    /** Transient canvas state used while viewing historical snapshots. */
+    readOnly?: boolean;
+  };
+
+  webhookTrigger: BaseData & {
+    webhookGuid?: string;
+  };
 
   scheduledTrigger: BaseData & {
     amount?: number;
     unit?: "seconds" | "minutes" | "hours" | "days";
   };
 
-  agent: BaseData;
+  agent: BaseData & {
+    model?: AgentModelConfig;
+    system_prompt?: string;
+    messages?: AgentMessage[];
+    tools?: AgentTool[];
+    mcp_servers?: AgentMcpServer[];
+  };
 
   if: BaseData & {
     expression?: string;
@@ -169,6 +288,12 @@ export type NodeDataMap = {
   };
 };
 
+export type IntegrationNodeDataMap = {
+  [K in IntegrationNodeKind]: IntegrationNodeData;
+};
+
+export type NodeDataMap = BuiltInNodeDataMap & IntegrationNodeDataMap;
+
 /** A union type of all possible node kinds. */
 export type NodeKind = keyof NodeDataMap;
 
@@ -176,12 +301,14 @@ export type CanvasNode = {
   [K in NodeKind]: Node<NodeDataMap[K]> & { type: K };
 }[NodeKind];
 
+export type StickyNoteData = NodeDataMap["stickyNote"];
 export type IfData = NodeDataMap["if"];
 export type SwitchData = NodeDataMap["switch"];
 export type HttpData = NodeDataMap["http"];
 export type SmtpData = NodeDataMap["smtp"];
 export type AgentData = NodeDataMap["agent"];
 export type TriggerData = NodeDataMap["trigger"];
+export type WebhookTriggerData = NodeDataMap["webhookTrigger"];
 export type ScheduledTriggerData = NodeDataMap["scheduledTrigger"];
 export type WaitData = NodeDataMap["wait"];
 export type LogData = NodeDataMap["log"];

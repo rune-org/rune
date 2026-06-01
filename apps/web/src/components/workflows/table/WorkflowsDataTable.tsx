@@ -31,6 +31,18 @@ function StatusBadge({ status }: { status: WorkflowSummary["status"] }) {
     );
   }
 
+  if (status === "inactive") {
+    return (
+      // Redish color to indicate attention needed for inactive workflows
+      <Badge
+        className="bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200"
+        variant="secondary"
+      >
+        Inactive
+      </Badge>
+    );
+  }
+
   return (
     <Badge
       className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
@@ -66,6 +78,7 @@ type WorkflowsDataTableProps = {
   isRowPending: (id: string) => boolean;
   isRowExporting: (id: string) => boolean;
   isAdmin: boolean;
+  currentUserName: string;
   lastRunByWorkflow: Map<string, ApiExecutionListItem>;
   executionsLoaded: boolean;
   onRun: (workflow: WorkflowSummary) => void;
@@ -87,6 +100,7 @@ export function WorkflowsDataTable({
   isRowPending,
   isRowExporting,
   isAdmin,
+  currentUserName,
   lastRunByWorkflow,
   executionsLoaded,
   onRun,
@@ -154,10 +168,18 @@ export function WorkflowsDataTable({
                     </a>
 
                     <Badge
-                      variant={workflow.role === "owner" ? "secondary" : "outline"}
+                      variant={
+                        workflow.role === "owner" && workflow.ownerName === currentUserName
+                          ? "secondary"
+                          : "outline"
+                      }
                       className="shrink-0 text-xs"
                     >
-                      {workflow.role === "owner" ? "Owner" : "Shared"}
+                      {workflow.role === "owner"
+                        ? workflow.ownerName === currentUserName
+                          ? "Owner"
+                          : workflow.ownerName || "Unknown"
+                        : "Shared"}
                     </Badge>
                   </div>
                 </TableCell>

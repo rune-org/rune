@@ -189,6 +189,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [initialize]);
 
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === REFRESH_TOKEN_KEY || e.key === ACCESS_EXP_KEY) {
+        if (!e.newValue) {
+          storeRefreshToken(null);
+          storeAccessExp(null);
+          clearScheduledRefresh();
+          setUser(null);
+        } else {
+          fetchProfile();
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [fetchProfile]);
+
   const login = useCallback(
     async (email: string, password: string) => {
       setLoading(true);

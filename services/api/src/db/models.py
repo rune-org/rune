@@ -44,6 +44,7 @@ class CredentialType(str, Enum):
     TOKEN = "token"  # nosec B105
     CUSTOM = "custom"
     SMTP = "smtp"
+    GEMINI_API_KEY = "gemini_api_key"
 
 
 class AuthProvider(str, Enum):
@@ -318,6 +319,13 @@ class WorkflowTemplate(TimestampModel, table=True):
     Templates are pre-made workflows that users can use as starting points.
     Each template is a standalone workflow configuration that can be instantiated.
     Templates are independent from user workflows and contain their own workflow data.
+
+    Templates come from two sources:
+
+    * ``source = "official"`` rows are upserted by the bundle seeder from the
+      ``rune-templates`` repo, keyed by ``external_id``.
+    * ``source = "user"`` rows are saved by end users via the save-template
+      flow and owned by ``created_by``.
     """
 
     __tablename__ = "workflow_templates"
@@ -334,13 +342,38 @@ class WorkflowTemplate(TimestampModel, table=True):
 
     category: str = Field(
         default="general",
-        description="Template category (e.g., 'automation', 'data-processing')",
+        description="Template category. Validated against TemplateCategory on write; stored as free-form str for forward compatibility.",
     )
     is_public: bool = Field(
         default=False, description="Whether this template is publicly available"
     )
     usage_count: int = Field(
         default=0, description="Number of times this template has been used"
+    )
+
+    source: str = Field(
+        default="user",
+        description="Template origin: 'official' (from rune-templates bundle) or 'user' (saved via UI).",
+    )
+    external_id: Optional[str] = Field(
+        default=None,
+        index=True,
+        description="Stable slug from the rune-templates repo; upsert key for official templates. Uniqueness is enforced by the unique index created in the migration.",
+    )
+    icon: Optional[str] = Field(
+        default=None,
+        description="Lucide icon name to display on the template card.",
+    )
+    tags: list[str] = Field(
+        default_factory=list,
+        sa_type=JSONB,
+        description="Free-form tags for search and filtering.",
+    )
+    author_name: Optional[str] = Field(
+        default=None, description="Display name of the template author."
+    )
+    author_url: Optional[str] = Field(
+        default=None, description="Profile/site URL for the template author."
     )
 
     created_by: Optional[int] = Field(
@@ -352,6 +385,17 @@ class WorkflowTemplate(TimestampModel, table=True):
 
     # Relationships
     creator: Optional[User] = Relationship(back_populates="templates")
+
+    @property
+    def node_count(self) -> int:
+        """Number of nodes in the workflow graph (0 if shape is unexpected).
+
+        Exposed via ``TemplateSummary`` so the gallery card can show how big
+        the workflow is at a glance without paying for the full ``workflow_data``
+        payload on every list response.
+        """
+        nodes = (self.workflow_data or {}).get("nodes")
+        return len(nodes) if isinstance(nodes, list) else 0
 
 
 class CredentialShare(TimestampModel, table=True):

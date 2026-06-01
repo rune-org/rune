@@ -5,7 +5,7 @@ from src.core.dependencies import (
 )
 from src.core.exceptions import BadRequest, NotFound
 from src.core.responses import ApiResponse
-from src.db.models import User, Workflow
+from src.db.models import User, UserRole, Workflow
 from src.executions.service import ExecutionTokenService
 from src.workflow.dependencies import (
     get_workflow_with_permission,
@@ -34,6 +34,7 @@ from src.workflow.schemas import (
     WorkflowVersionConflict,
     WorkflowVersionDetail,
     WorkflowVersionListItem,
+    compute_workflow_status,
 )
 from src.workflow.service import WorkflowService, WorkflowVersionConflictError
 
@@ -45,16 +46,19 @@ async def list_workflows(
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
-    wfs = await service.list_for_user(current_user.id)
+    is_admin = getattr(current_user, "role", None) == UserRole.ADMIN
+    wfs = await service.list_for_user(current_user.id, is_admin=is_admin)
     items = [
         WorkflowListItem(
             id=wf.id,
             name=wf.name,
             description=wf.description,
             is_active=wf.is_active,
+            status=compute_workflow_status(wf),
             role=role,
+            owner_name=owner_name,
         )
-        for wf, role in wfs
+        for wf, role, owner_name in wfs
     ]
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
 
@@ -238,7 +242,7 @@ async def update_status(
     Update workflow status (active/inactive).
 
     In the versioned model, activating publishes the latest saved version and
-    deactivating clears the published pointer.
+    deactivating keeps the published pointer but disables execution.
 
     **Requires:** EDIT permission (OWNER or EDITOR)
     """
@@ -335,7 +339,9 @@ async def create_workflow_version(
         version = await service.create_version(
             workflow=workflow,
             user_id=current_user.id,
-            workflow_data=payload.workflow_data,
+            workflow_data=payload.workflow_data.model_dump(
+                exclude_none=True, mode="json"
+            ),
             base_version_id=payload.base_version_id,
             message=payload.message,
         )

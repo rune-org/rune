@@ -28,10 +28,64 @@
           "items_type": "Edge",
           "required": true,
           "description": "Array of edge definitions"
+        },
+        "notes": {
+          "type": "array",
+          "items_type": "Note",
+          "required": false,
+          "description": "Array of decorative sticky notes (not part of execution)"
         }
       }
     },
-    
+
+    "Note": {
+      "description": "Decorative sticky note placed on the canvas. Persisted with the workflow but never executed; ignored by the worker and by trigger/edge validation.",
+      "fields": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "Unique identifier for the note within the workflow"
+        },
+        "content": {
+          "type": "string",
+          "required": false,
+          "description": "Markdown source of the note body (may be empty)"
+        },
+        "x": {
+          "type": "number",
+          "required": true,
+          "description": "Canvas x position"
+        },
+        "y": {
+          "type": "number",
+          "required": true,
+          "description": "Canvas y position"
+        },
+        "width": {
+          "type": "number",
+          "required": false,
+          "description": "Note width in pixels (persisted resize)"
+        },
+        "height": {
+          "type": "number",
+          "required": false,
+          "description": "Note height in pixels (persisted resize)"
+        },
+        "color": {
+          "type": "string",
+          "required": false,
+          "description": "Preset color theme key",
+          "enum": ["yellow", "green", "blue", "pink", "purple", "gray"]
+        },
+        "font_size": {
+          "type": "string",
+          "required": false,
+          "description": "Text size preset",
+          "enum": ["sm", "md", "lg"]
+        }
+      }
+    },
+
     "Node": {
       "description": "Single executable node within the workflow",
       "fields": {
@@ -54,7 +108,12 @@
           "type": "string",
           "required": true,
           "description": "Node type identifier",
-          "enum": ["ManualTrigger", "ScheduledTrigger", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge", "dateTimeNow", "dateTimeAdd", "dateTimeSubtract", "dateTimeFormat", "dateTimeParse", "filter", "sort", "limit"]
+          "enum": ["ManualTrigger", "ScheduledTrigger", "webhook", "http", "smtp", "conditional", "switch", "log", "agent", "wait", "edit", "split", "aggregator", "merge", "dateTimeNow", "dateTimeAdd", "dateTimeSubtract", "dateTimeFormat", "dateTimeParse", "filter", "sort", "limit"]
+        },
+        "webhook_guid": {
+          "type": "string",
+          "required": false,
+          "description": "Stable webhook registration GUID for webhook trigger nodes"
         },
         "parameters": {
           "type": "object",
@@ -160,6 +219,12 @@
         "amount": { "type": "number", "required": true, "description": "Quantity of time between executions" },
         "unit": { "type": "string", "required": true, "enum": ["seconds", "minutes", "hours", "days"], "description": "Unit of time for the interval" }
       }
+    },
+
+    "webhook": {
+      "description": "Webhook workflow trigger with a stable externally callable GUID",
+      "credential_type": null,
+      "parameters": {}
     },
 
     "http": {
@@ -678,4 +743,3 @@
     }
   }
 }
-

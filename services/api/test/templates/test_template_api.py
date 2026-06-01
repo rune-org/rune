@@ -16,7 +16,7 @@ async def test_create_template_requires_authentication(client: AsyncClient):
         json={
             "name": "Test Template",
             "description": "Test",
-            "category": "automation",
+            "category": "general",
             "workflow_data": {"nodes": []},
             "is_public": False,
         },
@@ -104,7 +104,7 @@ async def test_create_template_returns_201(authenticated_client: AsyncClient):
         json={
             "name": "Test Template",
             "description": "Test",
-            "category": "automation",
+            "category": "general",
             "workflow_data": {"nodes": []},
             "is_public": False,
         },
@@ -122,7 +122,7 @@ async def test_create_template_response_has_success_and_data(
         json={
             "name": "Test Template",
             "description": "Test",
-            "category": "automation",
+            "category": "general",
             "workflow_data": {"nodes": []},
             "is_public": False,
         },
@@ -272,7 +272,7 @@ async def test_create_template_rejects_empty_workflow_data(
         json={
             "name": "Empty Data Template",
             "description": "Test",
-            "category": "automation",
+            "category": "general",
             "workflow_data": {},  # empty workflow_data should be rejected
             "is_public": False,
         },

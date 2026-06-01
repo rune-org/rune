@@ -500,7 +500,7 @@ Initiates workflow execution through manual user action.
 {}
 ```
 
-Manual trigger nodes have no parameters. They are executed in the master service and provide initial context to the workflow.
+Manual trigger nodes have no parameters and no output. The master service uses them only to locate the workflow entry point.
 
 **Example:**
 

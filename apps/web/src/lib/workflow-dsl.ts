@@ -11,6 +11,7 @@ import {
   type SwitchRule,
   type SmtpData,
   type ScheduledTriggerData,
+  type WebhookTriggerData,
   type WaitData,
   type LogData,
   type DateTimeNowData,
@@ -27,7 +28,21 @@ import {
   type SplitData,
   type AggregatorData,
   type MergeData,
+  type AgentData,
+  isStickyNoteColor,
+  isStickyNoteFontSize,
+  type StickyNoteData,
+  type StickyNoteColor,
+  type StickyNoteFontSize,
 } from "@/features/canvas/types";
+import {
+  hydrateAgentMessages,
+  hydrateAgentTools,
+  stripAgentMessageUiId,
+  stripAgentToolUiId,
+} from "@/features/canvas/lib/agentDataNormalization";
+import type { IntegrationNodeData } from "@/features/canvas/integrations/types";
+import { isIntegrationNodeKind } from "@/features/canvas/integrations/helpers";
 import { isCredentialRef, nodeTypeRequiresCredential } from "@/lib/credentials";
 import type { CredentialRef } from "@/lib/credentials";
 import {
@@ -43,6 +58,7 @@ export interface WorkflowNode<Params = Record<string, unknown>> {
   name: string;
   trigger: boolean;
   type: string;
+  webhook_guid?: string;
   parameters: Params;
   credentials?: CredentialRef;
   output: Record<string, unknown>;
@@ -54,6 +70,16 @@ export interface WorkflowEdge {
   src: string;
   dst: string;
   label?: string;
+}
+export interface WorkflowNote {
+  id: string;
+  content: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  color?: StickyNoteColor;
+  font_size?: StickyNoteFontSize;
 }
 
 export class MissingNodeCredentialsError extends Error {
@@ -75,6 +101,8 @@ function toWorkerType(canvasType: string): string {
       return "ManualTrigger";
     case "scheduledTrigger":
       return "ScheduledTrigger";
+    case "webhookTrigger":
+      return "webhook";
     case "if":
       return "conditional";
     case "switch":
@@ -162,6 +190,11 @@ export function isLegacySmtpPlaceholder(value: unknown): boolean {
 
 // Build parameter objects for supported node types
 function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unknown> {
+  if (isIntegrationNodeKind(n.type)) {
+    const d = (n.data || {}) as IntegrationNodeData;
+    return d.arguments ?? {};
+  }
+
   switch (n.type) {
     case "http": {
       /** Pre–snake_case canvas fields (still serialize if present). */
@@ -415,6 +448,24 @@ function toWorkerParameters(n: CanvasNode, edges: RFEdge[]): Record<string, unkn
       if (typeof d.timeout !== "undefined") params.timeout = Number(d.timeout);
       return params;
     }
+    case "agent": {
+      const d = (n.data || {}) as AgentData;
+      const params: Record<string, unknown> = {};
+      if (d.model) params.model = d.model;
+      if (typeof d.system_prompt === "string" && d.system_prompt.length > 0) {
+        params.system_prompt = d.system_prompt;
+      }
+      if (Array.isArray(d.messages) && d.messages.length > 0) {
+        params.messages = d.messages.map(stripAgentMessageUiId);
+      }
+      if (Array.isArray(d.tools) && d.tools.length > 0) {
+        params.tools = d.tools.map(stripAgentToolUiId);
+      }
+      if (Array.isArray(d.mcp_servers) && d.mcp_servers.length > 0) {
+        params.mcp_servers = d.mcp_servers;
+      }
+      return params;
+    }
     default:
       return {};
   }
@@ -548,6 +599,19 @@ const nodeHydrators: Partial<Record<CanvasNode["type"], NodeHydrator>> = {
         : [],
     };
     return switchData;
+  },
+  agent: (base, params) => {
+    const agentData: AgentData = {
+      ...base,
+      model: (params.model as AgentData["model"]) ?? undefined,
+      system_prompt: typeof params.system_prompt === "string" ? params.system_prompt : undefined,
+      messages: hydrateAgentMessages(params.messages),
+      tools: hydrateAgentTools(params.tools),
+      mcp_servers: Array.isArray(params.mcp_servers)
+        ? (params.mcp_servers as AgentData["mcp_servers"])
+        : undefined,
+    };
+    return agentData;
   },
   smtp: (base, params) => {
     const smtpData: SmtpData = {
@@ -780,30 +844,56 @@ function extractNodeCredential(node: CanvasNode): CredentialRef | undefined {
   return undefined;
 }
 
-// Convert Canvas graph to a workflow_data blueprint (stored in API)
+function toWorkflowNote(n: CanvasNode): WorkflowNote {
+  const d = (n.data || {}) as StickyNoteData;
+  const note: WorkflowNote = {
+    id: n.id,
+    content: typeof d.content === "string" ? d.content : "",
+    x: n.position.x,
+    y: n.position.y,
+  };
+  if (typeof d.width === "number") note.width = d.width;
+  if (typeof d.height === "number") note.height = d.height;
+  if (d.color) note.color = d.color;
+  if (d.fontSize) note.font_size = d.fontSize;
+  return note;
+}
+
+// Convert Canvas graph to a workflow_data blueprint (stored in API).
+// Sticky notes are split out of `nodes` into the decorative top-level `notes`
+// array so they never reach the executable graph (worker/validation).
 export function canvasToWorkflowData(
   nodes: CanvasNode[],
   edges: RFEdge[],
-): { nodes: WorkflowNode[]; edges: WorkflowEdge[] } {
+): { nodes: WorkflowNode[]; edges: WorkflowEdge[]; notes: WorkflowNote[] } {
   const missingCredentials: Array<{ id: string; type: string }> = [];
 
-  const blueprintNodes: WorkflowNode[] = nodes.map((n) => {
-    const credential = extractNodeCredential(n);
-    if (nodeTypeRequiresCredential(n.type) && !credential) {
-      missingCredentials.push({ id: n.id, type: n.type });
-    }
+  const notes: WorkflowNote[] = nodes.filter((n) => n.type === "stickyNote").map(toWorkflowNote);
 
-    return {
-      id: n.id,
-      name: nodeName(n),
-      trigger: n.type === "trigger" || n.type === "scheduledTrigger",
-      type: toWorkerType(n.type), // store canonical type to simplify future use
-      parameters: toWorkerParameters(n, edges),
-      output: {},
-      position: [n.position.x, n.position.y],
-      credentials: credential,
-    };
-  });
+  const blueprintNodes: WorkflowNode[] = nodes
+    .filter((n) => n.type !== "stickyNote")
+    .map((n) => {
+      const credential = extractNodeCredential(n);
+      if (nodeTypeRequiresCredential(n.type) && !credential) {
+        missingCredentials.push({ id: n.id, type: n.type });
+      }
+
+      const webhookGuid =
+        n.type === "webhookTrigger" ? (n.data as WebhookTriggerData).webhookGuid : undefined;
+
+      return {
+        id: n.id,
+        name: nodeName(n),
+        trigger:
+          n.type === "trigger" || n.type === "scheduledTrigger" || n.type === "webhookTrigger",
+        type: toWorkerType(n.type), // store canonical type to simplify future use
+        ...(webhookGuid ? { webhook_guid: webhookGuid } : {}),
+        parameters: toWorkerParameters(n, edges),
+        output: {},
+        position: [n.position.x, n.position.y],
+        credentials: credential,
+      };
+    });
 
   const blueprintEdges: WorkflowEdge[] = edges.map((e) => ({
     id: e.id,
@@ -816,11 +906,31 @@ export function canvasToWorkflowData(
     throw new MissingNodeCredentialsError(missingCredentials);
   }
 
-  return { nodes: blueprintNodes, edges: blueprintEdges };
+  return { nodes: blueprintNodes, edges: blueprintEdges, notes };
+}
+
+function noteToCanvasNode(note: WorkflowNote): CanvasNode {
+  const data: StickyNoteData = {
+    content: typeof note.content === "string" ? note.content : "",
+  };
+  if (typeof note.width === "number") data.width = note.width;
+  if (typeof note.height === "number") data.height = note.height;
+  if (isStickyNoteColor(note.color)) data.color = note.color;
+  if (isStickyNoteFontSize(note.font_size)) data.fontSize = note.font_size;
+  return {
+    id: note.id,
+    type: "stickyNote",
+    position: { x: note.x ?? 100, y: note.y ?? 100 },
+    data,
+  } as CanvasNode;
 }
 
 // Convert stored workflow_data blueprint back to Canvas graph for editing
-export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: WorkflowEdge[] }): {
+export function workflowDataToCanvas(data: {
+  nodes?: WorkflowNode[];
+  edges?: WorkflowEdge[];
+  notes?: WorkflowNote[];
+}): {
   nodes: CanvasNode[];
   edges: RFEdge[];
 } {
@@ -834,13 +944,42 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
           ? "trigger"
           : n.type === "ScheduledTrigger"
             ? "scheduledTrigger"
-            : n.type;
+            : n.type === "webhook"
+              ? "webhookTrigger"
+              : n.type;
     const credentials = n.credentials ? { ...n.credentials } : undefined;
     const baseData = {
       label: sanitizeNodeLabel(n.name, "Node"),
       ...(credentials ? { credential: credentials } : {}),
     } as CanvasNode["data"];
     const params = (n.parameters ?? {}) as Record<string, unknown>;
+    if (canvasType === "webhookTrigger") {
+      return {
+        id: n.id,
+        type: "webhookTrigger",
+        position: { x, y },
+        data: {
+          ...baseData,
+          ...(typeof n.webhook_guid === "string" ? { webhookGuid: n.webhook_guid } : {}),
+        },
+      } as CanvasNode;
+    }
+
+    if (isIntegrationNodeKind(canvasType)) {
+      const dataForNode: IntegrationNodeData = {
+        ...baseData,
+        integrationKind: canvasType,
+        arguments: params,
+      };
+
+      return {
+        id: n.id,
+        type: canvasType,
+        position: { x, y },
+        data: dataForNode,
+      } as CanvasNode;
+    }
+
     const hydrateDataForNode = Object.hasOwn(nodeHydrators, canvasType)
       ? (nodeHydrators[canvasType as CanvasNode["type"]] ?? identityNodeHydrator)
       : identityNodeHydrator;
@@ -892,7 +1031,9 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
     return edge;
   });
 
-  return { nodes, edges };
+  const noteNodes: CanvasNode[] = (data.notes ?? []).map(noteToCanvasNode);
+
+  return { nodes: [...nodes, ...noteNodes], edges };
 }
 
 // ————————————————————————————————————————————————————————————————
@@ -900,9 +1041,24 @@ export function workflowDataToCanvas(data: { nodes?: WorkflowNode[]; edges?: Wor
 // ————————————————————————————————————————————————————————————————
 
 /**
- * Strips credential references from workflow_data nodes for safe export.
+ * Strips credential references and webhook GUIDs from workflow_data nodes for safe export.
  * Returns nodes and edges at top level; does not convert DSL to canvas shape.
  */
+function stripNestedCredentialRefs(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stripNestedCredentialRefs);
+  }
+
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const { credential: _credential, ...rest } = value as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(rest).map(([key, child]) => [key, stripNestedCredentialRefs(child)]),
+  );
+}
+
 export function stripCredentialsFromWorkflowData(workflowData: {
   nodes?: Array<Record<string, unknown>>;
   edges?: unknown[];
@@ -913,8 +1069,8 @@ export function stripCredentialsFromWorkflowData(workflowData: {
     return { nodes: [], edges };
   }
   const sanitizedNodes = nodes.map((node) => {
-    const { credentials: _omit, ...rest } = node;
-    return rest;
+    const { credentials: _credentials, webhook_guid: _webhookGuid, ...rest } = node;
+    return stripNestedCredentialRefs(rest) as Record<string, unknown>;
   });
   return { nodes: sanitizedNodes, edges };
 }

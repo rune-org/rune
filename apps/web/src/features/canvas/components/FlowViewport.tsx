@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import {
   Background,
   Controls,
@@ -67,11 +67,19 @@ export const FlowViewport = memo(function FlowViewport({
   wsReconnectAttempts,
   onDismissRunning,
 }: FlowViewportProps) {
+  const viewportNodes = useMemo<CanvasNode[]>(() => {
+    if (!readOnly) return nodes;
+    return nodes.map<CanvasNode>((node) => {
+      if (node.type !== "stickyNote") return node;
+      return { ...node, data: { ...node.data, readOnly: true } };
+    });
+  }, [nodes, readOnly]);
+
   return (
     <ReactFlow
       fitView
       onlyRenderVisibleElements
-      nodes={nodes}
+      nodes={viewportNodes}
       edges={edges}
       nodeTypes={nodeTypes}
       defaultEdgeOptions={{ type: "default" }}

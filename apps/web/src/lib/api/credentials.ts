@@ -7,9 +7,11 @@ import {
   revokeCredentialAccessCredentialsCredentialIdShareUserIdDelete,
   listCredentialSharesCredentialsCredentialIdSharesGet,
   getMyShareInfoCredentialsCredentialIdMyShareGet,
+  getCredentialUsageCredentialsCredentialIdUsageGet,
+  updateCredentialCredentialsCredentialIdPatch,
 } from "@/client";
 
-import type { CredentialCreate, CredentialShare } from "@/client/types.gen";
+import type { CredentialCreate, CredentialShare, CredentialUpdate } from "@/client/types.gen";
 
 // Readable wrappers for credentials-related SDK functions
 
@@ -78,4 +80,22 @@ export const listCredentialShares = (credentialId: number) =>
 export const getMyShareInfo = (credentialId: number) =>
   getMyShareInfoCredentialsCredentialIdMyShareGet({
     path: { credential_id: credentialId },
+  });
+
+/**
+ * Get all workflows using a credential
+ * @param credentialId - The ID of the credential
+ */
+export const getCredentialUsage = (credentialId: number) =>
+  getCredentialUsageCredentialsCredentialIdUsageGet({
+    path: { credential_id: credentialId },
+  });
+
+/**
+ * Partially update a credential (PATCH). For oauth2, only send fields you are changing.
+ */
+export const updateCredential = (credentialId: number, body: CredentialUpdate) =>
+  updateCredentialCredentialsCredentialIdPatch({
+    path: { credential_id: credentialId },
+    body,
   });
