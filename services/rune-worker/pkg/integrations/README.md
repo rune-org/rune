@@ -35,6 +35,19 @@ pkg/integrations/
         read_email.go
         search_emails.go
         list_labels.go
+      sheets/
+        sheets.go
+        read_range.go
+        write_range.go
+        append_row.go
+        clear.go
+        create_sheet.go
+        delete_sheet.go
+        delete_rows.go
+        delete_columns.go
+        update_row.go
+        create_spreadsheet.go
+        delete_spreadsheet.go
 ```
 
 ## Dispatch Flow
@@ -105,8 +118,25 @@ Implemented in this phase:
   - `integration.google.gmail.read_email`
   - `integration.google.gmail.search_emails`
   - `integration.google.gmail.list_labels`
+- Google Sheets:
+  - `integration.google.sheets.read_range`
+  - `integration.google.sheets.write_range`
+  - `integration.google.sheets.append_row`
+  - `integration.google.sheets.clear`
+  - `integration.google.sheets.create_sheet`
+  - `integration.google.sheets.delete_sheet`
+  - `integration.google.sheets.delete_rows`
+  - `integration.google.sheets.delete_columns`
+  - `integration.google.sheets.update_row`
+  - `integration.google.sheets.create_spreadsheet`
+  - `integration.google.sheets.delete_spreadsheet`
+
+- Microsoft Outlook tools:
+  - `integration.microsoft.outlook.send_email`
+  - `integration.microsoft.outlook.read_email`
+  - `integration.microsoft.outlook.search_emails`
+  - `integration.microsoft.outlook.list_folders`
 
 Planned next:
 
-- Google Sheets tools
-- Microsoft Outlook tools
+

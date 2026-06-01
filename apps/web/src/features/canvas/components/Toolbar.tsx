@@ -14,6 +14,7 @@ import {
   Clipboard,
   FileJson,
   FileBox,
+  Globe2,
   ChevronDown,
   Loader2,
   Square,
@@ -47,6 +48,7 @@ type ToolbarProps = {
   onExportToClipboard: () => void;
   onExportToFile: () => void;
   onExportToTemplate: () => void;
+  onExportToGallery: () => void;
   onImportFromClipboard: () => void;
   onImportFromFile: () => void;
   onImportFromTemplate: () => void;
@@ -58,6 +60,7 @@ type ToolbarProps = {
   wsStatus?: WsConnectionStatus;
   isStartingExecution?: boolean;
   workflowId?: number | null;
+  workflowName?: string | null;
 
   onPublish?: () => void;
   hasUnpublishedChanges?: boolean;
@@ -84,6 +87,7 @@ export const Toolbar = memo(function Toolbar({
   onExportToClipboard,
   onExportToFile,
   onExportToTemplate,
+  onExportToGallery,
   onImportFromClipboard,
   onImportFromFile,
   onImportFromTemplate,
@@ -94,6 +98,7 @@ export const Toolbar = memo(function Toolbar({
   wsStatus = "disconnected",
   isStartingExecution = false,
   workflowId,
+  workflowName,
   onPublish,
   hasUnpublishedChanges = false,
   publishDisabled = false,
@@ -163,6 +168,18 @@ export const Toolbar = memo(function Toolbar({
       >
         <Logo href="" variant="glyph" className="h-5 w-5 translate-x-[1.5px]" />
       </Link>
+
+      <div className="h-6 w-px bg-foreground/20" />
+
+      {workflowName && (
+        <div className="flex items-center rounded-md bg-muted/40 px-2.5 py-1">
+          <span className="max-w-[100px] truncate text-xs font-medium text-foreground">
+            {workflowName}
+          </span>
+        </div>
+      )}
+
+      <div className="h-6 w-px bg-foreground/20" />
 
       {isExecuting ? (
         <>
@@ -253,6 +270,9 @@ export const Toolbar = memo(function Toolbar({
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onExportToTemplate} className="gap-2">
             <FileBox className="h-4 w-4" /> Save as Template
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onExportToGallery} className="gap-2">
+            <Globe2 className="h-4 w-4" /> Submit to Global Gallery
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

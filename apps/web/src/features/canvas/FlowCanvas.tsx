@@ -26,6 +26,7 @@ import { Toolbar } from "./components/Toolbar";
 import { RightPanelStack } from "./components/RightPanelStack";
 import { Library } from "./components/Library";
 import { SaveTemplateDialog } from "./components/SaveTemplateDialog";
+import { ExportToGalleryDialog } from "./components/ExportToGalleryDialog";
 import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
 import { SaveVersionDialog } from "./components/SaveVersionDialog";
 import { VersionConflictDialog } from "./components/VersionConflictDialog";
@@ -34,6 +35,7 @@ import { FlowViewport } from "./components/FlowViewport";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
 import { useNodeShortcuts } from "./hooks/useNodeShortcuts";
 import { useAddNode } from "./hooks/useAddNode";
+import { isInspectableNode } from "./lib/nodeRegistry";
 import { useConditionalConnect } from "./hooks/useConditionalConnect";
 import { useCanvasHistory } from "./hooks/useCanvasHistory";
 import { useUpdateNodeData } from "./hooks/useUpdateNodeData";
@@ -69,6 +71,7 @@ type FlowCanvasProps = {
   ) => Promise<void> | void;
   saveDisabled?: boolean;
   workflowId?: number | null;
+  workflowName?: string | null;
   onPublish?: () => void;
   hasUnpublishedChanges?: boolean;
   publishDisabled?: boolean;
@@ -99,6 +102,7 @@ function FlowCanvasInner({
   onSaveWithMessage,
   saveDisabled = false,
   workflowId = null,
+  workflowName = null,
   onPublish,
   hasUnpublishedChanges = false,
   publishDisabled = false,
@@ -344,6 +348,7 @@ function FlowCanvasInner({
     exportToClipboard,
     exportToFile,
     exportToTemplate,
+    exportToGallery,
     importFromClipboard,
     importFromFile,
     handleFileImport,
@@ -351,6 +356,8 @@ function FlowCanvasInner({
     handleTemplateSelect,
     isSaveTemplateOpen,
     setIsSaveTemplateOpen,
+    isExportGalleryOpen,
+    setIsExportGalleryOpen,
     isImportTemplateOpen,
     setIsImportTemplateOpen,
     fileInputRef,
@@ -568,6 +575,7 @@ function FlowCanvasInner({
   }, []);
 
   const onNodeDoubleClick = useCallback((_evt: React.MouseEvent, node: CanvasNode) => {
+    if (!isInspectableNode(node.type)) return;
     setSelectedNodeId(node.id);
     setIsInspectorExpanded(true);
   }, []);
@@ -585,6 +593,8 @@ function FlowCanvasInner({
     },
     [pushHistory, addNode],
   );
+
+  const onAddStickyNote = useCallback(() => onLibraryAdd("stickyNote"), [onLibraryAdd]);
 
   const onExecute = useCallback(async () => {
     if (isViewingSnapshot) {
@@ -699,6 +709,7 @@ function FlowCanvasInner({
               onExportToClipboard={exportToClipboard}
               onExportToFile={exportToFile}
               onExportToTemplate={exportToTemplate}
+              onExportToGallery={exportToGallery}
               onImportFromClipboard={importFromClipboard}
               onImportFromFile={importFromFile}
               onImportFromTemplate={importFromTemplate}
@@ -708,6 +719,7 @@ function FlowCanvasInner({
               wsStatus={wsStatus}
               isStartingExecution={isStartingExecution}
               workflowId={workflowId}
+              workflowName={workflowName}
               onPublish={onPublish}
               hasUnpublishedChanges={hasUnpublishedChanges}
               publishDisabled={publishDisabled}
@@ -735,6 +747,7 @@ function FlowCanvasInner({
           isExpandedDialogOpen={isInspectorExpanded}
           setIsExpandedDialogOpen={setIsInspectorExpanded}
           onTogglePin={isViewingSnapshot ? undefined : togglePin}
+          onAddStickyNote={isViewingSnapshot ? undefined : onAddStickyNote}
           workflowId={workflowId}
           readOnly={isViewingSnapshot}
         />
@@ -767,6 +780,12 @@ function FlowCanvasInner({
         <SaveTemplateDialog
           open={isSaveTemplateOpen}
           onOpenChange={setIsSaveTemplateOpen}
+          workflowData={{ nodes, edges }}
+        />
+
+        <ExportToGalleryDialog
+          open={isExportGalleryOpen}
+          onOpenChange={setIsExportGalleryOpen}
           workflowData={{ nodes, edges }}
         />
 

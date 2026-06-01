@@ -28,27 +28,80 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+  /** When true, omits the default top-right close control (e.g. footer-only actions). */
+  hideCloseButton?: boolean;
+  /** When false, backdrop / outside pointer and focus do not dismiss the dialog. Default true. */
+  closeOnOutsideClick?: boolean;
+  /** When false, Escape does not dismiss the dialog. Default true. */
+  closeOnEscape?: boolean;
+};
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-6 rounded-[var(--radius)] border border-border/70 bg-card p-6 shadow-lg shadow-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <DialogPrimitive.Close className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full text-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-primary/50 focus-visible:ring-offset-background">
-        <span className="sr-only">Close</span>×
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
-  </DialogPortal>
-));
+  DialogContentProps
+>(
+  (
+    {
+      className,
+      children,
+      hideCloseButton,
+      closeOnOutsideClick = true,
+      closeOnEscape = true,
+      onPointerDownOutside,
+      onInteractOutside,
+      onFocusOutside,
+      onEscapeKeyDown,
+      ...rest
+    },
+    ref,
+  ) => {
+    const handlePointerDownOutside: DialogContentProps["onPointerDownOutside"] = (e) => {
+      onPointerDownOutside?.(e);
+      if (!closeOnOutsideClick && !e.defaultPrevented) e.preventDefault();
+    };
+
+    const handleInteractOutside: DialogContentProps["onInteractOutside"] = (e) => {
+      onInteractOutside?.(e);
+      if (!closeOnOutsideClick && !e.defaultPrevented) e.preventDefault();
+    };
+
+    const handleFocusOutside: DialogContentProps["onFocusOutside"] = (e) => {
+      onFocusOutside?.(e);
+      if (!closeOnOutsideClick && !e.defaultPrevented) e.preventDefault();
+    };
+
+    const handleEscapeKeyDown: DialogContentProps["onEscapeKeyDown"] = (e) => {
+      onEscapeKeyDown?.(e);
+      if (!closeOnEscape && !e.defaultPrevented) e.preventDefault();
+    };
+
+    return (
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogPrimitive.Content
+          ref={ref}
+          className={cn(
+            "fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-6 rounded-[var(--radius)] border border-border/70 bg-card p-6 shadow-lg shadow-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            className,
+          )}
+          onPointerDownOutside={handlePointerDownOutside}
+          onInteractOutside={handleInteractOutside}
+          onFocusOutside={handleFocusOutside}
+          onEscapeKeyDown={handleEscapeKeyDown}
+          {...rest}
+        >
+          {children}
+          {hideCloseButton ? null : (
+            <DialogPrimitive.Close className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full text-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-primary/50 focus-visible:ring-offset-background">
+              <span className="sr-only">Close</span>×
+            </DialogPrimitive.Close>
+          )}
+        </DialogPrimitive.Content>
+      </DialogPortal>
+    );
+  },
+);
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (

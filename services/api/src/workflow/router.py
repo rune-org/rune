@@ -339,7 +339,9 @@ async def create_workflow_version(
         version = await service.create_version(
             workflow=workflow,
             user_id=current_user.id,
-            workflow_data=payload.workflow_data,
+            workflow_data=payload.workflow_data.model_dump(
+                exclude_none=True, mode="json"
+            ),
             base_version_id=payload.base_version_id,
             message=payload.message,
         )

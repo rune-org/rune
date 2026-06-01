@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
 import { inviteUserSchema, type InviteUserFormValues } from "@/lib/validation";
-import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -36,8 +36,6 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
     }
   }, [open, form]);
 
-  if (!open) return null;
-
   const onSubmit = async (values: InviteUserFormValues) => {
     setIsSubmitting(true);
     try {
@@ -58,24 +56,31 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
     onClose();
   };
 
-  const handleBackdropClick = (_e: React.MouseEvent<HTMLDivElement>) => {
-    if (isSubmitting) return;
-    handleClose();
-  };
-
-  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-  };
-
   const { isValid } = form.formState;
 
+  const preventCloseWhileSubmitting = (e: Event) => {
+    if (isSubmitting) e.preventDefault();
+  };
+
   return (
-    <div
-      className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center p-6 z-40"
-      onClick={handleBackdropClick}
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !isSubmitting) {
+          handleClose();
+        }
+      }}
     >
-      <Card className="p-6 w-full max-w-md bg-background border" onClick={handleCardClick}>
-        <h3 className="text-lg font-semibold mb-4">Invite User</h3>
+      <DialogContent
+        hideCloseButton
+        className="max-w-md gap-4"
+        onEscapeKeyDown={preventCloseWhileSubmitting}
+        onPointerDownOutside={preventCloseWhileSubmitting}
+        onInteractOutside={preventCloseWhileSubmitting}
+      >
+        <DialogHeader className="gap-2 text-left">
+          <DialogTitle className="text-lg">Invite User</DialogTitle>
+        </DialogHeader>
 
         <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit)} noValidate>
           <div>
@@ -132,7 +137,7 @@ export function InviteUserDialog({ open, onClose, onInvite }: InviteUserDialogPr
             </Button>
           </div>
         </form>
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

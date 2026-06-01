@@ -19,7 +19,7 @@ async def other_user(test_db):
     ph = PasswordHasher()
     user = User(
         email="other@example.com",
-        hashed_password=ph.hash("otherpassword123"),
+        hashed_password=ph.hash("Otherpassword!23"),
         name="Other User",
         role=UserRole.USER,
     )
@@ -35,7 +35,7 @@ async def sample_public_template(test_db, test_user):
     template = WorkflowTemplate(
         name="Public Automation Template",
         description="A public template for testing",
-        category="automation",
+        category="general",
         workflow_data={
             "nodes": [
                 {"id": "node-1", "type": "trigger", "data": {"label": "Start"}},
@@ -59,7 +59,7 @@ async def sample_private_template(test_db, test_user):
     template = WorkflowTemplate(
         name="Private Automation Template",
         description="A private template for testing",
-        category="data-processing",
+        category="analytics",
         workflow_data={
             "nodes": [{"id": "node-1", "type": "trigger", "data": {"label": "Start"}}],
             "edges": [],
@@ -80,7 +80,7 @@ async def other_user_private_template(test_db, other_user):
     template = WorkflowTemplate(
         name="Other User's Private Template",
         description="A private template from another user",
-        category="testing",
+        category="development",
         workflow_data={},
         is_public=False,
         usage_count=0,
