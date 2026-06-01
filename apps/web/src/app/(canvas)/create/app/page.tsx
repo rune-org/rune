@@ -32,6 +32,17 @@ type WorkflowMeta = {
   latestVersionNumber: number | null;
 };
 
+function updateWorkflowMetaAfterSave(
+  previous: WorkflowMeta | null,
+  version: { id: number; version: number; is_published: boolean },
+): WorkflowMeta {
+  return {
+    publishedVersionId: version.is_published ? version.id : (previous?.publishedVersionId ?? null),
+    hasUnpublishedChanges: !version.is_published,
+    latestVersionNumber: version.version,
+  };
+}
+
 function getApiErrorMessage(error: unknown, fallback: string): string {
   if (error && typeof error === "object" && "detail" in error) {
     const detail = (error as { detail: unknown }).detail;
@@ -191,13 +202,12 @@ function CanvasPageInner() {
         });
 
         const newVersion = response.data!.data;
+        const didCreateVersion = newVersion.id !== baseVersionIdRef.current;
         setBaseVersionId(newVersion.id);
-        setWorkflowMeta((prev) => ({
-          publishedVersionId: prev?.publishedVersionId ?? null,
-          hasUnpublishedChanges: true,
-          latestVersionNumber: newVersion.version,
-        }));
-        toast.success("Version saved");
+        setWorkflowMeta((prev) => updateWorkflowMetaAfterSave(prev, newVersion));
+        if (didCreateVersion) {
+          toast.success("Version saved");
+        }
         return newVersion.id;
       } catch (err) {
         const conflict = workflows.isVersionConflict(err);
@@ -295,13 +305,12 @@ function CanvasPageInner() {
       });
 
       const newVersion = response.data!.data;
+      const didCreateVersion = newVersion.id !== conflictData.serverVersionId;
       setBaseVersionId(newVersion.id);
-      setWorkflowMeta((prev) => ({
-        publishedVersionId: prev?.publishedVersionId ?? null,
-        hasUnpublishedChanges: true,
-        latestVersionNumber: newVersion.version,
-      }));
-      toast.success("Version saved");
+      setWorkflowMeta((prev) => updateWorkflowMetaAfterSave(prev, newVersion));
+      if (didCreateVersion) {
+        toast.success("Version saved");
+      }
     } catch (err) {
       const nestedConflict = workflows.isVersionConflict(err);
       if (nestedConflict) {
