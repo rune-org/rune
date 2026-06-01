@@ -135,17 +135,19 @@ class TestWorkflowStateChanges:
         assert data["published_version_id"] is not None
 
     @pytest.mark.asyncio
-    async def test_unpublish_clears_published_version_id(
+    async def test_deactivate_preserves_published_version_id(
         self, authenticated_client, sample_workflow
     ):
-        """Unpublishing workflow clears published_version_id."""
+        """Deactivating workflow keeps published_version_id (disables execution, retains publish pointer)."""
         # Publish first
-        await authenticated_client.put(
+        published = await authenticated_client.put(
             f"/workflows/{sample_workflow.id}/status",
             json={"is_active": True},
         )
+        published_version_id = published.json()["data"]["published_version_id"]
+        assert published_version_id is not None
 
-        # Unpublish
+        # Deactivate
         response = await authenticated_client.put(
             f"/workflows/{sample_workflow.id}/status",
             json={"is_active": False},
@@ -153,7 +155,7 @@ class TestWorkflowStateChanges:
         assert response.status_code == 200
         data = response.json()["data"]
         assert data["is_active"] is False
-        assert data["published_version_id"] is None
+        assert data["published_version_id"] == published_version_id
 
     @pytest.mark.asyncio
     async def test_new_version_after_publish_marks_unpublished_changes(

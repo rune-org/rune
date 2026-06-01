@@ -1,1 +1,1 @@
-export type StatFilter = "all" | "active" | "runs" | "draft" | "failed";
+export type StatFilter = "all" | "active" | "inactive" | "runs" | "draft" | "failed";
