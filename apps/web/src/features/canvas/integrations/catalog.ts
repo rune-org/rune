@@ -642,7 +642,13 @@ export const INTEGRATION_TOOLS = [
     providerIcon: `${INTEGRATION_ICON_BASE}/slack.svg`,
     colorTheme: SLACK_COLOR_THEME,
     argumentFields: [
-      { name: "channel", label: "Channel or User ID", type: "text", required: true, placeholder: "C123... or U123..." },
+      {
+        name: "channel",
+        label: "Channel or User ID",
+        type: "text",
+        required: true,
+        placeholder: "C123... or U123...",
+      },
       { name: "text", label: "Message", type: "textarea", required: true },
     ],
     defaultArguments: {},
@@ -734,7 +740,13 @@ export const INTEGRATION_TOOLS = [
     providerIcon: `${INTEGRATION_ICON_BASE}/slack.svg`,
     colorTheme: SLACK_COLOR_THEME,
     argumentFields: [
-      { name: "email", label: "Email Address", type: "text", required: true, placeholder: "jane@example.com" },
+      {
+        name: "email",
+        label: "Email Address",
+        type: "text",
+        required: true,
+        placeholder: "jane@example.com",
+      },
     ],
     defaultArguments: {},
   },
