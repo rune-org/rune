@@ -46,7 +46,8 @@ jobs:
         working-directory: ./services/api
       
       - name: Generate client with hey-api
-        run: pnpm dlx @hey-api/openapi-ts -f heyapi.conf.js
+        # Keep this pinned until a hey-api release special-cases SSE annotations.
+        run: pnpm dlx @hey-api/openapi-ts@0.97.3 -f heyapi.conf.js
       
       - name: Create PR with client changes
         run: |
