@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { inviteUserSchema, type InviteUserFormValues } from "@/lib/validation";
-import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,7 +54,7 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
     }
   }, [open, user, form]);
 
-  if (!open || !user) return null;
+  if (!user) return null;
 
   const onSubmit = async (values: EditUserFormValues) => {
     setIsSubmitting(true);
@@ -76,24 +76,31 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
     onClose();
   };
 
-  const handleBackdropClick = (_e: React.MouseEvent<HTMLDivElement>) => {
-    if (isSubmitting) return;
-    handleClose();
-  };
-
-  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-  };
-
   const { isValid } = form.formState;
 
+  const preventCloseWhileSubmitting = (e: Event) => {
+    if (isSubmitting) e.preventDefault();
+  };
+
   return (
-    <div
-      className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center p-6 z-50"
-      onClick={handleBackdropClick}
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !isSubmitting) {
+          handleClose();
+        }
+      }}
     >
-      <Card className="p-6 w-full max-w-md bg-background border" onClick={handleCardClick}>
-        <h3 className="text-lg font-semibold mb-4">Edit User</h3>
+      <DialogContent
+        hideCloseButton
+        className="max-w-md gap-4"
+        onEscapeKeyDown={preventCloseWhileSubmitting}
+        onPointerDownOutside={preventCloseWhileSubmitting}
+        onInteractOutside={preventCloseWhileSubmitting}
+      >
+        <DialogHeader className="gap-2 text-left">
+          <DialogTitle className="text-lg">Edit User</DialogTitle>
+        </DialogHeader>
 
         <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit)} noValidate>
           <div>
@@ -150,7 +157,7 @@ export function EditUserDialog({ open, onClose, user, onUpdate }: EditUserDialog
             </Button>
           </div>
         </form>
-      </Card>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

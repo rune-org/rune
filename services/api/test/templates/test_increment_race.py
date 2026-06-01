@@ -22,7 +22,7 @@ async def _create_template(engine) -> int:
             tpl = WorkflowTemplate(
                 name="concurrent-template",
                 description="",
-                category="test",
+                category="general",
                 workflow_data={},
                 is_public=True,
                 created_by=None,

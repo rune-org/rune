@@ -65,6 +65,7 @@ export function KeyValueVariableEditor({
   }, []);
 
   const [entries, setEntries] = useState<Entry[]>(() => entriesFromRecord(value, 0));
+  const entriesRef = useRef(entries);
 
   const lastEmittedRef = useRef<Record<string, unknown>>(value ?? {});
 
@@ -73,7 +74,9 @@ export function KeyValueVariableEditor({
     if (recordsEqual(lastEmittedRef.current, incoming)) return;
     lastEmittedRef.current = incoming;
     idCounter.current += 1;
-    setEntries(entriesFromRecord(incoming, idCounter.current));
+    const nextEntries = entriesFromRecord(incoming, idCounter.current);
+    entriesRef.current = nextEntries;
+    setEntries(nextEntries);
   }, [value]);
 
   const emitChange = useCallback(
@@ -88,11 +91,10 @@ export function KeyValueVariableEditor({
 
   const updateEntries = useCallback(
     (updater: (prev: Entry[]) => Entry[]) => {
-      setEntries((prev) => {
-        const next = updater(prev);
-        emitChange(next);
-        return next;
-      });
+      const nextEntries = updater(entriesRef.current);
+      entriesRef.current = nextEntries;
+      setEntries(nextEntries);
+      emitChange(nextEntries);
     },
     [emitChange],
   );

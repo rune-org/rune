@@ -40,6 +40,30 @@ async def test_list_excludes_other_users_private_templates(
 
 
 @pytest.mark.asyncio
+async def test_list_search_matches_template_tags(template_service, test_user, test_db):
+    """Should include templates whose only search hit is a tag."""
+    template = WorkflowTemplate(
+        name="Quarterly Report",
+        description="Builds a summary",
+        category="general",
+        workflow_data={"nodes": [], "edges": []},
+        tags=["finance-close"],
+        is_public=True,
+        created_by=test_user.id,
+    )
+    test_db.add(template)
+    await test_db.commit()
+    await test_db.refresh(template)
+
+    templates = await template_service.list_all_accessible_templates(
+        test_user.id,
+        search="finance-close",
+    )
+
+    assert template.id in [t.id for t in templates]
+
+
+@pytest.mark.asyncio
 async def test_get_public_template_accessible_by_any_user(
     template_service, test_user, sample_public_template
 ):
@@ -128,7 +152,7 @@ async def test_create_template_sets_created_by(template_service, test_user, test
     template_data = TemplateCreate(
         name="User Template",
         description="Test",
-        category="automation",
+        category="general",
         workflow_data={"nodes": []},
         is_public=False,
     )
@@ -145,7 +169,7 @@ async def test_create_template_initializes_usage_count_to_zero(
     template_data = TemplateCreate(
         name="New Template",
         description="Test",
-        category="automation",
+        category="general",
         workflow_data={"nodes": []},
         is_public=False,
     )
@@ -184,7 +208,7 @@ async def test_create_template_persists_to_database(
     template_data = TemplateCreate(
         name="Persisted",
         description="Test",
-        category="automation",
+        category="general",
         workflow_data={"nodes": []},
         is_public=False,
     )

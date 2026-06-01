@@ -75,6 +75,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
   } = opts;
 
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
+  const [isExportGalleryOpen, setIsExportGalleryOpen] = useState(false);
   const [isImportTemplateOpen, setIsImportTemplateOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const nodesRef = useRef(nodes);
@@ -163,6 +164,14 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
       return;
     }
     setIsSaveTemplateOpen(true);
+  }, []);
+
+  const exportToGallery = useCallback(() => {
+    if (nodesRef.current.length === 0) {
+      toast.error("Build a workflow before submitting to the gallery");
+      return;
+    }
+    setIsExportGalleryOpen(true);
   }, []);
 
   const importFromFile = useCallback(() => {
@@ -332,6 +341,7 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
     exportToClipboard,
     exportToFile,
     exportToTemplate,
+    exportToGallery,
     importFromClipboard: notifyPasteShortcut,
     importFromFile,
     handleFileImport,
@@ -339,6 +349,8 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
     handleTemplateSelect,
     isSaveTemplateOpen,
     setIsSaveTemplateOpen,
+    isExportGalleryOpen,
+    setIsExportGalleryOpen,
     isImportTemplateOpen,
     setIsImportTemplateOpen,
     fileInputRef,

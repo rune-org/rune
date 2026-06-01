@@ -679,9 +679,9 @@ export const changeMyPasswordProfileMePasswordPost = <ThrowOnError extends boole
 /**
  * List Templates
  *
- * Get all templates accessible to the current user (public + their own).
+ * List templates the current user can see, with optional filters and sort.
  */
-export const listTemplatesTemplatesGet = <ThrowOnError extends boolean = false>(options?: Options<ListTemplatesTemplatesGetData, ThrowOnError>) => (options?.client ?? client).get<ListTemplatesTemplatesGetResponses, unknown, ThrowOnError>({
+export const listTemplatesTemplatesGet = <ThrowOnError extends boolean = false>(options?: Options<ListTemplatesTemplatesGetData, ThrowOnError>) => (options?.client ?? client).get<ListTemplatesTemplatesGetResponses, ListTemplatesTemplatesGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/templates/',
     ...options
@@ -700,6 +700,22 @@ export const createTemplateTemplatesPost = <ThrowOnError extends boolean = false
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * List Categories
+ *
+ * Enumerate the canonical TemplateCategory values with per-category counts.
+ *
+ * Counts honour ``scope`` so the gallery's category chips reflect what the
+ * user will actually see in the currently-selected tab. Legacy categories
+ * (free-form strings stored before the enum) are not surfaced here - the
+ * gallery UI renders strictly from this enum.
+ */
+export const listCategoriesTemplatesCategoriesGet = <ThrowOnError extends boolean = false>(options?: Options<ListCategoriesTemplatesCategoriesGetData, ThrowOnError>) => (options?.client ?? client).get<ListCategoriesTemplatesCategoriesGetResponses, ListCategoriesTemplatesCategoriesGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/templates/categories',
+    ...options
 });
 
 /**
@@ -877,6 +893,17 @@ export const updateCredentialCredentialsCredentialIdPatch = <ThrowOnError extend
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Get workflows using this credential
+ *
+ * Get a list of workflows that are currently using this credential.
+ */
+export const getCredentialUsageCredentialsCredentialIdUsageGet = <ThrowOnError extends boolean = false>(options: Options<GetCredentialUsageCredentialsCredentialIdUsageGetData, ThrowOnError>) => (options.client ?? client).get<GetCredentialUsageCredentialsCredentialIdUsageGetResponses, GetCredentialUsageCredentialsCredentialIdUsageGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/credentials/{credential_id}/usage',
+    ...options
 });
 
 /**
@@ -1067,3 +1094,34 @@ export const generateNewWorkflowSmithPost = <ThrowOnError extends boolean = fals
  * Trigger a workflow execution internally (used by the scheduler service).
  */
 export const runWorkflowInternalInternalWorkflowsWorkflowIdRunPost = <ThrowOnError extends boolean = false>(options: Options<RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostData, ThrowOnError>) => (options.client ?? client).post<RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostResponses, RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostErrors, ThrowOnError>({ url: '/internal/workflows/{workflow_id}/run', ...options });
+
+/**
+ * Oauth Authorize
+ *
+ * Start OAuth2 authorization code flow for a saved oauth2 credential.
+ */
+export const oauthAuthorizeOauthAuthorizeGet = <ThrowOnError extends boolean = false>(options: Options<OauthAuthorizeOauthAuthorizeGetData, ThrowOnError>) => (options.client ?? client).get<OauthAuthorizeOauthAuthorizeGetResponses, OauthAuthorizeOauthAuthorizeGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/oauth/authorize',
+    ...options
+});
+
+/**
+ * Oauth Callback
+ *
+ * OAuth2 redirect URI: exchange code and merge tokens into the credential.
+ */
+export const oauthCallbackOauthCallbackGet = <ThrowOnError extends boolean = false>(options?: Options<OauthCallbackOauthCallbackGetData, ThrowOnError>) => (options?.client ?? client).get<OauthCallbackOauthCallbackGetResponses, OauthCallbackOauthCallbackGetErrors, ThrowOnError>({ url: '/oauth/callback', ...options });
+
+/**
+ * Trigger Webhook
+ *
+ * Trigger a workflow via its registered webhook URL.
+ *
+ * The request body (JSON) is forwarded to the worker as webhook request
+ * payload under the ``$trigger`` key in the execution context.
+ *
+ * No authentication is required — the GUID itself is the secret.
+ * Returns 404 if the GUID is unknown or the workflow is inactive.
+ */
+export const triggerWebhookWebhookGuidPost = <ThrowOnError extends boolean = false>(options: Options<TriggerWebhookWebhookGuidPostData, ThrowOnError>) => (options.client ?? client).post<TriggerWebhookWebhookGuidPostResponses, TriggerWebhookWebhookGuidPostErrors, ThrowOnError>({ url: '/webhook/{guid}', ...options });

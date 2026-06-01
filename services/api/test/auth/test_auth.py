@@ -24,7 +24,7 @@ async def test_login_success(client: AsyncClient, test_user):
     - Validating the response structure and status code
     """
     response = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
+        "/auth/login", json={"email": "test@example.com", "password": "Testpassword!23"}
     )
 
     assert response.status_code == 200
@@ -46,9 +46,21 @@ async def test_login_invalid_email(client: AsyncClient, test_user):
     """Test login with non-existent email."""
     response = await client.post(
         "/auth/login",
-        json={"email": "nonexistent@example.com", "password": "testpassword123"},
+        json={"email": "nonexistent@example.com", "password": "Testpassword!23"},
     )
 
+    assert response.status_code == 401
+    data = response.json()
+    assert data["success"] is False
+    assert data["message"] == "Invalid credentials"
+
+
+@pytest.mark.asyncio
+async def test_login_invalid_password_format(client: AsyncClient, test_user):
+    """Test login with invalid password format."""
+    response = await client.post(
+        "/auth/login", json={"email": "test@example.com", "password": "not-a-password"}
+    )
     assert response.status_code == 401
     data = response.json()
     assert data["success"] is False
@@ -59,7 +71,7 @@ async def test_login_invalid_email(client: AsyncClient, test_user):
 async def test_login_wrong_password(client: AsyncClient, test_user):
     """Test login with incorrect password."""
     response = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "wrongpassword"}
+        "/auth/login", json={"email": "test@example.com", "password": "Wrongp@ssword1"}
     )
 
     assert response.status_code == 401
@@ -71,7 +83,7 @@ async def test_login_wrong_password(client: AsyncClient, test_user):
 @pytest.mark.asyncio
 async def test_login_missing_email_field(client: AsyncClient, test_user):
     """Test login with missing email field."""
-    response = await client.post("/auth/login", json={"password": "testpassword123"})
+    response = await client.post("/auth/login", json={"password": "Testpassword!23"})
 
     assert response.status_code == 422
     data = response.json()
@@ -115,7 +127,7 @@ async def test_login_with_extra_fields(client: AsyncClient, test_user):
         "/auth/login",
         json={
             "email": "test@example.com",
-            "password": "testpassword123",
+            "password": "Testpassword!23",
             "extra_field": "should be ignored",
             "another_field": 12345,
         },
@@ -132,7 +144,7 @@ async def test_login_with_extra_fields(client: AsyncClient, test_user):
 async def test_login_empty_email(client: AsyncClient, test_user):
     """Test login with empty email string."""
     response = await client.post(
-        "/auth/login", json={"email": "", "password": "testpassword123"}
+        "/auth/login", json={"email": "", "password": "Testpassword!23"}
     )
 
     assert response.status_code == 422
@@ -158,7 +170,7 @@ async def test_login_empty_password(client: AsyncClient, test_user):
 async def test_login_invalid_email_format(client: AsyncClient, test_user):
     """Test login with invalid email format."""
     response = await client.post(
-        "/auth/login", json={"email": "not-an-email", "password": "testpassword123"}
+        "/auth/login", json={"email": "not-an-email", "password": "Testpassword!23"}
     )
 
     assert response.status_code == 422
@@ -172,7 +184,7 @@ async def test_login_case_insensitive_email(client: AsyncClient, test_user):
     """Test login with different email casing."""
     response = await client.post(
         "/auth/login",
-        json={"email": "TEST@EXAMPLE.COM", "password": "testpassword123"},
+        json={"email": "TEST@EXAMPLE.COM", "password": "Testpassword!23"},
     )
 
     assert response.status_code == 200
@@ -189,7 +201,7 @@ async def test_login_case_insensitive_email(client: AsyncClient, test_user):
 async def test_refresh_token_success(client: AsyncClient, test_user):
     """Test successful token refresh."""
     login_response = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
+        "/auth/login", json={"email": "test@example.com", "password": "Testpassword!23"}
     )
     assert login_response.status_code == 200
     login_data = login_response.json()
@@ -271,7 +283,7 @@ async def test_refresh_token_nonexistent_user(client: AsyncClient, test_user):
 async def test_refresh_token_revoked(client: AsyncClient, test_user):
     """Test refresh with a revoked token (after logout)."""
     login_response = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
+        "/auth/login", json={"email": "test@example.com", "password": "Testpassword!23"}
     )
     refresh_token = login_response.json()["data"]["refresh_token"]
 
@@ -315,7 +327,7 @@ async def test_refresh_token_empty_string(client: AsyncClient, test_user):
 async def test_refresh_token_with_extra_fields(client: AsyncClient, test_user):
     """Test refresh endpoint with extra fields (should be rejected)."""
     login_response = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
+        "/auth/login", json={"email": "test@example.com", "password": "Testpassword!23"}
     )
     refresh_token = login_response.json()["data"]["refresh_token"]
 
@@ -446,7 +458,7 @@ async def test_token_refresh_updates_access_token_expiry(
 ):
     """Test that refreshing creates new token with fresh expiry."""
     login_response = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
+        "/auth/login", json={"email": "test@example.com", "password": "Testpassword!23"}
     )
     refresh_token = login_response.json()["data"]["refresh_token"]
     original_access_token = login_response.json()["data"]["access_token"]
@@ -513,7 +525,7 @@ async def test_logout_clears_cookie(authenticated_client: AsyncClient):
 async def test_cannot_use_token_after_logout(client: AsyncClient, test_user):
     """Test that tokens cannot be used after logout."""
     login_response = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
+        "/auth/login", json={"email": "test@example.com", "password": "Testpassword!23"}
     )
     refresh_token = login_response.json()["data"]["refresh_token"]
     access_token = login_response.json()["data"]["access_token"]
@@ -540,12 +552,12 @@ async def test_cannot_use_token_after_logout(client: AsyncClient, test_user):
 async def test_multiple_logins_same_user(client: AsyncClient, test_user):
     """Test that multiple logins for same user work (old tokens are invalidated)."""
     login1 = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
+        "/auth/login", json={"email": "test@example.com", "password": "Testpassword!23"}
     )
     refresh_token1 = login1.json()["data"]["refresh_token"]
 
     login2 = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
+        "/auth/login", json={"email": "test@example.com", "password": "Testpassword!23"}
     )
     refresh_token2 = login2.json()["data"]["refresh_token"]
 
@@ -584,7 +596,7 @@ async def test_login_with_wrong_data_types(client: AsyncClient, test_user):
 async def test_refresh_token_reuse(client: AsyncClient, test_user):
     """Test that refresh token can be reused multiple times."""
     login_response = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
+        "/auth/login", json={"email": "test@example.com", "password": "Testpassword!23"}
     )
     refresh_token = login_response.json()["data"]["refresh_token"]
 
@@ -674,7 +686,7 @@ async def test_very_long_password(client: AsyncClient, test_user):
 async def test_token_contains_expected_claims(client: AsyncClient, test_user: User):
     """Test that access token contains all expected claims."""
     response = await client.post(
-        "/auth/login", json={"email": "test@example.com", "password": "testpassword123"}
+        "/auth/login", json={"email": "test@example.com", "password": "Testpassword!23"}
     )
 
     access_token = response.json()["data"]["access_token"]
@@ -714,7 +726,7 @@ async def test_access_token_expires_at_exact_configured_time(
     with freeze_time("2025-10-22 10:00:00"):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         assert login_response.status_code == 200
         access_token = login_response.json()["data"]["access_token"]
@@ -730,7 +742,7 @@ async def test_access_token_expires_at_exact_configured_time(
     with freeze_time("2025-10-22 10:00:00"):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         access_token = login_response.json()["data"]["access_token"]
 
@@ -757,7 +769,7 @@ async def test_access_token_expires_after_configured_duration(
     with freeze_time("2025-10-22 10:00:00"):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         assert login_response.status_code == 200
         access_token = login_response.json()["data"]["access_token"]
@@ -773,7 +785,7 @@ async def test_access_token_expires_after_configured_duration(
     with freeze_time("2025-10-22 10:00:00"):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         access_token = login_response.json()["data"]["access_token"]
 
@@ -800,7 +812,7 @@ async def test_refresh_token_expires_after_configured_days(
     with freeze_time("2025-10-22 10:00:00"):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         assert login_response.status_code == 200
         refresh_token = login_response.json()["data"]["refresh_token"]
@@ -835,7 +847,7 @@ async def test_token_claims_have_correct_timestamps(client: AsyncClient, test_us
     with freeze_time(login_time):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         assert login_response.status_code == 200
         access_token = login_response.json()["data"]["access_token"]
@@ -865,7 +877,7 @@ async def test_refreshed_token_has_new_expiry_time(client: AsyncClient, test_use
     with freeze_time("2025-10-22 10:00:00+00:00"):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         original_access_token = login_response.json()["data"]["access_token"]
         refresh_token = login_response.json()["data"]["refresh_token"]
@@ -947,7 +959,7 @@ async def test_token_expiry_boundary_conditions(client: AsyncClient, test_user):
     with freeze_time("2025-10-22 10:00:00.000000"):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         access_token = login_response.json()["data"]["access_token"]
 
@@ -967,7 +979,7 @@ async def test_token_expiry_boundary_conditions(client: AsyncClient, test_user):
     with freeze_time("2025-10-22 10:00:00.000000"):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         access_token = login_response.json()["data"]["access_token"]
 
@@ -982,7 +994,7 @@ async def test_token_expiry_boundary_conditions(client: AsyncClient, test_user):
     with freeze_time("2025-10-22 10:00:00.000000"):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         access_token = login_response.json()["data"]["access_token"]
 
@@ -1006,7 +1018,7 @@ async def test_token_lifetime_configuration_is_respected(
     with freeze_time("2025-10-22 10:00:00"):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         access_token = login_response.json()["data"]["access_token"]
 
@@ -1032,7 +1044,7 @@ async def test_token_lifetime_configuration_is_respected(
     with freeze_time("2025-10-22 10:00:00"):
         login_response = await client.post(
             "/auth/login",
-            json={"email": "test@example.com", "password": "testpassword123"},
+            json={"email": "test@example.com", "password": "Testpassword!23"},
         )
         access_token = login_response.json()["data"]["access_token"]
 
