@@ -39,6 +39,7 @@ export type NodeGroup =
   | "agents"
   | "google"
   | "microsoft"
+  | "slack"
   | "annotate";
 
 export type NodeColorTheme = {
@@ -676,6 +677,12 @@ const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
     icon: Plug,
     iconSrc: "/icons/integrations/microsoft.svg",
     color: "#0078d4",
+  },
+  slack: {
+    label: "Slack",
+    icon: Plug,
+    iconSrc: "/icons/integrations/slack.svg",
+    color: "#4A154B",
   },
   annotate: { label: "Annotate", icon: NotepadText, color: "var(--node-note)" },
 };
