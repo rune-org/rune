@@ -356,10 +356,10 @@ class WorkflowService:
     async def get_run_version(
         self, workflow: Workflow, version_id: int | None
     ) -> WorkflowVersion:
-        if not workflow.is_active:
-            raise BadRequest(detail="Workflow is inactive")
-
         if version_id is None:
+            if not workflow.is_active:
+                raise BadRequest(detail="Workflow is inactive")
+
             if workflow.published_version_id is None:
                 raise BadRequest(detail="Workflow has no published version")
 
