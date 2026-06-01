@@ -174,6 +174,30 @@ export type ApiResponseFirstAdminSignupResponse = {
 };
 
 /**
+ * ApiResponse[List[TemplateCategorySummary]]
+ */
+export type ApiResponseListTemplateCategorySummary = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<TemplateCategorySummary>;
+};
+
+/**
  * ApiResponse[List[TemplateSummary]]
  */
 export type ApiResponseListTemplateSummary = {
@@ -1280,6 +1304,121 @@ export type RefreshRequest = {
 };
 
 /**
+ * RuntimeWorkflowEdge
+ *
+ * A single edge in the runtime workflow graph.
+ *
+ * The runtime/save shape uses ``src``/``dst`` (the worker convention),
+ * converted client-side from the canvas ``source``/``target`` shape in
+ * workflow-dsl.
+ */
+export type RuntimeWorkflowEdge = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Src
+     */
+    src: string;
+    /**
+     * Dst
+     */
+    dst: string;
+    /**
+     * Type
+     */
+    type?: string | null;
+    /**
+     * Label
+     */
+    label?: string | null;
+    [key: string]: unknown;
+};
+
+/**
+ * RuntimeWorkflowGraph
+ *
+ * The runtime workflow graph saved as a version: nodes + edges (+ notes).
+ *
+ * Pydantic owns *shape* validation here (required/non-empty fields, types,
+ * id uniqueness); cross-field *semantics* (edges reference existing nodes,
+ * no self-references, exactly one trigger) live in
+ * ``src.workflow.validation``. Stricter than the lenient template
+ * ``WorkflowGraph``: a saved version must have at least one node.
+ *
+ * ``notes`` is a decorative layer: free-floating sticky notes that are
+ * persisted but excluded from execution and from trigger/edge semantics.
+ */
+export type RuntimeWorkflowGraph = {
+    /**
+     * Nodes
+     */
+    nodes: Array<RuntimeWorkflowNode>;
+    /**
+     * Edges
+     */
+    edges: Array<RuntimeWorkflowEdge>;
+    /**
+     * Notes
+     */
+    notes?: Array<RuntimeWorkflowNote>;
+    /**
+     * Metadata
+     */
+    metadata?: {
+        [key: string]: unknown;
+    } | null;
+    [key: string]: unknown;
+};
+
+/**
+ * RuntimeWorkflowNode
+ *
+ * A single node in the runtime workflow graph.
+ *
+ * Only the structural identity fields are validated (``id``, ``type``); the
+ * rest of the runtime shape (``name``, ``parameters``, ``output``,
+ * ``position`` as an ``[x, y]`` array, ``credentials``, ...) is intentionally
+ * loose and passes through via ``extra="allow"``.
+ */
+export type RuntimeWorkflowNode = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Type
+     */
+    type: string;
+    /**
+     * Trigger
+     */
+    trigger?: boolean | null;
+    [key: string]: unknown;
+};
+
+/**
+ * RuntimeWorkflowNote
+ *
+ * A decorative sticky note placed on the canvas.
+ *
+ * Notes are persisted with the workflow but never executed: the worker
+ * deserializes only ``nodes``/``edges`` and semantic validation
+ * (``src.workflow.validation``) ignores notes entirely. Only the structural
+ * identity field is validated (``id``); the rest of the shape (``content``,
+ * ``x``/``y`` position, ``width``/``height``, ``color``, ``font_size``) is
+ * intentionally loose and passes through via ``extra="allow"``.
+ */
+export type RuntimeWorkflowNote = {
+    /**
+     * Id
+     */
+    id: string;
+    [key: string]: unknown;
+};
+
+/**
  * SAMLConfigCreate
  *
  * Request body for ``POST /auth/saml/config``.
@@ -1498,9 +1637,44 @@ export type SamlExchangeResponse = {
 };
 
 /**
+ * TemplateCategory
+ *
+ * Soft enum for template categories.
+ *
+ * Stored as a free-form ``str`` in the database so adding a new category is
+ * a Python-only change. New templates are validated against this enum on
+ * write via ``TemplateCreate``; reads stay lenient so legacy values
+ * (``automation``, ``data-processing``, etc.) still round-trip.
+ */
+export type TemplateCategory = 'general' | 'email' | 'analytics' | 'development' | 'cloud' | 'scheduling' | 'social_media' | 'productivity';
+
+/**
+ * TemplateCategorySummary
+ *
+ * One row in the ``GET /templates/categories`` response.
+ */
+export type TemplateCategorySummary = {
+    /**
+     * Value
+     */
+    value: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
  * TemplateCreate
  *
  * Schema for creating a new template.
+ *
+ * User-saved templates only; official templates are inserted by the bundle
+ * seeder, which uses the DB model directly.
  */
 export type TemplateCreate = {
     /**
@@ -1511,26 +1685,31 @@ export type TemplateCreate = {
      * Description
      */
     description?: string;
-    /**
-     * Category
-     */
-    category?: string;
-    /**
-     * Workflow Data
-     */
-    workflow_data: {
-        [key: string]: unknown;
-    };
+    category?: TemplateCategory;
+    workflow_data: WorkflowGraph;
     /**
      * Is Public
      */
     is_public?: boolean;
+    /**
+     * Icon
+     */
+    icon?: string | null;
+    /**
+     * Tags
+     */
+    tags?: Array<string>;
 };
 
 /**
  * TemplateDetail
  *
  * Detailed template information including workflow data.
+ *
+ * ``workflow_data`` is typed as ``dict[str, Any]`` rather than
+ * ``WorkflowGraph`` so existing templates with legacy or partial shapes
+ * continue to round-trip on read. New templates are validated against
+ * ``WorkflowGraph`` on write via ``TemplateCreate``.
  */
 export type TemplateDetail = {
     /**
@@ -1575,12 +1754,85 @@ export type TemplateDetail = {
      * Created By
      */
     created_by: number | null;
+    /**
+     * Source
+     */
+    source?: string;
+    /**
+     * External Id
+     */
+    external_id?: string | null;
+    /**
+     * Icon
+     */
+    icon?: string | null;
+    /**
+     * Tags
+     */
+    tags?: Array<string>;
+    /**
+     * Author Name
+     */
+    author_name?: string | null;
+    /**
+     * Author Url
+     */
+    author_url?: string | null;
+    /**
+     * Scope
+     *
+     * User-facing bucket: official / community / personal.
+     */
+    readonly scope: string;
 };
+
+/**
+ * TemplateScope
+ *
+ * The user-facing bucket a template belongs to.
+ *
+ * Derived from ``(source, is_public)`` so callers don't need to combine
+ * the two dimensions themselves:
+ *
+ * * ``OFFICIAL`` - curated by the Rune team, seeded from the
+ * ``rune-templates`` repo.
+ * * ``COMMUNITY`` - saved by an end user and marked public, visible to
+ * everyone on the Rune instance.
+ * * ``PERSONAL`` - saved by an end user for their own use, visible only
+ * to the creator.
+ */
+export type TemplateScope = 'official' | 'community' | 'personal';
+
+/**
+ * TemplateSort
+ *
+ * Sort options exposed on the templates list endpoint.
+ *
+ * ``FEATURED`` is the gallery default: official templates first, then by
+ * descending ``usage_count``. The other modes are straightforward
+ * single-column orderings.
+ */
+export type TemplateSort = 'featured' | 'popular' | 'newest' | 'alphabetical';
+
+/**
+ * TemplateSource
+ *
+ * Origin of a template row.
+ *
+ * ``OFFICIAL`` templates come from the curated ``rune-templates`` repo bundle
+ * and are upserted by the seeder keyed by ``external_id``. ``USER`` templates
+ * are created via the save-template flow and owned by ``created_by``.
+ */
+export type TemplateSource = 'official' | 'user';
 
 /**
  * TemplateSummary
  *
  * Template summary for listing templates.
+ *
+ * ``category`` is typed as ``str`` (not ``TemplateCategory``) so legacy
+ * values stored in the DB (``automation``, ``data-processing``, ...) still
+ * round-trip on read.
  */
 export type TemplateSummary = {
     /**
@@ -1607,6 +1859,40 @@ export type TemplateSummary = {
      * Is Public
      */
     is_public: boolean;
+    /**
+     * Source
+     */
+    source?: string;
+    /**
+     * External Id
+     */
+    external_id?: string | null;
+    /**
+     * Icon
+     */
+    icon?: string | null;
+    /**
+     * Tags
+     */
+    tags?: Array<string>;
+    /**
+     * Author Name
+     */
+    author_name?: string | null;
+    /**
+     * Author Url
+     */
+    author_url?: string | null;
+    /**
+     * Node Count
+     */
+    node_count?: number;
+    /**
+     * Scope
+     *
+     * User-facing bucket: official / community / personal.
+     */
+    readonly scope: string;
 };
 
 /**
@@ -1835,13 +2121,9 @@ export type WorkflowCreateVersion = {
      */
     base_version_id?: number | null;
     /**
-     * Workflow Data
-     *
      * Workflow definition to save
      */
-    workflow_data: {
-        [key: string]: unknown;
-    };
+    workflow_data: RuntimeWorkflowGraph;
     /**
      * Message
      *
@@ -1900,6 +2182,76 @@ export type WorkflowDetailDocs = {
 };
 
 /**
+ * WorkflowEdge
+ *
+ * A single edge in a workflow graph (React Flow shape).
+ *
+ * Edges use ``source``/``target`` (React Flow convention) - this is the
+ * canvas-facing shape that templates ship in. The runtime worker uses
+ * ``src``/``dst`` but conversion happens client-side in ``workflow-dsl.ts``
+ * when a workflow is saved.
+ */
+export type WorkflowEdge = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Source
+     */
+    source: string;
+    /**
+     * Target
+     */
+    target: string;
+    /**
+     * Type
+     */
+    type?: string | null;
+    /**
+     * Sourcehandle
+     */
+    sourceHandle?: string | null;
+    /**
+     * Targethandle
+     */
+    targetHandle?: string | null;
+    /**
+     * Label
+     */
+    label?: string | null;
+    [key: string]: unknown;
+};
+
+/**
+ * WorkflowGraph
+ *
+ * A workflow graph: nodes + edges (+ optional metadata).
+ *
+ * Structure is strict (the top-level shape and per-element required fields
+ * are validated). Empty ``nodes``/``edges`` arrays are allowed at the
+ * template-storage layer - runtime ``queue.py`` enforces "must have a
+ * trigger" only when a workflow is actually queued for execution.
+ */
+export type WorkflowGraph = {
+    /**
+     * Nodes
+     */
+    nodes?: Array<WorkflowNode>;
+    /**
+     * Edges
+     */
+    edges?: Array<WorkflowEdge>;
+    /**
+     * Metadata
+     */
+    metadata?: {
+        [key: string]: unknown;
+    } | null;
+    [key: string]: unknown;
+};
+
+/**
  * WorkflowListItem
  */
 export type WorkflowListItem = {
@@ -1924,6 +2276,56 @@ export type WorkflowListItem = {
      * Owner Name
      */
     owner_name: string;
+};
+
+/**
+ * WorkflowNode
+ *
+ * A single node in a workflow graph (React Flow shape).
+ *
+ * Per-node ``data`` is intentionally loose (``dict[str, Any]``): different
+ * node types have different config shapes, and templates need to keep working
+ * as the connector catalog evolves. Only the structural identity fields
+ * (``id``, ``type``) are strictly required.
+ */
+export type WorkflowNode = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Type
+     */
+    type: string;
+    position?: WorkflowNodePosition | null;
+    /**
+     * Data
+     */
+    data?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Trigger
+     */
+    trigger?: boolean | null;
+    [key: string]: unknown;
+};
+
+/**
+ * WorkflowNodePosition
+ *
+ * X/Y position for a workflow node on the canvas.
+ */
+export type WorkflowNodePosition = {
+    /**
+     * X
+     */
+    x: number;
+    /**
+     * Y
+     */
+    y: number;
+    [key: string]: unknown;
 };
 
 /**
@@ -2165,6 +2567,195 @@ export type WorkflowVersionListItem = {
      * Is Published
      */
     is_published: boolean;
+};
+
+/**
+ * ApiResponse[List[TemplateSummary]]
+ */
+export type ApiResponseListTemplateSummaryWritable = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<TemplateSummaryWritable>;
+};
+
+/**
+ * ApiResponse[TemplateDetail]
+ */
+export type ApiResponseTemplateDetailWritable = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Response data
+     */
+    data: TemplateDetailWritable;
+};
+
+/**
+ * TemplateDetail
+ *
+ * Detailed template information including workflow data.
+ *
+ * ``workflow_data`` is typed as ``dict[str, Any]`` rather than
+ * ``WorkflowGraph`` so existing templates with legacy or partial shapes
+ * continue to round-trip on read. New templates are validated against
+ * ``WorkflowGraph`` on write via ``TemplateCreate``.
+ */
+export type TemplateDetailWritable = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Workflow Data
+     */
+    workflow_data: {
+        [key: string]: unknown;
+    };
+    /**
+     * Usage Count
+     */
+    usage_count: number;
+    /**
+     * Is Public
+     */
+    is_public: boolean;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+    /**
+     * Created By
+     */
+    created_by: number | null;
+    /**
+     * Source
+     */
+    source?: string;
+    /**
+     * External Id
+     */
+    external_id?: string | null;
+    /**
+     * Icon
+     */
+    icon?: string | null;
+    /**
+     * Tags
+     */
+    tags?: Array<string>;
+    /**
+     * Author Name
+     */
+    author_name?: string | null;
+    /**
+     * Author Url
+     */
+    author_url?: string | null;
+};
+
+/**
+ * TemplateSummary
+ *
+ * Template summary for listing templates.
+ *
+ * ``category`` is typed as ``str`` (not ``TemplateCategory``) so legacy
+ * values stored in the DB (``automation``, ``data-processing``, ...) still
+ * round-trip on read.
+ */
+export type TemplateSummaryWritable = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Usage Count
+     */
+    usage_count: number;
+    /**
+     * Is Public
+     */
+    is_public: boolean;
+    /**
+     * Source
+     */
+    source?: string;
+    /**
+     * External Id
+     */
+    external_id?: string | null;
+    /**
+     * Icon
+     */
+    icon?: string | null;
+    /**
+     * Tags
+     */
+    tags?: Array<string>;
+    /**
+     * Author Name
+     */
+    author_name?: string | null;
+    /**
+     * Author Url
+     */
+    author_url?: string | null;
+    /**
+     * Node Count
+     */
+    node_count?: number;
 };
 
 export type LoginAuthLoginPostData = {
@@ -3363,9 +3954,53 @@ export type ChangeMyPasswordProfileMePasswordPostResponse = ChangeMyPasswordProf
 export type ListTemplatesTemplatesGetData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Category
+         *
+         * Filter by category slug. Accepts both canonical TemplateCategory values and legacy strings.
+         */
+        category?: string | null;
+        /**
+         * Source
+         *
+         * Lower-level filter by storage origin (official or user). Most callers should use ``scope``.
+         */
+        source?: TemplateSource | null;
+        /**
+         * Scope
+         *
+         * Filter by user-facing bucket: official, community (instance-wide public), or personal (only yours).
+         */
+        scope?: TemplateScope | null;
+        /**
+         * Tags
+         *
+         * Filter to templates that have at least one of the given tag slugs.
+         */
+        tags?: Array<string> | null;
+        /**
+         * Search
+         *
+         * Case-insensitive substring search across name, description, and tags.
+         */
+        search?: string | null;
+        /**
+         * Ordering applied to the result set.
+         */
+        sort?: TemplateSort;
+    };
     url: '/templates/';
 };
+
+export type ListTemplatesTemplatesGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListTemplatesTemplatesGetError = ListTemplatesTemplatesGetErrors[keyof ListTemplatesTemplatesGetErrors];
 
 export type ListTemplatesTemplatesGetResponses = {
     /**
@@ -3400,6 +4035,38 @@ export type CreateTemplateTemplatesPostResponses = {
 };
 
 export type CreateTemplateTemplatesPostResponse = CreateTemplateTemplatesPostResponses[keyof CreateTemplateTemplatesPostResponses];
+
+export type ListCategoriesTemplatesCategoriesGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Scope
+         *
+         * Restrict counts to a single scope (official, community, personal). Omit to count across every template the user can see.
+         */
+        scope?: TemplateScope | null;
+    };
+    url: '/templates/categories';
+};
+
+export type ListCategoriesTemplatesCategoriesGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListCategoriesTemplatesCategoriesGetError = ListCategoriesTemplatesCategoriesGetErrors[keyof ListCategoriesTemplatesCategoriesGetErrors];
+
+export type ListCategoriesTemplatesCategoriesGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApiResponseListTemplateCategorySummary;
+};
+
+export type ListCategoriesTemplatesCategoriesGetResponse = ListCategoriesTemplatesCategoriesGetResponses[keyof ListCategoriesTemplatesCategoriesGetResponses];
 
 export type DeleteTemplateTemplatesTemplateIdDeleteData = {
     body?: never;

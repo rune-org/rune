@@ -5,9 +5,11 @@ import {
   type HttpNode,
   type WebhookNode,
   type HttpParameters,
+  type Note,
   sanitizeWorkflow,
   sanitizeEdge,
   sanitizeHttpParameters,
+  sanitizeNote,
 } from "../../generated/types";
 
 describe("generated DSL types", () => {
@@ -46,6 +48,7 @@ describe("generated DSL types", () => {
       execution_id: "exec_1",
       nodes: [mockNode],
       edges: [mockEdge],
+      notes: undefined,
     };
 
     const result = sanitizeWorkflow(mockWorkflow);
@@ -100,9 +103,26 @@ describe("generated DSL types", () => {
       execution_id: "exec_1",
       nodes: [mockNode],
       edges: [],
+      notes: undefined,
     };
 
     const result = sanitizeWorkflow(mockWorkflow);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("sanitizeNote accepts a valid decorative note", () => {
+    const mockNote: Note = {
+      id: "note_1",
+      content: "# Title\n\nbody",
+      x: 10,
+      y: 20,
+      width: 240,
+      height: 180,
+      color: "yellow",
+      font_size: "md",
+    };
+    const result = sanitizeNote(mockNote);
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
   });
@@ -113,6 +133,7 @@ describe("generated DSL types", () => {
       execution_id: "exec_1",
       nodes: [] as Workflow["nodes"],
       edges: [] as Workflow["edges"],
+      notes: undefined,
     };
     const result = sanitizeWorkflow(mockWorkflow);
     expect(result.valid).toBe(false);

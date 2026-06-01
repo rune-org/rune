@@ -1,0 +1,3 @@
+[submodule "services/api/templates_bundle"]
+	path = services/api/templates_bundle
+	url = git@github.com:rune-org/rune-templates.git

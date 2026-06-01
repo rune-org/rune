@@ -12,11 +12,12 @@ from src.db.models import (
 )
 from src.workflow.service import WorkflowService
 
+ph = PasswordHasher()
+
 
 @pytest_asyncio.fixture(scope="function")
 async def other_user(test_db):
     """Create a second test user without any workflow access."""
-    ph = PasswordHasher()
     user = User(
         email="other@example.com",
         hashed_password=ph.hash("Otherpassword!23"),
@@ -32,7 +33,6 @@ async def other_user(test_db):
 @pytest_asyncio.fixture(scope="function")
 async def viewer_user(test_db):
     """Create a user who will be given VIEWER role on workflows."""
-    ph = PasswordHasher()
     user = User(
         email="viewer@example.com",
         hashed_password=ph.hash("Viewerpassword!23"),

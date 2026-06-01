@@ -68,6 +68,7 @@ function CanvasPageInner() {
   // Version state
   const [baseVersionId, setBaseVersionId] = useState<number | null>(null);
   const baseVersionIdRef = useRef<number | null>(null);
+  const appliedTemplateRef = useRef<number | null>(null);
   useEffect(() => {
     baseVersionIdRef.current = baseVersionId;
   }, [baseVersionId]);
@@ -88,15 +89,14 @@ function CanvasPageInner() {
     const abortController = new AbortController();
 
     async function load() {
-      // Check if loading from template
       if (templateId) {
+        const numericTemplateId = Number(templateId);
+        if (appliedTemplateRef.current === numericTemplateId) return;
         try {
-          // Check if aborted before making the API call
           if (abortController.signal.aborted) return;
 
-          const response = await applyTemplate(Number(templateId));
+          const response = await applyTemplate(numericTemplateId);
 
-          // Check if aborted after API call
           if (abortController.signal.aborted) return;
 
           if (response.data && !response.error) {
@@ -108,6 +108,7 @@ function CanvasPageInner() {
             if (!abortController.signal.aborted) {
               setNodes(filteredNodes as unknown as CanvasNode[]);
               setEdges(filteredEdges as unknown as CanvasEdge[]);
+              appliedTemplateRef.current = numericTemplateId;
             }
           }
         } catch (_error) {

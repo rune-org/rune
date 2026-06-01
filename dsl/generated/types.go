@@ -11,6 +11,7 @@ type Workflow struct {
   ExecutionId string `json:"execution_id"`  // Unique identifier for this specific execution instance
   Nodes []Node `json:"nodes"`  // Array of node definitions
   Edges []Edge `json:"edges"`  // Array of edge definitions
+  Notes *[]Note `json:"notes"`  // Array of decorative sticky notes (not part of execution)
 }
 
 func (n *Workflow) Sanitize() (bool, []string) {
@@ -27,6 +28,28 @@ func (n *Workflow) Sanitize() (bool, []string) {
   }
   if n.Edges == nil || len(n.Edges) == 0 {
     errors = append(errors, "Workflow.edges is required")
+  }
+
+  return len(errors) == 0, errors
+}
+
+type Note struct {
+  // Decorative sticky note placed on the canvas. Persisted with the workflow but never executed; ignored by the worker and by trigger/edge validation.
+  Id string `json:"id"`  // Unique identifier for the note within the workflow
+  Content *string `json:"content"`  // Markdown source of the note body (may be empty)
+  X float64 `json:"x"`  // Canvas x position
+  Y float64 `json:"y"`  // Canvas y position
+  Width *float64 `json:"width"`  // Note width in pixels (persisted resize)
+  Height *float64 `json:"height"`  // Note height in pixels (persisted resize)
+  Color *string `json:"color"`  // Preset color theme key
+  FontSize *string `json:"font_size"`  // Text size preset
+}
+
+func (n *Note) Sanitize() (bool, []string) {
+  var errors []string
+
+  if n.Id == "" {
+    errors = append(errors, "Note.id is required")
   }
 
   return len(errors) == 0, errors
