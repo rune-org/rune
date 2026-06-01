@@ -2268,6 +2268,7 @@ export type WorkflowListItem = {
      * Is Active
      */
     is_active: boolean;
+    status: WorkflowStatus;
     role: WorkflowRole;
     /**
      * Owner Name
@@ -2457,6 +2458,11 @@ export type WorkflowShareResponse = {
      */
     message: string;
 };
+
+/**
+ * WorkflowStatus
+ */
+export type WorkflowStatus = 'active' | 'inactive' | 'draft';
 
 /**
  * WorkflowUpdateName

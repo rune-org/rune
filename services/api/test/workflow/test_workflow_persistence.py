@@ -98,10 +98,10 @@ class TestWorkflowPersistenceThroughAPI:
         assert v3["version"] == 3
 
     @pytest.mark.asyncio
-    async def test_unpublished_workflow_clears_published_id(
+    async def test_deactivated_workflow_preserves_published_id(
         self, authenticated_client, sample_workflow
     ):
-        """Unpublishing workflow clears published_version_id in database."""
+        """Deactivating workflow keeps published_version_id in database."""
         # Publish
         detail1 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
         version_id = detail1.json()["data"]["latest_version"]["id"]
@@ -115,15 +115,15 @@ class TestWorkflowPersistenceThroughAPI:
         detail2 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
         assert detail2.json()["data"]["published_version_id"] == version_id
 
-        # Unpublish
+        # Deactivate
         await authenticated_client.put(
             f"/workflows/{sample_workflow.id}/status",
             json={"is_active": False},
         )
 
-        # Verify published_id cleared
+        # Verify published_id is preserved while execution is disabled
         detail3 = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
-        assert detail3.json()["data"]["published_version_id"] is None
+        assert detail3.json()["data"]["published_version_id"] == version_id
         assert detail3.json()["data"]["is_active"] is False
 
     @pytest.mark.asyncio

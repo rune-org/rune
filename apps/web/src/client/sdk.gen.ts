@@ -279,7 +279,7 @@ export const getWorkflowWorkflowsWorkflowIdGet = <ThrowOnError extends boolean =
  * Update workflow status (active/inactive).
  *
  * In the versioned model, activating publishes the latest saved version and
- * deactivating clears the published pointer.
+ * deactivating keeps the published pointer but disables execution.
  *
  * **Requires:** EDIT permission (OWNER or EDITOR)
  */
