@@ -165,6 +165,13 @@ export function TemplateGallery() {
         return false;
       }
       setTemplates((prev) => prev.filter((t) => t.id !== templateToDelete.id));
+      setCategories((prev) =>
+        prev.map((categorySummary) =>
+          categorySummary.value === templateToDelete.category
+            ? { ...categorySummary, count: Math.max(0, categorySummary.count - 1) }
+            : categorySummary,
+        ),
+      );
       if (selectedTemplate?.id === templateToDelete.id) setDetailOpen(false);
       toast.success("Template deleted");
       setTemplateToDelete(null);
