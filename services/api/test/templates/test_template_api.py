@@ -85,9 +85,7 @@ async def test_admin_delete_other_users_template_returns_204(
     admin_client: AsyncClient, other_user_private_template
 ):
     """Test that an admin can delete another user's template."""
-    response = await admin_client.delete(
-        f"/templates/{other_user_private_template.id}"
-    )
+    response = await admin_client.delete(f"/templates/{other_user_private_template.id}")
     assert response.status_code == 204
 
 
