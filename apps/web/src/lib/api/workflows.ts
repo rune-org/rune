@@ -46,7 +46,8 @@ import type {
 
 // Readable wrappers for workflow-related SDK functions
 
-export const listWorkflows = () => listWorkflowsWorkflowsGet();
+export const listWorkflows = (ownerId?: number) =>
+  listWorkflowsWorkflowsGet(ownerId != null ? { query: { owner_id: ownerId } } : undefined);
 
 export const listUserExecutions = () => listUserExecutionsExecutionsGet();
 

@@ -1,6 +1,14 @@
 import { Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { UserBasicInfo } from "@/client/types.gen";
 import type { StatFilter } from "@/components/workflows/table/workflowTableTypes";
 
 type WorkflowsTableFiltersProps = {
@@ -9,6 +17,13 @@ type WorkflowsTableFiltersProps = {
   onFilterChange: (next: StatFilter) => void;
   query: string;
   onQueryChange: (value: string) => void;
+  isAdmin: boolean;
+  users: UserBasicInfo[];
+  ownerId: number | null;
+  onOwnerChange: (ownerId: number | null) => void;
+  accessScope: "all" | "mine" | "shared";
+  onAccessScopeChange: (scope: "all" | "mine" | "shared") => void;
+  currentUserId: number | null;
 };
 
 function FilterButton({
@@ -40,7 +55,35 @@ export function WorkflowsTableFilters({
   onFilterChange,
   query,
   onQueryChange,
+  isAdmin,
+  users,
+  ownerId,
+  onOwnerChange,
+  accessScope,
+  onAccessScopeChange,
+  currentUserId,
 }: WorkflowsTableFiltersProps) {
+  const otherUsers = users.filter((u) => u.id !== currentUserId);
+
+  let selectValue = "all";
+  if (ownerId !== null) {
+    if (ownerId === currentUserId) {
+      selectValue = "mine";
+    } else {
+      selectValue = String(ownerId);
+    }
+  }
+
+  const handleValueChange = (value: string) => {
+    if (value === "all") {
+      onOwnerChange(null);
+    } else if (value === "mine") {
+      onOwnerChange(currentUserId);
+    } else {
+      onOwnerChange(Number(value));
+    }
+  };
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -78,15 +121,46 @@ export function WorkflowsTableFilters({
         </div>
       </div>
 
-      <div className="relative">
-        <Input
-          placeholder="Search workflows…"
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          className="pl-10"
-          aria-label="Search workflows"
-        />
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Input
+            placeholder="Search workflows…"
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            className="pl-10"
+            aria-label="Search workflows"
+          />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        </div>
+
+        {isAdmin && users.length > 1 && (
+          <Select value={selectValue} onValueChange={handleValueChange}>
+            <SelectTrigger className="w-48" aria-label="Filter by owner">
+              <SelectValue placeholder="All owners" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All owners</SelectItem>
+              {currentUserId !== null && <SelectItem value="mine">Mine</SelectItem>}
+              {otherUsers.map((user) => (
+                <SelectItem key={user.id} value={String(user.id)}>
+                  {user.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {!isAdmin && (
+          <Select value={accessScope} onValueChange={onAccessScopeChange}>
+            <SelectTrigger className="w-48" aria-label="Filter by access">
+              <SelectValue placeholder="All workflows" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="mine">Mine</SelectItem>
+              <SelectItem value="shared">Shared</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
     </>
   );
