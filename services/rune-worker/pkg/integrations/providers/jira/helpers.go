@@ -213,13 +213,6 @@ func apiBasePath(version string) string {
 	return "rest/api/" + version
 }
 
-func optionalQuery(key, value string) map[string]string {
-	if strings.TrimSpace(value) == "" {
-		return map[string]string{}
-	}
-	return map[string]string{key: value}
-}
-
 func addQuery(query map[string]string, key, value string) map[string]string {
 	if strings.TrimSpace(value) == "" {
 		return query
@@ -251,20 +244,6 @@ func addQueryInt(query map[string]string, key string, value int) map[string]stri
 	}
 	query[key] = strconv.Itoa(value)
 	return query
-}
-
-func joinCSV(values []string) string {
-	if len(values) == 0 {
-		return ""
-	}
-	out := make([]string, 0, len(values))
-	for _, value := range values {
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			out = append(out, trimmed)
-		}
-	}
-	return strings.Join(out, ",")
 }
 
 func splitCSV(value string) []string {
