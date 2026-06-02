@@ -123,7 +123,12 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
             value={value}
             objectOnly={false}
             onChange={(nextValue) => {
-              if (typeof nextValue === "object" && nextValue !== null && !Array.isArray(nextValue) && Object.keys(nextValue).length === 0) {
+              if (
+                typeof nextValue === "object" &&
+                nextValue !== null &&
+                !Array.isArray(nextValue) &&
+                Object.keys(nextValue).length === 0
+              ) {
                 updateArgument(field.name, undefined);
               } else {
                 updateArgument(field.name, nextValue);
