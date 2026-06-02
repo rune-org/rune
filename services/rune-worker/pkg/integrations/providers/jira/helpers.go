@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"strconv"
 	"strings"
@@ -84,7 +85,14 @@ func mergeFields(primary, fallback map[string]any) map[string]any {
 	if len(fallback) == 0 {
 		return primary
 	}
-	merged := make(map[string]any, len(primary)+len(fallback))
+	primaryLen := len(primary)
+	fallbackLen := len(fallback)
+	var merged map[string]any
+	if primaryLen > math.MaxInt-fallbackLen {
+		merged = make(map[string]any)
+	} else {
+		merged = make(map[string]any, primaryLen+fallbackLen)
+	}
 	for key, value := range fallback {
 		merged[key] = value
 	}
