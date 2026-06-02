@@ -93,6 +93,46 @@ async def other_user_private_template(test_db, other_user):
 
 
 @pytest_asyncio.fixture(scope="function")
+async def official_template(test_db):
+    """Create an official (bundle-seeded) template with no creator."""
+    template = WorkflowTemplate(
+        name="Official Bundle Template",
+        description="An official template seeded from the bundle",
+        category="general",
+        workflow_data={"nodes": [], "edges": []},
+        is_public=True,
+        usage_count=0,
+        source="official",
+        external_id="official-bundle-template",
+        created_by=None,
+    )
+    test_db.add(template)
+    await test_db.commit()
+    await test_db.refresh(template)
+    return template
+
+
+@pytest_asyncio.fixture(scope="function")
+async def authorless_community_template(test_db):
+    """Create a community-bundled template (user source, no creator)."""
+    template = WorkflowTemplate(
+        name="Community Bundle Template",
+        description="A community template seeded from the bundle",
+        category="general",
+        workflow_data={"nodes": [], "edges": []},
+        is_public=True,
+        usage_count=0,
+        source="user",
+        external_id="community-bundle-template",
+        created_by=None,
+    )
+    test_db.add(template)
+    await test_db.commit()
+    await test_db.refresh(template)
+    return template
+
+
+@pytest_asyncio.fixture(scope="function")
 def sample_template_data():
     """Provide complex nested workflow data for template testing."""
     return {

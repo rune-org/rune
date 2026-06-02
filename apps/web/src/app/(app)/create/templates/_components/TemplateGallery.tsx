@@ -13,8 +13,11 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { toast } from "@/components/ui/toast";
-import { listTemplates, listTemplateCategories } from "@/lib/api/templates";
+import { useAuth } from "@/lib/auth";
+import { canDeleteTemplate } from "@/lib/permissions";
+import { listTemplates, listTemplateCategories, deleteTemplate } from "@/lib/api/templates";
 import type {
   TemplateCategorySummary,
   TemplateScope,
@@ -55,6 +58,10 @@ const EMPTY_HINTS: Record<ScopeFilter, string> = {
 export function TemplateGallery() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { state: authState } = useAuth();
+
+  const currentUserId = authState.user?.id;
+  const isAdmin = authState.user?.role === "admin";
 
   const initialScope = parseScope(searchParams.get("scope"));
   const initialCategory = searchParams.get("category");
@@ -72,6 +79,9 @@ export function TemplateGallery() {
 
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateSummary | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+
+  const [templateToDelete, setTemplateToDelete] = useState<TemplateSummary | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -134,6 +144,38 @@ export function TemplateGallery() {
     setSelectedTemplate(template);
     setDetailOpen(true);
   }, []);
+
+  const canDelete = useCallback(
+    (template: TemplateSummary) =>
+      canDeleteTemplate(template.source, template.created_by, currentUserId, isAdmin),
+    [currentUserId, isAdmin],
+  );
+
+  const handleRequestDelete = useCallback((template: TemplateSummary) => {
+    setTemplateToDelete(template);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!templateToDelete) return false;
+    setDeleting(true);
+    try {
+      const response = await deleteTemplate(templateToDelete.id);
+      if (response.error) {
+        toast.error("Failed to delete template");
+        return false;
+      }
+      setTemplates((prev) => prev.filter((t) => t.id !== templateToDelete.id));
+      if (selectedTemplate?.id === templateToDelete.id) setDetailOpen(false);
+      toast.success("Template deleted");
+      setTemplateToDelete(null);
+      return true;
+    } catch {
+      toast.error("Failed to delete template");
+      return false;
+    } finally {
+      setDeleting(false);
+    }
+  }, [templateToDelete, selectedTemplate]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -216,6 +258,8 @@ export function TemplateGallery() {
               template={template}
               onOpenDetail={handleOpenDetail}
               onUse={handleUse}
+              canDelete={canDelete(template)}
+              onDelete={handleRequestDelete}
             />
           ))}
         </div>
@@ -229,6 +273,28 @@ export function TemplateGallery() {
           setDetailOpen(false);
           handleUse(t);
         }}
+        canDelete={selectedTemplate ? canDelete(selectedTemplate) : false}
+        onDelete={handleRequestDelete}
+      />
+
+      <ConfirmationDialog
+        open={templateToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setTemplateToDelete(null);
+        }}
+        title="Delete template"
+        description={
+          <>
+            This will permanently delete the template{" "}
+            <span className="font-semibold">{templateToDelete?.name ?? "Untitled"}</span>. This
+            action cannot be undone.
+          </>
+        }
+        cancelText="Cancel"
+        confirmText={deleting ? "Deleting..." : "Delete"}
+        onConfirm={handleConfirmDelete}
+        isDangerous
+        isLoading={deleting}
       />
     </div>
   );
