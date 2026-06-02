@@ -85,13 +85,14 @@ func mergeFields(primary, fallback map[string]any) map[string]any {
 	if len(fallback) == 0 {
 		return primary
 	}
-	primaryLen := len(primary)
-	fallbackLen := len(fallback)
+	primaryLen := uint64(len(primary))
+	fallbackLen := uint64(len(fallback))
+	totalLen := primaryLen + fallbackLen
 	var merged map[string]any
-	if primaryLen > math.MaxInt-fallbackLen {
+	if totalLen > uint64(math.MaxInt) {
 		merged = make(map[string]any)
 	} else {
-		merged = make(map[string]any, primaryLen+fallbackLen)
+		merged = make(map[string]any, int(totalLen))
 	}
 	for key, value := range fallback {
 		merged[key] = value
