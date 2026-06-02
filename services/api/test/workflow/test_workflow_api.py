@@ -249,6 +249,82 @@ class TestWorkflowExecution:
         await channel.close()
 
     @pytest.mark.asyncio
+    async def test_specific_version_can_run_for_draft_workflow(
+        self,
+        authenticated_client,
+        sample_workflow,
+        test_rabbitmq,
+        test_settings,
+    ):
+        """Canvas runs pin the latest draft version and bypass table status gating."""
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        version = detail.json()["data"]["latest_version"]
+
+        channel = await test_rabbitmq.channel()
+        queue = await channel.declare_queue(
+            test_settings.rabbitmq_workflow_queue,
+            durable=True,
+        )
+        await queue.purge()
+
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/run",
+            json={"version_id": version["id"]},
+        )
+        assert response.status_code == 200
+
+        message = await queue.get(timeout=5)
+        assert message is not None
+        payload = json.loads(message.body.decode("utf-8"))
+        assert payload["workflow_version_id"] == version["id"]
+
+        await channel.close()
+
+    @pytest.mark.asyncio
+    async def test_specific_version_can_run_for_inactive_workflow(
+        self,
+        authenticated_client,
+        sample_workflow,
+        test_rabbitmq,
+        test_settings,
+    ):
+        """Explicit version runs still work after a published workflow is deactivated."""
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        version = detail.json()["data"]["latest_version"]
+
+        publish = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/publish",
+            json={"version_id": version["id"]},
+        )
+        assert publish.status_code == 200
+
+        deactivate = await authenticated_client.put(
+            f"/workflows/{sample_workflow.id}/status",
+            json={"is_active": False},
+        )
+        assert deactivate.status_code == 200
+
+        channel = await test_rabbitmq.channel()
+        queue = await channel.declare_queue(
+            test_settings.rabbitmq_workflow_queue,
+            durable=True,
+        )
+        await queue.purge()
+
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/run",
+            json={"version_id": version["id"]},
+        )
+        assert response.status_code == 200
+
+        message = await queue.get(timeout=5)
+        assert message is not None
+        payload = json.loads(message.body.decode("utf-8"))
+        assert payload["workflow_version_id"] == version["id"]
+
+        await channel.close()
+
+    @pytest.mark.asyncio
     async def test_unpublished_workflow_cannot_be_executed(
         self,
         authenticated_client,

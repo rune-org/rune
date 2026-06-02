@@ -39,6 +39,7 @@ from src.workflow.constants import (
     WEBHOOK_TRIGGER_TYPE,
 )
 from src.workflow.queue import validate_workflow_can_run
+from src.workflow.utils import calculate_workflow_hash
 
 from src.workflow.queries import CREDENTIAL_BACKFILL_QUERY
 
@@ -156,7 +157,7 @@ class WorkflowService:
         """Update publish status using the versioned workflow model.
 
         `is_active=True` publishes the latest saved version.
-        `is_active=False` clears the published pointer.
+        `is_active=False` keeps the published pointer but disables execution.
         """
         locked_workflow = await self._lock_workflow(workflow.id)
 
@@ -171,7 +172,6 @@ class WorkflowService:
             await self._sync_credential_links(locked_workflow.id, latest.workflow_data)
             await self._upsert_webhook(locked_workflow.id, latest.workflow_data, True)
         else:
-            locked_workflow.published_version_id = None
             locked_workflow.is_active = False
             await self._delete_schedule(locked_workflow.id)
             await self._deactivate_webhook(locked_workflow.id)
@@ -190,27 +190,38 @@ class WorkflowService:
     ) -> WorkflowVersion:
         locked_workflow = await self._lock_workflow(workflow.id)
         current_latest = await self.get_latest_version(locked_workflow)
+        new_hash = calculate_workflow_hash(workflow_data)
+        normalized_message = self._normalize_message(message)
 
-        if current_latest is None:
-            if base_version_id is not None:
-                raise BadRequest(
-                    detail="base_version_id must be null when creating the first version"
-                )
-            next_version_number = 1
-        else:
+        if current_latest is not None:
             if base_version_id != current_latest.id:
                 raise WorkflowVersionConflictError(
                     server_version=current_latest.version,
                     server_version_id=current_latest.id,
                 )
+
+            # if content hash and message are identical, skip creation
+            if (
+                current_latest.content_hash == new_hash
+                and current_latest.message == normalized_message
+            ):
+                await self.db.commit()
+                return current_latest
             next_version_number = current_latest.version + 1
+        else:
+            if base_version_id is not None:
+                raise BadRequest(
+                    detail="base_version_id must be null when creating the first version"
+                )
+            next_version_number = 1
 
         version = WorkflowVersion(
             workflow_id=locked_workflow.id,
             version=next_version_number,
             workflow_data=workflow_data,
+            content_hash=new_hash,
             created_by=user_id,
-            message=self._normalize_message(message),
+            message=normalized_message,
         )
         self.db.add(version)
 
@@ -227,7 +238,6 @@ class WorkflowService:
             raise
 
         locked_workflow.latest_version_id = version.id
-        locked_workflow.is_active = locked_workflow.published_version_id is not None
 
         # Sync credential links for usage tracking
         await self._sync_credential_links(locked_workflow.id, workflow_data)
@@ -268,10 +278,15 @@ class WorkflowService:
 
         latest = await self.get_latest_version(locked_workflow)
         next_version_number = 1 if latest is None else latest.version + 1
+
+        workflow_data = copy.deepcopy(source_version.workflow_data)
+        new_hash = calculate_workflow_hash(workflow_data)
+
         version = WorkflowVersion(
             workflow_id=locked_workflow.id,
             version=next_version_number,
-            workflow_data=copy.deepcopy(source_version.workflow_data),
+            workflow_data=workflow_data,
+            content_hash=new_hash,
             created_by=user_id,
             message=self._normalize_message(message)
             or f"Restored from v{source_version.version}",
@@ -280,7 +295,6 @@ class WorkflowService:
         await self.db.flush()
 
         locked_workflow.latest_version_id = version.id
-        locked_workflow.is_active = locked_workflow.published_version_id is not None
 
         # Sync credential links for usage tracking
         await self._sync_credential_links(locked_workflow.id, version.workflow_data)
@@ -343,6 +357,9 @@ class WorkflowService:
         self, workflow: Workflow, version_id: int | None
     ) -> WorkflowVersion:
         if version_id is None:
+            if not workflow.is_active:
+                raise BadRequest(detail="Workflow is inactive")
+
             if workflow.published_version_id is None:
                 raise BadRequest(detail="Workflow has no published version")
 
@@ -536,7 +553,7 @@ class WorkflowService:
 
         Mirrors the single-workflow update_status logic:
         - is_active=True: publishes latest version and syncs schedule
-        - is_active=False: clears published pointer and deletes schedule
+        - is_active=False: keeps published pointer and deletes schedule
         """
         if not workflows:
             return
@@ -554,8 +571,7 @@ class WorkflowService:
                     await self._upsert_webhook(wf.id, latest.workflow_data, True)
                 # Skip workflows with no versions (cannot be activated)
             else:
-                # Deactivate: clear published pointer and delete schedule
-                wf.published_version_id = None
+                # Deactivate: keep published pointer and delete schedule
                 wf.is_active = False
                 await self._delete_schedule(wf.id)
                 await self._deactivate_webhook(wf.id)

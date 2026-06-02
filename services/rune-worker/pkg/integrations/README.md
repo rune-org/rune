@@ -154,6 +154,12 @@ Implemented in this phase:
   - `integration.jira.project_list`
   - `integration.jira.user_get`
 
+- Microsoft Outlook tools:
+  - `integration.microsoft.outlook.send_email`
+  - `integration.microsoft.outlook.read_email`
+  - `integration.microsoft.outlook.search_emails`
+  - `integration.microsoft.outlook.list_folders`
+
 Planned next:
 
-- Microsoft Outlook tools
+

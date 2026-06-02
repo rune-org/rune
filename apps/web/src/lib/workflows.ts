@@ -21,9 +21,9 @@ export type WorkflowSummary = {
    */
   description?: string | null;
   /**
-   * Derived status – treated as active when `is_active` is true, otherwise draft.
+   * Derived status from the backend workflow list item.
    */
-  status: "active" | "draft";
+  status: "active" | "inactive" | "draft";
   /**
    * Placeholder trigger type.
    */
@@ -70,13 +70,24 @@ export const defaultWorkflowSummary: WorkflowSummary = {
   ownerName: "Me",
 };
 
+function getStatusFromListItem(item: WorkflowListItem): WorkflowSummary["status"] {
+  if ("status" in item) {
+    const statusValue = (item as { status?: string }).status;
+    if (statusValue === "active" || statusValue === "inactive" || statusValue === "draft") {
+      return statusValue;
+    }
+  }
+
+  return item.is_active ? "active" : "draft";
+}
+
 export function listItemToWorkflowSummary(item: WorkflowListItem): WorkflowSummary {
   return {
     ...defaultWorkflowSummary,
     id: String(item.id),
     name: item.name,
     description: item.description,
-    status: item.is_active ? "active" : "draft",
+    status: getStatusFromListItem(item),
     role: item.role,
     ownerName: item.owner_name,
   };

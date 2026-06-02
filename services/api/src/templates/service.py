@@ -5,8 +5,8 @@ from sqlmodel import or_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.exceptions import Forbidden, NotFound
-from src.db.models import WorkflowTemplate
-from src.templates.categories import TemplateScope, TemplateSort
+from src.db.models import User, UserRole, WorkflowTemplate
+from src.templates.categories import TemplateScope, TemplateSort, TemplateSource
 from src.templates.schemas import TemplateCreate
 
 
@@ -177,15 +177,24 @@ class TemplateService:
         await self.db.refresh(template)
         return template
 
-    async def delete_template(self, template_id: int, user_id: int) -> None:
-        """Delete a template if owned by the caller."""
+    async def delete_template(self, template_id: int, user: User) -> None:
+        """Delete a user-created template.
+
+        Allowed for the template's creator or an admin. Official templates
+        are managed by the bundle seeder and cannot be deleted.
+        """
         stmt = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
         template = (await self.db.exec(stmt)).one_or_none()
 
         if not template:
             raise NotFound(f"Template with id {template_id} not found")
-        if template.created_by != user_id:
-            raise Forbidden("Only the template creator can delete it")
+        if template.source == TemplateSource.OFFICIAL:
+            raise Forbidden("Official templates cannot be deleted")
+
+        is_admin = user.role == UserRole.ADMIN
+        is_author = template.created_by is not None and template.created_by == user.id
+        if not (is_admin or is_author):
+            raise Forbidden("Only the template creator or an admin can delete it")
 
         await self.db.delete(template)
         await self.db.commit()
