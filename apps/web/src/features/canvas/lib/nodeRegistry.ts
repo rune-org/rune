@@ -38,6 +38,7 @@ export type NodeGroup =
   | "email"
   | "agents"
   | "google"
+  | "jira"
   | "microsoft"
   | "annotate";
 
@@ -670,6 +671,12 @@ const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
     icon: Plug,
     iconSrc: "/icons/integrations/google.svg",
     color: "#34a853",
+  },
+  jira: {
+    label: "Jira",
+    icon: Plug,
+    iconSrc: "/icons/integrations/jira.svg",
+    color: "#2684ff",
   },
   microsoft: {
     label: "Microsoft",
