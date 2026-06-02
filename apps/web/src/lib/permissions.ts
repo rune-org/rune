@@ -69,3 +69,23 @@ export function canRenameWorkflow(role: WorkflowRole, isAdmin: boolean = false):
 export function canChangeWorkflowStatus(role: WorkflowRole, isAdmin: boolean = false): boolean {
   return isAdmin || ["owner", "editor"].includes(role);
 }
+
+/**
+ * Check if user can delete a template.
+ *
+ * Matches the backend TemplateService.delete_template rules:
+ * - Official templates (source === "official") are managed by the bundle
+ *   seeder and can never be deleted.
+ * - Admins can delete any user-created template.
+ * - Otherwise only the template's author (created_by) can delete it.
+ */
+export function canDeleteTemplate(
+  source: string | undefined,
+  createdBy: number | null | undefined,
+  currentUserId: number | null | undefined,
+  isAdmin: boolean = false,
+): boolean {
+  if (source === "official") return false;
+  if (isAdmin) return true;
+  return createdBy != null && currentUserId != null && createdBy === currentUserId;
+}

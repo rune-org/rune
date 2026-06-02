@@ -721,7 +721,7 @@ export const listCategoriesTemplatesCategoriesGet = <ThrowOnError extends boolea
 /**
  * Delete Template
  *
- * Delete a template.
+ * Delete a template. Allowed for the template's creator or an admin.
  */
 export const deleteTemplateTemplatesTemplateIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteTemplateTemplatesTemplateIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<DeleteTemplateTemplatesTemplateIdDeleteResponses, DeleteTemplateTemplatesTemplateIdDeleteErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
