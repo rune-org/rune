@@ -3092,9 +3092,25 @@ export type InitializeFirstAdminSetupInitializePostResponse = InitializeFirstAdm
 export type ListWorkflowsWorkflowsGetData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Owner Id
+         *
+         * Filter workflows by owner ID
+         */
+        owner_id?: number | null;
+    };
     url: '/workflows/';
 };
+
+export type ListWorkflowsWorkflowsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListWorkflowsWorkflowsGetError = ListWorkflowsWorkflowsGetErrors[keyof ListWorkflowsWorkflowsGetErrors];
 
 export type ListWorkflowsWorkflowsGetResponses = {
     /**
