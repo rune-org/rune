@@ -43,11 +43,16 @@ router = APIRouter(prefix="/workflows", tags=["Workflows"])
 
 @router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
 async def list_workflows(
+    owner_id: int | None = None,
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem]]:
     is_admin = getattr(current_user, "role", None) == UserRole.ADMIN
-    wfs = await service.list_for_user(current_user.id, is_admin=is_admin)
+    wfs = await service.list_for_user(
+        current_user.id,
+        is_admin=is_admin,
+        owner_id=owner_id,
+    )
     items = [
         WorkflowListItem(
             id=wf.id,

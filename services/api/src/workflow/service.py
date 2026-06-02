@@ -63,7 +63,7 @@ class WorkflowService:
         self.encryptor = get_encryptor()
 
     async def list_for_user(
-        self, user_id: int, is_admin: bool = False
+        self, user_id: int, is_admin: bool = False, owner_id: int | None = None
     ) -> list[tuple[Workflow, WorkflowRole, str]]:
         """Return workflows visible to `user_id`, newest first.
 
@@ -71,7 +71,11 @@ class WorkflowService:
         Returns a tuple of (Workflow, role, owner_name) for each item.
         """
         owner_subquery = (
-            select(WorkflowUser.workflow_id, User.name.label("owner_name"))
+            select(
+                WorkflowUser.workflow_id,
+                User.name.label("owner_name"),
+                User.id.label("owner_id"),
+            )
             .join(User, WorkflowUser.user_id == User.id)
             .where(WorkflowUser.role == WorkflowRole.OWNER)
             .subquery()
@@ -79,19 +83,35 @@ class WorkflowService:
 
         if is_admin:
             # Admins see everything and default to OWNER access
-            statement = (
-                select(Workflow, owner_subquery.c.owner_name)
-                .outerjoin(owner_subquery, Workflow.id == owner_subquery.c.workflow_id)
-                .order_by(Workflow.updated_at.desc())
-            )
+            if owner_id is None:
+                statement = (
+                    select(Workflow, owner_subquery.c.owner_name)
+                    .outerjoin(
+                        owner_subquery, Workflow.id == owner_subquery.c.workflow_id
+                    )
+                    .order_by(Workflow.updated_at.desc())
+                )
+            else:
+                statement = (
+                    select(Workflow, owner_subquery.c.owner_name)
+                    .join(
+                        owner_subquery,
+                        (Workflow.id == owner_subquery.c.workflow_id)
+                        & (owner_subquery.c.owner_id == owner_id),
+                    )
+                    .order_by(Workflow.updated_at.desc())
+                )
         else:
             statement = (
                 select(Workflow, WorkflowUser.role, owner_subquery.c.owner_name)
-                .join(WorkflowUser)
+                .join(WorkflowUser, WorkflowUser.workflow_id == Workflow.id)
                 .outerjoin(owner_subquery, Workflow.id == owner_subquery.c.workflow_id)
                 .where(WorkflowUser.user_id == user_id)
                 .order_by(Workflow.updated_at.desc())
             )
+
+        if not is_admin and owner_id is not None:
+            statement = statement.where(owner_subquery.c.owner_id == owner_id)
 
         result = await self.db.exec(statement)
         rows = result.all()
