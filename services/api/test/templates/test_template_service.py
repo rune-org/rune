@@ -122,7 +122,7 @@ async def test_delete_own_template_allowed(
 ):
     """Should allow user to delete their own template."""
     template_id = sample_private_template.id
-    await template_service.delete_template(template_id, test_user.id)
+    await template_service.delete_template(template_id, test_user)
 
     # Verify deleted
     statement = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
@@ -137,8 +137,54 @@ async def test_delete_other_users_template_raises_forbidden(
     """Should deny deletion of other users' templates."""
     with pytest.raises(Forbidden):
         await template_service.delete_template(
-            other_user_private_template.id, test_user.id
+            other_user_private_template.id, test_user
         )
+
+
+@pytest.mark.asyncio
+async def test_admin_can_delete_other_users_template(
+    template_service, test_admin, other_user_private_template, test_db
+):
+    """Should allow an admin to delete any user-created template."""
+    template_id = other_user_private_template.id
+    await template_service.delete_template(template_id, test_admin)
+
+    statement = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
+    result = await test_db.exec(statement)
+    assert result.first() is None
+
+
+@pytest.mark.asyncio
+async def test_admin_can_delete_authorless_community_template(
+    template_service, test_admin, authorless_community_template, test_db
+):
+    """Should allow an admin to delete a community-bundled template with no creator."""
+    template_id = authorless_community_template.id
+    await template_service.delete_template(template_id, test_admin)
+
+    statement = select(WorkflowTemplate).where(WorkflowTemplate.id == template_id)
+    result = await test_db.exec(statement)
+    assert result.first() is None
+
+
+@pytest.mark.asyncio
+async def test_non_admin_cannot_delete_authorless_community_template(
+    template_service, test_user, authorless_community_template
+):
+    """Should deny regular users deletion of author-less community templates."""
+    with pytest.raises(Forbidden):
+        await template_service.delete_template(
+            authorless_community_template.id, test_user
+        )
+
+
+@pytest.mark.asyncio
+async def test_delete_official_template_raises_forbidden_even_for_admin(
+    template_service, test_admin, official_template
+):
+    """Official templates are managed by the bundle seeder and can never be deleted."""
+    with pytest.raises(Forbidden):
+        await template_service.delete_template(official_template.id, test_admin)
 
 
 # ============================================================================
@@ -238,7 +284,7 @@ async def test_delete_nonexistent_template_raises_not_found(
 ):
     """Should raise NotFound when deleting non-existent template."""
     with pytest.raises(NotFound):
-        await template_service.delete_template(99999, test_user.id)
+        await template_service.delete_template(99999, test_user)
 
 
 # ============================================================================

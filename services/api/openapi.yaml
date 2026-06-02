@@ -1676,7 +1676,7 @@ paths:
       tags:
       - Templates
       summary: Delete Template
-      description: Delete a template.
+      description: Delete a template. Allowed for the template's creator or an admin.
       operationId: delete_template_templates__template_id__delete
       security:
       - OAuth2PasswordBearer: []
@@ -4475,6 +4475,11 @@ components:
         is_public:
           type: boolean
           title: Is Public
+        created_by:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Created By
         source:
           type: string
           title: Source

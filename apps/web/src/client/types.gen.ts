@@ -1857,6 +1857,10 @@ export type TemplateSummary = {
      */
     is_public: boolean;
     /**
+     * Created By
+     */
+    created_by?: number | null;
+    /**
      * Source
      */
     source?: string;
@@ -2731,6 +2735,10 @@ export type TemplateSummaryWritable = {
      * Is Public
      */
     is_public: boolean;
+    /**
+     * Created By
+     */
+    created_by?: number | null;
     /**
      * Source
      */

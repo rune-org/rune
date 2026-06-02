@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Box, ExternalLink, Sparkles, Tag, User2 } from "lucide-react";
+import { ArrowRight, Box, ExternalLink, Sparkles, Tag, Trash2, User2 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ type TemplateDetailDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUse: (template: TemplateSummary) => void;
+  canDelete: boolean;
+  onDelete: (template: TemplateSummary) => void;
 };
 
 const SCOPE_LABELS: Record<string, string> = {
@@ -54,6 +56,8 @@ export function TemplateDetailDialog({
   open,
   onOpenChange,
   onUse,
+  canDelete,
+  onDelete,
 }: TemplateDetailDialogProps) {
   if (!template) return null;
 
@@ -138,6 +142,16 @@ export function TemplateDetailDialog({
           )}
 
           <div className="flex items-center justify-end gap-2 pt-1">
+            {canDelete && (
+              <Button
+                variant="ghost"
+                onClick={() => onDelete(template)}
+                className="mr-auto gap-1.5 text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            )}
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>

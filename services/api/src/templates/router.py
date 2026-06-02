@@ -143,8 +143,8 @@ async def delete_template(
     current_user: User = Depends(require_password_changed),
     service: TemplateService = Depends(get_template_service),
 ) -> None:
-    """Delete a template."""
-    await service.delete_template(template_id, current_user.id)
+    """Delete a template. Allowed for the template's creator or an admin."""
+    await service.delete_template(template_id, current_user)
 
 
 @router.post("/{template_id}/use", response_model=ApiResponse[TemplateWorkflowData])
