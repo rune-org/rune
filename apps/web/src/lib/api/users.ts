@@ -29,7 +29,8 @@ import type {
 
 export const listUsers = () => getAllUsersUsersGet();
 
-export const listUsersForSharing = () => listUsersForSharingUsersDirectoryGet();
+export const listUsersForSharing = (q?: string) =>
+  listUsersForSharingUsersDirectoryGet({ query: q ? { q } : undefined });
 
 export const getUserById = (user_id: number) => getUserByIdUsersUserIdGet({ path: { user_id } });
 

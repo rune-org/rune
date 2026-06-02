@@ -125,7 +125,7 @@ describe("WorkflowRowActions", () => {
   it("shows Activate for inactive workflows", async () => {
     const user = userEvent.setup();
     const { workflow } = renderActions("owner", {
-      status: "draft",
+      status: "inactive",
     });
 
     await user.click(screen.getByLabelText(`More actions for ${workflow.name}`));

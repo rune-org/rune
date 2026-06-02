@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   canChangeWorkflowStatus,
+  canDeleteTemplate,
   canDeleteWorkflow,
   canEditWorkflow,
   canExecuteWorkflow,
@@ -66,5 +67,34 @@ describe("workflow permissions", () => {
       "delete",
     ]);
     expect(canEditWorkflow("viewer", true)).toBe(true);
+  });
+});
+
+describe("template permissions", () => {
+  it("author can delete their own template", () => {
+    expect(canDeleteTemplate("user", 7, 7, false)).toBe(true);
+  });
+
+  it("non-author non-admin cannot delete someone else's template", () => {
+    expect(canDeleteTemplate("user", 7, 8, false)).toBe(false);
+  });
+
+  it("admin can delete any user-created template", () => {
+    expect(canDeleteTemplate("user", 7, 8, true)).toBe(true);
+    expect(canDeleteTemplate("user", null, 8, true)).toBe(true);
+  });
+
+  it("official templates can never be deleted, even by admins", () => {
+    expect(canDeleteTemplate("official", null, 8, true)).toBe(false);
+    expect(canDeleteTemplate("official", 7, 7, false)).toBe(false);
+  });
+
+  it("author-less templates are not deletable by regular users", () => {
+    expect(canDeleteTemplate("user", null, 8, false)).toBe(false);
+  });
+
+  it("unknown current user cannot delete", () => {
+    expect(canDeleteTemplate("user", 7, undefined, false)).toBe(false);
+    expect(canDeleteTemplate("user", 7, null, false)).toBe(false);
   });
 });

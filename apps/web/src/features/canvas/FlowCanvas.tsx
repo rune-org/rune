@@ -139,6 +139,7 @@ function FlowCanvasInner({
   } | null>(null);
 
   const [saveVersionDialogOpen, setSaveVersionDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Connect for instant updates on shared/deleted credentials
   useCredentialEvents();
@@ -372,24 +373,37 @@ function FlowCanvasInner({
     setSelectedNodeId,
   });
 
-  const persistGraph = useCallback(() => {
+  const persistGraph = useCallback(async () => {
     if (onboardingStateRef.current.isOpen && onboardingStateRef.current.step === 4) {
       setHasClickedSaveDuringTour(true);
     }
-    if (!onPersist) return;
-    return onPersist({
-      nodes: nodesRef.current,
-      edges: edgesRef.current,
-    });
-  }, [onPersist]);
+    if (!onPersist || isSaving) return;
+    setIsSaving(true);
+    try {
+      return await onPersist({
+        nodes: nodesRef.current,
+        edges: edgesRef.current,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [onPersist, isSaving]);
 
   const handleSaveVersionWithMessage = useCallback(
-    (message: string) => {
-      if (!onSaveWithMessage) return;
+    async (message: string) => {
+      if (!onSaveWithMessage || isSaving) return;
       setSaveVersionDialogOpen(false);
-      return onSaveWithMessage({ nodes: nodesRef.current, edges: edgesRef.current }, message);
+      setIsSaving(true);
+      try {
+        return await onSaveWithMessage(
+          { nodes: nodesRef.current, edges: edgesRef.current },
+          message,
+        );
+      } finally {
+        setIsSaving(false);
+      }
     },
-    [onSaveWithMessage],
+    [onSaveWithMessage, isSaving],
   );
 
   const handleViewVersion = useCallback(
@@ -597,8 +611,10 @@ function FlowCanvasInner({
   const onAddStickyNote = useCallback(() => onLibraryAdd("stickyNote"), [onLibraryAdd]);
 
   const onExecute = useCallback(async () => {
-    if (isViewingSnapshot) {
-      toast.error("Execution is disabled while viewing history");
+    if (isViewingSnapshot || isSaving) {
+      if (isViewingSnapshot) {
+        toast.error("Execution is disabled while viewing history");
+      }
       return;
     }
 
@@ -611,9 +627,7 @@ function FlowCanvasInner({
     let versionIdToRun: number | undefined;
     if (onPersist) {
       try {
-        const nodes = nodesRef.current;
-        const edges = edgesRef.current;
-        const persistedVersionId = await onPersist({ nodes, edges });
+        const persistedVersionId = await persistGraph();
         if (typeof persistedVersionId === "number") {
           versionIdToRun = persistedVersionId;
         } else {
@@ -628,7 +642,15 @@ function FlowCanvasInner({
     if (didStart && onboardingStateRef.current.isOpen && onboardingStateRef.current.step === 5) {
       setHasClickedRunDuringTour(true);
     }
-  }, [isViewingSnapshot, onPersist, resetExecution, startExecution, workflowId]);
+  }, [
+    isViewingSnapshot,
+    isSaving,
+    persistGraph,
+    onPersist,
+    resetExecution,
+    startExecution,
+    workflowId,
+  ]);
 
   useCanvasShortcuts({
     nodes,
@@ -698,7 +720,7 @@ function FlowCanvasInner({
           >
             <Toolbar
               onExecute={onExecute}
-              executeDisabled={isViewingSnapshot}
+              executeDisabled={isViewingSnapshot || isSaving}
               readOnly={isViewingSnapshot}
               onStop={stopExecution}
               onUndo={handleUndo}
@@ -714,7 +736,7 @@ function FlowCanvasInner({
               onImportFromFile={importFromFile}
               onImportFromTemplate={importFromTemplate}
               onAutoLayout={autoLayout}
-              saveDisabled={saveDisabled || isViewingSnapshot}
+              saveDisabled={saveDisabled || isViewingSnapshot || isSaving}
               executionStatus={executionState.status}
               wsStatus={wsStatus}
               isStartingExecution={isStartingExecution}
@@ -799,7 +821,7 @@ function FlowCanvasInner({
           open={saveVersionDialogOpen}
           onOpenChange={setSaveVersionDialogOpen}
           onSave={handleSaveVersionWithMessage}
-          isSaving={saveDisabled}
+          isSaving={isSaving || saveDisabled}
         />
 
         {conflictData && onConflictLoadServer && onConflictForceSave && onConflictCancel && (

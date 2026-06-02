@@ -1339,7 +1339,7 @@ export type RuntimeWorkflowEdge = {
 /**
  * RuntimeWorkflowGraph
  *
- * The runtime workflow graph saved as a version: nodes + edges (+ notes).
+ * The runtime workflow graph saved as a version: nodes + edges (+ optionally notes).
  *
  * Pydantic owns *shape* validation here (required/non-empty fields, types,
  * id uniqueness); cross-field *semantics* (edges reference existing nodes,
@@ -1405,10 +1405,7 @@ export type RuntimeWorkflowNode = {
  *
  * Notes are persisted with the workflow but never executed: the worker
  * deserializes only ``nodes``/``edges`` and semantic validation
- * (``src.workflow.validation``) ignores notes entirely. Only the structural
- * identity field is validated (``id``); the rest of the shape (``content``,
- * ``x``/``y`` position, ``width``/``height``, ``color``, ``font_size``) is
- * intentionally loose and passes through via ``extra="allow"``.
+ * (``src.workflow.validation``) ignores notes entirely.
  */
 export type RuntimeWorkflowNote = {
     /**
@@ -1860,6 +1857,10 @@ export type TemplateSummary = {
      */
     is_public: boolean;
     /**
+     * Created By
+     */
+    created_by?: number | null;
+    /**
      * Source
      */
     source?: string;
@@ -2271,6 +2272,7 @@ export type WorkflowListItem = {
      * Is Active
      */
     is_active: boolean;
+    status: WorkflowStatus;
     role: WorkflowRole;
     /**
      * Owner Name
@@ -2460,6 +2462,11 @@ export type WorkflowShareResponse = {
      */
     message: string;
 };
+
+/**
+ * WorkflowStatus
+ */
+export type WorkflowStatus = 'active' | 'inactive' | 'draft';
 
 /**
  * WorkflowUpdateName
@@ -2728,6 +2735,10 @@ export type TemplateSummaryWritable = {
      * Is Public
      */
     is_public: boolean;
+    /**
+     * Created By
+     */
+    created_by?: number | null;
     /**
      * Source
      */
@@ -3681,9 +3692,25 @@ export type UpdateUserRoleWorkflowsWorkflowIdPermissionsUserIdPatchResponse = Up
 export type ListUsersForSharingUsersDirectoryGetData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Q
+         *
+         * Search by name or email
+         */
+        q?: string | null;
+    };
     url: '/users/directory';
 };
+
+export type ListUsersForSharingUsersDirectoryGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListUsersForSharingUsersDirectoryGetError = ListUsersForSharingUsersDirectoryGetErrors[keyof ListUsersForSharingUsersDirectoryGetErrors];
 
 export type ListUsersForSharingUsersDirectoryGetResponses = {
     /**
