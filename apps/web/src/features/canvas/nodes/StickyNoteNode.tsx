@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { NodeResizer, useReactFlow, type Node, type NodeProps } from "@xyflow/react";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { cn } from "@/lib/cn";
@@ -64,7 +65,7 @@ export const StickyNoteNode = memo(function StickyNoteNode({
   data,
   selected,
 }: NodeProps<Node<StickyNoteData>>) {
-  const { updateNodeData } = useReactFlow();
+  const { updateNodeData, deleteElements } = useReactFlow();
 
   const color: StickyNoteColor = data.color ?? "yellow";
   const fontSize: StickyNoteFontSize = data.fontSize ?? "md";
@@ -104,6 +105,10 @@ export const StickyNoteNode = memo(function StickyNoteNode({
     setIsEditing(false);
     if (!readOnly && draft !== content) updateNodeData(id, { content: draft });
   }, [draft, content, id, readOnly, updateNodeData]);
+
+  const handleDelete = useCallback(() => {
+    void deleteElements({ nodes: [{ id }] });
+  }, [deleteElements, id]);
 
   return (
     <>
@@ -151,6 +156,16 @@ export const StickyNoteNode = memo(function StickyNoteNode({
               />
             ))}
             <div className="ml-auto flex shrink-0 items-center gap-0.5">
+              <button
+                type="button"
+                title="Delete note"
+                aria-label="Delete note"
+                onClick={handleDelete}
+                className="shrink-0 rounded p-0.5 text-foreground/50 transition-colors hover:text-red-600 dark:hover:text-red-400"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+              <div aria-hidden className="mx-0.5 h-3 w-px shrink-0 bg-foreground/15" />
               {STICKY_NOTE_FONT_SIZES.map((fs) => (
                 <button
                   key={fs}
