@@ -378,6 +378,30 @@ export type ApiResponseTokenResponse = {
 };
 
 /**
+ * ApiResponse[Union[list[WorkflowListItem], PaginatedData[WorkflowListItem]]]
+ */
+export type ApiResponseUnionListWorkflowListItemPaginatedDataWorkflowListItem = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<WorkflowListItem> | PaginatedDataWorkflowListItem;
+};
+
+/**
  * ApiResponse[UserResponse]
  */
 export type ApiResponseUserResponse = {
@@ -721,30 +745,6 @@ export type ApiResponseListUserResponse = {
      * Response data
      */
     data: Array<UserResponse>;
-};
-
-/**
- * ApiResponse[list[WorkflowListItem]]
- */
-export type ApiResponseListWorkflowListItem = {
-    /**
-     * Success
-     *
-     * Whether the request was successful
-     */
-    success?: boolean;
-    /**
-     * Message
-     *
-     * Human-readable message
-     */
-    message?: string;
-    /**
-     * Data
-     *
-     * Response data
-     */
-    data: Array<WorkflowListItem>;
 };
 
 /**
@@ -1275,6 +1275,42 @@ export type LoginRequest = {
      * User's password
      */
     password: string;
+};
+
+/**
+ * PaginatedData[WorkflowListItem]
+ */
+export type PaginatedDataWorkflowListItem = {
+    /**
+     * Items
+     *
+     * Paginated items
+     */
+    items: Array<WorkflowListItem>;
+    /**
+     * Total
+     *
+     * Total number of items
+     */
+    total: number;
+    /**
+     * Page
+     *
+     * Current page number
+     */
+    page: number;
+    /**
+     * Page Size
+     *
+     * Items per page
+     */
+    page_size: number;
+    /**
+     * Total Pages
+     *
+     * Total pages
+     */
+    total_pages: number;
 };
 
 /**
@@ -3100,15 +3136,41 @@ export type InitializeFirstAdminSetupInitializePostResponse = InitializeFirstAdm
 export type ListWorkflowsWorkflowsGetData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Page
+         */
+        page?: number | null;
+        /**
+         * Page Size
+         */
+        page_size?: number | null;
+        /**
+         * Search
+         */
+        search?: string | null;
+        /**
+         * Status
+         */
+        status?: WorkflowStatus | null;
+    };
     url: '/workflows/';
 };
+
+export type ListWorkflowsWorkflowsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListWorkflowsWorkflowsGetError = ListWorkflowsWorkflowsGetErrors[keyof ListWorkflowsWorkflowsGetErrors];
 
 export type ListWorkflowsWorkflowsGetResponses = {
     /**
      * Successful Response
      */
-    200: ApiResponseListWorkflowListItem;
+    200: ApiResponseUnionListWorkflowListItemPaginatedDataWorkflowListItem;
 };
 
 export type ListWorkflowsWorkflowsGetResponse = ListWorkflowsWorkflowsGetResponses[keyof ListWorkflowsWorkflowsGetResponses];
