@@ -18,7 +18,8 @@ type RightPanelStackProps = {
   isExpandedDialogOpen?: boolean;
   setIsExpandedDialogOpen?: (open: boolean) => void;
   onTogglePin?: (nodeId: string) => void;
-  onAddStickyNote?: () => void;
+  notePlacementMode?: boolean;
+  onToggleNotePlacement?: () => void;
   selectMode?: boolean;
   onToggleSelectMode?: () => void;
   workflowId?: number | null;
@@ -43,8 +44,9 @@ function areEqual(prev: RightPanelStackProps, next: RightPanelStackProps) {
     prev.isExpandedDialogOpen === next.isExpandedDialogOpen &&
     prev.readOnly === next.readOnly &&
     prev.selectMode === next.selectMode &&
+    prev.notePlacementMode === next.notePlacementMode &&
     Boolean(prev.onDelete) === Boolean(next.onDelete) &&
-    Boolean(prev.onAddStickyNote) === Boolean(next.onAddStickyNote) &&
+    Boolean(prev.onToggleNotePlacement) === Boolean(next.onToggleNotePlacement) &&
     Boolean(prev.onToggleSelectMode) === Boolean(next.onToggleSelectMode) &&
     isEquivalentSelectedNode(prev.selectedNode, next.selectedNode)
   );
@@ -55,7 +57,8 @@ export const RightPanelStack = memo(function RightPanelStack(props: RightPanelSt
   const {
     workflowId,
     readOnly,
-    onAddStickyNote,
+    notePlacementMode,
+    onToggleNotePlacement,
     selectMode,
     onToggleSelectMode,
     ...inspectorProps
@@ -75,7 +78,9 @@ export const RightPanelStack = memo(function RightPanelStack(props: RightPanelSt
         {!readOnly && onToggleSelectMode && (
           <SelectionModeButton active={Boolean(selectMode)} onToggle={onToggleSelectMode} />
         )}
-        {!readOnly && onAddStickyNote && <StickyNoteButton onClick={onAddStickyNote} />}
+        {!readOnly && onToggleNotePlacement && (
+          <StickyNoteButton active={Boolean(notePlacementMode)} onClick={onToggleNotePlacement} />
+        )}
         <Inspector
           {...inspectorProps}
           selectedNode={inspectorSelectedNode}
