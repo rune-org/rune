@@ -4,7 +4,7 @@ from src.core.dependencies import (
     require_password_changed,
 )
 from src.core.exceptions import BadRequest, NotFound
-from src.core.responses import ApiResponse
+from src.core.responses import ApiResponse, PaginatedData
 from src.db.models import User, UserRole, Workflow
 from src.executions.service import ExecutionTokenService
 from src.workflow.dependencies import (
@@ -29,6 +29,7 @@ from src.workflow.schemas import (
     WorkflowPublishVersion,
     WorkflowRestoreVersion,
     WorkflowRunRequest,
+    WorkflowStatus,
     WorkflowUpdateName,
     WorkflowUpdateStatus,
     WorkflowVersionConflict,
@@ -41,13 +42,36 @@ from src.workflow.service import WorkflowService, WorkflowVersionConflictError
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
 
 
-@router.get("/", response_model=ApiResponse[list[WorkflowListItem]])
+@router.get(
+    "/",
+    response_model=ApiResponse[
+        list[WorkflowListItem] | PaginatedData[WorkflowListItem]
+    ],
+)
 async def list_workflows(
+    page: int | None = None,
+    page_size: int | None = None,
+    search: str | None = None,
+    status: WorkflowStatus | None = None,
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
-) -> ApiResponse[list[WorkflowListItem]]:
+) -> ApiResponse[list[WorkflowListItem] | PaginatedData[WorkflowListItem]]:
     is_admin = getattr(current_user, "role", None) == UserRole.ADMIN
-    wfs = await service.list_for_user(current_user.id, is_admin=is_admin)
+
+    limit = page_size if page_size is not None else None
+    offset = (
+        (page - 1) * page_size if (page is not None and page_size is not None) else None
+    )
+    status_str = status.value if status is not None else None
+
+    wfs, total = await service.list_for_user(
+        current_user.id,
+        is_admin=is_admin,
+        limit=limit,
+        offset=offset,
+        search=search,
+        status=status_str,
+    )
     items = [
         WorkflowListItem(
             id=wf.id,
@@ -60,6 +84,20 @@ async def list_workflows(
         )
         for wf, role, owner_name in wfs
     ]
+
+    if page is not None and page_size is not None:
+        total_pages = (total + page_size - 1) // page_size if page_size > 0 else 0
+        paginated_data = PaginatedData(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+        )
+        return ApiResponse(
+            success=True, message="Workflows retrieved", data=paginated_data
+        )
+
     return ApiResponse(success=True, message="Workflows retrieved", data=items)
 
 
