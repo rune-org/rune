@@ -6,6 +6,7 @@ import {
   Controls,
   MiniMap,
   ReactFlow,
+  SelectionMode,
   type Edge,
   type IsValidConnection,
   type NodeChange,
@@ -21,6 +22,9 @@ import { getMiniMapNodeColor, isValidNodeKind } from "../lib/nodeRegistry";
 import { ClickConnectBridge } from "./ClickConnectBridge";
 import { ExecutionStatusBar } from "./ExecutionStatusBar";
 import type { WsConnectionStatus } from "../hooks/useRtesWebSocket";
+
+// In select mode, left-drag selects; panning moves to middle/right mouse buttons
+const SELECT_MODE_PAN_BUTTONS = [1, 2];
 
 function getNodeColor(node: { type?: string }) {
   const type = node.type as string;
@@ -44,6 +48,7 @@ type FlowViewportProps = {
   onInit: (instance: ReactFlowInstance<CanvasNode, Edge>) => void;
   onPaneClick: () => void;
   readOnly?: boolean;
+  selectMode?: boolean;
   wsStatus?: WsConnectionStatus;
   wsReconnectAttempts?: number;
   onDismissRunning?: () => void;
@@ -63,6 +68,7 @@ export const FlowViewport = memo(function FlowViewport({
   onInit,
   onPaneClick,
   readOnly,
+  selectMode,
   wsStatus,
   wsReconnectAttempts,
   onDismissRunning,
@@ -97,6 +103,10 @@ export const FlowViewport = memo(function FlowViewport({
       nodesDraggable={!readOnly}
       nodesConnectable={!readOnly}
       deleteKeyCode={null}
+      selectionOnDrag={selectMode}
+      selectionMode={SelectionMode.Partial}
+      panOnDrag={selectMode ? SELECT_MODE_PAN_BUTTONS : true}
+      className={selectMode ? "canvas-select-mode" : undefined}
     >
       {!readOnly ? <ClickConnectBridge /> : null}
       <Background />

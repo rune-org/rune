@@ -3,6 +3,7 @@
 import { memo, useState } from "react";
 import { Inspector } from "./Inspector";
 import { ScrybInterface } from "./ScrybInterface";
+import { SelectionModeButton } from "./SelectionModeButton";
 import { StickyNoteButton } from "./StickyNoteButton";
 import { cn } from "@/lib/cn";
 import type { CanvasNode } from "../types";
@@ -18,6 +19,8 @@ type RightPanelStackProps = {
   setIsExpandedDialogOpen?: (open: boolean) => void;
   onTogglePin?: (nodeId: string) => void;
   onAddStickyNote?: () => void;
+  selectMode?: boolean;
+  onToggleSelectMode?: () => void;
   workflowId?: number | null;
   readOnly?: boolean;
 };
@@ -39,15 +42,24 @@ function areEqual(prev: RightPanelStackProps, next: RightPanelStackProps) {
     prev.workflowId === next.workflowId &&
     prev.isExpandedDialogOpen === next.isExpandedDialogOpen &&
     prev.readOnly === next.readOnly &&
+    prev.selectMode === next.selectMode &&
     Boolean(prev.onDelete) === Boolean(next.onDelete) &&
     Boolean(prev.onAddStickyNote) === Boolean(next.onAddStickyNote) &&
+    Boolean(prev.onToggleSelectMode) === Boolean(next.onToggleSelectMode) &&
     isEquivalentSelectedNode(prev.selectedNode, next.selectedNode)
   );
 }
 
 export const RightPanelStack = memo(function RightPanelStack(props: RightPanelStackProps) {
   const [isScrybOpen, setIsScrybOpen] = useState(false);
-  const { workflowId, readOnly, onAddStickyNote, ...inspectorProps } = props;
+  const {
+    workflowId,
+    readOnly,
+    onAddStickyNote,
+    selectMode,
+    onToggleSelectMode,
+    ...inspectorProps
+  } = props;
 
   const inspectorSelectedNode =
     inspectorProps.selectedNode && isInspectableNode(inspectorProps.selectedNode.type)
@@ -60,6 +72,9 @@ export const RightPanelStack = memo(function RightPanelStack(props: RightPanelSt
       className="pointer-events-none absolute right-4 top-4 bottom-8 z-35 flex h-auto flex-col items-end justify-between gap-4"
     >
       <div className="pointer-events-auto flex min-h-0 items-start gap-2 overflow-visible">
+        {!readOnly && onToggleSelectMode && (
+          <SelectionModeButton active={Boolean(selectMode)} onToggle={onToggleSelectMode} />
+        )}
         {!readOnly && onAddStickyNote && <StickyNoteButton onClick={onAddStickyNote} />}
         <Inspector
           {...inspectorProps}

@@ -166,3 +166,7 @@
     stroke 0.3s,
     stroke-width 0.3s;
 }
+
+.react-flow.canvas-select-mode .react-flow__pane.selection {
+  cursor: crosshair;
+}

@@ -610,6 +610,17 @@ function FlowCanvasInner({
 
   const onAddStickyNote = useCallback(() => onLibraryAdd("stickyNote"), [onLibraryAdd]);
 
+  const [selectMode, setSelectMode] = useState(false);
+  const onToggleSelectMode = useCallback(() => setSelectMode((v) => !v), []);
+  useEffect(() => {
+    if (!selectMode) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectMode(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectMode]);
+
   const onExecute = useCallback(async () => {
     if (isViewingSnapshot || isSaving) {
       if (isViewingSnapshot) {
@@ -707,6 +718,7 @@ function FlowCanvasInner({
           onInit={onInit}
           onPaneClick={onPaneClick}
           readOnly={isViewingSnapshot}
+          selectMode={selectMode && !isViewingSnapshot}
           wsStatus={wsStatus}
           wsReconnectAttempts={wsReconnectAttempts}
           onDismissRunning={stopExecution}
@@ -770,6 +782,8 @@ function FlowCanvasInner({
           setIsExpandedDialogOpen={setIsInspectorExpanded}
           onTogglePin={isViewingSnapshot ? undefined : togglePin}
           onAddStickyNote={isViewingSnapshot ? undefined : onAddStickyNote}
+          selectMode={selectMode}
+          onToggleSelectMode={isViewingSnapshot ? undefined : onToggleSelectMode}
           workflowId={workflowId}
           readOnly={isViewingSnapshot}
         />
