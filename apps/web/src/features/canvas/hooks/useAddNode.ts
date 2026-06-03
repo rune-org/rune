@@ -16,8 +16,8 @@ export function calculateNodePosition(
 ) {
   if (container && rfInstance) {
     const rect = container.getBoundingClientRect();
-    const x = typeof clientX === "number" ? clientX - rect.left : rect.width / 2;
-    const y = typeof clientY === "number" ? clientY - rect.top : rect.height / 2;
+    const x = typeof clientX === "number" ? clientX : rect.left + rect.width / 2;
+    const y = typeof clientY === "number" ? clientY : rect.top + rect.height / 2;
     const position = rfInstance.screenToFlowPosition({
       x,
       y,

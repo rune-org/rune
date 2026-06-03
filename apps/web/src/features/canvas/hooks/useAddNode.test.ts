@@ -35,8 +35,8 @@ describe("calculateNodePosition", () => {
 
     const position = calculateNodePosition(rfInstance, container, 300, 250);
 
-    expect(rfInstance.screenToFlowPosition).toHaveBeenCalledWith({ x: 200, y: 200 });
-    expect(position).toEqual({ x: 100, y: 100 });
+    expect(rfInstance.screenToFlowPosition).toHaveBeenCalledWith({ x: 300, y: 250 });
+    expect(position).toEqual({ x: 150, y: 125 });
   });
 
   it("uses the current viewport center when no pointer position is provided", () => {
@@ -45,8 +45,8 @@ describe("calculateNodePosition", () => {
 
     const position = calculateNodePosition(rfInstance, container);
 
-    expect(rfInstance.screenToFlowPosition).toHaveBeenCalledWith({ x: 400, y: 300 });
-    expect(position).toEqual({ x: 200, y: 150 });
+    expect(rfInstance.screenToFlowPosition).toHaveBeenCalledWith({ x: 500, y: 350 });
+    expect(position).toEqual({ x: 250, y: 175 });
   });
 
   it("falls back when the canvas is not initialized", () => {
