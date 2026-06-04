@@ -18,7 +18,7 @@ import {
 } from "@xyflow/react";
 import { nodeTypes } from "../nodes";
 import { cn } from "@/lib/cn";
-import type { CanvasNode, StickyNoteColor } from "../types";
+import type { CanvasNode, NodeKind, StickyNoteColor } from "../types";
 import { getMiniMapNodeColor, isValidNodeKind } from "../lib/nodeRegistry";
 import { ClickConnectBridge } from "./ClickConnectBridge";
 import { ExecutionStatusBar } from "./ExecutionStatusBar";
@@ -35,6 +35,13 @@ const STICKY_NOTE_MINIMAP_COLORS: Record<StickyNoteColor, string> = {
   purple: "#c4b5fd",
   gray: "#d4d4d8",
 };
+
+const NON_EXECUTABLE_NODE_TYPES = new Set<NodeKind>([
+  "stickyNote",
+  "trigger",
+  "webhookTrigger",
+  "scheduledTrigger",
+]);
 
 function getNodeColor(node: { type?: string; data?: Record<string, unknown> }) {
   if (node.type === "stickyNote") {
@@ -100,6 +107,10 @@ export const FlowViewport = memo(function FlowViewport({
       return { ...node, data: { ...node.data, readOnly: true } };
     });
   }, [nodes, readOnly]);
+  const executableNodeCount = useMemo(
+    () => nodes.filter((node) => !NON_EXECUTABLE_NODE_TYPES.has(node.type)).length,
+    [nodes],
+  );
 
   return (
     <ReactFlow
@@ -147,6 +158,7 @@ export const FlowViewport = memo(function FlowViewport({
       <Controls style={{ height: 107, marginLeft: "222px", opacity: 0.85 }} />
 
       <ExecutionStatusBar
+        totalNodes={executableNodeCount}
         wsStatus={wsStatus}
         wsReconnectAttempts={wsReconnectAttempts}
         onDismissRunning={onDismissRunning}
