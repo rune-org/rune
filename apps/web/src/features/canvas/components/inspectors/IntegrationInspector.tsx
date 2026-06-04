@@ -122,18 +122,8 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
           <JsonField
             value={value}
             objectOnly={false}
-            onChange={(nextValue) => {
-              if (
-                typeof nextValue === "object" &&
-                nextValue !== null &&
-                !Array.isArray(nextValue) &&
-                Object.keys(nextValue).length === 0
-              ) {
-                updateArgument(field.name, undefined);
-              } else {
-                updateArgument(field.name, nextValue);
-              }
-            }}
+            emptyAsUndefined
+            onChange={(nextValue) => updateArgument(field.name, nextValue)}
           />
           {field.help && <div className="mt-1 text-xs text-muted-foreground/70">{field.help}</div>}
         </div>
