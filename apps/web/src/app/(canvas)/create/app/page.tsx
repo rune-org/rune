@@ -80,7 +80,6 @@ function CanvasPageInner() {
   const workflowId = params.get("workflow") ?? undefined;
   const templateId = params.get("templateId"); // Check if loading from template
   const {
-    state: { workflows: workflowSummaries },
     actions: { refreshWorkflows },
   } = useAppState();
 
@@ -96,7 +95,6 @@ function CanvasPageInner() {
   const [draftName, setDraftName] = useState("");
   const [draftDescription, setDraftDescription] = useState("");
   const [workflowName, setWorkflowName] = useState<string | null>(null);
-  const [hasShownViewerNoticeFor, setHasShownViewerNoticeFor] = useState<number | null>(null);
 
   // Version state
   const [baseVersionId, setBaseVersionId] = useState<number | null>(null);
@@ -117,22 +115,6 @@ function CanvasPageInner() {
     const parsed = Number(workflowId);
     return Number.isFinite(parsed) ? parsed : null;
   }, [workflowId]);
-
-  const workflowRole = useMemo(() => {
-    if (numericWorkflowId === null) return null;
-    const summary = workflowSummaries.find((workflow) => workflow.id === String(numericWorkflowId));
-    return summary?.role ?? null;
-  }, [numericWorkflowId, workflowSummaries]);
-
-  const isViewerReadOnly = workflowRole === "viewer";
-
-  useEffect(() => {
-    if (numericWorkflowId === null || !isViewerReadOnly) return;
-    if (hasShownViewerNoticeFor === numericWorkflowId) return;
-
-    toast.error("You no longer have editor access to this workflow.");
-    setHasShownViewerNoticeFor(numericWorkflowId);
-  }, [numericWorkflowId, isViewerReadOnly, hasShownViewerNoticeFor]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -229,10 +211,6 @@ function CanvasPageInner() {
 
   const saveVersion = useCallback(
     async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }, message?: string | null) => {
-      if (isViewerReadOnly) {
-        toast.error("You no longer have editor access to this workflow.");
-        return null;
-      }
       if (!numericWorkflowId) return;
       setIsSaving(true);
       try {
@@ -271,17 +249,12 @@ function CanvasPageInner() {
 
       return null;
     },
-    [numericWorkflowId, isViewerReadOnly],
+    [numericWorkflowId],
   );
 
   const handlePersist = useCallback(
     async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }) => {
       if (isSaving) return;
-
-      if (isViewerReadOnly) {
-        toast.error("You no longer have editor access to this workflow.");
-        return null;
-      }
 
       if (numericWorkflowId !== null) {
         return await saveVersion(graph);
@@ -294,16 +267,12 @@ function CanvasPageInner() {
       setCreateDialogOpen(true);
       return null;
     },
-    [isSaving, numericWorkflowId, saveVersion, isViewerReadOnly],
+    [isSaving, numericWorkflowId, saveVersion],
   );
 
   const handleSaveWithMessage = useCallback(
     async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }, message: string) => {
       if (isSaving) return;
-      if (isViewerReadOnly) {
-        toast.error("You no longer have editor access to this workflow.");
-        return;
-      }
       if (numericWorkflowId !== null) {
         await saveVersion(graph, message);
         return;
@@ -313,7 +282,7 @@ function CanvasPageInner() {
       setDraftMessage(message);
       setCreateDialogOpen(true);
     },
-    [isSaving, numericWorkflowId, saveVersion, isViewerReadOnly],
+    [isSaving, numericWorkflowId, saveVersion],
   );
 
   // Conflict resolution handlers
@@ -507,8 +476,6 @@ function CanvasPageInner() {
           onPersist={handlePersist}
           onSaveWithMessage={handleSaveWithMessage}
           saveDisabled={isSaving}
-          readOnly={isViewerReadOnly}
-          readOnlyReason="You no longer have editor access to this workflow."
           workflowId={numericWorkflowId}
           workflowName={workflowName}
           onPublish={handlePublish}
