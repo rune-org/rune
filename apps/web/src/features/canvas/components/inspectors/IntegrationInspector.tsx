@@ -66,6 +66,15 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
   );
 
   const renderField = (field: IntegrationArgumentField) => {
+    if (field.showWhen) {
+      const controllingValue =
+        node.data.arguments?.[field.showWhen.field] ??
+        tool?.defaultArguments?.[field.showWhen.field];
+      if (controllingValue !== field.showWhen.value) {
+        return null;
+      }
+    }
+
     const value = node.data.arguments?.[field.name];
 
     if (field.type === "boolean") {

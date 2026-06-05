@@ -54,20 +54,32 @@ const JIRA_API_VERSION_OPTIONS = [
   { value: "2", label: "v2" },
 ] as const;
 
+const JIRA_SITE_CONFIG_OPTIONS = [
+  { value: "url", label: "Site URL" },
+  { value: "cloud_id", label: "Cloud ID" },
+] as const;
+
 const JIRA_BASE_ARGUMENT_FIELDS = [
+  {
+    name: "site_config_type",
+    label: "Site configuration",
+    type: "select",
+    options: JIRA_SITE_CONFIG_OPTIONS,
+    help: "Use either the Site URL or Cloud ID to identify the Jira instance.",
+  },
   {
     name: "base_url",
     label: "Site URL",
     type: "text",
     placeholder: "https://your-domain.atlassian.net",
-    help: "Required when credentials do not provide a site URL. Used to resolve the Cloud ID for OAuth.",
+    showWhen: { field: "site_config_type", value: "url" },
   },
   {
     name: "cloud_id",
     label: "Cloud ID",
     type: "text",
     placeholder: "d3c2f2e0-xxxx-xxxx-xxxx-acdeabcd1234",
-    help: "Optional. Leave empty for OAuth; it will be resolved from the site URL.",
+    showWhen: { field: "site_config_type", value: "cloud_id" },
   },
   {
     name: "api_version",
@@ -652,7 +664,7 @@ export const INTEGRATION_TOOLS = [
         help: "Optional update operations for fields (e.g. adding comments via the `comment` operation).",
       },
     ],
-    defaultArguments: { api_version: "3" },
+    defaultArguments: { site_config_type: "url", api_version: "3" },
   },
   {
     kind: "integration.jira.issue_get",
@@ -690,7 +702,7 @@ export const INTEGRATION_TOOLS = [
         help: "Comma-separated expand options (e.g. renderedFields,names,schema).",
       },
     ],
-    defaultArguments: { api_version: "3", fields: "*all" },
+    defaultArguments: { site_config_type: "url", api_version: "3", fields: "*all" },
   },
   {
     kind: "integration.jira.issue_update",
@@ -759,7 +771,7 @@ export const INTEGRATION_TOOLS = [
         type: "boolean",
       },
     ],
-    defaultArguments: { api_version: "3" },
+    defaultArguments: { site_config_type: "url", api_version: "3" },
   },
   {
     kind: "integration.jira.issue_search",
@@ -814,7 +826,13 @@ export const INTEGRATION_TOOLS = [
         type: "boolean",
       },
     ],
-    defaultArguments: { api_version: "3", start_at: 0, max_results: 50, fields: "*all" },
+    defaultArguments: {
+      site_config_type: "url",
+      api_version: "3",
+      start_at: 0,
+      max_results: 50,
+      fields: "*all",
+    },
   },
   {
     kind: "integration.jira.issue_transition_list",
@@ -845,7 +863,7 @@ export const INTEGRATION_TOOLS = [
         help: "Comma-separated expand options.",
       },
     ],
-    defaultArguments: { api_version: "3" },
+    defaultArguments: { site_config_type: "url", api_version: "3" },
   },
   {
     kind: "integration.jira.issue_transition_apply",
@@ -893,7 +911,7 @@ export const INTEGRATION_TOOLS = [
         help: "Optional update operations for fields.",
       },
     ],
-    defaultArguments: { api_version: "3" },
+    defaultArguments: { site_config_type: "url", api_version: "3" },
   },
   {
     kind: "integration.jira.comment_create",
@@ -929,7 +947,7 @@ export const INTEGRATION_TOOLS = [
         help: "Advanced: Atlassian Document Format JSON body. Leave empty when using plain text above.",
       },
     ],
-    defaultArguments: { api_version: "3" },
+    defaultArguments: { site_config_type: "url", api_version: "3" },
   },
   {
     kind: "integration.jira.comment_list",
@@ -977,7 +995,7 @@ export const INTEGRATION_TOOLS = [
         placeholder: "renderedBody",
       },
     ],
-    defaultArguments: { api_version: "3", start_at: 0 },
+    defaultArguments: { site_config_type: "url", api_version: "3", start_at: 0 },
   },
   {
     kind: "integration.jira.project_list",
@@ -1006,7 +1024,7 @@ export const INTEGRATION_TOOLS = [
         placeholder: "50",
       },
     ],
-    defaultArguments: { api_version: "3", start_at: 0 },
+    defaultArguments: { site_config_type: "url", api_version: "3", start_at: 0 },
   },
   {
     kind: "integration.jira.user_get",
@@ -1049,7 +1067,7 @@ export const INTEGRATION_TOOLS = [
         help: "Use with API v2 when search query and account ID are not available.",
       },
     ],
-    defaultArguments: { api_version: "3" },
+    defaultArguments: { site_config_type: "url", api_version: "3" },
   },
   {
     kind: "integration.microsoft.outlook.send_email",

@@ -57,6 +57,7 @@ export type IntegrationArgumentField = {
   placeholder?: string;
   help?: string;
   options?: readonly { value: string; label: string }[];
+  showWhen?: { field: string; value: string };
 };
 
 export type IntegrationToolMetadata = {
