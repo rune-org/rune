@@ -44,6 +44,10 @@ function updateWorkflowMetaAfterSave(
 }
 
 function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.length > 0) {
+    return error.message;
+  }
+
   if (error && typeof error === "object" && "detail" in error) {
     const detail = (error as { detail: unknown }).detail;
     if (typeof detail === "string" && detail.length > 0) {
@@ -51,7 +55,23 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
     }
   }
 
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message: unknown }).message;
+    if (typeof message === "string" && message.length > 0) {
+      return message;
+    }
+  }
+
   return fallback;
+}
+
+function getSaveErrorMessage(error: unknown): string {
+  const message = getApiErrorMessage(error, "Failed to save workflow");
+  if (message.toLowerCase().includes("insufficient permissions to edit this workflow")) {
+    return "You no longer have editor access to this workflow.";
+  }
+
+  return message;
 }
 
 function CanvasPageInner() {
@@ -60,6 +80,7 @@ function CanvasPageInner() {
   const workflowId = params.get("workflow") ?? undefined;
   const templateId = params.get("templateId"); // Check if loading from template
   const {
+    state: { workflows: workflowSummaries },
     actions: { refreshWorkflows },
   } = useAppState();
 
@@ -75,6 +96,7 @@ function CanvasPageInner() {
   const [draftName, setDraftName] = useState("");
   const [draftDescription, setDraftDescription] = useState("");
   const [workflowName, setWorkflowName] = useState<string | null>(null);
+  const [hasShownViewerNoticeFor, setHasShownViewerNoticeFor] = useState<number | null>(null);
 
   // Version state
   const [baseVersionId, setBaseVersionId] = useState<number | null>(null);
@@ -95,6 +117,22 @@ function CanvasPageInner() {
     const parsed = Number(workflowId);
     return Number.isFinite(parsed) ? parsed : null;
   }, [workflowId]);
+
+  const workflowRole = useMemo(() => {
+    if (numericWorkflowId === null) return null;
+    const summary = workflowSummaries.find((workflow) => workflow.id === String(numericWorkflowId));
+    return summary?.role ?? null;
+  }, [numericWorkflowId, workflowSummaries]);
+
+  const isViewerReadOnly = workflowRole === "viewer";
+
+  useEffect(() => {
+    if (numericWorkflowId === null || !isViewerReadOnly) return;
+    if (hasShownViewerNoticeFor === numericWorkflowId) return;
+
+    toast.error("You no longer have editor access to this workflow.");
+    setHasShownViewerNoticeFor(numericWorkflowId);
+  }, [numericWorkflowId, isViewerReadOnly, hasShownViewerNoticeFor]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -191,6 +229,10 @@ function CanvasPageInner() {
 
   const saveVersion = useCallback(
     async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }, message?: string | null) => {
+      if (isViewerReadOnly) {
+        toast.error("You no longer have editor access to this workflow.");
+        return null;
+      }
       if (!numericWorkflowId) return;
       setIsSaving(true);
       try {
@@ -221,7 +263,7 @@ function CanvasPageInner() {
           const nodeList = err.nodes.map((n) => `${n.type} (${n.id.slice(0, 6)})`).join(", ");
           toast.error(`Missing credentials for: ${nodeList}`);
         } else {
-          toast.error(err instanceof Error ? err.message : "Failed to save version");
+          toast.error(getSaveErrorMessage(err));
         }
       } finally {
         setIsSaving(false);
@@ -229,12 +271,17 @@ function CanvasPageInner() {
 
       return null;
     },
-    [numericWorkflowId],
+    [numericWorkflowId, isViewerReadOnly],
   );
 
   const handlePersist = useCallback(
     async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }) => {
       if (isSaving) return;
+
+      if (isViewerReadOnly) {
+        toast.error("You no longer have editor access to this workflow.");
+        return null;
+      }
 
       if (numericWorkflowId !== null) {
         return await saveVersion(graph);
@@ -247,12 +294,16 @@ function CanvasPageInner() {
       setCreateDialogOpen(true);
       return null;
     },
-    [isSaving, numericWorkflowId, saveVersion],
+    [isSaving, numericWorkflowId, saveVersion, isViewerReadOnly],
   );
 
   const handleSaveWithMessage = useCallback(
     async (graph: { nodes: CanvasNode[]; edges: CanvasEdge[] }, message: string) => {
       if (isSaving) return;
+      if (isViewerReadOnly) {
+        toast.error("You no longer have editor access to this workflow.");
+        return;
+      }
       if (numericWorkflowId !== null) {
         await saveVersion(graph, message);
         return;
@@ -262,7 +313,7 @@ function CanvasPageInner() {
       setDraftMessage(message);
       setCreateDialogOpen(true);
     },
-    [isSaving, numericWorkflowId, saveVersion],
+    [isSaving, numericWorkflowId, saveVersion, isViewerReadOnly],
   );
 
   // Conflict resolution handlers
@@ -320,7 +371,7 @@ function CanvasPageInner() {
           localGraph,
         });
       } else {
-        toast.error("Failed to save version after conflict resolution");
+          toast.error(getSaveErrorMessage(err));
       }
     } finally {
       setIsSaving(false);
@@ -438,7 +489,7 @@ function CanvasPageInner() {
           const nodeList = err.nodes.map((n) => `${n.type} (${n.id.slice(0, 6)})`).join(", ");
           toast.error(`Missing credentials for: ${nodeList}`);
         } else {
-          toast.error(err instanceof Error ? err.message : "Failed to save workflow");
+          toast.error(getSaveErrorMessage(err));
         }
       } finally {
         setIsSaving(false);
@@ -456,6 +507,8 @@ function CanvasPageInner() {
           onPersist={handlePersist}
           onSaveWithMessage={handleSaveWithMessage}
           saveDisabled={isSaving}
+          readOnly={isViewerReadOnly}
+          readOnlyReason="You no longer have editor access to this workflow."
           workflowId={numericWorkflowId}
           workflowName={workflowName}
           onPublish={handlePublish}

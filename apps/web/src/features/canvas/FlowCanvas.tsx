@@ -85,6 +85,8 @@ type FlowCanvasProps = {
   onConflictLoadServer?: () => void;
   onConflictForceSave?: () => void;
   onConflictCancel?: () => void;
+  readOnly?: boolean;
+  readOnlyReason?: string;
 };
 
 export default function FlowCanvas(props: FlowCanvasProps) {
@@ -112,6 +114,8 @@ function FlowCanvasInner({
   onConflictLoadServer,
   onConflictForceSave,
   onConflictCancel,
+  readOnly = false,
+  readOnlyReason,
 }: FlowCanvasProps) {
   const [nodes, setNodes] = useNodesState<CanvasNode>(externalNodes ?? []);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(externalEdges ?? []);
@@ -160,6 +164,7 @@ function FlowCanvasInner({
 
   const [hasClickedSaveDuringTour, setHasClickedSaveDuringTour] = useState(false);
   const [hasClickedRunDuringTour, setHasClickedRunDuringTour] = useState(false);
+  const readOnlyToastAtRef = useRef(0);
   const tourBaselineRef = useRef<{ nodes: number; edges: number; nodeIds: Set<string> } | null>(
     null,
   );
@@ -267,6 +272,17 @@ function FlowCanvasInner({
     ctxExecutionState.isHistorical === true && !!ctxExecutionState.graphSnapshot;
 
   const isViewingSnapshot = isViewingExecutionSnapshot || !!versionSnapshot;
+  const isReadOnly = isViewingSnapshot || readOnly;
+  const resolvedReadOnlyReason = readOnlyReason ?? "You no longer have editor access to this workflow.";
+  const showReadOnlyBlocked = useCallback(() => {
+    const now = Date.now();
+    // Prevent toast spam from high-frequency input on inspector fields.
+    if (now - readOnlyToastAtRef.current < 1200) {
+      return;
+    }
+    readOnlyToastAtRef.current = now;
+    toast.error(resolvedReadOnlyReason);
+  }, [resolvedReadOnlyReason]);
 
   // Save/restore the live canvas when entering/leaving snapshot mode.
   const savedLiveNodesRef = useRef<CanvasNode[] | null>(null);
@@ -311,7 +327,7 @@ function FlowCanvasInner({
   // While viewing history we intentionally ignore external graph prop updates so
   // that "Return to Live" restores the pre-snapshot in-memory draft.
   useEffect(() => {
-    if (isViewingSnapshot) return;
+    if (isReadOnly) return;
     setNodes(externalNodes ?? []);
     setEdges(externalEdges ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -337,7 +353,7 @@ function FlowCanvasInner({
     handleSmithSend,
   } = useSmith({
     workflowId,
-    readOnly: isViewingSnapshot,
+    readOnly: isReadOnly,
     pushHistory,
     setNodes,
     setEdges,
@@ -365,7 +381,7 @@ function FlowCanvasInner({
   } = useGraphClipboard({
     nodes,
     edges,
-    readOnly: isViewingSnapshot,
+    readOnly: isReadOnly,
     selectedNodeId,
     pushHistory,
     setNodes,
@@ -377,6 +393,10 @@ function FlowCanvasInner({
     if (onboardingStateRef.current.isOpen && onboardingStateRef.current.step === 4) {
       setHasClickedSaveDuringTour(true);
     }
+    if (readOnly) {
+      showReadOnlyBlocked();
+      return;
+    }
     if (!onPersist || isSaving) return;
     setIsSaving(true);
     try {
@@ -387,10 +407,14 @@ function FlowCanvasInner({
     } finally {
       setIsSaving(false);
     }
-  }, [onPersist, isSaving]);
+  }, [onPersist, isSaving, readOnly, showReadOnlyBlocked]);
 
   const handleSaveVersionWithMessage = useCallback(
     async (message: string) => {
+      if (readOnly) {
+        showReadOnlyBlocked();
+        return;
+      }
       if (!onSaveWithMessage || isSaving) return;
       setSaveVersionDialogOpen(false);
       setIsSaving(true);
@@ -403,7 +427,18 @@ function FlowCanvasInner({
         setIsSaving(false);
       }
     },
-    [onSaveWithMessage, isSaving],
+    [onSaveWithMessage, isSaving, readOnly, showReadOnlyBlocked],
+  );
+
+  const guardedUpdateNodeData = useCallback(
+    ((...args: Parameters<typeof updateNodeData>) => {
+      if (isReadOnly) {
+        showReadOnlyBlocked();
+        return;
+      }
+      return updateNodeData(...args);
+    }) as typeof updateNodeData,
+    [updateNodeData, isReadOnly, showReadOnlyBlocked],
   );
 
   const handleViewVersion = useCallback(
@@ -516,12 +551,16 @@ function FlowCanvasInner({
 
   const updateSelectedNodeLabel = useCallback(
     (newLabel: string) => {
+      if (isReadOnly) {
+        showReadOnlyBlocked();
+        return;
+      }
       if (!selectedNode) return;
       const oldName = selectedNode.data.label;
 
       const needsScan = oldName && oldName !== newLabel;
       if (!needsScan) {
-        updateNodeData(selectedNode.id, selectedNode.type, () => ({ label: newLabel }));
+        guardedUpdateNodeData(selectedNode.id, selectedNode.type, () => ({ label: newLabel }));
         return;
       }
 
@@ -529,7 +568,7 @@ function FlowCanvasInner({
       const result = scanVariableReferences(otherNodes, oldName);
 
       if (result.totalRefs === 0) {
-        updateNodeData(selectedNode.id, selectedNode.type, () => ({ label: newLabel }));
+        guardedUpdateNodeData(selectedNode.id, selectedNode.type, () => ({ label: newLabel }));
         return;
       }
 
@@ -541,11 +580,15 @@ function FlowCanvasInner({
         scanResult: result,
       });
     },
-    [selectedNode, updateNodeData, nodes],
+    [selectedNode, guardedUpdateNodeData, nodes, isReadOnly, showReadOnlyBlocked],
   );
 
   const handleRenameChoice = useCallback(
     (choice: RenameChoice) => {
+      if (isReadOnly) {
+        showReadOnlyBlocked();
+        return;
+      }
       if (!renameDialog) return;
       const { oldName, newName, nodeId, nodeType } = renameDialog;
       setRenameDialog(null);
@@ -555,7 +598,7 @@ function FlowCanvasInner({
       pushHistory();
 
       if (choice === "skip") {
-        updateNodeData(nodeId, nodeType, () => ({ label: newName }));
+        guardedUpdateNodeData(nodeId, nodeType, () => ({ label: newName }));
         return;
       }
 
@@ -581,7 +624,7 @@ function FlowCanvasInner({
         );
       });
     },
-    [renameDialog, pushHistory, updateNodeData, setNodes],
+    [renameDialog, pushHistory, guardedUpdateNodeData, setNodes, isReadOnly, showReadOnlyBlocked],
   );
 
   const onSelectionChange = useCallback((params: OnSelectionChangeParams) => {
@@ -602,18 +645,24 @@ function FlowCanvasInner({
 
   const onLibraryAdd = useCallback(
     (t: NodeKind, x?: number, y?: number) => {
+      if (isReadOnly) {
+        showReadOnlyBlocked();
+        return;
+      }
       pushHistory();
       addNode(t, x, y);
     },
-    [pushHistory, addNode],
+    [pushHistory, addNode, isReadOnly, showReadOnlyBlocked],
   );
 
   const onAddStickyNote = useCallback(() => onLibraryAdd("stickyNote"), [onLibraryAdd]);
 
   const onExecute = useCallback(async () => {
-    if (isViewingSnapshot || isSaving) {
+    if (isReadOnly || isSaving) {
       if (isViewingSnapshot) {
         toast.error("Execution is disabled while viewing history");
+      } else if (readOnly) {
+        showReadOnlyBlocked();
       }
       return;
     }
@@ -643,7 +692,10 @@ function FlowCanvasInner({
       setHasClickedRunDuringTour(true);
     }
   }, [
+    isReadOnly,
     isViewingSnapshot,
+    readOnly,
+    showReadOnlyBlocked,
     isSaving,
     persistGraph,
     onPersist,
@@ -654,7 +706,7 @@ function FlowCanvasInner({
 
   useCanvasShortcuts({
     nodes,
-    readOnly: isViewingSnapshot,
+    readOnly: isReadOnly,
     setNodes,
     onDelete: deleteSelectedElements,
     onSave: () => {
@@ -683,6 +735,8 @@ function FlowCanvasInner({
     ? `Viewing version v${versionSnapshot.versionNumber} (read-only)`
     : isViewingExecutionSnapshot
       ? "Viewing historical execution snapshot (read-only)"
+      : readOnly
+        ? "View-only mode: you no longer have editor access"
       : "Drag to move \u2022 Connect via handles \u2022 Paste JSON to import";
 
   return (
@@ -706,7 +760,7 @@ function FlowCanvasInner({
           onNodeDragStop={onNodeDragStop}
           onInit={onInit}
           onPaneClick={onPaneClick}
-          readOnly={isViewingSnapshot}
+          readOnly={isReadOnly}
           wsStatus={wsStatus}
           wsReconnectAttempts={wsReconnectAttempts}
           onDismissRunning={stopExecution}
@@ -720,13 +774,13 @@ function FlowCanvasInner({
           >
             <Toolbar
               onExecute={onExecute}
-              executeDisabled={isViewingSnapshot || isSaving}
-              readOnly={isViewingSnapshot}
+              executeDisabled={isReadOnly || isSaving}
+              readOnly={isReadOnly}
               onStop={stopExecution}
               onUndo={handleUndo}
               onRedo={handleRedo}
-              canUndo={!isViewingSnapshot && canUndo}
-              canRedo={!isViewingSnapshot && canRedo}
+              canUndo={!isReadOnly && canUndo}
+              canRedo={!isReadOnly && canRedo}
               onSave={persistGraph}
               onExportToClipboard={exportToClipboard}
               onExportToFile={exportToFile}
@@ -736,7 +790,7 @@ function FlowCanvasInner({
               onImportFromFile={importFromFile}
               onImportFromTemplate={importFromTemplate}
               onAutoLayout={autoLayout}
-              saveDisabled={saveDisabled || isViewingSnapshot || isSaving}
+              saveDisabled={saveDisabled || isReadOnly || isSaving}
               executionStatus={executionState.status}
               wsStatus={wsStatus}
               isStartingExecution={isStartingExecution}
@@ -756,7 +810,7 @@ function FlowCanvasInner({
               onClick={openSmith}
               isSending={smithSending}
               justFinished={smithJustFinished}
-              disabled={isViewingSnapshot}
+              disabled={isReadOnly}
             />
           </div>
         </div>
@@ -764,14 +818,14 @@ function FlowCanvasInner({
         <RightPanelStack
           selectedNode={selectedNode}
           updateSelectedNodeLabel={updateSelectedNodeLabel}
-          updateData={updateNodeData}
-          onDelete={selectedNode && !isViewingSnapshot ? deleteSelectedElements : undefined}
+          updateData={guardedUpdateNodeData}
+          onDelete={selectedNode && !isReadOnly ? deleteSelectedElements : undefined}
           isExpandedDialogOpen={isInspectorExpanded}
           setIsExpandedDialogOpen={setIsInspectorExpanded}
-          onTogglePin={isViewingSnapshot ? undefined : togglePin}
-          onAddStickyNote={isViewingSnapshot ? undefined : onAddStickyNote}
+          onTogglePin={isReadOnly ? undefined : togglePin}
+          onAddStickyNote={isReadOnly ? undefined : onAddStickyNote}
           workflowId={workflowId}
-          readOnly={isViewingSnapshot}
+          readOnly={isReadOnly}
         />
 
         <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
@@ -780,7 +834,7 @@ function FlowCanvasInner({
           </div>
         </div>
 
-        {!isViewingSnapshot && (
+        {!isReadOnly && (
           <Library
             containerRef={containerRef}
             toolbarRef={toolbarRef}
