@@ -5,4 +5,5 @@ import (
 	_ "rune-worker/pkg/integrations/providers/google/sheets"
 	_ "rune-worker/pkg/integrations/providers/microsoft/outlook"
 	_ "rune-worker/pkg/integrations/providers/slack"
+	_ "rune-worker/pkg/integrations/providers/telegram"
 )

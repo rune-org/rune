@@ -30,7 +30,7 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("integration request failed: status=%d url=%s", e.Status, e.URL)
+	return fmt.Sprintf("integration request failed: status=%d url=%s body=%v", e.Status, e.URL, e.Body)
 }
 
 func Do(ctx context.Context, ec plugin.ExecutionContext, s Spec) (map[string]any, error) {
