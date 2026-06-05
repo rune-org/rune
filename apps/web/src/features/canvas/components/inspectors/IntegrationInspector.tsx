@@ -209,17 +209,16 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
               <br />
               Go to{" "}
               <span className="text-foreground/70">Settings → Credentials → Add credential</span>,
-              set type to <span className="font-mono text-foreground/70">Token</span>, paste your bot
-              token.
+              set type to <span className="font-mono text-foreground/70">Token</span>, paste your
+              bot token.
             </p>
             <p>
               <strong>3. Find your Chat ID</strong>
               <br />
               Message your bot on Telegram first (any text), then use the{" "}
               <span className="text-foreground/70">Get Chat ID</span> node to auto-detect it. Copy
-              the number into the{" "}
-              <span className="font-mono text-foreground/70">chat_id</span> field of other Telegram
-              nodes.
+              the number into the <span className="font-mono text-foreground/70">chat_id</span>{" "}
+              field of other Telegram nodes.
             </p>
           </div>
         </details>
