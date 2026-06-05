@@ -340,7 +340,7 @@ function CanvasPageInner() {
           localGraph,
         });
       } else {
-          toast.error(getSaveErrorMessage(err));
+        toast.error(getSaveErrorMessage(err));
       }
     } finally {
       setIsSaving(false);
