@@ -500,6 +500,23 @@ function FlowCanvasInner({
     [deleteDialog, performDelete],
   );
 
+  const onBeforeDelete = useCallback(
+    async ({
+      nodes: nodesToDelete,
+      edges: edgesToDelete,
+    }: {
+      nodes: CanvasNode[];
+      edges: Edge[];
+    }) => {
+      requestDelete(
+        new Set(nodesToDelete.map((n) => n.id)),
+        new Set(edgesToDelete.map((e) => e.id)),
+      );
+      return false;
+    },
+    [requestDelete],
+  );
+
   const deleteSelectedElements = useCallback(() => {
     const selectedNodeIds = new Set(nodesRef.current.filter((n) => n.selected).map((n) => n.id));
     if (selectedNodeIds.size === 0 && selectedNodeId) {
@@ -598,8 +615,6 @@ function FlowCanvasInner({
     rfInstanceRef.current = inst;
   }, []);
 
-  const onPaneClick = useCallback(() => setSelectedNodeId(null), []);
-
   const onLibraryAdd = useCallback(
     (t: NodeKind, x?: number, y?: number) => {
       pushHistory();
@@ -608,7 +623,42 @@ function FlowCanvasInner({
     [pushHistory, addNode],
   );
 
-  const onAddStickyNote = useCallback(() => onLibraryAdd("stickyNote"), [onLibraryAdd]);
+  const [selectMode, setSelectMode] = useState(false);
+  const [notePlacementMode, setNotePlacementMode] = useState(false);
+
+  const onToggleSelectMode = useCallback(() => {
+    setNotePlacementMode(false);
+    setSelectMode((v) => !v);
+  }, []);
+
+  const onToggleNotePlacement = useCallback(() => {
+    setSelectMode(false);
+    setNotePlacementMode((v) => !v);
+  }, []);
+
+  const onPaneClick = useCallback(
+    (event: React.MouseEvent) => {
+      if (notePlacementMode) {
+        setNotePlacementMode(false);
+        onLibraryAdd("stickyNote", event.clientX, event.clientY);
+        return;
+      }
+      setSelectedNodeId(null);
+    },
+    [notePlacementMode, onLibraryAdd],
+  );
+
+  useEffect(() => {
+    if (!selectMode && !notePlacementMode) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectMode(false);
+        setNotePlacementMode(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectMode, notePlacementMode]);
 
   const onExecute = useCallback(async () => {
     if (isViewingSnapshot || isSaving) {
@@ -706,7 +756,10 @@ function FlowCanvasInner({
           onNodeDragStop={onNodeDragStop}
           onInit={onInit}
           onPaneClick={onPaneClick}
+          onBeforeDelete={onBeforeDelete}
           readOnly={isViewingSnapshot}
+          selectMode={selectMode && !isViewingSnapshot}
+          notePlacementMode={notePlacementMode && !isViewingSnapshot}
           wsStatus={wsStatus}
           wsReconnectAttempts={wsReconnectAttempts}
           onDismissRunning={stopExecution}
@@ -769,7 +822,10 @@ function FlowCanvasInner({
           isExpandedDialogOpen={isInspectorExpanded}
           setIsExpandedDialogOpen={setIsInspectorExpanded}
           onTogglePin={isViewingSnapshot ? undefined : togglePin}
-          onAddStickyNote={isViewingSnapshot ? undefined : onAddStickyNote}
+          notePlacementMode={notePlacementMode}
+          onToggleNotePlacement={isViewingSnapshot ? undefined : onToggleNotePlacement}
+          selectMode={selectMode}
+          onToggleSelectMode={isViewingSnapshot ? undefined : onToggleSelectMode}
           workflowId={workflowId}
           readOnly={isViewingSnapshot}
         />
