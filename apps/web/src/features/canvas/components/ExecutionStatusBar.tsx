@@ -92,10 +92,12 @@ function getStatusConfig(
  * Auto-dismisses after completion/failure/halt.
  */
 export function ExecutionStatusBar({
+  totalNodes: graphTotalNodes,
   wsStatus = "disconnected",
   wsReconnectAttempts = 0,
   onDismissRunning,
 }: {
+  totalNodes?: number;
   wsStatus?: WsConnectionStatus;
   wsReconnectAttempts?: number;
   onDismissRunning?: () => void;
@@ -140,13 +142,12 @@ export function ExecutionStatusBar({
   }
 
   // Count completed/total nodes
-  const totalNodes = state.nodes.size;
-  const completedNodes = Array.from(state.nodes.values()).filter(
+  const observedNodes = Array.from(state.nodes.values());
+  const totalNodes = graphTotalNodes ?? state.nodes.size;
+  const completedNodes = observedNodes.filter(
     (n) => n.status === "success" || n.status === "failed",
   ).length;
-  const runningNodes = Array.from(state.nodes.values()).filter(
-    (n) => n.status === "running",
-  ).length;
+  const runningNodes = observedNodes.filter((n) => n.status === "running").length;
 
   const canDismiss = state.status !== "running";
   const canDismissRunningHint =

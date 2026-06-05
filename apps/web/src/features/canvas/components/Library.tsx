@@ -1,9 +1,18 @@
 "use client";
 
-import { ChevronLeft, ChevronsRight, GripHorizontal, Info, RotateCcw } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronsRight,
+  GripHorizontal,
+  Info,
+  RotateCcw,
+  Search,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LibraryGroups, type LibraryTab } from "./LibraryGroups";
+import { LibrarySearchResults } from "./LibrarySearchResults";
 import { cn } from "@/lib/cn";
 import type { NodeKind } from "../types";
 
@@ -24,10 +33,12 @@ export function Library({
 }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<LibraryTab>("runic");
+  const [query, setQuery] = useState("");
   const [panelWidth, setPanelWidth] = useState(300);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const handleBtnRef = useRef<HTMLButtonElement | null>(null);
+  const searching = query.trim().length > 0;
 
   // Dynamically position the panel below the toolbar
   const [top, setTop] = useState(66); // Fallback
@@ -44,15 +55,20 @@ export function Library({
   useEffect(() => {
     if (!open) return;
     const panel = panelRef.current;
-    if (closeBtnRef.current) {
+    if (searchInputRef.current) {
       try {
-        closeBtnRef.current.focus();
+        searchInputRef.current.focus();
       } catch {}
     }
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
+        if (searchInputRef.current?.value) {
+          setQuery("");
+          searchInputRef.current.focus();
+          return;
+        }
         setOpen(false);
         return;
       }
@@ -129,7 +145,7 @@ export function Library({
       {/* Handle */}
       <button
         ref={handleBtnRef}
-        className="pointer-events-auto absolute left-1 top-1/2 z-45 -translate-y-1/2 transform rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-background/80 text-muted-foreground hover:border-accent/60 hover:text-foreground"
+        className="pointer-events-auto absolute left-1 top-1/2 z-45 -translate-y-1/2 transform rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-background/60 text-muted-foreground backdrop-blur-md hover:border-accent/60 hover:text-foreground"
         style={{
           width: 28,
           height: 96,
@@ -148,7 +164,7 @@ export function Library({
       <div
         ref={panelRef}
         data-onboarding="library"
-        className="pointer-events-auto absolute flex flex-col overflow-visible rounded-(--radius) border border-border/60 bg-card/90 shadow-xl"
+        className="pointer-events-auto absolute flex flex-col overflow-visible rounded-(--radius) border border-border/60 bg-card/70 shadow-2xl ring-1 ring-white/[0.04] backdrop-blur-xl"
         style={{
           top: top,
           height: `calc(100% - ${top}px - 12px)`,
@@ -158,7 +174,7 @@ export function Library({
           transition: "transform 180ms ease-out",
         }}
       >
-        <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
+        <div className="flex items-center justify-between border-b border-border/50 px-3 py-2">
           <div className="flex items-center gap-2">
             <div className="text-xs font-medium text-muted-foreground">Library</div>
             {onResetShortcuts && (
@@ -190,7 +206,6 @@ export function Library({
             )}
           </div>
           <button
-            ref={closeBtnRef}
             className="inline-flex items-center gap-1 rounded p-1 text-muted-foreground hover:text-foreground"
             aria-label="Close library"
             onClick={() => setOpen(false)}
@@ -199,40 +214,77 @@ export function Library({
           </button>
         </div>
 
-        <div className="shrink-0 px-2 py-1.5 border-b border-border/40">
-          <div
-            role="tablist"
-            aria-label="Library sections"
-            className="flex rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-muted/20 p-0.5"
-          >
-            {(["runic", "integrations"] as const).map((t) => (
+        <div className="shrink-0 border-b border-border/40 px-2 py-1.5">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              ref={searchInputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search nodes…"
+              aria-label="Search library"
+              className="w-full rounded-[calc(var(--radius)-0.35rem)] border border-border/60 bg-background/40 py-1.5 pl-8 pr-7 text-xs outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-accent/60 focus:bg-background/70"
+            />
+            {query && (
               <button
-                key={t}
-                role="tab"
-                aria-selected={tab === t}
-                onClick={() => setTab(t)}
-                className={cn(
-                  "flex-1 cursor-pointer rounded-[calc(var(--radius)-0.35rem)] py-1 text-xs font-medium capitalize transition-all duration-150",
-                  tab === t
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground/70",
-                )}
+                onClick={() => {
+                  setQuery("");
+                  searchInputRef.current?.focus();
+                }}
+                aria-label="Clear search"
+                type="button"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
               >
-                {t}
+                <X className="h-3 w-3" />
               </button>
-            ))}
+            )}
           </div>
+
+          {!searching && (
+            <div
+              role="tablist"
+              aria-label="Library sections"
+              className="mt-1.5 flex rounded-[calc(var(--radius)-0.2rem)] border border-border/60 bg-muted/30 p-0.5 backdrop-blur-sm"
+            >
+              {(["runic", "integrations"] as const).map((t) => (
+                <button
+                  key={t}
+                  role="tab"
+                  aria-selected={tab === t}
+                  onClick={() => setTab(t)}
+                  className={cn(
+                    "flex-1 cursor-pointer rounded-[calc(var(--radius)-0.35rem)] py-1 text-xs font-medium capitalize transition-all duration-150",
+                    tab === t
+                      ? "bg-background/80 text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground/70",
+                  )}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Content */}
         <div className="h-full overflow-y-auto p-2">
-          <LibraryGroups
-            containerRef={containerRef}
-            onAdd={onAdd}
-            tab={tab}
-            shortcutsByKind={shortcutsByKind}
-            onAssignShortcut={onAssignShortcut}
-          />
+          {searching ? (
+            <LibrarySearchResults
+              query={query}
+              containerRef={containerRef}
+              onAdd={onAdd}
+              shortcutsByKind={shortcutsByKind}
+              onAssignShortcut={onAssignShortcut}
+            />
+          ) : (
+            <LibraryGroups
+              containerRef={containerRef}
+              onAdd={onAdd}
+              tab={tab}
+              shortcutsByKind={shortcutsByKind}
+              onAssignShortcut={onAssignShortcut}
+            />
+          )}
         </div>
 
         {/* Resizer handle */}
