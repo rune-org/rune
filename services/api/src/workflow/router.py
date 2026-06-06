@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from src.core.dependencies import (
     require_password_changed,
@@ -41,6 +41,8 @@ from src.workflow.service import WorkflowService, WorkflowVersionConflictError
 
 router = APIRouter(prefix="/workflows", tags=["Workflows"])
 
+MAX_WORKFLOW_PAGE_SIZE = 50
+
 
 @router.get(
     "/",
@@ -49,13 +51,23 @@ router = APIRouter(prefix="/workflows", tags=["Workflows"])
     ],
 )
 async def list_workflows(
-    page: int | None = None,
-    page_size: int | None = None,
+    page: int | None = Query(None, ge=1, description="Page number (1-based)"),
+    page_size: int | None = Query(
+        None,
+        ge=1,
+        le=MAX_WORKFLOW_PAGE_SIZE,
+        description="Number of workflows per page",
+    ),
     search: str | None = None,
     status: WorkflowStatus | None = None,
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem] | PaginatedData[WorkflowListItem]]:
+    if (page is None) != (page_size is None):
+        raise BadRequest(
+            detail="Both page and page_size are required for paginated results"
+        )
+
     is_admin = getattr(current_user, "role", None) == UserRole.ADMIN
 
     limit = page_size if page_size is not None else None

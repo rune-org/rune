@@ -17,6 +17,7 @@ from sqlmodel import select
 
 from src.db.models import Execution, Workflow
 from src.workflow.queue import NO_ACTION_NODES_MESSAGE
+from src.workflow.router import MAX_WORKFLOW_PAGE_SIZE
 
 
 class TestWorkflowVersionConflictDetection:
@@ -533,6 +534,39 @@ class TestWorkflowPaginationAndFilters:
         page1_ids = {wf["id"] for wf in envelope["items"]}
         page2_ids = {wf["id"] for wf in envelope2["items"]}
         assert page1_ids.isdisjoint(page2_ids)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "params",
+        [
+            {"page": 0, "page_size": 10},
+            {"page": 1, "page_size": 0},
+            {"page": -1, "page_size": 10},
+            {"page": 1, "page_size": -1},
+            {"page": 1, "page_size": MAX_WORKFLOW_PAGE_SIZE + 1},
+        ],
+    )
+    async def test_list_workflows_rejects_invalid_pagination_ranges(
+        self, authenticated_client, params
+    ):
+        """page and page_size must be within valid ranges."""
+        response = await authenticated_client.get("/workflows/", params=params)
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "params",
+        [
+            {"page": 1},
+            {"page_size": 10},
+        ],
+    )
+    async def test_list_workflows_requires_both_pagination_params(
+        self, authenticated_client, params
+    ):
+        """Providing only one of page or page_size returns 400."""
+        response = await authenticated_client.get("/workflows/", params=params)
+        assert response.status_code == 400
 
     @pytest.mark.asyncio
     async def test_list_workflows_search_filter(
