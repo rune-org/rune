@@ -44,14 +44,15 @@ describe("ExecutionStatusBar", () => {
       workflowId: 12,
       status: "running",
       nodes: new Map([
-        ["trigger", { nodeId: "trigger", status: "success" }],
         ["http", { nodeId: "http", status: "running" }],
+        ["edit", { nodeId: "edit", status: "success" }],
         ["log", { nodeId: "log", status: "failed" }],
       ]),
     });
 
     render(
       <ExecutionStatusBar
+        totalNodes={5}
         wsStatus="reconnecting"
         wsReconnectAttempts={2}
         onDismissRunning={onDismissRunning}
@@ -60,7 +61,7 @@ describe("ExecutionStatusBar", () => {
 
     expect(screen.getByText("Reconnecting...")).toBeInTheDocument();
     expect(
-      screen.getByLabelText("2 of 3 nodes completed, 1 currently running"),
+      screen.getByLabelText("2 of 5 nodes completed, 1 currently running"),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Execution ID: exec-abcdef123")).toBeInTheDocument();
 

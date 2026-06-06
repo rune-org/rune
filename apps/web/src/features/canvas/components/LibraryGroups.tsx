@@ -1,9 +1,7 @@
 "use client";
 
-import { useRef, useState, useCallback, useMemo } from "react";
-import { createPortal } from "react-dom";
+import { useMemo } from "react";
 import Image from "next/image";
-import { useDraggable } from "@neodrag/react";
 import type { NodeKind } from "../types";
 import {
   getNodesByGroup,
@@ -13,10 +11,11 @@ import {
   getGroupIconSrc,
   getGroupColor,
   isIntegrationGroup,
-  NODE_REGISTRY,
+  isInspectableNode,
   type NodeGroup,
 } from "../lib/nodeRegistry";
 import { getIntegrationTool, isIntegrationNodeKind } from "../integrations/helpers";
+import { DraggableItem, NodeIcon } from "./DraggableItem";
 
 export type LibraryTab = "runic" | "integrations";
 
@@ -28,199 +27,6 @@ type LibraryProps = {
   onAssignShortcut?: (kind: NodeKind, key: string | null) => void;
 };
 
-type DraggableItemProps = {
-  type: NodeKind;
-  label: string;
-  containerRef: React.RefObject<HTMLDivElement | null>;
-  onAdd: (type: NodeKind, x?: number, y?: number) => void;
-  shortcutKey?: string;
-  onAssignShortcut?: (kind: NodeKind, key: string | null) => void;
-};
-
-function NodeIcon({
-  iconSrc,
-  Icon,
-  className,
-}: {
-  iconSrc?: string;
-  Icon: React.ComponentType<{ className?: string }>;
-  className: string;
-}) {
-  return iconSrc ? (
-    <Image src={iconSrc} alt="" width={14} height={14} className={className} aria-hidden />
-  ) : (
-    <Icon className={className} />
-  );
-}
-
-function DraggableItem({
-  type,
-  label,
-  containerRef,
-  onAdd,
-  shortcutKey,
-  onAssignShortcut,
-}: DraggableItemProps) {
-  const ref = useRef<HTMLButtonElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [pos, setPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
-  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
-  const [editing, setEditing] = useState(false);
-
-  const handleDrop = useCallback(
-    (clientX: number, clientY: number) => {
-      const container = containerRef.current;
-      const flowEl = container?.querySelector<HTMLElement>(".react-flow");
-      const rect = flowEl?.getBoundingClientRect() ?? container?.getBoundingClientRect();
-      if (!rect) return;
-      const inside =
-        clientX >= rect.left &&
-        clientX <= rect.right &&
-        clientY >= rect.top &&
-        clientY <= rect.bottom;
-      if (inside) onAdd(type, clientX, clientY);
-    },
-    [containerRef, onAdd, type],
-  );
-
-  useDraggable(ref as unknown as React.RefObject<HTMLElement>, {
-    position: pos,
-    onDrag: ({ /* offsetX, offsetY, */ event }) => {
-      setDragging(true);
-      setPos({ x: 0, y: 0 });
-      const e = event as MouseEvent | TouchEvent;
-      let cx: number | undefined;
-      let cy: number | undefined;
-      if ("clientX" in e && "clientY" in e) {
-        cx = e.clientX;
-        cy = e.clientY;
-      }
-      if ((cx == null || cy == null) && "touches" in e && e.touches?.[0]) {
-        cx = e.touches[0].clientX;
-        cy = e.touches[0].clientY;
-      }
-      if (typeof cx === "number" && typeof cy === "number") {
-        setCursor({ x: cx, y: cy });
-      }
-    },
-    onDragEnd: ({ event }) => {
-      setDragging(false);
-      setCursor(null);
-      setPos({ x: 0, y: 0 });
-      const e = event as MouseEvent | TouchEvent;
-      let cx: number | undefined;
-      let cy: number | undefined;
-      if ("clientX" in e && "clientY" in e) {
-        cx = e.clientX;
-        cy = e.clientY;
-      }
-      if ((cx == null || cy == null) && "changedTouches" in e && e.changedTouches?.[0]) {
-        cx = e.changedTouches[0].clientX;
-        cy = e.changedTouches[0].clientY;
-      }
-      if (typeof cx === "number" && typeof cy === "number") {
-        handleDrop(cx, cy);
-      }
-    },
-  });
-
-  const metadata = NODE_REGISTRY[type];
-  const ItemIcon = metadata.icon;
-
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent) => {
-      if (!onAssignShortcut) return;
-      e.preventDefault();
-      setEditing(true);
-      requestAnimationFrame(() => inputRef.current?.focus());
-    },
-    [onAssignShortcut],
-  );
-
-  const handleShortcutKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (e.key === "Escape") {
-        setEditing(false);
-        return;
-      }
-
-      if (e.key === "Backspace" || e.key === "Delete") {
-        onAssignShortcut?.(type, null);
-        setEditing(false);
-        return;
-      }
-
-      if (/^[a-zA-Z0-9]$/.test(e.key)) {
-        onAssignShortcut?.(type, e.key);
-        setEditing(false);
-      }
-    },
-    [onAssignShortcut, type],
-  );
-
-  return (
-    <>
-      <button
-        ref={ref}
-        onClick={() => onAdd(type)}
-        onContextMenu={handleContextMenu}
-        className="flex cursor-grab items-center gap-2 rounded-sm border border-border/60 bg-background/60 px-3 py-1 text-left text-xs active:cursor-grabbing hover:bg-muted/40"
-        aria-label={`Add ${label}`}
-        style={dragging ? { opacity: 0 } : undefined}
-      >
-        <NodeIcon
-          iconSrc={metadata.iconSrc}
-          Icon={ItemIcon}
-          className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-        />
-        <span>{label}</span>
-        {editing ? (
-          <input
-            ref={inputRef}
-            className="ml-auto w-6 rounded border border-primary/60 bg-muted/60 px-1 py-0.5 text-center text-[0.65rem] font-mono uppercase outline-none"
-            maxLength={1}
-            onKeyDown={handleShortcutKeyDown}
-            onBlur={() => setEditing(false)}
-            readOnly
-          />
-        ) : shortcutKey ? (
-          <kbd className="ml-auto rounded border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[0.65rem] font-mono text-muted-foreground uppercase">
-            {shortcutKey}
-          </kbd>
-        ) : null}
-      </button>
-      {dragging &&
-        cursor &&
-        createPortal(
-          <div
-            style={{
-              position: "fixed",
-              left: 0,
-              top: 0,
-              transform: `translate(${cursor.x}px, ${cursor.y}px) translate(-50%, -50%) scale(1.6)`,
-              pointerEvents: "none",
-              zIndex: 9999,
-            }}
-          >
-            <div className="flex items-center gap-2 rounded-sm border border-border/60 bg-background/90 px-3 py-1.5 text-left text-[0.8rem] shadow-md">
-              <NodeIcon
-                iconSrc={metadata.iconSrc}
-                Icon={ItemIcon}
-                className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-              />
-              <span>{label}</span>
-            </div>
-          </div>,
-          document.body,
-        )}
-    </>
-  );
-}
-
 type GroupProps = {
   group: NodeGroup;
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -230,6 +36,20 @@ type GroupProps = {
 };
 
 type SortedNode = { kind: NodeKind; label: string };
+
+// Sections holding more nodes than this start collapsed; lighter ones stay open
+const COLLAPSE_THRESHOLD = 6;
+
+const libraryNodesByGroup = new Map<NodeGroup, ReturnType<typeof getNodesByGroup>>();
+
+function getLibraryNodesByGroup(group: NodeGroup) {
+  let nodes = libraryNodesByGroup.get(group);
+  if (!nodes) {
+    nodes = getNodesByGroup(group).filter((m) => isInspectableNode(m.kind));
+    libraryNodesByGroup.set(group, nodes);
+  }
+  return nodes;
+}
 
 function NodeList({
   nodes,
@@ -270,13 +90,21 @@ function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }
 
   const subgroups = useMemo(() => {
     if (!isIntegration) return null;
-    const map = new Map<string, { label: string; iconSrc: string; nodes: SortedNode[] }>();
-    for (const node of getNodesByGroup(group)) {
+    const map = new Map<
+      string,
+      { label: string; iconSrc: string; color: string; nodes: SortedNode[] }
+    >();
+    for (const node of getLibraryNodesByGroup(group)) {
       if (!isIntegrationNodeKind(node.kind)) continue;
       const tool = getIntegrationTool(node.kind);
       if (!tool) continue;
       if (!map.has(tool.service)) {
-        map.set(tool.service, { label: tool.serviceLabel, iconSrc: tool.icon, nodes: [] });
+        map.set(tool.service, {
+          label: tool.serviceLabel,
+          iconSrc: tool.icon,
+          color: tool.colorTheme.base,
+          nodes: [],
+        });
       }
       map.get(tool.service)!.nodes.push(node);
     }
@@ -288,12 +116,21 @@ function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }
 
   const flatNodes = useMemo(() => {
     if (isIntegration) return null;
-    return [...getNodesByGroup(group)].sort((a, b) => a.label.localeCompare(b.label));
+    return [...getLibraryNodesByGroup(group)].sort((a, b) => a.label.localeCompare(b.label));
   }, [isIntegration, group]);
 
+  const totalNodes = subgroups?.reduce((sum, sg) => sum + sg.nodes.length, 0) ?? 0;
+
   return (
-    <details open className="rounded-sm border border-border/60 bg-muted/20 p-2">
-      <summary className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
+    <details
+      open={!isIntegration || totalNodes <= COLLAPSE_THRESHOLD}
+      className="rounded-[calc(var(--radius)-0.35rem)] border p-2 backdrop-blur-sm"
+      style={{
+        borderColor: `color-mix(in srgb, ${color} 22%, transparent)`,
+        backgroundColor: `color-mix(in srgb, ${color} 6%, transparent)`,
+      }}
+    >
+      <summary className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
         <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
         <NodeIcon iconSrc={iconSrc} Icon={Icon} className="h-3.5 w-3.5" />
         {title}
@@ -303,10 +140,14 @@ function Group({ group, containerRef, onAdd, shortcutsByKind, onAssignShortcut }
           subgroups.map((sg) => (
             <details
               key={sg.label}
-              open
-              className="rounded-sm border border-border/40 bg-muted/10 p-1.5"
+              open={sg.nodes.length <= COLLAPSE_THRESHOLD}
+              className="rounded-[calc(var(--radius)-0.4rem)] border p-1.5"
+              style={{
+                borderColor: `color-mix(in srgb, ${sg.color} 20%, transparent)`,
+                backgroundColor: `color-mix(in srgb, ${sg.color} 5%, transparent)`,
+              }}
             >
-              <summary className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+              <summary className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground">
                 <Image
                   src={sg.iconSrc}
                   alt=""
@@ -352,9 +193,9 @@ export function LibraryGroups({
   const groups = useMemo(
     () =>
       getAllGroups().filter((g) => {
-        if (tab === "runic") return !isIntegrationGroup(g);
-        if (tab === "integrations") return isIntegrationGroup(g);
-        return true;
+        if (tab === "runic" && isIntegrationGroup(g)) return false;
+        if (tab === "integrations" && !isIntegrationGroup(g)) return false;
+        return getLibraryNodesByGroup(g).length > 0;
       }),
     [tab],
   );
