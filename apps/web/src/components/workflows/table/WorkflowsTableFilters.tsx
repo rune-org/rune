@@ -133,7 +133,7 @@ export function WorkflowsTableFilters({
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         </div>
 
-        {isAdmin && users.length > 1 && (
+        {isAdmin && otherUsers.length > 0 && (
           <Select value={selectValue} onValueChange={handleValueChange}>
             <SelectTrigger className="w-48" aria-label="Filter by owner">
               <SelectValue placeholder="All owners" />

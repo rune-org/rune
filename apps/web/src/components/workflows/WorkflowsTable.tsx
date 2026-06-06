@@ -145,11 +145,18 @@ export function WorkflowsTable() {
     }
   }, []);
 
-  const fetchSharingUsers = useCallback(async () => {
+  const fetchOwnerFilterUsers = useCallback(async () => {
     try {
-      const res = await usersApi.listUsersForSharing();
+      const res = await usersApi.listUsers();
       if (res.data?.data) {
-        setUsers(res.data.data);
+        setUsers(
+          res.data.data.map((user) => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          })),
+        );
       }
     } catch {
       // non-critical, ignore
@@ -342,8 +349,8 @@ export function WorkflowsTable() {
 
   useEffect(() => {
     if (!isAdmin) return;
-    void fetchSharingUsers();
-  }, [fetchSharingUsers, isAdmin]);
+    void fetchOwnerFilterUsers();
+  }, [fetchOwnerFilterUsers, isAdmin]);
 
   useEffect(() => {
     if (!isAdmin) return;
