@@ -712,6 +712,16 @@ export function WorkflowsTable() {
     return Math.ceil(totalCount / pageSize);
   }, [isExecutionFilter, pagination, totalCount, pageSize]);
 
+  useEffect(() => {
+    if (totalPages < 1) {
+      if (page !== 1) setPage(1);
+      return;
+    }
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
   return (
     <div className="flex flex-col gap-4">
       <WorkflowsTableFilters
