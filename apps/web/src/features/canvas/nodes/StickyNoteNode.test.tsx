@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@/test/render";
 import type { StickyNoteData } from "../types";
 
-const { updateNodeData } = vi.hoisted(() => ({ updateNodeData: vi.fn() }));
+const { updateNodeData, deleteElements } = vi.hoisted(() => ({
+  updateNodeData: vi.fn(),
+  deleteElements: vi.fn(),
+}));
 
 vi.mock("@xyflow/react", () => ({
   NodeResizer: ({
@@ -21,7 +24,7 @@ vi.mock("@xyflow/react", () => ({
         resize
       </button>
     ) : null,
-  useReactFlow: () => ({ updateNodeData }),
+  useReactFlow: () => ({ updateNodeData, deleteElements }),
 }));
 
 import { StickyNoteNode } from "./StickyNoteNode";
@@ -45,7 +48,10 @@ function renderNote(data: Partial<StickyNoteData>, opts?: { selected?: boolean }
 }
 
 describe("StickyNoteNode", () => {
-  beforeEach(() => updateNodeData.mockClear());
+  beforeEach(() => {
+    updateNodeData.mockClear();
+    deleteElements.mockClear();
+  });
 
   it("renders markdown content", () => {
     renderNote({ content: "**bold note**" });
@@ -78,6 +84,12 @@ describe("StickyNoteNode", () => {
     renderNote({ content: "x", color: "yellow" }, { selected: true });
     fireEvent.click(screen.getByLabelText("Color green"));
     expect(updateNodeData).toHaveBeenCalledWith("note-1", { color: "green" });
+  });
+
+  it("deletes the note via the trash button when selected", () => {
+    renderNote({ content: "x" }, { selected: true });
+    fireEvent.click(screen.getByLabelText("Delete note"));
+    expect(deleteElements).toHaveBeenCalledWith({ nodes: [{ id: "note-1" }] });
   });
 
   it("changes font size via the in-note controls when selected", () => {
