@@ -48,6 +48,18 @@ pkg/integrations/
         update_row.go
         create_spreadsheet.go
         delete_spreadsheet.go
+    jira/
+        platform.go
+        issue_create.go
+        issue_get.go
+        issue_update.go
+        issue_search.go
+        issue_transition_list.go
+        issue_transition_apply.go
+        comment_create.go
+        comment_list.go
+        project_list.go
+        user_get.go
 ```
 
 ## Dispatch Flow
@@ -130,6 +142,17 @@ Implemented in this phase:
   - `integration.google.sheets.update_row`
   - `integration.google.sheets.create_spreadsheet`
   - `integration.google.sheets.delete_spreadsheet`
+- Jira:
+  - `integration.jira.issue_create`
+  - `integration.jira.issue_get`
+  - `integration.jira.issue_update`
+  - `integration.jira.issue_search`
+  - `integration.jira.issue_transition_list`
+  - `integration.jira.issue_transition_apply`
+  - `integration.jira.comment_create`
+  - `integration.jira.comment_list`
+  - `integration.jira.project_list`
+  - `integration.jira.user_get`
 
 - Microsoft Outlook tools:
   - `integration.microsoft.outlook.send_email`
