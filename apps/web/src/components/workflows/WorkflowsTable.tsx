@@ -1,10 +1,11 @@
 "use client";
 
 import type { CheckedState } from "@radix-ui/react-checkbox";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { toast } from "@/components/ui/toast";
 import { useAuth } from "@/lib/auth";
+import { users as usersApi } from "@/lib/api";
 import {
   bulkWorkflowOperation,
   deleteWorkflow,
@@ -27,6 +28,7 @@ import type {
   BulkWorkflowAction,
   BulkWorkflowFailure,
   ExecutionListItem as ApiExecutionListItem,
+  UserBasicInfo,
 } from "@/client/types.gen";
 import { ShareWorkflowDialog } from "@/components/workflows/ShareWorkflowDialog";
 import { WorkflowBulkActionsBar } from "@/components/workflows/table/WorkflowBulkActionsBar";
@@ -93,7 +95,7 @@ function toNumericWorkflowIds(ids: string[]): number[] {
 export function WorkflowsTable() {
   const {
     state: { workflows, loading },
-    actions,
+    actions: { init, refreshWorkflows },
   } = useAppState();
 
   const { state: authState } = useAuth();
@@ -115,6 +117,11 @@ export function WorkflowsTable() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<StatFilter>("all");
   const [selectedWorkflowIds, setSelectedWorkflowIds] = useState<Set<string>>(new Set());
+  const [ownerId, setOwnerId] = useState<number | null>(null);
+  const [accessScope, setAccessScope] = useState<"all" | "mine" | "shared">("all");
+  const [users, setUsers] = useState<UserBasicInfo[]>([]);
+  const hasInitializedRef = useRef(false);
+  const isMountedRef = useRef(false);
 
   const refreshExecutions = useCallback(async () => {
     try {
@@ -138,6 +145,28 @@ export function WorkflowsTable() {
     }
   }, []);
 
+  const fetchOwnerFilterUsers = useCallback(async () => {
+    try {
+      const res = await usersApi.listUsers();
+      if (res.data?.data) {
+        setUsers(
+          res.data.data.map((user) => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          })),
+        );
+      }
+    } catch {
+      // non-critical, ignore
+    }
+  }, []);
+
+  const refreshFilteredWorkflows = useCallback(async () => {
+    await refreshWorkflows(ownerId ?? undefined);
+  }, [ownerId, refreshWorkflows]);
+
   const lastRunByWorkflow = useMemo(() => {
     const map = new Map<string, ApiExecutionListItem>();
     for (const execution of executionItems) {
@@ -150,9 +179,21 @@ export function WorkflowsTable() {
     return map;
   }, [executionItems]);
 
+  const scopedWorkflows = useMemo(() => {
+    let list = workflows;
+    if (!isAdmin) {
+      if (accessScope === "mine") {
+        list = list.filter((workflow) => workflow.role === "owner");
+      } else if (accessScope === "shared") {
+        list = list.filter((workflow) => workflow.role !== "owner");
+      }
+    }
+    return list;
+  }, [accessScope, isAdmin, workflows]);
+
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    let list = workflows;
+    let list = scopedWorkflows;
 
     switch (filter) {
       case "active":
@@ -176,7 +217,7 @@ export function WorkflowsTable() {
 
     if (!normalizedQuery) return list;
     return list.filter((workflow) => workflow.name.toLowerCase().includes(normalizedQuery));
-  }, [filter, lastRunByWorkflow, query, workflows]);
+  }, [filter, lastRunByWorkflow, query, scopedWorkflows]);
 
   const filteredWorkflowIdSet = useMemo(
     () => new Set(filtered.map((workflow) => workflow.id)),
@@ -192,16 +233,16 @@ export function WorkflowsTable() {
   }, [filteredWorkflowIdSet]);
 
   const stats = useMemo(() => {
-    const active = workflows.filter((workflow) => workflow.status === "active").length;
-    const inactive = workflows.filter((workflow) => workflow.status === "inactive").length;
-    const draft = workflows.filter((workflow) => workflow.status === "draft").length;
-    const failed = workflows.filter(
+    const active = scopedWorkflows.filter((workflow) => workflow.status === "active").length;
+    const inactive = scopedWorkflows.filter((workflow) => workflow.status === "inactive").length;
+    const draft = scopedWorkflows.filter((workflow) => workflow.status === "draft").length;
+    const failed = scopedWorkflows.filter(
       (workflow) => lastRunByWorkflow.get(workflow.id)?.status === "failed",
     ).length;
-    const runs = executionItems.length;
+    const runs = scopedWorkflows.filter((workflow) => lastRunByWorkflow.has(workflow.id)).length;
 
     return { active, inactive, draft, failed, runs };
-  }, [executionItems.length, lastRunByWorkflow, workflows]);
+  }, [lastRunByWorkflow, scopedWorkflows]);
 
   const selectedWorkflows = useMemo(
     () => filtered.filter((workflow) => selectedWorkflowIds.has(workflow.id)),
@@ -299,9 +340,26 @@ export function WorkflowsTable() {
   }, []);
 
   useEffect(() => {
-    if (workflows.length === 0) void actions.init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
+    if (workflows.length === 0) {
+      void init();
+    }
+  }, [init, workflows.length]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    void fetchOwnerFilterUsers();
+  }, [fetchOwnerFilterUsers, isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      return;
+    }
+    void refreshFilteredWorkflows();
+  }, [isAdmin, refreshFilteredWorkflows]);
 
   useEffect(() => {
     void refreshExecutions();
@@ -316,14 +374,14 @@ export function WorkflowsTable() {
       try {
         await updateWorkflowStatus(workflowId, workflow.status !== "active");
         toast.success(workflow.status === "active" ? "Workflow deactivated" : "Workflow activated");
-        await actions.refreshWorkflows();
+        await refreshFilteredWorkflows();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to update workflow status.");
       } finally {
         markWorkflowsPending([workflow.id], false);
       }
     },
-    [actions, markWorkflowsPending],
+    [markWorkflowsPending, refreshFilteredWorkflows],
   );
 
   const beginDelete = useCallback((workflow: WorkflowSummary) => {
@@ -343,13 +401,13 @@ export function WorkflowsTable() {
       await deleteWorkflow(workflowId);
       toast.success("Workflow deleted");
       setDeleteTarget(null);
-      await actions.refreshWorkflows();
+      await refreshFilteredWorkflows();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to delete workflow.");
     } finally {
       markWorkflowsPending([deleteTarget.id], false);
     }
-  }, [actions, deleteTarget, markWorkflowsPending]);
+  }, [deleteTarget, markWorkflowsPending, refreshFilteredWorkflows]);
 
   const handleRun = useCallback(
     async (workflow: WorkflowSummary) => {
@@ -414,14 +472,14 @@ export function WorkflowsTable() {
         await updateWorkflowName(workflowId, trimmed);
         toast.success("Workflow renamed");
         setRenameTarget(null);
-        await actions.refreshWorkflows();
+        await refreshFilteredWorkflows();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to rename workflow.");
       } finally {
         markWorkflowsPending([renameTarget.id], false);
       }
     },
-    [actions, markWorkflowsPending, renameTarget],
+    [markWorkflowsPending, refreshFilteredWorkflows, renameTarget],
   );
 
   const handleBulkExport = useCallback(async () => {
@@ -529,7 +587,7 @@ export function WorkflowsTable() {
           toast.success(
             `${target === "active" ? "Activated" : "Deactivated"} ${result.succeededCount} workflow${result.succeededCount > 1 ? "s" : ""}.`,
           );
-          await actions.refreshWorkflows();
+          await refreshFilteredWorkflows();
         }
         if (result.failedCount > 0) {
           toast.error(
@@ -548,9 +606,9 @@ export function WorkflowsTable() {
       }
     },
     [
-      actions,
       bulkActionPending,
       markWorkflowsPending,
+      refreshFilteredWorkflows,
       selectedCount,
       selectedActivatable,
       selectedDeactivatable,
@@ -586,7 +644,7 @@ export function WorkflowsTable() {
           result.succeededIds.forEach((id) => next.delete(String(id)));
           return next;
         });
-        await actions.refreshWorkflows();
+        await refreshFilteredWorkflows();
       }
       if (result.failedCount > 0) {
         toast.error(
@@ -601,9 +659,9 @@ export function WorkflowsTable() {
       setBulkActionPending(false);
     }
   }, [
-    actions,
     bulkActionPending,
     markWorkflowsPending,
+    refreshFilteredWorkflows,
     selectedCount,
     selectedDeletable,
     selectedWorkflowIds,
@@ -627,6 +685,13 @@ export function WorkflowsTable() {
         onFilterChange={setFilter}
         query={query}
         onQueryChange={setQuery}
+        isAdmin={isAdmin}
+        users={users}
+        ownerId={ownerId}
+        onOwnerChange={setOwnerId}
+        accessScope={accessScope}
+        onAccessScopeChange={(scope) => setAccessScope(scope)}
+        currentUserId={authState.user?.id ?? null}
       />
 
       <WorkflowBulkActionsBar

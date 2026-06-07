@@ -395,6 +395,16 @@ paths:
       - Workflows
       summary: List Workflows
       operationId: list_workflows_workflows__get
+      parameters:
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Owner Id
+          description: Filter workflows by owner ID
       responses:
         '200':
           description: Successful Response
@@ -402,6 +412,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_WorkflowListItem__'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
       security:
       - OAuth2PasswordBearer: []
     post:

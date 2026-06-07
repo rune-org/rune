@@ -75,7 +75,7 @@ type AppContextType = {
   state: AppState;
   actions: {
     init: () => Promise<void>;
-    refreshWorkflows: () => Promise<void>;
+    refreshWorkflows: (ownerId?: number) => Promise<void>;
   };
 };
 
@@ -110,10 +110,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const refreshWorkflows = useCallback(async () => {
+  const refreshWorkflows = useCallback(async (ownerId?: number) => {
     try {
       dispatch({ type: "start" });
-      const res = await workflowsApi.listWorkflows();
+      const res = await workflowsApi.listWorkflows(ownerId);
       if (!res.data) {
         throw new Error("Unable to load workflows");
       }
