@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useMemo, useReducer, type ReactNode } from "react";
 
 import { auth, workflows as workflowsApi } from "@/lib/api";
-import type { UserResponse } from "@/client/types.gen";
+import type { UserResponse, WorkflowStatus } from "@/client/types.gen";
 import { listItemToWorkflowSummary, type WorkflowSummary } from "@/lib/workflows";
 
 type UserProfile = {
@@ -17,19 +17,26 @@ type AppState = {
   workflows: WorkflowSummary[];
   loading: boolean;
   error: string | null;
+  pagination: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  } | null;
 };
 
 type Action =
   | { type: "start" }
   | { type: "error"; error: string }
   | { type: "setUser"; user: UserProfile }
-  | { type: "setWorkflows"; workflows: WorkflowSummary[] };
+  | { type: "setWorkflows"; workflows: WorkflowSummary[]; pagination: AppState["pagination"] };
 
 const initialState: AppState = {
   user: null,
   workflows: [],
   loading: false,
   error: null,
+  pagination: null,
 };
 
 function dedupeById<T extends { id: string }>(arr: T[]): T[] {
@@ -65,6 +72,7 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         loading: false,
         workflows: dedupeById(action.workflows),
+        pagination: action.pagination,
       };
     default:
       return state;
@@ -75,8 +83,16 @@ type AppContextType = {
   state: AppState;
   actions: {
     init: () => Promise<void>;
-    refreshWorkflows: (ownerId?: number) => Promise<void>;
+    refreshWorkflows: (params?: WorkflowListParams) => Promise<void>;
   };
+};
+
+type WorkflowListParams = {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  status?: WorkflowStatus;
+  owner_id?: number;
 };
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -87,51 +103,49 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const init = useCallback(async () => {
     try {
       dispatch({ type: "start" });
-      const [profileRes, workflowsRes] = await Promise.all([
-        auth.getMyProfile(),
-        workflowsApi.listWorkflows(),
-      ]);
+      const profileRes = await auth.getMyProfile();
       if (!profileRes.data) {
         throw new Error("Unable to load user profile");
       }
-      if (!workflowsRes.data) {
-        throw new Error("Unable to load workflows");
-      }
       const userData = profileRes.data.data;
       dispatch({ type: "setUser", user: toUserProfile(userData) });
-      const workflowItems = workflowsRes.data.data ?? [];
+    } catch (e) {
+      dispatch({ type: "error", error: (e as Error).message });
+    }
+  }, []);
+
+  const refreshWorkflows = useCallback(async (params?: WorkflowListParams) => {
+    try {
+      dispatch({ type: "start" });
+      const res = await workflowsApi.listWorkflows(params);
+      if (!res.data) {
+        throw new Error("Unable to load workflows");
+      }
+      const resData = res.data.data;
+      const workflowItems = Array.isArray(resData) ? resData : (resData?.items ?? []);
+      const pagination =
+        Array.isArray(resData) || !resData
+          ? null
+          : {
+              total: resData.total,
+              page: resData.page,
+              pageSize: resData.page_size,
+              totalPages: resData.total_pages,
+            };
 
       dispatch({
         type: "setWorkflows",
         workflows: workflowItems.map((item) => listItemToWorkflowSummary(item)),
+        pagination,
       });
     } catch (e) {
       dispatch({ type: "error", error: (e as Error).message });
     }
   }, []);
 
-  const refreshWorkflows = useCallback(async (ownerId?: number) => {
-    try {
-      dispatch({ type: "start" });
-      const res = await workflowsApi.listWorkflows(ownerId);
-      if (!res.data) {
-        throw new Error("Unable to load workflows");
-      }
-      const items = res.data.data ?? [];
+  const actions = useMemo(() => ({ init, refreshWorkflows }), [init, refreshWorkflows]);
 
-      dispatch({
-        type: "setWorkflows",
-        workflows: items.map((item) => listItemToWorkflowSummary(item)),
-      });
-    } catch (e) {
-      dispatch({ type: "error", error: (e as Error).message });
-    }
-  }, []);
-
-  const value = useMemo<AppContextType>(
-    () => ({ state, actions: { init, refreshWorkflows } }),
-    [state, init, refreshWorkflows],
-  );
+  const value = useMemo<AppContextType>(() => ({ state, actions }), [state, actions]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

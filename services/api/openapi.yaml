@@ -395,7 +395,48 @@ paths:
       - Workflows
       summary: List Workflows
       operationId: list_workflows_workflows__get
+      security:
+      - OAuth2PasswordBearer: []
       parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          description: Page number (1-based)
+          title: Page
+        description: Page number (1-based)
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            maximum: 50
+            minimum: 1
+          - type: 'null'
+          description: Number of workflows per page
+          title: Page Size
+        description: Number of workflows per page
+      - name: search
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Search
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/WorkflowStatus'
+          - type: 'null'
+          title: Status
       - name: owner_id
         in: query
         required: false
@@ -404,33 +445,32 @@ paths:
           - type: integer
           - type: 'null'
           title: Owner Id
-          description: Filter workflows by owner ID
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_list_WorkflowListItem__'
+                $ref: '#/components/schemas/ApiResponse_Union_list_WorkflowListItem___PaginatedData_WorkflowListItem___'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - OAuth2PasswordBearer: []
     post:
       tags:
       - Workflows
       summary: Create Workflow
       operationId: create_workflow_workflows__post
+      security:
+      - OAuth2PasswordBearer: []
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/WorkflowCreate'
-        required: true
       responses:
         '201':
           description: Successful Response
@@ -444,8 +484,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - OAuth2PasswordBearer: []
   /workflows/bulk:
     post:
       tags:
@@ -2983,6 +3021,30 @@ components:
       required:
       - data
       title: ApiResponse[TokenResponse]
+    ApiResponse_Union_list_WorkflowListItem___PaginatedData_WorkflowListItem___:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/WorkflowListItem'
+            type: array
+          - $ref: '#/components/schemas/PaginatedData_WorkflowListItem_'
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[Union[list[WorkflowListItem], PaginatedData[WorkflowListItem]]]
     ApiResponse_UserResponse_:
       properties:
         success:
@@ -3290,28 +3352,6 @@ components:
       required:
       - data
       title: ApiResponse[list[UserResponse]]
-    ApiResponse_list_WorkflowListItem__:
-      properties:
-        success:
-          type: boolean
-          title: Success
-          description: Whether the request was successful
-          default: true
-        message:
-          type: string
-          title: Message
-          description: Human-readable message
-          default: Success
-        data:
-          items:
-            $ref: '#/components/schemas/WorkflowListItem'
-          type: array
-          title: Data
-          description: Response data
-      type: object
-      required:
-      - data
-      title: ApiResponse[list[WorkflowListItem]]
     ApiResponse_list_WorkflowVersionListItem__:
       properties:
         success:
@@ -3848,6 +3888,38 @@ components:
       - email
       - password
       title: LoginRequest
+    PaginatedData_WorkflowListItem_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/WorkflowListItem'
+          type: array
+          title: Items
+          description: Paginated items
+        total:
+          type: integer
+          title: Total
+          description: Total number of items
+        page:
+          type: integer
+          title: Page
+          description: Current page number
+        page_size:
+          type: integer
+          title: Page Size
+          description: Items per page
+        total_pages:
+          type: integer
+          title: Total Pages
+          description: Total pages
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      - total_pages
+      title: PaginatedData[WorkflowListItem]
     ProfileUpdate:
       properties:
         name:
