@@ -430,6 +430,14 @@ paths:
           - $ref: '#/components/schemas/WorkflowStatus'
           - type: 'null'
           title: Status
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Owner Id
       responses:
         '200':
           description: Successful Response

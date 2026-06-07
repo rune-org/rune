@@ -83,13 +83,16 @@ type AppContextType = {
   state: AppState;
   actions: {
     init: () => Promise<void>;
-    refreshWorkflows: (params?: {
-      page?: number;
-      page_size?: number;
-      search?: string;
-      status?: WorkflowStatus;
-    }) => Promise<void>;
+    refreshWorkflows: (params?: WorkflowListParams) => Promise<void>;
   };
+};
+
+type WorkflowListParams = {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  status?: WorkflowStatus;
+  owner_id?: number;
 };
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -111,42 +114,34 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const refreshWorkflows = useCallback(
-    async (params?: {
-      page?: number;
-      page_size?: number;
-      search?: string;
-      status?: WorkflowStatus;
-    }) => {
-      try {
-        dispatch({ type: "start" });
-        const res = await workflowsApi.listWorkflows(params);
-        if (!res.data) {
-          throw new Error("Unable to load workflows");
-        }
-        const resData = res.data.data;
-        const workflowItems = Array.isArray(resData) ? resData : (resData?.items ?? []);
-        const pagination =
-          Array.isArray(resData) || !resData
-            ? null
-            : {
-                total: resData.total,
-                page: resData.page,
-                pageSize: resData.page_size,
-                totalPages: resData.total_pages,
-              };
-
-        dispatch({
-          type: "setWorkflows",
-          workflows: workflowItems.map((item) => listItemToWorkflowSummary(item)),
-          pagination,
-        });
-      } catch (e) {
-        dispatch({ type: "error", error: (e as Error).message });
+  const refreshWorkflows = useCallback(async (params?: WorkflowListParams) => {
+    try {
+      dispatch({ type: "start" });
+      const res = await workflowsApi.listWorkflows(params);
+      if (!res.data) {
+        throw new Error("Unable to load workflows");
       }
-    },
-    [],
-  );
+      const resData = res.data.data;
+      const workflowItems = Array.isArray(resData) ? resData : (resData?.items ?? []);
+      const pagination =
+        Array.isArray(resData) || !resData
+          ? null
+          : {
+              total: resData.total,
+              page: resData.page,
+              pageSize: resData.page_size,
+              totalPages: resData.total_pages,
+            };
+
+      dispatch({
+        type: "setWorkflows",
+        workflows: workflowItems.map((item) => listItemToWorkflowSummary(item)),
+        pagination,
+      });
+    } catch (e) {
+      dispatch({ type: "error", error: (e as Error).message });
+    }
+  }, []);
 
   const actions = useMemo(() => ({ init, refreshWorkflows }), [init, refreshWorkflows]);
 

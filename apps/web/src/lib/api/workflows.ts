@@ -47,7 +47,11 @@ import type {
 
 // Readable wrappers for workflow-related SDK functions
 
-export const listWorkflows = (params?: ListWorkflowsWorkflowsGetData["query"]) =>
+type WorkflowListQuery = ListWorkflowsWorkflowsGetData["query"] & {
+  owner_id?: number;
+};
+
+export const listWorkflows = (params?: WorkflowListQuery) =>
   listWorkflowsWorkflowsGet({ query: params });
 
 export const listUserExecutions = () => listUserExecutionsExecutionsGet();

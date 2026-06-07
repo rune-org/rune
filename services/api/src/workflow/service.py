@@ -71,6 +71,7 @@ class WorkflowService:
         offset: int | None = None,
         search: str | None = None,
         status: str | None = None,
+        owner_id: int | None = None,
     ) -> tuple[list[tuple[Workflow, WorkflowRole, str]], int]:
         """Return workflows visible to `user_id`, newest first, with optional filters and pagination.
 
@@ -78,7 +79,11 @@ class WorkflowService:
         Returns a tuple of (list of (Workflow, role, owner_name), total_count).
         """
         owner_subquery = (
-            select(WorkflowUser.workflow_id, User.name.label("owner_name"))
+            select(
+                WorkflowUser.workflow_id,
+                User.name.label("owner_name"),
+                User.id.label("owner_id"),
+            )
             .join(User, WorkflowUser.user_id == User.id)
             .where(WorkflowUser.role == WorkflowRole.OWNER)
             .subquery()
@@ -93,7 +98,7 @@ class WorkflowService:
         else:
             statement = (
                 select(Workflow, WorkflowUser.role, owner_subquery.c.owner_name)
-                .join(WorkflowUser)
+                .join(WorkflowUser, WorkflowUser.workflow_id == Workflow.id)
                 .outerjoin(owner_subquery, Workflow.id == owner_subquery.c.workflow_id)
                 .where(WorkflowUser.user_id == user_id)
             )
@@ -101,6 +106,15 @@ class WorkflowService:
                 select(func.count(Workflow.id))
                 .join(WorkflowUser)
                 .where(WorkflowUser.user_id == user_id)
+            )
+
+        if owner_id is not None:
+            owner_clause = owner_subquery.c.owner_id == owner_id
+            statement = statement.where(owner_clause)
+            count_statement = count_statement.where(
+                Workflow.id.in_(
+                    select(owner_subquery.c.workflow_id).where(owner_clause)
+                )
             )
 
         # Apply search and status filters if provided

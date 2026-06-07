@@ -60,6 +60,7 @@ async def list_workflows(
     ),
     search: str | None = None,
     status: WorkflowStatus | None = None,
+    owner_id: int | None = None,
     current_user: User = Depends(require_password_changed),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> ApiResponse[list[WorkflowListItem] | PaginatedData[WorkflowListItem]]:
@@ -83,6 +84,7 @@ async def list_workflows(
         offset=offset,
         search=search,
         status=status_str,
+        owner_id=owner_id,
     )
     items = [
         WorkflowListItem(
