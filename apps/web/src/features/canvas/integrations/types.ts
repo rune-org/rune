@@ -1,8 +1,8 @@
 import type { CredentialRef } from "@/lib/credentials";
 
-export type IntegrationProvider = "google" | "microsoft" | "slack";
+export type IntegrationProvider = "google" | "microsoft" | "slack" | "jira";
 
-export type IntegrationService = "gmail" | "sheets" | "outlook" | "slack";
+export type IntegrationService = "gmail" | "sheets" | "outlook" | "slack" | "jira";
 
 export type IntegrationNodeKind =
   | "integration.google.gmail.send_email"
@@ -20,6 +20,16 @@ export type IntegrationNodeKind =
   | "integration.google.sheets.update_row"
   | "integration.google.sheets.create_spreadsheet"
   | "integration.google.sheets.delete_spreadsheet"
+  | "integration.jira.issue_create"
+  | "integration.jira.issue_get"
+  | "integration.jira.issue_update"
+  | "integration.jira.issue_search"
+  | "integration.jira.issue_transition_list"
+  | "integration.jira.issue_transition_apply"
+  | "integration.jira.comment_create"
+  | "integration.jira.comment_list"
+  | "integration.jira.project_list"
+  | "integration.jira.user_get"
   | "integration.microsoft.outlook.send_email"
   | "integration.microsoft.outlook.read_email"
   | "integration.microsoft.outlook.search_emails"
@@ -47,6 +57,7 @@ export type IntegrationArgumentField = {
   placeholder?: string;
   help?: string;
   options?: readonly { value: string; label: string }[];
+  showWhen?: { field: string; value: string };
 };
 
 export type IntegrationToolMetadata = {
