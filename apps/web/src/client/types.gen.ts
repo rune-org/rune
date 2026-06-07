@@ -3139,10 +3139,14 @@ export type ListWorkflowsWorkflowsGetData = {
     query?: {
         /**
          * Page
+         *
+         * Page number (1-based)
          */
         page?: number | null;
         /**
          * Page Size
+         *
+         * Number of workflows per page
          */
         page_size?: number | null;
         /**
@@ -3153,6 +3157,10 @@ export type ListWorkflowsWorkflowsGetData = {
          * Status
          */
         status?: WorkflowStatus | null;
+        /**
+         * Owner Id
+         */
+        owner_id?: number | null;
     };
     url: '/workflows/';
 };

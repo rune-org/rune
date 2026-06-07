@@ -404,16 +404,23 @@ paths:
         schema:
           anyOf:
           - type: integer
+            minimum: 1
           - type: 'null'
+          description: Page number (1-based)
           title: Page
+        description: Page number (1-based)
       - name: page_size
         in: query
         required: false
         schema:
           anyOf:
           - type: integer
+            maximum: 50
+            minimum: 1
           - type: 'null'
+          description: Number of workflows per page
           title: Page Size
+        description: Number of workflows per page
       - name: search
         in: query
         required: false
