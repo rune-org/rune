@@ -132,7 +132,7 @@ class WorkflowService:
         total_count = total_result.one()
 
         # Apply ordering and limit/offset for data retrieval
-        statement = statement.order_by(Workflow.updated_at.desc())
+        statement = statement.order_by(Workflow.updated_at.desc(), Workflow.id.desc())
 
         if offset is not None:
             statement = statement.offset(offset)
