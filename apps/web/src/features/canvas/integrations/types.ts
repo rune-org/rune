@@ -1,8 +1,8 @@
 import type { CredentialRef } from "@/lib/credentials";
 
-export type IntegrationProvider = "google" | "microsoft" | "slack" | "jira";
+export type IntegrationProvider = "google" | "microsoft" | "slack" | "dropbox" | "jira";
 
-export type IntegrationService = "gmail" | "sheets" | "outlook" | "slack" | "jira";
+export type IntegrationService = "gmail" | "sheets" | "outlook" | "slack" | "dropbox" | "jira";
 
 export type IntegrationNodeKind =
   | "integration.google.gmail.send_email"
@@ -39,7 +39,12 @@ export type IntegrationNodeKind =
   | "integration.slack.chat.delete"
   | "integration.slack.conversations.history"
   | "integration.slack.conversations.find_message"
-  | "integration.slack.users.lookup_by_email";
+  | "integration.slack.users.lookup_by_email"
+  | "integration.dropbox.files.list_folder"
+  | "integration.dropbox.files.get_metadata"
+  | "integration.dropbox.files.get_temporary_link"
+  | "integration.dropbox.files.delete"
+  | "integration.dropbox.files.search";
 
 export type IntegrationNodeData = {
   label?: string;
