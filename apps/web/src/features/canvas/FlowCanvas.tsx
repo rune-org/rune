@@ -31,6 +31,7 @@ import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
 import { SaveVersionDialog } from "./components/SaveVersionDialog";
 import { VersionConflictDialog } from "./components/VersionConflictDialog";
 import { SmithButton } from "./components/SmithButton";
+import { ScrybInterface } from "./components/ScrybInterface";
 import { FlowViewport } from "./components/FlowViewport";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
 import { useNodeShortcuts } from "./hooks/useNodeShortcuts";
@@ -117,6 +118,7 @@ function FlowCanvasInner({
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(externalEdges ?? []);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
+  const [isScrybOpen, setIsScrybOpen] = useState(false);
   const [renameDialog, setRenameDialog] = useState<{
     oldName: string;
     newName: string;
@@ -765,7 +767,7 @@ function FlowCanvasInner({
           onDismissRunning={stopExecution}
         />
 
-        <div className="pointer-events-none absolute left-4 top-4 z-35">
+        <div className="pointer-events-none absolute inset-x-4 top-4 z-35 flex flex-wrap items-start gap-2">
           <div
             ref={toolbarRef}
             data-onboarding="toolbar"
@@ -812,23 +814,33 @@ function FlowCanvasInner({
               disabled={isViewingSnapshot}
             />
           </div>
+
+          <RightPanelStack
+            selectedNode={selectedNode}
+            updateSelectedNodeLabel={updateSelectedNodeLabel}
+            updateData={updateNodeData}
+            onDelete={selectedNode && !isViewingSnapshot ? deleteSelectedElements : undefined}
+            isExpandedDialogOpen={isInspectorExpanded}
+            setIsExpandedDialogOpen={setIsInspectorExpanded}
+            onTogglePin={isViewingSnapshot ? undefined : togglePin}
+            notePlacementMode={notePlacementMode}
+            onToggleNotePlacement={isViewingSnapshot ? undefined : onToggleNotePlacement}
+            selectMode={selectMode}
+            onToggleSelectMode={isViewingSnapshot ? undefined : onToggleSelectMode}
+            isScrybOpen={isScrybOpen}
+            readOnly={isViewingSnapshot}
+          />
         </div>
 
-        <RightPanelStack
-          selectedNode={selectedNode}
-          updateSelectedNodeLabel={updateSelectedNodeLabel}
-          updateData={updateNodeData}
-          onDelete={selectedNode && !isViewingSnapshot ? deleteSelectedElements : undefined}
-          isExpandedDialogOpen={isInspectorExpanded}
-          setIsExpandedDialogOpen={setIsInspectorExpanded}
-          onTogglePin={isViewingSnapshot ? undefined : togglePin}
-          notePlacementMode={notePlacementMode}
-          onToggleNotePlacement={isViewingSnapshot ? undefined : onToggleNotePlacement}
-          selectMode={selectMode}
-          onToggleSelectMode={isViewingSnapshot ? undefined : onToggleSelectMode}
-          workflowId={workflowId}
-          readOnly={isViewingSnapshot}
-        />
+        <div className="pointer-events-none absolute bottom-8 right-4 z-35">
+          <div className="pointer-events-auto">
+            <ScrybInterface
+              isOpen={isScrybOpen}
+              onOpenChange={setIsScrybOpen}
+              workflowId={workflowId}
+            />
+          </div>
+        </div>
 
         <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
           <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
