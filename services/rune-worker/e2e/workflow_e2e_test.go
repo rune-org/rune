@@ -7,6 +7,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -40,6 +42,16 @@ func TestNodeExecutionEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
+	// Create a local mock HTTP server for reliable testing
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := map[string]any{
+			"uuid": "test-uuid-1234",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
 	// Create a test workflow with a simple HTTP node (single node = completion expected)
 	workflowID := "test-workflow-e2e"
 	executionID := "exec-e2e-001"
@@ -59,7 +71,7 @@ func TestNodeExecutionEndToEnd(t *testing.T) {
 					Type: "http",
 					Parameters: map[string]interface{}{
 						"method": "GET",
-						"url":    "https://httpbin.org/uuid",
+						"url":    server.URL,
 					},
 				},
 			},

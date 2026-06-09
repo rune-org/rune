@@ -193,12 +193,47 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
       )}
 
       <CredentialSelector
-        credentialType={["oauth2", "token"]}
+        credentialType={tool?.provider === "telegram" ? "token" : ["oauth2", "token"]}
         value={node.data.credential ?? null}
         onChange={handleCredentialChange}
         label={tool ? `${tool.providerLabel} Account` : "Account"}
         placeholder="Select account"
       />
+
+      {/* TODO: Remove this inline guide and link to docs page when available */}
+      {tool?.provider === "telegram" && (
+        <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
+          <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+            How to set up Telegram
+          </summary>
+          <div className="mt-2 space-y-2 text-xs text-muted-foreground/80">
+            <p>
+              <strong>1. Get a bot token</strong>
+              <br />
+              Open Telegram, search for{" "}
+              <span className="font-mono text-foreground/70">@BotFather</span>, send{" "}
+              <span className="font-mono text-foreground/70">/newbot</span>, follow the prompts,
+              then copy the token it gives you.
+            </p>
+            <p>
+              <strong>2. Create a credential</strong>
+              <br />
+              Go to{" "}
+              <span className="text-foreground/70">Settings → Credentials → Add credential</span>,
+              set type to <span className="font-mono text-foreground/70">Token</span>, paste your
+              bot token.
+            </p>
+            <p>
+              <strong>3. Find your Chat ID</strong>
+              <br />
+              Message your bot on Telegram first (any text), then use the{" "}
+              <span className="text-foreground/70">Get Chat ID</span> node to auto-detect it. Copy
+              the number into the <span className="font-mono text-foreground/70">chat_id</span>{" "}
+              field of other Telegram nodes.
+            </p>
+          </div>
+        </details>
+      )}
 
       {tool && tool.argumentFields.length > 0 ? (
         <div className="space-y-3">{tool.argumentFields.map(renderField)}</div>

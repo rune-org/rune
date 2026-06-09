@@ -13,15 +13,16 @@ import (
 )
 
 type Spec struct {
-	Method      string
-	BaseURL     string
-	Path        string
-	PathArgs    map[string]string
-	Query       map[string]string
-	Headers     map[string]string
-	Body        any
-	Timeout     time.Duration
-	AllowNon2xx bool
+	Method           string
+	BaseURL          string
+	Path             string
+	PathArgs         map[string]string
+	RedactedPathKeys []string
+	Query            map[string]string
+	Headers          map[string]string
+	Body             any
+	Timeout          time.Duration
+	AllowNon2xx      bool
 }
 
 type Error struct {
@@ -48,6 +49,23 @@ func Do(ctx context.Context, ec plugin.ExecutionContext, s Spec) (map[string]any
 		return nil, err
 	}
 
+	errURL := fullURL
+	if len(s.RedactedPathKeys) > 0 {
+		sensitive := make(map[string]bool, len(s.RedactedPathKeys))
+		for _, k := range s.RedactedPathKeys {
+			sensitive[k] = true
+		}
+		redactedArgs := make(map[string]string, len(s.PathArgs))
+		for k, v := range s.PathArgs {
+			if sensitive[k] {
+				redactedArgs[k] = "***"
+			} else {
+				redactedArgs[k] = v
+			}
+		}
+		errURL, _ = buildURL(s.BaseURL, s.Path, redactedArgs)
+	}
+
 	headers := cloneHeaders(s.Headers)
 	httpcore.ApplyCredential(headers, ec.GetCredentials())
 
@@ -72,7 +90,7 @@ func Do(ctx context.Context, ec plugin.ExecutionContext, s Spec) (map[string]any
 	if !s.AllowNon2xx && (status < 200 || status >= 300) {
 		return nil, &Error{
 			Status: status,
-			URL:    fullURL,
+			URL:    errURL,
 			Body:   raw["body"],
 		}
 	}

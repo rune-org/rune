@@ -160,6 +160,11 @@ Implemented in this phase:
   - `integration.microsoft.outlook.search_emails`
   - `integration.microsoft.outlook.list_folders`
 
+- Telegram tools:
+  - `integration.telegram.bot.send_message`
+  - `integration.telegram.bot.send_photo`
+  - `integration.telegram.bot.send_document`
+  - `integration.telegram.bot.get_updates`
+  - `integration.telegram.bot.get_chat_id`
+
 Planned next:
-
-
