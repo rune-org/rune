@@ -1,8 +1,7 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo } from "react";
 import { Inspector } from "./Inspector";
-import { ScrybInterface } from "./ScrybInterface";
 import { SelectionModeButton } from "./SelectionModeButton";
 import { StickyNoteButton } from "./StickyNoteButton";
 import { cn } from "@/lib/cn";
@@ -22,7 +21,7 @@ type RightPanelStackProps = {
   onToggleNotePlacement?: () => void;
   selectMode?: boolean;
   onToggleSelectMode?: () => void;
-  workflowId?: number | null;
+  isScrybOpen?: boolean;
   readOnly?: boolean;
 };
 
@@ -40,7 +39,7 @@ function isEquivalentSelectedNode(prev: CanvasNode | null, next: CanvasNode | nu
 
 function areEqual(prev: RightPanelStackProps, next: RightPanelStackProps) {
   return (
-    prev.workflowId === next.workflowId &&
+    prev.isScrybOpen === next.isScrybOpen &&
     prev.isExpandedDialogOpen === next.isExpandedDialogOpen &&
     prev.readOnly === next.readOnly &&
     prev.selectMode === next.selectMode &&
@@ -53,9 +52,8 @@ function areEqual(prev: RightPanelStackProps, next: RightPanelStackProps) {
 }
 
 export const RightPanelStack = memo(function RightPanelStack(props: RightPanelStackProps) {
-  const [isScrybOpen, setIsScrybOpen] = useState(false);
   const {
-    workflowId,
+    isScrybOpen,
     readOnly,
     notePlacementMode,
     onToggleNotePlacement,
@@ -72,37 +70,24 @@ export const RightPanelStack = memo(function RightPanelStack(props: RightPanelSt
   return (
     <div
       data-onboarding="inspector"
-      className="pointer-events-none absolute right-4 top-4 bottom-8 z-35 flex h-auto flex-col items-end justify-between gap-4"
+      className="pointer-events-auto ml-auto flex min-h-0 items-start gap-2 overflow-visible"
     >
-      <div className="pointer-events-auto flex min-h-0 items-start gap-2 overflow-visible">
-        {!readOnly && onToggleSelectMode && (
-          <SelectionModeButton active={Boolean(selectMode)} onToggle={onToggleSelectMode} />
+      {!readOnly && onToggleSelectMode && (
+        <SelectionModeButton active={Boolean(selectMode)} onToggle={onToggleSelectMode} />
+      )}
+      {!readOnly && onToggleNotePlacement && (
+        <StickyNoteButton active={Boolean(notePlacementMode)} onClick={onToggleNotePlacement} />
+      )}
+      <Inspector
+        {...inspectorProps}
+        selectedNode={inspectorSelectedNode}
+        readOnly={readOnly}
+        renderInPanel={false}
+        className={cn(
+          "transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
+          isScrybOpen ? "max-h-[40vh]" : "max-h-[calc(100vh-12rem)]",
         )}
-        {!readOnly && onToggleNotePlacement && (
-          <StickyNoteButton active={Boolean(notePlacementMode)} onClick={onToggleNotePlacement} />
-        )}
-        <Inspector
-          {...inspectorProps}
-          selectedNode={inspectorSelectedNode}
-          readOnly={readOnly}
-          renderInPanel={false}
-          className={cn(
-            "transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
-            // When Scryb is open, shrink the max-height of the Inspector to avoid overlap
-            // The Inspector handles internal scrolling via overflow-y-auto
-            isScrybOpen ? "max-h-[40vh]" : "max-h-[calc(100vh-12rem)]",
-          )}
-        />
-      </div>
-
-      {/* Bottom: Scryb */}
-      <div className="pointer-events-auto shrink-0">
-        <ScrybInterface
-          isOpen={isScrybOpen}
-          onOpenChange={setIsScrybOpen}
-          workflowId={workflowId}
-        />
-      </div>
+      />
     </div>
   );
 }, areEqual);
