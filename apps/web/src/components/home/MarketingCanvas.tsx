@@ -133,6 +133,7 @@ function MarketingCanvasContent() {
 
   const handleReset = () => {
     reset();
+    setAmount(DEFAULT_AMOUNT);
     setNodes(INITIAL_NODES);
     setEdges(INITIAL_EDGES);
     setTimeout(() => {

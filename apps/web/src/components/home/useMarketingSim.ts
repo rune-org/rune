@@ -15,6 +15,7 @@ export function useMarketingSim(nodes: Node[], edges: Edge[], setEdges: EdgeSett
   const { dispatch } = useExecution();
   const [running, setRunning] = useState(false);
   const runningRef = useRef(false);
+  const runGenerationRef = useRef(0);
 
   const graphRef = useRef({ nodes, edges });
   graphRef.current = { nodes, edges };
@@ -50,10 +51,14 @@ export function useMarketingSim(nodes: Node[], edges: Edge[], setEdges: EdgeSett
   const run = useCallback(
     async (selectEdges?: SelectEdges) => {
       if (runningRef.current) return;
+      const runGeneration = ++runGenerationRef.current;
+      const isCurrentRun = () => runningRef.current && runGeneration === runGenerationRef.current;
+
       runningRef.current = true;
       setRunning(true);
       clearStatuses();
       await delay(150);
+      if (!isCurrentRun()) return;
 
       const { nodes, edges } = graphRef.current;
 
@@ -72,14 +77,14 @@ export function useMarketingSim(nodes: Node[], edges: Edge[], setEdges: EdgeSett
         const visited = new Set<string>();
 
         while (queue.length) {
-          if (!runningRef.current) break;
+          if (!isCurrentRun()) return;
           const cur = queue.shift()!;
           if (visited.has(cur)) continue;
           visited.add(cur);
 
           dispatch({ type: "NODE_UPDATE", payload: { node_id: cur, status: "running" } });
           await delay(STEP_MS);
-          if (!runningRef.current) break;
+          if (!isCurrentRun()) return;
           dispatch({
             type: "NODE_UPDATE",
             payload: { node_id: cur, status: "success", output: { ok: true } },
@@ -90,22 +95,26 @@ export function useMarketingSim(nodes: Node[], edges: Edge[], setEdges: EdgeSett
           if (node && selectEdges) next = selectEdges(node, next);
 
           for (const edge of next) {
-            if (!runningRef.current) break;
+            if (!isCurrentRun()) return;
             setEdgeState(edge.id, "active");
             await delay(STEP_MS);
+            if (!isCurrentRun()) return;
             setEdgeState(edge.id, "done");
             if (!visited.has(edge.target)) queue.push(edge.target);
           }
         }
       }
 
-      runningRef.current = false;
-      setRunning(false);
+      if (runGeneration === runGenerationRef.current) {
+        runningRef.current = false;
+        setRunning(false);
+      }
     },
     [clearStatuses, dispatch, setEdgeState],
   );
 
   const reset = useCallback(() => {
+    runGenerationRef.current += 1;
     runningRef.current = false;
     setRunning(false);
     clearStatuses();
@@ -113,6 +122,7 @@ export function useMarketingSim(nodes: Node[], edges: Edge[], setEdges: EdgeSett
 
   useEffect(() => {
     return () => {
+      runGenerationRef.current += 1;
       runningRef.current = false;
     };
   }, []);
