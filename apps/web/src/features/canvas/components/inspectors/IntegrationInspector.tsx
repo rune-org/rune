@@ -190,6 +190,7 @@ export function IntegrationInspector({ node, updateData }: IntegrationInspectorP
         placeholder="Select account"
       />
 
+      {/* TODO: Remove this inline guide and link to docs page when available */}
       {tool?.provider === "telegram" && (
         <details className="rounded-[calc(var(--radius)-0.25rem)] border border-border/60 bg-muted/20 p-2">
           <summary className="cursor-pointer text-xs font-medium text-muted-foreground">

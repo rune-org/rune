@@ -29,6 +29,7 @@ func (GetChatID) Execute(ctx context.Context, ec plugin.ExecutionContext) (map[s
 		PathArgs: map[string]string{
 			"token": token,
 		},
+		RedactedPathKeys: []string{"token"},
 		Body: map[string]any{
 			"limit": 1,
 		},
@@ -61,12 +62,22 @@ func (GetChatID) Execute(ctx context.Context, ec plugin.ExecutionContext) (map[s
 		return nil, errors.New("no messages yet. Send a message to your bot in Telegram first, then run this node again")
 	}
 
-	first, _ := results[0].(map[string]any)
-	if first == nil {
-		return nil, errors.New("unexpected response format from Telegram")
+	// Telegram returns updates oldest-first. Find the latest one.
+	var latestUpdate map[string]any
+	var maxUpdateID float64
+	for _, r := range results {
+		update, _ := r.(map[string]any)
+		if update == nil {
+			continue
+		}
+		id, _ := update["update_id"].(float64)
+		if latestUpdate == nil || id > maxUpdateID {
+			latestUpdate = update
+			maxUpdateID = id
+		}
 	}
 
-	chat := findChat(first)
+	chat := findChat(latestUpdate)
 	if chat == nil {
 		return nil, errors.New("no chat found in updates. Send a message to your bot in Telegram, then try again")
 	}
@@ -93,10 +104,11 @@ func (GetChatID) Execute(ctx context.Context, ec plugin.ExecutionContext) (map[s
 
 func getBotUsername(ctx context.Context, ec plugin.ExecutionContext, token string) (string, error) {
 	raw, err := connector.Do(ctx, ec, connector.Spec{
-		Method:   "POST",
-		BaseURL:  baseURL,
-		Path:     "/bot{token}/getMe",
-		PathArgs: map[string]string{"token": token},
+		Method:           "POST",
+		BaseURL:          baseURL,
+		Path:             "/bot{token}/getMe",
+		PathArgs:         map[string]string{"token": token},
+		RedactedPathKeys: []string{"token"},
 	})
 	if err != nil {
 		return "", err

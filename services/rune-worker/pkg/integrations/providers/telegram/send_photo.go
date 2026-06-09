@@ -62,7 +62,8 @@ func (SendPhoto) Execute(ctx context.Context, ec plugin.ExecutionContext) (map[s
 		PathArgs: map[string]string{
 			"token": token,
 		},
-		Body: body,
+		RedactedPathKeys: []string{"token"},
+		Body:             body,
 	})
 }
 

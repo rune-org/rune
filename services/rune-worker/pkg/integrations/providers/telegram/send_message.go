@@ -58,7 +58,8 @@ func (SendMessage) Execute(ctx context.Context, ec plugin.ExecutionContext) (map
 		PathArgs: map[string]string{
 			"token": token,
 		},
-		Body: body,
+		RedactedPathKeys: []string{"token"},
+		Body:             body,
 	})
 }
 
