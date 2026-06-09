@@ -1,8 +1,21 @@
 import type { CredentialRef } from "@/lib/credentials";
 
-export type IntegrationProvider = "google" | "microsoft" | "slack" | "dropbox" | "jira" | "telegram";
+export type IntegrationProvider =
+  | "google"
+  | "microsoft"
+  | "slack"
+  | "dropbox"
+  | "jira"
+  | "telegram";
 
-export type IntegrationService = "gmail" | "sheets" | "outlook" | "slack" | "dropbox" | "jira" | "bot";
+export type IntegrationService =
+  | "gmail"
+  | "sheets"
+  | "outlook"
+  | "slack"
+  | "dropbox"
+  | "jira"
+  | "bot";
 
 export type IntegrationNodeKind =
   | "integration.google.gmail.send_email"
@@ -44,7 +57,7 @@ export type IntegrationNodeKind =
   | "integration.telegram.bot.send_photo"
   | "integration.telegram.bot.send_document"
   | "integration.telegram.bot.get_updates"
-  | "integration.telegram.bot.get_chat_id";
+  | "integration.telegram.bot.get_chat_id"
   | "integration.dropbox.files.list_folder"
   | "integration.dropbox.files.get_metadata"
   | "integration.dropbox.files.get_temporary_link"
