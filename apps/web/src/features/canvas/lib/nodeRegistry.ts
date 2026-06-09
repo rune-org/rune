@@ -721,7 +721,7 @@ const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
     icon: Plug,
     iconSrc: "/icons/integrations/telegram.svg",
     color: "#229ED9",
-   },
+  },
   dropbox: {
     label: "Dropbox",
     icon: Plug,
