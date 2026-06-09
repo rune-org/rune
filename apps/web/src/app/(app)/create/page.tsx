@@ -84,7 +84,7 @@ export default function CreatePage() {
   useEffect(() => {
     let cancelled = false;
     setLoadingWorkflows(true);
-    Promise.all([listWorkflows({ page: 1, page_size: 12 }), listUserExecutions()])
+    Promise.all([listWorkflows(), listUserExecutions()])
       .then(([workflowsRes, executionsRes]) => {
         if (cancelled) return;
         const workflowData = workflowsRes.data?.data;

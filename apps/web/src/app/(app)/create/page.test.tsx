@@ -135,6 +135,42 @@ describe("CreatePage", () => {
     expect(runIndex).toBeLessThan(neverIndex);
   });
 
+  it("ranks recent runs across all accessible workflows", async () => {
+    listTemplatesMock.mockResolvedValue({ data: { data: [] }, error: undefined });
+    const workflows = Array.from({ length: 13 }, (_, index) => ({
+      id: index + 1,
+      name: `Workflow ${index + 1}`,
+      description: "",
+      is_active: false,
+      status: "draft",
+      role: "owner",
+      owner_name: "me",
+    }));
+    listWorkflowsMock.mockResolvedValue({
+      data: { data: workflows },
+      error: undefined,
+    });
+    listUserExecutionsMock.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: "e1",
+            workflow_id: 13,
+            workflow_name: "Workflow 13",
+            status: "completed",
+            created_at: "2026-06-08T00:00:00Z",
+          },
+        ],
+      },
+      error: undefined,
+    });
+
+    render(<CreatePage />);
+
+    expect(await screen.findByText("Workflow 13")).toBeInTheDocument();
+    expect(listWorkflowsMock).toHaveBeenCalledWith();
+  });
+
   it("shows the Smith starter box instead of recent workflows when the user has none", async () => {
     listTemplatesMock.mockResolvedValue({ data: { data: [] }, error: undefined });
 
