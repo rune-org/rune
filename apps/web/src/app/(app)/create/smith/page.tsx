@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import { startSmithWithPrompt } from "@/lib/smith";
 
 // Floating Orb Component
 function FloatingOrb({
@@ -50,10 +51,7 @@ export default function SmithQuickstartPage() {
 
   const handleSubmit = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
-    if (!prompt.trim()) return;
-
-    localStorage.setItem("smith_pending_prompt", prompt.trim());
-    window.location.href = "/create/app?smith=pending";
+    startSmithWithPrompt(prompt);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
