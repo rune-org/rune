@@ -38,9 +38,11 @@ export type NodeGroup =
   | "email"
   | "agents"
   | "google"
+  | "jira"
   | "microsoft"
   | "slack"
   | "telegram"
+  | "dropbox"
   | "annotate";
 
 export type NodeColorTheme = {
@@ -696,6 +698,12 @@ const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
     iconSrc: "/icons/integrations/google.svg",
     color: "#34a853",
   },
+  jira: {
+    label: "Jira",
+    icon: Plug,
+    iconSrc: "/icons/integrations/jira.svg",
+    color: "#2684ff",
+  },
   microsoft: {
     label: "Microsoft",
     icon: Plug,
@@ -713,6 +721,12 @@ const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
     icon: Plug,
     iconSrc: "/icons/integrations/telegram.svg",
     color: "#229ED9",
+   },
+  dropbox: {
+    label: "Dropbox",
+    icon: Plug,
+    iconSrc: "/icons/integrations/dropbox.svg",
+    color: "#0061FE",
   },
   annotate: { label: "Annotate", icon: NotepadText, color: "var(--node-note)" },
 };

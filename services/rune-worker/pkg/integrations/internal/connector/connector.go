@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -31,7 +32,15 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("integration request failed: status=%d url=%s", e.Status, e.URL)
+	msg := fmt.Sprintf("integration request failed: status=%d url=%s", e.Status, e.URL)
+	if e.Body != nil {
+		if bodyStr, ok := e.Body.(string); ok {
+			msg += " body=" + bodyStr
+		} else if bodyBytes, err := json.Marshal(e.Body); err == nil {
+			msg += " body=" + string(bodyBytes)
+		}
+	}
+	return msg
 }
 
 func Do(ctx context.Context, ec plugin.ExecutionContext, s Spec) (map[string]any, error) {
@@ -111,6 +120,9 @@ func buildURL(baseURL, path string, pathArgs map[string]string) (string, error) 
 	resolvedPath, err := resolvePath(path, pathArgs)
 	if err != nil {
 		return "", err
+	}
+	if !strings.HasPrefix(resolvedPath, "/") && !strings.HasSuffix(baseURL, "/") {
+		baseURL += "/"
 	}
 
 	base, err := url.Parse(baseURL)

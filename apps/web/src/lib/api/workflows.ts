@@ -26,6 +26,7 @@ import type {
   WorkflowRestoreVersion,
   WorkflowRunRequest,
   BulkWorkflowRequest,
+  ListWorkflowsWorkflowsGetData,
   ListWorkflowsWorkflowsGetResponse,
   GetWorkflowWorkflowsWorkflowIdGetResponse,
   CreateWorkflowWorkflowsPostResponse,
@@ -46,7 +47,12 @@ import type {
 
 // Readable wrappers for workflow-related SDK functions
 
-export const listWorkflows = () => listWorkflowsWorkflowsGet();
+type WorkflowListQuery = ListWorkflowsWorkflowsGetData["query"] & {
+  owner_id?: number;
+};
+
+export const listWorkflows = (params?: WorkflowListQuery) =>
+  listWorkflowsWorkflowsGet({ query: params });
 
 export const listUserExecutions = () => listUserExecutionsExecutionsGet();
 

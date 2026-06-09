@@ -6,6 +6,7 @@ import uuid
 import zipfile
 from typing import Any
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -63,15 +64,26 @@ class WorkflowService:
         self.encryptor = get_encryptor()
 
     async def list_for_user(
-        self, user_id: int, is_admin: bool = False
-    ) -> list[tuple[Workflow, WorkflowRole, str]]:
-        """Return workflows visible to `user_id`, newest first.
+        self,
+        user_id: int,
+        is_admin: bool = False,
+        limit: int | None = None,
+        offset: int | None = None,
+        search: str | None = None,
+        status: str | None = None,
+        owner_id: int | None = None,
+    ) -> tuple[list[tuple[Workflow, WorkflowRole, str]], int]:
+        """Return workflows visible to `user_id`, newest first, with optional filters and pagination.
 
         If `is_admin` is True, returns all workflows in the system.
-        Returns a tuple of (Workflow, role, owner_name) for each item.
+        Returns a tuple of (list of (Workflow, role, owner_name), total_count).
         """
         owner_subquery = (
-            select(WorkflowUser.workflow_id, User.name.label("owner_name"))
+            select(
+                WorkflowUser.workflow_id,
+                User.name.label("owner_name"),
+                User.id.label("owner_id"),
+            )
             .join(User, WorkflowUser.user_id == User.id)
             .where(WorkflowUser.role == WorkflowRole.OWNER)
             .subquery()
@@ -79,30 +91,82 @@ class WorkflowService:
 
         if is_admin:
             # Admins see everything and default to OWNER access
-            statement = (
-                select(Workflow, owner_subquery.c.owner_name)
-                .outerjoin(owner_subquery, Workflow.id == owner_subquery.c.workflow_id)
-                .order_by(Workflow.updated_at.desc())
+            statement = select(Workflow, owner_subquery.c.owner_name).outerjoin(
+                owner_subquery, Workflow.id == owner_subquery.c.workflow_id
             )
+            count_statement = select(func.count(Workflow.id))
         else:
             statement = (
                 select(Workflow, WorkflowUser.role, owner_subquery.c.owner_name)
-                .join(WorkflowUser)
+                .join(WorkflowUser, WorkflowUser.workflow_id == Workflow.id)
                 .outerjoin(owner_subquery, Workflow.id == owner_subquery.c.workflow_id)
                 .where(WorkflowUser.user_id == user_id)
-                .order_by(Workflow.updated_at.desc())
             )
+            count_statement = (
+                select(func.count(Workflow.id))
+                .join(WorkflowUser)
+                .where(WorkflowUser.user_id == user_id)
+            )
+
+        if owner_id is not None:
+            owner_clause = owner_subquery.c.owner_id == owner_id
+            statement = statement.where(owner_clause)
+            count_statement = count_statement.where(
+                Workflow.id.in_(
+                    select(owner_subquery.c.workflow_id).where(owner_clause)
+                )
+            )
+
+        # Apply search and status filters if provided
+        if search:
+            search_clause = Workflow.name.ilike(f"%{search}%")
+            statement = statement.where(search_clause)
+            count_statement = count_statement.where(search_clause)
+
+        if status:
+            if status == "active":
+                status_clause = Workflow.is_active.is_(True)
+            elif status == "inactive":
+                status_clause = (Workflow.is_active.is_(False)) & (
+                    Workflow.published_version_id.is_not(None)
+                )
+            elif status == "draft":
+                status_clause = (Workflow.is_active.is_(False)) & (
+                    Workflow.published_version_id.is_(None)
+                )
+            else:
+                status_clause = None
+
+            if status_clause is not None:
+                statement = statement.where(status_clause)
+                count_statement = count_statement.where(status_clause)
+
+        # Execute total count query
+        total_result = await self.db.exec(count_statement)
+        total_count = total_result.one()
+
+        # Apply ordering and limit/offset for data retrieval
+        statement = statement.order_by(Workflow.updated_at.desc(), Workflow.id.desc())
+
+        if offset is not None:
+            statement = statement.offset(offset)
+        if limit is not None:
+            statement = statement.limit(limit)
 
         result = await self.db.exec(statement)
         rows = result.all()
 
         if is_admin:
-            return [
+            items = [
                 (wf, WorkflowRole.OWNER, owner_name or "Unknown")
                 for wf, owner_name in rows
             ]
+        else:
+            items = [
+                (wf, role, owner_name or "Unknown") for wf, role, owner_name in rows
+            ]
 
-        return [(wf, role, owner_name or "Unknown") for wf, role, owner_name in rows]
+        return items, total_count
 
     async def get_by_id(self, workflow_id: int) -> Workflow | None:
         """Return a Workflow by primary key or None if not found."""
