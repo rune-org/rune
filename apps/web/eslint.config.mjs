@@ -38,6 +38,7 @@ const eslintConfig = [
       "coverage/**",
       "out/**",
       "build/**",
+      "public/_pagefind/**",
       "next-env.d.ts",
       "src/client/**",
     ],

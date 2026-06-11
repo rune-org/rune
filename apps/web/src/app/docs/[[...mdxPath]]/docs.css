@@ -1,0 +1,8 @@
+html {
+  scrollbar-gutter: stable;
+}
+
+.nextra-sidebar [class~="x:transition-all"],
+.nextra-toc [class~="x:transition-all"] {
+  transition: none !important;
+}
