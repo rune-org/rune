@@ -10,7 +10,7 @@ export default async function DocsLayout({ children }: { children: React.ReactNo
   return (
     <Layout
       pageMap={pageMap}
-      docsRepositoryBase="https://github.com/rune-org/rune/tree/main/apps/web/src/app/docs"
+      docsRepositoryBase="https://github.com/rune-org/rune/tree/main/apps/web/content"
       editLink="Edit this page"
       sidebar={{
         defaultMenuCollapseLevel: 1,

@@ -3,6 +3,7 @@ import nextra from 'nextra';
 
 // Nextra v4 configuration
 const withNextra = nextra({
+  contentDirBasePath: '/docs',
   mdxOptions: {
     rehypePlugins: [],
   },

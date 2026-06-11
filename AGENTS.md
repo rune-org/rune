@@ -335,6 +335,7 @@ If a verification command cannot run because dependencies or infrastructure are 
 Update nearby documentation when behavior changes:
 
 - Root `README.md` for product/service-level changes.
+- `apps/web/content/` for the user-facing docs site (Nextra 4 MDX, served at `/docs`). Nextra resolves it and `contentDirBasePath` in `apps/web/next.config.ts` controls the URL path. Sidebar labels/order live in the `_meta.ts` files alongside the pages; routing is handled by the catch-all at `apps/web/src/app/docs/[[...mdxPath]]/page.tsx`.
 - Service `README.md` files for setup, commands, or architecture changes.
 - `services/rune-worker/docs/` and `rfcs/` for worker/node semantics.
 - This `AGENTS.md` for any major workflow, command, service, generated-code, or contract changes.

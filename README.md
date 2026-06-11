@@ -22,10 +22,20 @@ We built Rune because automation shouldn't require a degree in distributed syste
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Features](#features)
 - [Quick Start](#quick-start)
+  - [What Gets Started](#what-gets-started)
+  - [Stopping Services](#stopping-services)
 - [Architecture](#architecture)
 - [Development](#development)
+  - [Prerequisites](#prerequisites)
+  - [Commands](#commands)
+    - [Startup \& Local Dev](#startup--local-dev)
+    - [Testing](#testing)
+    - [Linting \& Formatting](#linting--formatting)
+    - [Other Utility Commands](#other-utility-commands)
+  - [Project Structure](#project-structure)
 - [Why Rune?](#why-rune)
 - [Contributing](#contributing)
 - [License](#license)
@@ -216,6 +226,9 @@ make down             # Stop full Docker Compose stack
 rune/
 ├── apps/
 │   └── web/                 # Next.js frontend
+│       ├── content/         # Docs site pages
+│       ├── public/          # Static assets
+│       └── src/             # Application source
 ├── services/
 │   ├── api/                 # FastAPI backend
 │   ├── rune-worker/         # Go execution engine
