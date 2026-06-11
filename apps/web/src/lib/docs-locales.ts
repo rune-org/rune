@@ -10,8 +10,8 @@ export type DocsLocale = (typeof DOCS_LOCALES)[number]["code"];
 
 export const DEFAULT_DOCS_LOCALE: DocsLocale = "en";
 
-export function isDocsLocale(value: string | undefined): value is Exclude<DocsLocale, "en"> {
-  return value !== undefined && value !== "en" && DOCS_LOCALES.some((l) => l.code === value);
+export function isDocsLocale(value: string | undefined): value is DocsLocale {
+  return value !== undefined && DOCS_LOCALES.some((l) => l.code === value);
 }
 
 interface DocsUiStrings {

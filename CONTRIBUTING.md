@@ -75,7 +75,7 @@ Service-scoped commands for faster iteration:
 
 If your change affects infrastructure or documentation, verify Docker Compose still starts (`make up`) and that Markdown renders correctly.
 
-User-facing docs live in `apps/web/content/` as Nextra MDX pages served at `/docs`. Edit or add `.mdx` files there, update the sibling `_meta.ts` files for sidebar labels and ordering, and check the result with the frontend dev server.
+User-facing docs live in `apps/web/content/<locale>/` as Nextra MDX pages served at `/docs/<locale>`. Edit or add `.mdx` files there, update the sibling `_meta.ts` files for sidebar labels and ordering, and check the result with the frontend dev server.
 
 ## Pull Request Checklist
 

@@ -19,6 +19,20 @@ const nextConfig: NextConfig = {
       'next-mdx-import-source-file': './mdx-components.tsx',
     },
   },
+  async redirects() {
+    return [
+      {
+        source: "/docs",
+        destination: "/docs/en",
+        permanent: true,
+      },
+      {
+        source: "/docs/:path((?!(?:en|fr|es|ar|de)(?![^/]))[^/]+)/:rest*",
+        destination: "/docs/en/:path/:rest*",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     const target = process.env.API_PROXY_TARGET || "http://localhost:8000";
     return [

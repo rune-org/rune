@@ -15,7 +15,7 @@ export default async function DocsLayout({
 }) {
   const { mdxPath } = await params;
   const locale = isDocsLocale(mdxPath?.[0]) ? mdxPath![0] : "en";
-  const pageMap = await getPageMap(locale === "en" ? "/docs" : `/docs/${locale}`);
+  const pageMap = await getPageMap(`/docs/${locale}`);
   const ui = DOCS_UI_STRINGS[locale];
 
   return (
@@ -44,6 +44,7 @@ export default async function DocsLayout({
     >
       <div
         key="content"
+        lang={locale}
         dir={locale === "ar" ? "rtl" : "ltr"}
         data-pagefind-filter={`lang:${locale}`}
       >

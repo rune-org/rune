@@ -8,13 +8,12 @@ export function DocsLanguageSwitcher() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const segments = pathname.split("/").filter(Boolean); // ["docs", maybe-locale, ...rest]
+  const segments = pathname.split("/").filter(Boolean); // ["docs", locale, ...rest]
   const current = isDocsLocale(segments[1]) ? segments[1] : "en";
-  const rest = segments.slice(current === "en" ? 1 : 2);
+  const rest = segments.slice(2);
 
   const switchTo = (code: string) => {
-    const prefix = code === "en" ? "/docs" : `/docs/${code}`;
-    router.push([prefix, ...rest].join("/"));
+    router.push(["/docs", code, ...rest].join("/"));
   };
 
   return (
