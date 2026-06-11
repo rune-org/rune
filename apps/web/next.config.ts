@@ -22,25 +22,37 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: "/docs",
-        destination: "/docs/en",
-        permanent: true,
+        source: "/docs/en",
+        destination: "/docs",
+        permanent: false,
       },
       {
-        source: "/docs/:path((?!(?:en|fr|es|ar|de)(?![^/]))[^/]+)/:rest*",
-        destination: "/docs/en/:path/:rest*",
-        permanent: true,
+        source: "/docs/en/:path*",
+        destination: "/docs/:path*",
+        permanent: false,
       },
     ];
   },
   async rewrites() {
     const target = process.env.API_PROXY_TARGET || "http://localhost:8000";
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${target}/:path*`,
-      },
-    ];
+    return {
+      beforeFiles: [
+        {
+          source: "/docs",
+          destination: "/docs/en",
+        },
+        {
+          source: "/docs/:path((?!(?:en|fr|es|ar|de)(?![^/]))[^/]+)/:rest*",
+          destination: "/docs/en/:path/:rest*",
+        },
+      ],
+      afterFiles: [
+        {
+          source: "/api/:path*",
+          destination: `${target}/:path*`,
+        },
+      ],
+    };
   },
 };
 

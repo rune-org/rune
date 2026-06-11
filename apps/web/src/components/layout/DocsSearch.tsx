@@ -37,7 +37,10 @@ const DEV_NOTICE =
   "Search index not found. Run `pnpm build` once — Pagefind indexes the built pages.";
 
 function cleanUrl(url: string): string {
-  return url.replace(/\.html$/, "").replace(/\.html#/, "#");
+  return url
+    .replace(/\.html$/, "")
+    .replace(/\.html#/, "#")
+    .replace(/^\/docs\/en(?=[/#]|$)/, "/docs");
 }
 
 async function loadPagefind(): Promise<Pagefind> {
