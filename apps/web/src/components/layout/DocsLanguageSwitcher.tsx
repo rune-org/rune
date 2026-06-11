@@ -2,15 +2,17 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { Globe } from "lucide-react";
-import { DOCS_LOCALES, DOCS_UI_STRINGS, isDocsLocale } from "@/lib/docs-locales";
+import { DOCS_LOCALES, DOCS_UI_STRINGS, docsLocaleFromPath } from "@/lib/docs-locales";
 
 export function DocsLanguageSwitcher() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const segments = pathname.split("/").filter(Boolean);
-  const current = isDocsLocale(segments[1]) ? segments[1] : "en";
-  const rest = segments.slice(current === "en" ? 1 : 2);
+  const current = docsLocaleFromPath(pathname);
+  const rest = pathname
+    .split("/")
+    .filter(Boolean)
+    .slice(current === "en" ? 1 : 2);
 
   const switchTo = (code: string) => {
     const prefix = code === "en" ? "/docs" : `/docs/${code}`;

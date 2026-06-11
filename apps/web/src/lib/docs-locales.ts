@@ -14,6 +14,12 @@ export function isDocsLocale(value: string | undefined): value is DocsLocale {
   return value !== undefined && DOCS_LOCALES.some((l) => l.code === value);
 }
 
+const defaultLocalePrefix = new RegExp(`^/docs/${DEFAULT_DOCS_LOCALE}(?=[/#]|$)`);
+
+export function stripDefaultLocalePrefix(url: string): string {
+  return url.replace(defaultLocalePrefix, "/docs");
+}
+
 interface DocsUiStrings {
   editLink: string;
   feedback: string;
@@ -80,5 +86,5 @@ export const DOCS_UI_STRINGS: Record<DocsLocale, DocsUiStrings> = {
 
 export function docsLocaleFromPath(pathname: string): DocsLocale {
   const segments = pathname.split("/").filter(Boolean);
-  return isDocsLocale(segments[1]) ? segments[1] : "en";
+  return isDocsLocale(segments[1]) ? segments[1] : DEFAULT_DOCS_LOCALE;
 }

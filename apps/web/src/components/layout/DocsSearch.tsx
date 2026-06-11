@@ -5,7 +5,7 @@ import { useDeferredValue, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronRight, FileText, Search as SearchIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { DOCS_UI_STRINGS, type DocsLocale } from "@/lib/docs-locales";
+import { DOCS_UI_STRINGS, stripDefaultLocalePrefix, type DocsLocale } from "@/lib/docs-locales";
 
 interface PagefindSubResult {
   title: string;
@@ -37,11 +37,10 @@ const DEV_NOTICE =
   "Search index not found. Run `pnpm build` once — Pagefind indexes the built pages.";
 
 function cleanUrl(url: string): string {
-  return url
-    .replace(/\.html$/, "")
-    .replace(/\.html#/, "#")
-    .replace(/^\/docs\/en(?=[/#]|$)/, "/docs");
+  return stripDefaultLocalePrefix(url.replace(/\.html$/, "").replace(/\.html#/, "#"));
 }
+
+const isMacPlatform = () => navigator.userAgent.includes("Mac");
 
 async function loadPagefind(): Promise<Pagefind> {
   if (!window.pagefind) {
@@ -66,15 +65,13 @@ export function DocsSearch({ locale }: { locale: DocsLocale }) {
 
   useEffect(() => {
     setMounted(true);
-    setIsMac(navigator.userAgent.includes("Mac"));
+    setIsMac(isMacPlatform());
   }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const isHotkey =
-        event.key === "k" &&
-        !event.shiftKey &&
-        (navigator.userAgent.includes("Mac") ? event.metaKey : event.ctrlKey);
+        event.key === "k" && !event.shiftKey && (isMacPlatform() ? event.metaKey : event.ctrlKey);
       if (!isHotkey) return;
       event.preventDefault();
       setActive((prev) => !prev);

@@ -5,12 +5,17 @@ import "nextra-theme-docs/style.css";
 import "./docs.css";
 import { DocsNavbar } from "@/components/layout/DocsNavbar";
 import { Footer } from "@/components/layout/Footer";
-import { DOCS_UI_STRINGS, isDocsLocale } from "@/lib/docs-locales";
+import {
+  DEFAULT_DOCS_LOCALE,
+  DOCS_UI_STRINGS,
+  isDocsLocale,
+  stripDefaultLocalePrefix,
+} from "@/lib/docs-locales";
 
 function stripEnPrefix<T extends PageMapItem>(item: T): T {
   const result = { ...item };
   if ("route" in result && typeof result.route === "string") {
-    result.route = result.route.replace(/^\/docs\/en(?=\/|$)/, "/docs") || "/docs";
+    result.route = stripDefaultLocalePrefix(result.route);
   }
   if ("children" in result && Array.isArray(result.children)) {
     result.children = result.children.map(stripEnPrefix);
@@ -26,9 +31,9 @@ export default async function DocsLayout({
   params: Promise<{ mdxPath?: string[] }>;
 }) {
   const { mdxPath } = await params;
-  const locale = isDocsLocale(mdxPath?.[0]) ? mdxPath![0] : "en";
+  const locale = isDocsLocale(mdxPath?.[0]) ? mdxPath![0] : DEFAULT_DOCS_LOCALE;
   const rawPageMap = await getPageMap(`/docs/${locale}`);
-  const pageMap = locale === "en" ? rawPageMap.map(stripEnPrefix) : rawPageMap;
+  const pageMap = locale === DEFAULT_DOCS_LOCALE ? rawPageMap.map(stripEnPrefix) : rawPageMap;
   const ui = DOCS_UI_STRINGS[locale];
 
   return (

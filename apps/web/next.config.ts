@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 import nextra from 'nextra';
+import { DEFAULT_DOCS_LOCALE, DOCS_LOCALES } from "./src/lib/docs-locales";
+
+const docsLocaleCodes = DOCS_LOCALES.map((l) => l.code).join("|");
 
 // Nextra v4 configuration
 const withNextra = nextra({
@@ -22,12 +25,12 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: "/docs/en",
+        source: `/docs/${DEFAULT_DOCS_LOCALE}`,
         destination: "/docs",
         permanent: false,
       },
       {
-        source: "/docs/en/:path*",
+        source: `/docs/${DEFAULT_DOCS_LOCALE}/:path*`,
         destination: "/docs/:path*",
         permanent: false,
       },
@@ -39,11 +42,11 @@ const nextConfig: NextConfig = {
       beforeFiles: [
         {
           source: "/docs",
-          destination: "/docs/en",
+          destination: `/docs/${DEFAULT_DOCS_LOCALE}`,
         },
         {
-          source: "/docs/:path((?!(?:en|fr|es|ar|de)(?![^/]))[^/]+)/:rest*",
-          destination: "/docs/en/:path/:rest*",
+          source: `/docs/:path((?!(?:${docsLocaleCodes})(?![^/]))[^/]+)/:rest*`,
+          destination: `/docs/${DEFAULT_DOCS_LOCALE}/:path/:rest*`,
         },
       ],
       afterFiles: [
