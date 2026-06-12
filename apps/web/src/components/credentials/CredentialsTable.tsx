@@ -221,14 +221,20 @@ export function CredentialsTable({
           <Input
             placeholder="Search credentials..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
             className="pl-10"
           />
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         </div>
         <Select
           value={typeFilter}
-          onValueChange={(value) => setTypeFilter(value as CredentialType | "all")}
+          onValueChange={(value) => {
+            setTypeFilter(value as CredentialType | "all");
+            setPage(1);
+          }}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by type" />

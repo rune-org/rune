@@ -89,6 +89,7 @@ export default function ExecutionsPage() {
         <ExecutionsTable
           executions={executions}
           isLoading={isLoading}
+          hasActiveFilters={Boolean(search.trim()) || filters.status !== "all"}
           page={page}
           setPage={setPage}
           pageSize={pageSize}

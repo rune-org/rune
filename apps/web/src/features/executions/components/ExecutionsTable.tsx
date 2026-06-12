@@ -33,6 +33,7 @@ type ExecutionGroup = {
 interface ExecutionsTableProps {
   executions: ExecutionListItem[];
   isLoading?: boolean;
+  hasActiveFilters?: boolean;
   page: number;
   setPage: (page: number) => void;
   pageSize: number;
@@ -358,6 +359,18 @@ function RecentBody({ executions }: { executions: ExecutionListItem[] }) {
   );
 }
 
+function TableMessage({ colSpan, children }: { colSpan: number; children: React.ReactNode }) {
+  return (
+    <tbody>
+      <tr>
+        <td colSpan={colSpan} className="px-4 py-12 text-center">
+          {children}
+        </td>
+      </tr>
+    </tbody>
+  );
+}
+
 function SortToggle({ mode, onChange }: { mode: SortMode; onChange: (mode: SortMode) => void }) {
   return (
     <div className="inline-flex items-center rounded-lg bg-muted/30 p-1 gap-0.5">
@@ -394,6 +407,7 @@ function SortToggle({ mode, onChange }: { mode: SortMode; onChange: (mode: SortM
 export function ExecutionsTable({
   executions,
   isLoading,
+  hasActiveFilters = false,
   page,
   setPage,
   pageSize,
@@ -415,6 +429,7 @@ export function ExecutionsTable({
   };
 
   const filtered = executions;
+  const columnCount = sortMode === "recent" ? 6 : GROUPED_COL_COUNT;
 
   const groups = useMemo<ExecutionGroup[]>(() => {
     const grouped = new Map<number, ExecutionGroup>();
@@ -436,31 +451,6 @@ export function ExecutionsTable({
 
     return Array.from(grouped.values());
   }, [filtered]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (executions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Clock className="h-12 w-12 text-muted-foreground/50" />
-        <h3 className="mt-4 text-lg font-medium text-foreground">No executions yet</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Run a workflow to see execution history here.
-        </p>
-        <Link href="/create" className="mt-4">
-          <Button variant="outline" size="sm">
-            Go to Workflows
-          </Button>
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-3">
@@ -484,7 +474,32 @@ export function ExecutionsTable({
         <table className="w-full text-sm">
           <TableHead mode={sortMode} />
 
-          {sortMode === "workflow" ? (
+          {isLoading ? (
+            <TableMessage colSpan={columnCount}>
+              <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+            </TableMessage>
+          ) : filtered.length === 0 ? (
+            <TableMessage colSpan={columnCount}>
+              <div className="flex flex-col items-center justify-center text-center">
+                <Clock className="h-12 w-12 text-muted-foreground/50" />
+                <h3 className="mt-4 text-lg font-medium text-foreground">
+                  {hasActiveFilters ? "No executions found" : "No executions yet"}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {hasActiveFilters
+                    ? "Try adjusting your search or status filter."
+                    : "Run a workflow to see execution history here."}
+                </p>
+                {!hasActiveFilters && (
+                  <Link href="/create" className="mt-4">
+                    <Button variant="outline" size="sm">
+                      Go to Workflows
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </TableMessage>
+          ) : sortMode === "workflow" ? (
             <GroupedBody groups={groups} />
           ) : (
             <RecentBody executions={filtered} />

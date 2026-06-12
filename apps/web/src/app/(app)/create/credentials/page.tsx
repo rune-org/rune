@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
 import {
@@ -25,6 +25,7 @@ export default function CreateCredentialsPage() {
   const [typeFilter, setTypeFilter] = useState<Credential["credential_type"] | "all">("all");
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const requestIdRef = useRef(0);
 
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -42,6 +43,7 @@ export default function CreateCredentialsPage() {
     currentQuery = query,
     currentType = typeFilter,
   ) => {
+    const requestId = ++requestIdRef.current;
     try {
       setIsLoading(true);
       setError(null);
@@ -62,6 +64,10 @@ export default function CreateCredentialsPage() {
 
       const response = await credentialsAPI.listCredentials(params);
 
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
       // Extract data from the ApiResponse wrapper
       if (response.data && response.data.data) {
         const resData = response.data.data;
@@ -76,6 +82,9 @@ export default function CreateCredentialsPage() {
         }
       }
     } catch (_err) {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
       toast.error("Failed to load credentials", {
         action: {
           label: "Retry",
@@ -84,7 +93,9 @@ export default function CreateCredentialsPage() {
       });
       setError("Failed to load credentials. Please try again.");
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { toast } from "@/components/ui/toast";
 import { listUserExecutions } from "@/lib/api/workflows";
 import type {
@@ -102,6 +102,7 @@ export function useExecutionsList(): UseExecutionsListReturn {
   const [search, setSearch] = useState("");
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const paginatedRequestIdRef = useRef(0);
 
   const metrics = useMemo(() => calculateMetrics(allExecutions), [allExecutions]);
 
@@ -127,6 +128,7 @@ export function useExecutionsList(): UseExecutionsListReturn {
       currentSearch: string,
       currentFilters: ExecutionFilters,
     ) => {
+      const requestId = ++paginatedRequestIdRef.current;
       const statusParam =
         currentFilters.status && currentFilters.status !== "all"
           ? (currentFilters.status as ExecutionStatus)
@@ -138,7 +140,20 @@ export function useExecutionsList(): UseExecutionsListReturn {
         status: statusParam,
       };
 
-      const response = await listUserExecutions(params);
+      let response: Awaited<ReturnType<typeof listUserExecutions>>;
+      try {
+        response = await listUserExecutions(params);
+      } catch (error) {
+        if (requestId !== paginatedRequestIdRef.current) {
+          return false;
+        }
+        throw error;
+      }
+
+      if (requestId !== paginatedRequestIdRef.current) {
+        return false;
+      }
+
       if (response.error) {
         throw response.error;
       }
@@ -153,6 +168,8 @@ export function useExecutionsList(): UseExecutionsListReturn {
         setTotal(resData.length);
         setTotalPages(1);
       }
+
+      return true;
     },
     [],
   );
@@ -160,11 +177,16 @@ export function useExecutionsList(): UseExecutionsListReturn {
   const refresh = useCallback(async () => {
     setIsLoading(true);
     try {
-      await Promise.all([loadPaginated(page, pageSize, search, filters), loadMetrics()]);
+      const [isLatestRequest] = await Promise.all([
+        loadPaginated(page, pageSize, search, filters),
+        loadMetrics(),
+      ]);
+      if (isLatestRequest) {
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error("[useExecutionsList] Failed to fetch executions", error);
       toast.error("Failed to load executions");
-    } finally {
       setIsLoading(false);
     }
   }, [page, pageSize, search, filters, loadPaginated, loadMetrics]);
@@ -178,11 +200,14 @@ export function useExecutionsList(): UseExecutionsListReturn {
   useEffect(() => {
     setIsLoading(true);
     loadPaginated(page, pageSize, search, filters)
+      .then((isLatestRequest) => {
+        if (isLatestRequest) {
+          setIsLoading(false);
+        }
+      })
       .catch((error) => {
         console.error("[useExecutionsList] Failed to fetch executions", error);
         toast.error("Failed to load executions");
-      })
-      .finally(() => {
         setIsLoading(false);
       });
   }, [page, pageSize, search, filters, loadPaginated]);
