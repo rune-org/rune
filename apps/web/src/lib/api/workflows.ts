@@ -35,6 +35,7 @@ import type {
   DeleteWorkflowWorkflowsWorkflowIdDeleteResponse,
   RunWorkflowWorkflowsWorkflowIdRunPostResponse,
   ListUserExecutionsExecutionsGetResponse,
+  ListUserExecutionsExecutionsGetData,
   GetWorkflowExecutionsExecutionsWorkflowsWorkflowIdGetResponse,
   GetExecutionExecutionsWorkflowsWorkflowIdExecutionIdGetResponse,
   ListWorkflowVersionsWorkflowsWorkflowIdVersionsGetResponse,
@@ -54,7 +55,8 @@ type WorkflowListQuery = ListWorkflowsWorkflowsGetData["query"] & {
 export const listWorkflows = (params?: WorkflowListQuery) =>
   listWorkflowsWorkflowsGet({ query: params });
 
-export const listUserExecutions = () => listUserExecutionsExecutionsGet();
+export const listUserExecutions = (params?: ListUserExecutionsExecutionsGetData["query"]) =>
+  listUserExecutionsExecutionsGet({ query: params });
 
 export const getWorkflowById = (workflow_id: number) =>
   getWorkflowWorkflowsWorkflowIdGet({ path: { workflow_id } });

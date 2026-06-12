@@ -906,15 +906,63 @@ paths:
 
         Admins can see all executions.'
       operationId: list_user_executions_executions__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          description: Page number (1-based)
+          title: Page
+        description: Page number (1-based)
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            maximum: 50
+            minimum: 1
+          - type: 'null'
+          description: Number of executions per page
+          title: Page Size
+        description: Number of executions per page
+      - name: search
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Search
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/ExecutionStatus'
+          - type: 'null'
+          description: Filter by execution status
+          title: Status
+        description: Filter by execution status
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_list_ExecutionListItem__'
-      security:
-      - OAuth2PasswordBearer: []
+                $ref: '#/components/schemas/ApiResponse_Union_list_ExecutionListItem___PaginatedData_ExecutionListItem___'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /executions/workflows/{workflow_id}:
     get:
       tags:
@@ -1765,6 +1813,47 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
   /credentials/:
+    post:
+      tags:
+      - credentials
+      summary: Create a new credential
+      description: 'Create a new credential with encrypted data.
+
+
+        The credential data will be encrypted before storage and you will
+
+        become the owner of this credential.
+
+
+        Permissions:
+
+        - OWNER: (you become the owner upon creation)
+
+        - ADMIN: can create credentials
+
+        - USER: can create credentials'
+      operationId: create_credential_credentials__post
+      security:
+      - OAuth2PasswordBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_CredentialResponse_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
     get:
       tags:
       - credentials
@@ -1787,56 +1876,63 @@ paths:
 
         - SHARED USER: can view shared credentials'
       operationId: list_credentials_credentials__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          description: Page number (1-based)
+          title: Page
+        description: Page number (1-based)
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            maximum: 50
+            minimum: 1
+          - type: 'null'
+          description: Number of credentials per page
+          title: Page Size
+        description: Number of credentials per page
+      - name: search
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Search
+      - name: type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/CredentialType'
+          - type: 'null'
+          description: Filter by credential type
+          title: Type
+        description: Filter by credential type
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_list_CredentialResponse__'
-      security:
-      - OAuth2PasswordBearer: []
-    post:
-      tags:
-      - credentials
-      summary: Create a new credential
-      description: 'Create a new credential with encrypted data.
-
-
-        The credential data will be encrypted before storage and you will
-
-        become the owner of this credential.
-
-
-        Permissions:
-
-        - OWNER: (you become the owner upon creation)
-
-        - ADMIN: can create credentials
-
-        - USER: can create credentials'
-      operationId: create_credential_credentials__post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CredentialCreate'
-        required: true
-      responses:
-        '201':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_CredentialResponse_'
+                $ref: '#/components/schemas/ApiResponse_Union_list_CredentialResponse___PaginatedData_CredentialResponse___'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - OAuth2PasswordBearer: []
   /credentials/dropdown:
     get:
       tags:
@@ -3021,6 +3117,54 @@ components:
       required:
       - data
       title: ApiResponse[TokenResponse]
+    ApiResponse_Union_list_CredentialResponse___PaginatedData_CredentialResponse___:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/CredentialResponse'
+            type: array
+          - $ref: '#/components/schemas/PaginatedData_CredentialResponse_'
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[Union[list[CredentialResponse], PaginatedData[CredentialResponse]]]
+    ApiResponse_Union_list_ExecutionListItem___PaginatedData_ExecutionListItem___:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Whether the request was successful
+          default: true
+        message:
+          type: string
+          title: Message
+          description: Human-readable message
+          default: Success
+        data:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ExecutionListItem'
+            type: array
+          - $ref: '#/components/schemas/PaginatedData_ExecutionListItem_'
+          title: Data
+          description: Response data
+      type: object
+      required:
+      - data
+      title: ApiResponse[Union[list[ExecutionListItem], PaginatedData[ExecutionListItem]]]
     ApiResponse_Union_list_WorkflowListItem___PaginatedData_WorkflowListItem___:
       properties:
         success:
@@ -3220,28 +3364,6 @@ components:
       required:
       - data
       title: ApiResponse[list[CredentialResponseDropDown]]
-    ApiResponse_list_CredentialResponse__:
-      properties:
-        success:
-          type: boolean
-          title: Success
-          description: Whether the request was successful
-          default: true
-        message:
-          type: string
-          title: Message
-          description: Human-readable message
-          default: Success
-        data:
-          items:
-            $ref: '#/components/schemas/CredentialResponse'
-          type: array
-          title: Data
-          description: Response data
-      type: object
-      required:
-      - data
-      title: ApiResponse[list[CredentialResponse]]
     ApiResponse_list_CredentialShareInfo__:
       properties:
         success:
@@ -3286,28 +3408,6 @@ components:
       required:
       - data
       title: ApiResponse[list[CredentialUsage]]
-    ApiResponse_list_ExecutionListItem__:
-      properties:
-        success:
-          type: boolean
-          title: Success
-          description: Whether the request was successful
-          default: true
-        message:
-          type: string
-          title: Message
-          description: Human-readable message
-          default: Success
-        data:
-          items:
-            $ref: '#/components/schemas/ExecutionListItem'
-          type: array
-          title: Data
-          description: Response data
-      type: object
-      required:
-      - data
-      title: ApiResponse[list[ExecutionListItem]]
     ApiResponse_list_UserBasicInfo__:
       properties:
         success:
@@ -3888,6 +3988,70 @@ components:
       - email
       - password
       title: LoginRequest
+    PaginatedData_CredentialResponse_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/CredentialResponse'
+          type: array
+          title: Items
+          description: Paginated items
+        total:
+          type: integer
+          title: Total
+          description: Total number of items
+        page:
+          type: integer
+          title: Page
+          description: Current page number
+        page_size:
+          type: integer
+          title: Page Size
+          description: Items per page
+        total_pages:
+          type: integer
+          title: Total Pages
+          description: Total pages
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      - total_pages
+      title: PaginatedData[CredentialResponse]
+    PaginatedData_ExecutionListItem_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ExecutionListItem'
+          type: array
+          title: Items
+          description: Paginated items
+        total:
+          type: integer
+          title: Total
+          description: Total number of items
+        page:
+          type: integer
+          title: Page
+          description: Current page number
+        page_size:
+          type: integer
+          title: Page Size
+          description: Items per page
+        total_pages:
+          type: integer
+          title: Total Pages
+          description: Total pages
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      - total_pages
+      title: PaginatedData[ExecutionListItem]
     PaginatedData_WorkflowListItem_:
       properties:
         items:

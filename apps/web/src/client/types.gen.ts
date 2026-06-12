@@ -378,6 +378,54 @@ export type ApiResponseTokenResponse = {
 };
 
 /**
+ * ApiResponse[Union[list[CredentialResponse], PaginatedData[CredentialResponse]]]
+ */
+export type ApiResponseUnionListCredentialResponsePaginatedDataCredentialResponse = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<CredentialResponse> | PaginatedDataCredentialResponse;
+};
+
+/**
+ * ApiResponse[Union[list[ExecutionListItem], PaginatedData[ExecutionListItem]]]
+ */
+export type ApiResponseUnionListExecutionListItemPaginatedDataExecutionListItem = {
+    /**
+     * Success
+     *
+     * Whether the request was successful
+     */
+    success?: boolean;
+    /**
+     * Message
+     *
+     * Human-readable message
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * Response data
+     */
+    data: Array<ExecutionListItem> | PaginatedDataExecutionListItem;
+};
+
+/**
  * ApiResponse[Union[list[WorkflowListItem], PaginatedData[WorkflowListItem]]]
  */
 export type ApiResponseUnionListWorkflowListItemPaginatedDataWorkflowListItem = {
@@ -604,30 +652,6 @@ export type ApiResponseListCredentialResponseDropDown = {
 };
 
 /**
- * ApiResponse[list[CredentialResponse]]
- */
-export type ApiResponseListCredentialResponse = {
-    /**
-     * Success
-     *
-     * Whether the request was successful
-     */
-    success?: boolean;
-    /**
-     * Message
-     *
-     * Human-readable message
-     */
-    message?: string;
-    /**
-     * Data
-     *
-     * Response data
-     */
-    data: Array<CredentialResponse>;
-};
-
-/**
  * ApiResponse[list[CredentialShareInfo]]
  */
 export type ApiResponseListCredentialShareInfo = {
@@ -673,30 +697,6 @@ export type ApiResponseListCredentialUsage = {
      * Response data
      */
     data: Array<CredentialUsage>;
-};
-
-/**
- * ApiResponse[list[ExecutionListItem]]
- */
-export type ApiResponseListExecutionListItem = {
-    /**
-     * Success
-     *
-     * Whether the request was successful
-     */
-    success?: boolean;
-    /**
-     * Message
-     *
-     * Human-readable message
-     */
-    message?: string;
-    /**
-     * Data
-     *
-     * Response data
-     */
-    data: Array<ExecutionListItem>;
 };
 
 /**
@@ -1275,6 +1275,78 @@ export type LoginRequest = {
      * User's password
      */
     password: string;
+};
+
+/**
+ * PaginatedData[CredentialResponse]
+ */
+export type PaginatedDataCredentialResponse = {
+    /**
+     * Items
+     *
+     * Paginated items
+     */
+    items: Array<CredentialResponse>;
+    /**
+     * Total
+     *
+     * Total number of items
+     */
+    total: number;
+    /**
+     * Page
+     *
+     * Current page number
+     */
+    page: number;
+    /**
+     * Page Size
+     *
+     * Items per page
+     */
+    page_size: number;
+    /**
+     * Total Pages
+     *
+     * Total pages
+     */
+    total_pages: number;
+};
+
+/**
+ * PaginatedData[ExecutionListItem]
+ */
+export type PaginatedDataExecutionListItem = {
+    /**
+     * Items
+     *
+     * Paginated items
+     */
+    items: Array<ExecutionListItem>;
+    /**
+     * Total
+     *
+     * Total number of items
+     */
+    total: number;
+    /**
+     * Page
+     *
+     * Current page number
+     */
+    page: number;
+    /**
+     * Page Size
+     *
+     * Items per page
+     */
+    page_size: number;
+    /**
+     * Total Pages
+     *
+     * Total pages
+     */
+    total_pages: number;
 };
 
 /**
@@ -3554,15 +3626,47 @@ export type RunWorkflowWorkflowsWorkflowIdRunPostResponse = RunWorkflowWorkflows
 export type ListUserExecutionsExecutionsGetData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Page
+         *
+         * Page number (1-based)
+         */
+        page?: number | null;
+        /**
+         * Page Size
+         *
+         * Number of executions per page
+         */
+        page_size?: number | null;
+        /**
+         * Search
+         */
+        search?: string | null;
+        /**
+         * Status
+         *
+         * Filter by execution status
+         */
+        status?: ExecutionStatus | null;
+    };
     url: '/executions/';
 };
+
+export type ListUserExecutionsExecutionsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListUserExecutionsExecutionsGetError = ListUserExecutionsExecutionsGetErrors[keyof ListUserExecutionsExecutionsGetErrors];
 
 export type ListUserExecutionsExecutionsGetResponses = {
     /**
      * Successful Response
      */
-    200: ApiResponseListExecutionListItem;
+    200: ApiResponseUnionListExecutionListItemPaginatedDataExecutionListItem;
 };
 
 export type ListUserExecutionsExecutionsGetResponse = ListUserExecutionsExecutionsGetResponses[keyof ListUserExecutionsExecutionsGetResponses];
@@ -4258,15 +4362,47 @@ export type UseTemplateTemplatesTemplateIdUsePostResponse = UseTemplateTemplates
 export type ListCredentialsCredentialsGetData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Page
+         *
+         * Page number (1-based)
+         */
+        page?: number | null;
+        /**
+         * Page Size
+         *
+         * Number of credentials per page
+         */
+        page_size?: number | null;
+        /**
+         * Search
+         */
+        search?: string | null;
+        /**
+         * Type
+         *
+         * Filter by credential type
+         */
+        type?: CredentialType | null;
+    };
     url: '/credentials/';
 };
+
+export type ListCredentialsCredentialsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListCredentialsCredentialsGetError = ListCredentialsCredentialsGetErrors[keyof ListCredentialsCredentialsGetErrors];
 
 export type ListCredentialsCredentialsGetResponses = {
     /**
      * Successful Response
      */
-    200: ApiResponseListCredentialResponse;
+    200: ApiResponseUnionListCredentialResponsePaginatedDataCredentialResponse;
 };
 
 export type ListCredentialsCredentialsGetResponse = ListCredentialsCredentialsGetResponses[keyof ListCredentialsCredentialsGetResponses];
