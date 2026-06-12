@@ -1,9 +1,19 @@
 const docsMeta = {
   index: "Home",
   "getting-started": "Getting Started",
-  guides: "User Guides",
-  architecture: "Architecture",
-  "api-reference": "API Reference",
+  "how-rune-works": "How Rune Works",
+  guides: "Guides",
+  "ai-features": "AI Features",
+  faq: "FAQ",
+  reference: "Reference",
+  architecture: {
+    title: "Architecture",
+    display: "hidden",
+  },
+  "api-reference": {
+    title: "API Reference",
+    display: "hidden",
+  },
 };
 
 export default docsMeta;
