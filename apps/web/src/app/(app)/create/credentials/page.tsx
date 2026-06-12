@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
-import { CredentialsTable, type Credential, type CredentialType } from "@/components/credentials/CredentialsTable";
+import {
+  CredentialsTable,
+  type Credential,
+  type CredentialType,
+} from "@/components/credentials/CredentialsTable";
 import { AddCredentialDialog } from "@/components/credentials/AddCredentialDialog";
 import { DeleteCredentialDialog } from "@/components/credentials/DeleteCredentialDialog";
 import { credentials as credentialsAPI } from "@/lib/api";
@@ -14,7 +18,7 @@ export default function CreateCredentialsPage() {
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [query, setQuery] = useState("");
@@ -178,7 +182,10 @@ export default function CreateCredentialsPage() {
       <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
         <div className="text-center text-destructive">
           <p>{error}</p>
-          <button onClick={() => loadCredentials(page, pageSize, query, typeFilter)} className="mt-4 underline hover:no-underline">
+          <button
+            onClick={() => loadCredentials(page, pageSize, query, typeFilter)}
+            className="mt-4 underline hover:no-underline"
+          >
             Try again
           </button>
         </div>

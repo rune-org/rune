@@ -3,7 +3,10 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { toast } from "@/components/ui/toast";
 import { listUserExecutions } from "@/lib/api/workflows";
-import type { ExecutionListItem as ApiExecutionListItem, ExecutionStatus } from "@/client/types.gen";
+import type {
+  ExecutionListItem as ApiExecutionListItem,
+  ExecutionStatus,
+} from "@/client/types.gen";
 import type { ExecutionListItem, ExecutionMetrics, ExecutionFilters } from "../types";
 
 function mapExecution(item: ApiExecutionListItem): ExecutionListItem {
@@ -52,7 +55,6 @@ function calculateMetrics(executions: ExecutionListItem[]): ExecutionMetrics {
     executionsThisWeek,
   };
 }
-
 
 export interface UseExecutionsListReturn {
   /** List of executions (paginated) */
@@ -108,7 +110,9 @@ export function useExecutionsList(): UseExecutionsListReturn {
       const response = await listUserExecutions();
       if (response.data?.data) {
         const items = response.data.data;
-        const mapped = Array.isArray(items) ? items.map(mapExecution) : (items.items ?? []).map(mapExecution);
+        const mapped = Array.isArray(items)
+          ? items.map(mapExecution)
+          : (items.items ?? []).map(mapExecution);
         setAllExecutions(mapped);
       }
     } catch (error) {
@@ -116,44 +120,47 @@ export function useExecutionsList(): UseExecutionsListReturn {
     }
   }, []);
 
-  const loadPaginated = useCallback(async (
-    currentPage: number,
-    currentPageSize: number,
-    currentSearch: string,
-    currentFilters: ExecutionFilters,
-  ) => {
-    const statusParam = currentFilters.status && currentFilters.status !== "all" ? (currentFilters.status as ExecutionStatus) : undefined;
-    const params: NonNullable<Parameters<typeof listUserExecutions>[0]> = {
-      page: currentPage,
-      page_size: currentPageSize,
-      search: currentSearch.trim() || undefined,
-      status: statusParam,
-    };
+  const loadPaginated = useCallback(
+    async (
+      currentPage: number,
+      currentPageSize: number,
+      currentSearch: string,
+      currentFilters: ExecutionFilters,
+    ) => {
+      const statusParam =
+        currentFilters.status && currentFilters.status !== "all"
+          ? (currentFilters.status as ExecutionStatus)
+          : undefined;
+      const params: NonNullable<Parameters<typeof listUserExecutions>[0]> = {
+        page: currentPage,
+        page_size: currentPageSize,
+        search: currentSearch.trim() || undefined,
+        status: statusParam,
+      };
 
-    const response = await listUserExecutions(params);
-    if (response.error) {
-      throw response.error;
-    }
+      const response = await listUserExecutions(params);
+      if (response.error) {
+        throw response.error;
+      }
 
-    const resData = response.data?.data;
-    if (resData && !Array.isArray(resData)) {
-      setPaginatedExecutions((resData.items ?? []).map(mapExecution));
-      setTotal(resData.total ?? 0);
-      setTotalPages(resData.total_pages ?? 1);
-    } else if (Array.isArray(resData)) {
-      setPaginatedExecutions(resData.map(mapExecution));
-      setTotal(resData.length);
-      setTotalPages(1);
-    }
-  }, []);
+      const resData = response.data?.data;
+      if (resData && !Array.isArray(resData)) {
+        setPaginatedExecutions((resData.items ?? []).map(mapExecution));
+        setTotal(resData.total ?? 0);
+        setTotalPages(resData.total_pages ?? 1);
+      } else if (Array.isArray(resData)) {
+        setPaginatedExecutions(resData.map(mapExecution));
+        setTotal(resData.length);
+        setTotalPages(1);
+      }
+    },
+    [],
+  );
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
     try {
-      await Promise.all([
-        loadPaginated(page, pageSize, search, filters),
-        loadMetrics(),
-      ]);
+      await Promise.all([loadPaginated(page, pageSize, search, filters), loadMetrics()]);
     } catch (error) {
       console.error("[useExecutionsList] Failed to fetch executions", error);
       toast.error("Failed to load executions");

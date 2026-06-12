@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MoreHorizontal, Search, Key, Share2, Users, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  MoreHorizontal,
+  Search,
+  Key,
+  Share2,
+  Users,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 
