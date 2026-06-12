@@ -776,25 +776,89 @@ async def test_create_credential_with_null_credential_data(
 
 
 @pytest.mark.asyncio
-async def test_list_credentials_with_query_params_ignored(
+async def test_list_credentials_pagination_and_filtering(
     authenticated_client: AsyncClient,
 ):
-    """Test that query parameters are ignored (for now, since not implemented)."""
+    """Test pagination, search, and type filtering on list_credentials endpoint."""
+    # Create credentials
     await authenticated_client.post(
         "/credentials/",
         json={
-            "name": "test-cred",
+            "name": "apple-key",
             "credential_type": "api_key",
-            "credential_data": {"api_key": "secret"},
+            "credential_data": {"api_key": "secret1"},
+        },
+    )
+    await authenticated_client.post(
+        "/credentials/",
+        json={
+            "name": "banana-oauth",
+            "credential_type": "oauth2",
+            "credential_data": {"token": "secret2"},
+        },
+    )
+    await authenticated_client.post(
+        "/credentials/",
+        json={
+            "name": "orange-key",
+            "credential_type": "api_key",
+            "credential_data": {"api_key": "secret3"},
         },
     )
 
-    # List with query params (should be ignored)
-    response = await authenticated_client.get("/credentials/?type=oauth2&limit=10")
-
+    # 1. Flat list (original behavior)
+    response = await authenticated_client.get("/credentials/")
     assert response.status_code == 200
-    # Should still return all credentials (query params ignored)
-    assert len(response.json()["data"]) >= 1
+    data = response.json()
+    assert isinstance(data["data"], list)
+    assert len(data["data"]) == 3
+
+    # 2. Paginated enveloped structure
+    response = await authenticated_client.get(
+        "/credentials/", params={"page": 1, "page_size": 2}
+    )
+    assert response.status_code == 200
+    envelope = response.json()["data"]
+    assert "items" in envelope
+    assert "total" in envelope
+    assert "page" in envelope
+    assert "page_size" in envelope
+    assert "total_pages" in envelope
+    assert envelope["page"] == 1
+    assert envelope["page_size"] == 2
+    assert len(envelope["items"]) == 2
+    assert envelope["total"] == 3
+
+    # Page 2
+    response2 = await authenticated_client.get(
+        "/credentials/", params={"page": 2, "page_size": 2}
+    )
+    assert response2.status_code == 200
+    envelope2 = response2.json()["data"]
+    assert envelope2["page"] == 2
+    assert len(envelope2["items"]) == 1
+
+    # 3. Reject invalid combinations (only one of page or page_size provided)
+    response_fail = await authenticated_client.get("/credentials/", params={"page": 1})
+    assert response_fail.status_code == 400
+
+    # 4. Search filter
+    response_search = await authenticated_client.get(
+        "/credentials/", params={"search": "apple"}
+    )
+    assert response_search.status_code == 200
+    items = response_search.json()["data"]
+    assert len(items) == 1
+    assert items[0]["name"] == "apple-key"
+
+    # 5. Type filter
+    response_type = await authenticated_client.get(
+        "/credentials/", params={"type": "oauth2"}
+    )
+    assert response_type.status_code == 200
+    items_type = response_type.json()["data"]
+    assert len(items_type) == 1
+    assert items_type[0]["name"] == "banana-oauth"
 
 
 @pytest.mark.asyncio

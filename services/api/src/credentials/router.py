@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import StreamingResponse
 import asyncio
 
 from src.core.dependencies import require_password_changed
-from src.core.responses import ApiResponse
+from src.core.exceptions import BadRequest
+from src.core.responses import ApiResponse, PaginatedData
 from src.credentials.dependencies import get_credential_service, get_permission_service
 from src.credentials.permissions import CredentialPermissionService
 from src.credentials.schemas import (
@@ -16,7 +17,7 @@ from src.credentials.schemas import (
     CredentialUsage,
 )
 from src.credentials.service import CredentialService
-from src.db.models import User
+from src.db.models import User, CredentialType
 
 router = APIRouter(prefix="/credentials", tags=["credentials"])
 
@@ -52,15 +53,29 @@ async def create_credential(
     )
 
 
+MAX_CREDENTIAL_PAGE_SIZE = 50
+
+
 @router.get(
     "/",
-    response_model=ApiResponse[list[CredentialResponse]],
+    response_model=ApiResponse[
+        list[CredentialResponse] | PaginatedData[CredentialResponse]
+    ],
     summary="List all accessible credentials",
 )
 async def list_credentials(
+    page: int | None = Query(None, ge=1, description="Page number (1-based)"),
+    page_size: int | None = Query(
+        None,
+        ge=1,
+        le=MAX_CREDENTIAL_PAGE_SIZE,
+        description="Number of credentials per page",
+    ),
+    search: str | None = None,
+    type: CredentialType | None = Query(None, description="Filter by credential type"),
     current_user: User = Depends(require_password_changed),
     service: CredentialService = Depends(get_credential_service),
-) -> ApiResponse[list[CredentialResponse]]:
+) -> ApiResponse[list[CredentialResponse] | PaginatedData[CredentialResponse]]:
     """
     List all credentials you have access to.
 
@@ -73,12 +88,42 @@ async def list_credentials(
     - ADMIN: can view all credentials
     - SHARED USER: can view shared credentials
     """
-    credentials = await service.list_credentials(current_user)
+    if (page is None) != (page_size is None):
+        raise BadRequest(
+            detail="Both page and page_size are required for paginated results"
+        )
+
+    limit = page_size if page_size is not None else None
+    offset = (
+        (page - 1) * page_size if (page is not None and page_size is not None) else None
+    )
+
+    credentials, total = await service.list_credentials(
+        current_user,
+        limit=limit,
+        offset=offset,
+        search=search,
+        credential_type=type,
+    )
 
     # Enrich each credential with permission flags
     enriched = []
     for cred in credentials:
         enriched.append(await service.enrich_credential_response(cred, current_user))
+
+    if page is not None and page_size is not None:
+        total_pages = (total + page_size - 1) // page_size if page_size > 0 else 0
+        paginated_data = PaginatedData(
+            items=enriched,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+        )
+        return ApiResponse(
+            data=paginated_data,
+            message=f"Found {total} credential(s)",
+        )
 
     return ApiResponse(
         data=enriched,
@@ -106,7 +151,7 @@ async def list_credentials_dropdown(
     - ADMIN: can view all credentials
     - SHARED USER: can view shared credentials
     """
-    credentials = await service.list_credentials(current_user)
+    credentials, _ = await service.list_credentials(current_user)
 
     return ApiResponse(
         data=[CredentialResponseDropDown.model_validate(c) for c in credentials],
