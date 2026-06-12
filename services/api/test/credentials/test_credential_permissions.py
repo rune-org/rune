@@ -228,7 +228,7 @@ class TestAdminPermissions:
             admin_user,
         )
 
-        credentials = await service.list_credentials(admin_user)
+        credentials, _ = await service.list_credentials(admin_user)
 
         assert len(credentials) >= 2
         cred_ids = [c.id for c in credentials]
@@ -439,7 +439,7 @@ class TestUnauthorizedAccess:
         )
 
         # Regular user lists credentials
-        credentials = await service.list_credentials(regular_user)
+        credentials, _ = await service.list_credentials(regular_user)
 
         # Should only see their own
         cred_ids = [c.id for c in credentials]
@@ -856,7 +856,7 @@ class TestMultipleCredentialManagement:
         )
 
         # List all credentials
-        credentials = await service.list_credentials(owner_user)
+        credentials, _ = await service.list_credentials(owner_user)
         cred_ids = [c.id for c in credentials]
 
         assert cred1.id in cred_ids
@@ -898,7 +898,7 @@ class TestMultipleCredentialManagement:
         )
 
         # List all accessible credentials
-        credentials = await service.list_credentials(regular_user)
+        credentials, _ = await service.list_credentials(regular_user)
         cred_ids = [c.id for c in credentials]
 
         assert owned_cred.id in cred_ids
