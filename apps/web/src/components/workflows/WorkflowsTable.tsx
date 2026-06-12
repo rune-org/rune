@@ -132,8 +132,9 @@ export function WorkflowsTable() {
   const refreshExecutions = useCallback(async () => {
     try {
       const response = await listUserExecutions();
-      const items = response.data?.data;
-      if (items) {
+      const rawItems = response.data?.data;
+      if (rawItems) {
+        const items = Array.isArray(rawItems) ? rawItems : (rawItems.items ?? []);
         setExecutionItems((prev) => {
           if (
             prev.length === items.length &&

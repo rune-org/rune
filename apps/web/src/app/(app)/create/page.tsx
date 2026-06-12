@@ -91,7 +91,10 @@ export default function CreatePage() {
         const items: WorkflowListItem[] = Array.isArray(workflowData)
           ? workflowData
           : (workflowData?.items ?? []);
-        const executions: ExecutionListItem[] = executionsRes.data?.data ?? [];
+        const executionData = executionsRes.data?.data;
+        const executions: ExecutionListItem[] = Array.isArray(executionData)
+          ? executionData
+          : (executionData?.items ?? []);
 
         setRecentWorkflows(orderByRecentRun(items, executions).slice(0, RECENT_LIMIT));
       })
