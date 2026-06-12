@@ -1,0 +1,65 @@
+# FAQ
+
+## What is Rune?
+
+Rune is a low-code workflow automation app. You build workflows from connected nodes, run them, and inspect what happened.
+
+## Do I need to write code?
+
+No. Most workflows can be built from the visual canvas, templates, and Smith prompts.
+
+Some nodes still use technical ideas such as URLs, fields, variables, and credentials. The docs explain those concepts as you need them.
+
+## What should I do first?
+
+Run the [Quick Start](/docs/getting-started/quick-start). It uses a public API, so you do not need credentials.
+
+## What is a workflow?
+
+A workflow is the complete automation: trigger, nodes, connections, settings, and saved versions.
+
+## What is a trigger?
+
+A trigger starts the workflow. It can be manual, scheduled, or webhook-based.
+
+## What is a node?
+
+A node is one step in the workflow. Nodes can call APIs, transform data, branch, wait, send messages, run agents, or log output.
+
+## Why did my workflow fail?
+
+Open the failed execution and find the first failed node.
+
+Common causes include missing credentials, wrong variables, API errors, unsaved changes, or branch rules that did not match the data.
+
+## Where do I see run history?
+
+Use the **Executions** page or open execution details from the workflow canvas.
+
+## When do I need credentials?
+
+Use credentials when a workflow connects to a private API, account, or service.
+
+The quick-start workflow does not need credentials because it calls a public endpoint.
+
+## Can teammates use my workflow?
+
+Yes, if you share the workflow with them.
+
+They may also need access to any credentials the workflow uses.
+
+## Should I start from a template or from scratch?
+
+Start from a template when the pattern is close to what you need. Start from scratch when the workflow is small or highly specific.
+
+## What does Smith do?
+
+Smith drafts or edits workflows from plain-language prompts. Always review Smith's work before relying on it.
+
+## What does Scryb do?
+
+Scryb generates Markdown documentation for saved workflows.
+
+## Why does Scryb ask me to save first?
+
+Scryb needs a saved workflow before it can generate documentation from it.

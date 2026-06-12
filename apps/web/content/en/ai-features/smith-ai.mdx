@@ -1,0 +1,56 @@
+# Smith AI Builder
+
+Smith helps you turn a plain-language description into a workflow draft.
+
+Use Smith when you know the outcome you want but do not want to place every node manually.
+
+## Start with Smith
+
+1. Open **Create**.
+2. Choose **Ask an Agent** or open Smith from the canvas.
+3. Describe the workflow you want.
+4. Review the generated nodes and connections.
+5. Save the workflow.
+6. Run a test execution.
+
+## Write a useful prompt
+
+Good prompts include:
+
+- The event that starts the workflow.
+- The services involved.
+- The decision rules.
+- The final action.
+- Any constraints or edge cases.
+
+Example:
+
+```text
+Build a workflow that starts from a webhook, checks whether the payload priority is high, summarizes the request with an AI agent, and logs the summary.
+```
+
+## Review before running
+
+Smith can make mistakes. Before relying on a generated workflow:
+
+- Check each node's settings.
+- Confirm required credentials are selected.
+- Read branch conditions carefully.
+- Run with safe test data.
+- Inspect the execution output.
+
+## Iterate with Smith
+
+After the first draft, ask for focused changes.
+
+Examples:
+
+```text
+Add a Log node after the HTTP request so I can see the response body.
+```
+
+```text
+Change the branch so only urgent support tickets continue to the email step.
+```
+
+Small requests are easier to review than asking Smith to rebuild everything at once.

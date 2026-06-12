@@ -6,7 +6,15 @@ import { Container } from "@/components/shared/Container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { BookOpen, KeyRound, LayoutGrid, Workflow } from "lucide-react";
+import {
+  Bot,
+  BookOpen,
+  CircleHelp,
+  KeyRound,
+  LayoutGrid,
+  PlayCircle,
+  Workflow,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type DocCard = {
@@ -19,49 +27,55 @@ type DocCard = {
 
 const docCards: DocCard[] = [
   {
-    title: "Getting Started",
-    description: "Spin up your first workflow in minutes with guided steps.",
+    title: "Quick Start",
+    description: "Build and run a no-credential workflow in a few minutes.",
+    icon: PlayCircle,
+    href: "/docs/getting-started/quick-start",
+  },
+  {
+    title: "How Rune Works",
+    description: "Learn workflows, triggers, nodes, credentials, and executions.",
     icon: BookOpen,
-    href: "/docs/getting-started",
+    href: "/docs/how-rune-works",
   },
   {
     title: "Workflows",
-    description: "Design, test, and iterate on automated workflows.",
+    description: "Create, save, run, and iterate on workflows in the canvas.",
     icon: Workflow,
     href: "/docs/guides/creating-workflows",
   },
   {
     title: "Credentials",
-    description: "Manage secure connections to external services and APIs.",
+    description: "Connect private services without putting secrets in workflows.",
     icon: KeyRound,
     href: "/docs/guides/credentials",
   },
   {
     title: "Templates",
-    description: "Reuse curated templates to launch faster with best practices.",
+    description: "Start from reusable workflow patterns and customize safely.",
     icon: LayoutGrid,
     href: "/docs/guides/templates",
   },
   {
-    title: "Smith AI",
-    description: "Build workflows with natural language using the AI assistant.",
-    image: "/icons/smith_logo_compact_white.svg",
-    href: "/docs/guides/smith-ai",
+    title: "AI Features",
+    description: "Use Smith to build workflows and Scryb to document them.",
+    icon: Bot,
+    href: "/docs/ai-features/smith-ai",
   },
   {
-    title: "Scryb AI",
-    description: "Generate comprehensive documentation for any workflow with AI.",
-    image: "/icons/scryb_logo_compact_white.svg",
-    href: "/docs/guides/scryb-ai",
+    title: "FAQ",
+    description: "Answers for first-run blockers and common workflow questions.",
+    icon: CircleHelp,
+    href: "/docs/faq",
   },
 ];
 
 const faqItems = [
-  { question: "How do I install Rune?", href: "/docs/getting-started" },
-  { question: "How can I create a workflow?", href: "/docs/guides/creating-workflows" },
-  { question: "What workflow templates are available?", href: "/docs/guides/templates" },
-  { question: "How does Smith AI build workflows?", href: "/docs/guides/smith-ai" },
-  { question: "How does Scryb generate documentation?", href: "/docs/guides/scryb-ai" },
+  { question: "What should I do first?", href: "/docs/getting-started/quick-start" },
+  { question: "How does Rune work?", href: "/docs/how-rune-works" },
+  { question: "When do I need credentials?", href: "/docs/guides/credentials" },
+  { question: "Why did my workflow fail?", href: "/docs/guides/executions" },
+  { question: "How do Smith and Scryb help?", href: "/docs/ai-features/smith-ai" },
 ];
 
 export default function CreateDocsPage() {
@@ -69,7 +83,7 @@ export default function CreateDocsPage() {
     <Container className="flex flex-col gap-10 py-12" widthClassName="max-w-6xl">
       <PageHeader
         title="Documentation"
-        description="Welcome to the Rune documentation. Learn how to create and manage your workflows."
+        description="Learn the core Rune workflow path: build, run, inspect, and improve."
         actions={
           <Button asChild size="sm" variant="outline">
             <Link href="/docs">Browse full docs</Link>

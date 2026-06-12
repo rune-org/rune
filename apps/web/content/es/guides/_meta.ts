@@ -1,11 +1,19 @@
 const guidesMeta = {
   "creating-workflows": "Crear flujos de trabajo",
-  nodes: "Entender los nodos",
-  credentials: "Gestión de credenciales",
-  executions: "Monitorización de ejecuciones",
+  nodes: "Familias de nodos",
+  "data-and-variables": "Datos y variables",
+  credentials: "Credenciales",
+  executions: "Ejecuciones",
   templates: "Plantillas",
-  "smith-ai": "Smith, asistente de IA",
-  "scryb-ai": "Scryb, generador de docs con IA",
+  sharing: "Compartir",
+  "smith-ai": {
+    title: "Smith, asistente de IA",
+    display: "hidden",
+  },
+  "scryb-ai": {
+    title: "Scryb, generador de docs con IA",
+    display: "hidden",
+  },
 };
 
 export default guidesMeta;
