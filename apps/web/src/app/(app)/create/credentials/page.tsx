@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Container } from "@/components/shared/Container";
-import { CredentialsTable, type Credential } from "@/components/credentials/CredentialsTable";
+import { CredentialsTable, type Credential, type CredentialType } from "@/components/credentials/CredentialsTable";
 import { AddCredentialDialog } from "@/components/credentials/AddCredentialDialog";
 import { DeleteCredentialDialog } from "@/components/credentials/DeleteCredentialDialog";
 import { credentials as credentialsAPI } from "@/lib/api";
@@ -14,6 +14,14 @@ export default function CreateCredentialsPage() {
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<Credential["credential_type"] | "all">("all");
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     credentialId: number | null;
@@ -24,11 +32,63 @@ export default function CreateCredentialsPage() {
     credentialName: "",
   });
 
-  // Fetch credentials on mount
+  const loadCredentials = async (
+    currentPage = page,
+    currentPageSize = pageSize,
+    currentQuery = query,
+    currentType = typeFilter,
+  ) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const params: NonNullable<Parameters<typeof credentialsAPI.listCredentials>[0]> = {
+        page: currentPage,
+        page_size: currentPageSize,
+      };
+
+      const trimmedQuery = currentQuery.trim();
+      if (trimmedQuery) {
+        params.search = trimmedQuery;
+      }
+
+      if (currentType !== "all") {
+        params.type = currentType as CredentialType;
+      }
+
+      const response = await credentialsAPI.listCredentials(params);
+
+      // Extract data from the ApiResponse wrapper
+      if (response.data && response.data.data) {
+        const resData = response.data.data;
+        if (Array.isArray(resData)) {
+          setCredentials(resData);
+          setTotal(resData.length);
+          setTotalPages(1);
+        } else {
+          setCredentials(resData.items ?? []);
+          setTotal(resData.total ?? 0);
+          setTotalPages(resData.total_pages ?? 1);
+        }
+      }
+    } catch (_err) {
+      toast.error("Failed to load credentials", {
+        action: {
+          label: "Retry",
+          onClick: () => loadCredentials(currentPage, currentPageSize, currentQuery, currentType),
+        },
+      });
+      setError("Failed to load credentials. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch credentials when pagination or filters change
   useEffect(() => {
-    loadCredentials();
+    loadCredentials(page, pageSize, query, typeFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [page, pageSize, query, typeFilter]);
 
   // OAuth redirect return (API sends browser here with ?oauth=success|error)
   useEffect(() => {
@@ -39,7 +99,7 @@ export default function CreateCredentialsPage() {
 
     if (oauth === "success") {
       toast.success("OAuth credential connected.");
-      loadCredentials();
+      void loadCredentials(page, pageSize, query, typeFilter);
     } else if (oauth === "error") {
       const reason = params.get("reason") || "OAuth failed";
       toast.error(decodeURIComponent(reason));
@@ -48,31 +108,6 @@ export default function CreateCredentialsPage() {
     window.history.replaceState({}, "", window.location.pathname);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const loadCredentials = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await credentialsAPI.listCredentials();
-
-      // Extract data from the ApiResponse wrapper
-      if (response.data && response.data.data) {
-        setCredentials(response.data.data);
-      }
-    } catch (_err) {
-      toast.error("Failed to load credentials", {
-        action: {
-          label: "Retry",
-          onClick: () => loadCredentials(),
-        },
-      });
-      setError("Failed to load credentials. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // TODO(fe): revisit after RBAC
 
   const handleAddCredential = async (newCred: {
     name: string;
@@ -101,12 +136,10 @@ export default function CreateCredentialsPage() {
 
       // Extract the created credential from the ApiResponse wrapper
       if (response.data && response.data.data) {
-        setCredentials((prev) => [...prev, response.data.data]);
+        void loadCredentials(page, pageSize, query, typeFilter);
         toast.success("Credential created successfully");
       }
     } catch (err) {
-      // Only show generic error if it wasn't already handled above
-      // (response.error errors are already shown via toast)
       if (!hasHandledApiError) {
         toast.error("Failed to create credential. Please try again.");
       }
@@ -132,11 +165,10 @@ export default function CreateCredentialsPage() {
 
     try {
       await credentialsAPI.deleteCredential(id);
-      setCredentials((prev) => prev.filter((c) => c.id !== id));
       toast.success("Credential deleted successfully");
+      void loadCredentials(page, pageSize, query, typeFilter);
     } catch (_err) {
-      // Reload credentials to restore UI state on error
-      loadCredentials();
+      void loadCredentials(page, pageSize, query, typeFilter);
       toast.error("Failed to delete credential. Please try again.");
     }
   };
@@ -146,7 +178,7 @@ export default function CreateCredentialsPage() {
       <Container className="flex flex-col gap-8 py-12" widthClassName="max-w-6xl">
         <div className="text-center text-destructive">
           <p>{error}</p>
-          <button onClick={loadCredentials} className="mt-4 underline hover:no-underline">
+          <button onClick={() => loadCredentials(page, pageSize, query, typeFilter)} className="mt-4 underline hover:no-underline">
             Try again
           </button>
         </div>
@@ -164,8 +196,18 @@ export default function CreateCredentialsPage() {
       <CredentialsTable
         credentials={credentials}
         onDelete={handleDeleteCredential}
-        onSharesChanged={loadCredentials}
+        onSharesChanged={() => loadCredentials(page, pageSize, query, typeFilter)}
         isLoading={isLoading}
+        page={page}
+        setPage={setPage}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        query={query}
+        setQuery={setQuery}
+        typeFilter={typeFilter}
+        setTypeFilter={setTypeFilter}
+        total={total}
+        totalPages={totalPages}
       />
       <DeleteCredentialDialog
         open={deleteDialog.open}

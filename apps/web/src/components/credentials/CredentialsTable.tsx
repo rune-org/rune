@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { MoreHorizontal, Search, Key, Share2, Users, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MoreHorizontal, Search, Key, Share2, Users, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,16 @@ interface CredentialsTableProps {
   onDelete?: (id: number) => void;
   onSharesChanged?: () => void;
   isLoading?: boolean;
+  page: number;
+  setPage: (page: number) => void;
+  pageSize: number;
+  setPageSize: (pageSize: number) => void;
+  query: string;
+  setQuery: (query: string) => void;
+  typeFilter: CredentialType | "all";
+  setTypeFilter: (filter: CredentialType | "all") => void;
+  total: number;
+  totalPages: number;
 }
 
 export function CredentialsTable({
@@ -67,12 +78,20 @@ export function CredentialsTable({
   onDelete,
   onSharesChanged,
   isLoading = false,
+  page,
+  setPage,
+  pageSize,
+  setPageSize,
+  query,
+  setQuery,
+  typeFilter,
+  setTypeFilter,
+  total,
+  totalPages,
 }: CredentialsTableProps) {
   const { state } = useAuth();
   const currentUserId = state.user?.id;
 
-  const [query, setQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<CredentialType | "all">("all");
   const [shareDialogCredential, setShareDialogCredential] = useState<Credential | null>(null);
   const [oauthUpdateCredential, setOauthUpdateCredential] = useState<Credential | null>(null);
   const [leavingCredentialId, setLeavingCredentialId] = useState<number | null>(null);
@@ -184,17 +203,7 @@ export function CredentialsTable({
     window.location.href = `${apiBase}/oauth/authorize?credential_id=${credentialId}`;
   };
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let list = credentials;
-
-    if (typeFilter !== "all") {
-      list = list.filter((c) => c.credential_type === typeFilter);
-    }
-
-    if (!q) return list;
-    return list.filter((c) => c.name.toLowerCase().includes(q));
-  }, [credentials, query, typeFilter]);
+  const filtered = credentials;
 
   return (
     <div className="flex flex-col gap-4">
@@ -425,6 +434,57 @@ export function CredentialsTable({
             : `${filtered.length} credential${filtered.length > 1 ? "s" : ""} total.`}
         </TableCaption>
       </Table>
+      {/* Pagination Controls */}
+      {total > 0 && (
+        <div className="flex items-center justify-between border-t border-border px-2 py-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {Math.min((page - 1) * pageSize + 1, total)} to{" "}
+            {Math.min(page * pageSize, total)} of {total} credentials
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Rows per page</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="h-8 w-[70px] rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {[5, 10, 20, 50].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => setPage(Math.max(page - 1, 1))}
+                disabled={page <= 1}
+              >
+                <span className="sr-only">Previous page</span>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-medium">
+                Page {page} of {totalPages || 1}
+              </span>
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => setPage(Math.min(page + 1, totalPages))}
+                disabled={page >= totalPages}
+              >
+                <span className="sr-only">Next page</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Share Credential Dialog */}
       {shareDialogCredential && (
