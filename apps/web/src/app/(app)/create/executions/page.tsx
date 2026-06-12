@@ -17,13 +17,29 @@ import { MetricsCards } from "@/features/executions/components/MetricsCards";
 import type { ExecutionListStatus } from "@/features/executions/types";
 
 export default function ExecutionsPage() {
-  const { executions, metrics, isLoading, filters, setFilters, refresh } = useExecutionsList();
+  const {
+    executions,
+    metrics,
+    isLoading,
+    filters,
+    setFilters,
+    refresh,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    search,
+    setSearch,
+    total,
+    totalPages,
+  } = useExecutionsList();
 
   const handleStatusFilterChange = (value: string) => {
     setFilters({
       ...filters,
       status: value === "all" ? "all" : (value as ExecutionListStatus),
     });
+    setPage(1);
   };
 
   return (
@@ -67,10 +83,21 @@ export default function ExecutionsPage() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Recent Executions</h2>
           <div className="text-sm text-muted-foreground">
-            {executions.length} {executions.length === 1 ? "execution" : "executions"}
+            {total} {total === 1 ? "execution" : "executions"}
           </div>
         </div>
-        <ExecutionsTable executions={executions} isLoading={isLoading} />
+        <ExecutionsTable
+          executions={executions}
+          isLoading={isLoading}
+          page={page}
+          setPage={setPage}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+          search={search}
+          setSearch={setSearch}
+          total={total}
+          totalPages={totalPages}
+        />
       </div>
     </Container>
   );

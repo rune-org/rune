@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { toast } from "@/components/ui/toast";
 import { listUserExecutions } from "@/lib/api/workflows";
-import type { ExecutionListItem as ApiExecutionListItem } from "@/client/types.gen";
+import type { ExecutionListItem as ApiExecutionListItem, ExecutionStatus } from "@/client/types.gen";
 import type { ExecutionListItem, ExecutionMetrics, ExecutionFilters } from "../types";
 
 function mapExecution(item: ApiExecutionListItem): ExecutionListItem {
@@ -53,36 +53,9 @@ function calculateMetrics(executions: ExecutionListItem[]): ExecutionMetrics {
   };
 }
 
-/**
- * Apply filters to execution list.
- */
-function applyFilters(
-  executions: ExecutionListItem[],
-  filters: ExecutionFilters,
-): ExecutionListItem[] {
-  let filtered = executions;
-
-  if (filters.workflowId !== undefined) {
-    filtered = filtered.filter((e) => e.workflowId === filters.workflowId);
-  }
-
-  if (filters.status && filters.status !== "all") {
-    filtered = filtered.filter((e) => e.status === filters.status);
-  }
-
-  if (filters.dateRange) {
-    const { start, end } = filters.dateRange;
-    filtered = filtered.filter((e) => {
-      const date = new Date(e.startedAt);
-      return date >= start && date <= end;
-    });
-  }
-
-  return filtered;
-}
 
 export interface UseExecutionsListReturn {
-  /** List of executions (filtered) */
+  /** List of executions (paginated) */
   executions: ExecutionListItem[];
   /** Raw unfiltered executions */
   allExecutions: ExecutionListItem[];
@@ -90,6 +63,22 @@ export interface UseExecutionsListReturn {
   metrics: ExecutionMetrics;
   /** Loading state */
   isLoading: boolean;
+  /** Current page */
+  page: number;
+  /** Set page */
+  setPage: (page: number) => void;
+  /** Page size */
+  pageSize: number;
+  /** Set page size */
+  setPageSize: (pageSize: number) => void;
+  /** Search query */
+  search: string;
+  /** Set search query */
+  setSearch: (search: string) => void;
+  /** Total executions */
+  total: number;
+  /** Total pages */
+  totalPages: number;
   /** Current filters */
   filters: ExecutionFilters;
   /** Set filters */
@@ -105,40 +94,105 @@ export function useExecutionsList(): UseExecutionsListReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState<ExecutionFilters>({ status: "all" });
   const [allExecutions, setAllExecutions] = useState<ExecutionListItem[]>([]);
-
-  const executions = useMemo(() => applyFilters(allExecutions, filters), [allExecutions, filters]);
+  const [paginatedExecutions, setPaginatedExecutions] = useState<ExecutionListItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState("");
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const metrics = useMemo(() => calculateMetrics(allExecutions), [allExecutions]);
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-
+  const loadMetrics = useCallback(async () => {
     try {
       const response = await listUserExecutions();
-
-      if (response.error) {
-        throw response.error;
+      if (response.data?.data) {
+        const items = response.data.data;
+        const mapped = Array.isArray(items) ? items.map(mapExecution) : (items.items ?? []).map(mapExecution);
+        setAllExecutions(mapped);
       }
+    } catch (error) {
+      console.error("[useExecutionsList] Failed to load metrics", error);
+    }
+  }, []);
 
-      const items = response.data?.data ?? [];
-      setAllExecutions(items.map(mapExecution));
+  const loadPaginated = useCallback(async (
+    currentPage: number,
+    currentPageSize: number,
+    currentSearch: string,
+    currentFilters: ExecutionFilters,
+  ) => {
+    const statusParam = currentFilters.status && currentFilters.status !== "all" ? (currentFilters.status as ExecutionStatus) : undefined;
+    const params: NonNullable<Parameters<typeof listUserExecutions>[0]> = {
+      page: currentPage,
+      page_size: currentPageSize,
+      search: currentSearch.trim() || undefined,
+      status: statusParam,
+    };
+
+    const response = await listUserExecutions(params);
+    if (response.error) {
+      throw response.error;
+    }
+
+    const resData = response.data?.data;
+    if (resData && !Array.isArray(resData)) {
+      setPaginatedExecutions((resData.items ?? []).map(mapExecution));
+      setTotal(resData.total ?? 0);
+      setTotalPages(resData.total_pages ?? 1);
+    } else if (Array.isArray(resData)) {
+      setPaginatedExecutions(resData.map(mapExecution));
+      setTotal(resData.length);
+      setTotalPages(1);
+    }
+  }, []);
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await Promise.all([
+        loadPaginated(page, pageSize, search, filters),
+        loadMetrics(),
+      ]);
     } catch (error) {
       console.error("[useExecutionsList] Failed to fetch executions", error);
       toast.error("Failed to load executions");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page, pageSize, search, filters, loadPaginated, loadMetrics]);
 
+  // Load metrics once on mount
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void loadMetrics();
+  }, [loadMetrics]);
+
+  // Load paginated data on changes
+  useEffect(() => {
+    setIsLoading(true);
+    loadPaginated(page, pageSize, search, filters)
+      .catch((error) => {
+        console.error("[useExecutionsList] Failed to fetch executions", error);
+        toast.error("Failed to load executions");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [page, pageSize, search, filters, loadPaginated]);
 
   return {
-    executions,
+    executions: paginatedExecutions,
     allExecutions,
     metrics,
     isLoading,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    search,
+    setSearch,
+    total,
+    totalPages,
     filters,
     setFilters,
     refresh,
