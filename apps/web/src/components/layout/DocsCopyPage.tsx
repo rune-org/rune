@@ -24,8 +24,7 @@ export function DocsCopyPage({ sourceCode }: { sourceCode: string }) {
   };
 
   const openInAssistant = (assistant: "chatgpt" | "claude") => {
-    const url =
-      assistant === "chatgpt" ? "chatgpt.com/?hints=search&prompt" : "claude.ai/new?q";
+    const url = assistant === "chatgpt" ? "chatgpt.com/?hints=search&prompt" : "claude.ai/new?q";
     const query = `Read from ${location.href} so I can ask questions about it.`;
     window.open(`https://${url}=${encodeURIComponent(query)}`, "_blank");
   };
@@ -52,9 +51,7 @@ export function DocsCopyPage({ sourceCode }: { sourceCode: string }) {
             <Copy className="size-4 shrink-0" />
             <span className="flex flex-col">
               <span className="font-medium">Copy page</span>
-              <span className="text-xs text-muted-foreground">
-                Copy page as Markdown for LLMs
-              </span>
+              <span className="text-xs text-muted-foreground">Copy page as Markdown for LLMs</span>
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -66,9 +63,7 @@ export function DocsCopyPage({ sourceCode }: { sourceCode: string }) {
               <span className="flex items-center gap-1 font-medium">
                 Open in ChatGPT <LinkArrowIcon height="1em" />
               </span>
-              <span className="text-xs text-muted-foreground">
-                Ask questions about this page
-              </span>
+              <span className="text-xs text-muted-foreground">Ask questions about this page</span>
             </span>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -80,9 +75,7 @@ export function DocsCopyPage({ sourceCode }: { sourceCode: string }) {
               <span className="flex items-center gap-1 font-medium">
                 Open in Claude <LinkArrowIcon height="1em" />
               </span>
-              <span className="text-xs text-muted-foreground">
-                Ask questions about this page
-              </span>
+              <span className="text-xs text-muted-foreground">Ask questions about this page</span>
             </span>
           </DropdownMenuItem>
         </DropdownMenuContent>
