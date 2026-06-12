@@ -39,10 +39,12 @@ export default async function DocsLayout({
   return (
     <Layout
       pageMap={pageMap}
-      docsRepositoryBase="https://github.com/rune-org/rune/tree/main/apps/web/content"
+      docsRepositoryBase="https://github.com/rune-org/rune/tree/main/apps/web"
       editLink={ui.editLink}
+      darkMode={false}
       sidebar={{
         defaultMenuCollapseLevel: 1,
+        toggleButton: false,
       }}
       navbar={<DocsNavbar key="navbar" />}
       footer={<Footer key="footer" />}

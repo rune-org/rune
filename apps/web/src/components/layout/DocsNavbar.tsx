@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Logo } from "@/components/shared/Logo";
 import { DocsSearch } from "@/components/layout/DocsSearch";
 import { DocsLanguageSwitcher } from "@/components/layout/DocsLanguageSwitcher";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { docsLocaleFromPath } from "@/lib/docs-locales";
 
 export function DocsNavbar() {
@@ -21,6 +22,7 @@ export function DocsNavbar() {
       </div>
 
       <div className="flex items-center gap-4">
+        <ThemeToggle />
         <DocsLanguageSwitcher />
         <Link
           href="https://github.com/rune-org/rune"
