@@ -6,7 +6,15 @@ import { Container } from "@/components/shared/Container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Bot, BookOpen, CircleHelp, KeyRound, LayoutGrid, PlayCircle, Workflow } from "lucide-react";
+import {
+  Bot,
+  BookOpen,
+  CircleHelp,
+  KeyRound,
+  LayoutGrid,
+  PlayCircle,
+  Workflow,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type DocCard = {
