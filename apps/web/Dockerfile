@@ -1,7 +1,7 @@
 
 FROM node:24-alpine AS base
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@11.6.0 --activate
 
 FROM base AS deps
 
@@ -9,7 +9,7 @@ RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml* .npmrc* ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
 
 RUN pnpm install --frozen-lockfile
 
