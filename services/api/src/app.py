@@ -15,6 +15,7 @@ from src.db.config import init_db, build_connection_string, get_async_engine
 from src.db.redis import close_redis
 from src.queue.rabbitmq import close_rabbitmq
 from src.smith.agent import create_smith_agent
+from src.scryb.agent import create_scryb_agent
 from src.auth.router import router as auth_router
 from src.auth.saml.router import router as saml_router
 from src.setup.router import router as setup_router
@@ -81,10 +82,46 @@ async def lifespan(app: FastAPI):
     async with AsyncPostgresSaver.from_conn_string(conn_string) as checkpointer:
         await checkpointer.setup()
 
+        # Optionally load Context7 documentation tools (MCP over streamable HTTP)
+        # so Smith can look up external-API usage while building http nodes.
+        # Failures never crash startup: Context7 is non-critical and Smith works
+        # without it (mirrors the template-seeding precedent). The client is a
+        # stateless HTTP client, so there is no shutdown hook.
+        context7_tools = []
+        if settings.context7_api_key:
+            try:
+                from langchain_mcp_adapters.client import MultiServerMCPClient
+
+                mcp_client = MultiServerMCPClient(
+                    {
+                        "context7": {
+                            "transport": "streamable_http",
+                            "url": "https://mcp.context7.com/mcp",
+                            "headers": {
+                                "CONTEXT7_API_KEY": settings.context7_api_key
+                            },
+                        }
+                    }
+                )
+                context7_tools = await mcp_client.get_tools()
+                print(
+                    f"Context7 tools loaded: {[t.name for t in context7_tools]}"
+                )
+            except Exception as exc:
+                print(f"Context7 load failed (continuing without it): {exc}")
+        else:
+            print("Context7 disabled (CONTEXT7_API_KEY not set); running without it.")
+
         # Create the Smith agent with the checkpointer
-        app.state.smith_agent = create_smith_agent(checkpointer=checkpointer)
+        app.state.smith_agent = create_smith_agent(
+            checkpointer=checkpointer, extra_tools=context7_tools
+        )
         # Store checkpointer separately for thread management
         app.state.smith_checkpointer = checkpointer
+
+        # Scryb is a stateless documentation agent (no checkpointer); it reads the
+        # shared node_docs on demand. Built once here, retrieved via app.state.
+        app.state.scryb_agent = create_scryb_agent()
 
         yield  # App runs here
 

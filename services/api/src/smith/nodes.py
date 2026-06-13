@@ -3,29 +3,8 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 
-# ── Todo / Planning ──────────────────────────────────────────────────────────
-
-
-class TodoItemInput(BaseModel):
-    """A single todo item for plan creation."""
-
-    title: str = Field(..., description="Short title for this step")
-    description: Optional[str] = Field(default=None, description="Optional details about this step")
-
-
-class CreateTodoPlanArgs(BaseModel):
-    """Arguments for creating a todo plan."""
-
-    items: list[TodoItemInput] = Field(
-        ..., description="Ordered list of todo items for the plan"
-    )
-
-
-class UpdateTodoStatusArgs(BaseModel):
-    """Arguments for updating a todo item's status."""
-
-    todo_id: str = Field(..., description="ID of the todo item to mark as done")
-    status: Literal["done"] = Field(default="done", description="Mark the todo as done")
+# Planning todos are handled by the prebuilt ``TodoListMiddleware``; there are
+# no hand-rolled todo arg models here.
 
 
 # ── Shared sub-models ────────────────────────────────────────────────────────
@@ -101,6 +80,17 @@ class ScheduledTriggerArgs(BaseModel):
     )
     unit: Optional[Literal["seconds", "minutes", "hours", "days"]] = Field(
         default=None, description="Interval unit"
+    )
+
+
+class WebhookTriggerArgs(BaseModel):
+    """Arguments for creating a webhook trigger node."""
+
+    node_type: Literal["webhookTrigger"] = Field(
+        default="webhookTrigger", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
     )
 
 
@@ -298,8 +288,8 @@ class SplitArgs(BaseModel):
     name: str = Field(
         ..., description="Node name (needs to be short, informative, without spaces)"
     )
-    array_field: Optional[str] = Field(
-        default=None, description="Variable reference to the array field to iterate over (e.g., '$FetchUsers.body.users')"
+    input_array: str = Field(
+        ..., description="Variable reference to the array to iterate over (e.g., '$FetchUsers.body.users')"
     )
 
 
@@ -330,31 +320,375 @@ class WaitArgs(BaseModel):
     )
 
 
-class DatetimeArgs(BaseModel):
-    """Arguments for creating a datetime node."""
+# Date/time shift units shared by dateTimeAdd / dateTimeSubtract.
+DateTimeUnit = Literal[
+    "seconds", "minutes", "hours", "days", "weeks", "months", "years"
+]
 
-    node_type: Literal["datetime"] = Field(default="datetime", description="Node type")
+# Reused field descriptions for the date/time family.
+_DT_FORMAT_DESC = (
+    "Output format as a Go time layout (e.g. '2006-01-02', "
+    "'2006-01-02 15:04:05', or RFC3339). Defaults to RFC3339."
+)
+_DT_TIMEZONE_DESC = "IANA timezone (e.g. 'UTC', 'America/New_York'). Defaults to UTC."
+
+
+class DateTimeNowArgs(BaseModel):
+    """Arguments for creating a dateTimeNow node (current date/time)."""
+
+    node_type: Literal["dateTimeNow"] = Field(
+        default="dateTimeNow", description="Node type"
+    )
     name: str = Field(
         ..., description="Node name (needs to be short, informative, without spaces)"
     )
-    operation: Optional[Literal["now", "add", "subtract", "format"]] = Field(
-        default=None, description="Date/time operation to perform"
+    timezone: Optional[str] = Field(default=None, description=_DT_TIMEZONE_DESC)
+    format: Optional[str] = Field(default=None, description=_DT_FORMAT_DESC)
+
+
+class DateTimeAddArgs(BaseModel):
+    """Arguments for creating a dateTimeAdd node (date/time + duration)."""
+
+    node_type: Literal["dateTimeAdd"] = Field(
+        default="dateTimeAdd", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    amount: int = Field(
+        ..., description="Number of units to add (e.g. 5)"
     )
     date: Optional[str] = Field(
-        default=None, description="Input date string (for add/subtract/format operations)"
+        default=None,
+        description="Base date string. Omit to add to the current time.",
     )
-    amount: Optional[int] = Field(
-        default=None, description="Amount to add or subtract"
+    unit: Optional[DateTimeUnit] = Field(
+        default=None, description="Duration unit (defaults to days)"
     )
-    unit: Optional[Literal["seconds", "minutes", "hours", "days", "weeks", "months", "years"]] = Field(
-        default=None, description="Unit for add/subtract operations"
+    timezone: Optional[str] = Field(default=None, description=_DT_TIMEZONE_DESC)
+    format: Optional[str] = Field(default=None, description=_DT_FORMAT_DESC)
+
+
+class DateTimeSubtractArgs(BaseModel):
+    """Arguments for creating a dateTimeSubtract node (date/time - duration)."""
+
+    node_type: Literal["dateTimeSubtract"] = Field(
+        default="dateTimeSubtract", description="Node type"
     )
-    format: Optional[str] = Field(
-        default=None, description="Date format string (e.g., 'YYYY-MM-DD')"
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
     )
-    timezone: Optional[str] = Field(
-        default=None, description="Timezone (e.g., 'UTC', 'America/New_York')"
+    amount: int = Field(
+        ..., description="Number of units to subtract (e.g. 5)"
     )
+    date: Optional[str] = Field(
+        default=None,
+        description="Base date string. Omit to subtract from the current time.",
+    )
+    unit: Optional[DateTimeUnit] = Field(
+        default=None, description="Duration unit (defaults to days)"
+    )
+    timezone: Optional[str] = Field(default=None, description=_DT_TIMEZONE_DESC)
+    format: Optional[str] = Field(default=None, description=_DT_FORMAT_DESC)
+
+
+class DateTimeFormatArgs(BaseModel):
+    """Arguments for creating a dateTimeFormat node (reformat a date string)."""
+
+    node_type: Literal["dateTimeFormat"] = Field(
+        default="dateTimeFormat", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    date: str = Field(..., description="Input date string to reformat")
+    timezone: Optional[str] = Field(default=None, description=_DT_TIMEZONE_DESC)
+    format: Optional[str] = Field(default=None, description=_DT_FORMAT_DESC)
+
+
+class DateTimeParseArgs(BaseModel):
+    """Arguments for creating a dateTimeParse node (parse a date string)."""
+
+    node_type: Literal["dateTimeParse"] = Field(
+        default="dateTimeParse", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    date: str = Field(..., description="Input date string to parse")
+    timezone: Optional[str] = Field(default=None, description=_DT_TIMEZONE_DESC)
+
+
+# ── Integration Args ─────────────────────────────────────────────────────────
+#
+# Integration node ``node_type`` strings are the worker integration *kinds* and
+# MUST match the worker registry exactly (see ``test/smith/test_docs.py``). The
+# frontend's ``workflowDataToCanvas`` maps ``{type: "integration.…",
+# parameters}`` onto a canvas integration node ({integrationKind, arguments}),
+# so Smith only needs to emit the kind plus snake_case ``parameters``. Every
+# integration node requires a Google credential selected on the canvas; it will
+# not save or run without one.
+
+_SHEETS_SPREADSHEET_ID_DESC = (
+    "Spreadsheet ID from the sheet URL "
+    "(https://docs.google.com/spreadsheets/d/<id>/edit)."
+)
+_SHEETS_VALUES_DESC = (
+    "Row/cell values as a JSON two-dimensional array string, e.g. "
+    '\'[["Name", "Email"], ["Alice", "a@example.com"]]\'.'
+)
+_SHEETS_VALUE_INPUT_DESC = (
+    "How values are interpreted: 'USER_ENTERED' (parse like the UI) or 'RAW'."
+)
+
+
+# Gmail ------------------------------------------------------------------------
+
+
+class GmailSendEmailArgs(BaseModel):
+    """Arguments for a Gmail 'send email' integration node."""
+
+    node_type: Literal["integration.google.gmail.send_email"] = Field(
+        default="integration.google.gmail.send_email", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    to: str = Field(..., description="Recipient email address(es)")
+    subject: str = Field(..., description="Email subject")
+    body: str = Field(..., description="Email body")
+    cc: Optional[str] = Field(default=None, description="CC email address(es)")
+    bcc: Optional[str] = Field(default=None, description="BCC email address(es)")
+
+
+class GmailReadEmailArgs(BaseModel):
+    """Arguments for a Gmail 'read email' integration node."""
+
+    node_type: Literal["integration.google.gmail.read_email"] = Field(
+        default="integration.google.gmail.read_email", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    id: str = Field(..., description="Gmail message ID to read")
+    format: Optional[Literal["full", "metadata", "minimal", "raw"]] = Field(
+        default=None, description="Message detail level (defaults to full)"
+    )
+
+
+class GmailSearchEmailsArgs(BaseModel):
+    """Arguments for a Gmail 'search emails' integration node."""
+
+    node_type: Literal["integration.google.gmail.search_emails"] = Field(
+        default="integration.google.gmail.search_emails", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    q: str = Field(
+        ..., description="Gmail search query (e.g. 'is:unread from:boss@example.com')"
+    )
+    # Worker reads camelCase keys for these three params.
+    max_results: Optional[int] = Field(
+        default=None, alias="maxResults", description="Maximum number of results"
+    )
+    label_ids: Optional[str] = Field(
+        default=None,
+        alias="labelIds",
+        description="Comma-separated label IDs (e.g. 'INBOX,UNREAD')",
+    )
+    include_spam_trash: Optional[bool] = Field(
+        default=None,
+        alias="includeSpamTrash",
+        description="Include results from spam and trash",
+    )
+
+
+class GmailListLabelsArgs(BaseModel):
+    """Arguments for a Gmail 'list labels' integration node."""
+
+    node_type: Literal["integration.google.gmail.list_labels"] = Field(
+        default="integration.google.gmail.list_labels", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+
+
+# Sheets -----------------------------------------------------------------------
+
+
+class SheetsReadRangeArgs(BaseModel):
+    """Arguments for a Google Sheets 'read range' integration node."""
+
+    node_type: Literal["integration.google.sheets.read_range"] = Field(
+        default="integration.google.sheets.read_range", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    spreadsheet_id: str = Field(..., description=_SHEETS_SPREADSHEET_ID_DESC)
+    range: str = Field(..., description="A1 notation range (e.g. 'Sheet1!A1:B10')")
+
+
+class SheetsWriteRangeArgs(BaseModel):
+    """Arguments for a Google Sheets 'write range' integration node."""
+
+    node_type: Literal["integration.google.sheets.write_range"] = Field(
+        default="integration.google.sheets.write_range", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    spreadsheet_id: str = Field(..., description=_SHEETS_SPREADSHEET_ID_DESC)
+    range: str = Field(..., description="A1 notation range (e.g. 'Sheet1!A1:B10')")
+    values: str = Field(..., description=_SHEETS_VALUES_DESC)
+    value_input_option: Optional[Literal["USER_ENTERED", "RAW"]] = Field(
+        default=None, description=_SHEETS_VALUE_INPUT_DESC
+    )
+
+
+class SheetsAppendRowArgs(BaseModel):
+    """Arguments for a Google Sheets 'append row' integration node."""
+
+    node_type: Literal["integration.google.sheets.append_row"] = Field(
+        default="integration.google.sheets.append_row", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    spreadsheet_id: str = Field(..., description=_SHEETS_SPREADSHEET_ID_DESC)
+    sheet_name: str = Field(..., description="Worksheet tab name (e.g. 'Sheet1')")
+    values: str = Field(..., description=_SHEETS_VALUES_DESC)
+    value_input_option: Optional[Literal["USER_ENTERED", "RAW"]] = Field(
+        default=None, description=_SHEETS_VALUE_INPUT_DESC
+    )
+
+
+class SheetsUpdateRowArgs(BaseModel):
+    """Arguments for a Google Sheets 'update row' integration node."""
+
+    node_type: Literal["integration.google.sheets.update_row"] = Field(
+        default="integration.google.sheets.update_row", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    spreadsheet_id: str = Field(..., description=_SHEETS_SPREADSHEET_ID_DESC)
+    sheet_name: str = Field(..., description="Worksheet tab name (e.g. 'Sheet1')")
+    row_number: int = Field(..., description="1-based row number to update")
+    start_column: str = Field(
+        ..., description="Column letter where the row values start (e.g. 'A')"
+    )
+    values: str = Field(..., description=_SHEETS_VALUES_DESC)
+    value_input_option: Optional[Literal["USER_ENTERED", "RAW"]] = Field(
+        default=None, description=_SHEETS_VALUE_INPUT_DESC
+    )
+
+
+class SheetsClearArgs(BaseModel):
+    """Arguments for a Google Sheets 'clear' integration node."""
+
+    node_type: Literal["integration.google.sheets.clear"] = Field(
+        default="integration.google.sheets.clear", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    spreadsheet_id: str = Field(..., description=_SHEETS_SPREADSHEET_ID_DESC)
+    sheet_name: Optional[str] = Field(
+        default=None, description="Worksheet tab name (e.g. 'Sheet1')"
+    )
+    range: Optional[str] = Field(
+        default=None,
+        description="A1 notation range to clear. Omit to clear the whole sheet.",
+    )
+
+
+class SheetsCreateSheetArgs(BaseModel):
+    """Arguments for a Google Sheets 'create sheet' integration node."""
+
+    node_type: Literal["integration.google.sheets.create_sheet"] = Field(
+        default="integration.google.sheets.create_sheet", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    spreadsheet_id: str = Field(..., description=_SHEETS_SPREADSHEET_ID_DESC)
+    title: str = Field(..., description="Title of the new worksheet tab")
+    rows: Optional[int] = Field(default=None, description="Number of rows (e.g. 100)")
+    columns: Optional[int] = Field(
+        default=None, description="Number of columns (e.g. 26)"
+    )
+
+
+class SheetsDeleteSheetArgs(BaseModel):
+    """Arguments for a Google Sheets 'delete sheet' integration node."""
+
+    node_type: Literal["integration.google.sheets.delete_sheet"] = Field(
+        default="integration.google.sheets.delete_sheet", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    spreadsheet_id: str = Field(..., description=_SHEETS_SPREADSHEET_ID_DESC)
+    sheet_name: str = Field(..., description="Worksheet tab name to delete")
+
+
+class SheetsDeleteRowsArgs(BaseModel):
+    """Arguments for a Google Sheets 'delete rows' integration node."""
+
+    node_type: Literal["integration.google.sheets.delete_rows"] = Field(
+        default="integration.google.sheets.delete_rows", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    spreadsheet_id: str = Field(..., description=_SHEETS_SPREADSHEET_ID_DESC)
+    sheet_name: str = Field(..., description="Worksheet tab name (e.g. 'Sheet1')")
+    start_row: int = Field(..., description="1-based first row to delete")
+    row_count: int = Field(..., description="Number of rows to delete")
+
+
+class SheetsDeleteColumnsArgs(BaseModel):
+    """Arguments for a Google Sheets 'delete columns' integration node."""
+
+    node_type: Literal["integration.google.sheets.delete_columns"] = Field(
+        default="integration.google.sheets.delete_columns", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    spreadsheet_id: str = Field(..., description=_SHEETS_SPREADSHEET_ID_DESC)
+    sheet_name: str = Field(..., description="Worksheet tab name (e.g. 'Sheet1')")
+    start_column: str = Field(
+        ..., description="Column letter where deletion starts (e.g. 'A')"
+    )
+    column_count: int = Field(..., description="Number of columns to delete")
+
+
+class SheetsCreateSpreadsheetArgs(BaseModel):
+    """Arguments for a Google Sheets 'create spreadsheet' integration node."""
+
+    node_type: Literal["integration.google.sheets.create_spreadsheet"] = Field(
+        default="integration.google.sheets.create_spreadsheet", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    title: str = Field(..., description="Title of the new spreadsheet")
+
+
+class SheetsDeleteSpreadsheetArgs(BaseModel):
+    """Arguments for a Google Sheets 'delete spreadsheet' integration node."""
+
+    node_type: Literal["integration.google.sheets.delete_spreadsheet"] = Field(
+        default="integration.google.sheets.delete_spreadsheet", description="Node type"
+    )
+    name: str = Field(
+        ..., description="Node name (needs to be short, informative, without spaces)"
+    )
+    spreadsheet_id: str = Field(..., description=_SHEETS_SPREADSHEET_ID_DESC)
 
 
 # ── Update Node Args ─────────────────────────────────────────────────────────

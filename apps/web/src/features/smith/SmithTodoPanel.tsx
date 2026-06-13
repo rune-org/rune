@@ -16,20 +16,17 @@ type Props = {
   isSending: boolean;
 };
 
-export function SmithTodoPanel({ todos, isSending }: Props) {
+export function SmithTodoPanel({ todos }: Props) {
   const [open, setOpen] = useState(true);
 
   const doneCount = todos.filter((t) => t.status === "done").length;
   const total = todos.length;
   const progressPct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
 
-  // Infer in_progress: first pending item is "active" while sending
-  const firstPendingId = isSending ? todos.find((t) => t.status === "pending")?.id : undefined;
-
+  // The agent now reports real statuses via the prebuilt `write_todos` tool
+  // (pending / in_progress / completed -> done), so trust them directly.
   function getDisplayStatus(todo: TodoItem): "pending" | "in_progress" | "done" {
-    if (todo.status === "done") return "done";
-    if (todo.id === firstPendingId) return "in_progress";
-    return "pending";
+    return todo.status;
   }
 
   return (

@@ -7,10 +7,17 @@ from langgraph.types import Command
 
 from .nodes import (
     AggregatorArgs,
-    CreateTodoPlanArgs,
-    DatetimeArgs,
+    DateTimeAddArgs,
+    DateTimeFormatArgs,
+    DateTimeNowArgs,
+    DateTimeParseArgs,
+    DateTimeSubtractArgs,
     EditArgs,
     FilterArgs,
+    GmailListLabelsArgs,
+    GmailReadEmailArgs,
+    GmailSearchEmailsArgs,
+    GmailSendEmailArgs,
     HTTPArgs,
     IfArgs,
     LimitArgs,
@@ -18,98 +25,26 @@ from .nodes import (
     MergeArgs,
     SMTPArgs,
     ScheduledTriggerArgs,
+    SheetsAppendRowArgs,
+    SheetsClearArgs,
+    SheetsCreateSheetArgs,
+    SheetsCreateSpreadsheetArgs,
+    SheetsDeleteColumnsArgs,
+    SheetsDeleteRowsArgs,
+    SheetsDeleteSheetArgs,
+    SheetsDeleteSpreadsheetArgs,
+    SheetsReadRangeArgs,
+    SheetsUpdateRowArgs,
+    SheetsWriteRangeArgs,
     SortArgs,
     SplitArgs,
     SwitchArgs,
     TriggerArgs,
     UpdateNodeArgs,
-    UpdateTodoStatusArgs,
     WaitArgs,
+    WebhookTriggerArgs,
 )
 from .schemas import WorkflowEdge, WorkflowNode
-
-
-# ── Planning tools ───────────────────────────────────────────────────────────
-
-
-@tool(
-    args_schema=CreateTodoPlanArgs,
-    description="Create a planning checklist before building the workflow. Call this FIRST with an ordered list of steps. Replaces any existing plan.",
-)
-def create_todo_plan(runtime: ToolRuntime, **kwargs) -> Command:
-    """Create an ordered todo plan and store it in agent state.
-
-    Args:
-        runtime: Runtime context (automatically injected, hidden from model).
-        **kwargs: Unpacked CreateTodoPlanArgs fields.
-
-    Returns:
-        Command to update state with the new todo list.
-    """
-    args = CreateTodoPlanArgs(**kwargs)
-    todos = [
-        {
-            "id": str(uuid.uuid4()),
-            "title": item.title,
-            "status": "pending",
-            **({"description": item.description} if item.description else {}),
-        }
-        for item in args.items
-    ]
-
-    tool_message = ToolMessage(
-        content=json.dumps({"plan_created": True, "todos": todos}),
-        tool_call_id=runtime.tool_call_id,
-    )
-
-    return Command(
-        update={
-            "todos": todos,
-            "messages": [tool_message],
-        }
-    )
-
-
-@tool(
-    args_schema=UpdateTodoStatusArgs,
-    description="Mark a todo item as done after completing it. Call this after finishing each step.",
-)
-def update_todo_status(runtime: ToolRuntime, **kwargs) -> Command:
-    """Update a todo item's status to 'done'.
-
-    Args:
-        runtime: Runtime context (automatically injected, hidden from model).
-        **kwargs: Unpacked UpdateTodoStatusArgs fields.
-
-    Returns:
-        Command to update state with the modified todo list.
-    """
-    args = UpdateTodoStatusArgs(**kwargs)
-    todos = runtime.state.get("todos", [])
-
-    updated = False
-    updated_todos = []
-    for todo in todos:
-        if todo["id"] == args.todo_id:
-            updated_todos.append({**todo, "status": "done"})
-            updated = True
-        else:
-            updated_todos.append(todo)
-
-    if updated:
-        matched = next(t for t in updated_todos if t["id"] == args.todo_id)
-        tool_message = ToolMessage(
-            content=json.dumps({"todo_id": args.todo_id, "status": "done", "title": matched["title"]}),
-            tool_call_id=runtime.tool_call_id,
-        )
-        return Command(update={"todos": updated_todos, "messages": [tool_message]})
-    else:
-        tool_message = ToolMessage(
-            content=json.dumps({"success": False, "message": f"Todo '{args.todo_id}' not found"}),
-            tool_call_id=runtime.tool_call_id,
-        )
-        return Command(update={"messages": [tool_message]})
-
 
 # ── Node creation helper ─────────────────────────────────────────────────────
 
@@ -131,7 +66,7 @@ def _create_node_from_args(args, runtime: ToolRuntime) -> Command:
                 pass  # Keep as string if not valid JSON
 
     node_id = str(uuid.uuid4())
-    is_trigger = node_type in ("trigger", "scheduledTrigger")
+    is_trigger = node_type in ("trigger", "scheduledTrigger", "webhookTrigger")
 
     node = WorkflowNode(
         id=node_id,
@@ -182,6 +117,16 @@ def create_trigger_node(runtime: ToolRuntime, **kwargs) -> Command:
 def create_scheduled_trigger_node(runtime: ToolRuntime, **kwargs) -> Command:
     """Create a scheduled trigger node and add it to the workflow state."""
     args = ScheduledTriggerArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+@tool(
+    args_schema=WebhookTriggerArgs,
+    description="Create a webhook trigger node (entry point that starts the workflow when an HTTP request hits its URL). No parameters; the webhook URL is assigned on the canvas.",
+)
+def create_webhook_trigger_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a webhook trigger node and add it to the workflow state."""
+    args = WebhookTriggerArgs(**kwargs)
     return _create_node_from_args(args, runtime)
 
 
@@ -299,7 +244,7 @@ def create_limit_node(runtime: ToolRuntime, **kwargs) -> Command:
 
 @tool(
     args_schema=SplitArgs,
-    description="Create a split node to iterate over an array, processing each item individually. Inside the split body, use $item to reference the current element. Required: name. Optional: array_field (e.g., '$FetchUsers.body.users').",
+    description="Create a split node to iterate over an array, processing each item individually. Inside the split body, use $item to reference the current element. Required: name, input_array (e.g., '$FetchUsers.body.users').",
 )
 def create_split_node(runtime: ToolRuntime, **kwargs) -> Command:
     """Create a split/iterate node and add it to the workflow state."""
@@ -331,13 +276,170 @@ def create_wait_node(runtime: ToolRuntime, **kwargs) -> Command:
 
 
 @tool(
-    args_schema=DatetimeArgs,
-    description="Create a datetime node for date/time operations. Required: name. Optional: operation (now/add/subtract/format), date, amount, unit, format, timezone.",
+    args_schema=DateTimeNowArgs,
+    description="Create a dateTimeNow node that outputs the current date/time. Required: name. Optional: timezone, format (Go time layout).",
 )
-def create_datetime_node(runtime: ToolRuntime, **kwargs) -> Command:
-    """Create a datetime node and add it to the workflow state."""
-    args = DatetimeArgs(**kwargs)
+def create_datetime_now_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a dateTimeNow node and add it to the workflow state."""
+    args = DateTimeNowArgs(**kwargs)
     return _create_node_from_args(args, runtime)
+
+
+@tool(
+    args_schema=DateTimeAddArgs,
+    description="Create a dateTimeAdd node that adds a duration to a date/time. Required: name, amount. Optional: date (defaults to now), unit (seconds/minutes/hours/days/weeks/months/years), timezone, format.",
+)
+def create_datetime_add_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a dateTimeAdd node and add it to the workflow state."""
+    args = DateTimeAddArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+@tool(
+    args_schema=DateTimeSubtractArgs,
+    description="Create a dateTimeSubtract node that subtracts a duration from a date/time. Required: name, amount. Optional: date (defaults to now), unit (seconds/minutes/hours/days/weeks/months/years), timezone, format.",
+)
+def create_datetime_subtract_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a dateTimeSubtract node and add it to the workflow state."""
+    args = DateTimeSubtractArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+@tool(
+    args_schema=DateTimeFormatArgs,
+    description="Create a dateTimeFormat node that reformats a date string. Required: name, date. Optional: timezone, format (Go time layout).",
+)
+def create_datetime_format_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a dateTimeFormat node and add it to the workflow state."""
+    args = DateTimeFormatArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+@tool(
+    args_schema=DateTimeParseArgs,
+    description="Create a dateTimeParse node that parses a date string into a normalized timestamp. Required: name, date. Optional: timezone.",
+)
+def create_datetime_parse_node(runtime: ToolRuntime, **kwargs) -> Command:
+    """Create a dateTimeParse node and add it to the workflow state."""
+    args = DateTimeParseArgs(**kwargs)
+    return _create_node_from_args(args, runtime)
+
+
+# ── Integration node tools ───────────────────────────────────────────────────
+#
+# Gmail and Google Sheets integration nodes. Each emits the worker integration
+# ``kind`` as ``node_type`` plus snake_case ``parameters``; the frontend maps
+# that onto a canvas integration node. The user must select a Google credential
+# on the canvas for these nodes to save and run. One distinct tool is registered
+# per op (the LLM tool selector narrows the large pool per request), built from
+# a shared factory to stay DRY.
+
+
+def _make_integration_tool(args_model, tool_name: str, description: str):
+    """Build a node-creation tool for a single integration op.
+
+    Args:
+        args_model: The pydantic Args model whose ``node_type`` default is the
+            worker integration kind.
+        tool_name: Unique tool name exposed to the model (no dots).
+        description: Selector/model-facing tool description.
+
+    Returns:
+        A langchain ``@tool`` that appends the integration node to state.
+    """
+
+    @tool(tool_name, args_schema=args_model, description=description)
+    def _integration_node_tool(runtime: ToolRuntime, **kwargs) -> Command:
+        args = args_model(**kwargs)
+        return _create_node_from_args(args, runtime)
+
+    return _integration_node_tool
+
+
+_CREDENTIAL_NOTE = " Requires a Google credential selected on the canvas."
+
+_INTEGRATION_TOOL_SPECS = [
+    (
+        GmailSendEmailArgs,
+        "create_gmail_send_email_node",
+        "Create a Gmail node that sends an email. Params: to, subject, body, cc, bcc.",
+    ),
+    (
+        GmailReadEmailArgs,
+        "create_gmail_read_email_node",
+        "Create a Gmail node that reads one email by message id. Params: id, format.",
+    ),
+    (
+        GmailSearchEmailsArgs,
+        "create_gmail_search_emails_node",
+        "Create a Gmail node that searches emails with a query. Params: q, maxResults, labelIds, includeSpamTrash.",
+    ),
+    (
+        GmailListLabelsArgs,
+        "create_gmail_list_labels_node",
+        "Create a Gmail node that lists all labels. No params.",
+    ),
+    (
+        SheetsReadRangeArgs,
+        "create_sheets_read_range_node",
+        "Create a Google Sheets node that reads a range of cells. Params: spreadsheet_id, range.",
+    ),
+    (
+        SheetsWriteRangeArgs,
+        "create_sheets_write_range_node",
+        "Create a Google Sheets node that writes values to a range. Params: spreadsheet_id, range, values, value_input_option.",
+    ),
+    (
+        SheetsAppendRowArgs,
+        "create_sheets_append_row_node",
+        "Create a Google Sheets node that appends row(s) to a sheet. Params: spreadsheet_id, sheet_name, values, value_input_option.",
+    ),
+    (
+        SheetsUpdateRowArgs,
+        "create_sheets_update_row_node",
+        "Create a Google Sheets node that updates a row by number. Params: spreadsheet_id, sheet_name, row_number, start_column, values, value_input_option.",
+    ),
+    (
+        SheetsClearArgs,
+        "create_sheets_clear_node",
+        "Create a Google Sheets node that clears a sheet or range. Params: spreadsheet_id, sheet_name, range.",
+    ),
+    (
+        SheetsCreateSheetArgs,
+        "create_sheets_create_sheet_node",
+        "Create a Google Sheets node that adds a new sheet/tab to a spreadsheet. Params: spreadsheet_id, title, rows, columns.",
+    ),
+    (
+        SheetsDeleteSheetArgs,
+        "create_sheets_delete_sheet_node",
+        "Create a Google Sheets node that deletes a sheet/tab. Params: spreadsheet_id, sheet_name.",
+    ),
+    (
+        SheetsDeleteRowsArgs,
+        "create_sheets_delete_rows_node",
+        "Create a Google Sheets node that deletes rows. Params: spreadsheet_id, sheet_name, start_row, row_count.",
+    ),
+    (
+        SheetsDeleteColumnsArgs,
+        "create_sheets_delete_columns_node",
+        "Create a Google Sheets node that deletes columns. Params: spreadsheet_id, sheet_name, start_column, column_count.",
+    ),
+    (
+        SheetsCreateSpreadsheetArgs,
+        "create_sheets_create_spreadsheet_node",
+        "Create a Google Sheets node that creates a new spreadsheet. Params: title.",
+    ),
+    (
+        SheetsDeleteSpreadsheetArgs,
+        "create_sheets_delete_spreadsheet_node",
+        "Create a Google Sheets node that deletes a spreadsheet. Params: spreadsheet_id.",
+    ),
+]
+
+INTEGRATION_TOOLS = [
+    _make_integration_tool(model, tool_name, description + _CREDENTIAL_NOTE)
+    for (model, tool_name, description) in _INTEGRATION_TOOL_SPECS
+]
 
 
 # ── Node management tools ────────────────────────────────────────────────────
@@ -389,7 +491,10 @@ def update_node(runtime: ToolRuntime, **kwargs) -> Command:
     else:
         tool_message = ToolMessage(
             content=json.dumps(
-                {"success": False, "message": f"Node with ID '{args.node_id}' not found"}
+                {
+                    "success": False,
+                    "message": f"Node with ID '{args.node_id}' not found",
+                }
             ),
             tool_call_id=runtime.tool_call_id,
         )
@@ -615,12 +720,10 @@ def list_workflow_edges(
 
 
 SMITH_TOOLS = [
-    # Planning
-    create_todo_plan,
-    update_todo_status,
     # Triggers
     create_trigger_node,
     create_scheduled_trigger_node,
+    create_webhook_trigger_node,
     # Actions
     create_http_node,
     create_smtp_node,
@@ -639,7 +742,13 @@ SMITH_TOOLS = [
     create_aggregator_node,
     # Timing
     create_wait_node,
-    create_datetime_node,
+    create_datetime_now_node,
+    create_datetime_add_node,
+    create_datetime_subtract_node,
+    create_datetime_format_node,
+    create_datetime_parse_node,
+    # Integrations (Gmail, Google Sheets)
+    *INTEGRATION_TOOLS,
     # Node management
     update_node,
     # Connectivity

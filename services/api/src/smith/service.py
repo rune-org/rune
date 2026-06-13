@@ -7,16 +7,10 @@ from langchain_core.messages import AIMessageChunk, HumanMessage, ToolMessage
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph.state import CompiledStateGraph
 
+from src.smith.docs import DSL_TO_CANONICAL_NODE_TYPE as _DSL_TO_CANVAS_TYPE
+
 
 logger = logging.getLogger(__name__)
-
-# Map legacy DSL type names to canvas type names so the agent always sees
-# consistent naming when working with existing workflows.
-_DSL_TO_CANVAS_TYPE = {
-    "ManualTrigger": "trigger",
-    "ScheduledTrigger": "scheduledTrigger",
-    "conditional": "if",
-}
 
 
 def _normalize_node_types(nodes: list[dict]) -> list[dict]:
@@ -26,10 +20,30 @@ def _normalize_node_types(nodes: list[dict]) -> list[dict]:
         node_type = node.get("type", "")
         if node_type in _DSL_TO_CANVAS_TYPE:
             node = {**node, "type": _DSL_TO_CANVAS_TYPE[node_type]}
-        if node["type"] in ("trigger", "scheduledTrigger"):
+        if node["type"] in ("trigger", "scheduledTrigger", "webhookTrigger"):
             node = {**node, "trigger": True}
         normalized.append(node)
     return normalized
+
+
+def _to_ui_todos(todos: list[dict]) -> list[dict]:
+    """Adapt prebuilt ``write_todos`` items to the UI's ``TodoItem`` shape.
+
+    ``TodoListMiddleware`` stores todos as ``{content, status}`` with status in
+    ``{pending, in_progress, completed}``. The Smith chat panel expects
+    ``{id, title, status}`` with status in ``{pending, in_progress, done}``, so
+    map ``content -> title``, ``completed -> done``, and synthesize a stable
+    list-position id (``write_todos`` replaces the whole list each call, so the
+    index is a stable key within a render).
+    """
+    return [
+        {
+            "id": str(index),
+            "title": todo.get("content", ""),
+            "status": "done" if todo.get("status") == "completed" else todo.get("status", "pending"),
+        }
+        for index, todo in enumerate(todos)
+    ]
 
 
 class SmithAgentService:
@@ -104,11 +118,12 @@ class SmithAgentService:
         # Initialize workflow state with existing data or empty arrays
         # Normalize legacy DSL type names so the agent sees consistent canvas types
         normalized_nodes = _normalize_node_types(existing_nodes) if existing_nodes else []
+        # ``todos`` is owned by TodoListMiddleware and defaults to empty, so it
+        # is not seeded here.
         input_messages = {
             "messages": [HumanMessage(content=message)],
             "workflow_nodes": normalized_nodes,
             "workflow_edges": existing_edges if existing_edges is not None else [],
-            "todos": [],
         }
 
         try:
@@ -119,33 +134,39 @@ class SmithAgentService:
             ):
                 try:
                     if isinstance(event, AIMessageChunk):
-                        if event.content:
-                            yield _format_sse(
-                                {"type": "token", "content": event.content}
-                            )
+                        # Stream the visible answer token-by-token. When thinking
+                        # is enabled Gemini interleaves "reasoning" content blocks
+                        # with "text" ones; emit only the text so reasoning stays
+                        # hidden from the chat. (Forwarding the raw block list would
+                        # also make the browser render each block as
+                        # "[object Object]".)
+                        text = "".join(
+                            block.get("text", "")
+                            for block in event.content_blocks
+                            if block.get("type") == "text"
+                        )
+                        if text:
+                            yield _format_sse({"type": "token", "content": text})
 
                         if (
                             hasattr(event, "tool_call_chunks")
                             and event.tool_call_chunks
                         ):
                             for call in event.tool_call_chunks:
-                                if "name" in call and "args" in call:
-                                    try:
-                                        yield _format_sse(
-                                            {
-                                                "type": "tool_call",
-                                                "name": call["name"],
-                                                "arguments": call["args"],
-                                                "call_id": call["id"],
-                                            }
-                                        )
-                                    except json.JSONDecodeError:
-                                        yield _format_sse(
-                                            {
-                                                "type": "error",
-                                                "message": "Failed to process tool arguments.",
-                                            }
-                                        )
+                                # Only the opening chunk of a tool call carries a
+                                # name; nameless continuation fragments would emit
+                                # a stray "tool:" line, so skip them.
+                                name = call.get("name")
+                                if not name:
+                                    continue
+                                yield _format_sse(
+                                    {
+                                        "type": "tool_call",
+                                        "name": name,
+                                        "arguments": call.get("args") or "",
+                                        "call_id": call.get("id"),
+                                    }
+                                )
 
                     elif isinstance(event, ToolMessage):
                         # Parse tool output to extract node/edge objects
@@ -179,7 +200,7 @@ class SmithAgentService:
                             "type": "workflow_state",
                             "workflow_nodes": workflow_nodes,
                             "workflow_edges": workflow_edges,
-                            "todos": todos,
+                            "todos": _to_ui_todos(todos),
                         }
                     )
 

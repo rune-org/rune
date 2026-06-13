@@ -330,8 +330,6 @@ function FlowCanvasInner({
     smithInput,
     setSmithInput,
     smithSending,
-    smithShowTrace,
-    setSmithShowTrace,
     smithJustFinished,
     handleSmithSend,
     smithTodos,
@@ -822,8 +820,6 @@ function FlowCanvasInner({
           onInputChange={setSmithInput}
           onSend={handleSmithSend}
           isSending={smithSending}
-          showTrace={smithShowTrace}
-          onToggleTrace={setSmithShowTrace}
           todos={smithTodos}
         />
 

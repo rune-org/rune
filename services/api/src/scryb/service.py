@@ -1,23 +1,38 @@
-from langchain.chat_models import init_chat_model
-from langchain_core.messages import HumanMessage, SystemMessage
+import json
 
-from src.core.config import get_settings
+from langchain_core.messages import BaseMessage, HumanMessage
+
 from src.db.models import Workflow
-from src.scryb.prompts import build_system_prompt, get_style_prompt
+from src.scryb.prompts import get_style_prompt
 from src.scryb.schemas import GenerateWorkflowDocsRequest
 from src.scryb.serializer import WorkflowSerializer
 from src.workflow.service import WorkflowService
 
 
+def _message_text(message: BaseMessage) -> str:
+    """Return a message's text content as a plain string.
+
+    Gemini may return ``content`` either as a string or as a list of content
+    blocks (dicts with a ``text`` field, or bare strings). Join the text parts so
+    the endpoint always returns clean Markdown.
+    """
+    content = message.content
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = [
+            block["text"] if isinstance(block, dict) else str(block)
+            for block in content
+            if not isinstance(block, dict) or "text" in block
+        ]
+        return "".join(parts)
+    return str(content)
+
+
 class ScrybService:
-    def __init__(self, workflow_service: WorkflowService):
+    def __init__(self, agent, workflow_service: WorkflowService):
+        self._agent = agent
         self._workflow_service = workflow_service
-        settings = get_settings()
-        self._model = init_chat_model(
-            settings.scryb_model,
-            temperature=settings.scryb_temperature,
-            model_provider="openrouter",
-        )
 
     async def generate_docs(
         self,
@@ -41,12 +56,17 @@ class ScrybService:
             if request.custom_style
             else get_style_prompt(request.target_audience)
         )
-        system_prompt = build_system_prompt(style_prompt)
 
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=str(serialized_data)),
-        ]
+        serialized_json = json.dumps(serialized_data, indent=2, ensure_ascii=False)
 
-        response = await self._model.ainvoke(messages)
-        return response.content
+        human_content = (
+            "Produce the documentation in the following style:\n\n"
+            f"{style_prompt}\n\n"
+            "## Workflow (SIR JSON)\n\n"
+            f"{serialized_json}"
+        )
+
+        result = await self._agent.ainvoke(
+            {"messages": [HumanMessage(content=human_content)]}
+        )
+        return _message_text(result["messages"][-1])
