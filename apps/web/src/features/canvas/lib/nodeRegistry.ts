@@ -38,7 +38,11 @@ export type NodeGroup =
   | "email"
   | "agents"
   | "google"
+  | "jira"
   | "microsoft"
+  | "slack"
+  | "telegram"
+  | "dropbox"
   | "annotate";
 
 export type NodeColorTheme = {
@@ -66,6 +70,7 @@ export type NodeMetadata<K extends NodeKind = NodeKind> = {
   hasDynamicOutputs: boolean;
   shortcutKey?: string;
   inspectable?: boolean; // Sticky notes don't trigger an inspector
+  keywords?: readonly string[];
 };
 
 export type NodeRegistry = {
@@ -112,6 +117,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: true,
     hasDynamicOutputs: false,
     shortcutKey: "t",
+    keywords: ["start", "manual", "run"],
   },
   stickyNote: {
     kind: "stickyNote",
@@ -147,6 +153,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: true,
     hasDynamicOutputs: false,
     shortcutKey: "r",
+    keywords: ["cron", "schedule", "timer", "interval"],
   },
   webhookTrigger: {
     kind: "webhookTrigger",
@@ -164,6 +171,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: true,
     hasDynamicOutputs: false,
     shortcutKey: "w",
+    keywords: ["callback", "event", "http"],
   },
   agent: {
     kind: "agent",
@@ -192,6 +200,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "agents",
     isTrigger: false,
     hasDynamicOutputs: false,
+    keywords: ["ai", "llm", "assistant", "gpt", "model", "chat"],
   },
   if: {
     kind: "if",
@@ -209,6 +218,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "i",
+    keywords: ["condition", "branch", "conditional"],
   },
   switch: {
     kind: "switch",
@@ -229,6 +239,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: true,
     shortcutKey: "c",
+    keywords: ["condition", "branch", "case", "route"],
   },
   http: {
     kind: "http",
@@ -253,6 +264,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "h",
+    keywords: ["api", "request", "fetch", "rest", "url"],
   },
   smtp: {
     kind: "smtp",
@@ -274,6 +286,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "m",
+    keywords: ["email", "mail", "send"],
   },
   wait: {
     kind: "wait",
@@ -290,6 +303,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "flow",
     isTrigger: false,
     hasDynamicOutputs: false,
+    keywords: ["delay", "sleep", "pause"],
   },
   log: {
     kind: "log",
@@ -307,6 +321,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "l",
+    keywords: ["print", "debug", "console"],
   },
   dateTimeNow: {
     kind: "dateTimeNow",
@@ -328,6 +343,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "d",
+    keywords: ["date", "time", "timestamp", "now", "today"],
   },
   dateTimeAdd: {
     kind: "dateTimeAdd",
@@ -350,6 +366,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "datetime",
     isTrigger: false,
     hasDynamicOutputs: false,
+    keywords: ["date", "time", "timestamp", "add", "plus"],
   },
   dateTimeSubtract: {
     kind: "dateTimeSubtract",
@@ -372,6 +389,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "datetime",
     isTrigger: false,
     hasDynamicOutputs: false,
+    keywords: ["date", "time", "timestamp", "subtract", "minus"],
   },
   dateTimeFormat: {
     kind: "dateTimeFormat",
@@ -392,6 +410,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "datetime",
     isTrigger: false,
     hasDynamicOutputs: false,
+    keywords: ["date", "time", "timestamp", "format", "convert"],
   },
   dateTimeParse: {
     kind: "dateTimeParse",
@@ -411,6 +430,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "datetime",
     isTrigger: false,
     hasDynamicOutputs: false,
+    keywords: ["date", "time", "timestamp", "parse", "read"],
   },
   edit: {
     kind: "edit",
@@ -432,6 +452,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "e",
+    keywords: ["set", "map", "assign", "transform"],
   },
   filter: {
     kind: "filter",
@@ -453,6 +474,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "f",
+    keywords: ["where", "match"],
   },
   sort: {
     kind: "sort",
@@ -473,6 +495,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "o",
+    keywords: ["order", "arrange"],
   },
   limit: {
     kind: "limit",
@@ -490,6 +513,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "n",
+    keywords: ["slice", "top", "truncate"],
   },
   split: {
     kind: "split",
@@ -507,6 +531,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "s",
+    keywords: ["loop", "iterate", "explode", "items"],
   },
   aggregator: {
     kind: "aggregator",
@@ -524,6 +549,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     isTrigger: false,
     hasDynamicOutputs: false,
     shortcutKey: "g",
+    keywords: ["combine", "collect", "group"],
   },
   merge: {
     kind: "merge",
@@ -540,6 +566,7 @@ export const NODE_REGISTRY: NodeRegistry = {
     group: "flow",
     isTrigger: false,
     hasDynamicOutputs: false,
+    keywords: ["join", "combine"],
   },
   ...INTEGRATION_NODE_REGISTRY,
 };
@@ -671,11 +698,35 @@ const GROUP_METADATA: Record<NodeGroup, GroupMetadata> = {
     iconSrc: "/icons/integrations/google.svg",
     color: "#34a853",
   },
+  jira: {
+    label: "Jira",
+    icon: Plug,
+    iconSrc: "/icons/integrations/jira.svg",
+    color: "#2684ff",
+  },
   microsoft: {
     label: "Microsoft",
     icon: Plug,
     iconSrc: "/icons/integrations/microsoft.svg",
     color: "#0078d4",
+  },
+  slack: {
+    label: "Slack",
+    icon: Plug,
+    iconSrc: "/icons/integrations/slack.svg",
+    color: "#4A154B",
+  },
+  telegram: {
+    label: "Telegram",
+    icon: Plug,
+    iconSrc: "/icons/integrations/telegram.svg",
+    color: "#229ED9",
+  },
+  dropbox: {
+    label: "Dropbox",
+    icon: Plug,
+    iconSrc: "/icons/integrations/dropbox.svg",
+    color: "#0061FE",
   },
   annotate: { label: "Annotate", icon: NotepadText, color: "var(--node-note)" },
 };

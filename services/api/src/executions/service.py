@@ -4,7 +4,14 @@ from aio_pika import RobustConnection
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.db.models import Execution, User, UserRole, Workflow, WorkflowUser
+from src.db.models import (
+    Execution,
+    ExecutionStatus,
+    User,
+    UserRole,
+    Workflow,
+    WorkflowUser,
+)
 from src.executions.schemas import ExecutionListItem, ExecutionTokenMessage
 from src.queue.base import BaseQueuePublisher
 
@@ -15,17 +22,27 @@ class ExecutionService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list_for_user(self, user: User) -> list[ExecutionListItem]:
+    async def list_for_user(
+        self,
+        user: User,
+        limit: int | None = None,
+        offset: int | None = None,
+        search: str | None = None,
+        status: ExecutionStatus | None = None,
+    ) -> tuple[list[ExecutionListItem], int]:
         """Return all executions the user has access to, newest first.
 
         Admins see all executions. Regular users see executions
         for workflows where they have at least VIEWER access.
         """
+        from sqlalchemy import func
+
         if user.role == UserRole.ADMIN:
-            statement = (
-                select(Execution, Workflow.name)
-                .join(Workflow, Execution.workflow_id == Workflow.id)
-                .order_by(Execution.created_at.desc())
+            statement = select(Execution, Workflow.name).join(
+                Workflow, Execution.workflow_id == Workflow.id
+            )
+            count_statement = select(func.count(Execution.id)).join(
+                Workflow, Execution.workflow_id == Workflow.id
             )
         else:
             statement = (
@@ -33,11 +50,40 @@ class ExecutionService:
                 .join(Workflow, Execution.workflow_id == Workflow.id)
                 .join(WorkflowUser, WorkflowUser.workflow_id == Workflow.id)
                 .where(WorkflowUser.user_id == user.id)
-                .order_by(Execution.created_at.desc())
+            )
+            count_statement = (
+                select(func.count(Execution.id))
+                .join(Workflow, Execution.workflow_id == Workflow.id)
+                .join(WorkflowUser, WorkflowUser.workflow_id == Workflow.id)
+                .where(WorkflowUser.user_id == user.id)
             )
 
+        if search:
+            search_clause = Workflow.name.ilike(f"%{search}%")
+            if search.isdigit():
+                search_clause = search_clause | (Workflow.id == int(search))
+            statement = statement.where(search_clause)
+            count_statement = count_statement.where(search_clause)
+
+        if status:
+            status_clause = Execution.status == status
+            statement = statement.where(status_clause)
+            count_statement = count_statement.where(status_clause)
+
+        # Get total count
+        total_result = await self.db.exec(count_statement)
+        total_count = total_result.one()
+
+        # Apply sorting and limit/offset pagination
+        statement = statement.order_by(Execution.created_at.desc(), Execution.id.desc())
+
+        if offset is not None:
+            statement = statement.offset(offset)
+        if limit is not None:
+            statement = statement.limit(limit)
+
         result = await self.db.exec(statement)
-        return [
+        items = [
             ExecutionListItem(
                 id=execution.id,
                 workflow_id=execution.workflow_id,
@@ -50,6 +96,7 @@ class ExecutionService:
             )
             for execution, workflow_name in result.all()
         ]
+        return items, total_count
 
 
 class ExecutionTokenService(BaseQueuePublisher):

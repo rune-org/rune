@@ -20,4 +20,11 @@ def extra_authorize_query_params(authorization_endpoint_url: str) -> dict[str, s
             "access_type": "offline",
             "prompt": "consent",
         }
+
+    if host == "dropbox.com" or host.endswith(".dropbox.com"):
+        # Dropbox requires token_access_type=offline to return a refresh token
+        # https://www.dropbox.com/developers/reference/oauth-guide
+        return {
+            "token_access_type": "offline",
+        }
     return {}

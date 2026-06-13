@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -12,15 +13,16 @@ import (
 )
 
 type Spec struct {
-	Method      string
-	BaseURL     string
-	Path        string
-	PathArgs    map[string]string
-	Query       map[string]string
-	Headers     map[string]string
-	Body        any
-	Timeout     time.Duration
-	AllowNon2xx bool
+	Method           string
+	BaseURL          string
+	Path             string
+	PathArgs         map[string]string
+	RedactedPathKeys []string
+	Query            map[string]string
+	Headers          map[string]string
+	Body             any
+	Timeout          time.Duration
+	AllowNon2xx      bool
 }
 
 type Error struct {
@@ -30,13 +32,38 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("integration request failed: status=%d url=%s", e.Status, e.URL)
+	msg := fmt.Sprintf("integration request failed: status=%d url=%s", e.Status, e.URL)
+	if e.Body != nil {
+		if bodyStr, ok := e.Body.(string); ok {
+			msg += " body=" + bodyStr
+		} else if bodyBytes, err := json.Marshal(e.Body); err == nil {
+			msg += " body=" + string(bodyBytes)
+		}
+	}
+	return msg
 }
 
 func Do(ctx context.Context, ec plugin.ExecutionContext, s Spec) (map[string]any, error) {
 	fullURL, err := buildURL(s.BaseURL, s.Path, s.PathArgs)
 	if err != nil {
 		return nil, err
+	}
+
+	errURL := fullURL
+	if len(s.RedactedPathKeys) > 0 {
+		sensitive := make(map[string]bool, len(s.RedactedPathKeys))
+		for _, k := range s.RedactedPathKeys {
+			sensitive[k] = true
+		}
+		redactedArgs := make(map[string]string, len(s.PathArgs))
+		for k, v := range s.PathArgs {
+			if sensitive[k] {
+				redactedArgs[k] = "***"
+			} else {
+				redactedArgs[k] = v
+			}
+		}
+		errURL, _ = buildURL(s.BaseURL, s.Path, redactedArgs)
 	}
 
 	headers := cloneHeaders(s.Headers)
@@ -63,7 +90,7 @@ func Do(ctx context.Context, ec plugin.ExecutionContext, s Spec) (map[string]any
 	if !s.AllowNon2xx && (status < 200 || status >= 300) {
 		return nil, &Error{
 			Status: status,
-			URL:    fullURL,
+			URL:    errURL,
 			Body:   raw["body"],
 		}
 	}
@@ -93,6 +120,9 @@ func buildURL(baseURL, path string, pathArgs map[string]string) (string, error) 
 	resolvedPath, err := resolvePath(path, pathArgs)
 	if err != nil {
 		return "", err
+	}
+	if !strings.HasPrefix(resolvedPath, "/") && !strings.HasSuffix(baseURL, "/") {
+		baseURL += "/"
 	}
 
 	base, err := url.Parse(baseURL)

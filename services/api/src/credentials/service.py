@@ -253,20 +253,64 @@ class CredentialService:
         result = await self.session.exec(statement)
         return result.all()
 
-    async def list_credentials(self, user: User) -> list[WorkflowCredential]:
+    async def list_credentials(
+        self,
+        user: User,
+        limit: int | None = None,
+        offset: int | None = None,
+        search: str | None = None,
+        credential_type: CredentialType | None = None,
+    ) -> tuple[list[WorkflowCredential], int]:
         """
-        List all credentials accessible to the user.
+        List all credentials accessible to the user with optional pagination, search and type filtering.
 
         Admins see all credentials.
         Regular users see credentials they own or that are shared with them.
-
-        Args:
-            user: User requesting the credentials
-
-        Returns:
-            List of credential instances
         """
-        return await self.permission_service.get_accessible_credentials(user)
+        from sqlalchemy import func
+        from src.db.models import CredentialShare, UserRole
+
+        is_admin = user.role == UserRole.ADMIN
+
+        if is_admin:
+            statement = select(WorkflowCredential)
+            count_statement = select(func.count(WorkflowCredential.id))
+        else:
+            shared_subquery = select(CredentialShare.credential_id).where(
+                CredentialShare.user_id == user.id
+            )
+            clause = (
+                WorkflowCredential.created_by == user.id
+            ) | WorkflowCredential.id.in_(shared_subquery)
+            statement = select(WorkflowCredential).where(clause)
+            count_statement = select(func.count(WorkflowCredential.id)).where(clause)
+
+        if search:
+            search_clause = WorkflowCredential.name.ilike(f"%{search}%")
+            statement = statement.where(search_clause)
+            count_statement = count_statement.where(search_clause)
+
+        if credential_type:
+            type_clause = WorkflowCredential.credential_type == credential_type
+            statement = statement.where(type_clause)
+            count_statement = count_statement.where(type_clause)
+
+        # Get total count
+        total_result = await self.session.exec(count_statement)
+        total_count = total_result.one()
+
+        # Order and paginate
+        statement = statement.order_by(
+            WorkflowCredential.name.asc(), WorkflowCredential.id.asc()
+        )
+
+        if offset is not None:
+            statement = statement.offset(offset)
+        if limit is not None:
+            statement = statement.limit(limit)
+
+        result = await self.session.exec(statement)
+        return list(result.all()), total_count
 
     async def enrich_credential_response(
         self, credential: WorkflowCredential, user: User

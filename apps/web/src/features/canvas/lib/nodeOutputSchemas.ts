@@ -1,5 +1,6 @@
 import type { EditData, NodeKind } from "../types";
 import { isIntegrationNodeKind } from "../integrations/helpers";
+import type { IntegrationNodeKind } from "../integrations/types";
 import type { VariableTreeNode } from "./variableSchema";
 
 /**
@@ -11,6 +12,14 @@ export function getStaticOutputSchema(
   data?: Record<string, unknown>,
 ): VariableTreeNode[] {
   if (isIntegrationNodeKind(kind)) {
+    const integrationKind = kind as IntegrationNodeKind;
+    if (integrationKind === "integration.telegram.bot.get_chat_id") {
+      return [
+        { key: "chat_id", path: "chat_id", type: "number", source: "schema" },
+        { key: "chat_type", path: "chat_type", type: "string", source: "schema" },
+        { key: "chat_name", path: "chat_name", type: "string", source: "schema" },
+      ];
+    }
     return [{ key: "data", path: "data", type: "object", source: "schema", children: [] }];
   }
 

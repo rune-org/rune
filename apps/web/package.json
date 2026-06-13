@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -15,6 +16,7 @@
     "format:check": "prettier --check src/"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^3.0.0",
     "@hookform/resolvers": "^5.0.0",
     "@neodrag/react": "^2.3.1",
     "@next/eslint-plugin-next": "^16.1.6",
@@ -30,13 +32,13 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.0.7",
-    "@dagrejs/dagre": "^3.0.0",
     "@theguild/remark-mermaid": "^0.3.0",
     "@xyflow/react": "^12.8.6",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.24",
+    "fuse.js": "^7.4.1",
     "lucide-react": "^1.0.0",
     "next": "16.2.6",
     "next-themes": "^0.4.6",
@@ -66,6 +68,7 @@
     "eslint": "^10.0.0",
     "eslint-config-next": "16.2.4",
     "jsdom": "^29.0.0",
+    "pagefind": "^1.5.2",
     "prettier": "^3.8.1",
     "shadcn": "^4.0.0",
     "tailwindcss": "^4",
@@ -73,34 +76,5 @@
     "vite-tsconfig-paths": "^6.0.0",
     "vitest": "^4.0.0"
   },
-  "pnpm": {
-    "peerDependencyRules": {
-      "allowedVersions": {
-        "eslint-plugin-import>eslint": "^10.0.0",
-        "eslint-plugin-react-hooks>eslint": "^10.0.0",
-        "eslint-plugin-jsx-a11y>eslint": "^10.0.0",
-        "eslint-plugin-react>eslint": "^10.0.0"
-      }
-    },
-    "overrides": {
-      "typescript-eslint": "8.59.1",
-      "@typescript-eslint/parser": "8.59.1",
-      "@typescript-eslint/eslint-plugin": "8.59.1",
-      "tar": ">=7.5.3",
-      "diff": ">=8.0.3",
-      "@modelcontextprotocol/sdk": ">=1.26.0",
-      "qs": ">=6.14.1",
-      "body-parser": ">=2.2.1",
-      "js-yaml": ">=4.1.1",
-      "minimatch": ">=10.2.1",
-      "postcss": ">=8.5.10",
-      "picomatch": "4.0.4",
-      "vite": "7.3.2",
-      "hono": ">=4.12.14",
-      "@hono/node-server": ">=1.19.14",
-      "ip-address": ">=10.1.1",
-      "uuid": ">=11.1.1",
-      "@xmldom/xmldom": ">=0.9.10"
-    }
-  }
+  "packageManager": "pnpm@11.6.0"
 }

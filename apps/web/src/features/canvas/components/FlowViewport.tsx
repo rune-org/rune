@@ -6,6 +6,7 @@ import {
   Controls,
   MiniMap,
   ReactFlow,
+  SelectionMode,
   type Edge,
   type IsValidConnection,
   type NodeChange,
@@ -16,13 +17,39 @@ import {
   type ReactFlowInstance,
 } from "@xyflow/react";
 import { nodeTypes } from "../nodes";
-import type { CanvasNode } from "../types";
+import { cn } from "@/lib/cn";
+import type { CanvasNode, NodeKind, StickyNoteColor } from "../types";
 import { getMiniMapNodeColor, isValidNodeKind } from "../lib/nodeRegistry";
 import { ClickConnectBridge } from "./ClickConnectBridge";
 import { ExecutionStatusBar } from "./ExecutionStatusBar";
 import type { WsConnectionStatus } from "../hooks/useRtesWebSocket";
 
-function getNodeColor(node: { type?: string }) {
+// In select mode, left-drag selects; panning moves to middle/right mouse buttons
+const SELECT_MODE_PAN_BUTTONS = [1, 2];
+
+const STICKY_NOTE_MINIMAP_COLORS: Record<StickyNoteColor, string> = {
+  yellow: "#fcd34d",
+  green: "#86efac",
+  blue: "#7dd3fc",
+  pink: "#f9a8d4",
+  purple: "#c4b5fd",
+  gray: "#d4d4d8",
+};
+
+const NON_EXECUTABLE_NODE_TYPES = new Set<NodeKind>([
+  "stickyNote",
+  "trigger",
+  "webhookTrigger",
+  "scheduledTrigger",
+]);
+
+function getNodeColor(node: { type?: string; data?: Record<string, unknown> }) {
+  if (node.type === "stickyNote") {
+    const color =
+      STICKY_NOTE_MINIMAP_COLORS[node.data?.color as StickyNoteColor] ??
+      STICKY_NOTE_MINIMAP_COLORS.yellow;
+    return `color-mix(in srgb, ${color} 30%, transparent)`;
+  }
   const type = node.type as string;
   if (isValidNodeKind(type)) {
     return getMiniMapNodeColor(type);
@@ -42,8 +69,11 @@ type FlowViewportProps = {
   onNodeDragStart: NonNullable<ReactFlowProps<CanvasNode, Edge>["onNodeDragStart"]>;
   onNodeDragStop: NonNullable<ReactFlowProps<CanvasNode, Edge>["onNodeDragStop"]>;
   onInit: (instance: ReactFlowInstance<CanvasNode, Edge>) => void;
-  onPaneClick: () => void;
+  onPaneClick: NonNullable<ReactFlowProps<CanvasNode, Edge>["onPaneClick"]>;
+  onBeforeDelete: NonNullable<ReactFlowProps<CanvasNode, Edge>["onBeforeDelete"]>;
   readOnly?: boolean;
+  selectMode?: boolean;
+  notePlacementMode?: boolean;
   wsStatus?: WsConnectionStatus;
   wsReconnectAttempts?: number;
   onDismissRunning?: () => void;
@@ -62,7 +92,10 @@ export const FlowViewport = memo(function FlowViewport({
   onNodeDragStop,
   onInit,
   onPaneClick,
+  onBeforeDelete,
   readOnly,
+  selectMode,
+  notePlacementMode,
   wsStatus,
   wsReconnectAttempts,
   onDismissRunning,
@@ -74,6 +107,10 @@ export const FlowViewport = memo(function FlowViewport({
       return { ...node, data: { ...node.data, readOnly: true } };
     });
   }, [nodes, readOnly]);
+  const executableNodeCount = useMemo(
+    () => nodes.filter((node) => !NON_EXECUTABLE_NODE_TYPES.has(node.type)).length,
+    [nodes],
+  );
 
   return (
     <ReactFlow
@@ -93,10 +130,18 @@ export const FlowViewport = memo(function FlowViewport({
       onNodeDragStop={onNodeDragStop}
       onInit={onInit}
       onPaneClick={onPaneClick}
+      onBeforeDelete={onBeforeDelete}
       connectOnClick={!readOnly}
       nodesDraggable={!readOnly}
       nodesConnectable={!readOnly}
       deleteKeyCode={null}
+      selectionOnDrag={selectMode}
+      selectionMode={SelectionMode.Partial}
+      panOnDrag={selectMode ? SELECT_MODE_PAN_BUTTONS : true}
+      className={
+        cn(selectMode && "canvas-select-mode", notePlacementMode && "canvas-note-placement") ||
+        undefined
+      }
     >
       {!readOnly ? <ClickConnectBridge /> : null}
       <Background />
@@ -113,6 +158,7 @@ export const FlowViewport = memo(function FlowViewport({
       <Controls style={{ height: 107, marginLeft: "222px", opacity: 0.85 }} />
 
       <ExecutionStatusBar
+        totalNodes={executableNodeCount}
         wsStatus={wsStatus}
         wsReconnectAttempts={wsReconnectAttempts}
         onDismissRunning={onDismissRunning}

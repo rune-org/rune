@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowRight, Box, User2 } from "lucide-react";
+import { ArrowRight, Box, Trash2, User2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import { resolveTemplateIcon } from "@/lib/templateIcons";
 import type { TemplateSummary } from "@/client/types.gen";
@@ -12,6 +13,8 @@ type TemplateCardProps = {
   template: TemplateSummary;
   onOpenDetail: (template: TemplateSummary) => void;
   onUse: (template: TemplateSummary) => void;
+  canDelete: boolean;
+  onDelete: (template: TemplateSummary) => void;
 };
 
 const SCOPE_LABELS: Record<string, string> = {
@@ -38,7 +41,13 @@ const CATEGORY_TONE: Record<string, string> = {
   productivity: "from-indigo-500/20 via-indigo-500/5 to-transparent",
 };
 
-export function TemplateCard({ template, onOpenDetail, onUse }: TemplateCardProps) {
+export function TemplateCard({
+  template,
+  onOpenDetail,
+  onUse,
+  canDelete,
+  onDelete,
+}: TemplateCardProps) {
   const Icon = resolveTemplateIcon({ icon: template.icon, category: template.category });
   const scope = template.scope as string;
   const scopeLabel = SCOPE_LABELS[scope] ?? scope;
@@ -77,12 +86,32 @@ export function TemplateCard({ template, onOpenDetail, onUse }: TemplateCardProp
         />
         <span
           className={cn(
-            "absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border bg-background/70 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur-sm",
+            "absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full border bg-background/70 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur-sm",
           )}
         >
           <Box className="h-3 w-3" />
           {nodeCount} {nodeCount === 1 ? "node" : "nodes"}
         </span>
+        {canDelete && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-3 top-3 z-10 h-7 w-7 rounded-full border p-0 bg-background/70 text-muted-foreground backdrop-blur-sm hover:bg-background/90 hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(template);
+                }}
+                onKeyDown={(e) => e.stopPropagation()}
+                aria-label={`Delete ${template.name}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Delete template</TooltipContent>
+          </Tooltip>
+        )}
         <Badge
           variant="outline"
           className={cn("absolute left-3 top-3 border text-[10px]", scopeTone)}
@@ -132,6 +161,7 @@ export function TemplateCard({ template, onOpenDetail, onUse }: TemplateCardProp
               e.stopPropagation();
               onUse(template);
             }}
+            onKeyDown={(e) => e.stopPropagation()}
             className="gap-1"
           >
             Use

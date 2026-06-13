@@ -81,6 +81,24 @@ async def test_delete_other_users_template_forbidden(
 
 
 @pytest.mark.asyncio
+async def test_admin_delete_other_users_template_returns_204(
+    admin_client: AsyncClient, other_user_private_template
+):
+    """Test that an admin can delete another user's template."""
+    response = await admin_client.delete(f"/templates/{other_user_private_template.id}")
+    assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_admin_delete_official_template_forbidden(
+    admin_client: AsyncClient, official_template
+):
+    """Test that official templates cannot be deleted, even by admins."""
+    response = await admin_client.delete(f"/templates/{official_template.id}")
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_use_other_users_private_template_forbidden(
     authenticated_client: AsyncClient, other_user_private_template
 ):
@@ -146,6 +164,16 @@ async def test_list_templates_response_is_array(authenticated_client: AsyncClien
     response = await authenticated_client.get("/templates/")
     data = response.json()
     assert isinstance(data["data"], list)
+
+
+@pytest.mark.asyncio
+async def test_list_template_summary_includes_created_by(
+    authenticated_client: AsyncClient, test_user, sample_public_template
+):
+    """Test that template summaries expose created_by for ownership checks."""
+    response = await authenticated_client.get("/templates/")
+    summaries = {t["id"]: t for t in response.json()["data"]}
+    assert summaries[sample_public_template.id]["created_by"] == test_user.id
 
 
 @pytest.mark.asyncio

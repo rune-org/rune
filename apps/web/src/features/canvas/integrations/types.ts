@@ -1,8 +1,21 @@
 import type { CredentialRef } from "@/lib/credentials";
 
-export type IntegrationProvider = "google" | "microsoft";
+export type IntegrationProvider =
+  | "google"
+  | "microsoft"
+  | "slack"
+  | "dropbox"
+  | "jira"
+  | "telegram";
 
-export type IntegrationService = "gmail" | "sheets" | "outlook";
+export type IntegrationService =
+  | "gmail"
+  | "sheets"
+  | "outlook"
+  | "slack"
+  | "dropbox"
+  | "jira"
+  | "bot";
 
 export type IntegrationNodeKind =
   | "integration.google.gmail.send_email"
@@ -20,9 +33,36 @@ export type IntegrationNodeKind =
   | "integration.google.sheets.update_row"
   | "integration.google.sheets.create_spreadsheet"
   | "integration.google.sheets.delete_spreadsheet"
+  | "integration.jira.issue_create"
+  | "integration.jira.issue_get"
+  | "integration.jira.issue_update"
+  | "integration.jira.issue_search"
+  | "integration.jira.issue_transition_list"
+  | "integration.jira.issue_transition_apply"
+  | "integration.jira.comment_create"
+  | "integration.jira.comment_list"
+  | "integration.jira.project_list"
+  | "integration.jira.user_get"
   | "integration.microsoft.outlook.send_email"
   | "integration.microsoft.outlook.read_email"
-  | "integration.microsoft.outlook.list_inbox";
+  | "integration.microsoft.outlook.search_emails"
+  | "integration.microsoft.outlook.list_folders"
+  | "integration.slack.chat.post_message"
+  | "integration.slack.chat.update"
+  | "integration.slack.chat.delete"
+  | "integration.slack.conversations.history"
+  | "integration.slack.conversations.find_message"
+  | "integration.slack.users.lookup_by_email"
+  | "integration.telegram.bot.send_message"
+  | "integration.telegram.bot.send_photo"
+  | "integration.telegram.bot.send_document"
+  | "integration.telegram.bot.get_updates"
+  | "integration.telegram.bot.get_chat_id"
+  | "integration.dropbox.files.list_folder"
+  | "integration.dropbox.files.get_metadata"
+  | "integration.dropbox.files.get_temporary_link"
+  | "integration.dropbox.files.delete"
+  | "integration.dropbox.files.search";
 
 export type IntegrationNodeData = {
   label?: string;
@@ -40,6 +80,7 @@ export type IntegrationArgumentField = {
   placeholder?: string;
   help?: string;
   options?: readonly { value: string; label: string }[];
+  showWhen?: { field: string; value: string };
 };
 
 export type IntegrationToolMetadata = {

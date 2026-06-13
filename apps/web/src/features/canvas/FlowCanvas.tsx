@@ -31,6 +31,7 @@ import { ImportTemplateDialog } from "./components/ImportTemplateDialog";
 import { SaveVersionDialog } from "./components/SaveVersionDialog";
 import { VersionConflictDialog } from "./components/VersionConflictDialog";
 import { SmithButton } from "./components/SmithButton";
+import { ScrybInterface } from "./components/ScrybInterface";
 import { FlowViewport } from "./components/FlowViewport";
 import { useCanvasShortcuts } from "./hooks/useCanvasShortcuts";
 import { useNodeShortcuts } from "./hooks/useNodeShortcuts";
@@ -117,6 +118,7 @@ function FlowCanvasInner({
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(externalEdges ?? []);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isInspectorExpanded, setIsInspectorExpanded] = useState(false);
+  const [isScrybOpen, setIsScrybOpen] = useState(false);
   const [renameDialog, setRenameDialog] = useState<{
     oldName: string;
     newName: string;
@@ -139,6 +141,7 @@ function FlowCanvasInner({
   } | null>(null);
 
   const [saveVersionDialogOpen, setSaveVersionDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Connect for instant updates on shared/deleted credentials
   useCredentialEvents();
@@ -371,24 +374,37 @@ function FlowCanvasInner({
     setSelectedNodeId,
   });
 
-  const persistGraph = useCallback(() => {
+  const persistGraph = useCallback(async () => {
     if (onboardingStateRef.current.isOpen && onboardingStateRef.current.step === 4) {
       setHasClickedSaveDuringTour(true);
     }
-    if (!onPersist) return;
-    return onPersist({
-      nodes: nodesRef.current,
-      edges: edgesRef.current,
-    });
-  }, [onPersist]);
+    if (!onPersist || isSaving) return;
+    setIsSaving(true);
+    try {
+      return await onPersist({
+        nodes: nodesRef.current,
+        edges: edgesRef.current,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [onPersist, isSaving]);
 
   const handleSaveVersionWithMessage = useCallback(
-    (message: string) => {
-      if (!onSaveWithMessage) return;
+    async (message: string) => {
+      if (!onSaveWithMessage || isSaving) return;
       setSaveVersionDialogOpen(false);
-      return onSaveWithMessage({ nodes: nodesRef.current, edges: edgesRef.current }, message);
+      setIsSaving(true);
+      try {
+        return await onSaveWithMessage(
+          { nodes: nodesRef.current, edges: edgesRef.current },
+          message,
+        );
+      } finally {
+        setIsSaving(false);
+      }
     },
-    [onSaveWithMessage],
+    [onSaveWithMessage, isSaving],
   );
 
   const handleViewVersion = useCallback(
@@ -483,6 +499,23 @@ function FlowCanvasInner({
       performDelete(nodeIds, edgeIds, choice === "clear" ? orphanedNames : undefined);
     },
     [deleteDialog, performDelete],
+  );
+
+  const onBeforeDelete = useCallback(
+    async ({
+      nodes: nodesToDelete,
+      edges: edgesToDelete,
+    }: {
+      nodes: CanvasNode[];
+      edges: Edge[];
+    }) => {
+      requestDelete(
+        new Set(nodesToDelete.map((n) => n.id)),
+        new Set(edgesToDelete.map((e) => e.id)),
+      );
+      return false;
+    },
+    [requestDelete],
   );
 
   const deleteSelectedElements = useCallback(() => {
@@ -583,8 +616,6 @@ function FlowCanvasInner({
     rfInstanceRef.current = inst;
   }, []);
 
-  const onPaneClick = useCallback(() => setSelectedNodeId(null), []);
-
   const onLibraryAdd = useCallback(
     (t: NodeKind, x?: number, y?: number) => {
       pushHistory();
@@ -593,11 +624,48 @@ function FlowCanvasInner({
     [pushHistory, addNode],
   );
 
-  const onAddStickyNote = useCallback(() => onLibraryAdd("stickyNote"), [onLibraryAdd]);
+  const [selectMode, setSelectMode] = useState(false);
+  const [notePlacementMode, setNotePlacementMode] = useState(false);
+
+  const onToggleSelectMode = useCallback(() => {
+    setNotePlacementMode(false);
+    setSelectMode((v) => !v);
+  }, []);
+
+  const onToggleNotePlacement = useCallback(() => {
+    setSelectMode(false);
+    setNotePlacementMode((v) => !v);
+  }, []);
+
+  const onPaneClick = useCallback(
+    (event: React.MouseEvent) => {
+      if (notePlacementMode) {
+        setNotePlacementMode(false);
+        onLibraryAdd("stickyNote", event.clientX, event.clientY);
+        return;
+      }
+      setSelectedNodeId(null);
+    },
+    [notePlacementMode, onLibraryAdd],
+  );
+
+  useEffect(() => {
+    if (!selectMode && !notePlacementMode) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectMode(false);
+        setNotePlacementMode(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectMode, notePlacementMode]);
 
   const onExecute = useCallback(async () => {
-    if (isViewingSnapshot) {
-      toast.error("Execution is disabled while viewing history");
+    if (isViewingSnapshot || isSaving) {
+      if (isViewingSnapshot) {
+        toast.error("Execution is disabled while viewing history");
+      }
       return;
     }
 
@@ -610,9 +678,7 @@ function FlowCanvasInner({
     let versionIdToRun: number | undefined;
     if (onPersist) {
       try {
-        const nodes = nodesRef.current;
-        const edges = edgesRef.current;
-        const persistedVersionId = await onPersist({ nodes, edges });
+        const persistedVersionId = await persistGraph();
         if (typeof persistedVersionId === "number") {
           versionIdToRun = persistedVersionId;
         } else {
@@ -627,7 +693,15 @@ function FlowCanvasInner({
     if (didStart && onboardingStateRef.current.isOpen && onboardingStateRef.current.step === 5) {
       setHasClickedRunDuringTour(true);
     }
-  }, [isViewingSnapshot, onPersist, resetExecution, startExecution, workflowId]);
+  }, [
+    isViewingSnapshot,
+    isSaving,
+    persistGraph,
+    onPersist,
+    resetExecution,
+    startExecution,
+    workflowId,
+  ]);
 
   useCanvasShortcuts({
     nodes,
@@ -683,13 +757,16 @@ function FlowCanvasInner({
           onNodeDragStop={onNodeDragStop}
           onInit={onInit}
           onPaneClick={onPaneClick}
+          onBeforeDelete={onBeforeDelete}
           readOnly={isViewingSnapshot}
+          selectMode={selectMode && !isViewingSnapshot}
+          notePlacementMode={notePlacementMode && !isViewingSnapshot}
           wsStatus={wsStatus}
           wsReconnectAttempts={wsReconnectAttempts}
           onDismissRunning={stopExecution}
         />
 
-        <div className="pointer-events-none absolute left-4 top-4 z-35">
+        <div className="pointer-events-none absolute inset-x-4 top-4 z-35 flex flex-wrap items-start gap-2">
           <div
             ref={toolbarRef}
             data-onboarding="toolbar"
@@ -697,7 +774,7 @@ function FlowCanvasInner({
           >
             <Toolbar
               onExecute={onExecute}
-              executeDisabled={isViewingSnapshot}
+              executeDisabled={isViewingSnapshot || isSaving}
               readOnly={isViewingSnapshot}
               onStop={stopExecution}
               onUndo={handleUndo}
@@ -713,7 +790,7 @@ function FlowCanvasInner({
               onImportFromFile={importFromFile}
               onImportFromTemplate={importFromTemplate}
               onAutoLayout={autoLayout}
-              saveDisabled={saveDisabled || isViewingSnapshot}
+              saveDisabled={saveDisabled || isViewingSnapshot || isSaving}
               executionStatus={executionState.status}
               wsStatus={wsStatus}
               isStartingExecution={isStartingExecution}
@@ -736,20 +813,33 @@ function FlowCanvasInner({
               disabled={isViewingSnapshot}
             />
           </div>
+
+          <RightPanelStack
+            selectedNode={selectedNode}
+            updateSelectedNodeLabel={updateSelectedNodeLabel}
+            updateData={updateNodeData}
+            onDelete={selectedNode && !isViewingSnapshot ? deleteSelectedElements : undefined}
+            isExpandedDialogOpen={isInspectorExpanded}
+            setIsExpandedDialogOpen={setIsInspectorExpanded}
+            onTogglePin={isViewingSnapshot ? undefined : togglePin}
+            notePlacementMode={notePlacementMode}
+            onToggleNotePlacement={isViewingSnapshot ? undefined : onToggleNotePlacement}
+            selectMode={selectMode}
+            onToggleSelectMode={isViewingSnapshot ? undefined : onToggleSelectMode}
+            isScrybOpen={isScrybOpen}
+            readOnly={isViewingSnapshot}
+          />
         </div>
 
-        <RightPanelStack
-          selectedNode={selectedNode}
-          updateSelectedNodeLabel={updateSelectedNodeLabel}
-          updateData={updateNodeData}
-          onDelete={selectedNode && !isViewingSnapshot ? deleteSelectedElements : undefined}
-          isExpandedDialogOpen={isInspectorExpanded}
-          setIsExpandedDialogOpen={setIsInspectorExpanded}
-          onTogglePin={isViewingSnapshot ? undefined : togglePin}
-          onAddStickyNote={isViewingSnapshot ? undefined : onAddStickyNote}
-          workflowId={workflowId}
-          readOnly={isViewingSnapshot}
-        />
+        <div className="pointer-events-none absolute bottom-8 right-4 z-35">
+          <div className="pointer-events-auto">
+            <ScrybInterface
+              isOpen={isScrybOpen}
+              onOpenChange={setIsScrybOpen}
+              workflowId={workflowId}
+            />
+          </div>
+        </div>
 
         <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2">
           <div className="rounded-full border border-border/40 bg-background/20 px-3 py-1 text-xs text-muted-foreground/96 backdrop-blur">
@@ -798,7 +888,7 @@ function FlowCanvasInner({
           open={saveVersionDialogOpen}
           onOpenChange={setSaveVersionDialogOpen}
           onSave={handleSaveVersionWithMessage}
-          isSaving={saveDisabled}
+          isSaving={isSaving || saveDisabled}
         />
 
         {conflictData && onConflictLoadServer && onConflictForceSave && onConflictCancel && (

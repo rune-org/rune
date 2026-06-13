@@ -354,3 +354,78 @@ class TestListExecutions:
         assert "completed" in statuses
         assert "pending" in statuses
         assert "failed" in statuses
+
+    @pytest.mark.asyncio
+    async def test_list_executions_pagination_and_filtering(
+        self, authenticated_client, sample_executions, sample_workflow
+    ):
+        """Test pagination, search, and status filtering on list_user_executions endpoint."""
+        # 1. Flat list (original behavior)
+        response = await authenticated_client.get("/executions/")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data["data"], list)
+        assert len(data["data"]) == 3
+
+        # 2. Paginated enveloped structure
+        response = await authenticated_client.get(
+            "/executions/", params={"page": 1, "page_size": 2}
+        )
+        assert response.status_code == 200
+        envelope = response.json()["data"]
+        assert "items" in envelope
+        assert "total" in envelope
+        assert "page" in envelope
+        assert "page_size" in envelope
+        assert "total_pages" in envelope
+        assert envelope["page"] == 1
+        assert envelope["page_size"] == 2
+        assert len(envelope["items"]) == 2
+        assert envelope["total"] == 3
+
+        # Page 2
+        response2 = await authenticated_client.get(
+            "/executions/", params={"page": 2, "page_size": 2}
+        )
+        assert response2.status_code == 200
+        envelope2 = response2.json()["data"]
+        assert envelope2["page"] == 2
+        assert len(envelope2["items"]) == 1
+
+        # 3. Reject invalid combinations (only one of page or page_size provided)
+        response_fail = await authenticated_client.get(
+            "/executions/", params={"page": 1}
+        )
+        assert response_fail.status_code == 400
+
+        # 4. Search filter (by workflow name)
+        response_search = await authenticated_client.get(
+            "/executions/", params={"search": "Sample"}
+        )
+        assert response_search.status_code == 200
+        items = response_search.json()["data"]
+        assert len(items) == 3
+
+        response_search_empty = await authenticated_client.get(
+            "/executions/", params={"search": "Nonexistent"}
+        )
+        assert response_search_empty.status_code == 200
+        items_empty = response_search_empty.json()["data"]
+        assert len(items_empty) == 0
+
+        # 5. Search filter (by workflow ID)
+        response_search_id = await authenticated_client.get(
+            "/executions/", params={"search": str(sample_workflow.id)}
+        )
+        assert response_search_id.status_code == 200
+        items_id = response_search_id.json()["data"]
+        assert len(items_id) == 3
+
+        # 6. Status filter
+        response_status = await authenticated_client.get(
+            "/executions/", params={"status": "completed"}
+        )
+        assert response_status.status_code == 200
+        items_status = response_status.json()["data"]
+        assert len(items_status) == 1
+        assert items_status[0]["id"] == "exec_completed_1"

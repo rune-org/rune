@@ -1,18 +1,29 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Logo } from "@/components/shared/Logo";
+import { DocsSearch } from "@/components/layout/DocsSearch";
+import { DocsLanguageSwitcher } from "@/components/layout/DocsLanguageSwitcher";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { docsLocaleFromPath } from "@/lib/docs-locales";
 
 export function DocsNavbar() {
+  const locale = docsLocaleFromPath(usePathname());
+
   return (
-    <nav className="flex items-center justify-between w-full h-16 px-6 bg-background/80 backdrop-blur-md border-b border-border/40">
+    <nav className="sticky top-0 z-30 flex items-center justify-between w-full h-16 px-6 bg-background/80 backdrop-blur-md border-b border-border/40">
       <div className="flex items-center gap-6">
-        <Logo variant="glyph" href="/" className="h-6 w-6" />
+        <Logo variant="wordmark" href="/" className="h-7" />
       </div>
 
-      <div className="flex-1" />
+      <div className="flex-1 flex justify-center px-6">
+        <DocsSearch locale={locale} />
+      </div>
 
       <div className="flex items-center gap-4">
+        <ThemeToggle />
+        <DocsLanguageSwitcher />
         <Link
           href="https://github.com/rune-org/rune"
           target="_blank"

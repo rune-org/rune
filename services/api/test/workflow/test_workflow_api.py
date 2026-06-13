@@ -17,6 +17,7 @@ from sqlmodel import select
 
 from src.db.models import Execution, Workflow
 from src.workflow.queue import NO_ACTION_NODES_MESSAGE
+from src.workflow.router import MAX_WORKFLOW_PAGE_SIZE
 
 
 class TestWorkflowVersionConflictDetection:
@@ -249,6 +250,82 @@ class TestWorkflowExecution:
         await channel.close()
 
     @pytest.mark.asyncio
+    async def test_specific_version_can_run_for_draft_workflow(
+        self,
+        authenticated_client,
+        sample_workflow,
+        test_rabbitmq,
+        test_settings,
+    ):
+        """Canvas runs pin the latest draft version and bypass table status gating."""
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        version = detail.json()["data"]["latest_version"]
+
+        channel = await test_rabbitmq.channel()
+        queue = await channel.declare_queue(
+            test_settings.rabbitmq_workflow_queue,
+            durable=True,
+        )
+        await queue.purge()
+
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/run",
+            json={"version_id": version["id"]},
+        )
+        assert response.status_code == 200
+
+        message = await queue.get(timeout=5)
+        assert message is not None
+        payload = json.loads(message.body.decode("utf-8"))
+        assert payload["workflow_version_id"] == version["id"]
+
+        await channel.close()
+
+    @pytest.mark.asyncio
+    async def test_specific_version_can_run_for_inactive_workflow(
+        self,
+        authenticated_client,
+        sample_workflow,
+        test_rabbitmq,
+        test_settings,
+    ):
+        """Explicit version runs still work after a published workflow is deactivated."""
+        detail = await authenticated_client.get(f"/workflows/{sample_workflow.id}")
+        version = detail.json()["data"]["latest_version"]
+
+        publish = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/publish",
+            json={"version_id": version["id"]},
+        )
+        assert publish.status_code == 200
+
+        deactivate = await authenticated_client.put(
+            f"/workflows/{sample_workflow.id}/status",
+            json={"is_active": False},
+        )
+        assert deactivate.status_code == 200
+
+        channel = await test_rabbitmq.channel()
+        queue = await channel.declare_queue(
+            test_settings.rabbitmq_workflow_queue,
+            durable=True,
+        )
+        await queue.purge()
+
+        response = await authenticated_client.post(
+            f"/workflows/{sample_workflow.id}/run",
+            json={"version_id": version["id"]},
+        )
+        assert response.status_code == 200
+
+        message = await queue.get(timeout=5)
+        assert message is not None
+        payload = json.loads(message.body.decode("utf-8"))
+        assert payload["workflow_version_id"] == version["id"]
+
+        await channel.close()
+
+    @pytest.mark.asyncio
     async def test_unpublished_workflow_cannot_be_executed(
         self,
         authenticated_client,
@@ -383,3 +460,215 @@ class TestWorkflowVersionValidation:
 
         # Semantic error surfaces via the model_validator ValueError (422).
         assert response.status_code == 422
+
+
+class TestWorkflowPaginationAndFilters:
+    """Test pagination, search, and status filtering on list_workflows endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_list_workflows_without_pagination_returns_flat_list(
+        self, authenticated_client, workflow_service, test_user
+    ):
+        """Omitting page parameters returns a flat list (original behavior)."""
+        # Create a few workflows
+        for i in range(3):
+            await workflow_service.create(
+                user_id=test_user.id,
+                name=f"Workflow Flat {i}",
+                description=f"Description {i}",
+            )
+
+        response = await authenticated_client.get("/workflows/")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert isinstance(data["data"], list)
+        # Verify our newly created workflows are in the list
+        names = [wf["name"] for wf in data["data"]]
+        for i in range(3):
+            assert f"Workflow Flat {i}" in names
+
+    @pytest.mark.asyncio
+    async def test_list_workflows_paginated_returns_enveloped_data(
+        self, authenticated_client, workflow_service, test_user
+    ):
+        """Providing page/page_size returns enveloped PaginatedData schema."""
+        # Create 5 workflows
+        for i in range(5):
+            await workflow_service.create(
+                user_id=test_user.id,
+                name=f"Workflow Paginated {i}",
+                description=f"Description {i}",
+            )
+
+        # Get page 1 with page_size 2
+        response = await authenticated_client.get(
+            "/workflows/",
+            params={"page": 1, "page_size": 2},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        envelope = data["data"]
+        assert "items" in envelope
+        assert "total" in envelope
+        assert "page" in envelope
+        assert "page_size" in envelope
+        assert "total_pages" in envelope
+
+        assert envelope["page"] == 1
+        assert envelope["page_size"] == 2
+        assert len(envelope["items"]) == 2
+        assert envelope["total"] >= 5
+
+        # Get page 2
+        response_page2 = await authenticated_client.get(
+            "/workflows/",
+            params={"page": 2, "page_size": 2},
+        )
+        assert response_page2.status_code == 200
+        envelope2 = response_page2.json()["data"]
+        assert envelope2["page"] == 2
+        assert len(envelope2["items"]) == 2
+        # Ensure items on page 1 and page 2 are different
+        page1_ids = {wf["id"] for wf in envelope["items"]}
+        page2_ids = {wf["id"] for wf in envelope2["items"]}
+        assert page1_ids.isdisjoint(page2_ids)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "params",
+        [
+            {"page": 0, "page_size": 10},
+            {"page": 1, "page_size": 0},
+            {"page": -1, "page_size": 10},
+            {"page": 1, "page_size": -1},
+            {"page": 1, "page_size": MAX_WORKFLOW_PAGE_SIZE + 1},
+        ],
+    )
+    async def test_list_workflows_rejects_invalid_pagination_ranges(
+        self, authenticated_client, params
+    ):
+        """page and page_size must be within valid ranges."""
+        response = await authenticated_client.get("/workflows/", params=params)
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "params",
+        [
+            {"page": 1},
+            {"page_size": 10},
+        ],
+    )
+    async def test_list_workflows_requires_both_pagination_params(
+        self, authenticated_client, params
+    ):
+        """Providing only one of page or page_size returns 400."""
+        response = await authenticated_client.get("/workflows/", params=params)
+        assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_list_workflows_search_filter(
+        self, authenticated_client, workflow_service, test_user
+    ):
+        """Providing search queries filters results by name (case-insensitive)."""
+        await workflow_service.create(
+            user_id=test_user.id,
+            name="Apple Pie Flow",
+            description="",
+        )
+        await workflow_service.create(
+            user_id=test_user.id,
+            name="Banana Split Flow",
+            description="",
+        )
+
+        response = await authenticated_client.get(
+            "/workflows/",
+            params={"search": "apple"},
+        )
+        assert response.status_code == 200
+        names = [wf["name"] for wf in response.json()["data"]]
+        assert "Apple Pie Flow" in names
+        assert "Banana Split Flow" not in names
+
+    @pytest.mark.asyncio
+    async def test_list_workflows_status_filter(
+        self, authenticated_client, workflow_service, test_user
+    ):
+        """Providing status parameter filters workflows by active, inactive, draft states."""
+        # 1. Draft workflow (no versions saved/published, inactive)
+        await workflow_service.create(
+            user_id=test_user.id,
+            name="Draft Workflow",
+            description="",
+        )
+
+        # 2. Inactive workflow (has versions, published_version_id is set, is_active=False)
+        inactive_wf = await workflow_service.create(
+            user_id=test_user.id,
+            name="Inactive Workflow",
+            description="",
+        )
+        version = await workflow_service.create_version(
+            workflow=inactive_wf,
+            user_id=test_user.id,
+            workflow_data={
+                "nodes": [
+                    {"id": "t", "type": "trigger", "trigger": True},
+                    {"id": "a", "type": "action"},
+                ],
+                "edges": [],
+            },
+            base_version_id=None,
+        )
+        await workflow_service.publish_version(inactive_wf, version.id)
+        await workflow_service.update_status(inactive_wf, is_active=False)
+
+        # 3. Active workflow (has versions, is_active=True)
+        active_wf = await workflow_service.create(
+            user_id=test_user.id,
+            name="Active Workflow",
+            description="",
+        )
+        version_active = await workflow_service.create_version(
+            workflow=active_wf,
+            user_id=test_user.id,
+            workflow_data={
+                "nodes": [
+                    {"id": "t", "type": "trigger", "trigger": True},
+                    {"id": "a", "type": "action"},
+                ],
+                "edges": [],
+            },
+            base_version_id=None,
+        )
+        await workflow_service.publish_version(active_wf, version_active.id)
+
+        # Test active status filter
+        resp_active = await authenticated_client.get(
+            "/workflows/", params={"status": "active"}
+        )
+        active_names = [wf["name"] for wf in resp_active.json()["data"]]
+        assert "Active Workflow" in active_names
+        assert "Inactive Workflow" not in active_names
+        assert "Draft Workflow" not in active_names
+
+        # Test inactive status filter
+        resp_inactive = await authenticated_client.get(
+            "/workflows/", params={"status": "inactive"}
+        )
+        inactive_names = [wf["name"] for wf in resp_inactive.json()["data"]]
+        assert "Inactive Workflow" in inactive_names
+        assert "Active Workflow" not in inactive_names
+        assert "Draft Workflow" not in inactive_names
+
+        # Test draft status filter
+        resp_draft = await authenticated_client.get(
+            "/workflows/", params={"status": "draft"}
+        )
+        draft_names = [wf["name"] for wf in resp_draft.json()["data"]]
+        assert "Draft Workflow" in draft_names
+        assert "Active Workflow" not in draft_names
+        assert "Inactive Workflow" not in draft_names

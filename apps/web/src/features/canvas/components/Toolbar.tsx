@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
 import {
@@ -108,6 +108,11 @@ export const Toolbar = memo(function Toolbar({
   viewingVersionNumber,
   onExecutionUrlChange,
 }: ToolbarProps) {
+  const [openMenu, setOpenMenu] = useState<"import" | "export" | null>(null);
+  const handleMenuOpenChange = (menu: "import" | "export") => (open: boolean) => {
+    setOpenMenu((prev) => (open ? menu : prev === menu ? null : prev));
+  };
+
   const isExecuting = executionStatus === "running" || isStartingExecution;
   const isRunDisabled = executeDisabled || readOnly;
   const liveStatusLabel =
@@ -135,12 +140,14 @@ export const Toolbar = memo(function Toolbar({
     title,
     children,
     disabled,
+    iconOnly,
     "data-onboarding": dataOnboarding,
   }: {
     onClick: () => void;
     title: string;
     children: React.ReactNode;
     disabled?: boolean;
+    iconOnly?: boolean;
     "data-onboarding"?: string;
   }) => (
     <button
@@ -149,7 +156,10 @@ export const Toolbar = memo(function Toolbar({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       data-onboarding={dataOnboarding}
-      className="inline-flex h-8 items-center gap-2 rounded-sm border border-border/60 bg-muted/40 px-2.5 text-xs hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50"
+      className={cn(
+        "inline-flex h-8 items-center gap-2 rounded-sm border border-border/60 bg-muted/40 text-xs hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50",
+        iconOnly ? "w-8 justify-center" : "px-2.5",
+      )}
     >
       {children}
     </button>
@@ -219,14 +229,20 @@ export const Toolbar = memo(function Toolbar({
           disabled={readOnly && viewingVersionNumber == null}
         />
       )}
-      <Btn onClick={onUndo} title="Undo (Ctrl+Z)" disabled={!canUndo}>
-        <RotateCcw className="h-4 w-4" /> Undo
+      <Btn onClick={onUndo} title="Undo (Ctrl+Z)" disabled={!canUndo} iconOnly>
+        <RotateCcw className="h-4 w-4" />
       </Btn>
-      <Btn onClick={onRedo} title="Redo (Ctrl+Shift+Z)" disabled={!canRedo}>
-        <RotateCw className="h-4 w-4" /> Redo
+      <Btn onClick={onRedo} title="Redo (Ctrl+Shift+Z)" disabled={!canRedo} iconOnly>
+        <RotateCw className="h-4 w-4" />
       </Btn>
-      <Btn onClick={onSave} title="Save (Ctrl+S)" disabled={saveDisabled} data-onboarding="save">
-        <Save className="h-4 w-4" /> Save
+      <Btn
+        onClick={onSave}
+        title="Save (Ctrl+S)"
+        disabled={saveDisabled}
+        data-onboarding="save"
+        iconOnly
+      >
+        <Save className="h-4 w-4" />
       </Btn>
       {onPublish && hasUnpublishedChanges && !viewingVersionNumber && !readOnly && (
         <div className="relative">
@@ -240,7 +256,7 @@ export const Toolbar = memo(function Toolbar({
         </div>
       )}
 
-      <DropdownMenu>
+      <DropdownMenu open={openMenu === "import"} onOpenChange={handleMenuOpenChange("import")}>
         <DropdownMenuTrigger className={btnClass} disabled={readOnly}>
           <Download className="h-4 w-4" /> Import <ChevronDown className="h-3 w-3 opacity-60" />
         </DropdownMenuTrigger>
@@ -257,7 +273,7 @@ export const Toolbar = memo(function Toolbar({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <DropdownMenu>
+      <DropdownMenu open={openMenu === "export"} onOpenChange={handleMenuOpenChange("export")}>
         <DropdownMenuTrigger className={btnClass}>
           <Upload className="h-4 w-4" /> Export <ChevronDown className="h-3 w-3 opacity-60" />
         </DropdownMenuTrigger>
@@ -283,7 +299,7 @@ export const Toolbar = memo(function Toolbar({
         </Btn>
       )}
       {onOpenOnboarding && (
-        <Btn onClick={onOpenOnboarding} title="Open onboarding guide">
+        <Btn onClick={onOpenOnboarding} title="Open onboarding guide" iconOnly>
           <HelpCircle className="h-4 w-4" />
         </Btn>
       )}

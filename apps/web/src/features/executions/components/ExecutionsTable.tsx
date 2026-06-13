@@ -11,6 +11,7 @@ import {
   Loader2,
   AlertTriangle,
   ChevronRight,
+  ChevronLeft,
   Layers,
   ArrowDownWideNarrow,
   Search,
@@ -32,6 +33,15 @@ type ExecutionGroup = {
 interface ExecutionsTableProps {
   executions: ExecutionListItem[];
   isLoading?: boolean;
+  hasActiveFilters?: boolean;
+  page: number;
+  setPage: (page: number) => void;
+  pageSize: number;
+  setPageSize: (pageSize: number) => void;
+  search: string;
+  setSearch: (search: string) => void;
+  total: number;
+  totalPages: number;
 }
 
 function StatusBadge({ status }: { status: ExecutionListStatus }) {
@@ -349,6 +359,18 @@ function RecentBody({ executions }: { executions: ExecutionListItem[] }) {
   );
 }
 
+function TableMessage({ colSpan, children }: { colSpan: number; children: React.ReactNode }) {
+  return (
+    <tbody>
+      <tr>
+        <td colSpan={colSpan} className="px-4 py-12 text-center">
+          {children}
+        </td>
+      </tr>
+    </tbody>
+  );
+}
+
 function SortToggle({ mode, onChange }: { mode: SortMode; onChange: (mode: SortMode) => void }) {
   return (
     <div className="inline-flex items-center rounded-lg bg-muted/30 p-1 gap-0.5">
@@ -382,27 +404,32 @@ function SortToggle({ mode, onChange }: { mode: SortMode; onChange: (mode: SortM
   );
 }
 
-export function ExecutionsTable({ executions, isLoading }: ExecutionsTableProps) {
+export function ExecutionsTable({
+  executions,
+  isLoading,
+  hasActiveFilters = false,
+  page,
+  setPage,
+  pageSize,
+  setPageSize,
+  search,
+  setSearch,
+  total,
+  totalPages,
+}: ExecutionsTableProps) {
   const [sortMode, setSortMode] = useState<SortMode>(() => {
     if (typeof window === "undefined") return "workflow";
     const stored = localStorage.getItem("executions-sort-mode");
     return stored === "recent" ? "recent" : "workflow";
   });
-  const [query, setQuery] = useState("");
 
   const handleSortChange = (mode: SortMode) => {
     setSortMode(mode);
     localStorage.setItem("executions-sort-mode", mode);
   };
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return executions;
-    return executions.filter((e) => {
-      const name = e.workflowName?.toLowerCase() ?? "";
-      return name.includes(q) || String(e.workflowId).includes(q);
-    });
-  }, [executions, query]);
+  const filtered = executions;
+  const columnCount = sortMode === "recent" ? 6 : GROUPED_COL_COUNT;
 
   const groups = useMemo<ExecutionGroup[]>(() => {
     const grouped = new Map<number, ExecutionGroup>();
@@ -425,39 +452,17 @@ export function ExecutionsTable({ executions, isLoading }: ExecutionsTableProps)
     return Array.from(grouped.values());
   }, [filtered]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (executions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Clock className="h-12 w-12 text-muted-foreground/50" />
-        <h3 className="mt-4 text-lg font-medium text-foreground">No executions yet</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Run a workflow to see execution history here.
-        </p>
-        <Link href="/create" className="mt-4">
-          <Button variant="outline" size="sm">
-            Go to Workflows
-          </Button>
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <Input
             placeholder="Search by workflow..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
           />
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -469,13 +474,90 @@ export function ExecutionsTable({ executions, isLoading }: ExecutionsTableProps)
         <table className="w-full text-sm">
           <TableHead mode={sortMode} />
 
-          {sortMode === "workflow" ? (
+          {isLoading ? (
+            <TableMessage colSpan={columnCount}>
+              <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+            </TableMessage>
+          ) : filtered.length === 0 ? (
+            <TableMessage colSpan={columnCount}>
+              <div className="flex flex-col items-center justify-center text-center">
+                <Clock className="h-12 w-12 text-muted-foreground/50" />
+                <h3 className="mt-4 text-lg font-medium text-foreground">
+                  {hasActiveFilters ? "No executions found" : "No executions yet"}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {hasActiveFilters
+                    ? "Try adjusting your search or status filter."
+                    : "Run a workflow to see execution history here."}
+                </p>
+                {!hasActiveFilters && (
+                  <Link href="/create" className="mt-4">
+                    <Button variant="outline" size="sm">
+                      Go to Workflows
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </TableMessage>
+          ) : sortMode === "workflow" ? (
             <GroupedBody groups={groups} />
           ) : (
             <RecentBody executions={filtered} />
           )}
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {total > 0 && (
+        <div className="flex items-center justify-between border-t border-border px-2 py-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {Math.min((page - 1) * pageSize + 1, total)} to{" "}
+            {Math.min(page * pageSize, total)} of {total} executions
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Rows per page</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="h-8 w-[70px] rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {[5, 10, 20, 50].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => setPage(Math.max(page - 1, 1))}
+                disabled={page <= 1}
+              >
+                <span className="sr-only">Previous page</span>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-medium">
+                Page {page} of {totalPages || 1}
+              </span>
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => setPage(Math.min(page + 1, totalPages))}
+                disabled={page >= totalPages}
+              >
+                <span className="sr-only">Next page</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

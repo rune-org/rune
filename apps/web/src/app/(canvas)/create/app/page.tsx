@@ -32,7 +32,22 @@ type WorkflowMeta = {
   latestVersionNumber: number | null;
 };
 
+function updateWorkflowMetaAfterSave(
+  previous: WorkflowMeta | null,
+  version: { id: number; version: number; is_published: boolean },
+): WorkflowMeta {
+  return {
+    publishedVersionId: version.is_published ? version.id : (previous?.publishedVersionId ?? null),
+    hasUnpublishedChanges: !version.is_published,
+    latestVersionNumber: version.version,
+  };
+}
+
 function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.length > 0) {
+    return error.message;
+  }
+
   if (error && typeof error === "object" && "detail" in error) {
     const detail = (error as { detail: unknown }).detail;
     if (typeof detail === "string" && detail.length > 0) {
@@ -40,7 +55,23 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
     }
   }
 
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message: unknown }).message;
+    if (typeof message === "string" && message.length > 0) {
+      return message;
+    }
+  }
+
   return fallback;
+}
+
+function getSaveErrorMessage(error: unknown): string {
+  const message = getApiErrorMessage(error, "Failed to save workflow");
+  if (message.toLowerCase().includes("insufficient permissions to edit this workflow")) {
+    return "You no longer have editor access to this workflow.";
+  }
+
+  return message;
 }
 
 function CanvasPageInner() {
@@ -191,13 +222,12 @@ function CanvasPageInner() {
         });
 
         const newVersion = response.data!.data;
+        const didCreateVersion = newVersion.id !== baseVersionIdRef.current;
         setBaseVersionId(newVersion.id);
-        setWorkflowMeta((prev) => ({
-          publishedVersionId: prev?.publishedVersionId ?? null,
-          hasUnpublishedChanges: true,
-          latestVersionNumber: newVersion.version,
-        }));
-        toast.success("Version saved");
+        setWorkflowMeta((prev) => updateWorkflowMetaAfterSave(prev, newVersion));
+        if (didCreateVersion) {
+          toast.success("Version saved");
+        }
         return newVersion.id;
       } catch (err) {
         const conflict = workflows.isVersionConflict(err);
@@ -211,7 +241,7 @@ function CanvasPageInner() {
           const nodeList = err.nodes.map((n) => `${n.type} (${n.id.slice(0, 6)})`).join(", ");
           toast.error(`Missing credentials for: ${nodeList}`);
         } else {
-          toast.error(err instanceof Error ? err.message : "Failed to save version");
+          toast.error(getSaveErrorMessage(err));
         }
       } finally {
         setIsSaving(false);
@@ -295,13 +325,12 @@ function CanvasPageInner() {
       });
 
       const newVersion = response.data!.data;
+      const didCreateVersion = newVersion.id !== conflictData.serverVersionId;
       setBaseVersionId(newVersion.id);
-      setWorkflowMeta((prev) => ({
-        publishedVersionId: prev?.publishedVersionId ?? null,
-        hasUnpublishedChanges: true,
-        latestVersionNumber: newVersion.version,
-      }));
-      toast.success("Version saved");
+      setWorkflowMeta((prev) => updateWorkflowMetaAfterSave(prev, newVersion));
+      if (didCreateVersion) {
+        toast.success("Version saved");
+      }
     } catch (err) {
       const nestedConflict = workflows.isVersionConflict(err);
       if (nestedConflict) {
@@ -311,7 +340,7 @@ function CanvasPageInner() {
           localGraph,
         });
       } else {
-        toast.error("Failed to save version after conflict resolution");
+        toast.error(getSaveErrorMessage(err));
       }
     } finally {
       setIsSaving(false);
@@ -429,7 +458,7 @@ function CanvasPageInner() {
           const nodeList = err.nodes.map((n) => `${n.type} (${n.id.slice(0, 6)})`).join(", ");
           toast.error(`Missing credentials for: ${nodeList}`);
         } else {
-          toast.error(err instanceof Error ? err.message : "Failed to save workflow");
+          toast.error(getSaveErrorMessage(err));
         }
       } finally {
         setIsSaving(false);

@@ -11,7 +11,12 @@ import {
   updateCredentialCredentialsCredentialIdPatch,
 } from "@/client";
 
-import type { CredentialCreate, CredentialShare, CredentialUpdate } from "@/client/types.gen";
+import type {
+  CredentialCreate,
+  CredentialShare,
+  CredentialUpdate,
+  ListCredentialsCredentialsGetData,
+} from "@/client/types.gen";
 
 // Readable wrappers for credentials-related SDK functions
 
@@ -25,7 +30,8 @@ export const createCredential = (payload: CredentialCreate) =>
 /**
  * List all credentials
  */
-export const listCredentials = () => listCredentialsCredentialsGet();
+export const listCredentials = (params?: ListCredentialsCredentialsGetData["query"]) =>
+  listCredentialsCredentialsGet({ query: params });
 
 /**
  * List all credentials for dropdown usage
