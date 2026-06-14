@@ -1,0 +1,77 @@
+# Service Provider Setup
+
+The Service Provider is Rune. This page shows you how to get the information from Rune that you need to configure your identity provider.
+
+## What is the Service Provider Tab?
+
+When you go to **Settings** → **Authentication** → **SAML** in Rune, you'll see three tabs:
+
+- **Setup Guide**
+- **Service Provider**
+- **Identity Provider**
+
+The **Service Provider** tab shows you information about Rune that your identity provider needs.
+
+## Getting Information from Rune
+
+### Step 1: Open the Service Provider Tab
+
+1. Sign in to Rune as an admin
+2. Go to **Settings** → **Authentication** → **SAML**
+3. Click on the **Service Provider** tab
+
+![SAML Configuration](/docs/auth/saml-config.png)
+
+### Step 2: Copy the Values
+
+You'll see three values on this page. You need to copy these and enter them in your identity provider:
+
+| Field in Rune    | What It Is                                           | Where to Use It                                                  |
+| ---------------- | ---------------------------------------------------- | ---------------------------------------------------------------- |
+| **Entity ID**    | Identifies Rune to your identity provider            | Also called: Identifier, Audience, SP Entity ID                  |
+| **ACS URL**      | Where your identity provider sends login responses   | Also called: Reply URL, Callback URL, Assertion Consumer Service |
+| **Metadata URL** | Contains all Rune's SAML information in one XML file | Some identity providers can import this automatically            |
+
+### Step 3: Use These in Your Identity Provider
+
+Take these three values and use them when creating a SAML application in your identity provider.
+
+**Example values** (yours will be different based on your Rune URL):
+
+```
+Entity ID:    https://rune.yourcompany.com/auth/saml/metadata
+ACS URL:      https://rune.yourcompany.com/auth/saml/acs
+Metadata URL: https://rune.yourcompany.com/auth/saml/metadata
+```
+
+## Different Names in Identity Providers
+
+Your identity provider might use different names for these fields:
+
+### Entity ID might be called:
+
+- Identifier
+- Audience
+- SP Entity ID
+- Application ID
+
+### ACS URL might be called:
+
+- Reply URL
+- Callback URL
+- Assertion Consumer Service URL
+- Single Sign-On URL
+
+## Using the Metadata URL
+
+Some identity providers let you import SAML configuration automatically using the Metadata URL. If your identity provider has an "Import from Metadata URL" option:
+
+1. Copy the Metadata URL from Rune
+2. Paste it in your identity provider's import field
+3. The Entity ID and ACS URL will be filled in automatically
+
+If your identity provider doesn't support this, manually enter the Entity ID and ACS URL.
+
+---
+
+**Next:** [Identity Provider Setup](/docs/auth/sso/identity-provider)
