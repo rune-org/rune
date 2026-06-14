@@ -1,0 +1,48 @@
+# Single Sign-On (SSO)
+
+Single Sign-On lets your team sign in to Rune using your company's identity system. Users authenticate through your identity provider, and Rune trusts that authentication.
+
+## Why Use SSO?
+
+| Benefit                      | What It Means                                               |
+| ---------------------------- | ----------------------------------------------------------- |
+| **One login for everything** | Users sign in with their company credentials                |
+| **Better security**          | Your identity provider enforces your security policies      |
+| **Automatic access**         | New employees get access when added to your identity system |
+| **Compliance**               | Meet enterprise security requirements                       |
+
+## How It Works
+
+When a user signs in via SSO:
+
+1. User clicks **Sign in with SSO** on Rune
+2. Rune redirects to your company's login page
+3. User signs in with company credentials
+4. Identity provider confirms the user is valid
+5. Rune creates or updates the user account automatically
+6. User gains access to Rune
+
+## Setup Process
+
+Setting up SSO involves these steps:
+
+1. **Get information from Rune** - The Service Provider tab shows you what to give your identity provider
+2. **Configure your identity provider** - Create a SAML application in your company's system
+3. **Enter information in Rune** - The Identity Provider tab is where you enter your identity provider's details
+4. **Test** - Verify SSO works before going live
+
+## What You Need
+
+To set up SSO:
+
+- Admin access to Rune
+- Admin access to your company's identity provider
+- At least one password-based admin account (as backup)
+
+## SAML 2.0
+
+Rune uses SAML 2.0, the industry standard for enterprise SSO. This works with most enterprise identity providers.
+
+---
+
+**Next:** [Setup Guide](/docs/auth/sso/setup-guide) - Follow the step-by-step instructions

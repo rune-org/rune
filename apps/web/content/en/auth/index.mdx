@@ -1,0 +1,78 @@
+# Authentication Overview
+
+Rune provides secure authentication through password-based login and optional SAML single sign-on.
+
+## What's Covered
+
+| Topic                                                     | Description                                                |
+| --------------------------------------------------------- | ---------------------------------------------------------- |
+| [Admin Signup](/docs/auth/admin-signup)                   | Creating the first admin account when setting up Rune      |
+| [Login](/docs/auth/login)                                 | Signing in with email and password, or SSO                 |
+| [Password Requirements](/docs/auth/password-requirements) | Security requirements for all passwords                    |
+| [SSO](/docs/auth/sso)                                     | Setting up SAML single sign-on with your identity provider |
+
+For inviting and managing users, see [User Management](/docs/guides/user-management).
+
+## Authentication Flow
+
+### First-Time Setup
+
+When you first install Rune:
+
+1. No users exist in the system
+2. You create the first admin account
+3. Admins can then invite other users
+
+### Daily Use
+
+Users sign in with:
+
+- **Email and Password** - Standard authentication method
+- **SAML SSO** - Enterprise authentication through your identity provider
+
+## User Roles
+
+Rune has two roles:
+
+| Role      | What They Can Do                                                 |
+| --------- | ---------------------------------------------------------------- |
+| **Admin** | Full access - manage users, settings, workflows, and credentials |
+| **User**  | Can create and use workflows, limited access to settings         |
+
+## Password-Based Login
+
+The standard way to access Rune:
+
+- Works immediately after signup
+- No additional configuration needed
+- Always available as a fallback
+
+## SAML Single Sign-On
+
+Enterprise authentication through your company's identity provider:
+
+- Users sign in with their company credentials
+- Accounts created automatically on first login
+- Centralized user management
+- Better security through your organization's policies
+
+See [SSO Setup](/docs/auth/sso) for configuration details.
+
+## Important Notes
+
+### Keep a Password Admin
+
+Even if you enable SSO, always keep at least one admin account with password access. This ensures you can still sign in if there's an issue with your identity provider.
+
+### Session Security
+
+- Sessions are cookie-based with secure flags
+- Changing your password signs you out on all devices
+- Admins can deactivate accounts to immediately revoke access
+
+---
+
+**Next Steps:**
+
+1. Complete [admin signup](/docs/auth/admin-signup) if you haven't already
+2. Optionally [configure SSO](/docs/auth/sso) for enterprise authentication

@@ -1,0 +1,144 @@
+# Identity Provider Setup
+
+The Identity Provider (IdP) is your company's authentication system. This page shows you how to configure it and then enter its information in Rune.
+
+## Part 1: Configure Your Identity Provider
+
+Before you can enter information in Rune's **Identity Provider** tab, you need to set up SAML in your company's identity provider first.
+
+### What You Need from Rune
+
+Before starting, get these values from Rune's [Service Provider](/docs/auth/sso/service-provider) tab:
+
+- Entity ID
+- ACS URL
+
+### Steps in Your Identity Provider
+
+The exact steps vary by provider, but generally you need to:
+
+#### 1. Create a New SAML Application
+
+In your identity provider's admin console:
+
+- Look for "Add Application" or "Create App"
+- Choose "SAML 2.0" as the type
+- Give it a name like "Rune"
+
+#### 2. Enter Rune's Information
+
+You'll be asked for these (the names might be different):
+
+| What to Enter                            | Value to Use                                   |
+| ---------------------------------------- | ---------------------------------------------- |
+| **Entity ID** (or Identifier, Audience)  | The Entity ID from Rune's Service Provider tab |
+| **ACS URL** (or Reply URL, Callback URL) | The ACS URL from Rune's Service Provider tab   |
+
+#### 3. Configure User Attributes
+
+Make sure your identity provider sends these attributes:
+
+| Attribute | Required? | What It's Used For          |
+| --------- | --------- | --------------------------- |
+| **Email** | Required  | Identifies the user in Rune |
+| **Name**  | Optional  | User's display name         |
+
+The attribute mapping might look like:
+
+- `email` → `user.email`
+- `name` → `user.displayName`
+
+#### 4. Assign Users
+
+Make sure the users who need access to Rune are assigned to this SAML application in your identity provider.
+
+#### 5. Get These Three Values
+
+After saving the SAML application, your identity provider will show you three important values. You need to copy these:
+
+| Value           | Also Called                            | What It Looks Like                                            |
+| --------------- | -------------------------------------- | ------------------------------------------------------------- |
+| **Entity ID**   | Issuer, IdP Entity ID                  | Usually a URL like `https://idp.yourcompany.com`              |
+| **SSO URL**     | Login URL, Sign-On URL, SAML Endpoint  | A URL ending in something like `/sso` or `/login`             |
+| **Certificate** | X.509 Certificate, Signing Certificate | A long text block starting with `-----BEGIN CERTIFICATE-----` |
+
+Keep these three values ready - you'll enter them in Rune next.
+
+---
+
+## Part 2: Enter Information in Rune
+
+Now that you have the three values from your identity provider, enter them in Rune.
+
+### Step 1: Open the Identity Provider Tab
+
+1. Sign in to Rune as an admin
+2. Go to **Settings** → **Authentication** → **SAML**
+3. Click on the **Identity Provider** tab
+
+### Step 2: Fill in the Form
+
+You'll see a form with these fields:
+
+| Field               | What to Enter                                                     |
+| ------------------- | ----------------------------------------------------------------- |
+| **Name**            | A friendly name like "Company SSO" (just for your reference)      |
+| **IdP Entity ID**   | The Entity ID you got from your identity provider                 |
+| **IdP SSO URL**     | The SSO URL you got from your identity provider                   |
+| **IdP Certificate** | Paste the full certificate text including the BEGIN and END lines |
+| **Domain Hint**     | (Optional) Your company email domain like `yourcompany.com`       |
+
+### Step 3: Configure Options
+
+Below the form, you'll see these options:
+
+#### Enable SAML
+
+Toggle this to **ON** to activate SSO.
+
+#### Just-in-Time Provisioning
+
+Choose how users are created:
+
+- **Enabled** (recommended) - Users are created automatically when they first sign in via SSO
+- **Disabled** - Admin must manually invite each user before they can sign in
+
+### Step 4: Save
+
+Click the **Save** button at the bottom.
+
+Your SSO is now configured!
+
+---
+
+## Important Notes
+
+### Domain Hint
+
+If you enter a domain hint (like `yourcompany.com`):
+
+- Users with that email domain will automatically be redirected to SSO
+- They won't need to click "Sign in with SSO"
+- Just entering their email will redirect them
+
+### Certificate Format
+
+The certificate must include the BEGIN and END lines:
+
+```
+-----BEGIN CERTIFICATE-----
+MIIDXzCCAkegAwIBAgILBAAAAAABIVhTCKIwDQYJ...
+(many more lines)
+...AwIBIDANBgkqhkiG9w0BAQUFAAOCAQEAKs
+-----END CERTIFICATE-----
+```
+
+If your identity provider gives you the certificate without these lines, add them manually.
+
+### Keep a Password Admin
+
+Before enabling SSO, make sure you have at least one admin account that can sign in with password. This is your backup if SSO has issues.
+
+---
+
+**Next:** [Testing Your SSO Setup](/docs/auth/sso/testing)

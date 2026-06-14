@@ -1,0 +1,115 @@
+# Testing Your SSO Setup
+
+How to test your SAML configuration before enabling it for everyone.
+
+## Before You Test
+
+Make sure you have:
+
+- Completed the [Setup Guide](/docs/auth/sso/setup)
+- Saved the SAML configuration in Rune
+- A test user account in your identity provider
+
+## Testing Steps
+
+### Step 1: Test the Login Flow
+
+1. In Rune, go to **Settings** → **Authentication** → **SAML**
+2. Click **Test SAML Login**
+3. You'll be redirected to your identity provider's login page
+4. Sign in with your test credentials
+5. You should be redirected back to Rune successfully
+
+If this works, your SSO is configured correctly.
+
+### Step 2: Verify User Information
+
+After a successful test login:
+
+1. Go to **Settings** → **Users**
+2. Find the test user you just signed in with
+3. Check that their email and name are correct
+
+If the information is wrong, check the user attribute mapping in your identity provider.
+
+### Step 3: Test with Regular Users
+
+Before going live:
+
+- Ask a few team members to test the SSO login
+- Make sure they can sign in successfully
+- Verify their accounts are created correctly
+
+## Common Issues
+
+### Redirect Error
+
+**What you see:** Error page after clicking "Sign in with SSO"
+
+**Solutions:**
+
+- Check that the ACS URL in your identity provider exactly matches Rune's ACS URL
+- Make sure both URLs use the same protocol (both HTTPS or both HTTP)
+- Verify the Entity ID is correct
+
+### Certificate Error
+
+**What you see:** "Invalid signature" or certificate error
+
+**Solutions:**
+
+- Make sure you copied the entire certificate including BEGIN/END lines
+- Check that the certificate hasn't expired
+- Verify you're using the correct certificate from your identity provider
+
+### User Not Created
+
+**What you see:** Login succeeds but user doesn't appear in Rune
+
+**Solutions:**
+
+- Check that Just-in-Time provisioning is enabled
+- Verify the email attribute is being sent from your identity provider
+- Make sure the user is assigned to the Rune application in your identity provider
+
+### Wrong Information
+
+**What you see:** User created but email or name is wrong
+
+**Solutions:**
+
+- Check the user attribute mapping in your identity provider
+- Make sure the email attribute is mapped correctly
+- Verify the identity provider is sending the correct user information
+
+## What to Test
+
+Before enabling SSO for everyone, verify:
+
+- [ ] Admin can sign in via SSO
+- [ ] Regular users can sign in via SSO
+- [ ] New users are created automatically (JIT provisioning)
+- [ ] User information (email, name) is correct
+- [ ] You can still sign in with password as admin (backup access)
+
+## Going Live
+
+Once testing is successful:
+
+1. Enable SSO in Rune (toggle to ON)
+2. Announce to your team that SSO is available
+3. Users can now sign in with the **Sign in with SSO** button
+
+## If Something Goes Wrong
+
+If you need to disable SSO:
+
+1. Go to **Settings** → **Authentication** → **SAML**
+2. Toggle **Enable SAML** to OFF
+3. Users will need to use password login instead
+
+Make sure you have at least one admin with password access before disabling SSO.
+
+---
+
+**Related:** [Setup Guide](/docs/auth/sso/setup) | [SSO Overview](/docs/auth/sso)

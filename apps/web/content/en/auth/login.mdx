@@ -1,0 +1,61 @@
+# Login
+
+Sign in to Rune using your email and password, or SSO if your organization has configured it.
+
+## Password Login
+
+### Signing In
+
+1. Open your Rune instance in your browser
+2. Enter your email address and password
+3. Click **Sign In**
+
+![Login Form](/docs/auth/login-form.png)
+
+You'll be redirected to your dashboard.
+
+## Common Issues
+
+### Invalid Credentials
+
+If you see "Invalid credentials":
+
+- Check that your email is spelled correctly
+- Make sure Caps Lock is off (passwords are case-sensitive)
+- Verify you're on the correct Rune instance
+
+If you've forgotten your password, contact your admin.
+
+### Account Uses SSO
+
+If you see "This account uses SSO":
+
+Your account was created through your company's identity provider. You cannot use password login. Use the **Sign in with SSO** button instead.
+
+### Account Deactivated
+
+If your account has been deactivated, contact your admin to restore access.
+
+## SSO Login
+
+If your organization uses SSO:
+
+1. Click **Sign in with SSO** on the login page
+2. You'll be redirected to your company's login page
+3. Sign in with your company credentials
+4. You'll be redirected back to Rune
+
+On your first SSO login, your account is created automatically.
+
+## Session Duration
+
+You'll stay signed in until:
+
+- You click **Sign Out**
+- Your session expires after a period of inactivity
+- Your admin deactivates your account
+- You change your password (signs you out everywhere)
+
+---
+
+**Related:** [Admin Signup](/docs/auth/admin-signup) | [SSO Setup](/docs/auth/sso)
