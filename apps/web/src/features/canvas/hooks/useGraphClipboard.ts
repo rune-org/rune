@@ -322,7 +322,6 @@ export function useGraphClipboard(opts: UseGraphClipboardOptions) {
         setNodes((current) => [...current.map((n) => ({ ...n, selected: false })), ...pastedNodes]);
         setEdges((current) => [...current, ...pastedEdges]);
         setSelectedNodeId(pastedNodes[0]?.id ?? null);
-        toast.success("Pasted selection from clipboard");
         return;
       }
 
