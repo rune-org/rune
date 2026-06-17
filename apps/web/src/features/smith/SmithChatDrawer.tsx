@@ -2,13 +2,15 @@
 
 import { FormEvent, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Loader2, SendHorizontal, Sparkles, Bot, ChevronRight, Wrench } from "lucide-react";
+import { Loader2, SendHorizontal, Sparkles, Bot, ChevronRight, Wrench, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/cn";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
+import { SmithTodoPanel } from "./SmithTodoPanel";
+import type { TodoItem } from "@/lib/api/smith";
 
 export type SmithChatMessage = {
   role: "user" | "smith" | "tool_call";
@@ -17,6 +19,17 @@ export type SmithChatMessage = {
   toolName?: string; // For tool_call messages
 };
 
+/** Pretty-print streamed tool-call arguments, falling back to the raw string. */
+function formatToolArgs(raw: string): string {
+  const trimmed = raw?.trim();
+  if (!trimmed) return "{}";
+  try {
+    return JSON.stringify(JSON.parse(trimmed), null, 2);
+  } catch {
+    return raw;
+  }
+}
+
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -24,9 +37,10 @@ type Props = {
   input: string;
   onInputChange: (next: string) => void;
   onSend: (content: string) => void;
+  /** Clear this workflow's conversation (server thread + local view). */
+  onClearConversation?: () => void;
   isSending: boolean;
-  showTrace?: boolean;
-  onToggleTrace?: (next: boolean) => void;
+  todos?: TodoItem[];
 };
 
 export function SmithChatDrawer({
@@ -36,9 +50,9 @@ export function SmithChatDrawer({
   input,
   onInputChange,
   onSend,
+  onClearConversation,
   isSending,
-  showTrace = false,
-  onToggleTrace,
+  todos = [],
 }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -102,7 +116,26 @@ export function SmithChatDrawer({
           </div>
           <SheetTitle className="sr-only">Smith AI</SheetTitle>
           <p className="text-xs font-medium text-muted-foreground/80">Workflow Architect</p>
+
+          {onClearConversation && messages.length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onClearConversation}
+              disabled={isSending}
+              title="Clear conversation"
+              aria-label="Clear conversation"
+              className="absolute right-3 top-3 h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
+
+        {todos.length > 0 && (
+          <SmithTodoPanel todos={todos} isSending={isSending} />
+        )}
 
         <div className="relative flex-1 overflow-y-auto p-4 scrollbar-none">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-500/5 via-transparent to-transparent opacity-50 pointer-events-none" />
@@ -146,10 +179,15 @@ export function SmithChatDrawer({
 
                   <div className="max-w-[85%] select-text" onPointerDown={handleMessagePointerDown}>
                     {msg.role === "tool_call" ? (
-                      <div className="relative rounded-xl rounded-bl-sm border border-amber-500/20 bg-amber-500/5 px-3 py-2 font-mono text-xs leading-relaxed text-amber-700 dark:text-amber-200/80 select-text">
-                        <span className="text-amber-500/60">→</span> {msg.toolName || "tool"}:{" "}
-                        {msg.content}
-                      </div>
+                      <details className="group rounded-xl rounded-bl-sm border border-amber-500/20 bg-amber-500/5 [&_summary::-webkit-details-marker]:hidden select-text">
+                        <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 font-mono text-xs leading-relaxed text-amber-700 dark:text-amber-200/90 hover:bg-amber-500/10 rounded-xl transition-colors select-none">
+                          <ChevronRight className="h-3 w-3 shrink-0 text-amber-500/70 transition-transform group-open:rotate-90" />
+                          <span className="truncate">{msg.toolName || "tool"}</span>
+                        </summary>
+                        <pre className="overflow-x-auto border-t border-amber-500/20 px-3 py-2 font-mono text-[11px] leading-relaxed text-amber-700/90 dark:text-amber-200/70 whitespace-pre-wrap wrap-break-word">
+                          {formatToolArgs(msg.content)}
+                        </pre>
+                      </details>
                     ) : (
                       <div
                         className={cn(
@@ -208,7 +246,7 @@ export function SmithChatDrawer({
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 </div>
                 <div className="flex items-center gap-1 rounded-2xl bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-                  <span className="animate-pulse">{showTrace ? "Reasoning" : "Thinking"}</span>
+                  <span className="animate-pulse">Thinking</span>
                   <span className="animate-bounce delay-75">.</span>
                   <span className="animate-bounce delay-150">.</span>
                   <span className="animate-bounce delay-300">.</span>
@@ -236,24 +274,7 @@ export function SmithChatDrawer({
               rows={1}
               style={{ maxHeight: "150px" }}
             />
-            <div className="flex items-center justify-between pt-2">
-              <label
-                className={cn(
-                  "flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-medium transition-colors select-none",
-                  showTrace ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted",
-                )}
-                title="Show detailed reasoning steps"
-              >
-                <input
-                  type="checkbox"
-                  checked={showTrace}
-                  onChange={(e) => onToggleTrace?.(e.target.checked)}
-                  className="hidden"
-                />
-                <Sparkles className="h-3 w-3" />
-                {showTrace ? "Reasoning On" : "Reasoning Off"}
-              </label>
-
+            <div className="flex items-center justify-end pt-2">
               <Button
                 variant="ghost"
                 size="icon"

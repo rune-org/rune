@@ -4,8 +4,9 @@ import type { CanvasNode } from "../types";
 import type { SmithChatMessage } from "@/features/smith/SmithChatDrawer";
 import { sanitizeGraph } from "../lib/graphIO";
 import { applyAutoLayout } from "../lib/autoLayout";
-import { workflowDataToCanvas } from "@/lib/workflow-dsl";
+import { canvasToWorkflowData, workflowDataToCanvas } from "@/lib/workflow-dsl";
 import { smith } from "@/lib/api";
+import type { TodoItem } from "@/lib/api/smith";
 import { toast } from "@/components/ui/toast";
 
 export type UseSmithOptions = {
@@ -15,10 +16,28 @@ export type UseSmithOptions = {
   setNodes: React.Dispatch<React.SetStateAction<CanvasNode[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
   rfInstanceRef: React.RefObject<ReactFlowInstance<CanvasNode, Edge> | null>;
+  /** Live canvas graph, read at send time so Smith edits what is on screen. */
+  nodesRef: React.RefObject<CanvasNode[]>;
+  edgesRef: React.RefObject<Edge[]>;
+  /**
+   * Ensure a persisted workflow exists and return its id (creating a shell when
+   * the canvas has none yet). Smith threads its conversation on this id.
+   */
+  ensureWorkflow: () => Promise<number | null>;
 };
 
 export function useSmith(opts: UseSmithOptions) {
-  const { workflowId, readOnly = false, pushHistory, setNodes, setEdges, rfInstanceRef } = opts;
+  const {
+    workflowId,
+    readOnly = false,
+    pushHistory,
+    setNodes,
+    setEdges,
+    rfInstanceRef,
+    nodesRef,
+    edgesRef,
+    ensureWorkflow,
+  } = opts;
 
   const [isSmithOpen, setIsSmithOpen] = useState(false);
   const [smithMessages, setSmithMessages] = useState<SmithChatMessage[]>([]);
@@ -27,6 +46,7 @@ export function useSmith(opts: UseSmithOptions) {
   const [smithShowTrace, setSmithShowTrace] = useState(true);
   const [smithJustFinished, setSmithJustFinished] = useState(false);
   const [pendingSmithPrompt, setPendingSmithPrompt] = useState<string | null>(null);
+  const [smithTodos, setSmithTodos] = useState<TodoItem[]>([]);
 
   const smithSendingRef = useRef(false);
   const smithShowTraceRef = useRef(true);
@@ -94,6 +114,7 @@ export function useSmith(opts: UseSmithOptions) {
       const userMessage: SmithChatMessage = { role: "user", content: trimmed };
       setSmithMessages((prev) => [...prev, userMessage]);
       setSmithInput("");
+      setSmithTodos([]);
       setSmithSending(true);
 
       // If reasoning mode is on, close the drawer to let user watch the canvas
@@ -102,7 +123,23 @@ export function useSmith(opts: UseSmithOptions) {
       }
 
       try {
-        const { stream } = await smith.streamGenerateNewWorkflow(trimmed);
+        // Smith threads its conversation on a real workflow id; create a shell
+        // first if the canvas isn't backed by one yet.
+        const wfId = workflowId ?? (await ensureWorkflow());
+        if (wfId == null) {
+          toast.error("Couldn't prepare a workflow for Smith");
+          return;
+        }
+
+        // Send the live on-screen graph so Smith edits exactly what the user
+        // sees (work-in-progress nodes may lack credentials — that's fine here).
+        const { nodes: dslNodes, edges: dslEdges } = canvasToWorkflowData(
+          nodesRef.current ?? [],
+          edgesRef.current ?? [],
+          { ignoreMissingCredentials: true },
+        );
+
+        const { stream } = await smith.streamEditWorkflow(wfId, trimmed, dslNodes, dslEdges);
 
         let accumulatedContent = "";
         let hasWorkflowState = false;
@@ -133,6 +170,9 @@ export function useSmith(opts: UseSmithOptions) {
               } catch (_err) {
                 toast.error("Failed to apply Smith's workflow changes");
               }
+              if (sseEvent.todos) {
+                setSmithTodos(sseEvent.todos);
+              }
               break;
 
             case "error":
@@ -144,14 +184,17 @@ export function useSmith(opts: UseSmithOptions) {
               break;
 
             case "tool_call":
-              setSmithMessages((prev) => [
-                ...prev,
-                {
-                  role: "tool_call" as const,
-                  content: sseEvent.arguments || "{}",
-                  toolName: sseEvent.name,
-                },
-              ]);
+              // Filter out todo tool calls -- the plan panel shows these
+              if (sseEvent.name !== "create_todo_plan" && sseEvent.name !== "update_todo_status") {
+                setSmithMessages((prev) => [
+                  ...prev,
+                  {
+                    role: "tool_call" as const,
+                    content: sseEvent.arguments || "{}",
+                    toolName: sseEvent.name,
+                  },
+                ]);
+              }
               break;
           }
         }
@@ -171,8 +214,25 @@ export function useSmith(opts: UseSmithOptions) {
         }
       }
     },
-    [readOnly, applySmithWorkflow],
+    [readOnly, applySmithWorkflow, workflowId, ensureWorkflow, nodesRef, edgesRef],
   );
+
+  // Manually clear this workflow's Smith conversation (server thread + local
+  // view). Deletes that chat only — never the workflow or other users' chats.
+  const handleClearConversation = useCallback(async () => {
+    if (readOnly || smithSendingRef.current) return;
+    if (workflowId != null) {
+      try {
+        await smith.clearThread(workflowId);
+      } catch {
+        // Non-fatal: still reset the local view so the user gets a fresh chat.
+      }
+    }
+    setSmithMessages([]);
+    setSmithTodos([]);
+    setSmithInput("");
+    toast.success("Conversation cleared");
+  }, [readOnly, workflowId]);
 
   useEffect(() => {
     if (readOnly) {
@@ -240,5 +300,7 @@ export function useSmith(opts: UseSmithOptions) {
     setSmithShowTrace,
     smithJustFinished,
     handleSmithSend,
+    handleClearConversation,
+    smithTodos,
   };
 }

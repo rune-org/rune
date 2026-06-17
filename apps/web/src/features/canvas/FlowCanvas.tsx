@@ -86,6 +86,11 @@ type FlowCanvasProps = {
   onConflictLoadServer?: () => void;
   onConflictForceSave?: () => void;
   onConflictCancel?: () => void;
+  /**
+   * Ensure a persisted workflow exists and return its id (creating a shell when
+   * the canvas has none yet). Used by Smith so it can edit/thread on a real id.
+   */
+  onEnsureWorkflow?: () => Promise<number | null>;
 };
 
 export default function FlowCanvas(props: FlowCanvasProps) {
@@ -113,6 +118,7 @@ function FlowCanvasInner({
   onConflictLoadServer,
   onConflictForceSave,
   onConflictCancel,
+  onEnsureWorkflow,
 }: FlowCanvasProps) {
   const [nodes, setNodes] = useNodesState<CanvasNode>(externalNodes ?? []);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(externalEdges ?? []);
@@ -325,6 +331,11 @@ function FlowCanvasInner({
 
   const isValidConnection = useConnectionValidation({ nodes, edges });
 
+  const ensureWorkflow = useCallback(
+    () => (onEnsureWorkflow ? onEnsureWorkflow() : Promise.resolve(workflowId)),
+    [onEnsureWorkflow, workflowId],
+  );
+
   const {
     isSmithOpen,
     setIsSmithOpen,
@@ -333,10 +344,10 @@ function FlowCanvasInner({
     smithInput,
     setSmithInput,
     smithSending,
-    smithShowTrace,
-    setSmithShowTrace,
     smithJustFinished,
     handleSmithSend,
+    handleClearConversation,
+    smithTodos,
   } = useSmith({
     workflowId,
     readOnly: isViewingSnapshot,
@@ -344,6 +355,9 @@ function FlowCanvasInner({
     setNodes,
     setEdges,
     rfInstanceRef,
+    nodesRef,
+    edgesRef,
+    ensureWorkflow,
   });
 
   const {
@@ -910,9 +924,9 @@ function FlowCanvasInner({
           input={smithInput}
           onInputChange={setSmithInput}
           onSend={handleSmithSend}
+          onClearConversation={handleClearConversation}
           isSending={smithSending}
-          showTrace={smithShowTrace}
-          onToggleTrace={setSmithShowTrace}
+          todos={smithTodos}
         />
 
         {renameDialog && (

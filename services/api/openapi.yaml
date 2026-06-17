@@ -562,7 +562,13 @@ paths:
       description: 'Delete a workflow.
 
 
-        **Requires:** DELETE permission (OWNER only)'
+        **Requires:** DELETE permission (OWNER only)
+
+
+        Smith conversation threads are intentionally not deleted here; a user clears
+        a
+
+        workflow''s chat manually from the UI (``DELETE /smith/{workflow_id}``).'
       operationId: delete_workflow_workflows__workflow_id__delete
       security:
       - OAuth2PasswordBearer: []
@@ -2358,7 +2364,14 @@ paths:
       tags:
       - Smith
       summary: Generate Workflow
-      description: 'Use Smith AI to generate/update a workflow from natural language.
+      description: 'Use Smith AI to create or edit a workflow from natural language.
+
+
+        Smith seeds its state from the **live canvas graph** sent in the request body
+
+        (``nodes``/``edges``), so it edits exactly what the user is looking at,
+
+        including unsaved changes. An empty graph means "build from scratch".
 
 
         Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
@@ -2376,10 +2389,14 @@ paths:
 
         **Session Persistence:**
 
-        Conversations are persisted per user+workflow combination.
+        Conversations are persisted per user+workflow combination and kept until the
 
-        The same workflow_id will maintain conversation history for 60 minutes of
-        inactivity.
+        user clears them or the workflow is deleted. The same workflow_id maintains
+
+        conversation history across requests; the graph state is overwritten from
+        the
+
+        request body each turn.
 
 
         **Event Types:**
@@ -2513,124 +2530,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /smith:
-    post:
-      tags:
-      - Smith
-      summary: Generate New Workflow
-      description: 'Use Smith AI to generate a new workflow from natural language
-        (without a workflow_id).
-
-
-        Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
-
-        including AI tokens, tool calls, tool results, and completion status.
-
-
-        **Headers:**
-
-        - `Accept: text/event-stream`
-
-
-        **Session Persistence:**
-
-        Creates a new temporary session. The returned workflow structure can be
-
-        saved to create a new workflow.
-
-
-        **Event Types:**
-
-        - `stream_start`: Stream has started
-
-        - `token`: AI-generated text token
-
-        - `tool_call`: Agent is calling a tool (e.g., create_node, create_edge)
-
-        - `tool_result`: Result from a tool call
-
-        - `workflow_state`: Final workflow structure with nodes and edges
-
-        - `stream_end`: Stream has completed successfully
-
-        - `error`: An error occurred during processing'
-      operationId: generate_new_workflow_smith_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GenerateWorkflowRequest'
-        required: true
-      responses:
-        '200':
-          description: Server-Sent Events (SSE) stream
-          content:
-            text/event-stream:
-              schema:
-                type: string
-                format: binary
-                description: Server-Sent Events stream with JSON payloads
-              examples:
-                stream_start:
-                  summary: Stream Start Event
-                  value: 'data: {"type": "stream_start"}
-
-
-                    '
-                token:
-                  summary: AI Token Event
-                  value: 'data: {"type": "token", "content": "I will create a workflow..."}
-
-
-                    '
-                tool_call:
-                  summary: Tool Call Event
-                  value: 'data: {"type": "tool_call", "name": "create_node", "arguments":
-                    {...}, "call_id": "..."}
-
-
-                    '
-                tool_result:
-                  summary: Tool Result Event
-                  value: 'data: {"type": "tool_result", "output": {...}, "call_id":
-                    "..."}
-
-
-                    '
-                warning:
-                  summary: Warning Event
-                  value: 'data: {"type": "warning", "message": "Parse error: unexpected
-                    token"}
-
-
-                    '
-                workflow_state:
-                  summary: Workflow State Event
-                  value: 'data: {"type": "workflow_state", "workflow_nodes": [...],
-                    "workflow_edges": [...]}
-
-
-                    '
-                stream_end:
-                  summary: Stream End Event
-                  value: 'data: {"type": "stream_end"}
-
-
-                    '
-                error:
-                  summary: Error Event
-                  value: 'data: {"type": "error", "message": "Error description"}
-
-
-                    '
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-      security:
-      - OAuth2PasswordBearer: []
   /internal/workflows/{workflow_id}/run:
     post:
       tags:
@@ -3948,6 +3847,11 @@ components:
           - Executive Summary
           title: Target Audience
           default: Executive Summary
+        custom_style:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Custom Style
       type: object
       title: GenerateWorkflowDocsRequest
     GenerateWorkflowRequest:
@@ -3955,11 +3859,29 @@ components:
         prompt:
           type: string
           title: Prompt
+        nodes:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Nodes
+        edges:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Edges
       type: object
       required:
       - prompt
       title: GenerateWorkflowRequest
-      description: Request body for creating a workflow from natural language.
+      description: "Request body for creating or editing a workflow from natural language.\n\
+        \n``nodes``/``edges`` carry the **live canvas graph** the user is looking\
+        \ at\n(worker-DSL form, as produced by the frontend's ``canvasToWorkflowData``).\n\
+        Smith seeds its state from these so it edits exactly what is on screen \u2014\
+        \ an\nempty graph means \"build from scratch\". They are kept as loose dicts\
+        \ (not\n``WorkflowNode``/``WorkflowEdge``) so canvas-only fields like ``position``\n\
+        pass through untouched; ``_normalize_node_types`` consumes them directly."
     HTTPValidationError:
       properties:
         detail:

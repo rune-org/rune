@@ -115,9 +115,15 @@ services:
       # Internal API key for scheduler → API communication
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-in-production}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-your-google-api-key-here}
+      # Google model backend for Smith & Scryb (false=AI Studio, true=Vertex AI)
+      GOOGLE_GENAI_USE_VERTEXAI: ${GOOGLE_GENAI_USE_VERTEXAI:-false}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
+      GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-}
       # Smith AI Agent Settings
-      SMITH_MODEL: ${SMITH_MODEL:-gemini-2.5-flash-lite}
+      SMITH_MODEL: ${SMITH_MODEL:-gemini-3.5-flash}
       SMITH_TEMPERATURE: ${SMITH_TEMPERATURE:-0.3}
+      # Optional Context7 docs lookup for Smith (blank = disabled)
+      CONTEXT7_API_KEY: ${CONTEXT7_API_KEY:-}
       # SAML SSO Settings
       SAML_SP_BASE_URL: ${SAML_SP_BASE_URL:-https://localhost/api}
       SAML_FRONTEND_URL: ${SAML_FRONTEND_URL:-https://localhost}

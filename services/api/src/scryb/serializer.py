@@ -1,6 +1,7 @@
 from typing import Any
 
 from src.scryb.sir import SIROutcome, SIRStep, SIRWorkflow
+from src.smith.docs import canonical_node_type
 
 
 class WorkflowSerializer:
@@ -52,7 +53,10 @@ class WorkflowSerializer:
     def _process_node(self, node: dict[str, Any]) -> SIRStep:
         node_id = node["id"]
         node_name = node.get("name", node_id)
-        node_type = node.get("type", "unknown")
+        # Resolve legacy DSL type names (e.g. "conditional", "ManualTrigger") to the
+        # canonical node_type used as the node_docs filename, so the agent reads the
+        # right doc and the documented type stays consistent with the canvas.
+        node_type = canonical_node_type(node.get("type", "unknown"))
 
         outcomes = []
         if node_id in self.outgoing_edges:

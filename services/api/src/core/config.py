@@ -65,12 +65,26 @@ class Settings(BaseSettings):
     internal_api_key: str | None = None
 
     # Smith AI Agent Settings
-    smith_model: str = "gemini-2.0-flash"
+    smith_model: str = "gemini-3.5-flash"
     smith_temperature: float = 0.3
     google_api_key: str | None = None
+    # Optional Context7 MCP key. When set, Smith loads Context7 documentation
+    # tools at startup so it can look up external-API usage while filling http
+    # nodes. Absent/invalid keys degrade gracefully (Smith runs without them).
+    context7_api_key: str | None = None
+
+    # Google model backend (shared by Smith and Scryb). When false (default),
+    # Gemini is served by Google AI Studio (the Gemini Developer API); when true,
+    # by Vertex AI in Express mode. Both authenticate with GOOGLE_API_KEY above —
+    # no service-account / ADC credentials are required. The project / location
+    # below are optional and only used when the Vertex backend is enabled.
+    google_genai_use_vertexai: bool = False
+    google_cloud_project: str | None = None
+    google_cloud_location: str | None = None
 
     # Scryb Documentation Settings
-    scryb_model: str = "gemini/gemini-2.5-flash-lite"
+    scryb_model: str = "gemini-3.5-flash"
+    scryb_temperature: float = 0.3
 
     # Templates Bundle Settings (curated templates from the rune-templates repo)
     # On startup, when ``seed_templates`` is true, the API reads validated

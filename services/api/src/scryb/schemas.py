@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -11,3 +11,4 @@ class GenerateWorkflowDocsRequest(BaseModel):
     target_audience: Literal["Technical Developer", "Executive Summary"] = (
         "Executive Summary"
     )
+    custom_style: Optional[str] = None
