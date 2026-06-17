@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
+import Image from "next/image";
 import type { Node } from "@xyflow/react";
 import { Trash2, Plus } from "lucide-react";
 import {
@@ -32,6 +33,22 @@ const GEMINI_BACKEND_LABELS: Record<GeminiBackend, string> = {
   ai_studio: "Google AI Studio",
   vertex: "Vertex AI (Express)",
 };
+
+const PROVIDER_META: Record<AgentProvider, { label: string; icon: string }> = {
+  gemini: { label: "Gemini", icon: "/icons/gemini.svg" },
+  openai: { label: "OpenAI", icon: "/icons/openai.svg" },
+  anthropic: { label: "Claude", icon: "/icons/claude.svg" },
+};
+
+function ProviderOption({ provider }: { provider: AgentProvider }) {
+  const meta = PROVIDER_META[provider];
+  return (
+    <span className="flex items-center gap-2">
+      <Image src={meta.icon} alt="" width={14} height={14} className="shrink-0" />
+      {meta.label}
+    </span>
+  );
+}
 
 const MODEL_CREDENTIAL_TYPES_BY_PROVIDER: Record<AgentProvider, CredentialType[]> = {
   gemini: ["gemini_api_key"],
@@ -208,7 +225,9 @@ function ModelTab({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="gemini">Gemini</SelectItem>
+            <SelectItem value="gemini">
+              <ProviderOption provider="gemini" />
+            </SelectItem>
           </SelectContent>
         </Select>
         <p className="mt-1.5 text-[11px] text-muted-foreground/70">More providers coming soon.</p>
@@ -387,6 +406,7 @@ function PromptTab({
             onChange={onSystemPromptChange}
             placeholder="You are a helpful assistant…"
             nodeId={nodeId}
+            multiline
           />
         </div>
       </div>
@@ -432,6 +452,7 @@ function PromptTab({
               onChange={(v) => updateMsg(idx, { content: v })}
               placeholder="Message content (supports $Node refs)"
               nodeId={nodeId}
+              multiline
             />
           </div>
         ))}
