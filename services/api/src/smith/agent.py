@@ -103,8 +103,9 @@ def create_smith_agent(checkpointer=None, extra_tools=None):
     # stock ``LLMToolSelectorMiddleware``, whose ``anyOf``/``const`` selection
     # schema Gemini mis-handles (it returns tool descriptions instead of names and
     # the turn crashes). Selection uses the agent's main model (``model`` omitted)
-    # and a Smith-specific prompt. It runs via a non-streaming ``ainvoke``, so its
-    # output never leaks into the token SSE stream.
+    # and a Smith-specific prompt. The selection call is tagged ``nostream`` so its
+    # internal routing message stays out of the ``stream_mode="messages"`` SSE
+    # stream — otherwise the chosen-tool list surfaces in the chat at every turn.
     tool_selector = ToolSelectorMiddleware(
         max_tools=10,
         must_select_tools=ALWAYS_INCLUDE + middleware_always_include,

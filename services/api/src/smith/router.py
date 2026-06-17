@@ -1,17 +1,13 @@
-import uuid
-
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
-from src.core.dependencies import DatabaseDep
 from src.core.dependencies import require_password_changed
 from src.db.models import User, Workflow
 from src.smith.response import SSE_RESPONSES
 from src.smith.schemas import ClearThreadResponse, GenerateWorkflowRequest
-from src.smith.service import SmithAgentService
+from src.smith.service import SmithAgentService, build_session_id
 from src.workflow.dependencies import get_workflow_with_permission
 from src.workflow.permissions import require_workflow_permission
-from src.workflow.service import WorkflowService
 
 router = APIRouter(prefix="/smith", tags=["Smith"])
 
@@ -21,15 +17,6 @@ def get_smith_service(request: Request) -> SmithAgentService:
     agent = request.app.state.smith_agent
     checkpointer = request.app.state.smith_checkpointer
     return SmithAgentService(agent, checkpointer=checkpointer)
-
-
-def get_workflow_service(db: DatabaseDep) -> WorkflowService:
-    return WorkflowService(db=db)
-
-
-def build_session_id(user_id: int, workflow_id: int | str) -> str:
-    """Build session ID from user ID and workflow ID."""
-    return f"{user_id}:{workflow_id}"
 
 
 @router.post(
@@ -44,10 +31,13 @@ async def generate_workflow(
     workflow: Workflow = Depends(get_workflow_with_permission),
     current_user: User = Depends(require_password_changed),
     smith: SmithAgentService = Depends(get_smith_service),
-    workflow_service: WorkflowService = Depends(get_workflow_service),
 ) -> StreamingResponse:
     """
-    Use Smith AI to generate/update a workflow from natural language.
+    Use Smith AI to create or edit a workflow from natural language.
+
+    Smith seeds its state from the **live canvas graph** sent in the request body
+    (``nodes``/``edges``), so it edits exactly what the user is looking at,
+    including unsaved changes. An empty graph means "build from scratch".
 
     Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
     including AI tokens, tool calls, tool results, and completion status.
@@ -58,8 +48,10 @@ async def generate_workflow(
     - `Accept: text/event-stream`
 
     **Session Persistence:**
-    Conversations are persisted per user+workflow combination.
-    The same workflow_id will maintain conversation history for 60 minutes of inactivity.
+    Conversations are persisted per user+workflow combination and kept until the
+    user clears them or the workflow is deleted. The same workflow_id maintains
+    conversation history across requests; the graph state is overwritten from the
+    request body each turn.
 
     **Event Types:**
     - `stream_start`: Stream has started
@@ -72,66 +64,12 @@ async def generate_workflow(
     """
     session_id = build_session_id(current_user.id, workflow.id)
 
-    existing_nodes = []
-    existing_edges = []
-    latest_workflow_data = await workflow_service.get_latest_workflow_data(workflow)
-    if latest_workflow_data:
-        existing_nodes = latest_workflow_data.get("nodes", [])
-        existing_edges = latest_workflow_data.get("edges", [])
-
     return StreamingResponse(
         smith.stream_workflow(
             message=payload.prompt,
             session_id=session_id,
-            existing_nodes=existing_nodes,
-            existing_edges=existing_edges,
-        ),
-        media_type="text/event-stream",
-    )
-
-
-@router.post(
-    "",
-    response_class=StreamingResponse,
-    responses=SSE_RESPONSES,
-)
-async def generate_new_workflow(
-    payload: GenerateWorkflowRequest,
-    current_user: User = Depends(require_password_changed),
-    smith: SmithAgentService = Depends(get_smith_service),
-) -> StreamingResponse:
-    """
-    Use Smith AI to generate a new workflow from natural language (without a workflow_id).
-
-    Returns a **Server-Sent Events (SSE)** stream with real-time agent responses
-    including AI tokens, tool calls, tool results, and completion status.
-
-    **Headers:**
-    - `Accept: text/event-stream`
-
-    **Session Persistence:**
-    Creates a new temporary session. The returned workflow structure can be
-    saved to create a new workflow.
-
-    **Event Types:**
-    - `stream_start`: Stream has started
-    - `token`: AI-generated text token
-    - `tool_call`: Agent is calling a tool (e.g., create_node, create_edge)
-    - `tool_result`: Result from a tool call
-    - `workflow_state`: Final workflow structure with nodes and edges
-    - `stream_end`: Stream has completed successfully
-    - `error`: An error occurred during processing
-    """
-    # Generate a temporary session ID for this new workflow generation
-    temp_workflow_id = str(uuid.uuid4())
-    session_id = build_session_id(current_user.id, temp_workflow_id)
-
-    return StreamingResponse(
-        smith.stream_workflow(
-            message=payload.prompt,
-            session_id=session_id,
-            existing_nodes=[],
-            existing_edges=[],
+            existing_nodes=payload.nodes,
+            existing_edges=payload.edges,
         ),
         media_type="text/event-stream",
     )

@@ -1235,18 +1235,41 @@ export type GenerateWorkflowDocsRequest = {
      * Target Audience
      */
     target_audience?: 'Technical Developer' | 'Executive Summary';
+    /**
+     * Custom Style
+     */
+    custom_style?: string | null;
 };
 
 /**
  * GenerateWorkflowRequest
  *
- * Request body for creating a workflow from natural language.
+ * Request body for creating or editing a workflow from natural language.
+ *
+ * ``nodes``/``edges`` carry the **live canvas graph** the user is looking at
+ * (worker-DSL form, as produced by the frontend's ``canvasToWorkflowData``).
+ * Smith seeds its state from these so it edits exactly what is on screen — an
+ * empty graph means "build from scratch". They are kept as loose dicts (not
+ * ``WorkflowNode``/``WorkflowEdge``) so canvas-only fields like ``position``
+ * pass through untouched; ``_normalize_node_types`` consumes them directly.
  */
 export type GenerateWorkflowRequest = {
     /**
      * Prompt
      */
     prompt: string;
+    /**
+     * Nodes
+     */
+    nodes?: Array<{
+        [key: string]: unknown;
+    }>;
+    /**
+     * Edges
+     */
+    edges?: Array<{
+        [key: string]: unknown;
+    }>;
 };
 
 /**
@@ -4795,31 +4818,6 @@ export type GenerateWorkflowSmithWorkflowIdPostResponses = {
 };
 
 export type GenerateWorkflowSmithWorkflowIdPostResponse = GenerateWorkflowSmithWorkflowIdPostResponses[keyof GenerateWorkflowSmithWorkflowIdPostResponses];
-
-export type GenerateNewWorkflowSmithPostData = {
-    body: GenerateWorkflowRequest;
-    path?: never;
-    query?: never;
-    url: '/smith';
-};
-
-export type GenerateNewWorkflowSmithPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GenerateNewWorkflowSmithPostError = GenerateNewWorkflowSmithPostErrors[keyof GenerateNewWorkflowSmithPostErrors];
-
-export type GenerateNewWorkflowSmithPostResponses = {
-    /**
-     * Server-Sent Events stream with JSON payloads
-     */
-    200: Blob | File;
-};
-
-export type GenerateNewWorkflowSmithPostResponse = GenerateNewWorkflowSmithPostResponses[keyof GenerateNewWorkflowSmithPostResponses];
 
 export type RunWorkflowInternalInternalWorkflowsWorkflowIdRunPostData = {
     body?: never;

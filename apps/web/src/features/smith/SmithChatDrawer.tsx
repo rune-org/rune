@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Loader2, SendHorizontal, Sparkles, Bot, ChevronRight, Wrench } from "lucide-react";
+import { Loader2, SendHorizontal, Sparkles, Bot, ChevronRight, Wrench, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,8 @@ type Props = {
   input: string;
   onInputChange: (next: string) => void;
   onSend: (content: string) => void;
+  /** Clear this workflow's conversation (server thread + local view). */
+  onClearConversation?: () => void;
   isSending: boolean;
   todos?: TodoItem[];
 };
@@ -48,6 +50,7 @@ export function SmithChatDrawer({
   input,
   onInputChange,
   onSend,
+  onClearConversation,
   isSending,
   todos = [],
 }: Props) {
@@ -113,6 +116,21 @@ export function SmithChatDrawer({
           </div>
           <SheetTitle className="sr-only">Smith AI</SheetTitle>
           <p className="text-xs font-medium text-muted-foreground/80">Workflow Architect</p>
+
+          {onClearConversation && messages.length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onClearConversation}
+              disabled={isSending}
+              title="Clear conversation"
+              aria-label="Clear conversation"
+              className="absolute right-3 top-3 h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {todos.length > 0 && (

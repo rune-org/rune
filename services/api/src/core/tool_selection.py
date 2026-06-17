@@ -24,6 +24,12 @@ What this version does differently
   model can learn what a tool does, since a flat enum carries names only.
 * Never hard-fails the turn: unknown selections are dropped with a warning, and a
   selector error (network/parse) falls back to passing through all tools.
+* Keeps the selection call out of the agent's output stream. The selector is an
+  internal routing step, but LangGraph's ``stream_mode="messages"`` emits *every*
+  model run inside the graph — including this one (``on_llm_end`` forwards the
+  final message even for a non-streaming ``ainvoke``). Tagging the call with
+  ``TAG_NOSTREAM`` makes the message handler skip it, so the selected-tool list
+  never surfaces in the SSE stream as a stray token/tool-call at each turn.
 
 Config knobs (constructor): ``model`` (selector model override), ``max_tools``
 (cap on selected tools), ``must_select_tools`` (always included, not counted
@@ -39,6 +45,7 @@ from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResp
 from langchain.chat_models.base import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage
+from langgraph.constants import TAG_NOSTREAM
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -161,6 +168,12 @@ class ToolSelectorMiddleware(AgentMiddleware):
     def _selector_model(self, request: ModelRequest) -> BaseChatModel:
         return self.model or request.model
 
+    # Tag the selection call so LangGraph's ``stream_mode="messages"`` handler
+    # skips it (see ``on_chat_model_start`` in ``langgraph.pregel._messages``).
+    # Without this the selector's structured-output message leaks into the SSE
+    # stream and the chosen-tool list is rendered at every turn.
+    _SELECTOR_CONFIG = {"tags": [TAG_NOSTREAM]}
+
     def _apply_selection(
         self,
         response: dict[str, Any],
@@ -206,7 +219,10 @@ class ToolSelectorMiddleware(AgentMiddleware):
             self._selection_schema(selectable)
         )
         try:
-            response = model.invoke(self._selection_messages(request, selectable))
+            response = model.invoke(
+                self._selection_messages(request, selectable),
+                config=self._SELECTOR_CONFIG,
+            )
         except Exception:
             logger.exception("Tool selection failed; passing through all tools")
             return handler(request)
@@ -237,7 +253,8 @@ class ToolSelectorMiddleware(AgentMiddleware):
         )
         try:
             response = await model.ainvoke(
-                self._selection_messages(request, selectable)
+                self._selection_messages(request, selectable),
+                config=self._SELECTOR_CONFIG,
             )
         except Exception:
             logger.exception("Tool selection failed; passing through all tools")

@@ -865,6 +865,7 @@ function toWorkflowNote(n: CanvasNode): WorkflowNote {
 export function canvasToWorkflowData(
   nodes: CanvasNode[],
   edges: RFEdge[],
+  options?: { ignoreMissingCredentials?: boolean },
 ): { nodes: WorkflowNode[]; edges: WorkflowEdge[]; notes: WorkflowNote[] } {
   const missingCredentials: Array<{ id: string; type: string }> = [];
 
@@ -902,7 +903,7 @@ export function canvasToWorkflowData(
     label: (e as RFEdge & { label?: string }).label,
   }));
 
-  if (missingCredentials.length > 0) {
+  if (missingCredentials.length > 0 && !options?.ignoreMissingCredentials) {
     throw new MissingNodeCredentialsError(missingCredentials);
   }
 

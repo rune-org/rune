@@ -1,4 +1,4 @@
-import { generateNewWorkflowSmithPost } from "@/client";
+import { clearThreadSmithWorkflowIdDelete, generateWorkflowSmithWorkflowIdPost } from "@/client";
 import type { GenerateWorkflowRequest } from "@/client/types.gen";
 
 export interface TodoItem {
@@ -40,8 +40,27 @@ export interface WorkflowEdge {
   label?: string;
 }
 
-export const streamGenerateNewWorkflow = (prompt: string) =>
-  generateNewWorkflowSmithPost({
-    body: { prompt },
+/**
+ * Stream Smith over an existing workflow, sending the live canvas graph so the
+ * agent edits exactly what is on screen. An empty graph means "build from
+ * scratch". The caller must ensure the workflow exists first (so there is a real
+ * id to thread the conversation on).
+ */
+export const streamEditWorkflow = (
+  workflowId: number,
+  prompt: string,
+  nodes: unknown[],
+  edges: unknown[],
+) =>
+  generateWorkflowSmithWorkflowIdPost({
+    path: { workflow_id: workflowId },
+    body: { prompt, nodes, edges } as unknown as GenerateWorkflowRequest,
   });
+
+/**
+ * Delete the current user's Smith conversation thread for one workflow. Clears
+ * that chat only — it does not touch the workflow itself or other users' chats.
+ */
+export const clearThread = (workflowId: number) =>
+  clearThreadSmithWorkflowIdDelete({ path: { workflow_id: workflowId } });
 export type { GenerateWorkflowRequest };

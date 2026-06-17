@@ -26,6 +26,11 @@ def _normalize_node_types(nodes: list[dict]) -> list[dict]:
     return normalized
 
 
+def build_session_id(user_id: int, workflow_id: int | str) -> str:
+    """Build the checkpointer thread id for a user's conversation on a workflow."""
+    return f"{user_id}:{workflow_id}"
+
+
 def _to_ui_todos(todos: list[dict]) -> list[dict]:
     """Adapt prebuilt ``write_todos`` items to the UI's ``TodoItem`` shape.
 
@@ -40,7 +45,9 @@ def _to_ui_todos(todos: list[dict]) -> list[dict]:
         {
             "id": str(index),
             "title": todo.get("content", ""),
-            "status": "done" if todo.get("status") == "completed" else todo.get("status", "pending"),
+            "status": "done"
+            if todo.get("status") == "completed"
+            else todo.get("status", "pending"),
         }
         for index, todo in enumerate(todos)
     ]
@@ -117,7 +124,9 @@ class SmithAgentService:
 
         # Initialize workflow state with existing data or empty arrays
         # Normalize legacy DSL type names so the agent sees consistent canvas types
-        normalized_nodes = _normalize_node_types(existing_nodes) if existing_nodes else []
+        normalized_nodes = (
+            _normalize_node_types(existing_nodes) if existing_nodes else []
+        )
         # ``todos`` is owned by TodoListMiddleware and defaults to empty, so it
         # is not seeded here.
         input_messages = {

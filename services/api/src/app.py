@@ -97,16 +97,12 @@ async def lifespan(app: FastAPI):
                         "context7": {
                             "transport": "streamable_http",
                             "url": "https://mcp.context7.com/mcp",
-                            "headers": {
-                                "CONTEXT7_API_KEY": settings.context7_api_key
-                            },
+                            "headers": {"CONTEXT7_API_KEY": settings.context7_api_key},
                         }
                     }
                 )
                 context7_tools = await mcp_client.get_tools()
-                print(
-                    f"Context7 tools loaded: {[t.name for t in context7_tools]}"
-                )
+                print(f"Context7 tools loaded: {[t.name for t in context7_tools]}")
             except Exception as exc:
                 print(f"Context7 load failed (continuing without it): {exc}")
         else:
