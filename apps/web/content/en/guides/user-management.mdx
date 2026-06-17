@@ -1,0 +1,202 @@
+# User Management
+
+Learn how to invite users to your Rune organization, manage their roles, and control access.
+
+## User Roles
+
+Rune has two roles:
+
+| Role      | What They Can Do                                                 |
+| --------- | ---------------------------------------------------------------- |
+| **Admin** | Full access - manage users, settings, workflows, and credentials |
+| **User**  | Can create and use workflows, limited access to settings         |
+
+## Inviting Users
+
+Only admins can invite new users to Rune.
+
+### Step 1: Open User Management
+
+1. Sign in as an admin
+2. Go to **Settings** → **Users**
+
+You'll see a list of all current users in your organization.
+
+![User Management](/docs/auth/user-management.png)
+
+### Step 2: Click Create User
+
+Click the **Create User** button in the top right.
+
+### Step 3: Fill in User Details
+
+A form will appear where you enter the new user's information:
+
+![Create User Form](/docs/auth/create-user-form.png)
+
+| Field     | What to Enter                      |
+| --------- | ---------------------------------- |
+| **Name**  | User's full name (3-40 characters) |
+| **Email** | User's email address               |
+| **Role**  | Select either Admin or User        |
+
+Click **Create User**.
+
+### Step 4: Copy the Temporary Password
+
+After clicking Create User, a temporary password will be generated and shown to you.
+
+![Temporary Password](/docs/auth/invitation-temp-password.png)
+
+**Important:** This password is only shown once. You must copy it now and send it to the new user.
+
+The temporary password will look something like: `xK9mP2nQ8vL5wR4t`
+
+### Step 5: Send Credentials to User
+
+Send the new user:
+
+- Their email address (what they'll use to sign in)
+- The temporary password
+
+You can send this via:
+
+- Email
+- Slack or Teams message
+- Direct message
+- Any secure communication method
+
+---
+
+## What the New User Does
+
+When the new user receives their credentials:
+
+### Step 1: Go to Login Page
+
+They open Rune and go to the login page.
+
+### Step 2: Sign In with Temporary Password
+
+They enter:
+
+- **Email**: The email address you created for them
+- **Password**: The temporary password you sent them
+
+### Step 3: Change Password
+
+After signing in with the temporary password, they're immediately prompted to create their own password.
+
+They must:
+
+1. Enter a new password
+2. Confirm the password by entering it again
+3. The password must meet the [requirements](/docs/auth/password-requirements)
+
+### Step 4: Access Rune
+
+After changing their password, they can now use Rune with their own password.
+
+---
+
+## Managing Existing Users
+
+### Viewing Users
+
+In **Settings** → **Users**, you can see:
+
+- User name
+- Email address
+- Role (Admin or User)
+- Status (Active or Inactive)
+- Last login date
+
+### Changing User Role
+
+To change a user's role:
+
+1. Find the user in the list
+2. Click on their row or the edit icon
+3. Change their role from User to Admin (or vice versa)
+4. Click **Save**
+
+The change takes effect immediately.
+
+### Deactivating Users
+
+To temporarily disable a user's access:
+
+1. Find the user in the list
+2. Click **Actions** → **Deactivate**
+
+When deactivated:
+
+- The user cannot sign in
+- Their workflows and data remain in the system
+- You can reactivate them later
+
+### Reactivating Users
+
+To restore access for a deactivated user:
+
+1. Filter to show inactive users
+2. Find the user
+3. Click **Actions** → **Activate**
+
+The user can now sign in again with their existing password.
+
+### Deleting Users
+
+To permanently remove a user:
+
+1. Find the user in the list
+2. Click **Actions** → **Delete**
+3. Confirm the deletion
+
+**Warning:** This cannot be undone. Consider deactivating instead if you might restore access later.
+
+---
+
+## Important Rules
+
+### Cannot Deactivate Yourself
+
+You cannot deactivate your own admin account. Another admin must do this.
+
+### Cannot Deactivate Last Admin
+
+The system won't let you deactivate the last active admin. This ensures someone always has administrative access.
+
+To deactivate the last admin:
+
+1. First promote another user to admin
+2. Then deactivate the original admin
+
+### Cannot Delete Users with Active Sessions
+
+If a user is currently signed in, you must deactivate them first before deletion.
+
+---
+
+## SSO Users vs Password Users
+
+### Password Users
+
+Users you create through **Settings** → **Users**:
+
+- Have a password stored in Rune
+- Sign in with email and password
+- Receive a temporary password when created
+
+### SSO Users
+
+Users who sign in via SSO (if SAML is configured):
+
+- Created automatically on first SSO login
+- No password in Rune
+- Always sign in through your identity provider
+- Cannot use password login
+
+---
+
+**Related:** [Admin Signup](/docs/auth/admin-signup) | [Login](/docs/auth/login) | [Password Requirements](/docs/auth/password-requirements)

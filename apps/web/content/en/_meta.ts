@@ -2,6 +2,7 @@ const docsMeta = {
   index: "Home",
   "getting-started": "Getting Started",
   "how-rune-works": "How Rune Works",
+  auth: "Authentication",
   guides: "Guides",
   "ai-features": "AI Features",
   faq: "FAQ",

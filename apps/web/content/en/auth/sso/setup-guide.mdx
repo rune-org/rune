@@ -1,0 +1,76 @@
+# Setup Guide
+
+This guide shows you how to configure SAML SSO step-by-step. The setup involves two main parts:
+
+1. **Service Provider (Rune)** - Get information from Rune to give to your identity provider
+2. **Identity Provider (Your company's system)** - Configure SAML and get information to enter in Rune
+
+## Setup Order
+
+Follow these steps in order:
+
+### Step 1: Get Service Provider Information
+
+First, you need to get information from Rune to configure your identity provider.
+
+1. Sign in to Rune as an admin
+2. Go to **Settings** → **Authentication** → **SAML**
+3. Click on the **Service Provider** tab
+
+You'll see these values that you need to give to your identity provider:
+
+- **Entity ID**
+- **ACS URL**
+- **Metadata URL**
+
+See [Service Provider Setup](/docs/auth/sso/service-provider) for detailed instructions.
+
+### Step 2: Configure Your Identity Provider
+
+Take the values from Step 1 and configure your company's identity provider.
+
+You need to:
+
+- Create a new SAML application in your identity provider
+- Enter Rune's Entity ID and ACS URL
+- Configure user attributes (especially email)
+- Get three values back: Entity ID, SSO URL, and Certificate
+
+See [Identity Provider Setup](/docs/auth/sso/identity-provider) for detailed instructions.
+
+### Step 3: Enter Identity Provider Information in Rune
+
+After configuring your identity provider, enter its information in Rune:
+
+1. In Rune, go to **Settings** → **Authentication** → **SAML**
+2. Click on the **Identity Provider** tab
+3. Fill in the form with the values from your identity provider
+4. Toggle **Enable SAML** to ON
+5. Click **Save**
+
+See [Identity Provider Setup](/docs/auth/sso/identity-provider) for detailed instructions.
+
+### Step 4: Test
+
+Test the SSO login before going live. See [Testing](/docs/auth/sso/testing) for how to test.
+
+---
+
+## Quick Overview
+
+Here's what information flows between systems:
+
+### Rune Gives to Your IdP:
+
+- Entity ID
+- ACS URL
+
+### Your IdP Gives to Rune:
+
+- IdP Entity ID
+- IdP SSO URL
+- IdP Certificate
+
+---
+
+**Next:** [Service Provider Setup](/docs/auth/sso/service-provider)

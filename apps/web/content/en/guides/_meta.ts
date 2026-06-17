@@ -6,6 +6,7 @@ const guidesMeta = {
   executions: "Executions",
   templates: "Templates",
   sharing: "Sharing",
+  "user-management": "User Management",
   "smith-ai": {
     title: "Smith AI Builder",
     display: "hidden",

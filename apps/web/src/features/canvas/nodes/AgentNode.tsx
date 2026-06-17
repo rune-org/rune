@@ -1,15 +1,23 @@
 "use client";
 
 import { memo, useCallback, type ReactNode } from "react";
+import Image from "next/image";
 import { type Node, type NodeProps } from "@xyflow/react";
 import { Bot, MessageSquare, Wrench, Plug } from "lucide-react";
 import { BaseNode } from "./BaseNode";
-import type { AgentData } from "../types";
+import type { AgentData, AgentProvider } from "../types";
 import { agentTabStore } from "../stores/agentTabStore";
 import type { AgentTab } from "../stores/agentTabStore";
 
+const PROVIDER_ICONS: Record<AgentProvider, string> = {
+  gemini: "/icons/gemini.svg",
+  openai: "/icons/openai.svg",
+  anthropic: "/icons/claude.svg",
+};
+
 export const AgentNode = memo(function AgentNode({ id, data }: NodeProps<Node<AgentData>>) {
   const modelName = data.model?.name ?? "No model configured";
+  const providerIcon = data.model?.provider ? PROVIDER_ICONS[data.model.provider] : undefined;
   const toolCount = data.tools?.length ?? 0;
   const mcpCount = data.mcp_servers?.length ?? 0;
 
@@ -30,7 +38,12 @@ export const AgentNode = memo(function AgentNode({ id, data }: NodeProps<Node<Ag
       pinned={data.pinned}
       className="w-[260px] max-w-[260px]"
     >
-      <div className="text-xs text-muted-foreground truncate">{modelName}</div>
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        {providerIcon && (
+          <Image src={providerIcon} alt="" width={14} height={14} className="shrink-0" />
+        )}
+        <span className="truncate">{modelName}</span>
+      </div>
 
       <div className="mt-2 border-t border-border/40" />
 
