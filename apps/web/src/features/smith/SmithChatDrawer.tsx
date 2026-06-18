@@ -133,9 +133,7 @@ export function SmithChatDrawer({
           )}
         </div>
 
-        {todos.length > 0 && (
-          <SmithTodoPanel todos={todos} isSending={isSending} />
-        )}
+        {todos.length > 0 && <SmithTodoPanel todos={todos} isSending={isSending} />}
 
         <div className="relative flex-1 overflow-y-auto p-4 scrollbar-none">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-500/5 via-transparent to-transparent opacity-50 pointer-events-none" />

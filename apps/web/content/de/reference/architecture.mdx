@@ -1,7 +1,32 @@
-import EnglishPage from "../../en/reference/architecture.mdx";
+# Architektur
 
-> Uebersetzung in Arbeit: Der kanonische Inhalt ist derzeit auf Englisch.
+Diese Seite richtet sich an Entwickler und Betreiber, die Implementierungskontext benötigen.
 
-<div dir="ltr" lang="en">
-  <EnglishPage />
-</div>
+Das Onboarding für Benutzer beginnt bei der [Rune-Dokumentation](/docs).
+
+## Systemüberblick
+
+Rune besteht aus:
+
+- Einer Next.js-Web-App für die Benutzeroberfläche und den Workflow-Canvas.
+- Einem FastAPI-Dienst für Benutzer, Workflows, Zugangsdaten, Vorlagen, OAuth und interne Endpunkte.
+- Einem Go-Worker, der Workflow-Knoten ausführt.
+- Einem Rust-Echtzeit-Ausführungsdienst für Ausführungszustand und Live-Updates.
+- Python-Diensten für Abschlussaufzeichnung und geplantes Workflow-Polling.
+- Einem sprachneutralen DSL, das Workflow-Strukturen definiert, die diensteübergreifend geteilt werden.
+
+## Pfad auf Benutzerseite
+
+Aus Benutzersicht:
+
+```mermaid
+flowchart LR
+  Web["Web-App"] --> API["API"]
+  API --> Queue["Ausführungswarteschlange"]
+  Queue --> Worker["Worker"]
+  Worker --> Events["Ausführungsereignisse"]
+  Events --> RTES["Echtzeit-Ausführungszustand"]
+  RTES --> Web
+```
+
+Für Implementierungsanleitungen auf Repository-Ebene, siehe `AGENTS.md` und die Dienst-READMEs.

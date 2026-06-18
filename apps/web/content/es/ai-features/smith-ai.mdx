@@ -1,7 +1,56 @@
-import EnglishPage from "../../en/ai-features/smith-ai.mdx";
+# Smith, asistente de IA
 
-> Traducción en curso: el contenido canónico está en inglés por ahora.
+Smith te ayuda a convertir una descripción en lenguaje natural en un borrador de flujo de trabajo.
 
-<div dir="ltr" lang="en">
-  <EnglishPage />
-</div>
+Usa Smith cuando conozcas el resultado que quieres pero no quieras colocar cada nodo manualmente.
+
+## Empezar con Smith
+
+1. Abre **Crear**.
+2. Elige **Pedir a un agente** o abre Smith desde el lienzo.
+3. Describe el flujo de trabajo que quieres.
+4. Revisa los nodos y conexiones generados.
+5. Guarda el flujo de trabajo.
+6. Ejecuta una prueba.
+
+## Escribir una instrucción útil
+
+Las buenas instrucciones incluyen:
+
+- El evento que inicia el flujo.
+- Los servicios involucrados.
+- Las reglas de decisión.
+- La acción final.
+- Cualquier restricción o caso especial.
+
+Ejemplo:
+
+```text
+Build a workflow that starts from a webhook, checks whether the payload priority is high, summarizes the request with an AI agent, and logs the summary.
+```
+
+## Revisar antes de ejecutar
+
+Smith puede cometer errores. Antes de confiar en un flujo generado:
+
+- Verifica la configuración de cada nodo.
+- Confirma que las credenciales requeridas están seleccionadas.
+- Lee las condiciones de rama con cuidado.
+- Ejecuta con datos de prueba seguros.
+- Inspecciona la salida de ejecución.
+
+## Iterar con Smith
+
+Después del primer borrador, solicita cambios específicos.
+
+Ejemplos:
+
+```text
+Add a Log node after the HTTP request so I can see the response body.
+```
+
+```text
+Change the branch so only urgent support tickets continue to the email step.
+```
+
+Las solicitudes pequeñas son más fáciles de revisar que pedirle a Smith que reconstruya todo a la vez.
