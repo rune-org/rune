@@ -1,0 +1,63 @@
+{
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "trigger",
+      "position": {"x": 80, "y": 40},
+      "data": {"label": "Trigger"}
+    },
+    {
+      "id": "fetch-order",
+      "type": "http",
+      "position": {"x": 280, "y": 40},
+      "data": {
+        "label": "FetchOrder",
+        "method": "GET",
+        "url": "https://dummyjson.com/carts/approved",
+        "timeout": 30,
+        "retry": 0,
+        "retry_delay": 0,
+        "raise_on_status": "4xx,5xx"
+      }
+    },
+    {
+      "id": "if-risk",
+      "type": "if",
+      "position": {"x": 560, "y": 40},
+      "data": {"label": "RiskGate", "expression": "$FetchOrder.body.risk_score <= 70"}
+    },
+    {
+      "id": "edit-package",
+      "type": "edit",
+      "position": {"x": 840, "y": 20},
+      "data": {
+        "label": "PackageDecision",
+        "mode": "keep_only",
+        "assignments": [
+          {"name": "decision", "value": "approved", "type": "string"},
+          {"name": "order_id", "value": "{{ $FetchOrder.body.order_id }}", "type": "string"},
+          {"name": "score", "value": "{{ $FetchOrder.body.risk_score }}", "type": "number"}
+        ]
+      }
+    },
+    {
+      "id": "log-result",
+      "type": "log",
+      "position": {"x": 1120, "y": 20},
+      "data": {"label": "AuditLog", "message": "Approved order", "level": "info"}
+    },
+    {
+      "id": "log-reject",
+      "type": "log",
+      "position": {"x": 840, "y": 120},
+      "data": {"label": "RejectLog", "message": "Rejected order", "level": "warn"}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "trigger-1", "target": "fetch-order", "type": "default"},
+    {"id": "e2", "source": "fetch-order", "target": "if-risk", "type": "default"},
+    {"id": "e3", "source": "if-risk", "sourceHandle": "true", "target": "edit-package", "type": "default"},
+    {"id": "e4", "source": "if-risk", "sourceHandle": "false", "target": "log-reject", "type": "default"},
+    {"id": "e5", "source": "edit-package", "target": "log-result", "type": "default"}
+  ]
+}

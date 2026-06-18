@@ -1,0 +1,88 @@
+{
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "trigger",
+      "position": {"x": 80, "y": 40},
+      "data": {"label": "Start"}
+    },
+    {
+      "id": "switch-route",
+      "type": "switch",
+      "position": {"x": 280, "y": 40},
+      "data": {
+        "label": "Route",
+        "rules": [
+          {"value": "$FetchTicket.body.priority", "operator": "==", "compare": "high"},
+          {"value": "$FetchTicket.body.priority", "operator": "==", "compare": "low"}
+        ]
+      }
+    },
+    {
+      "id": "fetch-ticket",
+      "type": "http",
+      "position": {"x": 280, "y": -80},
+      "data": {
+        "label": "FetchTicket",
+        "method": "GET",
+        "url": "https://dummyjson.com/tickets/high",
+        "timeout": 30,
+        "retry": 0,
+        "retry_delay": 0,
+        "raise_on_status": "4xx,5xx"
+      }
+    },
+    {
+      "id": "log-high",
+      "type": "log",
+      "position": {"x": 520, "y": 0},
+      "data": {"label": "Escalate", "message": "Escalated to on-call", "level": "warn"}
+    },
+    {
+      "id": "log-low",
+      "type": "log",
+      "position": {"x": 520, "y": 80},
+      "data": {"label": "Queue", "message": "Queued for standard SLA", "level": "info"}
+    },
+    {
+      "id": "log-fallback",
+      "type": "log",
+      "position": {"x": 520, "y": 160},
+      "data": {"label": "Fallback", "message": "Unknown priority", "level": "info"}
+    },
+    {
+      "id": "log-done",
+      "type": "log",
+      "position": {"x": 760, "y": 40},
+      "data": {"label": "Done", "message": "Ticket routed", "level": "info"}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "trigger-1", "target": "fetch-ticket", "type": "default"},
+    {"id": "e1b", "source": "fetch-ticket", "target": "switch-route", "type": "default"},
+    {
+      "id": "e2",
+      "source": "switch-route",
+      "sourceHandle": "switch-case-0",
+      "target": "log-high",
+      "type": "default"
+    },
+    {
+      "id": "e3",
+      "source": "switch-route",
+      "sourceHandle": "switch-case-1",
+      "target": "log-low",
+      "type": "default"
+    },
+    {
+      "id": "e4",
+      "source": "switch-route",
+      "sourceHandle": "switch-fallback",
+      "target": "log-fallback",
+      "type": "default"
+    },
+    {"id": "e5", "source": "log-high", "target": "log-done", "type": "default"},
+    {"id": "e6", "source": "log-low", "target": "log-done", "type": "default"},
+    {"id": "e7", "source": "log-fallback", "target": "log-done", "type": "default"}
+  ]
+}

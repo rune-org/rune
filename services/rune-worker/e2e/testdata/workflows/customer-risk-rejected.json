@@ -1,0 +1,61 @@
+{
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "trigger",
+      "position": {"x": 80, "y": 40},
+      "data": {"label": "Trigger"}
+    },
+    {
+      "id": "fetch-order",
+      "type": "http",
+      "position": {"x": 280, "y": 40},
+      "data": {
+        "label": "FetchOrder",
+        "method": "GET",
+        "url": "https://dummyjson.com/carts/rejected",
+        "timeout": 30,
+        "retry": 0,
+        "retry_delay": 0,
+        "raise_on_status": "4xx,5xx"
+      }
+    },
+    {
+      "id": "if-risk",
+      "type": "if",
+      "position": {"x": 560, "y": 40},
+      "data": {"label": "RiskGate", "expression": "$FetchOrder.body.risk_score > 70"}
+    },
+    {
+      "id": "log-precheck",
+      "type": "log",
+      "position": {"x": 840, "y": 20},
+      "data": {"label": "PrecheckLog", "message": "Risk too high, notifying", "level": "warn"}
+    },
+    {
+      "id": "http-reject",
+      "type": "http",
+      "position": {"x": 1120, "y": 20},
+      "data": {
+        "label": "RejectCall",
+        "method": "GET",
+        "url": "https://httpbin.org/status/404",
+        "raise_on_status": "4xx,5xx"
+      }
+    },
+    {
+      "id": "log-end",
+      "type": "log",
+      "position": {"x": 1400, "y": 20},
+      "data": {"label": "EndLog", "message": "Should not run", "level": "info"}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "trigger-1", "target": "fetch-order", "type": "default"},
+    {"id": "e2", "source": "fetch-order", "target": "if-risk", "type": "default"},
+    {"id": "e3", "source": "if-risk", "sourceHandle": "true", "target": "log-precheck", "type": "default"},
+    {"id": "e4", "source": "if-risk", "sourceHandle": "false", "target": "log-end", "type": "default"},
+    {"id": "e5", "source": "log-precheck", "target": "http-reject", "type": "default"},
+    {"id": "e6", "source": "http-reject", "target": "log-end", "type": "default"}
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "workflow_id": "wf-time-normalization",
+  "execution_id": "exec-time-normalization",
+  "status_messages": [
+    {
+      "node_id": "add-days",
+      "node_name": "AddDays",
+      "status": "success",
+      "output": {
+        "result": "2026-03-11",
+        "timezone": "UTC"
+      }
+    },
+    {
+      "node_id": "format-date",
+      "node_name": "FormatDate",
+      "status": "success",
+      "output": {
+        "result": "2026-03-08 11:30 EDT",
+        "timezone": "America/New_York"
+      }
+    },
+    {
+      "node_id": "log-date",
+      "node_name": "DateLog",
+      "status": "success",
+      "output": {
+        "level": "info",
+        "message": "Dates normalized"
+      }
+    },
+    {
+      "node_id": "parse-date",
+      "node_name": "ParseDate",
+      "status": "success",
+      "output": {
+        "day": 8,
+        "hour": 11,
+        "iso": "2026-03-08T11:30:00-04:00",
+        "minute": 30,
+        "month": 3,
+        "second": 0,
+        "timezone": "America/New_York",
+        "weekday": "Sunday",
+        "year": 2026
+      }
+    },
+    {
+      "node_id": "subtract-weeks",
+      "node_name": "SubtractWeeks",
+      "status": "success",
+      "output": {
+        "result": "2026-03-08",
+        "timezone": "UTC"
+      }
+    }
+  ],
+  "completion": {
+    "status": "completed",
+    "final_context": {
+      "$AddDays": {
+        "result": "2026-03-11",
+        "timezone": "UTC"
+      },
+      "$DateLog": {
+        "level": "info",
+        "message": "Dates normalized"
+      },
+      "$FormatDate": {
+        "result": "2026-03-08 11:30 EDT",
+        "timezone": "America/New_York"
+      },
+      "$ParseDate": {
+        "day": 8,
+        "hour": 11,
+        "iso": "2026-03-08T11:30:00-04:00",
+        "minute": 30,
+        "month": 3,
+        "second": 0,
+        "timezone": "America/New_York",
+        "weekday": "Sunday",
+        "year": 2026
+      },
+      "$SubtractWeeks": {
+        "result": "2026-03-08",
+        "timezone": "UTC"
+      }
+    }
+  }
+}
