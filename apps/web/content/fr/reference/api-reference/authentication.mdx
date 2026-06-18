@@ -1,7 +1,18 @@
-import EnglishPage from "../../../en/reference/api-reference/authentication.mdx";
+# Authentification
 
-> Traduction en cours: le contenu canonique est en anglais pour le moment.
+Cette page de référence est réservée aux détails d'authentification destinés aux développeurs.
 
-<div dir="ltr" lang="en">
-  <EnglishPage />
-</div>
+Pour l'intégration des utilisateurs, commencez par [Démarrer](/docs/getting-started).
+
+## Connexion des utilisateurs
+
+Les utilisateurs de Rune se connectent via l'application. Selon la configuration de l'espace de travail, l'authentification peut inclure un accès par mot de passe, SAML ou des services connectés via OAuth utilisés par les identifiants.
+
+## Les identifiants sont distincts
+
+L'authentification de l'application n'est pas la même chose que les identifiants de workflow.
+
+- L'authentification de l'application contrôle qui peut utiliser Rune.
+- Les identifiants de workflow contrôlent les systèmes externes auxquels un workflow peut accéder.
+
+Pour des conseils sur les identifiants destinés aux utilisateurs, consultez [Identifiants](/docs/guides/credentials).

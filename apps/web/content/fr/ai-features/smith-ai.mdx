@@ -1,7 +1,56 @@
-import EnglishPage from "../../en/ai-features/smith-ai.mdx";
+# Smith, assistant IA
 
-> Traduction en cours: le contenu canonique est en anglais pour le moment.
+Smith vous aide à transformer une description en langage naturel en brouillon de workflow.
 
-<div dir="ltr" lang="en">
-  <EnglishPage />
-</div>
+Utilisez Smith lorsque vous connaissez le résultat souhaité mais ne voulez pas placer chaque nœud manuellement.
+
+## Démarrer avec Smith
+
+1. Ouvrez **Créer**.
+2. Choisissez **Demander à un agent** ou ouvrez Smith depuis le canevas.
+3. Décrivez le workflow que vous voulez.
+4. Examinez les nœuds et connexions générés.
+5. Enregistrez le workflow.
+6. Lancez une exécution de test.
+
+## Rédiger une consigne utile
+
+De bonnes consignes incluent :
+
+- L'événement qui démarre le workflow.
+- Les services concernés.
+- Les règles de décision.
+- L'action finale.
+- Les contraintes ou cas particuliers.
+
+Exemple :
+
+```text
+Build a workflow that starts from a webhook, checks whether the payload priority is high, summarizes the request with an AI agent, and logs the summary.
+```
+
+## Vérifier avant d'exécuter
+
+Smith peut faire des erreurs. Avant de vous fier à un workflow généré :
+
+- Vérifiez les paramètres de chaque nœud.
+- Confirmez que les identifiants requis sont sélectionnés.
+- Lisez attentivement les conditions de branche.
+- Exécutez avec des données de test sûres.
+- Inspectez la sortie d'exécution.
+
+## Itérer avec Smith
+
+Après le premier brouillon, demandez des modifications ciblées.
+
+Exemples :
+
+```text
+Add a Log node after the HTTP request so I can see the response body.
+```
+
+```text
+Change the branch so only urgent support tickets continue to the email step.
+```
+
+Les petites demandes sont plus faciles à vérifier que de demander à Smith de tout reconstruire d'un coup.

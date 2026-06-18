@@ -1,7 +1,56 @@
-import EnglishPage from "../../en/ai-features/smith-ai.mdx";
+# Smith KI-Builder
 
-> Uebersetzung in Arbeit: Der kanonische Inhalt ist derzeit auf Englisch.
+Smith hilft dir dabei, eine natürlichsprachige Beschreibung in einen Workflow-Entwurf zu verwandeln.
 
-<div dir="ltr" lang="en">
-  <EnglishPage />
-</div>
+Nutze Smith, wenn du das gewünschte Ergebnis kennst, aber nicht jeden Knoten manuell platzieren möchtest.
+
+## Mit Smith starten
+
+1. Öffne **Erstellen**.
+2. Wähle **Einen Agenten fragen** oder öffne Smith vom Canvas aus.
+3. Beschreibe den gewünschten Workflow.
+4. Überprüfe die generierten Knoten und Verbindungen.
+5. Speichere den Workflow.
+6. Führe einen Testlauf durch.
+
+## Einen nützlichen Prompt schreiben
+
+Gute Prompts enthalten:
+
+- Das Ereignis, das den Workflow startet.
+- Die beteiligten Dienste.
+- Die Entscheidungsregeln.
+- Die letzte Aktion.
+- Etwaige Einschränkungen oder Sonderfälle.
+
+Beispiel:
+
+```text
+Build a workflow that starts from a webhook, checks whether the payload priority is high, summarizes the request with an AI agent, and logs the summary.
+```
+
+## Vor dem Ausführen prüfen
+
+Smith kann Fehler machen. Bevor du einem generierten Workflow vertraust:
+
+- Überprüfe die Einstellungen jedes Knotens.
+- Bestätige, dass die erforderlichen Zugangsdaten ausgewählt sind.
+- Lies Verzweigungsbedingungen sorgfältig.
+- Führe mit sicheren Testdaten aus.
+- Inspiziere die Ausführungsausgabe.
+
+## Mit Smith iterieren
+
+Nach dem ersten Entwurf bitte um gezielte Änderungen.
+
+Beispiele:
+
+```text
+Add a Log node after the HTTP request so I can see the response body.
+```
+
+```text
+Change the branch so only urgent support tickets continue to the email step.
+```
+
+Kleine Anfragen sind leichter zu prüfen, als Smith zu bitten, alles auf einmal neu zu erstellen.

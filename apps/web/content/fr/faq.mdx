@@ -1,7 +1,65 @@
-import EnglishPage from "../en/faq.mdx";
+# FAQ
 
-> Traduction en cours: le contenu canonique est en anglais pour le moment.
+## Qu'est-ce que Rune ?
 
-<div dir="ltr" lang="en">
-  <EnglishPage />
-</div>
+Rune est une application d'automatisation de workflows low-code. Vous créez des workflows à partir de nœuds reliés, vous les exécutez et vous inspectez ce qui s'est passé.
+
+## Dois-je écrire du code ?
+
+Non. La plupart des workflows peuvent être créés à partir du canevas visuel, des modèles et des consignes Smith.
+
+Certains nœuds utilisent tout de même des notions techniques telles que les URL, les champs, les variables et les identifiants. La documentation explique ces concepts au fur et à mesure de vos besoins.
+
+## Que dois-je faire en premier ?
+
+Suivez le [Démarrage rapide](/docs/getting-started/quick-start). Il utilise une API publique, vous n'avez donc pas besoin d'identifiants.
+
+## Qu'est-ce qu'un workflow ?
+
+Un workflow est l'automatisation complète : déclencheur, nœuds, connexions, paramètres et versions enregistrées.
+
+## Qu'est-ce qu'un déclencheur ?
+
+Un déclencheur démarre le workflow. Il peut être manuel, planifié ou basé sur un webhook.
+
+## Qu'est-ce qu'un nœud ?
+
+Un nœud est une étape du workflow. Les nœuds peuvent appeler des API, transformer des données, créer des branches, attendre, envoyer des messages, exécuter des agents ou journaliser une sortie.
+
+## Pourquoi mon workflow a-t-il échoué ?
+
+Ouvrez l'exécution échouée et repérez le premier nœud en échec.
+
+Les causes courantes incluent des identifiants manquants, des variables incorrectes, des erreurs d'API, des modifications non enregistrées ou des règles de branche qui ne correspondaient pas aux données.
+
+## Où puis-je voir l'historique des runs ?
+
+Utilisez la page **Exécutions** ou ouvrez les détails d'exécution depuis le canevas du workflow.
+
+## Quand ai-je besoin d'identifiants ?
+
+Utilisez des identifiants lorsqu'un workflow se connecte à une API, un compte ou un service privé.
+
+Le workflow de démarrage rapide n'a pas besoin d'identifiants car il appelle un point de terminaison public.
+
+## Mes coéquipiers peuvent-ils utiliser mon workflow ?
+
+Oui, si vous partagez le workflow avec eux.
+
+Ils peuvent également avoir besoin d'accéder aux identifiants utilisés par le workflow.
+
+## Dois-je partir d'un modèle ou de zéro ?
+
+Partez d'un modèle lorsque le schéma est proche de ce dont vous avez besoin. Partez de zéro lorsque le workflow est petit ou très spécifique.
+
+## Que fait Smith ?
+
+Smith rédige ou modifie des workflows à partir de consignes en langage naturel. Vérifiez toujours le travail de Smith avant de vous y fier.
+
+## Que fait Scryb ?
+
+Scryb génère une documentation Markdown pour les workflows enregistrés.
+
+## Pourquoi Scryb me demande-t-il d'enregistrer d'abord ?
+
+Scryb a besoin d'un workflow enregistré avant de pouvoir en générer la documentation.

@@ -1,7 +1,65 @@
-import EnglishPage from "../en/faq.mdx";
+# FAQ
 
-> Uebersetzung in Arbeit: Der kanonische Inhalt ist derzeit auf Englisch.
+## Was ist Rune?
 
-<div dir="ltr" lang="en">
-  <EnglishPage />
-</div>
+Rune ist eine Low-Code-Workflow-Automatisierungs-App. Du baust Workflows aus verbundenen Knoten, führst sie aus und inspizierst, was passiert ist.
+
+## Muss ich Code schreiben?
+
+Nein. Die meisten Workflows lassen sich über den visuellen Canvas, Vorlagen und Smith-Prompts erstellen.
+
+Einige Knoten nutzen weiterhin technische Konzepte wie URLs, Felder, Variablen und Zugangsdaten. Die Dokumentation erklärt diese Konzepte, sobald du sie benötigst.
+
+## Was soll ich zuerst tun?
+
+Führe den [Schnellstart](/docs/getting-started/quick-start) durch. Er verwendet eine öffentliche API, du brauchst also keine Zugangsdaten.
+
+## Was ist ein Workflow?
+
+Ein Workflow ist die vollständige Automatisierung: Trigger, Knoten, Verbindungen, Einstellungen und gespeicherte Versionen.
+
+## Was ist ein Trigger?
+
+Ein Trigger startet den Workflow. Er kann manuell, geplant oder webhook-basiert sein.
+
+## Was ist ein Knoten?
+
+Ein Knoten ist ein Schritt im Workflow. Knoten können APIs aufrufen, Daten transformieren, verzweigen, warten, Nachrichten senden, Agenten ausführen oder Ausgaben protokollieren.
+
+## Warum ist mein Workflow fehlgeschlagen?
+
+Öffne die fehlgeschlagene Ausführung und finde den ersten fehlgeschlagenen Knoten.
+
+Häufige Ursachen sind fehlende oder abgelaufene Zugangsdaten, falsche Variablen, API-Fehler, nicht gespeicherte Änderungen oder Verzweigungsregeln, die nicht mit den Daten übereinstimmten.
+
+## Wo sehe ich den Ausführungsverlauf?
+
+Nutze die Seite **Ausführungen** oder öffne die Ausführungsdetails vom Workflow-Canvas aus.
+
+## Wann brauche ich Zugangsdaten?
+
+Nutze Zugangsdaten, wenn ein Workflow eine Verbindung zu einer privaten API, einem Konto oder einem Dienst herstellt.
+
+Der Schnellstart-Workflow benötigt keine Zugangsdaten, da er einen öffentlichen Endpunkt aufruft.
+
+## Können meine Teammitglieder meinen Workflow nutzen?
+
+Ja, wenn du ihn mit ihnen teilst.
+
+Sie benötigen möglicherweise auch Zugriff auf die vom Workflow verwendeten Zugangsdaten.
+
+## Soll ich mit einer Vorlage oder von Grund auf beginnen?
+
+Beginne mit einer Vorlage, wenn das Muster nahe an dem ist, was du brauchst. Beginne von Grund auf, wenn der Workflow klein oder sehr spezifisch ist.
+
+## Was macht Smith?
+
+Smith entwirft oder bearbeitet Workflows auf der Grundlage von Beschreibungen in natürlicher Sprache. Überprüfe Smiths Arbeit immer, bevor du dich darauf verlässt.
+
+## Was macht Scryb?
+
+Scryb generiert Markdown-Dokumentation für gespeicherte Workflows.
+
+## Warum bittet mich Scryb, zuerst zu speichern?
+
+Scryb benötigt einen gespeicherten Workflow, bevor es Dokumentation daraus generieren kann.

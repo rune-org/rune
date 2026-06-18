@@ -1,7 +1,65 @@
-import EnglishPage from "../en/faq.mdx";
+# Preguntas frecuentes
 
-> Traducción en curso: el contenido canónico está en inglés por ahora.
+## ¿Qué es Rune?
 
-<div dir="ltr" lang="en">
-  <EnglishPage />
-</div>
+Rune es una aplicación de automatización de flujos de trabajo low-code. Construyes flujos de trabajo a partir de nodos conectados, los ejecutas e inspeccionas lo que ocurrió.
+
+## ¿Necesito escribir código?
+
+No. La mayoría de los flujos de trabajo se pueden construir desde el lienzo visual, las plantillas y las instrucciones de Smith.
+
+Algunos nodos todavía usan conceptos técnicos como URLs, campos, variables y credenciales. La documentación explica esos conceptos cuando los necesitas.
+
+## ¿Qué debo hacer primero?
+
+Sigue el [Inicio rápido](/docs/getting-started/quick-start). Usa una API pública, por lo que no necesitas credenciales.
+
+## ¿Qué es un flujo de trabajo?
+
+Un flujo de trabajo es la automatización completa: disparador, nodos, conexiones, configuraciones y versiones guardadas.
+
+## ¿Qué es un disparador?
+
+Un disparador inicia el flujo de trabajo. Puede ser manual, programado o basado en webhook.
+
+## ¿Qué es un nodo?
+
+Un nodo es un paso en el flujo de trabajo. Los nodos pueden llamar APIs, transformar datos, ramificarse, esperar, enviar mensajes, ejecutar agentes o registrar salidas.
+
+## ¿Por qué falló mi flujo de trabajo?
+
+Abre la ejecución fallida y encuentra el primer nodo que falló.
+
+Las causas comunes incluyen credenciales faltantes, variables incorrectas, errores de API, cambios no guardados o reglas de rama que no coincidieron con los datos.
+
+## ¿Dónde veo el historial de ejecuciones?
+
+Usa la página **Ejecuciones** o abre los detalles de ejecución desde el lienzo del flujo de trabajo.
+
+## ¿Cuándo necesito credenciales?
+
+Usa credenciales cuando un flujo de trabajo se conecta a una API, cuenta o servicio privado.
+
+El flujo de inicio rápido no necesita credenciales porque llama a un punto de acceso público.
+
+## ¿Pueden mis compañeros usar mi flujo de trabajo?
+
+Sí, si lo compartes con ellos.
+
+Es posible que también necesiten acceso a las credenciales que usa el flujo.
+
+## ¿Debo empezar con una plantilla o desde cero?
+
+Empieza con una plantilla cuando el patrón se aproxime a lo que necesitas. Empieza desde cero cuando el flujo sea pequeño o muy específico.
+
+## ¿Qué hace Smith?
+
+Smith redacta o edita flujos de trabajo a partir de descripciones en lenguaje natural. Siempre revisa el trabajo de Smith antes de confiar en él.
+
+## ¿Qué hace Scryb?
+
+Scryb genera documentación Markdown para flujos de trabajo guardados.
+
+## ¿Por qué Scryb me pide guardar primero?
+
+Scryb necesita un flujo de trabajo guardado antes de poder generar documentación a partir de él.
