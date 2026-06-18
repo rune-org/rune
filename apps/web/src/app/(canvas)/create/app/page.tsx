@@ -100,6 +100,10 @@ function CanvasPageInner() {
   const [baseVersionId, setBaseVersionId] = useState<number | null>(null);
   const baseVersionIdRef = useRef<number | null>(null);
   const appliedTemplateRef = useRef<number | null>(null);
+  // Set when Smith creates a workflow shell mid-session so the load() effect
+  // below skips refetching it (the shell has no version yet — refetching would
+  // push an empty graph and wipe Smith's in-progress canvas).
+  const justCreatedRef = useRef<number | null>(null);
   useEffect(() => {
     baseVersionIdRef.current = baseVersionId;
   }, [baseVersionId]);
@@ -164,6 +168,11 @@ function CanvasPageInner() {
           setNodes(undefined);
           setEdges(undefined);
         }
+        return;
+      }
+      if (numericWorkflowId === justCreatedRef.current) {
+        // Just created for Smith; keep the live canvas instead of refetching an
+        // empty shell. Subsequent saves persist versions normally.
         return;
       }
       try {
@@ -284,6 +293,37 @@ function CanvasPageInner() {
     },
     [isSaving, numericWorkflowId, saveVersion],
   );
+
+  // Smith: ensure a real workflow exists (creating a silent shell when the
+  // canvas has none yet) so the agent can edit and thread its conversation on a
+  // real id. Returns the id, or null if creation failed.
+  const ensureWorkflowForSmith = useCallback(async (): Promise<number | null> => {
+    if (numericWorkflowId !== null) return numericWorkflowId;
+    try {
+      const response = await workflows.createWorkflow({
+        name: defaultWorkflowSummary.name,
+        description: "",
+      });
+      if (!response.data) {
+        throw new Error("Failed to create workflow");
+      }
+      const created = response.data.data;
+      justCreatedRef.current = created.id;
+      setWorkflowName(created.name);
+      setBaseVersionId(null);
+      setWorkflowMeta({
+        publishedVersionId: null,
+        hasUnpublishedChanges: true,
+        latestVersionNumber: null,
+      });
+      void refreshWorkflows();
+      router.replace(`/create/app?workflow=${created.id}`);
+      return created.id;
+    } catch (err) {
+      toast.error(getSaveErrorMessage(err));
+      return null;
+    }
+  }, [numericWorkflowId, refreshWorkflows, router]);
 
   // Conflict resolution handlers
   const handleConflictLoadServer = useCallback(async () => {
@@ -487,6 +527,7 @@ function CanvasPageInner() {
           onConflictLoadServer={handleConflictLoadServer}
           onConflictForceSave={handleConflictForceSave}
           onConflictCancel={handleConflictCancel}
+          onEnsureWorkflow={ensureWorkflowForSmith}
         />
       </div>
 

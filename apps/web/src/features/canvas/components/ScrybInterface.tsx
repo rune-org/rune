@@ -61,6 +61,8 @@ export function ScrybInterface({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [targetAudience, setTargetAudience] =
     useState<GenerateWorkflowDocsRequest["target_audience"]>("Technical Developer");
+  const [audienceMode, setAudienceMode] = useState<"Technical Developer" | "Executive Summary" | "Custom">("Technical Developer");
+  const [customStyle, setCustomStyle] = useState("");
   const [reportViewerOpen, setReportViewerOpen] = useState(false);
 
   const isOpen = isOpenProp ?? isOpenInternal;
@@ -83,7 +85,11 @@ export function ScrybInterface({
       setErrorMessage(null);
 
       try {
-        const response = await scryb.generateWorkflowDocs(workflowId, targetAudience);
+        const response = await scryb.generateWorkflowDocs(
+          workflowId,
+          targetAudience,
+          audienceMode === "Custom" ? customStyle || undefined : undefined,
+        );
 
         if (response.error) {
           throw new Error("Failed to generate documentation");
@@ -101,7 +107,7 @@ export function ScrybInterface({
         toast.error(err instanceof Error ? err.message : "Failed to generate documentation");
       }
     },
-    [workflowId, targetAudience],
+    [workflowId, targetAudience, audienceMode, customStyle],
   );
 
   const resetView = () => {
@@ -261,37 +267,68 @@ export function ScrybInterface({
                         <div className="flex gap-2">
                           <button
                             type="button"
-                            onClick={() => setTargetAudience("Technical Developer")}
+                            onClick={() => {
+                              setAudienceMode("Technical Developer");
+                              setTargetAudience("Technical Developer");
+                            }}
                             className={cn(
                               "flex-1 rounded-xl border px-3 py-2 text-xs transition-all",
-                              targetAudience === "Technical Developer"
+                              audienceMode === "Technical Developer"
                                 ? "border-border bg-white/5 backdrop-blur-md text-foreground shadow-sm"
                                 : "border-border/20 bg-transparent text-muted-foreground/70 hover:bg-muted/40",
                             )}
                             style={{
                               fontFamily: "ui-sans-serif, system-ui, sans-serif",
-                              fontWeight: targetAudience === "Technical Developer" ? 700 : 400,
+                              fontWeight: audienceMode === "Technical Developer" ? 700 : 400,
                             }}
                           >
                             TECHNICAL
                           </button>
                           <button
                             type="button"
-                            onClick={() => setTargetAudience("Executive Summary")}
+                            onClick={() => {
+                              setAudienceMode("Executive Summary");
+                              setTargetAudience("Executive Summary");
+                            }}
                             className={cn(
                               "flex-1 rounded-xl border px-3 py-2 text-xs transition-all",
-                              targetAudience === "Executive Summary"
+                              audienceMode === "Executive Summary"
                                 ? "border-border bg-white/5 backdrop-blur-md text-foreground shadow-sm"
                                 : "border-border/20 bg-transparent text-muted-foreground/70 hover:bg-muted/40",
                             )}
                             style={{
                               fontFamily: "ui-sans-serif, system-ui, sans-serif",
-                              fontWeight: targetAudience === "Executive Summary" ? 700 : 400,
+                              fontWeight: audienceMode === "Executive Summary" ? 700 : 400,
                             }}
                           >
                             EXECUTIVE
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => setAudienceMode("Custom")}
+                            className={cn(
+                              "flex-1 rounded-xl border px-3 py-2 text-xs transition-all",
+                              audienceMode === "Custom"
+                                ? "border-border bg-white/5 backdrop-blur-md text-foreground shadow-sm"
+                                : "border-border/20 bg-transparent text-muted-foreground/70 hover:bg-muted/40",
+                            )}
+                            style={{
+                              fontFamily: "ui-sans-serif, system-ui, sans-serif",
+                              fontWeight: audienceMode === "Custom" ? 700 : 400,
+                            }}
+                          >
+                            CUSTOM
+                          </button>
                         </div>
+                        {audienceMode === "Custom" && (
+                          <textarea
+                            value={customStyle}
+                            onChange={(e) => setCustomStyle(e.target.value)}
+                            placeholder="Describe the style, tone, and format you want..."
+                            rows={4}
+                            className="mt-2 w-full rounded-xl border border-border/30 bg-muted/30 px-3 py-2 font-sans text-xs text-foreground/90 placeholder:text-muted-foreground/50 focus:border-border/60 focus:outline-none resize-none"
+                          />
+                        )}
                       </div>
 
                       <div className="relative rounded-2xl border border-border/30 bg-muted/30 p-4">

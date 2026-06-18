@@ -467,6 +467,9 @@ async def delete_workflow(
     Delete a workflow.
 
     **Requires:** DELETE permission (OWNER only)
+
+    Smith conversation threads are intentionally not deleted here; a user clears a
+    workflow's chat manually from the UI (``DELETE /smith/{workflow_id}``).
     """
     await service.delete(workflow)
     return
