@@ -61,7 +61,9 @@ export function ScrybInterface({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [targetAudience, setTargetAudience] =
     useState<GenerateWorkflowDocsRequest["target_audience"]>("Technical Developer");
-  const [audienceMode, setAudienceMode] = useState<"Technical Developer" | "Executive Summary" | "Custom">("Technical Developer");
+  const [audienceMode, setAudienceMode] = useState<
+    "Technical Developer" | "Executive Summary" | "Custom"
+  >("Technical Developer");
   const [customStyle, setCustomStyle] = useState("");
   const [reportViewerOpen, setReportViewerOpen] = useState(false);
 
