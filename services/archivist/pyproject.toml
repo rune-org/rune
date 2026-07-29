@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Consumes workflow completion events from RabbitMQ and records them in PostgreSQL"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "aio-pika==9.6.2",
+    "aio-pika==10.0.1",
     "asyncpg==0.31.0",
     "greenlet==3.5.0",
     "pydantic-settings==2.14.0",
