@@ -5,9 +5,9 @@ allowBuilds:
   unrs-resolver: false
 
 overrides:
-  typescript-eslint: 8.59.1
-  '@typescript-eslint/parser': 8.59.1
-  '@typescript-eslint/eslint-plugin': 8.59.1
+  typescript-eslint: 8.65.0
+  '@typescript-eslint/parser': 8.65.0
+  '@typescript-eslint/eslint-plugin': 8.65.0
   tar: '>=7.5.3'
   diff: '>=8.0.3'
   '@modelcontextprotocol/sdk': '>=1.26.0'
@@ -16,8 +16,8 @@ overrides:
   js-yaml: '>=4.1.1'
   minimatch: '>=10.2.1'
   postcss: '>=8.5.10'
-  picomatch: 4.0.4
-  vite: 7.3.5
+  picomatch: 4.0.5
+  vite: 7.3.6
   hono: '>=4.12.14'
   '@hono/node-server': '>=1.19.14'
   ip-address: '>=10.1.1'
