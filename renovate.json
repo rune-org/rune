@@ -4,7 +4,7 @@
     "config:recommended",
     ":dependencyDashboard"
   ],
-  "enabled": true,
+  "enabled": false,
 
   "minimumReleaseAge": "7 days",
 
