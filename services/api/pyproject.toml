@@ -16,7 +16,7 @@ dependencies = [
     "langchain-google-genai==4.2.2",
     "langchain-mcp-adapters==0.2.2",
     "langgraph-checkpoint>=4.0.0",
-    "langgraph-checkpoint-postgres==3.0.5",
+    "langgraph-checkpoint-postgres==3.1.1",
     "litellm>=1.83.7",
     "psycopg[binary]==3.3.3",
     "pydantic-settings==2.14.0",
