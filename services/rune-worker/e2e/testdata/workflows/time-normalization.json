@@ -1,0 +1,70 @@
+{
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "trigger",
+      "position": {"x": 80, "y": 40},
+      "data": {"label": "Start"}
+    },
+    {
+      "id": "parse-date",
+      "type": "dateTimeParse",
+      "position": {"x": 280, "y": 40},
+      "data": {
+        "label": "ParseDate",
+        "date": "2026-03-08T15:30:00Z",
+        "timezone": "America/New_York"
+      }
+    },
+    {
+      "id": "format-date",
+      "type": "dateTimeFormat",
+      "position": {"x": 520, "y": 40},
+      "data": {
+        "label": "FormatDate",
+        "date": "2026-03-08T15:30:00Z",
+        "timezone": "America/New_York",
+        "format": "2006-01-02 15:04 MST"
+      }
+    },
+    {
+      "id": "add-days",
+      "type": "dateTimeAdd",
+      "position": {"x": 760, "y": 40},
+      "data": {
+        "label": "AddDays",
+        "date": "2026-03-08",
+        "amount": 3,
+        "unit": "days",
+        "timezone": "UTC",
+        "format": "2006-01-02"
+      }
+    },
+    {
+      "id": "subtract-weeks",
+      "type": "dateTimeSubtract",
+      "position": {"x": 980, "y": 40},
+      "data": {
+        "label": "SubtractWeeks",
+        "date": "2026-03-22",
+        "amount": 2,
+        "unit": "weeks",
+        "timezone": "UTC",
+        "format": "2006-01-02"
+      }
+    },
+    {
+      "id": "log-date",
+      "type": "log",
+      "position": {"x": 1220, "y": 40},
+      "data": {"label": "DateLog", "message": "Dates normalized", "level": "info"}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "trigger-1", "target": "parse-date", "type": "default"},
+    {"id": "e2", "source": "parse-date", "target": "format-date", "type": "default"},
+    {"id": "e3", "source": "format-date", "target": "add-days", "type": "default"},
+    {"id": "e4", "source": "add-days", "target": "subtract-weeks", "type": "default"},
+    {"id": "e5", "source": "subtract-weeks", "target": "log-date", "type": "default"}
+  ]
+}

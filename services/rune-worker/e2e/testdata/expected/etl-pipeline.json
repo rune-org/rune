@@ -1,0 +1,243 @@
+{
+  "workflow_id": "wf-etl-pipeline",
+  "execution_id": "exec-etl-pipeline",
+  "status_messages": [
+    {
+      "node_id": "00-fetch",
+      "node_name": "FetchProducts",
+      "status": "success",
+      "output": {
+        "status": 200
+      }
+    },
+    {
+      "node_id": "01-filter",
+      "node_name": "InStockOnly",
+      "status": "success",
+      "output": {
+        "$json": [
+          {
+            "id": "p1",
+            "price": 120,
+            "stock": 4,
+            "title": "Alpha"
+          },
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          }
+        ],
+        "count": 3,
+        "original_count": 4
+      }
+    },
+    {
+      "node_id": "02-sort",
+      "node_name": "SortByPrice",
+      "status": "success",
+      "output": {
+        "$json": [
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          },
+          {
+            "id": "p1",
+            "price": 120,
+            "stock": 4,
+            "title": "Alpha"
+          }
+        ],
+        "count": 3
+      }
+    },
+    {
+      "node_id": "03-limit",
+      "node_name": "Top3",
+      "status": "success",
+      "output": {
+        "$json": [
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          },
+          {
+            "id": "p1",
+            "price": 120,
+            "stock": 4,
+            "title": "Alpha"
+          }
+        ],
+        "count": 3,
+        "original_count": 3
+      }
+    },
+    {
+      "node_id": "04-edit",
+      "node_name": "FormatData",
+      "status": "success",
+      "output": {
+        "$json": [
+          {
+            "cost": "200",
+            "name": "Charlie"
+          },
+          {
+            "cost": "150",
+            "name": "Delta"
+          },
+          {
+            "cost": "120",
+            "name": "Alpha"
+          }
+        ]
+      }
+    },
+    {
+      "node_id": "05-log",
+      "node_name": "ETL pipeline",
+      "status": "success",
+      "output": {
+        "level": "info",
+        "message": "Processed top 3 products."
+      }
+    }
+  ],
+  "completion": {
+    "status": "completed",
+    "final_context": {
+      "$ETL pipeline": {
+        "level": "info",
+        "message": "Processed top 3 products."
+      },
+      "$FetchProducts": {
+        "status": 200
+      },
+      "$FormatData": {
+        "$json": [
+          {
+            "cost": "200",
+            "name": "Charlie"
+          },
+          {
+            "cost": "150",
+            "name": "Delta"
+          },
+          {
+            "cost": "120",
+            "name": "Alpha"
+          }
+        ]
+      },
+      "$InStockOnly": {
+        "$json": [
+          {
+            "id": "p1",
+            "price": 120,
+            "stock": 4,
+            "title": "Alpha"
+          },
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          }
+        ],
+        "count": 3,
+        "original_count": 4
+      },
+      "$SortByPrice": {
+        "$json": [
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          },
+          {
+            "id": "p1",
+            "price": 120,
+            "stock": 4,
+            "title": "Alpha"
+          }
+        ],
+        "count": 3
+      },
+      "$Top3": {
+        "$json": [
+          {
+            "id": "p3",
+            "price": 200,
+            "stock": 2,
+            "title": "Charlie"
+          },
+          {
+            "id": "p4",
+            "price": 150,
+            "stock": 7,
+            "title": "Delta"
+          },
+          {
+            "id": "p1",
+            "price": 120,
+            "stock": 4,
+            "title": "Alpha"
+          }
+        ],
+        "count": 3,
+        "original_count": 3
+      },
+      "$json": [
+        {
+          "cost": "200",
+          "name": "Charlie"
+        },
+        {
+          "cost": "150",
+          "name": "Delta"
+        },
+        {
+          "cost": "120",
+          "name": "Alpha"
+        }
+      ]
+    }
+  }
+}

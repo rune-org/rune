@@ -72,6 +72,23 @@ func SetupTestEnv(t *testing.T) *TestEnv {
 	}
 }
 
+// Reset clears shared test queues and Redis state without closing connections.
+func (env *TestEnv) Reset(t *testing.T) {
+	t.Helper()
+
+	if err := resetRabbitMQQueues(env.RabbitMQURL); err != nil {
+		t.Fatalf("Failed to reset RabbitMQ queues: %v", err)
+	}
+
+	if env.RedisClient != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := env.RedisClient.FlushDB(ctx).Err(); err != nil {
+			t.Fatalf("Failed to flush Redis: %v", err)
+		}
+	}
+}
+
 // Cleanup closes all resources
 func (env *TestEnv) Cleanup(t *testing.T) {
 	t.Helper()

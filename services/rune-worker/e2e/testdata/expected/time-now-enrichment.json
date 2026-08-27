@@ -1,0 +1,59 @@
+{
+  "workflow_id": "wf-time-now-enrichment",
+  "execution_id": "exec-time-now-enrichment",
+  "status_messages": [
+    {
+      "node_id": "edit-now",
+      "node_name": "PickTimezone",
+      "status": "success",
+      "output": {
+        "$json": {
+          "timezone": "UTC"
+        }
+      }
+    },
+    {
+      "node_id": "log-now",
+      "node_name": "NowLog",
+      "status": "success",
+      "output": {
+        "level": "info",
+        "message": "Timestamp captured"
+      }
+    },
+    {
+      "node_id": "now-node",
+      "node_name": "Now",
+      "status": "success",
+      "output": {
+        "iso": "\u003cdynamic\u003e",
+        "result": "\u003cdynamic\u003e",
+        "timezone": "UTC",
+        "unix": "\u003cdynamic\u003e"
+      }
+    }
+  ],
+  "completion": {
+    "status": "completed",
+    "final_context": {
+      "$Now": {
+        "iso": "\u003cdynamic\u003e",
+        "result": "\u003cdynamic\u003e",
+        "timezone": "UTC",
+        "unix": "\u003cdynamic\u003e"
+      },
+      "$NowLog": {
+        "level": "info",
+        "message": "Timestamp captured"
+      },
+      "$PickTimezone": {
+        "$json": {
+          "timezone": "UTC"
+        }
+      },
+      "$json": {
+        "timezone": "UTC"
+      }
+    }
+  }
+}

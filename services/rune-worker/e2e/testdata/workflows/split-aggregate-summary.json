@@ -1,0 +1,62 @@
+{
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "trigger",
+      "position": {"x": 80, "y": 40},
+      "data": {"label": "Start"}
+    },
+    {
+      "id": "fetch-cart",
+      "type": "http",
+      "position": {"x": 280, "y": 40},
+      "data": {
+        "label": "FetchCart",
+        "method": "GET",
+        "url": "https://dummyjson.com/carts/summary",
+        "timeout": 30,
+        "retry": 0,
+        "retry_delay": 0,
+        "raise_on_status": "4xx,5xx"
+      }
+    },
+    {
+      "id": "split-items",
+      "type": "split",
+      "position": {"x": 560, "y": 40},
+      "data": {"label": "SplitItems", "array_field": "$FetchCart.body.products"}
+    },
+    {
+      "id": "edit-item",
+      "type": "edit",
+      "position": {"x": 840, "y": 40},
+      "data": {
+        "label": "SummarizeItem",
+        "mode": "assignments",
+        "assignments": [
+          {"name": "sku", "value": "{{ $item.sku }}", "type": "string"},
+          {"name": "total", "value": "{{ $item.price * $item.qty }}", "type": "number"}
+        ]
+      }
+    },
+    {
+      "id": "aggregate-items",
+      "type": "aggregator",
+      "position": {"x": 1120, "y": 40},
+      "data": {"label": "Aggregate"}
+    },
+    {
+      "id": "log-summary",
+      "type": "log",
+      "position": {"x": 1400, "y": 40},
+      "data": {"label": "SummaryLog", "message": "Items summarized", "level": "info"}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "trigger-1", "target": "fetch-cart", "type": "default"},
+    {"id": "e1b", "source": "fetch-cart", "target": "split-items", "type": "default"},
+    {"id": "e2", "source": "split-items", "target": "edit-item", "type": "default"},
+    {"id": "e3", "source": "edit-item", "target": "aggregate-items", "type": "default"},
+    {"id": "e4", "source": "aggregate-items", "target": "log-summary", "type": "default"}
+  ]
+}

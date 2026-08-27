@@ -1,0 +1,78 @@
+{
+  "nodes": [
+    {
+      "id": "00-trigger",
+      "type": "trigger",
+      "position": {"x": 80, "y": 40},
+      "data": {"label": "Trigger"}
+    },
+    {
+      "id": "00-fetch",
+      "type": "http",
+      "position": {"x": 280, "y": 40},
+      "data": {
+        "label": "FetchProducts",
+        "method": "GET",
+        "url": "https://dummyjson.com/products",
+        "timeout": 30,
+        "retry": 0,
+        "retry_delay": 0,
+        "raise_on_status": "4xx,5xx"
+      }
+    },
+    {
+      "id": "01-filter",
+      "type": "filter",
+      "position": {"x": 560, "y": 40},
+      "data": {
+        "label": "InStockOnly",
+        "input_array": "$FetchProducts.body.products",
+        "match_mode": "all",
+        "rules": [{"field": "stock", "operator": ">", "value": "0"}]
+      }
+    },
+    {
+      "id": "02-sort",
+      "type": "sort",
+      "position": {"x": 840, "y": 40},
+      "data": {
+        "label": "SortByPrice",
+        "input_array": "$InStockOnly.$json",
+        "rules": [{"field": "$item.price", "direction": "descending", "type": "auto"}]
+      }
+    },
+    {
+      "id": "03-limit",
+      "type": "limit",
+      "position": {"x": 1120, "y": 40},
+      "data": {"label": "Top3", "input_array": "$SortByPrice.$json", "count": 3}
+    },
+    {
+      "id": "04-edit",
+      "type": "edit",
+      "position": {"x": 1400, "y": 40},
+      "data": {
+        "label": "FormatData",
+        "mode": "keep_only",
+        "assignments": [
+          {"name": "name", "value": "{{ $json.title }}", "type": "string"},
+          {"name": "cost", "value": "{{ $json.price }}", "type": "string"}
+        ]
+      }
+    },
+    {
+      "id": "05-log",
+      "type": "log",
+      "position": {"x": 1680, "y": 40},
+      "data": {"label": "ETL pipeline", "message": "Processed top 3 products.", "level": "info"}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "00-trigger", "target": "00-fetch", "type": "default"},
+    {"id": "e1b", "source": "00-fetch", "target": "01-filter", "type": "default"},
+    {"id": "e2", "source": "01-filter", "target": "02-sort", "type": "default"},
+    {"id": "e3", "source": "02-sort", "target": "03-limit", "type": "default"},
+    {"id": "e4", "source": "03-limit", "target": "04-edit", "type": "default"},
+    {"id": "e5", "source": "04-edit", "target": "05-log", "type": "default"}
+  ]
+}

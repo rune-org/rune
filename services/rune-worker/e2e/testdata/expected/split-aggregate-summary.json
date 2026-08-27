@@ -1,0 +1,181 @@
+{
+  "workflow_id": "wf-split-aggregate-summary",
+  "execution_id": "exec-split-aggregate-summary",
+  "status_messages": [
+    {
+      "node_id": "aggregate-items",
+      "node_name": "Aggregate",
+      "status": "success",
+      "item_index": 0,
+      "total_items": 2,
+      "output": {
+        "_aggregator_processed_count": 1,
+        "_barrier_closed": true
+      }
+    },
+    {
+      "node_id": "aggregate-items",
+      "node_name": "Aggregate",
+      "status": "success",
+      "item_index": 1,
+      "total_items": 2,
+      "output": {
+        "aggregated": [
+          {
+            "$item": {
+              "price": 10,
+              "qty": 2,
+              "sku": "A1"
+            },
+            "$json": {
+              "sku": "A1",
+              "total": 20
+            }
+          },
+          {
+            "$item": {
+              "price": 25,
+              "qty": 1,
+              "sku": "B2"
+            },
+            "$json": {
+              "sku": "B2",
+              "total": 25
+            }
+          }
+        ]
+      }
+    },
+    {
+      "node_id": "edit-item",
+      "node_name": "SummarizeItem",
+      "status": "success",
+      "item_index": 0,
+      "total_items": 2,
+      "output": {
+        "$json": {
+          "sku": "A1",
+          "total": 20
+        }
+      }
+    },
+    {
+      "node_id": "edit-item",
+      "node_name": "SummarizeItem",
+      "status": "success",
+      "item_index": 1,
+      "total_items": 2,
+      "output": {
+        "$json": {
+          "sku": "B2",
+          "total": 25
+        }
+      }
+    },
+    {
+      "node_id": "fetch-cart",
+      "node_name": "FetchCart",
+      "status": "success",
+      "output": {
+        "status": 200
+      }
+    },
+    {
+      "node_id": "log-summary",
+      "node_name": "SummaryLog",
+      "status": "success",
+      "item_index": 1,
+      "total_items": 2,
+      "output": {
+        "level": "info",
+        "message": "Items summarized"
+      }
+    },
+    {
+      "node_id": "split-items",
+      "node_name": "SplitItems",
+      "status": "success",
+      "output": {
+        "_split_items": [
+          {
+            "price": 10,
+            "qty": 2,
+            "sku": "A1"
+          },
+          {
+            "price": 25,
+            "qty": 1,
+            "sku": "B2"
+          }
+        ]
+      }
+    }
+  ],
+  "completion": {
+    "status": "completed",
+    "final_context": {
+      "$Aggregate": {
+        "aggregated": [
+          {
+            "$item": {
+              "price": 10,
+              "qty": 2,
+              "sku": "A1"
+            },
+            "$json": {
+              "sku": "A1",
+              "total": 20
+            }
+          },
+          {
+            "$item": {
+              "price": 25,
+              "qty": 1,
+              "sku": "B2"
+            },
+            "$json": {
+              "sku": "B2",
+              "total": 25
+            }
+          }
+        ]
+      },
+      "$FetchCart": {
+        "status": 200
+      },
+      "$SplitItems": {
+        "_split_items": [
+          {
+            "price": 10,
+            "qty": 2,
+            "sku": "A1"
+          },
+          {
+            "price": 25,
+            "qty": 1,
+            "sku": "B2"
+          }
+        ]
+      },
+      "$SummarizeItem": {
+        "$json": {
+          "sku": "B2",
+          "total": 25
+        }
+      },
+      "$SummaryLog": {
+        "level": "info",
+        "message": "Items summarized"
+      },
+      "$item": {
+        "price": 25,
+        "qty": 1,
+        "sku": "B2"
+      },
+      "$json": {
+        "sku": "B2",
+        "total": 25
+      }
+    }
+  }
+}

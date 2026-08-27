@@ -1,0 +1,72 @@
+{
+  "workflow_id": "wf-customer-risk-approved",
+  "execution_id": "exec-customer-risk-approved",
+  "status_messages": [
+    {
+      "node_id": "edit-package",
+      "node_name": "PackageDecision",
+      "status": "success",
+      "output": {
+        "$json": {
+          "decision": "approved",
+          "order_id": "ord-1001",
+          "score": 42
+        }
+      }
+    },
+    {
+      "node_id": "fetch-order",
+      "node_name": "FetchOrder",
+      "status": "success",
+      "output": {
+        "status": 200
+      }
+    },
+    {
+      "node_id": "if-risk",
+      "node_name": "RiskGate",
+      "status": "success",
+      "output": {
+        "expression": "$FetchOrder.body.risk_score \u003c= 70",
+        "result": true
+      }
+    },
+    {
+      "node_id": "log-result",
+      "node_name": "AuditLog",
+      "status": "success",
+      "output": {
+        "level": "info",
+        "message": "Approved order"
+      }
+    }
+  ],
+  "completion": {
+    "status": "completed",
+    "final_context": {
+      "$AuditLog": {
+        "level": "info",
+        "message": "Approved order"
+      },
+      "$FetchOrder": {
+        "status": 200
+      },
+      "$PackageDecision": {
+        "$json": {
+          "decision": "approved",
+          "order_id": "ord-1001",
+          "score": 42
+        }
+      },
+      "$RiskGate": {
+        "expression": "$FetchOrder.body.risk_score \u003c= 70",
+        "result": true
+      },
+      "$json": {
+        "decision": "approved",
+        "order_id": "ord-1001",
+        "score": 42
+      }
+    }
+  }
+}

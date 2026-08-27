@@ -1,0 +1,78 @@
+{
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "trigger",
+      "position": {"x": 80, "y": 40},
+      "data": {"label": "Start"}
+    },
+    {
+      "id": "fetch-inventory",
+      "type": "http",
+      "position": {"x": 280, "y": 40},
+      "data": {
+        "label": "FetchInventory",
+        "method": "GET",
+        "url": "https://dummyjson.com/products",
+        "timeout": 30,
+        "retry": 0,
+        "retry_delay": 0,
+        "raise_on_status": "4xx,5xx"
+      }
+    },
+    {
+      "id": "filter-active",
+      "type": "filter",
+      "position": {"x": 520, "y": 40},
+      "data": {
+        "label": "FilterActive",
+        "input_array": "$FetchInventory.body.products",
+        "match_mode": "all",
+        "rules": [{"field": "stock", "operator": ">", "value": "0"}]
+      }
+    },
+    {
+      "id": "sort-price",
+      "type": "sort",
+      "position": {"x": 760, "y": 40},
+      "data": {
+        "label": "SortPrice",
+        "input_array": "$FilterActive.$json",
+        "rules": [{"field": "price", "direction": "desc", "type": "number"}]
+      }
+    },
+    {
+      "id": "limit-top",
+      "type": "limit",
+      "position": {"x": 1000, "y": 40},
+      "data": {"label": "Top2", "input_array": "$SortPrice.$json", "count": 2}
+    },
+    {
+      "id": "edit-select",
+      "type": "edit",
+      "position": {"x": 1220, "y": 40},
+      "data": {
+        "label": "SelectFields",
+        "mode": "keep_only",
+        "assignments": [
+          {"name": "id", "value": "{{ $json.id }}", "type": "string"},
+          {"name": "price", "value": "{{ $json.price }}", "type": "number"}
+        ]
+      }
+    },
+    {
+      "id": "log-result",
+      "type": "log",
+      "position": {"x": 1460, "y": 40},
+      "data": {"label": "InventoryLog", "message": "Top items ready", "level": "info"}
+    }
+  ],
+  "edges": [
+    {"id": "e1", "source": "trigger-1", "target": "fetch-inventory", "type": "default"},
+    {"id": "e1b", "source": "fetch-inventory", "target": "filter-active", "type": "default"},
+    {"id": "e2", "source": "filter-active", "target": "sort-price", "type": "default"},
+    {"id": "e3", "source": "sort-price", "target": "limit-top", "type": "default"},
+    {"id": "e4", "source": "limit-top", "target": "edit-select", "type": "default"},
+    {"id": "e5", "source": "edit-select", "target": "log-result", "type": "default"}
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "workflow_id": "wf-malformed-http-config",
+  "execution_id": "exec-malformed-http-config",
+  "status_messages": [
+    {
+      "node_id": "edit-payload",
+      "node_name": "BuildPayload",
+      "status": "success",
+      "output": {
+        "$json": {
+          "payload": "ok"
+        }
+      }
+    },
+    {
+      "node_id": "http-bad",
+      "node_name": "BadHTTP",
+      "status": "failed",
+      "error": {
+        "message": "url parameter is required",
+        "code": "NODE_EXECUTION_FAILED"
+      }
+    },
+    {
+      "node_id": "log-start",
+      "node_name": "StartLog",
+      "status": "success",
+      "output": {
+        "level": "info",
+        "message": "Preparing request"
+      }
+    }
+  ],
+  "completion": {
+    "status": "halted",
+    "final_context": {
+      "$BuildPayload": {
+        "$json": {
+          "payload": "ok"
+        }
+      },
+      "$StartLog": {
+        "level": "info",
+        "message": "Preparing request"
+      },
+      "$json": {
+        "payload": "ok"
+      }
+    }
+  }
+}
