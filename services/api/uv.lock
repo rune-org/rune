@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = "==3.13.*"
 
 [[package]]
@@ -187,7 +187,7 @@ requires-dist = [
     { name = "langchain-google-genai", specifier = "==4.2.2" },
     { name = "langchain-mcp-adapters", specifier = "==0.2.2" },
     { name = "langgraph-checkpoint", specifier = ">=4.0.0" },
-    { name = "langgraph-checkpoint-postgres", specifier = "==3.0.5" },
+    { name = "langgraph-checkpoint-postgres", specifier = "==3.1.3" },
     { name = "litellm", specifier = ">=1.83.7" },
     { name = "psycopg", extras = ["binary"], specifier = "==3.3.3" },
     { name = "pydantic-settings", specifier = "==2.14.0" },
@@ -1027,20 +1027,20 @@ wheels = [
 
 [[package]]
 name = "langgraph-checkpoint"
-version = "4.0.3"
+version = "4.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "langchain-core" },
     { name = "ormsgpack" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7c/e1/885e49cdafceb4c74dae4573bc5dd6054c6c640382ee73104532f33dca46/langgraph_checkpoint-4.0.3.tar.gz", hash = "sha256:a7b5e2ca18fb79b55edf19396d4ee446f8a53dcb7a4ec62ce6f1c7e00bb5af7f", size = 174009, upload-time = "2026-04-27T14:34:02.777Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/69/31fdbdc65a85bbd6178afa193c772bb926620f47b4869638bc2bc80afaaa/langgraph_checkpoint-4.3.0.tar.gz", hash = "sha256:c75965d84cc2c1d549163e910a15bcb577758001b141619d05297c463280b018", size = 182652, upload-time = "2026-10-12T22:26:31.478Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/19/ee/ecd3fa2e893746dde3b768daca2a4935208bc77d09445437ccfffb4a8c9b/langgraph_checkpoint-4.0.3-py3-none-any.whl", hash = "sha256:b91b765712a2311a5b198760f714b7ab9b376d01c047ed78d9b9a3e80df802a3", size = 51682, upload-time = "2026-04-27T14:34:01.51Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/0c/84747e340bf4f29291c84cdd5733fc8d0a822f3d33bb24e664a18afa4a7c/langgraph_checkpoint-4.3.0-py3-none-any.whl", hash = "sha256:bedfafe2f997ded60e4fa593e79f56f436a6e45586392dc382aa810d0c751c64", size = 58063, upload-time = "2026-10-12T22:26:30.429Z" },
 ]
 
 [[package]]
 name = "langgraph-checkpoint-postgres"
-version = "3.0.5"
+version = "3.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "langgraph-checkpoint" },
@@ -1048,9 +1048,9 @@ dependencies = [
     { name = "psycopg" },
     { name = "psycopg-pool" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/95/7a/8f439966643d32111248a225e6cb33a182d07c90de780c4dbfc1e0377832/langgraph_checkpoint_postgres-3.0.5.tar.gz", hash = "sha256:a8fd7278a63f4f849b5cbc7884a15ca8f41e7d5f7467d0a66b31e8c24492f7eb", size = 127856, upload-time = "2026-03-18T21:25:29.785Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/78/bf/d0ab4d6e4d61952de2f77044d7407b7ce09e07d53e7bb448cf9df55c35e5/langgraph_checkpoint_postgres-3.1.3.tar.gz", hash = "sha256:a152a9c0c3d5931bc949b64e01e8c7da20be57a32aa754626446318e90a07650", size = 158122, upload-time = "2026-10-12T23:05:19.759Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e8/87/b0f98b33a67204bca9d5619bcd9574222f6b025cf3c125eedcec9a50ecbc/langgraph_checkpoint_postgres-3.0.5-py3-none-any.whl", hash = "sha256:86d7040a88fd70087eaafb72251d796696a0a2d856168f5c11ef620771411552", size = 42907, upload-time = "2026-03-18T21:25:28.75Z" },
+    { url = "https://files.pythonhosted.org/packages/41/42/659106ed829ee026144e32ddd589735f978d2ed09681020e5965cdfca04c/langgraph_checkpoint_postgres-3.1.3-py3-none-any.whl", hash = "sha256:050ae583223e24d97747f27b9e06e7345bf13c972f1fb6ed33bb3d1f9c11cee4", size = 52048, upload-time = "2026-10-12T23:05:18.854Z" },
 ]
 
 [[package]]
